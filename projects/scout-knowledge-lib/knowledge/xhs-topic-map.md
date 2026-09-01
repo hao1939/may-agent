@@ -2,7 +2,7 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-01"
-source_basis: "XHS retained local evidence through 2026-08-19; seed reconciliations through 2026-09-01T10:24:20Z; topic-led GitHub, arXiv, and Reddit checks; and full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, and 2606.04315v1 on 2026-09-01."
+source_basis: "XHS retained local evidence through 2026-08-19; seed reconciliations through 2026-09-01T10:32:54Z; topic-led GitHub, arXiv, Reddit, and Hugging Face checks; full-source reviews of arXiv 2608.22610v1, 2608.30177v1, 2604.16548v2, and 2606.04315v1; and sattyamjjain/mnemo at revision 376ca28606c5b6287d9c8274482fa791d4dc8703 on 2026-09-01."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -35,7 +35,7 @@ it is not evidence quality.
 | Cluster | Seed connection | Score | Supporting sources | Current finding / uncertainty | Confidence | Next exploration |
 |---|---|---:|---|---|---|---|
 | **Self-evolution reliability and evaluation authority** | U | **13** (`3+3+3+2+2`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1) | XHS metadata says attention is moving from generic self-evolution toward evaluator independence, learning state, and human interference. Cross-source evidence adds task-order, security, executor-compatibility, and coalition confounders. Unknown: whether any of these posts are human-collected or whether full XHS content supports more than their visible metadata. | Moderate-high for the cross-source reliability pattern; low for unseen XHS post contents. | Reproduce or independently audit `2608.22610` once code is released; on seed access, deep-read any collected evaluator/skill-reliability post first. |
-| **Long-horizon persistence and stage-aware memory governance** | U | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Persistent agents need stage-aware utility/risk measurement plus lifecycle governance. Active iterative retrieval improves cross-scenario generality when retained evidence can still be surfaced, but it cannot recover facts discarded by a build-time schema and is not write authorization. Direct collection relevance is unknown; MemGauge's four-system results are diagnostic; the governance survey proposes rather than validates its predicates. | High for the evaluated MemGauge and active-retrieval settings; moderate for the lifecycle synthesis; low for unseen XHS post contents and unbenchmarked end-to-end governance. | Compare `2606.04315v1` artifacts with its claims if an attributable repository or artifact URL appears; otherwise test how principal scope and provenance should constrain iterative retrieval over shared memories. Reconcile XHS first. |
+| **Long-horizon persistence and stage-aware memory governance** | U | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703) and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | Persistent agents need stage-aware utility/risk measurement plus lifecycle governance. Active iterative retrieval improves cross-scenario generality when retained evidence can still be surfaced, but it cannot recover facts discarded by a build-time schema and is not write authorization. Mnemo is a related implementation, not attributable paper code; its synthetic write-control fixture is not a paper reproduction, and its four agent-managed handlers do not bind caller-supplied identity fields to the verified request principal. | High for the evaluated MemGauge and active-retrieval settings; moderate for the lifecycle synthesis and source-level Mnemo boundary; low for unseen XHS post contents and unexecuted Mnemo behavior. | Test the Mnemo `mem_*` identity boundary through its actual authenticated transport, or inspect a fix that binds all four handlers to `CallerContext`. Reconcile XHS first; revisit paper artifacts if an attributable URL appears. |
 | **Build playbooks and implementation literacy** | U | **10** (`2+2+2+2+2`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md) | In one search packet, process maps and source-code notes had more visible engagement than generic definitions or launch framing. Unknown: collection relevance, content quality, and whether the ranking persists across queries or time. | Low-moderate; title/author/like snapshots only. | On access, compare collected build artifacts by format and inspect whether saves/comments reflect successful use rather than curiosity. |
 
 ## Source-lane continuity
@@ -45,9 +45,9 @@ a source-activity quota.
 
 | Lane | Current relevance / expected value / freshness | Access and last useful evidence | Decision and revisit trigger |
 |---|---|---|---|
-| **GitHub** | High relevance to the selected memory cluster because released code could make its results reproducible; expected value is currently low because the cycle-3 complete searches are fresh and no paper or search result supplied a new repository. | Public repository Search API returned HTTP 200 in cycle 3. Complete searches (`incomplete_results=false`) returned nine repositories for `"MemGauge"`, three for the exact `2604.16548v2` title, and four for `"Verifiable Memory Governance"`, but no attributable implementation. No revisit trigger fired in cycle 4; no request was made merely to meet a quota. | **Deferred in cycle 4.** Last useful evidence remains the pinned paper-index revision, which is discovery provenance rather than paper confirmation. Revisit when any reviewed paper links code, a search result changes materially, or an attributable revision appears; pin a commit before using code as evidence. |
-| **arXiv** | Highest relevance and expected value for the selected cluster. `2608.30177v1` remains the fresh 15/15 anchor; `2606.04315v1` was the highest-value queued question because it could resolve Reddit's active-control interpretation. | Exact-ID Atom returned the current version in cycle 3. In cycle 4, the v1 source archive returned HTTP 200 (71,132-byte gzip; SHA-256 `a6b3c07607c2851f53c97be7900bc8594138961415af820c02b51522571b962c`) and its TeX was reviewed. This paper's AutoMEM harness is distinct from the library's separate AutoMem paper `2607.01224`. The paper claims a Hugging Face artifact repository for derived outputs, but the reviewed source contains no artifact URL. | **Selected and deep-read in cycle 4.** Preserve `2608.30177v1` as the cluster anchor. Admit `2606.04315v1` as evidence for active iterative query-time retrieval and delayed commitment, not autonomous write authorization or safe governance. Revisit for attributable artifacts or a principal-scoped retrieval test. |
-| **Reddit** | Directly relevant because `t3_1v8a3sh` led to both follow-up papers; expected new value is low after the post and six comments were just reviewed; thread published 2026-07-27. | Post-level RSS returned HTTP 200 in cycle 3 for stable post `t3_1v8a3sh` and six `t1_...` comments. Earlier JSON requests returned HTTP 403, an endpoint-specific boundary rather than total unavailability. No new high-value thread or access change appeared before cycle 4 reconsideration. | **Deferred in cycle 4.** The post's “agent decides what to write and retrieve” wording is now narrowed by the cited paper's full source: observed control is query planning over raw text or a prebuilt index. Revisit on a new seed-linked thread, a claim requiring comparison, or an RSS/JSON access change. |
+| **GitHub** | High relevance because the paper's unlinked artifact claim and the corrected write-control interpretation fired a fresh implementation/provenance trigger. | **Selected in cycle 5.** Public repository Search API returned HTTP 200 with `incomplete_results=false`: exact `"2606.04315"` found two repositories, exact title found five, and `"AutoMEM" "Zhikai Chen"` found one paper index. The attributable author profile linked only arXiv and exposed no paper repository. Mnemo was pinned at `376ca286…8703` and inspected as a related implementation. | Paper artifacts remain unlocated. Paper indexes are discovery provenance, not artifacts or confirmation; Mnemo is neither attributable author code nor a reproduction. Revisit for an author-linked artifact, a search-result change, or an authenticated `mem_*` identity test. |
+| **arXiv** | Highest cluster relevance, but the full `2606.04315v1` source and its 15/15 `2608.30177v1` anchor were just reviewed; expected new-paper value was low. | **Checked in cycle 5.** A bounded exact-ID Atom request returned HTTP 200 and current entries `2608.30177v1` and `2606.04315v1`, updated 2026-08-31 and 2026-06-03 respectively. No version change or higher-value candidate appeared, so no new paper was deep-read. | Preserve `2608.30177v1` as selected primary evidence and `2606.04315v1` as its reviewed follow-up. Revisit on a version change, new seed-linked question, or attributable artifacts. |
+| **Reddit** | Relevant as the path that surfaced both papers, but expected new information is low because stable post `t3_1v8a3sh` and six comments were just reviewed and corrected against primary evidence. | **Checked in cycle 5.** Post-level RSS returned HTTP 200 again at feed update `2026-09-01T10:43:38Z`, with the same stable post and six stable comments; JSON remains last observed HTTP 403. No new thread or content delta appeared. | Retain the post as attributed community framing, not experimental confirmation. Revisit for a new seed-linked thread, material claim requiring comparison, or access change. |
 
 ## Selected deep dive — coalition-conditioned skill reliability
 
@@ -198,6 +198,49 @@ cross-scenario access, but non-parametric memory does not replace actor
 capability or lifecycle governance. Reddit's wording is therefore retained as
 an attributed interpretation and corrected, not promoted into a paper result.
 
+## Fifth-cycle follow-up — implementation identity must follow the caller
+
+The fifth reconciliation completed at `2026-09-01T10:32:54Z`, before any new
+source request. The direct collection remained unobserved; the corrected local
+inventory remained 104 stable IDs / 125 URL occurrences / 24 files with
+fingerprint `889d3247…d8fb`. A preliminary 78-ID count was rejected because its
+matcher omitted `/search_result/`; it is not a removal signal. The memory
+cluster and fresh `2608.30177v1` anchor therefore remain selected at 15/15.
+
+GitHub was selected because `2606.04315v1` claims an artifact repository without
+giving a URL, which fired the recorded provenance trigger. Complete public
+repository searches (`incomplete_results=false`) found two repositories for the
+exact paper ID, five for the exact title, and one paper index for `"AutoMEM"
+"Zhikai Chen"`. The attributable `CurryTang/CurryTang` profile links the paper
+only to arXiv; its public repository list exposes no attributable paper code.
+Two pinned paper lists also link only arXiv. Bounded Hugging Face API searches
+returned HTTP 200 but no matching model, dataset, or Space. A bounded arXiv
+exact-ID refresh returned the same two v1 entries, and Reddit post RSS returned
+the same post and six comments. These checks leave the claimed artifacts
+**unlocated**, not proven absent, and add no new paper or community claim.
+
+[`sattyamjjain/mnemo`](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703)
+was the highest-value related implementation, but it is not author-attributable
+paper code. At the pinned revision, its README describes `2606.04315` as an
+agent-controlled write/revise/forget design. Its own synthetic crossover test
+stores all 12 facts × 3 revisions plus 12 incidental details in the fixed arm,
+while the agent-managed arm manually removes stale versions and omits incidental
+details. Under a BM25/NoopEmbedding fixture, current-fact F1 is 0.500 versus
+1.000 and incidental recall is 1.000 versus 0.000. Those are repository-designed
+results about its constructed fixture, not a reproduction of the paper.
+
+The source also exposes a distinct authority question. `call_tool` verifies a
+per-request `CallerContext` and inserts it into request extensions, but the four
+`mem_*` handlers do not consume that extension. Their inputs accept `agent_id`
+and, for write/read/revise, `org_id`; the handlers copy those values into ordinary
+remember, recall, and forget requests. Ordinary remember records the capability
+principal only when invoked through its capability-authorized path; otherwise it
+falls back to `created_by` or the record's `agent_id`. The source-level inference
+is therefore that tool invocation permission is not bound to the identity used
+for ownership, retrieval scope, deletion checks, or provenance in these four
+handlers. This is not a live exploitation claim: Scout did not run Mnemo's suite
+or exercise an authenticated transport.
+
 ## Connections and tension
 
 - **Self-evolution ↔ governed memory:** a growing skill or memory bank is a
@@ -220,6 +263,11 @@ an attributed interpretation and corrected, not promoted into a paper result.
   access control, filtering, and audit logging out of scope. Active retrieval
   must therefore sit behind the survey's principal, provenance, and
   authorization boundaries rather than substitute for them.
+- **Implementation authority gap:** Mnemo turns the overstated framing into
+  write/revise/forget tools, then accepts identity scope from tool input even
+  though dispatch has already resolved the authenticated caller. A verified
+  tool gate is not sufficient when the guarded operation uses a second,
+  caller-asserted principal.
 - **Blocked evidence:** direct collection membership, current engagement, full
   XHS post text, and collection removals remain unknown while the browser
   endpoint is outside this worker's reachable network namespace. Reddit's JSON
@@ -236,3 +284,4 @@ an attributed interpretation and corrected, not promoted into a paper result.
 | 2026-09-01 cycle 2 | Reconciled first at 10:00:06Z: direct set still unobserved; local fallback unchanged at 104 stable IDs / 125 occurrences and fingerprint `889d3247…d8fb`. | After reconciliation, arXiv HTML search returned `2608.30177` first; the specific API record and full source were readable. GitHub's complete nine-result `MemGauge` query found a pinned paper index but no attributable experiment repository. Reddit JSON returned HTTP 403; global search RSS returned metadata for `t3_1v8a3sh`, then its deep read returned HTTP 429. | Stage-wise utility-risk profiles across controlled interventions and four real systems. | Memory governance rises to 15/15 and qualifies the read-write synthesis; Reddit metadata remains a candidate, not claim support. | Reconcile XHS first again; look for attributable `2608.30177` code, then reproduce stage profiles under additional attacks. Revisit the Reddit candidate after the rate-limit boundary changes. |
 | 2026-09-01 cycle 3 | Reconciled first at 10:12:33Z: direct set still unobserved; local fallback again unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`. | Bounded GitHub repository searches were complete; the arXiv exact-ID feed returned `2604.16548v2`, `2606.04315v1`, and preserved `2608.30177v1`; Reddit post RSS returned `t3_1v8a3sh` plus six comments. | `2604.16548v2` lifecycle framework and five proposed governance predicates; Reddit claims kept attributable and non-empirical. | The 15/15 cluster and MemGauge anchor remain selected. The 14/15 marginal follow-up adds recoverability and lineage requirements without counting paper indexes or comments as confirmation. | Reconcile XHS first; deep-read `2606.04315v1` and test whether its active-control result entails safe write authorization, provenance, and principal scope. |
 | 2026-09-01 cycle 4 | Reconciled first at 10:24:20Z: direct set still unobserved; local fallback unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`. | GitHub deferred because complete searches were fresh; Reddit deferred because the thread and comments were just reviewed; arXiv selected and `2606.04315v1` full source reviewed. | Cross-scenario memory generality, build-time schema loss, iterative retrieval, AutoMEM cost/accuracy, and the dynamic-task ceiling. | Preserve the 15/15 cluster and `2608.30177v1` anchor. Correct Reddit's write-control interpretation: the paper supports active query-time reads, not governed memory admission. | Reconcile XHS first; seek attributable `2606.04315` artifacts or test principal-scoped iterative retrieval. Revisit GitHub or Reddit only when their recorded triggers fire. |
+| 2026-09-01 cycle 5 | Reconciled first at 10:32:54Z: direct set still unobserved; corrected fallback unchanged at 104 IDs / 125 occurrences / 24 files and fingerprint `889d3247…d8fb`; rejected an incomplete matcher rather than recording a false delta. | GitHub selected on the paper-artifact trigger; Hugging Face checked as related discovery; bounded arXiv exact-ID and Reddit post-RSS reads returned HTTP 200 with the same versioned papers, post, and six comments. | Pinned Mnemo source audit: repository-specific synthetic crossover, paper misattribution, and an inferred caller-identity binding gap in the four `mem_*` handlers. | Preserve `2608.30177v1` as the 15/15 anchor. No new arXiv or Reddit candidate displaced it. Classify Mnemo as related implementation evidence, not paper artifact, reproduction, or live vulnerability proof. | Reconcile XHS first; exercise the identity boundary through Mnemo's authenticated transport or inspect a fix binding `mem_*` operations to `CallerContext`. Revisit paper artifacts when an attributable URL appears. |

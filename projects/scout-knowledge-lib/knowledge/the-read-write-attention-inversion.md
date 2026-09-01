@@ -1,10 +1,10 @@
 <ai_context>
-summary: "Cross-source synthesis, created 2026-06-29 and qualified 2026-09-01: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge (arXiv 2608.30177v1) shows stage-specific profiles: writing has a threshold-like risk transition, management can locally decouple utility and risk, and greater retrieval exposure raises clean utility and attack success together. The durable conclusion is stage-aware memory governance, not exclusive write-side control."
+summary: "Cross-source synthesis, created 2026-06-29 and qualified 2026-09-01: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge (arXiv 2608.30177v1) shows stage-specific profiles; arXiv 2606.04315v1 supports active query-time reads, not autonomous governed writes; and Mnemo shows that write-control tooling must bind the authenticated caller through the operation. The durable conclusion is stage-aware memory governance, not exclusive write-side control."
 triggers: ["read-write inversion", "memory attention", "write governance", "read optimization", "write selection", "memory investment", "RAG ceiling", "retrieval saturates", "write quality", "write discipline", "memory engineering", "industry attention bias", "read-side optimization"]
 confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
 discovered: "2026-06-29"
 last_updated: "2026-09-01"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), HN scan #220 (Write Discipline), GitHub MARM/Distill"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
@@ -235,6 +235,20 @@ therefore complements MemGauge's exposure controls and Verifiable Memory
 Governance's authorization, provenance, principal-scope, rollback, and
 forgetting requirements. It cannot substitute for them.
 
+A related implementation illustrates the distinction. Mnemo revision
+[`376ca286`](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703)
+describes four write/read/revise/forget tools as AutoMEM-inspired, although the
+paper does not evaluate those write controls. Its synthetic crossover manually
+keeps only current facts in one arm and all revisions plus incidental details
+in the other, producing the designed precision/recall crossover under BM25; it
+is not a paper reproduction. More importantly, the four handlers accept
+caller-supplied `agent_id` (and sometimes `org_id`) rather than consuming the
+`CallerContext` that dispatch has already verified. That pinned source supports
+an implementation-level warning: write governance is not authenticated merely
+because the caller passed a tool gate; the resolved principal must bind the
+actual read, write, revise, forget, and provenance operations. Scout did not
+exercise this boundary against a live authenticated transport.
+
 ## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |
@@ -312,7 +326,9 @@ improvement is lower value. `2606.04315v1` adds a sixth: when evidence remains
 available, let the answering agent iteratively refine its query rather than
 commit to one passive retrieval. That loop must still inherit principal scope,
 provenance, and audit controls, and cannot repair information discarded during
-memory construction.
+memory construction. Mnemo adds the enforcement corollary: derive the operation's
+principal from authenticated request context, not tool arguments, and test that
+binding across every wrapper path.
 
 ---
 
@@ -337,3 +353,4 @@ Sources:
 - https://arxiv.org/abs/2606.10062
 - https://arxiv.org/abs/2608.30177v1
 - https://arxiv.org/abs/2606.04315v1
+- https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703

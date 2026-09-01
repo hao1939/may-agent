@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five proposed lifecycle governance predicates and shows why rollback and verified forgetting require authenticated, lineage-bearing state. These are audit requirements, not proof of deployed end-to-end governance."
-triggers: ["Halofy", "Switchboard", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody"]
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five proposed lifecycle governance predicates; and Mnemo shows why an authenticated tool gate must also bind the principal used inside each operation. These are source-level audit requirements, not proof of deployed end-to-end governance or live exploitation."
+triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source inspection of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -12,6 +12,7 @@ Last updated: 2026-09-01<br>
 Source: GitHub and arXiv<br>
 Repo: https://github.com/halofyai/halofy<br>
 Repo: https://github.com/Egoist-Machines/switchboard<br>
+Repo: https://github.com/sattyamjjain/mnemo<br>
 Paper: https://arxiv.org/abs/2604.16548v2
 
 ## Signal
@@ -151,6 +152,50 @@ does not expose a reproducible search query, screening counts, or inclusion
 criteria. The predicates should therefore be used as test hypotheses and audit
 questions, not as a completeness theorem or deployment benchmark.
 
+## Implementation qualification — caller identity must reach the operation
+
+Mnemo revision
+[`376ca286`](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703)
+provides a useful counterexample to checking identity only at dispatch. The
+repository is a related implementation discovered through the `2606.04315`
+topic; it is not attributable paper code and its claims are not an independent
+confirmation of that paper.
+
+The README and tool comments describe four `mnemo.mem_*` operations as an
+AutoMEM-inspired agent-controlled flat store. That attribution is too broad:
+the paper evaluates query-time `grep`/`read` over raw text and `rg`, `read`,
+`dump`, and `index_query` over prebuilt indexes. It does not evaluate agents
+authorizing long-term writes, revisions, or deletion. Mnemo's crossover is its
+own synthetic test, not a reproduction: the fixed arm stores 12 facts through
+three revisions plus 12 incidental details, while the agent-managed arm
+manually removes stale versions and omits incidental details. With the test's
+BM25/NoopEmbedding fixture, current-fact F1 is 0.500 versus 1.000 and incidental
+recall is 1.000 versus 0.000. The result demonstrates the fixture's intended
+selectivity tradeoff; it does not validate the paper's benchmarks.
+
+The stronger source-level finding concerns principal binding:
+
+- `call_tool` resolves a verified per-request `CallerContext`, applies its role
+  filter, and inserts the context into request extensions.
+- Other authority-bearing handlers consume `Extension<CallerContext>`, but
+  `mem_write`, `mem_read`, `mem_revise`, and `mem_forget` do not.
+- Their public inputs accept `agent_id`; write, read, and revise also accept
+  `org_id`. Each handler copies those fields into ordinary engine requests.
+- `mem_write` and the write half of `mem_revise` call ordinary `remember`, not
+  the capability-authorized path. Ordinary remember derives provenance from a
+  capability principal only when a capability is explicitly passed; otherwise
+  it falls back to `created_by` and then record `agent_id`.
+- Recall and forget use the request's `agent_id` (or the engine default) for
+  visibility and permission decisions.
+
+Therefore the verified caller that may invoke the tool is not necessarily the
+principal the handler uses for ownership, retrieval scope, deletion checks, or
+recorded write provenance. This is an inference from the pinned source, not a
+claim that Scout exploited a live deployment. Scout did not execute Mnemo's
+external suite or authenticated transport; the repository's existing flat-store
+contract test calls engine primitives directly and does not cover these four
+handlers under distinct request principals.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -169,6 +214,9 @@ workers. A governance layer must therefore bind six distinct questions:
    application predicate is not database-enforced tenant isolation.
 6. **Is this knowledge or custody?** Durable memory and a one-time task snapshot
    need different addressing, expiry, claim, deletion, and replay rules.
+7. **Does authenticated identity reach the operation?** A role gate at dispatch
+   does not bind ownership or provenance if the handler later accepts another
+   principal from caller-controlled fields.
 
 This turns “memory governance” from a feature checklist into an authority map.
 The reusable test is to trace every proposal, approval, read, write, plugin call,
@@ -179,6 +227,9 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 
 - Resolve actor, role, namespace, and source scope server-side; never let the
   agent assert the identity under which its own request will be authorized.
+- Pass that resolved identity into every authority-bearing handler and reject or
+  ignore conflicting identity fields; test the handler through the real
+  authenticated transport, not only the engine primitive it wraps.
 - Apply scope before candidate generation and expose retrieval plugins only the
   minimum read surface needed for one call.
 - Route imports, connectors, brownout writes, and interactive writes through the
@@ -218,3 +269,8 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Switchboard handoff tests: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/test/handoff.test.mjs
 - Successful Switchboard test run: https://github.com/Egoist-Machines/switchboard/actions/runs/32932761986
 - Long-term memory security survey v2: https://arxiv.org/abs/2604.16548v2
+- Mnemo repository at inspected revision: https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703
+- Mnemo agent-managed tool inputs: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/tools/agent_managed.rs
+- Mnemo tool handlers and request dispatch: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/server.rs
+- Mnemo remember provenance path: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-core/src/query/remember.rs
+- Mnemo synthetic crossover test: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-core/tests/agent_managed_crossover.rs

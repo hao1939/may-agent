@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across four cycles: Xiaohongshu reconciliation preceded every GitHub, arXiv, and Reddit decision; arXiv 2608.30177v1 remains the stage-aware memory anchor; and full-source review of 2606.04315v1 narrows active memory control to iterative query-time retrieval rather than governed write authorization."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "XHS seed-first cycle 4"]
+summary: "Seed-first Scout checkpoint across five cycles: Xiaohongshu reconciliation preceded every GitHub, arXiv, and Reddit decision; arXiv 2608.30177v1 remains the stage-aware memory anchor; and a pinned Mnemo audit separates repository-specific write-control claims from the paper while exposing a source-level caller-identity binding gap."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "XHS seed-first cycle 5"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; XHS reconciliations through 2026-09-01T10:24:20Z; bounded public GitHub API, arXiv API/full TeX, and Reddit Atom observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, and 2606.04315v1."
+source_basis: "Goal-owned implementation and tests; XHS reconciliations through 2026-09-01T10:32:54Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, and 2606.04315v1; and sattyamjjain/mnemo at revision 376ca28606c5b6287d9c8274482fa791d4dc8703."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -29,6 +29,14 @@ paper-supported result: iterative query-time retrieval over raw text or a
 prebuilt index. The same checkpoint makes Reddit manually invocable through
 the existing shared command and adds a regression test. Repository indexes and
 Reddit discussion are not miscounted as experimental confirmation.
+
+Cycle 5 follows the paper's missing-artifact trigger into GitHub and Hugging
+Face. It leaves the claimed artifact bundle unlocated and classifies Mnemo as a
+related implementation rather than author code or a paper reproduction. The
+pinned source also turns the abstract principal-scope question into a concrete
+audit finding: Mnemo verifies request identity at dispatch, but its four
+agent-managed handlers accept separate identity fields and do not consume the
+verified caller context. This is source analysis, not a live exploitation claim.
 
 ## Seed reconciliation came first
 
@@ -59,6 +67,15 @@ again failed as `uid=1000(hao)` at `127.0.0.1:9222` with `connect ECONNREFUSED`.
 The local fallback remained 104 stable IDs / 125 occurrences / 24 files with
 the same fingerprint. Direct additions, changes, and removals remain unknown;
 the unreachable collection was not treated as empty.
+
+Cycle 5 repeated the ordering at `2026-09-01T10:32:54Z`. The XHS preflight again
+failed for effective identity `uid=1000(hao)` at target `127.0.0.1:9222` with
+`connect ECONNREFUSED`. A corrected inventory remained 104 stable IDs / 125 URL
+occurrences / 24 files with fingerprint
+`889d3247e9fd0d7a2772a2901cfa69ff27387de96ea4bf15dfcd21241228d8fb`.
+An earlier 78-ID draft count was rejected because the matcher omitted
+`/search_result/`; it was corrected before selecting GitHub or treating any
+follow-up as evidence. Direct seed deltas remain unknown rather than zero.
 
 ## What each lane can actually do
 
@@ -94,6 +111,26 @@ source.
 | GitHub | Still relevant for reproducibility, but expected new value was low: cycle-3 complete searches were fresh, no reviewed paper exposed a repository, and no recorded revisit trigger fired. **Deferred.** | Last useful evidence remains the complete public searches and pinned AgentSafety-Papers revision. They found no attributable implementation. The lane can perform bounded read-only repository search, but an index mention is provenance, not experimental confirmation. |
 | arXiv | Highest expected value because the queued `2606.04315v1` question could resolve Reddit's active-control interpretation. **Selected and deep-read.** | The source archive returned HTTP 200 as a 71,132-byte gzip with SHA-256 `a6b3c07607c2851f53c97be7900bc8594138961415af820c02b51522571b962c`. Stable versioned ID and the reviewed TeX are primary provenance. |
 | Reddit | Still relevant as the discovery path to both papers, but expected new value was low because the stable post and six comments were just reviewed and no new seed-linked thread or access change appeared. **Deferred.** | Post RSS was readable in cycle 3; JSON remained HTTP 403. No body was requested again merely for a lane count. The post remains attributed community framing, now corrected against its cited paper. |
+
+### Cycle 5 reconsideration and evidence
+
+All lanes were reconsidered after the corrected `10:32:54Z` seed record. The
+paper's unlinked artifact claim fired GitHub's revisit trigger. Bounded arXiv
+and Reddit reads then verified their current primary/community evidence without
+turning freshness checks into new deep dives.
+
+| Lane | Relevance, value, freshness, and decision | Evidence and boundary |
+|---|---|---|
+| GitHub | High expected value because `2606.04315v1` claims released artifacts but exposes no URL, and its corrected interpretation made a related implementation audit useful. **Selected.** | Public repository Search API returned HTTP 200 with `incomplete_results=false`: exact `"2606.04315"` returned two repositories (`sattyamjjain/mnemo`, `frycm/pi-muninn`), the exact title returned five, and `"AutoMEM" "Zhikai Chen"` returned one paper index. The attributable `CurryTang/CurryTang` profile at `a1b8f5b…543` links the paper only to arXiv and exposes no attributable paper repository. `OpenDataBox/awesome-agent-memory` at `7273e75…29` and `js-lee-AI/awesome-agent-loop-papers` at `678c0a5…e6` also link only arXiv; they are provenance, not artifacts or confirmation. |
+| arXiv | The selected cluster and papers remain highly relevant, but their full sources were just reviewed and no new paper question outranked the implementation audit. **Checked; no new candidate selected.** | A bounded exact-ID Atom request returned HTTP 200, feed update `2026-09-01T10:43:37Z`, and the same current entries: `2608.30177v1` (updated 2026-08-31) and `2606.04315v1` (updated 2026-06-03). The former remains the 15/15 anchor; the latter remains evidence for query-time reads, not governed writes. |
+| Reddit | The stable thread remains relevant as discovery provenance, but expected new value was low after its interpretation was checked against the paper. **Checked; no new thread selected.** | Post-level RSS returned HTTP 200 again with feed update `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and the same six stable comments. JSON remains last observed HTTP 403. No content delta or access transition appeared; the thread remains community framing, not empirical confirmation. |
+
+Hugging Face was selected as useful related discovery rather than a permanent
+quota lane. Its public APIs returned HTTP 200 for paper ID, title-term,
+`AutoMEM`, and `author=CurryTang` searches across models, datasets, and Spaces.
+No matching paper artifact appeared; the sole `AutoMEM`-like result was the
+unrelated `Multilingual-Multimodal-NLP/AutoMemoryBench`. These searches do not
+prove that private, renamed, or differently attributed artifacts do not exist.
 
 The existing Scout implementation continues to support these decisions without
 per-source goals. `app.ts` schedules stable `explore-github`, `explore-arxiv`,
@@ -138,6 +175,53 @@ to long-term memory. It explicitly leaves access control, content filtering,
 and audit logging out of scope. Scout admits the result as evidence for active,
 iterative retrieval and delayed query-time commitment—not autonomous write
 authorization, principal scope, provenance, rollback, or verified forgetting.
+
+## What the related Mnemo implementation establishes
+
+The highest-value GitHub result was
+[`sattyamjjain/mnemo`](https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703),
+inspected at revision `376ca28606c5b6287d9c8274482fa791d4dc8703` from a
+1,475,147-byte source archive with SHA-256
+`5390d6fad19630b937fb7192eed1450dd4ff4bd250539504c5b7e3987d0ed5e3`.
+The repository is not linked by the paper or attributable author profile. It is
+a related implementation, not the paper's released code or artifact bundle.
+
+The repository claims its `mem_write`, `mem_read`, `mem_revise`, and
+`mem_forget` flat-store mode implements the paper's agent-controlled memory
+framing. That claim overreaches the paper, which evaluates query-time reads over
+raw text or a prebuilt index. Mnemo's supporting crossover is its own synthetic
+experiment: 12 tracked facts receive three revisions and 12 incidental details
+are added. The fixed pipeline stores all versions; the agent-managed arm
+manually deletes stale versions and omits incidental facts. Under its
+BM25/NoopEmbedding fixture, current-fact F1 is 0.500 for fixed versus 1.000 for
+agent-managed, while incidental recall is 1.000 versus 0.000. These observed
+test fixtures and asserted outputs demonstrate the constructed selectivity
+tradeoff, not a reproduction of `2606.04315v1`. Scout did not execute Mnemo's
+suite, so even those repository results are source claims rather than an
+independent local run.
+
+Pinned code inspection found a separate identity-binding gap:
+
+- `call_tool` resolves the request's verified `CallerContext`, applies the role
+  gate, and inserts that context into request extensions.
+- The four `mem_*` handlers do not accept `Extension<CallerContext>`. Their input
+  structs accept caller-controlled `agent_id`; write/read/revise also accept
+  `org_id`, and the handlers copy those fields into engine requests.
+- `mem_write` and the write half of revise call ordinary `engine.remember`.
+  Ordinary remember uses the capability principal only when a capability is
+  explicitly passed; otherwise write provenance falls back to `created_by` and
+  then the record's `agent_id`.
+- Recall and forget resolve authorization scope from the request's `agent_id`
+  or the server default. Existing per-request identity tests cover other
+  handlers and the flat-store contract test invokes engine primitives directly;
+  neither covers these four tool handlers under a distinct verified caller.
+
+The supported inference is that permission to invoke an agent-managed tool is
+not bound inside these handlers to the principal used for ownership, retrieval
+scope, deletion checks, or provenance. This is a source-code authority finding,
+not a live exploit or a claim about a deployed configuration. The smallest
+validation target is an authenticated transport test that supplies a conflicting
+`agent_id` and proves every `mem_*` path derives scope from `CallerContext`.
 
 ## Why `2608.30177v1` still wins
 
@@ -188,13 +272,20 @@ blurred boundaries, and the reviewed source exposes no reproducible search
 query, screening counts, or inclusion criteria despite calling the review
 systematic.
 
+The fifth reconciliation also does not displace the anchor. It adds a concrete
+implementation authority boundary but no new controlled stage-wise experiment.
+Mnemo is therefore linked as related source evidence under the existing 15/15
+cluster; it is not counted as a second confirmation of either paper.
+
 ## Library and topic-map changes
 
 - [XHS seed ledger](../../knowledge/xhs-seed-ledger.md): records reconciliations
-  through cycle 4 and exact seed-before-discovery ordering.
+  through cycle 5, exact seed-before-discovery ordering, and why the incomplete
+  78-ID draft was rejected rather than treated as a removal.
 - [Living topic map](../../knowledge/xhs-topic-map.md): retains stage-aware
-  memory governance at 15/15, records each cycle-4 lane decision, and keeps
-  paper evidence separate from repository provenance and Reddit anecdotes.
+  memory governance at 15/15, records each cycle-5 lane decision, and keeps
+  paper evidence separate from repository claims, synthetic tests, and Reddit
+  anecdotes.
 - [Read-write attention synthesis](../../knowledge/the-read-write-attention-inversion.md):
   corrects its impossible future creation date from 2026-10-28 to the
   repository-observed creation date 2026-06-29, adds the MemGauge deep dive,
@@ -202,6 +293,9 @@ systematic.
 - [Knowledge index](../../knowledge/INDEX.md): updates the canonical summary to
   the qualified stage-aware and active-retrieval conclusion.
 - [Memory-governance authority note](../../knowledge/findings/2026-08-26-agent-memory-governance-authority-boundaries.md): absorbs the survey into the existing subject, adds the five predicates and their limits, and avoids a duplicate paper finding.
+- The same authority note now absorbs the Mnemo audit rather than creating a
+  duplicate finding, distinguishing dispatch identity, handler scope, source
+  inference, and unexecuted live behavior.
 - Scout app: retains the shared Reddit lane and adds the smallest missing
   GitHub safety/evidence contract plus focused test. Cycle 4 also adds Reddit
   to the existing `explore-now` command schema/help and verifies that it routes
@@ -223,7 +317,7 @@ A broader scan of the pre-existing `knowledge/INDEX.md` still finds 67 broken
 links unrelated to this change. They remain library-health backlog rather than
 being presented as a clean global-link result.
 
-The read-only health scan at `2026-09-01T10:29:19Z` returned 24
+The read-only health scan at `2026-09-01T10:45:00Z` returned 24
 facts and 16 bounded wake signals: 13 future-date facts, 10 oversized-note
 facts, and the existing index unsourced backlog. The packet remains truncated,
 so it is a bounded regression signal rather than a global-health claim. None of
@@ -238,12 +332,22 @@ reviewed TeX contains no repository URL, so reproducibility artifacts remain
 unlocated rather than presumed absent. None of those boundaries blocks the
 supported arXiv update.
 
+Mnemo's authenticated `mem_*` behavior remains live-unverified. The source
+archive and pinned URLs establish the handler/data-flow observation, but Scout
+did not run the external repository suite or send conflicting identities through
+an authenticated transport. The exact remaining validation boundary is whether
+those four handlers can use a caller-supplied principal that differs from the
+verified `CallerContext` in a real configured server; the smallest fix-and-proof
+would bind each handler to that context and add one transport-level regression
+covering write, read, revise, forget, and recorded provenance.
+
 The next exploration begins with another XHS reconciliation. It then deep-reads
-an attributable `2606.04315v1` artifact if one becomes locatable, or tests how
-principal scope and provenance should constrain iterative retrieval over shared
-memory. GitHub is revisited when attributable paper code appears or search
-results change; Reddit is revisited for a new high-value thread or a claim
-needing source comparison, not merely to exercise the lane again.
+an attributable `2606.04315v1` artifact if one becomes locatable, or exercises
+the pinned Mnemo caller-identity boundary through its authenticated transport.
+GitHub is revisited when attributable paper code, a Mnemo identity-binding fix,
+or materially changed search results appear. Reddit is revisited for a new
+high-value thread or a claim needing source comparison, not merely to exercise
+the lane again.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
