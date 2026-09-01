@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and a pinned Mnemo wire-path reproduction proves why an authenticated tool gate must bind the principal inside each operation. An isolated fix passes focused and package tests, but is not deployed proof."
-triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo wire-path reproductions prove why authenticated principal and organization scope must reach each operation. Isolated fixes pass focused, package, formatting, and lint validation, but are not deployed proof."
+triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703, with isolated caller candidate c82e711e8a2bb386001e98c3437da44c32b62428 and organization-scope candidate b0e0873c69658cc74ca7b607553b6978e3d4781f."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -232,12 +232,45 @@ calls are rejected, Bob's independent record remains active, and an authorized
 Alice write is owned and provenanced as Alice. `cargo fmt --check`, the focused
 11- and 14-test suites, and the complete 89-test `mnemo-mcp` package passed.
 
-The candidate remains local and unreviewed upstream; it has not been pushed,
-deployed, or live-HTTP validated. It deliberately does not claim organization
-binding. `CallerContext` authenticates a principal and roles but carries no
-`org_id`, while write/read/revise inputs still accept caller-supplied
-organization scope. Authenticating and binding that dimension is the next
-authority question, not a property this principal-only fix can prove.
+The principal candidate remains local and unreviewed upstream; it has not been
+pushed, deployed, or live-HTTP validated. Its remaining organization boundary
+was exercised in Cycle 10 rather than assumed resolved.
+
+### Cycle 10 organization-scope reproduction and repair
+
+Cycle 10 first confirmed upstream `main` still resolved to
+`376ca28606c5b6287d9c8274482fa791d4dc8703` at
+`2026-09-01T12:20:18Z`. An unauthenticated, complete GitHub issue search for
+both exact terms `org_id` and `CallerContext` returned zero at
+`2026-09-01T12:20:33Z`. This is a bounded public-search result, not proof that
+no private or differently worded repair exists.
+
+A second real MCP duplex fixture issued a valid `alice` capability whose signed
+scope was `role:writer org:alpha`, then supplied `org_id: beta`. Against the
+principal-only candidate, `mnemo.mem_write` returned success rather than an
+authorization error. The directly observed failure was therefore at the
+operation boundary: authenticated principal `alice`, signed authority
+`org:alpha`, agent-managed target `org_id: beta`, accepted by the write wrapper.
+
+Local commit `b0e0873c69658cc74ca7b607553b6978e3d4781f` is the bounded repair. It
+preserves non-role tokens from the verified capability in `CallerContext`,
+accepts an explicit organization only when a matching signed `org:<id>` token
+exists, derives the organization when exactly one is authorized, and preserves
+legacy request-selected behavior only for the boot-derived single-principal
+stdio path. Write and read reject a conflicting organization before reaching
+the engine. Revise and forget additionally compare the addressed record's
+organization before mutation, closing the identifier-only path.
+
+The strengthened fixture now proves five denials: cross-organization write,
+read, explicit revise, revise-by-ID with omitted organization, and forget-by-ID.
+The Beta record remains unchanged, while an organization-omitting valid Alpha
+write is stored as `org_id: alpha`. Both principal and organization regressions
+pass through the real MCP wrappers. `cargo fmt --all -- --check`, Clippy for all
+`mnemo-mcp` tests with warnings denied, and the complete 90-test package pass.
+This remains isolated local-code evidence, not upstream review, a deployed
+HTTP result, or proof that every non-agent-managed Mnemo tool binds
+organization scope. The next code-level revisit is the broader remember,
+recall, and experience-memory surface.
 
 ## Why it matters
 
