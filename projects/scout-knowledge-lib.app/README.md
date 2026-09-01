@@ -13,6 +13,10 @@ delivery to the independently runnable Scout knowledge-library project in
   owns the current durable library layout.
 - [`tasks/README.md`](tasks/README.md) explains the task resources and their
   generated read projection.
+- [`docs/herdr-supervisor.md`](docs/herdr-supervisor.md) explains which Scout
+  responsibilities fit Herdr goals, how to run them, and how to recover them.
+- [`herdr/goals/library-health-pilot.goal.json`](herdr/goals/library-health-pilot.goal.json)
+  is a safe, portable first contract for validating the supervised workflow.
 - [`design/archive/`](design/archive/) retains completed proposals and rollout
   evidence; those files are not current instructions or deployment targets.
 - [`archive/agents/`](archive/agents/) preserves the retired Amy and Amy-Kimi
@@ -32,3 +36,11 @@ never in the tracked agent or knowledge archive.
 cd /app/projects/scout-knowledge-lib.app
 bun run check
 ```
+
+The deterministic library observer also has a read-only inspection command:
+
+```bash
+bun scripts/library-health-readonly.ts
+```
+
+Run it from an isolated worktree when using it as Herdr completion evidence.
