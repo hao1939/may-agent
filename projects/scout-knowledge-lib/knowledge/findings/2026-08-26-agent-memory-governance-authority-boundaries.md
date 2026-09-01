@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo wire-path reproductions prove why authenticated principal and organization scope must reach agent-managed, general, and experience-memory operations. Isolated fixes pass focused, package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation. Isolated fixes and a real-binary transport regression pass focused, package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP transport tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local candidates c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, and a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004 and transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -308,6 +308,40 @@ regressions, the two earlier principal/organization regressions, all 92
 denied. This remains isolated, unreviewed, and undeployed evidence. It does not
 prove authenticated HTTP behavior or that organization scope reaches every
 other organization-bearing Mnemo tool.
+
+### Cycle 12 live Streamable HTTP validation
+
+The next seed reconciliation completed before transport work and found the same
+130 stable cards, complete metadata fingerprint, and empty exact added,
+changed, absent, and unavailable arrays. With no higher-value seed change, the
+recorded HTTP trigger fired.
+
+The executable boundary is `crates/mnemo-cli/src/http_transport.rs`: the
+`http-transport` feature mounts `/mcp` on loopback, requires a capability key,
+and relies on rmcp to inject each network request's HTTP parts for the existing
+caller resolver. The earlier tests injected equivalent request parts or used an
+in-memory duplex service; neither proved that the installed binary preserved
+the `Authorization` carrier across a real network session.
+
+Goal-owned test commit `fbb7000fdb75ae5fc799820570ec4cbd81e21a74`, whose
+production parent is merged repair candidate
+`0d7a19d6d09ff7ea17f4cde4dcf2c3aa93c26848`, closes that evidence gap without
+changing production behavior. It boots the real HTTP-enabled binary on an
+ephemeral loopback port, initializes one MCP session, writes a Bob-owned record
+with Bob's signed capability, then sends Alice's signed capability on each of
+the four agent-managed calls in that same session. Write, read, revise, and
+forget all return the exact Alice-versus-Bob authorization error; a final Bob
+exact recall returns the original record. Thus identity is observed per HTTP
+request rather than inherited from boot state or the session.
+
+The focused transport test passes, as do `cargo fmt --all -- --check`, Clippy
+for the HTTP-enabled CLI test target with warnings denied, and all 76
+`mnemo-mcp-server` tests with `http-transport` enabled. The earlier 92-test
+`mnemo-mcp` package result still covers the unchanged production repair. This
+is loopback real-binary evidence, not an upstream-reviewed commit, pushed
+branch, deployed service, TLS boundary, or hostile-network evaluation. The next
+code question is whether any remaining organization-bearing MCP wrapper still
+accepts scope independently of verified caller context.
 
 ## Why it matters
 
