@@ -1,10 +1,12 @@
 # XHS collection resolution ledger
-# observation=2026-09-01; declared=995; observed=906; unobserved=89; fingerprint=a87a3648fcfc53d95ea3895a0fe0effbcf199a6e14aa72f7c84acc2e21b33c5c
-# access=metadata-only unless a companion evidence note explicitly records a readable body; title text is not treated as a technical claim.
+# observation=2026-09-02 follow-up; declared=997; observed=908; unobserved=89; body-frontier=12 detail-inspected (11 readable text bodies, 1 image-only cover); sorted-ID-newline-SHA256=f66e7c7611a35fc23a2c35c435905f95a07ed55029554eddf4cd6047ac7e77b6
+# access is recorded per row; titles remain discovery metadata and are never treated as technical evidence without a body or stable primary source.
 stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
+6a96b1320000000012024529	微软开源：SkillOpt 技能训练器	CountryRoad	body-readable:2026-09-02	core	skill-lifecycle	SkillOpt; arxiv:2605.23904v2; github:microsoft/SkillOpt	Body claims document-only optimization, a compact best_skill.md, +23.5 points over no-skill GPT-5.5 direct chat, and later SkillOpt-Sleep offline replay/adoption; primary paper and code confirm the first three but Sleep is a later preview package.	deep-dived:paper-code-and-version-boundary
+6a96667100000000290122ae	卖维修零件，年营收25亿美元？	图灵云科技	body-readable:2026-09-02	out	out-of-scope	Parts Town	Body is a B2B ecommerce case study; no agent-evolution mechanism or technical claim enters this investigation.	screened-out:body-confirmed-not-agent-evolution
 6a966f4f00000000280392db	Navara开源的3D地图引擎	RoboMiner	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a9536d8000000000a009ef3	四个开源项目让本地模型和云端工具协同运行	AI樟榆树	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
-6a955b35000000000400afaf	谷歌团队：让Agent Skills和知识库一起演化	大模型知识分享	metadata-only	core	skill-lifecycle		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a955b35000000000400afaf	谷歌团队：让Agent Skills和知识库一起演化	大模型知识分享	body-readable:2026-09-02	core	skill-lifecycle	WikiSkill; arxiv:2608.27454	Body identifies persistent raw/wiki/skill layers and cross-model transfer; primary review finds only skills roll back, small reused validation splits, occasional catastrophic transfer, and no official Google code.	deep-dived:persistent-knowledge-with-contamination-risk
 6a9144600000000006013731	一分钟get山海经志怪美学AI提示词技巧	都都沉Doc	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a929d820000000007004d03	这个开源项目直接把gis门槛砸穿了：不用安装专业软件，打开浏览器就能做三维建模、	青青	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a92bdf700000000070064d5	RecHarness：一个用于自演化推荐系统的多臂	AI前沿日报	metadata-only	core	harness-workflow	RecHarness	arxiv:2607.29241	resolved:named-source-or-project
@@ -13,7 +15,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a8faaa8000000001803e2f0	这个号称机器人版Github，零基础手搓机器人	阿博粒	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a9157ae0000000021024368	机器人开始学会“边想边干”了？CMU提出ℛ³：让机器人在长程任务中持续推理、纠错	未来机器人Lab	metadata-only	adjacent	cross-cutting		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a9083dc000000002503ca5c	code‑as‑Agent‑Harness🔥代码=自主智能体的	Agent Daily	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
-6a8ffe56000000002c03f7ec	能够自我改进的 Harness	论文五分钟🤗	metadata-only	core	harness-workflow		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a8ffe56000000002c03f7ec	能够自我改进的 Harness	论文五分钟🤗	body-readable:2026-09-02	core	harness-workflow		Readable body contains only topic hashtags and supplies no named method, mechanism, result, citation, or technical claim.	resolved:no-technical-evidence-in-body
 6a902f770000000025012296	ICML 26|Google正在颠覆LLM的长期记忆机制	西飞钳工	metadata-only	adjacent	memory-experience		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a8edd8e0000000006010689	AI自我改进，先从局部飞轮开始	AF智域心识	metadata-only	core	cross-cutting		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
 6a8cedf300000000240279f6	6 美元Token费用开发的价值 30 万美元流程！	药研智能社	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -29,13 +31,13 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a8afea90000000028002a35	追踪与归因大模型记忆系统中的错误	论文五分钟🤗	metadata-only	adjacent	memory-experience		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a8bf155000000002901b56d	PrimeAgent？近期连续霸榜的 Agent 项目！	轻舟AI	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a8be16a00000000330096a4	智能体对微小的提示引导(nudge)高度敏感	饭里不要放南瓜	metadata-only	adjacent	evaluator-admission		unresolved:title-claim-needs-body-or-primary-match	retained:prompt-sensitivity-control
-6a887216000000000b02577a	Recursive Self-Improvement自进化的整理	Brench	metadata-only	core	multiagent-autonomy		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a887216000000000b02577a	Recursive Self-Improvement自进化的整理	Brench	body-readable:2026-09-02	core	multiagent-autonomy	RHO:arxiv:2606.05922v3; harness-evaluation critique:arxiv:2607.12227v2	Body links retrospective harness optimization with a later matched-budget critique; primary review preserves their protocol tension rather than treating the critique as a direct RHO replication.	deep-dived:contradictory-harness-protocols
 6a885a2d00000000260388f0	代理式 AI 是从简单任务执行到真正自主智能	新生	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a896fd30000000017000908	UE5开源4D场景数据引擎	GitHubStore	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a88efcc000000002b025adb	这个项目能读懂连续视频流	VLX开源社区	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a880abe00000000320317a0	deepseek harness迎来重大更新	索亚加德	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a8800f5000000002500246f	世界模型＋Agent，不更新参数也能进化？	Dr.Hao学AI	metadata-only	adjacent	world-environment		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
-6a87e8d8000000000c026091	Agent自进化设闸门，修好才接受	光头不砍树	metadata-only	core	evaluator-admission		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a87e8d8000000000c026091	Agent自进化设闸门，修好才接受	光头不砍树	image-only-cover-resolved:2026-09-02	core	evaluator-admission	SkillBoost; arxiv:2607.26643v2	No extractable text body; targeted cover and primary paper resolve typed failure repair plus full-observed-set back-testing, accepting only when Fix-Regress>0 and Regress<epsilon. No implementation repository was found.	deep-dived:strong-regression-gate-limited-readiness
 6a86a54a0000000033033800	北大发布 Harness-Bench：我们可能一直在错	AI拯救打工人（幻觉版）	metadata-only	core	harness-workflow	Harness-Bench	arxiv:2605.27922	resolved:named-source-or-project
 6a8577be0000000028006efe	🔍 让 AI 智能体自己改自己?这篇论文做了	希希冉冉学AI	metadata-only	core	cross-cutting		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
 6a7f30fb0000000024026b03	用AI做自由职业副业小单$5-50新手也能上手	立强出海	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -46,14 +48,14 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a812e5e000000003302cdb7	很久没有见过这么优雅的RL milestone了Rei	Lai Wei	metadata-only	adjacent	weight-training		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a81710c0000000025005ef8	On-Policy Distillation新idea找合作者	柑橘学姐	metadata-only	core	cross-cutting	OPID	arxiv:2606.26790	deep-dived:primary-and-comparison
 6a8193da00000000250040d6	推理模型不改参数，靠技能手册自我进化	光头不砍树	metadata-only	core	skill-lifecycle		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
-6a7f5f7b000000002102348b	自改进Agent有边界，理论说清了	炼丹与摸鱼齐飞	metadata-only	core	cross-cutting		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a7f5f7b000000002102348b	自改进Agent有边界，理论说清了	炼丹与摸鱼齐飞	body-readable:2026-09-02	core	cross-cutting	On The Statistical Limits of Self-Improving Agents; arxiv:2510.04399v3	Body names a theoretical boundary; primary review limits the theorem to fixed-distribution IID data, independent validation, bounded loss, one-axis changes, and a fixed ex-ante reachable envelope.	deep-dived:formal-warning-not-deployable-capacity-gate
 6a7fdb870000000035015b7c	300 只鸟没有领队，三条规则成鸟群！🐦✨	麦哥爱西芹MATLAB	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a7fc6a90000000024025fef	DeepSeek Harness的过度设计与 Pi 的极简	AI拯救打工人（幻觉版）	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a794c65000000002c000047	维克:📊ARIMA差分｜让假数据说真话的魔法	维克兜率天	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a7a1f7b0000000006007a3e	普通人能买到的十件顶级工具	边走边啃腌萝卜	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a7f1d6700000000240260ea	偏好RL，石头剪刀布也能对齐	炼丹与摸鱼齐飞	metadata-only	adjacent	weight-training		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a7e6dd20000000008012a93	〖T.O.P.〗只用17.7克，手搓暴力高清穿越机，全程不用焊接教程#穿越机 #	TOP的遥控玩具	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
-6a7e764f000000002c002f2d	"改变我对""递归自我改进""（RSI）认知的两小时"	AI Dance	metadata-only	core	multiagent-autonomy		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a7e764f000000002c002f2d	"改变我对""递归自我改进""（RSI）认知的两小时"	AI Dance	body-readable:2026-09-02	core	multiagent-autonomy	Dwarkesh Patel interview with Ryan Greenblatt	Body points to Greenblatt's broad RSI definition as automated successor-model R&D and dated forecasts; the interview supports the framing but forecasts and transfer assumptions remain arguments, not experiments.	deep-dived:conceptual-reframing-not-empirical-proof
 6a7410a9000000002500e5e4	AgentEvolver：自我提问+自我导航+自我归因	晓辉算法笔记	metadata-only	core	cross-cutting	AgentEvolver	arxiv:2511.10395	resolved:named-source-or-project
 6a7dd2cd00000000050307b3	DeepSeek DSH：不只是又一个编程助手	墨小白	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a7d3636000000002500b50a	记忆是支撑长期、自我进化 Agent 的关键	光仔玩AI	metadata-only	core	memory-experience		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
@@ -71,7 +73,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a762c6e00000000050288d6	howto | 和 AI 一起规划任意规模的项目	KHAOS	metadata-only	adjacent	cross-cutting		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a757d170000000008012b59	ICML'26：Q-learning收敛与否，就差一个if	炼丹与摸鱼齐飞	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a7585cd000000002701ff87	拆解一下大火的Prime Agent ...	车厘子Official	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
-6a753ceb000000002402cae5	Agent脚手架自进化，8B追平Opus	光头不砍树	metadata-only	core	harness-workflow		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a753ceb000000002402cae5	Agent脚手架自进化，8B追平Opus	光头不砍树	body-readable:2026-09-02	core	harness-workflow	EvoHarness-RL; arxiv:2608.05446	Body's 8B-versus-Opus headline is not budget- or harness-matched: Qwen uses Opus teacher trajectories and consolidation, 150 GRPO epochs, and 8 H200 GPUs; Opus with the same BPE harness scores higher on seen tasks and has no reported unseen comparison.	deep-dived:headline-downgraded-by-compute-and-teacher-confounds
 6a743c27000000003302c3a0	长任务总断片？这个内核能接上	增长研习社	metadata-only	adjacent	cross-cutting		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a73db1700000000290302d6	几张随拍照片秒级生成可漫游的高清3D场景	GitHubStore	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a74c15a0000000008010a53	今天 GitHub 被万能 Agent屠榜了！	Jayce	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -86,7 +88,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a7151b900000000050203a4	伯克利：为什么AI智能体需要本体论作为护栏	AI大模型前沿研究	metadata-only	adjacent	safety-governance		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a714858000000002701cea5	自进化Agent流式实测，越强反而越没用	狗头读论文	metadata-only	core	cross-cutting	AgentStream	arxiv:2608.00155	resolved:named-source-or-project
 6a6ab006000000001c00c932	任务Agent边做边记笔记，换新题照样强	光头不砍树	metadata-only	core	cross-cutting	SkillRise	arxiv:2607.26784	resolved:named-source-or-project
-6a68b3a8000000000f00aa49	RL真的会创造新能力吗	涛涛涛	metadata-only	core	weight-training		unresolved:title-claim-needs-body-or-primary-match	retained:capability-novelty-question
+6a68b3a8000000000f00aa49	RL真的会创造新能力吗	涛涛涛	body-readable:2026-09-02	core	weight-training	On the Interplay of Pre-Training, Mid-Training, and RL; arxiv:2512.07783	Body poses the capability question; controlled synthetic experiments show RL can expand pass@128 only when pretraining leaves headroom and tasks lie near the competence edge, while mid-training often dominates under fixed compute.	deep-dived:conditional-capability-expansion
 6a68c726000000001f01e5da	Deer Workflow：开源动态Ag	恒星sun	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a68001e000000000103101a	UIUC MetaEvolve推理模型自我进化越改越强	狗头读论文	metadata-only	core	cross-cutting	MetaEvolve	arxiv:2607.21971	resolved:named-source-or-project
 6a6777350000000001002d5d	领域没了？	贝塔	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -95,7 +97,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a601dd800000000010301b6	生成式AI之父：自进化Agent全景综述	AIGC 深一度	metadata-only	core	cross-cutting	self-evolving-agent survey	arxiv:2607.13104	resolved:named-source-or-project
 6a607f9f000000001302408f	咋回事？杨立昆突然转发了上月爆火的无限OCR	大厂趣谈	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a601554000000001d023267	这应该是近期 AI 领域热度最高的几篇论文！	轻舟AI	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
-6a5ea1bb000000000c003000	01. Agent 自我进化到底怎么评测	Arky Yang	metadata-only	core	evaluator-admission		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a5ea1bb000000000c003000	01. Agent 自我进化到底怎么评测	Arky Yang	body-readable:2026-09-02	core	evaluator-admission	SEAGym; arxiv:2606.17546; github:antropy-research/SEAGym	Body identifies lifecycle evaluation across train, frozen validation, held-out ID/OOD, replay, snapshots, and cost; primary and code review confirm the protocol and show non-monotonic batch-size and replay-collapse evidence.	deep-dived:evaluation-infrastructure
 6a5fabd4000000001100761f	微软AI知识负责人：三种知识如何驱动Agent	追焦Lock	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a5f4c8c00000000100295ca	MAPLE	哈吉米大师	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a5f43340000000010026c77	微软最新论文：潜在推理也能一样准了？	深度之眼Deepshare	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -122,7 +124,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a50bbbf000000000803eb62	Harness + Loop？自进化Agent最新综述！	轻舟AI	metadata-only	core	harness-workflow	self-evolving-agent survey	arxiv:2607.13104	resolved:named-source-or-project
 6a4d34be000000001102d216	Claude 官方把 Loop 分成了4种	芽菜AI	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6a4fd53b00000000080244cd	Claude 团队的 unknowns 工作流（上）	KrisHimTech	metadata-only	adjacent	harness-workflow		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
-6a4f9c5f0000000011018ad6	硅谷新风向：Harness自进化	AI知本论	metadata-only	core	harness-workflow		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+6a4f9c5f0000000011018ad6	硅谷新风向：Harness自进化	AI知本论	body-readable:2026-09-02	core	harness-workflow	Lilian Weng blog:2026-07-04-harness	Body calls the source a paper, but the primary source is Weng's July 2026 blog; its taxonomy and external evaluator/permission boundary are useful synthesis, not experimental evidence.	deep-dived:secondary-synthesis-not-paper
 6a4e71650000000021023df3	复旦：AgentGYM非理想化真实环境评测	刘东瑞 上海 AI Lab	metadata-only	core	evaluator-admission	AgentGym2	arxiv:2607.05174	deep-dived:primary-and-comparison
 6a4d9a55000000000802584b	无需穿戴标记抓取真实多人体动作的开源神器	GitHubStore	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a4cc619000000001502714d	Depth Anything 3加速，零依赖比特级精准！	GitHubStore	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution

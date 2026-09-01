@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-01"
-source_basis: "A source-agnostic 966-row lead ledger: 906 observed cards from the human's Xiaohongshu collection, 52 primary paper, repository, benchmark, and survey records, and 8 existing Scout artifacts; full-text paper review; pinned repository inspection; existing Scout reconciliation; and bounded local code checks. Xiaohongshu bodies remained login-bound at this revision, so card titles are discovery metadata rather than technical evidence."
+last_updated: "2026-09-02"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 68 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -31,10 +31,12 @@ not imply autonomy. A system can update skills or weights while humans still
 fix its goal, evaluator, budget, authority, and release boundary.
 
 The strongest current evidence supports **bounded evolution under an external,
-fixed acceptance gate**. Evidence becomes less trustworthy as the proposer and
-judge share assumptions, as validation cases are reused, or as the evaluator
-itself changes. Broad-goal autonomy remains especially weak: Aspire agents
-often completed training or harness-editing loops, but rarely produced a
+fixed acceptance gate**. A regression test on previously observed tasks is
+useful but is not a generalization gate; promotion also needs protected cases
+that did not generate the proposal. Evidence becomes less trustworthy as the
+proposer and judge share assumptions, as validation cases are reused, or as the
+evaluator itself changes. Broad-goal autonomy remains especially weak: Aspire
+agents often completed training or harness-editing loops, but rarely produced a
 checkpoint that beat the immutable base under sealed evaluation.
 
 ## Describe an evolution claim in six coordinates
@@ -89,8 +91,8 @@ general agent can safely rewrite itself.
 
 | Stage | Representative work | Strength | Weakness | Prefer when |
 |---|---|---|---|---|
-| Create | Memento-Skills, Trace2Skill, MetaClaw | turns experience into reusable procedures | generation quality and attribution are uncertain | failures repeat and artifacts can be inspected |
-| Curate/admit | SkillOS, Bayesian-Agent, PL-HCL | controls activation using outcomes or contracts | RL curation is costly; static scans miss runtime behavior | the library is large or evidence is sparse |
+| Create | Memento-Skills, Trace2Skill, MetaClaw, WikiSkill | turns experience into reusable procedures and structured knowledge | generation quality, attribution, and persistent-layer contamination are uncertain | failures repeat and artifacts can be inspected |
+| Curate/admit | SkillOpt, SkillBoost, SkillOS, Bayesian-Agent, PL-HCL | controls edits or activation using held-out scores, regressions, outcomes, or contracts | gates differ sharply in independence; RL curation is costly | the library is large or evidence is sparse |
 | Maintain | SkillOps, later Memento repository | detects duplication, contract drift, and stale structure | measured behavioral gains are modest | library entropy is the bottleneck |
 | Internalize | OPID, SEED, SkillRL | removes retrieval cost at inference | training is expensive and errors become parametric | behavior is stable, well verified, and frequently reused |
 
@@ -114,6 +116,24 @@ content-addressed champion. The inspected skill-evolver implementation adds
 transactional staging, backups, and rollback, although its isolated suite had
 2 failures among 879 tests and provides no comparative capability campaign.
 
+SkillOpt is stronger than immediate skill append: it bounds document edits,
+keeps rejected edits, selects against held-out tasks, and reports the test set
+only at the end. The later SkillOpt-Sleep preview is a separate deployment
+package, not evidence from the paper. SkillBoost adds typed failure attribution
+and accepts a repair only when `Fix−Regress>0` and `Regress<epsilon`; its gate
+ablations and cross-agent/cross-benchmark transfer are useful, but admission
+back-tests the full observed set rather than an inaccessible promotion set.
+No SkillBoost implementation was available to verify that invariant.
+
+WikiSkill retains raw experience, a structured wiki, and derived skills. That
+separation helps the proposer—Gemini's reported average rises 48.7→63.7 with
+wiki access—but giving the wiki directly to the executor lowers it to 60.9.
+Only skills roll back after rejection; the wiki persists. Small validation sets
+are reused for up to eight iterations, and Qwen-4B spreadsheet skills reduce
+Gemini from 50.5→18.1 in one transfer. A persistent knowledge layer therefore
+needs its own transactional gate, provenance, and rollback, not only a gate on
+the final skill file.
+
 ### 2. Harness-only, weight-only, and joint evolution solve different problems
 
 | Strategy | Examples | Advantage | Disadvantage |
@@ -135,6 +155,24 @@ joint optimization, but not yet recursive general improvement: the study is
 math-focused, contains two full rounds, needs a capable critic and substantial
 training compute, and leaves structural harness redesign to humans.
 
+RHO shows that label-free retrospective proposal can help on resettable past
+trajectories, with separate optimization and held-out benchmark splits. It does
+not establish a reliable self-admission rule: on SWE-Bench Pro, self-preference
+selected 0.78 while its three candidates averaged 0.79. Its “single-round”
+Meta-Harness comparison uses 103 calls versus 41, while the 320-call ten-round
+baseline reaches 0.80, so the result is round-matched rather than compute-
+matched. A later protocol critique of AHE-style evolution—not a replication of
+RHO—finds matched `K=5` parallel or sequential task search often wins and
+disjoint-task transfer averages only +0.6 points. Candidate generation and
+promotion reliability must therefore be measured separately.
+
+EvoHarness-RL is likewise not an equal-budget “8B matches Opus” result. Its
+Qwen3-8B agent uses 87 successful Opus trajectories, Opus consolidation each
+epoch, 150 GRPO epochs, and eight H200 GPUs. On seen ALFWorld, Opus with the
+same BPE harness scores 98.5 versus Qwen's 96.9; no Opus unseen comparison is
+reported. The supported claim is domain-specific teacher-assisted harness and
+weight coordination, not small-model parity.
+
 ### 3. Fixed, generated, and co-evolving evaluators have different evidential weight
 
 | Evaluator | Examples | Evidence quality | Appropriate use |
@@ -150,6 +188,11 @@ may discover more discriminative criteria, but policy and rubric can share
 blind spots. Cross-model review, as in ARIS, adds diversity but also does not
 create independence: models may share training data, prompts, and benchmark
 assumptions.
+
+The new admission evidence sharpens a three-way distinction: back-testing the
+observed set catches incumbent regressions; a frozen validation set chooses
+among proposals; and an inaccessible promotion/test set estimates transfer.
+One set cannot safely serve all three roles through repeated rounds.
 
 ### 4. Centralized and decentralized sharing exchange speed for contamination risk
 
@@ -256,6 +299,47 @@ stream; a method can help in isolation and hurt when domains interleave. A
 separate task-order study turns a reported +1.5% default-order ReasoningBank
 gain into −4.5% under shuffled orders.
 
+SEAGym turns evaluation into an explicit lifecycle: train exposure, frozen
+update-validation, held-out in- and out-of-distribution tests, replay,
+snapshots, and cost. Its AHE run reports validation 40.0→57.1 but held-out ID
+only 40.0→49.1 and OOD 22.5→28.8; one intermediate epoch collapses to 6/80
+replay tasks before recovery, and batch sizes 10 and 80 regress while 20 works
+best. This makes forgetting and optimization-path sensitivity visible. The
+released deterministic engine is operational—the goal-owned checkout passed
+161 tests with 7 skipped—but provider-backed results remain author-reported.
+
+The matched-budget harness critique adds a harder baseline. On Terminal-Bench
+2.1 without unit-test feedback, direct execution averages 68.2, parallel search
+72.3, sequential refinement 69.3, and harness evolution 67.4; with feedback,
+parallel reaches 86.0 and sequential 84.3 versus harness evolution 75.8. On a
+disjoint 45/10/34 split, evolved-harness transfer averages only +0.6. These are
+protocol-level results for AHE-style evolution, not a direct refutation of
+RHO, but they justify requiring a harness-sensitivity diagnosis, matched task-
+level search, and disjoint transfer before crediting harness evolution itself.
+
+### RL can expand capability only under identifiable headroom
+
+The controlled synthetic study *On the Interplay of Pre-Training,
+Mid-Training, and RL* reconciles two slogans. RL expands pass@128 when
+pretraining leaves missing but reachable combinations and tasks sit near the
+model's competence edge; it does little when primitives are absent or the task
+is already saturated. Under fixed compute, targeted mid-training often beats
+RL-only. This is evidence for conditional capability expansion, not that RL
+always creates new abilities or merely sharpens existing ones. The released
+training stack and checkpoints make the study inspectable, but its synthetic
+math tasks do not establish the same causal boundary in open environments.
+
+### Formal limits are warnings, not turnkey gates
+
+The Two-Gate result in *On The Statistical Limits of Self-Improving Agents*
+requires fixed-distribution IID data, bounded loss, independent validation,
+one changing axis at a time, and a fixed ex-ante reachable hypothesis envelope.
+Promotion must exceed `2εV+τ`, not merely improve a validation score. The paper
+formalizes why repeated adaptive reuse consumes evidence, but practical
+capacity bounds for modern agent harnesses remain unknown. Use it to motivate
+protected data and bounded mutation surfaces, not to claim a deployable VC-
+dimension gate.
+
 ## Novelty and value rubric
 
 Use four independent scores rather than rewarding a new name:
@@ -268,13 +352,15 @@ Use four independent scores rather than rewarding a new name:
 | Cluster | Mechanism | Decision value | Evidence | Readiness | Judgment |
 |---|---:|---:|---:|---:|---|
 | protected harness evolution | 3/4 | 4/4 | 3/4 | 4/4 | deployable pattern with bounded evidence |
-| skill creation + gated admission | 3/4 | 4/4 | 2/4 | 3/4 | high value; coalition and transfer tests missing |
+| skill creation + gated admission | 3/4 | 4/4 | 3/4 | 3/4 | useful now; gate independence and coalition transfer still vary |
+| persistent wiki + derived skills | 3/4 | 4/4 | 2/4 | 1/4 | proposer value, but unrolled-back knowledge can contaminate descendants |
 | per-step skill internalization | 3/4 | 3/4 | 2/4 | 2/4 | promising training method, expensive to reverse |
 | adaptive search portfolios | 3/4 | 3/4 | 3/4 | 3/4 | useful optimizer; often mislabeled agent evolution |
 | meta-procedure evolution | 4/4 | 4/4 | 2/4 | 2/4 | genuinely novel, still bounded by fixed evaluation |
 | generated/co-evolving evaluators | 4/4 | 4/4 | 1/4 | 1/4 | important frontier, unsafe as sole admission gate |
 | world-model adaptation | 3/4 | 3/4 | 3/4 | 2/4 | strong for planning under shift, not general autonomy |
 | broad-goal autonomous learning | 4/4 | 4/4 | 2/4 | 1/4 | valuable negative result; current reliability is poor |
+| lifecycle and matched-search evaluation | 2/4 | 4/4 | 4/4 | 3/4 | high-value control that often changes the winner |
 
 ## A practical governed evolution loop
 
@@ -303,6 +389,10 @@ Practical rules:
 8. Quarantine generated knowledge until provenance and behavioral checks pass.
 9. Use model-generated rubrics as advisers unless a fixed anchor confirms them.
 10. Prefer external, reversible learning before internalizing behavior in weights.
+11. Diagnose whether the task is harness-sensitive; compare matched parallel
+    and sequential search before attributing gains to a durable harness.
+12. Separate observed-set regression, proposal selection, and inaccessible
+    promotion; report disjoint-task transfer.
 
 ## Highest-value next experiments
 
@@ -320,14 +410,20 @@ Practical rules:
 6. **Broad-goal proxy audit:** require an autonomous learner to nominate its
    objective before seeing protected results, then compare terminal selection
    with an immutable base and engineered reference.
+7. **Persistent-wiki rollback test:** independently gate raw, wiki, and skill
+   layers; inject a plausible false abstraction and measure descendant
+   contamination, cross-model transfer, and recovery.
+8. **Harness-versus-search tournament:** after a harness-sensitivity screen,
+   compare evolution, per-instance harness scaling, parallel sampling, and
+   sequential refinement under matched calls, tokens, feedback, and latency.
 
 ## Evidence and provenance
 
 The source-agnostic [lead ledger](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 966 records with access, provenance, research question, value, novelty,
+contains 984 records with access, provenance, research question, value, novelty,
 credibility, related work, disposition, and stopping condition. The companion [Xiaohongshu
 resolution ledger](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv)
-preserves all 906 observed stable card IDs. The [evidence report](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md)
+preserves all 908 observed stable card IDs and exact body-access states. The [evidence report](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md)
 separates paper claims, inspected code, bounded local checks, analysis, and
 unresolved access boundaries.
 
@@ -342,4 +438,9 @@ Key primary sources include [AgentGym2](https://arxiv.org/abs/2607.05174),
 [OPID](https://arxiv.org/abs/2606.26790), [AdaJEPA](https://arxiv.org/abs/2606.32026),
 [SkillCoach](https://arxiv.org/abs/2607.01874), [PL-HCL](https://arxiv.org/abs/2607.10534),
 [SEED](https://arxiv.org/abs/2607.14777), [Co-Harness](https://arxiv.org/abs/2607.22688),
-and the [world-proxy survey](https://arxiv.org/abs/2608.02713).
+the [world-proxy survey](https://arxiv.org/abs/2608.02713),
+[SkillOpt](https://arxiv.org/abs/2605.23904), [SEAGym](https://arxiv.org/abs/2606.17546),
+[RHO](https://arxiv.org/abs/2606.05922), the [matched-budget harness critique](https://arxiv.org/abs/2607.12227),
+[SkillBoost](https://arxiv.org/abs/2607.26643), [WikiSkill](https://arxiv.org/abs/2608.27454),
+[EvoHarness-RL](https://arxiv.org/abs/2608.05446), the [statistical-limits paper](https://arxiv.org/abs/2510.04399),
+and the [controlled RL-interplay study](https://arxiv.org/abs/2512.07783).

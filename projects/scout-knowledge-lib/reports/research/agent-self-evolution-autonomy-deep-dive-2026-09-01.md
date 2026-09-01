@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 906 observed Xiaohongshu cards with primary papers, repositories, and prior Scout work; records all 966 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
+summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 908 observed Xiaohongshu cards, including a bounded authenticated body frontier, with primary papers, repositories, and prior Scout work; records all 984 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
 triggers: ["self-evolution deep dive", "autonomy evidence report", "agent evolution lead ledger", "XHS collection resolution", "skill and harness evolution evidence"]
-last_updated: "2026-09-01"
-source_basis: "Goal-owned lead ledgers, 29 locally extracted full-text papers, pinned repository inspections, existing Scout notes, and bounded standard-library or no-credential code checks. External performance results are attributed, not presented as Scout reproductions."
+last_updated: "2026-09-02"
+source_basis: "Goal-owned lead ledgers, authenticated observational reads of 11 targeted Xiaohongshu text bodies plus one image-only cover, full primary-paper and discussion review, pinned repository inspections, existing Scout notes, and bounded no-credential code checks. External performance results are attributed, not presented as Scout reproductions."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy — Deep Investigation Report
@@ -21,8 +21,17 @@ into primary papers or repositories when identifiable, adds related work found
 during investigation, and gives every row a disposition and stopping condition.
 The synthesis then compares mechanisms directly instead of repeating titles.
 
-The result is deliberately skeptical. “Self-evolving” is retained only when a
-durable agent configuration changes. Search-time program evolution, within-
+The authenticated follow-up changes several conclusions rather than merely
+adding summaries. It resolves the strongest remaining cards to SkillBoost,
+SEAGym, WikiSkill, SkillOpt, RHO and its protocol-level critique,
+EvoHarness-RL, a formal limits paper, a controlled RL study, and two primary
+discussions. The strongest operational change is a stricter evidence contract:
+observed-set regression, frozen proposal selection, and inaccessible promotion
+are different gates; harness evolution must also beat matched task-level search
+and transfer across disjoint tasks.
+
+The result remains deliberately skeptical. “Self-evolving” is retained only
+when a durable agent configuration changes. Search-time program evolution, within-
 rollout state, adaptive routing, skill-library operations, world-model
 adaptation, and policy learning remain valuable, but are not collapsed into one
 claim of recursive autonomy.
@@ -30,27 +39,37 @@ claim of recursive autonomy.
 ## Research frontier and lead accounting
 
 The [unified lead ledger](./agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 966 unique rows:
+contains 984 unique rows:
 
-- 906 Xiaohongshu collection cards with stable IDs;
-- 35 paper, survey, primary-metadata, or benchmark records;
-- 17 code-bearing, code-metadata, or paper-plus-code records where implementation evidence changes
-  the judgment; and
+- 908 Xiaohongshu collection cards with stable IDs;
+- 68 paper, repository, benchmark, survey, blog, interview, or other primary-source records; and
 - 8 existing Scout notes and reports, each reconciled rather than silently reused.
 
 The companion [Xiaohongshu resolution ledger](./agent-self-evolution-xhs-ledger-2026-09-01.tsv)
 preserves the complete observed surface rather than only retained cards. Its
-bounded snapshot contains 906 observed of 995 declared collection notes, with
-89 unobserved and stable-ID fingerprint
-`a87a3648fcfc53d95ea3895a0fe0effbcf199a6e14aa72f7c84acc2e21b33c5c`.
-Classification is 162 core, 296 adjacent, and 448 outside this topic.
+bounded snapshot contains 908 observed of 997 declared collection notes, with
+89 unobserved and sorted-ID/newline SHA-256 fingerprint
+`f66e7c7611a35fc23a2c35c435905f95a07ed55029554eddf4cd6047ac7e77b6`.
+Classification is 163 core, 296 adjacent, and 449 outside this topic.
 
-At this revision the goal-owned browser was logged out. The QR was refreshed
-for the human, but no authenticated body access had yet been observed. All 906
-cards are therefore labeled `metadata-only`: titles and authors are discovery
-evidence, never proof of the technical claim. The 89-card tail and all bodies
-remain explicit access boundaries. No card is guessed from neighboring text,
-and no account or content action was performed.
+The human authenticated a dedicated observational browser profile. The bounded
+follow-up inspected twelve targeted card details: eleven had readable text
+bodies and one high-value card had no extractable text but a targeted cover.
+Ten yielded useful technical leads, one harness card contained only hashtags,
+and one newly encountered body confirmed an unrelated business case. The other
+896 observed cards remain `metadata-only`; the 89-card tail remains unobserved.
+No title or snippet was promoted to technical evidence, no neighboring profile
+or collection content was used, and no like, comment, follow, collect, message,
+setting, or other account/content mutation was performed.
+
+The stopping condition was evidence saturation, not feed exhaustion: the
+predecessor's 906 IDs plus the two newly surfaced IDs account for 908/997, and
+the same 89-note unmaterialized tail remains. The follow-up then exhausted the
+highest-information ten-card unresolved frontier and both newly encountered
+cards at body level, following every useful claim until its mechanism,
+strongest comparison, implementation availability, and decisive caveat were
+resolved. Repeatedly scrolling or rereading the unchanged tail would add no
+identity or body evidence.
 
 The unified ledger's dispositions are intentionally not all “researched”:
 
@@ -129,6 +148,17 @@ from the narrative.
 | [world-proxy survey `2608.02713`](https://arxiv.org/abs/2608.02713) | full survey | prediction, execution, memory, skill, and verification proxies can be mapped separately | taxonomy is not empirical validation; “world model” may stretch too far |
 | [AgentStream `2608.00155`](https://arxiv.org/abs/2608.00155) | paper and pinned code | experience transfer depends on model, method, order, and mixture | model campaigns not reproduced locally |
 | [Aspire `2608.31111`](https://arxiv.org/abs/2608.31111) | full paper tables/trajectories | broad-goal learners often complete updates without retained improvement | new result; one retained gain reused a fixed feedback slice |
+| [SkillOpt `2605.23904`](https://arxiv.org/abs/2605.23904) + [repo](https://github.com/microsoft/SkillOpt) | paper, pinned code, later Sleep preview | bounded document edits, held-out selection, and rejected-edit memory are stronger than immediate append | Sleep deployment claims are later than the paper; final adoption still needs real protected tasks |
+| [SEAGym `2606.17546`](https://arxiv.org/abs/2606.17546) + [repo](https://github.com/antropy-research/SEAGym) | paper, code, 161-test local run | train/validation/ID/OOD/replay/cost views expose overfit and forgetting | evaluation infrastructure, not a new evolution method; provider campaign not reproduced |
+| [RHO `2606.05922`](https://arxiv.org/abs/2606.05922) + [repo](https://github.com/wbopan/retro-harness) | paper tables/method, pinned code | label-free proposal from resettable past trajectories can improve held-out tasks | self-preference is not consistently discriminative; Meta-Harness comparison is not call-matched |
+| [harness-evaluation critique `2607.12227`](https://arxiv.org/abs/2607.12227) + [repo](https://github.com/rethinking-harness-evolution/code) | primary HTML/results and pinned code | matched parallel/sequential search often beats AHE-style evolution; disjoint transfer is small | protocol-level challenge, not a direct RHO replication or refutation |
+| [SkillBoost `2607.26643`](https://arxiv.org/abs/2607.26643) | full HTML, gate ablations, repository search | typed repairs plus `Fix−Regress>0` and bounded regression reject harmful edits | admission reuses the observed set; no inspectable implementation found |
+| [WikiSkill `2608.27454`](https://arxiv.org/abs/2608.27454) | full paper, results, code search | a structured wiki helps proposal more than direct inference and can transfer | wiki never rolls back; small reused validation sets and catastrophic transfer exist; no official code found |
+| [EvoHarness-RL `2608.05446`](https://arxiv.org/abs/2608.05446) | full paper and comparison audit | joint harness/weight training can make an 8B model strong on ALFWorld | “matches Opus” is confounded by Opus teaching, unequal harnesses/compute, and missing unseen Opus result |
+| [statistical limits `2510.04399`](https://arxiv.org/abs/2510.04399) | theorem and assumptions | repeated adaptive selection needs capacity-aware independent evidence | fixed IID envelope and unknown practical capacity proxies limit deployment use |
+| [RL interplay `2512.07783`](https://arxiv.org/abs/2512.07783) + [repo](https://github.com/Interplay-LM-Reasoning/Interplay-LM-Reasoning) | paper and pinned training stack | RL expands capability conditionally at the competence edge with pretraining headroom | controlled synthetic tasks; heavy GPU reproduction not run |
+| [Lilian Weng harness essay](https://lilianweng.github.io/posts/2026-07-04-harness/) | primary blog | useful taxonomy; evaluator and permissions should remain outside the evolving loop | secondary synthesis, not the paper or experiment claimed by the card |
+| [Ryan Greenblatt interview](https://www.dwarkesh.com/p/ryan-greenblatt) | primary participant discussion | RSI can mean automating successor-model R&D rather than self-editing weights | timelines and transfer from verifiable R&D tasks are forecasts, not empirical evidence |
 
 The unified ledger holds additional baselines and implementation records,
 including AgentFlow, RLTF, SkillRL, Continual Experience Internalization,
@@ -155,6 +185,15 @@ or failure stream grows. Add maintenance when redundancy and interface drift
 become visible. Internalize only stable, frequently reused procedures because a
 bad external file is easier to remove than a bad weight update.
 
+The authenticated leads make admission more precise. SkillOpt uses separate
+optimization, held-out selection, and final test reporting; its later Sleep
+package stages human adoption and must not be backported into the paper's
+evidence. SkillBoost's observed-set gate is strong regression protection but
+not independent proof of generalization. WikiSkill shows that gating only the
+derived skill is insufficient when an upstream wiki persists after rejection.
+The practical unit of rollback is every durable knowledge layer that can shape
+future proposals.
+
 ### Harness, weights, and joint change
 
 Self-Harness and Meta-Harness isolate harness search around fixed models.
@@ -171,6 +210,24 @@ typed sibling trajectories. Their reported gains are useful leads, but they do
 not add cleanly: once policy, harness, data, and environment all move, a fixed
 anchor and staged ablations are the only way to preserve causal identity.
 
+RHO adds a useful retrospective path: choose a difficult/diverse ten-task
+coreset, sample three rollouts and three proposals, and diagnose by self-
+validation/self-consistency. Its held-out gains support candidate generation,
+but not a clean promotion victory: SWE-Bench Pro self-preference selects 0.78
+while three candidates average 0.79, and its 103-call one-round comparison is
+not equal compute to Meta-Harness at 41 or 320 calls. The later critique asks a
+different but decisive question—does durable evolution beat using the same
+feedback and `K=5` rollouts directly on each task? Often it does not. Because
+that study evaluates AHE-style evolution rather than RHO, the correct synthesis
+is a protocol requirement, not a claimed refutation.
+
+EvoHarness-RL further shows why layer attribution matters. Qwen3-8B's 96.9%
+seen and 86.6% unseen ALFWorld scores follow 87 successful Opus teacher
+trajectories, Opus consolidation each epoch, 150 GRPO epochs, and eight H200s.
+Claude Opus 4.5 scores 96.4 with ReAct and 98.5 with the same BPE harness; no
+Opus unseen score is given. This is a strong domain-specific training result,
+not equal-budget 8B parity.
+
 ### Evaluator authority
 
 Fixed hidden or executable evaluators provide the clearest admission evidence.
@@ -179,6 +236,12 @@ the proposer and judge may share blind spots. A different model is diverse, not
 independent. Genuine evaluator co-evolution without an immutable anchor remains
 mostly a proposal; CORAL explicitly leaves it to future work. No reviewed
 evidence justifies giving a co-evolving judge sole promotion authority.
+
+Observed-set regression, frozen selection, and inaccessible promotion now form
+three distinct authorities. SEAGym supplies the lifecycle bookkeeping;
+SkillBoost supplies a concrete incumbent-regression rule; SkillOpt demonstrates
+held-out proposal selection; and the harness critique supplies matched-search
+and disjoint-transfer controls. None alone is the full admission contract.
 
 ### Sharing topology
 
@@ -206,6 +269,16 @@ causal evaluation should report prediction error, plan quality, action success,
 and mediation between them rather than using “learns a world model” as a single
 performance claim.
 
+### RL capability is conditional on pretraining headroom
+
+The controlled synthetic Interplay study resolves neither extreme slogan. RL
+can expand pass@128 when pretraining supplies the needed primitives, leaves
+headroom, and places tasks near the competence edge. It does little when the
+primitives are absent or the task is saturated, and targeted mid-training often
+dominates RL-only under fixed compute. The official stack exposes stage-specific
+configs and checkpoints, but a GPU-scale reproduction was disproportionate and
+the synthetic-domain boundary remains explicit.
+
 ## Novelty and value judgments
 
 The [canonical synthesis](../../knowledge/agent-self-evolution-and-autonomy.md)
@@ -227,6 +300,12 @@ readiness. The strongest judgments are:
    under shift, but does not imply goal autonomy or general self-evolution.
 6. **Aspire's negative result is unusually valuable.** It shows that choosing a
    useful proxy and terminal checkpoint is harder than completing an update.
+7. **Matched-search evaluation can reverse the winner.** SEAGym makes the
+   lifecycle measurable; the harness critique shows that evolution can lose to
+   simpler use of the same inference budget.
+8. **Persistent knowledge needs its own release boundary.** WikiSkill's wiki
+   improves proposals but survives rejected descendants and sometimes transfers
+   catastrophically.
 
 ## Contradictions resolved
 
@@ -249,6 +328,20 @@ readiness. The strongest judgments are:
 8. **“Recursive means unbounded.”** HyperAgents changes its improvement code,
    yet still runs inside fixed tasks, evaluators, archives, budgets, and human
    controls.
+9. **“A regression gate proves generalization.”** SkillBoost can reject edits
+   that hurt observed tasks, but promotion still needs inaccessible evidence.
+10. **“Self-preference is a reliable admission gate.”** RHO's candidate
+    generation helps, but on SWE-Bench Pro its selected candidate is below the
+    three-candidate mean.
+11. **“Harness evolution beats test-time scaling.”** The matched-budget critique
+    often favors parallel or sequential task search and finds little disjoint
+    transfer; it challenges the protocol, not RHO specifically.
+12. **“8B matches Opus.”** EvoHarness-RL uses Opus teaching, Opus consolidation,
+    large RL compute, and a different default harness; same-harness Opus is
+    higher on seen tasks and unseen Opus is unreported.
+13. **“RL only refines” versus “RL creates.”** Controlled results support a
+    conditional answer: RL expands reachable combinations only with suitable
+    primitives and competence-edge headroom.
 
 ## Focused direct checks already completed
 
@@ -305,35 +398,91 @@ silently waived. The implementation demonstrates transactional skill staging,
 checks, atomic deployment, backups, and rollback; the test result and absence of
 a comparative capability campaign prevent an efficacy claim.
 
+### SEAGym
+
+Pinned source: `antropy-research/SEAGym@9e61e14db1f1355de944cd7c5b10c244fc74e82d`.
+
+The documented `python` command first failed at the shell boundary because this
+environment exposes only `python3`; this was missing convenience wiring, not a
+missing runtime. The equivalent standard interpreter command then ran the full
+released suite:
+
+```text
+python3 -m unittest discover -s tests
+  -> Ran 161 tests in 0.474s
+  -> OK (skipped=7)
+```
+
+The tests exercise split validation, batch planning, baseline updates,
+checkpoint/resume, update-validation, replay/cost metrics, Harbor-result
+adapters, scheduling, and report generation. This validates the released
+deterministic lifecycle implementation, not the paper's provider-backed AHE,
+ACE, or TF-GRPO scores.
+
+### New code-bearing primary sources
+
+SkillOpt was inspected at
+`microsoft/SkillOpt@db46cd9ae7ce12f1dbd73c945185816aa738751d`.
+The default gate requires strict hard-score improvement; optional soft/mixed
+metrics and a semantic-density bonus do not change that default. The later
+SkillOpt-Sleep preview is version-separated from the paper implementation.
+
+The RHO implementation was inspected at
+`wbopan/retro-harness@e5f2d1a8a06ab3523ab42e0042d2fa13d9acb701`, and the
+matched-search critique at
+`rethinking-harness-evolution/code@62df2b9624ff32ca61b8accce7fb4a0fd8cbc8a8`.
+They expose materially different protocols: retrospective coreset proposal
+versus direct/parallel/sequential/AHE-style budget comparisons. Running either
+benchmark campaign would require provider credentials, models, and benchmark
+environments, so no performance reproduction is claimed.
+
+The RL-interplay stack was inspected at
+`Interplay-LM-Reasoning/Interplay-LM-Reasoning@ab728f05d81de9af38d0ca155a84166b037e355a`.
+It includes stage-specific LLaMA-Factory and verl/GRPO configs, synthetic data
+tools, an evaluation runner, and released checkpoint links. Its documented
+Python 3.12, PyTorch 2.7.1/CUDA, model-training, merge, and evaluation path is
+inspectable but not a bounded CPU reproduction.
+
+SkillBoost has no project/code URL in its metadata or full HTML, and bounded
+GitHub searches by title, method, and arXiv ID found no implementation as of
+2026-09-02. Its acceptance invariant and ablations therefore remain primary-
+reported rather than implementation-verified.
+
 ## Repository validation
 
 - `bun --cwd=projects/scout-knowledge-lib.app run check` exited 0. It bundled
   the application and workflows, passed TypeScript and Prettier checks, and ran
   78 tests with 0 failures and 226 assertions.
 - A standard-library TSV validator read all records at their declared widths:
-  906 unique XHS IDs across 9 columns and 966 unique unified lead IDs across 14
-  columns. Every unified row has a research question.
-- A scoped resolver found 0 missing relative links across the canonical note,
-  this report, and the four index entries added or updated for this work.
+  908 unique XHS IDs across 9 columns and 984 unique unified lead IDs across 14
+  columns. Every unified row has a research question. It also reproduced the
+  163 core / 296 adjacent / 449 out-of-scope split and 896 metadata-only / 11
+  readable-body / 1 image-only-cover access counts.
+- A scoped resolver found 0 missing relative links across the two changed
+  Markdown documents. HTTP checks returned 200 for all 16 newly cited arXiv,
+  blog, interview, and GitHub targets after correcting SEAGym's repository
+  owner from the paper team name to `antropy-research`.
 - `git diff --check` exited 0.
-- `bun projects/scout-knowledge-lib.app/scripts/library-health-readonly.ts`
-  completed and returned a bounded, truncated packet of 24 inherited facts:
+- The read-only library-health command, run with explicit clock
+  `2026-09-02T00:00:00Z`, completed and returned a bounded, truncated packet of
+  24 inherited facts:
   future-dated files, oversized notes, and the existing unsourced index backlog.
   None names a file added or rewritten by this goal, so the packet is disclosed
   rather than misrepresented as global library health.
 
 ## Remaining limits
 
-- Xiaohongshu body access and the final 89 declared cards remain login-bound at
-  this revision. The open browser lets the human authenticate observational
-  access; no account mutation is authorized.
+- The bounded authenticated Xiaohongshu frontier is resolved, but 896 observed
+  cards remain metadata-only and the final 89 declared cards remain
+  unobserved. This does not imply that all contain relevant bodies; it preserves
+  the exact access boundary without bulk private-surface extraction.
 - Many 2026 papers are recent preprints. Results are author-reported unless a
   direct check above says otherwise.
 - No deep-learning campaign was reproduced locally. The environment lacks the
   required model weights, provider calls, benchmark services, and large GPU
   budgets; those are capability boundaries for reproduction, not blockers to
   source analysis.
-- The 966-row ledger is complete for the bounded encountered frontier, not for
+- The 984-row ledger is complete for the bounded encountered frontier, not for
   every paper that could exist. Each unresolved or deferred row includes the
   evidence that would reopen it.
 - Existing Scout notes were reused for task-order, SkillRise, memory governance,
@@ -342,15 +491,15 @@ a comparative capability campaign prevent an efficacy claim.
 
 ## Integration scope
 
-This revision adds the unified and XHS ledgers, replaces the outdated canonical
-note and report, and updates the knowledge index. It does not push, merge,
-deploy, modify an account, or edit the dirty source checkout. Repository
-validation is recorded above; the exact diff remains reviewable on the local
-goal branch.
+This follow-up extends the unified and XHS ledgers and updates only the material
+conclusions in the canonical note and report. It does not push, merge, deploy,
+mutate the observed account/content, or edit the dirty source checkout.
+Repository validation is recorded above; the exact diff remains reviewable on
+the local goal branch.
 
 ## Supervision
-- Goal: Produce a lead-complete, evidence-backed Scout Knowledge Library deep investigation of agent self-evolution and autonomy: treat every potentially useful lead from the human's collections, existing Scout material, primary sources, repositories, citations, discussions, and discovered related work as a research thread; trace, challenge, and compare it; assess its novelty, value, credibility, tradeoffs, and limits; and synthesize careful, actionable conclusions without silently dropping leads or trusting claims at face value.
-- Goal ID: "g_8c56b7d5-efb2-4ad5-b029-3d4752910e83"
-- Worker: "goal-acc95da7db5accd83a5930497b6"
-- Codex session: "01a05ce0-0d2b-7ab2-89ec-47b6d4f3bf62"
-- Pane: "w1:p6D"
+- Goal: Extend the accepted Scout Knowledge Library investigation of agent self-evolution and autonomy by resolving the human-curated Xiaohongshu leads at body level wherever observationally accessible, while remaining source-agnostic: faithfully extract useful claims, trace them through primary sources, implementations, citations, alternatives, critiques, and contradictory evidence, assess novelty, value, credibility, tradeoffs, and limits, and integrate new conclusions into the existing ledgers, synthesis, and evidence report without trusting or silently dropping leads.
+- Goal ID: "g_475c9885-50b2-4ed9-ba52-ddf355dd2ec7"
+- Worker: "goal-498ea3b7616296fef384e226d44"
+- Codex session: "01a05e2c-f1fe-7c30-9826-6eb13725ed74"
+- Pane: "w1:p6F"
