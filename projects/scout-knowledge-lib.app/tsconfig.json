@@ -18,6 +18,7 @@
     "app.ts",
     "agents/scout/workflows/**/*.ts",
     "agents/scout/tools/**/*.ts",
+    "scripts/**/*.ts",
     "watchers/**/*.ts",
     "types/**/*.ts"
   ],
