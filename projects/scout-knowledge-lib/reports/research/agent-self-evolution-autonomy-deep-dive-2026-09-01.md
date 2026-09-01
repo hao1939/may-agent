@@ -62,6 +62,17 @@ No title or snippet was promoted to technical evidence, no neighboring profile
 or collection content was used, and no like, comment, follow, collect, message,
 setting, or other account/content mutation was performed.
 
+The exact authenticated surfaces were the self-profile collection-note grid,
+targeted `/explore/<stable_id>` card details, and `/search_result` recovery when
+a selected identity was not materialized in the current grid. Query strings
+were kept inside the browser and never recorded. Extraction deduplicated on the
+24-hexadecimal-character stable card ID: all 908 ledger identities are unique,
+so there are zero duplicate stable-ID rows. A card could appear through more
+than one document anchor; those repeated rendering occurrences were collapsed
+during observation, and their raw occurrence count was intentionally not
+persisted because it has no identity value and would require retaining broader
+private-page output.
+
 The stopping condition was evidence saturation, not feed exhaustion: the
 predecessor's 906 IDs plus the two newly surfaced IDs account for 908/997, and
 the same 89-note unmaterialized tail remains. The follow-up then exhausted the
@@ -71,7 +82,38 @@ strongest comparison, implementation availability, and decisive caveat were
 resolved. Repeatedly scrolling or rereading the unchanged tail would add no
 identity or body evidence.
 
+Every detail inspected in that frontier has a row in both ledgers. The table
+below is the complete body-to-evidence trace, not a sample:
+
+| Stable card ID | Body disposition | Unified evidence path | Saturation or stop |
+|---|---|---|---|
+| `6a96b1320000000012024529` | useful: SkillOpt | `xhs:…` → `paper:2605.23904` + `code:skillopt` | paper gate, pinned code, and later-package boundary resolved |
+| `6a96667100000000290122ae` | irrelevant business case | `xhs:…` only | body established the topic boundary; no technical claim to follow |
+| `6a955b35000000000400afaf` | useful: WikiSkill | `xhs:…` → `paper:2608.27454` | mechanism, transfer failures, validation reuse, and no-code boundary resolved |
+| `6a8ffe56000000002c03f7ec` | no technical evidence | `xhs:…` only | readable body contained hashtags only; inventing a source was rejected |
+| `6a887216000000000b02577a` | useful: RHO and protocol critique | `xhs:…` → `paper:2606.05922` + `code:retro-harness` + `paper:2607.12227` + `code:rethinking-harness-evolution` | protocols, splits, call budgets, candidate distribution, and non-refutation boundary resolved |
+| `6a87e8d8000000000c026091` | useful cover: SkillBoost | `xhs:…` → `paper:2607.26643` | mechanism, ablations, transfer, and absence of inspectable code resolved; reopen on implementation release |
+| `6a7f5f7b000000002102348b` | useful: statistical limit | `xhs:…` → `paper:2510.04399` | theorem assumptions, threshold, and missing practical capacity proxy resolved |
+| `6a7e764f000000002c002f2d` | useful: RSI framing | `xhs:…` → `source:greenblatt-interview` | definition separated from forecasts and empirical evidence |
+| `6a753ceb000000002402cae5` | useful: EvoHarness-RL | `xhs:…` → `paper:2608.05446` | base model, teacher, benchmark, evaluator, compute, harness, and unseen-comparison confounds resolved |
+| `6a68b3a8000000000f00aa49` | useful: RL capability boundary | `xhs:…` → `paper:2512.07783` + `code:interplay` | causal stage comparison, training-stack identity, and synthetic-domain boundary resolved |
+| `6a5ea1bb000000000c003000` | useful: SEAGym | `xhs:…` → `paper:2606.17546` + `code:seagym` | lifecycle protocol, ablations, pinned code, and bounded 161-test implementation check resolved |
+| `6a4f9c5f0000000011018ad6` | useful taxonomy; evidence type corrected | `xhs:…` → `source:weng-harness-blog` | primary blog identity resolved; no experimental claim assigned |
+
+The ten useful rows therefore all enter the 984-row unified ledger and reach an
+identified paper, repository, or primary discussion. The two non-useful bodies
+also remain explicit rather than disappearing. The 16 added non-XHS records
+are exactly the papers, code records, and primary discussions named in the
+table; this is why the ledger grew from 966 to 984 rows after adding two new
+card identities.
+
 The unified ledger's dispositions are intentionally not all “researched”:
+
+Across the 908 XHS rows, disposition prefixes are 53 `deep-dived`, 26
+`resolved`, 380 `retained`, and 449 `screened-out`; they sum to the complete
+identity set. The 163 core and 296 adjacent rows make the 459 potentially
+relevant/control records explicit, while the same 449 screened rows are the
+irrelevant boundary.
 
 - out-of-scope cards are screened out with a topic boundary;
 - adjacent cards are retained as controls or comparisons;
@@ -307,6 +349,40 @@ readiness. The strongest judgments are:
    improves proposals but survives rejected descendants and sometimes transfers
    catastrophically.
 
+For the newly body-resolved high-value choices, the operational comparison is:
+
+| Choice and strongest alternative | Prerequisite and cost | Evidence and advantage | Disadvantage, risk, or failure mode | Prefer when / readiness |
+|---|---|---|---|---|
+| SkillOpt versus immediate skill append | separable optimization/selection tasks and repeated model calls | held-out selection, bounded document edits, rejected-edit memory; paper reports +23.5 points over no-skill GPT-5.5 | selection still needs genuinely protected deployment tasks; later Sleep claims are not paper evidence | use for reversible document skills when a clean selection split exists; medium-high readiness because code is inspectable |
+| SkillBoost versus SkillOpt or incumbent/knockout release gates | typed failure attribution, `N` repair candidates, and full observed-set back-tests | 23 reported configurations, gate ablations, and transfer; explicitly rejects fixes whose regressions dominate | observed-set reuse is not independent promotion; no released code, so the invariant was not implementation-verified | use its rule as regression screening, not sole promotion, when failures localize cleanly; medium decision value, low-medium readiness |
+| WikiSkill versus transactional skill-only storage | persistent raw experience, wiki synthesis, skill derivation, and repeated validation calls | structured wiki improves proposals and reports cross-model transfer | wiki survives rejected skills, small validation sets are reused, catastrophic transfer occurs, and no official code was found | prefer only when every persistent layer can be versioned, gated, and rolled back; otherwise choose a transactional skill store; low readiness |
+| RHO versus Meta-Harness and matched per-task search | resettable past trajectories, a 10-task coreset, 3 rollouts × 3 proposals, and a GPT-5.5 solver/judge/ranker | held-out gains support label-free candidate generation | self-preference loses to the candidate mean on SWE-Bench Pro; 103 calls versus 41/320 makes the Meta-Harness comparison round-matched, not compute-matched | prefer for offline proposal from resettable history; require matched parallel/sequential search and an external promotion gate; medium readiness |
+| SEAGym plus the harness-evaluation protocol versus endpoint-only benchmark scores | train/validation/ID/OOD/replay/cost splits, snapshots, repeated runs, and matched `K=5` budgets | released lifecycle code passes 161 tests; the critique shows simpler search can reverse the winner and disjoint transfer averages only +0.6 | evaluation infrastructure adds campaign cost and does not itself improve an agent; critique tests AHE-style evolution, not RHO | prefer before investing in durable harness evolution, especially when harness sensitivity is unknown; high decision value, medium-high readiness |
+| EvoHarness-RL versus frozen, harness-only, or weight-only cells | Opus teacher trajectories/consolidation, 150 GRPO epochs, eight H200s, and ALFWorld-specific BPE harness | strong reported 8B domain result and an example of joint optimization | unequal teachers, harnesses, and compute destroy the “8B matches Opus” attribution; unseen Opus result and repeated-run uncertainty are absent | prefer only for funded domain specialization after a four-cell factorial; low general readiness despite an inspectable method description |
+| Statistical Two-Gate bound versus behavioral release gates | fixed-distribution IID cases, bounded loss, independent validation, one mutable axis, and an ex-ante hypothesis envelope | formalizes evidence consumption under repeated adaptive selection | modern harness capacity is unknown and assumptions exclude many open adaptive settings | use as a warning that protected evidence is finite; use paired behavioral gates for actual release; low operational readiness |
+| Competence-edge RL versus targeted mid-training | pretrained primitives, measurable headroom, training compute, and stage-matched evaluation | controlled synthetic tasks isolate when RL expands pass@128 | RL adds little without primitives or near saturation; mid-training often wins at fixed compute; external validity and GPU cost remain | diagnose headroom first; prefer mid-training for missing primitives and RL for reachable-but-rare combinations; medium evidence, low local reproducibility |
+
+The Weng blog and Greenblatt interview are retained as taxonomy and scenario
+framing, not operational alternatives: neither supplies a tested mechanism or a
+promotion rule.
+
+## What changed and what retained predecessor provenance
+
+Materially changed or strengthened conclusions are limited to six points: the
+three-way split between observed-set regression, frozen proposal selection, and
+inaccessible promotion; RHO's support for proposal generation but not reliable
+self-preference admission; the requirement to compare harness evolution with
+matched task-level search and disjoint transfer; WikiSkill's unrolled-back wiki
+as a contamination channel; the downgrade of “8B matches Opus”; and the
+conditional competence-edge account of RL capability. SkillBoost adds strong
+reported regression-gate evidence but stays below code-backed readiness.
+
+The predecessor's six-coordinate definition, mutable-object taxonomy,
+preference for reversible external skills before weight updates, skepticism of
+co-evolving judges, separation of search from deployed-agent change, and
+shared-memory contamination warning were retained. Their existing citations
+remain in place; they were not rewritten as discoveries of this follow-up.
+
 ## Contradictions resolved
 
 1. **“Self-evolving” versus search.** EvoX and CORAL improve a search process
@@ -459,7 +535,7 @@ reported rather than implementation-verified.
   163 core / 296 adjacent / 449 out-of-scope split and 896 metadata-only / 11
   readable-body / 1 image-only-cover access counts.
 - A scoped resolver found 0 missing relative links across the two changed
-  Markdown documents. HTTP checks returned 200 for all 16 newly cited arXiv,
+  Markdown documents. HTTP checks returned 200 for all 17 newly cited arXiv,
   blog, interview, and GitHub targets after correcting SEAGym's repository
   owner from the paper team name to `antropy-research`.
 - `git diff --check` exited 0.
@@ -496,6 +572,48 @@ conclusions in the canonical note and report. It does not push, merge, deploy,
 mutate the observed account/content, or edit the dirty source checkout.
 Repository validation is recorded above; the exact diff remains reviewable on
 the local goal branch.
+
+## Acceptance audit and safe handoff
+
+This finite acceptance audit began from clean commit
+`8f611fec0adb19a6a44ac0202c094fe30ee298de`, whose parent and merge base are the
+accepted predecessor revision `8c5d8747a6b4be8d65703792911360a9082d8b51`.
+The reviewed predecessor-to-candidate diff is confined to the canonical
+synthesis, this report, and the two ledgers: 346 insertions and 76 deletions at
+the audit start. No index, application code, or external service changed.
+
+| Acceptance criterion | Durable evidence and disposition |
+|---|---|
+| Complete per-card identity, access, deduplication, relationship, and disposition | XHS ledger header plus all 908 stable-ID rows; the twelve non-metadata rows and body-to-evidence table above are the complete detail frontier, while 896 metadata-only and 89 unobserved remain explicit. |
+| Exact coverage, duplicates, boundaries, and stop | “Research frontier and lead accounting” records the three UI surfaces, 908/997 identities, zero duplicate stable-ID rows, scope/access counts, the 89-card boundary, and evidence-saturation stop without treating metadata as evidence. |
+| Every useful body claim snowballed | The complete twelve-row trace above maps ten useful claims to all 16 added paper/code/discussion rows and gives each saturation or reopening condition; two non-useful bodies remain explicit controls. |
+| Novelty, value, evidence, readiness, and alternatives | “Direct comparisons,” “Novelty and value judgments,” and the operational comparison table state prerequisites, results, cost, advantages, risks, failure modes, preferred conditions, and readiness. |
+| Claim-type separation | “Evidence grades,” “Source and claim map,” per-row `provenance`/`access`/`credibility`, and the direct-check sections separate XHS discovery claims, primary reports, inspected code, bounded runs, Scout analysis, forecasts, and unknowns with dated stable IDs. |
+| Only material synthesis changes | “What changed and what retained predecessor provenance” names the six changed conclusions and the retained framework; the four-file diff is based directly on the accepted predecessor commit. |
+| Consequential bounded checks | “Focused direct checks” gives pinned revisions, exact Harness-Bench and SEAGym commands/results, the AgentStream ordering facts, the skill-evolver failures, and explicit provider/GPU boundaries. The exact one-off AgentStream extraction and inherited skill-evolver invocation were not retained, so those two are evidence records rather than copy-paste reproductions; no stronger claim depends on them. |
+| Clean, reviewed, valid candidate | “Repository validation” records the repository suite, schema/identity/count/fingerprint checks, relative and external links, diff check, and all 24 inherited health facts. The final post-audit commit and clean-state proof are supplied in the handoff because a commit cannot contain its own hash. |
+| Plain-language report and integration | “What was wrong and what changes,” “Remaining limits,” and this section provide scope, proof, limits, and procedure. If the target contains `8c5d8747…`, cherry-pick the follow-up commit range through the final reported tip; otherwise merge the complete goal branch after reviewing the same four-file diff. |
+
+The XHS helper was also audited as code. Its allowlist performs navigation,
+scrolling, targeted stable-ID extraction, and relevant-cover capture; it has no
+cookie/storage read, request-body submission, account-action endpoint, or
+credential export. Navigation clicks are label-restricted, detail output
+returns pathname rather than query, and the only persisted authenticated media
+is the relevant admission-gate cover in goal-owned volatile scratch. The
+repository diff contains no signed XHS URL, query parameter, cookie, token,
+message, full page/body dump, profile metadata, or unrelated private content.
+The human-provided Windows browser profile was neither copied nor inspected.
+
+Before this audit edit, a read-only `GIT_OPTIONAL_LOCKS=0` snapshot recorded the
+starting `/app` worktree at `386b445c236e4609cd8870d22cc773cc4641fec8`
+with its pre-existing 881 status records (status-output SHA-256
+`91e199b7c8b0603e98bb52203f841ac7e8d0d6c2b29a8ead11b20124fa2d925f`).
+All peer worktrees were likewise fingerprinted without running commands inside
+them: eight were clean, the pre-existing user-overlay worktree had three status
+records, and the predecessor remained clean at `8c5d8747…`. Only the claimed
+goal worktree is written or tested. A matching post-audit snapshot and the
+exact clean final tip are reported in the final handoff; any independent peer
+change would be disclosed rather than attributed to this goal.
 
 ## Supervision
 - Goal: Extend the accepted Scout Knowledge Library investigation of agent self-evolution and autonomy by resolving the human-curated Xiaohongshu leads at body level wherever observationally accessible, while remaining source-agnostic: faithfully extract useful claims, trace them through primary sources, implementations, citations, alternatives, critiques, and contradictory evidence, assess novelty, value, credibility, tradeoffs, and limits, and integrate new conclusions into the existing ledgers, synthesis, and evidence report without trusting or silently dropping leads.

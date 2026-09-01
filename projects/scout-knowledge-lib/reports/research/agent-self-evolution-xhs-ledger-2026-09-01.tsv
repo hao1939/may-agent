@@ -1,5 +1,6 @@
 # XHS collection resolution ledger
 # observation=2026-09-02 follow-up; declared=997; observed=908; unobserved=89; body-frontier=12 detail-inspected (11 readable text bodies, 1 image-only cover); sorted-ID-newline-SHA256=f66e7c7611a35fc23a2c35c435905f95a07ed55029554eddf4cd6047ac7e77b6
+# surfaces=authenticated self-profile collection-note grid, targeted /explore/<stable_id> details, and /search_result recovery; deduplication key=stable_id; duplicate stable-ID rows=0; raw repeated DOM-anchor occurrences were collapsed during observation and were not persisted.
 # access is recorded per row; titles remain discovery metadata and are never treated as technical evidence without a body or stable primary source.
 stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 6a96b1320000000012024529	微软开源：SkillOpt 技能训练器	CountryRoad	body-readable:2026-09-02	core	skill-lifecycle	SkillOpt; arxiv:2605.23904v2; github:microsoft/SkillOpt	Body claims document-only optimization, a compact best_skill.md, +23.5 points over no-skill GPT-5.5 direct chat, and later SkillOpt-Sleep offline replay/adoption; primary paper and code confirm the first three but Sleep is a later preview package.	deep-dived:paper-code-and-version-boundary
