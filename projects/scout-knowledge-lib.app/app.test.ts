@@ -7,7 +7,7 @@ import app, {
 
 describe("Scout task reconciliation", () => {
   it("maps each source to an independent standing maintain task", () => {
-    for (const source of ["arxiv", "hn", "xhs", "github"]) {
+    for (const source of ["arxiv", "hn", "xhs", "github", "reddit"]) {
       expect(
         resolveScoutTask({
           type: "scout.explore",
@@ -378,6 +378,7 @@ describe("Scout task reconciliation", () => {
     expect(intervals["scout-explore-hn"]).toBe(7_200_000);
     expect(intervals["scout-explore-xhs"]).toBe(14_400_000);
     expect(intervals["scout-explore-github"]).toBe(7_200_000);
+    expect(intervals["scout-explore-reddit"]).toBe(14_400_000);
     expect(app.tasks?.maxConcurrent).toBe(1);
   });
 

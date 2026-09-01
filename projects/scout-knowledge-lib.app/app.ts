@@ -57,7 +57,7 @@ function ownerRequested(
   });
 }
 
-const scoutSources = new Set(["arxiv", "hn", "xhs", "github"]);
+const scoutSources = new Set(["arxiv", "hn", "xhs", "github", "reddit"]);
 const ownerReviewReasons = new Set([
   "experience-review",
   "library-health-signal",
@@ -312,7 +312,7 @@ export default defineApp({
   version: 1,
   agent: "scout",
   description:
-    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",
@@ -418,6 +418,12 @@ export default defineApp({
       enabled: true,
       intervalMs: 7_200_000, // 2h
       event: scoutEvent("scout.explore", { source: "github" }),
+    },
+    {
+      id: "scout-explore-reddit",
+      enabled: true,
+      intervalMs: 14_400_000, // 4h
+      event: scoutEvent("scout.explore", { source: "reddit" }),
     },
     {
       id: "scout-daily-digest",

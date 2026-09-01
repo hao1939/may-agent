@@ -29,11 +29,12 @@ The exact source and runtime authorities are:
 | XHS credential observation                            | `projects/scout-knowledge-lib.app/watchers/xhs-credential.ts` and `agents/scout/tools/xhs-credential.ts`                                             |
 | Durable product data                                  | `projects/scout-knowledge-lib/knowledge/` and `projects/scout-knowledge-lib/reports/`                                                                |
 
-`app.ts` currently declares one Scout owner, a concurrency limit of one, seven
-schedules (including the daily owner review), and these seven stable `maintain`
+`app.ts` currently declares one Scout owner, a concurrency limit of one, eight
+schedules (including the daily owner review), and these eight stable `maintain`
 responsibilities:
 
-- `explore-arxiv`, `explore-hn`, `explore-xhs`, and `explore-github` use
+- `explore-arxiv`, `explore-hn`, `explore-xhs`, `explore-github`, and
+  `explore-reddit` use
   `scout-explore`;
 - `daily-digest` uses `scout-daily-digest`;
 - `runtime/library-health-observer` uses `library-health`; and
@@ -62,7 +63,7 @@ phases, or generated projection into a Herdr contract.
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | One current structural health assessment                                                     | Migrate now; safest pilot                                                    | Finite, read-only goal. Run the focused tests and `scripts/library-health-readonly.ts`; report facts and prove no state or domain writes.                                                                                             |
 | One explicit index repair, deduplication, rollup, or layout repair                           | Good migration candidate                                                     | One bounded library outcome. Proof is the reviewed diff, link/reference checks, focused validation, and an evidence-backed no-op when no safe edit is justified.                                                                      |
-| One arXiv, HN, or GitHub exploration                                                         | Migrate conditionally                                                        | Make the goal one current source check, not permanent exploration. Proof includes the real query/feed, check time, stable item IDs or URLs, deduplication search, exact outputs, or a grounded no-op. Network availability is a risk. |
+| One arXiv, HN, GitHub, or Reddit exploration                                                 | Migrate conditionally                                                        | Make the goal one current source check, not permanent exploration. Proof includes the real query/feed, check time, stable item IDs or URLs, deduplication search, exact outputs, or a grounded no-op. Network availability is a risk. |
 | One XHS exploration                                                                          | Migrate only when the credential Condition is ready                          | Preserve `credential.state / credential:xhs / state=ready` as an exact wait. Never simulate XHS or substitute another source. Credential scope and browser placement are risks.                                                       |
 | One digest delivery                                                                          | Migrate only with an explicit recipient and delivery authority               | Proof requires the archive path and delivery receipt, or verified empty input. A local file alone does not prove delivery. External side effects make this unsuitable for the first pilot.                                            |
 | Standing owner review or ongoing source cadence                                              | Keep in May-agent unless the human explicitly wants an indefinite Herdr loop | A schedule tick has no durable finish line. If migrated, write a standing learn-and-improve objective that is never auto-accepted after one run.                                                                                      |

@@ -1,7 +1,7 @@
 /**
  * Scout explore — routine discovery cron task.
  *
- * Called with a source-specific task (arXiv, HN, XHS, GitHub). The workflow
+ * Called with a source-specific task (arXiv, HN, XHS, GitHub, Reddit). The workflow
  * prepares source evidence where available, then admits one bounded result.
  */
 import { createHash } from "node:crypto";
@@ -38,7 +38,7 @@ export const description =
 const defaultAppDir = "/app/projects/scout-knowledge-lib.app";
 const defaultProjectDir = "/app/projects/scout-knowledge-lib";
 const defaultXhsQuery = "AI agent 智能体";
-const sourceNames = ["arxiv", "hn", "xhs", "github"] as const;
+const sourceNames = ["arxiv", "hn", "xhs", "github", "reddit"] as const;
 
 type SourceName = (typeof sourceNames)[number];
 
@@ -110,7 +110,15 @@ arXiv execution contract:
 - Every arXiv HTTP request must have both a bounded connection timeout and a bounded total timeout. For curl, supply both \`--connect-timeout\` and \`--max-time\`; do not run an unbounded retrieval.
 - If arXiv cannot be reached within those bounds, do not substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and the timeout or retrieval error.
 `
-        : "";
+        : source === "reddit"
+          ? `
+Reddit execution contract:
+- Access Reddit observationally through read-only public endpoints only. Never post, comment, vote, save, follow, message, log in, or otherwise change account or content state.
+- Start topic-led discovery with the public Atom feed at \`https://www.reddit.com/search.rss\`; preserve stable \`t3_...\` post IDs. Treat feed titles and timestamps as metadata, not support for body-level claims, unless the post itself is readable.
+- Every request must use a descriptive User-Agent, a bounded connection timeout, and a bounded total timeout. For curl, supply \`--connect-timeout\` and \`--max-time\`.
+- If Reddit returns an authentication, network-security, rate-limit, or retrieval boundary, do not bypass it or substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and exact HTTP status or retrieval error.
+`
+          : "";
   const resultContract = `
 Result contract:
 - Return summary, source, and outputs through finish().

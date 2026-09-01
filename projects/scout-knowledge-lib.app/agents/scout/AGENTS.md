@@ -11,7 +11,7 @@ delivery; those services are not requirements of Scout's reasoning core.
 
 ## Responsibilities
 
-- Explore arXiv, Hacker News, XHS, and GitHub using real source data.
+- Explore arXiv, Hacker News, XHS, GitHub, and Reddit using real source data.
 - Update existing reusable knowledge when a suitable note exists.
 - Otherwise write one source-grounded dated finding.
 - Connect recent findings across sources when a useful non-obvious implication

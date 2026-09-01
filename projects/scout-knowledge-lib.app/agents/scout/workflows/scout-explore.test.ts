@@ -152,6 +152,29 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("do not substitute another source");
   });
 
+  it("keeps Reddit exploration observational and records exact access boundaries", () => {
+    const task = buildExploreTask(
+      "Explore Reddit for AI agent discussions.",
+      undefined,
+      undefined,
+      "reddit",
+    );
+
+    expect(task).toContain("Reddit execution contract");
+    expect(task).toContain("read-only public endpoints only");
+    expect(task).toContain("https://www.reddit.com/search.rss");
+    expect(task).toContain("stable `t3_...` post IDs");
+    expect(task).toContain("metadata, not support for body-level claims");
+    expect(task).toContain("Never post, comment, vote, save, follow, message");
+    expect(task).toContain("descriptive User-Agent");
+    expect(task).toContain("`--connect-timeout`");
+    expect(task).toContain("`--max-time`");
+    expect(task).toContain("network-security");
+    expect(task).toContain("exact HTTP status or retrieval error");
+    expect(task).toContain("outputs: []");
+    expect(task).toContain("do not bypass it or substitute another source");
+  });
+
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
     const result = xhsWaitResult("xhs", {
       credential: "xhs",

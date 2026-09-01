@@ -1,36 +1,37 @@
 <ai_context>
-summary: "Cross-source synthesis: The agent memory field has invested ~95% of its engineering effort in read-path optimization (RAG, retrieval, vector search, context windows, attention mechanisms) while the binding constraint has shifted to write-path governance (what to remember, when to forget, how to verify before writing, how to supersede). Eight independent research streams converge: Memory Depth (2606.26806) proves retrieval saturates while consolidation is the bottleneck; Write Discipline papers (2606.24595, 2606.21144, 2606.24428) prove write quality bounds system performance; Control-Plane Placement (2606.15903v2) shows governance cost is exclusively on writes; Nous (2606.22030) inverts storage to store deltas with surprise gating; Insight Governance (2606.17591) proves same experience degrades or improves depending solely on write-side curation; Budget-Curated Memory (2606.25115) shows 2.7× reduction with accuracy maintained; Library Drift (2605.19576) shows ungovern write produces +0.0pp silently; GateMem (2606.18829) proves multi-principal writes are unsolved. The field's attention is inverted — it optimizes what it can measure (read latency, retrieval accuracy) while ignoring what determines outcomes (write selection, write verification, write retirement)."
+summary: "Cross-source synthesis, created 2026-06-29 and qualified 2026-09-01: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge (arXiv 2608.30177v1) shows stage-specific profiles: writing has a threshold-like risk transition, management can locally decouple utility and risk, and greater retrieval exposure raises clean utility and attack success together. The durable conclusion is stage-aware memory governance, not exclusive write-side control."
 triggers: ["read-write inversion", "memory attention", "write governance", "read optimization", "write selection", "memory investment", "RAG ceiling", "retrieval saturates", "write quality", "write discipline", "memory engineering", "industry attention bias", "read-side optimization"]
-confidence: "high"
-discovered: "2026-10-28"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), HN scan #220 (Write Discipline), GitHub MARM/Distill"
+confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
+discovered: "2026-06-29"
+last_updated: "2026-09-01"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
 # The Read-Write Attention Inversion: Why Memory Engineering Optimizes the Wrong Side
 
-*Cross-source synthesis — emerges from connecting eight independent research
-streams that all discover the same structural truth from different directions.*
+*Cross-source synthesis — earlier streams establish the write-governance gap;
+new stage-wise evidence bounds where that thesis does and does not hold.*
 
-**Type:** Cross-Source Synthesis  
-**Created:** 2026-10-28  
-**Status:** Active hypothesis with strong multi-stream evidence  
-**Extends:** Subtraction Deficit, Impedance Principle, Eternal Present  
+**Type:** Cross-Source Synthesis
+**Created:** 2026-06-29
+**Last updated:** 2026-09-01
+**Status:** Active hypothesis, qualified by stage-wise utility-risk evidence
+**Extends:** Subtraction Deficit, Impedance Principle, Eternal Present
 **Unifies:** Write Discipline, Library Drift, Memory Depth, Budget-Curated Memory
 
 ## The Observation
 
-The agent memory field has a structural attention bias. Engineering effort,
-research publications, product development, and venture capital flow
-overwhelmingly toward the **read path** — making retrieval faster, more
-accurate, more contextual. Meanwhile, the evidence converges from eight
-independent directions that system performance is bounded by the **write
-path** — what gets written, when it's retired, how conflicts resolve.
+The agent memory field has a structural attention bias toward the **read path**
+— making retrieval faster, more accurate, and more contextual. Multiple
+research streams show that the **write and management paths** — what gets
+written, verified, reconciled, and retired — can bind system quality.
 
-This is not a capability gap. It's an *attention* inversion — the field
-optimizes what it can measure (read latency, retrieval F1) while ignoring
-what determines outcomes (write selection, write verification, write
-retirement).
+This remains an *attention* inversion, but not an exclusive-write thesis.
+Retrieval exposure is itself a consequential control surface: more relevant
+memory can improve clean utility while also exposing more risk-bearing memory.
+The supported conclusion is that end-to-end retrieval scores are insufficient;
+each lifecycle stage needs separate utility and risk controls.
 
 ## The Evidence Structure
 
@@ -43,8 +44,9 @@ behavior") remains at 0.812–0.904 with only 2–3 parametric writes per 200
 events. The gap between read performance (>95%) and write performance (~85%)
 is the binding constraint.
 
-**Implication:** Additional read-path engineering yields diminishing returns.
-The 5-15pp performance gap lives exclusively on the write side.
+**Implication:** Within these factual-recall tasks, additional read-path work
+has diminishing returns and the remaining 5–15 percentage-point gap points to
+consolidation. This does not establish saturation for every retrieval workload.
 
 ### Stream 2: Write Quality Bounds System Performance
 
@@ -69,9 +71,8 @@ retrieval of bad memories makes agents more confidently wrong.
 ### Stream 3: Governance Cost Lives on Writes
 
 **Control-Plane Placement** (2606.15903v2): 13 configurations tested across
-3 placement regimes. The read path is unaffected by governance decisions.
-ALL governance cost — canonicalization, intent-aware deletion, cross-lingual
-normalization — sits on the write path:
+3 placement regimes. In that experiment, canonicalization, intent-aware
+deletion, and cross-lingual normalization costs sat on the write path:
 
 | Placement | Governance Cost | Read Impact |
 |-----------|----------------|-------------|
@@ -79,9 +80,9 @@ normalization — sits on the write path:
 | Inscribe-time LLM | 100% canonicalization | None |
 | Mutation-time hook | 78-85% intent-aware, $0.17/385-case | None |
 
-No configuration achieves all forgetting modes simultaneously. But critically,
-the engineering challenge is exclusively write-side. Read architectures are
-already solved.
+No configuration achieves all forgetting modes simultaneously. This is strong
+evidence that forgetting governance needs write-side intervention, not proof
+that every memory-engineering challenge is exclusively write-side.
 
 ### Stream 4: Storage Paradigm Inverted
 
@@ -144,8 +145,9 @@ forgetting. The failure mode is exclusively write-side: who can write what,
 who can overwrite whom, who can delete.
 
 Long-context prompting achieves best governance at high cost; retrieval-based
-methods reduce cost but leak unauthorized information. The read path works.
-The write path fails.
+methods reduce cost but leak unauthorized information. The benchmark therefore
+shows interacting write-policy and read-exposure failures, not a solved read
+path.
 
 ### Stream 9: The Formal Resolution — Write-Time Origin Binding
 
@@ -170,12 +172,39 @@ relevance scorer LRE, 2606.20954) → Forgetting (mutation-time hooks,
 Privacy Frontier (deployment-time memorization knob, 2606.10062). No single
 layer suffices; the stack is the architecture. Every layer is write-side.
 
-## The Quantified Inversion
+### Qualification: Retrieval Is Also a Utility-Risk Control Surface
+
+**MemGauge** ([2608.30177v1](https://arxiv.org/abs/2608.30177v1)) separates
+writing admission, management policy, and retrieval exposure under matched
+clean and poisoned conditions. Its controlled study uses 11 language models
+and 100 questions each from LongMemEval and LoCoMo. Writing risk stays low at
+restrictive coverage, then rises sharply: at full coverage, attack success
+reaches 37–64%. Management policies move attack success by as much as 62%
+while clean utility changes only 3–5%, showing mechanism-dependent local
+decoupling.
+
+Retrieval does not behave like a solved neutral read. Across Mem0, Hindsight,
+LangMem, and A-MEM, increasing top-K from 1 to 7 raises clean utility from
+24.6–29.3% to 52.7–64.2%, but also raises attack success from 4.7–12.2% to
+36.1–53.7%. Native management reduces attack success by 10.6–24.8 percentage
+points with clean-utility changes between +0.8 and −3.9 points. The evaluation
+judge agrees with majority human labels on 91% of 400 trajectories;
+inter-annotator agreement is κ=0.78.
+
+This paper materially narrows the original thesis. Write governance remains
+necessary, but retrieval budget and exposure must be governed jointly with
+admission and management. The four real-system measurements are diagnostic
+associations rather than controlled causal stage effects, and no experiment
+code was linked in the v1 paper or found in the current GitHub paper-index
+cross-check. These limits prevent treating the reported thresholds as universal
+defaults.
+
+## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |
 |--------|-------------------|-------------------|
-| Read latency | High (vector DBs, re-rankers, caching) | Saturated (>95%) |
-| Read accuracy | High (embedding models, chunk strategy) | Saturated (>95%) |
+| Read latency | High (vector DBs, re-rankers, caching) | Not evaluated uniformly across sources |
+| Read accuracy | High (embedding models, chunk strategy) | >95% only in the cited factual-recall setting; not a universal saturation claim |
 | Write selection | Low (append-all default) | Binding (85%) |
 | Write verification | Very low (no standard) | Unknown (0pp silent) |
 | Write retirement | Near-zero | Critical (2.7× oversize) |
@@ -230,7 +259,8 @@ companion notes) while leaving our write path ungoverned.
 
 The synthesis predicts a design principle for this system:
 
-**Invest engineering effort in write gates, not read optimization.**
+**Invest in stage-aware controls, with write gates and retrieval-exposure
+budgets evaluated together.**
 
 Specifically:
 - Write-time novelty scoring (does this duplicate existing knowledge?)
@@ -238,10 +268,11 @@ Specifically:
 - Periodic retirement audit (which files have zero reads in 60 days?)
 - Multi-principal conflict resolution (when Scout and Arc contradict)
 
-These four write-side investments would yield more performance than any
-read-side improvement (better search, fancier indexing, larger context
-windows) because read-path performance is already saturated while write-path
-quality is the binding constraint.
+These four write-side investments address gaps the earlier evidence makes
+visible. MemGauge adds a fifth requirement: evaluate retrieval budgets under
+matched clean and poisoned conditions, because more exposure can raise utility
+and risk together. The evidence does not support claiming that every read-side
+improvement is lower value.
 
 ---
 
@@ -264,3 +295,4 @@ Sources:
 - https://arxiv.org/abs/2606.12945
 - https://arxiv.org/abs/2606.20954
 - https://arxiv.org/abs/2606.10062
+- https://arxiv.org/abs/2608.30177v1

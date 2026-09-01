@@ -3,6 +3,7 @@
  * XHS (小红书) Browser Tool
  * Uses Chrome DevTools Protocol to browse xiaohongshu.com
  * Chrome must be running visible (non-headless) on DISPLAY=:99 with --remote-debugging-port=9222
+ * Override endpoint wiring with SCOUT_XHS_CDP_HOST and SCOUT_XHS_CDP_PORT.
  *
  * Commands:
  *   status                - Check whether the browser session can read XHS
@@ -13,16 +14,17 @@
  */
 
 import http from "node:http";
+import { resolveXhsCdpEndpoint } from "./xhs-cdp-config.mjs";
 
-const CDP_PORT = 9222;
-const CDP_HOST = "localhost";
+let CDP_HOST;
+let CDP_PORT;
 
 // --- CDP helpers ---
 
 function cdpGet(path) {
   return new Promise((resolve, reject) => {
     http
-      .get(`http://${CDP_HOST}:${CDP_PORT}${path}`, (res) => {
+      .get({ hostname: CDP_HOST, port: CDP_PORT, path }, (res) => {
         let d = "";
         res.on("data", (c) => (d += c));
         res.on("end", () => {
@@ -40,8 +42,7 @@ function cdpGet(path) {
 function cdpPut(path) {
   return new Promise((resolve, reject) => {
     const req = http.request(
-      `http://${CDP_HOST}:${CDP_PORT}${path}`,
-      { method: "PUT" },
+      { hostname: CDP_HOST, port: CDP_PORT, path, method: "PUT" },
       (res) => {
         let d = "";
         res.on("data", (c) => (d += c));
@@ -391,6 +392,10 @@ async function main() {
 
   let cdp;
   try {
+    const endpoint = resolveXhsCdpEndpoint();
+    CDP_HOST = endpoint.host;
+    CDP_PORT = endpoint.port;
+
     const tab = await getXHSTab();
     cdp = new CDPClient(tab.webSocketDebuggerUrl);
     await cdp.connect();
