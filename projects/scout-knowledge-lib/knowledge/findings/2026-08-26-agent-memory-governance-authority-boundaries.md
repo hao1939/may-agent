@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including general forgetting by ID or criteria. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, and 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, and organization-scoped general-forget repair fcb022acf583b6146eb9dc866ced999b48f5dcf8."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, and provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -419,6 +419,53 @@ patch; deleting only the goal-owned disposable 58 GiB Rust target cache restored
 repository source was removed. The candidate remains local, unreviewed, and
 undeployed; organizationless bulk/destructive paths beyond this handler remain
 an explicit next-audit question.
+
+### Bulk provenance selection must not become deletion authority
+
+Cycle 16 began from the separately persisted live XHS reconciliation at
+`2026-09-01T14:58:51.323Z–14:59:22.740Z`: the 129-ID and metadata fingerprints
+exactly matched Cycle 15; added, changed, and removed arrays were empty; prior
+card `6a4b745f…5691` remained unavailable; and SkillRise remained readable.
+Only then did the unchanged 15/15 memory-governance cluster select the queued
+bulk-path audit.
+
+At public Mnemo revision
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` plus local repair ancestry through
+`fcb022acf583b6146eb9dc866ced999b48f5dcf8`,
+`mnemo.forget_by_provenance` accepted a principal or session selector without
+consuming `CallerContext`. The core selector gathered matching memory IDs and
+built a `ForgetRequest` with `agent_id: None`; deletion therefore ran under the
+configured boot principal rather than the authenticated request principal.
+
+Two real MCP duplex fixtures made the boundary executable. A capability for
+signed `alice` with `role:writer org:alpha` selected boot-owned Alpha records.
+Before repair, the principal selector returned
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` in `forgotten`; the session selector
+returned `01a05d88-e7a4-7f71-99a8-d873033baeaf`. These generated fixture IDs
+are exact outputs from that run, not persistent production identifiers. Both
+records were soft-deleted. This does not contradict the preserved Alice→Bob
+four-wrapper denial: the vulnerable path specifically inherited boot authority
+and therefore succeeded against boot-owned targets.
+
+Repair `42d5894755fc7bae4601cb7726d4bded50e8f9d4` leaves the legacy core/stdio
+entry points compatible but adds authenticated variants for both selectors.
+The MCP handler now receives verified caller context, derives the sole signed
+organization, and passes both actor and organization through candidate
+selection to the existing per-ID authorization checks. After repair, each
+fixture returns `forgotten: []`, an exact `permission denied` error for its
+selected ID, and the boot-owned record remains intact. The provenance selector
+identifies remediation candidates; it no longer grants authority over them.
+
+Formatting passes. Strict Clippy with warnings denied passes for all core/MCP
+targets and all HTTP-enabled server targets. Full validation passes 295 core,
+95 MCP, and 85 HTTP-enabled server tests; the latter retains the real HTTP
+Alice→Bob four-wrapper regression. Validation used a goal-owned Rust 1.98
+container and caches because host Cargo was unavailable. The 54 GiB target
+cache consumed the remaining filesystem blocks, so only that goal-owned,
+rebuildable target directory was deleted after successful validation; source
+and download/toolchain caches remain. This candidate is local, unreviewed, and
+undeployed. Read-side provenance selection and other bulk paths remain outside
+the completed audit.
 
 ## Why it matters
 

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across fifteen cycles: Cycle 15 materializes 129 stable Xiaohongshu IDs with one prior card currently unavailable, a probable self-optimize-skill repository relation adds process evidence without performance proof, arXiv 2608.30177v1 remains the stage-aware memory anchor, and Reddit remains deferred at its actual boundary."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 15"]
+summary: "Seed-first Scout checkpoint across sixteen cycles: Cycle 16 preserves the reconciled 129-card Xiaohongshu state, proves provenance-based bulk deletion inherited boot authority, repairs both principal and session selectors with caller and organization checks, retains arXiv 2608.30177v1, and defers Reddit at its actual boundary."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo general forget", "Mnemo provenance forget", "Mnemo Streamable HTTP", "SkillRise", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 16"]
 last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T14:49:54.073Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T14:59:22.740Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews of arXiv 2608.30177v1, 2604.16548v2, 2606.04315v1, 2607.26784v1, and 2608.27454v1; pinned SkillRise, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -1025,6 +1025,83 @@ appears, resume the organizationless destructive/bulk-path audit, including
 storage-error and nonexistent-ID behavior before changing code. Reddit is
 revisited only for distinct evidence or an access/content change; the prepared
 SkillRise fixture remains queued for proportionate model/environment resources.
+
+## Cycle 16 checkpoint — bulk remediation no longer inherits boot authority
+
+What was wrong: `mnemo.forget_by_provenance` let a signed request choose a
+principal or session, but unlike ordinary forget it did not receive verified
+caller context. The selected IDs reached core deletion with `agent_id: None`,
+which means the permission check ran as the configured boot principal. For a
+user, a scoped remediation request could therefore delete boot-owned memory it
+was not authorized to change.
+
+Seed ordering was preserved before this selection. Cycle 16's live XHS pass ran
+at `2026-09-01T14:58:51.323Z–14:59:22.740Z` and exactly matched both Cycle-15
+fingerprints across 129 materialized cards. Added, changed, and removed arrays
+are `[]`; unavailable remains `[6a4b745f000000001c025691]`; SkillRise remains
+readable. The unavailable card retains its direct `/404` observed nine minutes
+earlier, while the 866-note tail and 14 files remain unknown. This state was
+committed as `a589ec5786` before any Cycle-16 lane work.
+
+The post-reconciliation lane decision was explicit:
+
+- **GitHub/local code: selected, high relevance and value, current.** Public
+  Mnemo source remains pinned at
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`; local tested ancestry began at
+  `fcb022acf583b6146eb9dc866ced999b48f5dcf8`. Source lines
+  `crates/mnemo-mcp/src/server.rs:845` and
+  `crates/mnemo-core/src/query/write_provenance.rs:101` exposed the missing
+  caller and `agent_id: None` path. In the pre-fix duplex run, signed
+  `alice`/`org:alpha` selected boot-owned Alpha records and received principal
+  ID `01a05d88-e769-7a20-98d5-bfdb63b27b82` and session ID
+  `01a05d88-e7a4-7f71-99a8-d873033baeaf` in `forgotten`. These are generated
+  test identifiers, preserved as exact run evidence.
+- **arXiv: retained, high relevance but low incremental value.** Reviewed
+  `2608.30177v1` still scores 15/15 and remains the stage-aware
+  memory-governance anchor after reconciliation. No version, artifact,
+  replication, or stronger-study trigger changed, so no quota request ran.
+- **Reddit: deferred, medium relevance and low incremental value.** Last useful
+  evidence remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, post
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. That
+  anecdotal thread cannot resolve this code-level boundary, so no quota or
+  access-bypass work ran.
+
+What changes: local repair
+`42d5894755fc7bae4601cb7726d4bded50e8f9d4` makes both provenance selectors
+carry the verified actor and derived sole organization into the existing
+per-ID authorization path. The selector now identifies candidates without
+granting deletion authority. Both regressions return `forgotten: []`, an exact
+`permission denied` error for the selected ID, and leave the boot-owned record
+intact. Legacy core/stdio methods retain their previous boot-principal
+contract. The prior Alice→Bob four-wrapper denial remains separately proved by
+loopback HTTP test `fbb7000fdb75ae5fc799820570ec4cbd81e21a74`.
+
+Proof is current to the repair revision: Rust formatting passes; strict Clippy
+with warnings denied passes for all core/MCP targets and all HTTP-enabled
+server targets; full suites pass 295 core, 95 MCP, and 85 HTTP-enabled server
+tests. The host shell had no Cargo, so the checks used a goal-owned Rust 1.98
+container and caches. The completed build consumed all free filesystem blocks;
+only the goal-owned, rebuildable 54 GiB target directory was then deleted,
+restoring 52 GiB. Source and reusable download/toolchain caches remain.
+Scout's full check passes syntax bundling, TypeScript, Prettier, and 78 tests
+with 226 assertions. All 19 relative links across the four current checkpoint
+documents resolve. The read-only health scan at
+`2026-09-01T15:47:48.781Z` remains bounded at 24 facts and 16 wake signals;
+none identifies a Cycle-16 changed document.
+
+The human checkout stayed read-only. Its post-validation proof is unchanged
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 386 porcelain-v2 entries, and
+status SHA-256
+`e06ad5b26c0f0b8044d9e987e8d0fdc5f32e20e3d8e91797a06375b9ba73d182`.
+All edits, builds, tests, staging, and commits occurred only in goal-owned
+worktrees and caches.
+
+Remaining limits are explicit: the repair is local, unreviewed upstream, and
+undeployed; read-side provenance selectors and other bulk tools are not yet
+audited. Cycle 17 starts seed-first. If the XHS state and lane triggers remain
+unchanged, the next exploration is whether `mnemo.provenance` can disclose
+unauthorized identifiers or metadata through principal/session selection;
+Reddit is revisited only for distinct evidence or an access/content change.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
