@@ -147,3 +147,25 @@ The practical question for any agent system with persistent memory: **which two 
 - **Evaluation Mirage**: Our evaluation system produces 3 bits of information per session. Memory governance evaluation would need to produce real information
 - **Operational Memory**: Our operational memory note anticipated this — "the problem isn't just efficiency, it's structural"
 - **Token Economics Trap**: Persistent memory reduces token costs (avoid re-learning) but increases governance costs (must audit memory effects)
+
+## August 2026 update — memory admission is a four-way commitment decision
+
+**Source:** https://arxiv.org/abs/2608.19564v1  
+**Paper:** *Remember, Verify, or Ask? Cross-Family Evaluation of Memory Commitment in LLM Agents* (MCB)
+
+MCB turns part of the governance problem above into an explicit admission policy. For each candidate update, the agent must choose among four actions:
+
+- **persist** an explicitly durable preference, authorized policy, or stable fact;
+- **ephemeral** use for information limited to one artifact, session, or time window;
+- **verify** changing world state against the world;
+- **clarify** ambiguity, scope, conflict, or second-hand preference with the user.
+
+The key distinction is authority, not uncertainty alone: changing facts should be checked against the world, while only the user can settle unresolved intent. The benchmark's labeling rule prefers the weaker commitment when persistence and a less durable action remain tied, because an unnecessary question is visible and recoverable while a bad durable update can fail silently.
+
+On 70 held-out items, bare Qwen3.5-9B verified 12/18 freshness cases but clarified 0/12 ambiguous cases, mapping seven of those clarification cases to persistence. A policy prompt reduced erroneous persistence from 17/70 to 7/70 (`p_H = 0.038`) but moved uncertainty mainly toward verification: clarification recall rose only from 0 to 0.083. Few-shot examples improved overall accuracy from 0.557 to 0.771, yet clarification recall remained 0.333. Claude models also verified more reliably than they clarified, although their alternative error choices differed. This narrows the defensible cross-family claim to **under-asking**, not one universal memory-failure policy.
+
+The paper also finds that a stated policy decision is not an execution receipt. Label-to-tool agreement was 0.571 for both Claude models and 0.229 for Qwen; tool-mode accuracy fell from 0.814 to 0.529 for Sonnet and from 0.557 to 0.343 for Qwen. The tool arguments were well formed, so the observed bottleneck was action selection rather than serialization.
+
+### Operational correction
+
+A governed memory layer should expose four separate capabilities—durable write, scoped local use, world lookup, and user question—and evaluate the concrete capability selected, not merely ask the model to name a label. Admission telemetry should separately report erroneous persistence and clarification recall; aggregate accuracy can hide a useful reduction in silent durable writes or a harmful substitution of world verification for user authorization. MCB does **not** test downstream tool execution, real personal records, multilingual behavior, or long-run retrieval effects, so it supplies an admission benchmark rather than end-to-end proof of safe memory.

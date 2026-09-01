@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-08-11"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement."
+last_updated: "2026-08-20"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -413,6 +413,49 @@ Agent memory has become a standalone product category with 10+ competing repos a
   agents repeatedly paying to re-derive context from prior sessions. Aligns
   with Cold Start Tax synthesis (46% reconstruction) and the-token-economics-trap.md.
   Source: HN Scan #152b (findings/2026-06-22-hn-scan-152.md).
+
+#### Memory benchmarks need a stage boundary and a scale boundary (GitHub, Aug 2026)
+
+[`lesliechowsh/dsh-memo`](https://github.com/lesliechowsh/dsh-memo) is a
+small lexical-retrieval plugin over DeepSeek Harness's existing session index,
+but its reusable contribution is measurement discipline. The published harness
+scores **session localization**—whether a gold session appears at rank *k*—not
+whether a model reads the evidence correctly or produces a correct answer.
+That separates four stages which “memory accuracy” often collapses:
+
+1. candidate discovery;
+2. session ranking;
+3. passage/evidence retrieval inside the selected session; and
+4. answer generation and judging.
+
+At inspected revision
+[`86a94dd`](https://github.com/lesliechowsh/dsh-memo/commit/86a94dd8d188669e031ad6615a65b7a764b47cd4),
+the product enriches only the top three ranked sessions with up to three event
+snippets *after* ranking. The benchmark therefore supports claims about stages
+1–2, while the shipped evidence-enrichment path and end-to-end QA remain
+separate unmeasured stages. This is a useful architecture rule: instrument each
+boundary before using one downstream score to describe the whole memory stack.
+
+Scale is a second boundary. The maintainer reports hit@1 of 78.2% on
+LongMemEval-S's roughly 54-session pools, 54.6% on LongMemEval-M's roughly
+500-session pools, and 60.2% on LoCoMo10. These are author-reported numbers,
+not reproduced here; the repository publishes deterministic harnesses and
+explicitly rejects comparison with reader+judge systems or different Recall@k
+protocols. More importantly, candidate variants that improved the smaller S
+set were not shipped when segmented M runs were neutral or negative. A
+benchmark should act as a **falsifier**, not merely a leaderboard: require the
+same directional gain on a larger or held-out pool, disclose the random
+baseline at that pool size, and preserve rejected experiments.
+
+One local check did reproduce the repository's narrower functional claim:
+`node bench/zh.cjs` produced 0/11 hit@1 for ASCII-only tokenization and 10/11
+for contiguous-Han-run tokenization, including the declared no-verbatim-run
+ceiling miss. This is correctly labeled a self-built regression, not a public
+Chinese benchmark. The boundary matters as much as the result.
+
+- **Repo:** https://github.com/lesliechowsh/dsh-memo
+- **Inspected revision:** https://github.com/lesliechowsh/dsh-memo/commit/86a94dd8d188669e031ad6615a65b7a764b47cd4
+- **Primary sources:** [benchmark protocol and experiment log](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/bench/README.md), [shipped retrieval and evidence-enrichment path](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/index.js), [release/error history](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/CHANGELOG.md)
 
 #### Event-sourced memory is an observation ledger, not a second source of truth (HN, Aug 2026)
 

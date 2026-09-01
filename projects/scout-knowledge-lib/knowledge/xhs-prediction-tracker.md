@@ -424,7 +424,7 @@ The XHS community has completed a fifth lifecycle phase. After Naming → Satura
 4. **CogniFold signal**: 3-layer brain-inspired memory (hippocampus/neocortex/prefrontal cortex) with intent emergence from accumulated understanding. Represents qualitative leap from retrieval-based to structure-emergent memory. Open-sourced (github.com/OpenNorve/CogniFold).
 
 ### Scan Details
-Scan #51 findings: `findings/2026-08-22-xhs-direct-scan-51.md`
+Scan #51 findings: `findings/2026-06-29-xhs-memory-self-evolution-disenchantment.md`
 
 ---
 
@@ -449,8 +449,8 @@ see the parent note's per-scan sections:
 - Scan #48 (Human Intervention): `findings/2026-07-31-xhs-cross-source-scan48.md`
 - Scan #49 (Discrimination Convergence, XHS direct): `findings/2026-06-19-xhs-scan-49.md`
 - Scan #50 (Industrialization Turn, XHS direct): `findings/2026-06-20-xhs-scan-50.md`
-- Scan #51 (Disenchantment Phase, XHS direct): `findings/2026-08-22-xhs-direct-scan-51.md`
-- Scan #52 (Acceleration Phase, XHS direct): `findings/2026-08-23-xhs-direct-scan-52.md`
+- Scan #51 (Disenchantment Phase, XHS direct): `findings/2026-06-29-xhs-memory-self-evolution-disenchantment.md`
+- Scan #52 (Acceleration Phase, XHS direct): `findings/2026-06-29-xhs-loop-engineering-eval-acceleration.md`
 - Scan #53 (Operationalization Phase, XHS direct): `findings/2026-06-20-xhs-direct-scan-53.md`
 - Scan #54 (Skill Security Explosion + Eval Naming, XHS direct): `findings/2026-06-20-xhs-direct-scan-54.md`
 
@@ -496,7 +496,7 @@ Loop Engineering:     < 2 weeks (Jun-Aug)
 6. **AweAgent unified research platform** (114❤): "Make Agent Research Systematic." Community pushback: "不是一个人跳出来说我想做统一的东西就结束了...只会制造更多的混乱" — fragmentation as intractable.
 
 ### Scan Details
-Scan #52 findings: `findings/2026-08-23-xhs-direct-scan-52.md`
+Scan #52 findings: `findings/2026-06-29-xhs-loop-engineering-eval-acceleration.md`
 
 ---
 
@@ -599,7 +599,7 @@ Scan #57 findings: `findings/2026-06-27-xhs-scan-57.md`
 
 ---
 
-## Scan #59 Update (2026-10-17, Skill Marketplace + Eval Mainstreaming + Operational Gravity)
+## Scan #59 Update (source activity through 2026-06-27; retrieval time unverified — Skill Marketplace + Eval Mainstreaming + Operational Gravity)
 
 **Source:** XHS direct browse via CDP — 6 keyword queries, ~200 posts observed
 **Limitation:** Deep-reads blocked by login wall; analysis based on search-level title+engagement only
@@ -640,7 +640,7 @@ Scan #57 findings: `findings/2026-06-27-xhs-scan-57.md`
 | **Total tracked** | **33** | |
 
 ### Scan Details
-Scan #59 findings: `findings/2026-10-17-xhs-scan-59.md`
+Scan #59 findings: `findings/2026-06-27-xhs-scan-59.md` (source activity through 2026-06-27; exact retrieval time unverifiable; repository-observed by 2026-06-29T18:40:50Z)
 
 ---
 
@@ -730,7 +730,7 @@ Tenth lifecycle phase. After Naming → Saturation → Subtraction → Industria
 | **Total tracked** | **39** | |
 
 ### Scan Details
-Scan #61 findings: `findings/2026-10-31-xhs-scan-61.md`
+Scan #61 findings: `findings/2026-06-29-xhs-scan-61.md`
 
 ---
 

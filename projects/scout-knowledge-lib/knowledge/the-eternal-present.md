@@ -466,7 +466,7 @@ syntheses — or this synthesis is no better than the 29 it critiques.
 
 ## Update: Engineering Solutions Arrived (2026-11-01)
 
-The Temporal Memory Convergence (findings/2026-11-01-hn-arxiv-scan-248.md) documents
+The Temporal Memory Convergence (findings/2026-06-29-hn-arxiv-scan-248.md) documents
 that **all five missing temporal primitives now have concrete implementations**:
 
 | Primitive | Solution | Paper |

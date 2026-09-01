@@ -20,6 +20,10 @@ export const description =
   "Deterministic Scout library observer. Records bounded domain facts and wakes Scout only for new, worse, or review-due facts.";
 
 const projectId = "scout-knowledge-lib";
+export const KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID =
+  "scout.knowledge-preamble-coverage";
+export const RETIRED_KNOWLEDGE_PRACTICE_LOADED_METRIC_ID =
+  "scout.knowledge-practice-loaded";
 const packetFile = "library-health-packets.jsonl";
 const maxFacts = 50;
 const maxWakeSignals = 16;
@@ -76,10 +80,6 @@ type ArtifactIdentityOccurrence = {
   path: string;
   kind: "finding" | "digest";
 };
-
-function field(task: string, name: string): string | undefined {
-  return task.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim();
-}
 
 function safeRead(path: string): string {
   try {
@@ -145,6 +145,21 @@ function listRootMarkdownFiles(root: string): string[] {
   } catch {
     return [];
   }
+}
+
+export function knowledgePreambleCoverage(projectDir: string): {
+  value: number;
+  sampleSize: number;
+} {
+  const files = listMarkdownFiles(join(projectDir, "knowledge"));
+  if (files.length === 0) return { value: 1, sampleSize: 0 };
+  const withPreamble = files.filter((path) =>
+    safeRead(path).slice(0, 8192).includes("<ai_context>"),
+  ).length;
+  return {
+    value: Number((withPreamble / files.length).toFixed(4)),
+    sampleSize: files.length,
+  };
 }
 
 function unquote(value: string): string {
@@ -734,6 +749,34 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const appDir = ctx.workspace.appRoot;
   const projectDir = ctx.workspace.projectRoot;
   ctx.metrics.define({
+    id: RETIRED_KNOWLEDGE_PRACTICE_LOADED_METRIC_ID,
+    name: "Scout knowledge practice loaded (invalid proxy)",
+    owner: "scout",
+    project: projectId,
+    type: "health",
+    unit: "boolean",
+    priority: "P2",
+    status: "retired",
+    description:
+      "Retired because instruction-file text does not prove that an attempt loaded or followed the instructions; Runtime agent-configuration health covers deployment validity.",
+  });
+  ctx.metrics.define({
+    id: KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+    name: "Scout knowledge preamble coverage",
+    owner: "scout",
+    project: projectId,
+    type: "gauge",
+    target: 0.25,
+    threshold: 0.15,
+    unit: "ratio",
+    priority: "P3",
+    alertOp: "<",
+    status: "active",
+    config: { alert: { mode: "disabled", disabled: true } },
+    description:
+      "Advisory share of canonical Scout knowledge Markdown files whose first 8 KiB contains an <ai_context> preamble.",
+  });
+  ctx.metrics.define({
     id: RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID,
     name: "Accepted Scout source outputs in the last 24 hours (unsupported)",
     owner: "scout",
@@ -762,6 +805,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     status: "active",
     description: `Distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window or successive-run coverage is claimed.`,
   });
+  const preambleCoverage = knowledgePreambleCoverage(projectDir);
+  await ctx.metrics.record(
+    KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+    preambleCoverage.value,
+    {
+      sampleSize: preambleCoverage.sampleSize,
+      measuredBy: `workflow:${name}`,
+    },
+  );
   const packet = buildLibraryHealthPacket({ appDir, projectDir });
   const packetPath = writePacket(appDir, packet);
 

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates (AREX, Lilian Weng, PAST-Bench, ContinualSkillBench) show durable gains come from externally grounded verification and pathway-level evaluation that separates persistent state/skill reuse from short-horizon adaptation."
-triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence"]
-source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874."
-last_updated: "2026-08-05"
+summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates show durable gains require externally grounded verification, pathway-level evaluation, repeated runs, order perturbations, security/effect audits, and explicit separation of optimization spend from deployment cost."
+triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence", "task order", "hidden curriculum", "run variance", "underspecification", "security drift", "unauthorized state change", "artifact-executor compatibility", "agent optimization budget", "deployment cost frontier"]
+source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077."
+last_updated: "2026-08-25"
 </ai_context>
 
 # Most "Self-Improving" AI Agents Don't Improve
@@ -95,3 +95,62 @@ These papers strengthen the original finding rather than overturning it:
 3. **Persistence is not the same as consolidation.** Keeping memory or skills across sessions is necessary, but it does not prove the agent learned something portable.
 
 **Scout implication:** the durable frontier is shifting from "can agents improve?" to **"can we tell whether the improvement came from persistent, reusable structure rather than transient context advantage?"** That is a verification and instrumentation problem first, and a learning problem second.
+
+## Update 2026-08-19: task order can manufacture the appearance of improvement
+
+**Source**: https://arxiv.org/abs/2608.18066v1
+
+Salesforce AI Research's re-evaluation of two textual-memory methods, ReasoningBank and SCUBA, adds a second confound beyond transient context: the task stream itself can act as an undeclared training intervention. The authors reran web-agent experiments three times and perturbed task order across WebArena, VisualWebArena, and SCUBA rather than accepting the benchmarks' default sequence.
+
+The stress tests materially change the interpretation of "self-improvement":
+
+- Adding a memory loop increased run-to-run variance in **17 of 24 comparisons (about 71%)**; 11 comparisons increased variance by more than 50%. The paper attributes this to statefulness: early stochastic outcomes alter memory construction, then compound into different later memory states.
+- In the default benchmark order, ReasoningBank averaged a **+1.5%** gain. Under shuffled orders it instead averaged **-4.5%**. Six of eight method/benchmark comparisons degraded significantly under shuffled order.
+- The default WebArena sequences were not difficulty-neutral. Moving-average baseline success began near 75% and fell below 40% after task ID 150 in two domains, creating an implicit easy-to-hard curriculum that real user traffic cannot be assumed to provide.
+- Manual memory inspection exposed specification failures, not merely weak retrieval. Agents learned plausible but impossible advice—for example, recommending APIs in a browser-only environment—and propagated misunderstandings from ambiguous task requests. Adding post-task rubrics, environment action feedback, and explicit memory-writing constraints recovered only **31%** of the shuffled-order degradation.
+
+### Stronger claim protocol
+
+This updates the earlier pathway-evidence requirement with two controls. A self-improvement result should report **multiple complete sequential runs**, because one random early trajectory can seed a favorable library, and it should test **multiple task permutations**, because a fixed sequence can quietly supply curriculum. Results should preserve the ordered task IDs, seeds, per-run memory snapshots, and benchmark/harness versions so an evaluator can distinguish learning from stream luck.
+
+The paper does not show that textual memory is generally harmful: it studies two methods in web-agent settings, uses three runs per experiment, and the specification interventions recover part—but not most—of the order-induced loss. Its durable contribution is narrower: **a fixed sequential benchmark is simultaneously an evaluation set and a curriculum, so single-order gains are not sufficient evidence of robust self-improvement.**
+
+## Update 2026-08-20: capability gain can widen the attack surface without raising conditional vulnerability
+
+**Source**: https://arxiv.org/abs/2608.17684v1
+
+An audit of SkillOpt, Agent Workflow Memory (AWM), and ReasoningBank in simulated e-banking adds a security dimension to pathway and task-order controls. The authors use matched benign acquisition trajectories, sealed evaluation endpoints, execution-grounded checks, and independent state replay. Their central result is that a learned artifact can make an agent more capable and more likely to reach hostile content, so security cannot be summarized by attack success *conditional on exposure*.
+
+On Qwen 3.7 Flash, SkillOpt raises benign utility from **0.741 to 0.837** and exposure to injected content from **0.820 to 0.943**. Conditional attack success after exposure falls from **0.605 to 0.562**, yet overall attack success rises from **0.496 to 0.530** and unauthorized financial-state changes rise to **0.685**. Across three independently evolved lineages, utility, exposure, and unauthorized-state changes all increase, while aggregate attack success increases in only two. ReasoningBank reaches **0.859** utility without increasing aggregate attack success, although its unauthorized-state-change rate remains slightly above the static baseline.
+
+AWM exposes a separate measurement confound. Its literal WebArena text-action envelope does not match the study's native function-calling executor. Removing only that envelope in a post-hoc sensitivity test changes utility from **0.319 to 0.756**, exposure from **0.299 to 0.909**, and attack success from **0.195 to 0.575**. An apparently safe or incapable learned workflow may therefore be an interface-incompatible artifact rather than a genuine behavioral result.
+
+### Stronger audit contract
+
+A self-evolution evaluation should report at least four separate quantities:
+
+1. **Benign capability and regression**, on sealed endpoints rather than the acquisition tasks.
+2. **Attack-surface contact**, because a more capable agent may encounter more adversarial content.
+3. **Conditional compromise and realized unauthorized effects**, since a lower conditional rate can coexist with more total harm.
+4. **Artifact–executor compatibility**, tested separately from artifact quality before comparing memory or workflow methods.
+
+The evidence is deliberately bounded: it is one simulated banking environment on one named model, and the AWM correction is post-hoc. It does not rank these methods generally. It does show why post-evolution accuracy and one aggregate security score are insufficient: **learning can change reachability, susceptibility, and realized effects in different directions.**
+
+## Update 2026-08-25: treat optimization spend and deployed-agent cost as separate budgets
+
+**Sources**:
+- https://news.ycombinator.com/item?id=49423077
+- https://github.com/microsoft/agent-lightning/releases/tag/v1.0.1
+- https://github.com/microsoft/agent-lightning/blob/v1.0.1/skills/agent-lightning/SKILL.md
+
+Microsoft's Agent Lightning v1.0.1 release packages agent optimization as an installable coding-agent skill rather than claiming that a model improves itself autonomously. Given an editable agent and a benchmark, the skill directs the coding agent to vary grounding, output contracts, prompts, tools, models, reasoning effort, isolation, repair, routing, planning, retrieval, and critique. This is another concrete instance of the August shift already tracked here: practical "self-improvement" is becoming measured harness search over externally editable artifacts.
+
+The most reusable part of the skill is its **two-budget distinction**. It tells the optimizer to read a development budget from `/artifacts/cost_budget.json`, continue measured iteration while meaningful search budget remains, and separately evaluate the resulting agent's per-run cost. Extra optimization spend is therefore allowed to discover a deployment configuration that may itself be cheaper. Accuracy, completion, downside, latency, cost, and variance are treated as separate coordinates rather than one scalar notion of improvement.
+
+Its evaluation guidance also aligns with this note's stronger claim protocol: hold checkpoint, cases, model, effort, concurrency, scorer, and execution path constant except for the tested variable; use validation splits and repeated runs when the budget supports them; freeze primary outputs; do not expose held-out labels or training-only fields to deployment; and treat unavailable measurements as unknown rather than as evidence of success.
+
+### Boundary: a good optimization protocol is not evidence that the optimizer improves agents
+
+The release announcement says the skill guides systematic improvements and strengthens benchmark reporting, but it publishes no controlled result for the skill itself. The HN thread had 51 points and five comments at retrieval; its technical discussion was minimal and mostly questioned presentation. The skill also says to keep iterating while substantial budget remains, but it does not prescribe confidence intervals, minimum repetitions, a baseline-admission test, or an explicit multiple-comparison correction. Searching more configurations can increase the chance of selecting noise unless validation is protected from repeated optimizer access.
+
+**Reusable rule:** maintain three ledgers during agent optimization: search spend, candidate deployment cost, and protected validation evidence. Stop when the remaining search budget cannot resolve a decision-relevant frontier uncertainty—not merely when budget is exhausted—and do not promote a candidate unless its deployment-visible path beats an admitted baseline on predeclared metrics.

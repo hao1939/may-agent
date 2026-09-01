@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
-triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection"]
-last_updated: "2026-08-09"
-source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. GitHub update (2026-08-08): RealReplicaBench section rechecked at commit 42693bb and expanded to distinguish per-run answer concealment from corpus-level secrecy: all 107 task definitions and rubrics are public, and private expected-answer files are present in the repository even though the runner excludes them from the agent-visible task tree. GitHub update (2026-08-06): RealReplicaBench section refreshed from the current Accio-org/RealReplicaBench public repo (redirect from Accio-Lab), adding the evaluation-boundary nuance that published leaderboard scores come from Accio-managed evaluation endpoints while the repo exposes a bring-your-own-credentials path and still lacks immutable public raw result bundles. HN update (2026-08-04): HN 49170915 added as practitioner evidence that benchmark saturation is pushing teams toward open-ended multi-agent evaluation worlds. HN update (2026-08-05): HN 49169641 / Computer Anthology added as evidence that serious eval teams are turning benchmarks into continuously renewed benchmark families and that scaffold choice can move pass@1 by double-digit points. HN update (2026-08-05): Ask HN 49181014 added as practitioner evidence that teams now want harness-only benchmarks with model/reasoning provenance instead of pooled model scores. HN update (2026-08-07): HN 49200652 added as live evidence that an unversioned agentic leaderboard can change ordering during the discussion when graders and task versions change. arXiv update (2026-08-07): AV-AIVAT (2608.06362) added as evidence that costly interactive agent comparisons need anytime-valid stopping, variance reduction, and replayable stopping metadata. arXiv update (2026-08-09): SkillTV-Bench (2608.05573v1) added as evidence that task-time procedural skills must be compiled into evidence-seeking inspection plans and that false accepts can erase gains from larger rollout pools. Companion extraction note: §12–§22 and §23–§31 were moved to agent-evaluation-research.md after being appended to the parent."
+summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), repeated A/B tests of agent-tooling configurations, XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, trace-to-eval asset compilation, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
+triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "A/B test", "agent tooling experiment", "skill selection reliability", "request exposure", "conditional quality", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection", "EvoTrace", "trace mining", "executable eval assets", "verifier provenance", "environment reconstruction"]
+last_updated: "2026-08-24"
+source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. GitHub update (2026-08-08): RealReplicaBench section rechecked at commit 42693bb and expanded to distinguish per-run answer concealment from corpus-level secrecy: all 107 task definitions and rubrics are public, and private expected-answer files are present in the repository even though the runner excludes them from the agent-visible task tree. GitHub update (2026-08-06): RealReplicaBench section refreshed from the current Accio-org/RealReplicaBench public repo (redirect from Accio-Lab), adding the evaluation-boundary nuance that published leaderboard scores come from Accio-managed evaluation endpoints while the repo exposes a bring-your-own-credentials path and still lacks immutable public raw result bundles. HN update (2026-08-04): HN 49170915 added as practitioner evidence that benchmark saturation is pushing teams toward open-ended multi-agent evaluation worlds. HN update (2026-08-05): HN 49169641 / Computer Anthology added as evidence that serious eval teams are turning benchmarks into continuously renewed benchmark families and that scaffold choice can move pass@1 by double-digit points. HN update (2026-08-05): Ask HN 49181014 added as practitioner evidence that teams now want harness-only benchmarks with model/reasoning provenance instead of pooled model scores. HN update (2026-08-07): HN 49200652 added as live evidence that an unversioned agentic leaderboard can change ordering during the discussion when graders and task versions change. arXiv update (2026-08-07): AV-AIVAT (2608.06362) added as evidence that costly interactive agent comparisons need anytime-valid stopping, variance reduction, and replayable stopping metadata. arXiv update (2026-08-09): SkillTV-Bench (2608.05573v1) added as evidence that task-time procedural skills must be compiled into evidence-seeking inspection plans and that false accepts can erase gains from larger rollout pools. GitHub update (2026-08-20): EvoTrace at commit 1e457e8 added as an implementation of local coding-session mining into provenance-bearing task/environment/verifier bundles, with reconstruction confidence and explicit policy/runtime limits. HN update (2026-08-24): PagerDuty's repeated A/B test of unified versus domain-specific standards skills added as evidence that unconditional request exposure and routing reliability must be measured separately from quality conditional on activation. Companion extraction note: §12–§22 and §23–§31 were moved to agent-evaluation-research.md after being appended to the parent."
 </ai_context>
 
 # Agent Evaluation Patterns
@@ -25,6 +25,107 @@ use, or error recovery. Evaluation is shifting toward:
    agents must maintain state over time, replacing single-turn pass/fail tests.
 3. **Environment-Based Testing:** Interactive environments (WebArena,
    SWE-bench) where the agent navigates a stateful system with real tool use.
+
+### Separate request exposure from conditional quality (HN, Aug 2026)
+
+A PagerDuty engineering experiment compared one unified Claude Code standards
+skill with several domain-specific skills while holding the model, codebase,
+tasks, standards content, permissions, and activation hook constant. Fifteen
+seed tasks across five domains ran three times per variant; the reported verdict
+used 45 manually reconciled trials per variant, while duration and token figures
+came from a wider set of 90 trials per variant.
+
+The aggregate quality score alone obscures the mechanism. The unified skill
+loaded the correct standards in 45/45 reconciled trials; domain-specific routing
+did so in 42/45, including three trials in which no skill fired. Conditional on
+the right skill firing, compliance was effectively tied (4.04/5 unified versus
+4.07/5 domain-specific). When no skill fired, compliance fell to 1.3/5. Mean
+token cost was also nearly unchanged (12,567 versus 12,483), so the proposed
+context-size benefit did not offset the new selection failure in this setup.
+
+This yields a reusable evaluation decomposition:
+
+- **Exposure/coverage:** did the required instruction, tool, policy, or memory
+  enter the trajectory before the first consequential action?
+- **Selection correctness:** if a router chose among candidates, did it choose
+  the applicable one?
+- **Conditional quality:** how good was the result *given* correct exposure?
+- **End-to-end quality:** what users actually receive after routing misses are
+  included.
+
+Reporting only end-to-end averages can misdiagnose a routing defect as a weak
+skill; reporting only conditional quality can hide silent non-activation. The
+same repeated-trial harness also exposed standards/gate drift that tracked one
+seed across both variants, illustrating how invariance across treatments can
+identify a shared-specification defect rather than a variant effect.
+
+The study's instrumentation is also part of the result: deterministic transcript
+parsers measured tool-call facts, a separately run rubric judge measured
+quality, platform records cross-checked session metrics, and humans reconciled
+judge rationales against traces. An early parser that counted any occurrence of
+"error" as a tool failure was corrected after disagreement with platform flags.
+That is evidence for instrument calibration, not just for repeated sampling.
+
+**Limit:** this is a vendor-reported study on one internal React/TypeScript
+codebase and standards family. The post describes artifacts and reconciliation
+in detail but does not provide the underlying private codebase and trial corpus,
+so the exact result is not independently reproducible and should not be
+universalized into "one skill is always better."
+
+*Source: https://www.pagerduty.com/eng/evidence-over-anecdotes-running-a-b-tests-on-ai-agent-tooling/  
+HN: https://news.ycombinator.com/item?id=49407872 (submitted 2026-08-23; no comments when checked)  
+Checked: 2026-08-24.*
+
+### Coding traces need compilation before they become eval assets (GitHub, Aug 2026)
+
+[EvoTrace](https://github.com/jinzijian/EvoTrace) implements a useful bridge between
+operational agent history and reusable evaluation data. Rather than treating a Claude
+Code or Codex transcript as a ready-made benchmark, its deterministic local curator
+looks for observable signals—code edits, verification commands, corrections, and
+failure-then-recovery sequences—and compiles selected sessions with repository evidence
+into task, environment, patch, policy, and verifier artifacts.
+
+The durable pattern is **trace → candidate → executable bundle**, with provenance and
+uncertainty retained at each transition:
+
+1. Normalize provider-specific history into a common event envelope.
+2. Score candidates from inspectable signals rather than model judgment.
+3. Recover the repository base from session evidence or a time-aligned commit.
+4. Record reconstruction confidence instead of presenting an inferred base as exact.
+5. Preserve whether each verifier was user-supplied, trajectory-recovered, inferred
+   from repository convention, or absent.
+6. Keep the raw trace, curated task, executable environment, and validated rollout as
+   separate asset layers; passing execution is what promotes a trajectory, not merely
+   its presence in history.
+
+That separation matters because a command string is not yet a portable verifier. In a
+local check of commit
+[`1e457e8`](https://github.com/jinzijian/EvoTrace/commit/1e457e8a65deac19e35773c953614da41c220ee5),
+11 of 12 unit tests passed when run with `PYTHONPATH=src`; the end-to-end replay test
+failed because a recovered `python -m unittest ...` command encountered a host with
+`python3` but no `python` executable. This is a small but concrete example of the gap
+between **command provenance** and **environment completeness**. A trace compiler should
+therefore validate recovered verifiers inside the reconstructed environment and retain
+failure evidence, not infer executability from command recognition alone.
+
+The repository also draws an important policy/runtime boundary. Its bundle emits a
+`sandbox-policy.json` declaring container-only, non-root, no-network execution, but the
+README says the safe autonomous container orchestrator is a future milestone. A policy
+manifest is an auditable input to enforcement, not evidence that enforcement already
+occurred. Similarly, the project warns that mining labels and generated verifiers are
+evidence rather than proof of semantic task quality, and that best-effort redaction
+cannot establish that a source bundle contains no tracked secrets.
+
+**Practical implication:** teams can turn ordinary agent operations into a renewable
+eval supply, but only if they preserve four distinct claims: the trace really happened,
+the task/base were reconstructed with stated confidence, the verifier ran in a captured
+environment, and the resulting rollout passed that verifier. Collapsing those claims
+back into “we saved the transcript” recreates the static-dataset problem with weaker
+provenance.
+
+*Repo: https://github.com/jinzijian/EvoTrace  
+Observed commit: https://github.com/jinzijian/EvoTrace/commit/1e457e8a65deac19e35773c953614da41c220ee5  
+Primary evidence: [README](https://github.com/jinzijian/EvoTrace/blob/1e457e8a65deac19e35773c953614da41c220ee5/README.md), [schema](https://github.com/jinzijian/EvoTrace/blob/1e457e8a65deac19e35773c953614da41c220ee5/docs/schema.md), [compiler](https://github.com/jinzijian/EvoTrace/blob/1e457e8a65deac19e35773c953614da41c220ee5/src/evotrace/compiler.py), and [miner](https://github.com/jinzijian/EvoTrace/blob/1e457e8a65deac19e35773c953614da41c220ee5/src/evotrace/miner.py) (checked 2026-08-20).*
 
 ### Benchmark Saturation and Open-Ended Evaluation Worlds (HN, Aug 2026)
 A fresh HN discussion around **"When AI Benchmarks Plateau: A Systematic Study

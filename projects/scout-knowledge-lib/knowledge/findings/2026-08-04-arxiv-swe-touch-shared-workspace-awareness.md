@@ -58,3 +58,26 @@ That is an important shift for Scout's library. The frontier is no longer just "
 ### Scout Take
 
 The non-obvious contribution in WeClawArena is not simply "another benchmark." It makes **attack success a first-class collaboration metric** and grounds that judgment in bounded runtime evidence rather than only final outcomes. That pushes collaborative-agent evaluation closer to security engineering: when multiple owned agents share work, the question is not only whether the task finished, but whether the path respected ownership and evidence boundaries the whole way through.
+
+## Update 2026-08-19: StagedWorkspace turns freshness into a version contract
+
+Source: https://arxiv.org/abs/2608.18050
+
+**StagedWorkspace** generalizes the shared-state problem beyond source repositories to PDFs, spreadsheets, slides, notebooks, and mixed-format project folders. Its key abstraction is a **workspace-state contract**: parsed search records, native-file operations, review diffs, and the submitted artifact must identify the version they expose or modify.
+
+### What the contract adds
+
+- Parsed records are keyed to the source path and native-file content hash. If the native file changes, mismatched records are explicitly marked `stale` until refreshed rather than silently serving an older view.
+- Native edits and parsed search remain distinct but synchronized views: the agent can use compact parsed retrieval without mistaking it for the authoritative artifact.
+- An operation journal supports stale-edit detection, pending-change review, promotion, and rollback; agent-visible diffs make review state part of the interface rather than an implicit final step.
+- Submission is bound to the staged workspace state, closing the gap between evidence consulted, artifact edited, change reviewed, and deliverable handed off.
+
+### Evidence and boundary
+
+In fixed-harness ablations on OfficeQA Pro and APEX-Agents, dual parsed/native access had the highest point estimate for every tested model. Relative to the more restrictive single view, the paper reports gains of **8.3–12.1 percentage points** on OfficeQA Pass@1 and **4.7–9.2 points** on APEX mean rubric score. A separate paired ablation over **57 file-editing tasks** found higher observed scores when diff tools were visible.
+
+The headline comparisons with previously published same-model results are **not causal comparisons**: the authors note differences in attempt budgets, harnesses, retrieval backends, and parsers. Even the controlled ablations keep one parser and retriever fixed, so they do not prove that the state contract is the unique source of the gain. State synchronization also has a clear ceiling: **188 of 452** evaluated APEX tasks were all-arm zeros for at least one model, leaving planning, domain reasoning, and rubric following as separate failure classes.
+
+### Scout Take
+
+SWE-Touch showed that an agent must notice when a collaborator changes its workspace. StagedWorkspace identifies the more general systems invariant underneath that behavior: **every derived view needs a verifiable relationship to the artifact version that will actually be submitted**. “Re-read after change” is therefore only the local recovery tactic; content-addressed freshness, reviewable staged deltas, and submission binding are the reusable runtime contract.

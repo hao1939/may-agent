@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Triage of 10 new arXiv papers (May–June 2026) converging on 'The Evolution Stall' — the systematic discovery that agent self-improvement has counter-intuitive failure modes. Harness-updating capability is flat across model tiers (even weak models produce good updates), but harness-benefit is non-monotonic (mid-tier benefits most, strong-tier benefits less). Per-criterion accuracy gains don't compose into end-to-end task completion. Evaluator-solver co-evolution is required to avoid stagnation. Complementary cluster on memory: anticipation > archival (T-Mem), graph memory has structural attack surfaces invisible to provenance checks (Selection Integrity), and evidence-use is the bottleneck, not retrieval (MemTrace). The false-success problem (45-48% of agent failures) is structurally undetectable by LLM judges but trivially detectable by lightweight classifiers."
-triggers: ["harness evolution", "self-evolution", "harness-updating", "harness-benefit", "non-monotonic improvement", "evolution stall", "T-Mem", "anticipatory memory", "write-time triggers", "graph memory attack", "selection integrity", "AuthSelect", "false success", "confident closing", "SecureClaw", "dual-boundary", "DeltaBox", "checkpoint rollback", "decoupled search grounding", "DSG", "MCP gateway", "Parthenon", "legal agent", "SCORE", "co-evolutionary training", "MemTrace", "knowledge point", "G-Long", "attention-aware importance"]
-last_updated: "2026-07-22"
-source_basis: "arXiv API queries: 'AI agent' AND 'multi-agent' (cs.AI), 'LLM agent' AND 'runtime' AND 'failure', 'agentic' AND 'production' AND 'LLM', 'agent' AND 'memory' AND 'long-term' AND 'LLM', 'agent' AND 'self-evolving' AND 'harness', 'agent' AND 'transaction' AND 'rollback' AND 'LLM'. All abstracts read from export.arxiv.org API. Deduplicated against all prior triages (131+ paper IDs checked)."
+summary: "Triage of arXiv papers converging on 'The Evolution Stall' — the systematic discovery that agent self-improvement has counter-intuitive failure modes. Harness-updating capability is flat across model tiers, but harness-benefit is non-monotonic. Per-criterion gains don't compose into end-to-end completion, and evaluator-solver co-evolution is required to avoid stagnation. August updates add a three-layer experience architecture (raw traces → persistent wiki → executable skills) and behavior-attributed candidate verification: durable improvement needs both consolidated knowledge and evidence that each harness edit caused its relevant gains without hidden regressions. Complementary memory results show anticipation > archival, evidence-use > retrieval, and graph selection has structural attack surfaces invisible to provenance checks."
+triggers: ["harness evolution", "self-evolution", "harness-updating", "harness-benefit", "non-monotonic improvement", "evolution stall", "WikiSkill", "persistent knowledge wiki", "raw experience consolidation", "HarnessLens", "behavior-aware verification", "attributable-evidence gate", "T-Mem", "anticipatory memory", "write-time triggers", "graph memory attack", "selection integrity", "AuthSelect", "false success", "confident closing", "SecureClaw", "dual-boundary", "DeltaBox", "checkpoint rollback", "decoupled search grounding", "DSG", "MCP gateway", "Parthenon", "legal agent", "SCORE", "co-evolutionary training", "MemTrace", "knowledge point", "G-Long", "attention-aware importance"]
+last_updated: "2026-08-28"
+source_basis: "arXiv API queries: six standard Scout queries listed in the original triage, plus the 2026-08-28 recent-submission feed `(all:\"AI agent\" OR all:\"LLM agent\" OR all:agentic)` sorted by submitted date. All abstracts read from export.arxiv.org API. August update adds WikiSkill 2608.27454 and HarnessLens 2608.27311 after primary-ID deduplication across the knowledge library."
 </ai_context>
 
 # Source Triage — August 20, 2026 (arXiv: The Evolution Stall & Memory Paradigm Shift)
@@ -181,9 +181,37 @@ The memory cluster reveals the complementary problem: even when agents access re
 
 ---
 
+## August 28 update: consolidation and attribution are separate gates
+
+Two new papers make the improvement pipeline more concrete by addressing different failure points.
+
+### WikiSkill: do not compile executable skills directly from scattered traces
+
+**WikiSkill** separates three stores that many self-improving systems collapse: raw execution experience, a persistent knowledge wiki, and executable skills. Experience is repeatedly consolidated into the wiki; later skill revisions consume that accumulated knowledge rather than only the latest optimization history. Across the paper's tested benchmarks and models, WikiSkill reports consistent gains over prior skill-evolution methods and mostly improves on no-skill baselines. Its ablations identify persistent wiki accumulation as critical; evolved skills also transfer across model families, and a skill evolved by another model can outperform a self-evolved one.
+
+This sharpens the earlier flat-updating result. If useful skill artifacts can cross model boundaries, the evolver and consumer need not be the same model. But the result does **not** establish that arbitrary prose memory transfers: the paper evaluates its own compilation architecture, and the API abstract does not expose per-benchmark effect sizes. The reusable architectural claim is narrower: preserve raw evidence, consolidate reusable knowledge separately, then compile operational skills from that stable layer.
+
+*Source: [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454v1), arXiv 2608.27454v1, submitted 2026-08-27.*
+
+### HarnessLens: verify the behavior an edit claims to change
+
+**HarnessLens** targets the next gate: candidate harness edits are expensive to evaluate, while a single aggregate score can hide local regressions. It derives modifications from execution trajectories, maps each candidate to behavior-relevant tasks, and requires attributable evidence rather than rerunning every candidate on one fixed suite. Across three harnesses and four benchmarks, the paper reports **7.6–13.6% average held-out improvement** with substantially less evaluation budget than comparison methods.
+
+The conjunction yields a stronger loop than either paper alone:
+
+1. retain raw traces as audit evidence;
+2. consolidate cross-run knowledge without overwriting that evidence;
+3. compile a bounded candidate skill or harness edit; and
+4. verify it on tasks tied to the behavior it changes, while retaining a broader regression sentinel.
+
+The last clause is important: behavior-scoped testing is an efficiency mechanism, not permission to ignore unrelated effects. The abstract reports held-out gains but does not quantify the residual risk from a mistaken relevance map. Candidate attribution and global regression detection therefore remain distinct checks.
+
+*Source: [Verify Smarter, Evolve Further: Efficient Harness Evolution through Behavior-Aware Verification](https://arxiv.org/abs/2608.27311v1), arXiv 2608.27311v1, submitted 2026-08-27.*
+
 ## New Paper IDs (for dedup tracking)
 
 ```
 2605.22781 2605.30621 2606.04507 2606.04602 2606.09549 2606.09863
-2606.12290 2606.13115 2606.15405 2606.17328 2606.18947
+2606.12290 2606.13115 2606.15405 2606.17328 2606.18947 2608.27311
+2608.27454
 ```

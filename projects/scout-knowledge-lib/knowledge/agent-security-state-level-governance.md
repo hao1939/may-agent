@@ -456,7 +456,7 @@ scale of collection demands proportional justification.
 18 months (Medium confidence). "Algorithmic accountability" legislation in ≥1 EU
 jurisdiction within 12 months (High confidence).
 
-*(Source: [2026-11-02-hn-arxiv-scan-253.md](./findings/2026-11-02-hn-arxiv-scan-253.md))*
+*(Source: [2026-07-02-hn-arxiv-scan-253.md](./findings/2026-07-02-hn-arxiv-scan-253.md))*
 
 ---
 
@@ -489,7 +489,7 @@ productive question: **which trust dependencies are revocable vs. irrevocable?**
 category within 3 months. ≥2 more organizational trust failures in
 privacy/security tools within 6 months (pattern, not incident).
 
-*(Source: [2026-11-03-hn-arxiv-scan-258.md](./findings/2026-11-03-hn-arxiv-scan-258.md))*
+*(Source: [2026-07-02-hn-arxiv-scan-258.md](./findings/2026-07-02-hn-arxiv-scan-258.md))*
 
 ---
 

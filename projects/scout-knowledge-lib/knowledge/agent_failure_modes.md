@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, and retries that reproduce latent or semantic faults. Covers symptoms, causes, evidence limits, and mitigations."
-triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state"]
-last_updated: "2026-08-09"
-source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; and 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes."
+summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, and retries that reproduce latent or semantic faults. Covers symptoms, causes, evidence limits, and mitigations, including controlled replay for separating causal repair from stochastic resampling."
+triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state", "SymTrace", "SymFail", "controlled replay", "stochastic repair", "intervention anchor"]
+last_updated: "2026-08-27"
+source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes; and 2026-08-27 with SymTrace/SymFail's controlled comparison of replay, rerun, and symptom-driven intervention."
 </ai_context>
 
 # AI Agent Failure Modes & Solutions (Research Synthesis)
@@ -211,3 +211,54 @@ future work.
 Source: https://arxiv.org/abs/2608.05263v1  
 Source: https://arxiv.org/html/2608.05263v1  
 Source: https://export.arxiv.org/api/query?id_list=2608.05263
+
+### 9. Stochastic Repair Masquerading as Debugging (August 2026)
+
+**SymTrace/SymFail** separates correction of a recorded multi-agent failure from
+getting a different outcome by sampling a new trajectory. SymTrace records the
+execution and establishes an intervention anchor; replay reconstructs the
+recorded prefix and regenerates only the downstream trajectory. SymFail adds
+536 human-annotated failures from AG2, CrewAI, and Magentic-One, linked to graph
+locations, categories, and trace evidence.
+
+The distinction materially changes what a successful rerun means. Across those
+536 source failures, an unguided full rerun reproduced the same failure on the
+first attempt only **67.97%** of the time, versus **80.78%** for anchored replay.
+When the criterion required the same failure in all three attempts, the rates
+fell to **41.42%** and **52.43%**, respectively. Thus a changed terminal outcome
+after full regeneration is weak evidence of repair: the original failure may
+simply have failed to recur.
+
+Task-level `pass@3` reinforces this point. Unguided rerun repaired **6.90%** of
+cases, while self-reflection and critic-agent baselines reached **4.29%** and
+**3.73%**. A suspicious-node intervention instead detects local C1–C4 symptom
+signals, replays to a selected anchor, injects evidence-conditioned guidance,
+and regenerates the suffix; it repaired **20.15%** of cases. Local symptoms can
+therefore identify an actionable intervention boundary even when they do not
+uniquely establish root cause.
+
+**Operational implication:** evaluate repair with a counterfactual replay
+contract, not terminal success alone:
+
+1. retain the exact pre-intervention history and a graph-linked failure identity;
+2. state the intended intervention boundary and regenerate only after it;
+3. measure same-failure reproduction separately from repaired-task success; and
+4. compare methods under matched attempt budgets so extra samples are not
+   credited to feedback or diagnosis.
+
+This extends **Blind Retry on Latent State**: OrchestraBench shows why retries
+fail when bad state persists, while SymTrace shows the complementary evaluation
+error—full reruns can appear to repair a failure because the bad state was never
+reproduced. Reliable debugging needs both a trusted state boundary and a replay
+protocol that holds the preceding history fixed.
+
+**Evidence limits:** These are preprint results on long-horizon web tasks using
+one requested model alias (`deepseek-v4-flash`) through an OpenAI-compatible
+endpoint. The paper reports no verified provider identity or immutable model
+snapshot, and explicitly cautions that results may not generalize across model
+families or providers. SymTrace controls recorded history before the anchor,
+not model or environmental variation after it.
+
+Source: https://arxiv.org/abs/2608.25920  
+Source: https://arxiv.org/html/2608.25920  
+Source: https://export.arxiv.org/api/query?id_list=2608.25920

@@ -15,8 +15,8 @@ All new content has been indexed into `knowledge/INDEX.md`.
 
 | File | Type | Key Content |
 |------|------|-------------|
-| `findings/2026-08-24-arxiv-executable-turn-triage.md` | arXiv triage | **The Executable Turn**: 12 papers on code-as-state. User as Code 99% vs 6-43% retrieval. APEX three-layer co-evolution +90%. CmdNeedle 69-98.6% denylist fragility. |
-| `findings/2026-08-25-hn-scan-49.md` | HN scan | **AI Cost Wall**: budget blown by April, $1,500/month caps. Supply chain attacks at 945pts. Hallucination∝Size confirmed. Norway AI ban 583pts. |
+| `findings/2026-06-29-arxiv-executable-turn-triage.md` | arXiv triage | **The Executable Turn**: 12 papers on code-as-state. User as Code 99% vs 6-43% retrieval. APEX three-layer co-evolution +90%. CmdNeedle 69-98.6% denylist fragility. |
+| `findings/2026-06-29-hn-ai-cost-wall-agent-supply-chain.md` | HN scan | **AI Cost Wall**: budget blown by April, $1,500/month caps. Supply chain attacks at 945pts. Hallucination∝Size confirmed. Norway AI ban 583pts. |
 | `findings/2026-06-20-hn-scan-50.md` | HN scan | **Instrument Paradigm**: "different tool, not worse model." Physical AI convergence 2,019pts. |
 | `findings/2026-06-19-hn-scan-51.md` | HN scan | **AI Economic Squeeze**: OpenAI $20.9B loss. Externalities essay. Apple memory cost inflation. |
 | `findings/2026-06-20-hn-scan-52.md` | HN scan (consolidated ref) | **Competence Reckoning**: Nature skill atrophy. Norway ban breakout 39→524pts. 8 growth cycles no decay. |
@@ -26,7 +26,7 @@ All new content has been indexed into `knowledge/INDEX.md`.
 | `findings/2026-06-20-hn-scan-56.md` | HN scan | Nature "Is AI ruining our skills?" (204pts/272c). "Hard-drug potentiality." Kent Beck "Hey n00b." |
 | `findings/2026-06-20-hn-scan-57.md` | HN scan | **Maturation Plateau**: all signals sustain 7+ cycles. MCP Auth reaches implementation maturity. |
 | `findings/2026-06-20-hn-scan-58.md` | HN scan | **Plateau Hardens**: 8th growth cycle. Hallucination Inversion (GPT-5.5 3× worse than GLM-5.2). |
-| `findings/2026-08-23-xhs-direct-scan-52.md` | XHS direct | **Acceleration Phase**: Loop Engineering erupts. Naming cycle <2 weeks. Simultaneous counter-signals. |
+| `findings/2026-06-29-xhs-loop-engineering-eval-acceleration.md` | XHS direct | **Acceleration Phase**: Loop Engineering erupts. Naming cycle <2 weeks. Simultaneous counter-signals. |
 | `findings/2026-06-20-xhs-direct-scan-53.md` | XHS direct | **Operationalization Phase**: Eval Engineering enters debate. Result Orthogonality 68% false-failure. |
 
 ### Indexed 25 New KE Entries (KE-066 through KE-090)

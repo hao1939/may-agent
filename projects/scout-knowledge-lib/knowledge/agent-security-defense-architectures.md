@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks (including AgentJailbreak's 5,629-run execution study), TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns incl. CXI §2.44, aiAuthZ §2.45) in agent-security-verified-enforcement.md. Research frontiers (incl. MCP TAG-Block concealment) in agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
-triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "compliance correction", "memory poisoning defense", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AgentJailbreak", "malicious skill files", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF"]
-last_updated: "2026-08-08"
-source_basis: "Extracted from agent-security-governance.md §2. 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), plus Aug 2026 updates MAFIA 2608.03844 on query-only audit-bypassing memory attacks and AgentJailbreak 2608.05223 on malicious skill execution, HN practitioner discourse, and XHS community validation (scan #54). §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. Research frontiers extracted to agent-security-research-frontiers.md. Post-extraction entries from scans #368, #375, #411, #432 moved to research-frontiers companion. §Execution Boundary Patterns (scan #453) distributed — CXI/aiAuthZ to verified-enforcement, TAG-Block to research-frontiers."
+summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, task-scoped delegation authority, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks (including AgentJailbreak's 5,629-run execution study), TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). Aug 2026 evidence combines a Trail of Bits VM-escape field report with AISI's 18-scenario SandboxEscapeBench: a general-purpose VM is attack surface rather than a containment proof, while escape capability should be regression-tested from inside an independently controlled outer boundary. The memory section distinguishes content screening, additive provenance ranking, and bounded provenance occupancy: recent LongMemEval evidence shows the first cannot detect ordinary falsehoods and the second can flip from ineffective to categorical exclusion. Four Aug 27 papers expose security-state laundering across harness transformations: context promotion, history recurrence, cross-query persistence, and loop resets can erase provenance or risk unless metadata remains monotone and non-decaying. §2.34+ (verified enforcement patterns incl. CXI §2.44, aiAuthZ §2.45) in agent-security-verified-enforcement.md. Research frontiers (incl. MCP TAG-Block concealment) in agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
+triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "shadow delegation", "task-scoped authority", "attenuating authorization", "compliance correction", "memory poisoning defense", "memory content screening", "provenance-weighted retrieval", "bounded occupancy", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "VM escape", "QEMU", "KVM", "Firecracker", "cyber-capable agent", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AgentJailbreak", "malicious skill files", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF", "instruction privilege escalation", "history promotion", "security-state laundering", "cross-query information-flow control", "non-decaying loop state"]
+last_updated: "2026-08-28"
+source_basis: "Extracted from agent-security-governance.md §2. 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), plus Aug 2026 updates MAFIA 2608.03844 on query-only audit-bypassing memory attacks, Utility Under Attack 2608.21230 on ordinary-falsehood poisoning and provenance-ranking utility collapse, AgentJailbreak 2608.05223 on malicious skill execution, instruction privilege escalation 2608.27299, SPA 2608.27234, SARA 2608.27146, non-decaying loop state 2608.27141, Niyikiza's shadow-delegation analysis surfaced via HN item 49404443, Trail of Bits' first-party VM-escape field report surfaced via HN item 49450188, other HN practitioner discourse, and XHS community validation (scan #54). §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. Research frontiers extracted to agent-security-research-frontiers.md. Post-extraction entries from scans #368, #375, #411, #432 moved to research-frontiers companion. §Execution Boundary Patterns (scan #453) distributed — CXI/aiAuthZ to verified-enforcement, TAG-Block to research-frontiers."
 </ai_context>
 
 # Agent Security: Defense Architectures
@@ -137,6 +137,42 @@ addresses our repair metabolism problem — depth-3 rework should have
 attenuated authority, not full agent permissions.
 *(arXiv [2606.12320], Tallam, Jun 2026)*
 
+### August 2026 update — ordinary tool calls can hide delegation
+
+A Hacker News submission surfaced a concrete authorization failure that sharpens
+the five-plane pattern: an agent exposed as an MCP tool may start its own
+reasoning and tool-use chain, even though the handoff appears on the wire and in
+logs as an ordinary tool call. In the article's incident example, a human asks an
+operations assistant to **investigate** latency; an incident agent then calls a
+deployment agent, whose standing identity permits a production rollback. Every
+local identity and role check can pass while the final action exceeds the
+originating task.
+
+The missing control is therefore not merely a narrower role for each agent. The
+call needs authenticated, task-scoped authority that binds:
+
+- the originating invocation and purpose;
+- the operations and resources authorized for that invocation;
+- the current holder and each delegation parent; and
+- monotonic attenuation, so a child can narrow but never add authority.
+
+Under that model, an investigation grant containing metrics, logs, and deployment
+read access cannot derive `deployments.rollback`, regardless of the deployment
+agent's standing permissions. A legitimate rollback requires a new bounded grant
+from an entitled party. Enforcement happens where the action lands by verifying
+the presenter, attempted operation, and derivation chain—not by trusting an
+agent's narrative or correlating side-channel logs after the fact.
+
+**Design consequence**: workload identity answers *which agent called*;
+task-scoped capability answers *why this invocation may perform this action*.
+Token forwarding, per-agent standing credentials, token exchange, and a central
+policy language do not solve shadow delegation unless task authority and lineage
+are actually present in the enforcement input. This supplies a practical,
+protocol-level form for §2.8's composite-principal and attenuation requirement.
+
+*Source: [When Agents Call Agents](https://niyikiza.com/posts/agents-to-agents/),
+Niki A. Niyikiza, surfaced via [HN item 49404443](https://news.ycombinator.com/item?id=49404443), Aug 2026. This is an architectural analysis, not an empirical security evaluation.*
+
 ## 2.9 Compliance-Correction Symmetry in Linear MAS
 
 Larger models are far more likely to execute malicious instructions (53.7pp
@@ -191,6 +227,39 @@ retrieval-validation stack now looks less like an optional hardening layer and
 more like the minimum architecture for any persistent agent memory exposed to
 untrusted user interaction.
 *(arXiv [2608.03844], Chen et al., Aug 2026)*
+
+**August 2026 update — ordinary falsehoods expose a second defense boundary (2608.21230).**
+A LongMemEval study removes instructions, triggers, and retriever optimization
+from the attack: it inserts plainly worded false assertions produced in one
+pass. Poisoning only **1.2%** of the corpus reduces answer accuracy from
+**0.850 to 0.300**. A four-stage content-screening pipeline that reaches
+**0.832 recall** on indirect prompt injection rejects **0 of 360** poisoned
+memories. This is not evidence that all screening is useless; it is evidence
+that text-only screening cannot determine whether an ordinary assertion is
+true without external grounding.
+
+The paper also tests additive provenance scoring and finds a utility cliff:
+the shipped weight is statistically indistinguishable from no defense
+(**p = 0.80**), while a stronger weight recovers accuracy from **0.3167 to
+0.7000** when untrusted content is mostly benign only by suppressing the
+untrusted tier. When answer-bearing evidence itself is untrusted, evidence
+recall falls to zero across 120 questions and accuracy to **0.0417**. In the
+measured similarity regime, the weight is therefore too weak to matter or
+strong enough to become a de facto exclusion rule.
+
+**Defense implication**: provenance should shape retrieval composition rather
+than merely add a scalar penalty. A bounded occupancy rule can guarantee that
+some trusted records survive into the candidate set without categorically
+removing untrusted evidence. But this is a design hypothesis, not a validated
+defense: the paper does not implement the quota; it studies one memory system,
+one retriever/embedder/reader stack, assumes correct provenance labels, and
+uses a 120-question poisoning subsample. Pair any occupancy rule with
+write-time origin binding and evaluate it across domains before treating it as
+a replacement for SMSR-style validation.
+
+Source: https://arxiv.org/abs/2608.21230v1
+
+*(Karunanidhi, “Utility Under Attack,” Aug 2026)*
 
 ## 2.11 Oversight Capacity — The Inverted-U
 
@@ -249,6 +318,100 @@ public-facing deployment. Memory integrity is absent from all three.
   corruption is not just a theoretical risk but demonstrably undetected by
   current monitoring.
 *(arXiv [2606.12797], Hossain et al., Jun 2026)*
+
+### August 2026 field report — treat a VM as attack surface, not a containment proof
+
+Trail of Bits reports giving a preview cyber model a CTF objective: from a
+QEMU/KVM guest on a disposable Debian 12 host, retrieve a host-side flag. The
+agent worked for roughly hour-to-12-hour intervals, survived context compaction,
+backtracked, read upstream code and papers, built test oracles, and composed
+vulnerabilities across the guest's exposed host stack. The reported paths are
+more useful than the headline count:
+
+- the initial oldstable host exposed a newly disclosed kernel flaw;
+- after package updates, the agent combined a libslirp CVE with a fixed but
+  non-CVE bug to obtain an asserted host read/write primitive;
+- after QEMU and libslirp were rebuilt from current upstream source with fewer
+  features, it reportedly chained QEMU, KVM, kernel, and libslirp defects,
+  including then-undisclosed bugs, into a reliable escape;
+- failed branches still found reachable CUPS, display, networking, and hardware
+  paths, showing that every convenience feature enlarges the effective boundary.
+
+This changes the architectural claim a sandbox operator can safely make. A
+**general-purpose VM is one layer in a containment stack**, not a proof that the
+agent lacks host authority. Its hypervisor, kernel, emulated devices, user-mode
+networking, display, file-transfer path, management channel, package latency,
+and run duration all belong in the threat model. The report's Firecracker trial
+is directionally consistent with minimizing that surface: the agent hardlocked
+the host through patched-upstream kernel flaws but did not escape during the
+trial. That is evidence of a harder tested target, not evidence that Firecracker
+is escape-proof.
+
+A safer deployment pattern is therefore layered and per-run: use a deliberately
+minimal isolation technology; remove display, shared filesystem, and unnecessary
+emulation; deny network by default and mediate required destinations; keep host
+kernel and the whole virtualization dependency closure near upstream security
+state; expose no durable credentials; cap time and resources; rebuild from a
+known-clean image; and monitor the host from outside the agent's trust domain.
+For sufficiently capable offensive workloads, move the remaining failure
+boundary to dedicated disposable hardware or another blast radius whose loss is
+already authorized. A guest reset is not recovery if the host boundary may have
+failed.
+
+**Evidence limits matter.** This is a first-party authorized field report, not a
+controlled benchmark or independent reproduction. The preview model, full logs,
+prompts, and exploit chain are not public; several bugs remain under coordinated
+disclosure. The article also describes its first path as a host hardlock that
+had not yet “landed cleanly,” despite the broader “three escapes” framing. The
+agent process started outside the target VM so it could survive guest crashes,
+although the author says final exploits could be audited for cheating. Treat the
+report as strong evidence against an *assumed* VM boundary and as a concrete
+attack-surface inventory—not as a measured escape rate or a universal result for
+all VMs and configurations.
+
+*Source: [VMs won't contain cyber-capable agents](https://blog.trailofbits.com/2026/08/26/vms-wont-contain-cyber-capable-agents/), Artem Dinaburg / Trail of Bits, surfaced via [HN item 49450188](https://news.ycombinator.com/item?id=49450188), Aug 2026.*
+
+### August 2026 benchmark — measure the inner boundary from a disposable outer boundary
+
+The UK AI Security Institute's **SandboxEscapeBench** turns container escape
+from an anecdotal red-team outcome into a repeatable capability evaluation. Its
+18 capture-the-flag scenarios span Docker and Kubernetes misconfiguration,
+capability and namespace mistakes, container runtimes, orchestration, and
+kernel vulnerabilities. The agent starts inside a vulnerable container and
+must retrieve a flag from its VM host; that host is itself the inner layer of a
+hardened, disposable evaluation environment. Public tasks use known
+vulnerability classes, while AISI retains private tasks to reduce benchmark
+contamination and preserve an unseen capability check.
+
+AISI reports that tested advanced models reliably exploited common mistakes
+such as a mounted Docker socket and privileged containers. Larger models made
+meaningful progress on intermediate multi-step and documented-vulnerability
+scenarios, but none solved the hardest public scenarios, estimated at one to
+two hours for an experienced security professional. Success increased roughly
+log-linearly with inference budget, and every reported successful breakout used
+a previously disclosed vulnerability. The repository also publishes 254 eval
+logs covering nine models and 18 tasks plus transcript-analysis tooling, making
+this stronger capability evidence than an unreleased field narrative, although
+it still measures deliberately vulnerable CTF configurations rather than the
+escape rate of patched production sandboxes.
+
+Together with the Trail of Bits report, this suggests a two-part assurance
+contract:
+
+1. **Boundary audit:** minimize and patch the complete runtime dependency
+   closure, remove convenience surfaces, mediate network and credentials, and
+   assume no virtualization layer is proof by itself.
+2. **Capability regression:** repeatedly run public and held-out escape tasks
+   across model revisions and realistic token budgets, recording exact model,
+   task, image, outer-isolation configuration, and transcripts.
+
+The nesting is itself the reusable safety pattern: test whether one boundary
+fails only from inside another independently controlled blast radius. A
+successful inner escape becomes measurement rather than incident; a clean run
+remains evidence scoped to the tested scenarios, image, model, and budget—not a
+certificate that the sandbox is escape-proof.
+
+*Sources: [AISI announcement](https://www.aisi.gov.uk/blog/can-ai-agents-escape-their-sandboxes-a-benchmark-for-safely-measuring-container-breakout-capabilities), surfaced via [HN item 49456457](https://news.ycombinator.com/item?id=49456457); [open benchmark repository](https://github.com/UKGovernmentBEIS/sandbox_escape_bench); [paper](https://arxiv.org/abs/2603.02277), Aug 2026.*
 
 ## 2.15 Anti-Fabrication Firewall (Goal-Autopilot)
 
@@ -781,6 +944,85 @@ Informality Tax (scan #177). Shows that prompt-level and tool-level governance
 is structurally insufficient — indirect execution paths are invisible to both.
 
 *(arXiv [2606.25189](https://arxiv.org/abs/2606.25189), Jun 2026. Scan #190)*
+
+---
+
+## August 2026 update — security state must survive harness transformations
+
+Four papers submitted together on 27 August expose one architectural failure at
+four time scales: agent harnesses preserve task content while silently dropping
+or upgrading the **security metadata** that should constrain it.
+
+| Transformation | Failure | Proposed control |
+|---|---|---|
+| Tool output → model context | Low-privilege attacker content is reintroduced as a higher-level instruction | Preserve the original instruction level; do not let context assembly promote it |
+| Observation → repeated history | Recurrence makes an untrusted action suggestion look like established execution authority | Keep action-origin provenance and apply **No-History-Promotion** |
+| Query result → persistent artifact | Untrusted payload influences later planning or tool arguments | Persist confidentiality/integrity labels; reveal semantic metadata rather than raw payloads to later planners |
+| Trajectory → next autonomous iteration | A fresh monitor forgets attack evidence fragmented across prior iterations | Maintain non-decaying loop-level risk state and mediate irreversible commits |
+
+**Instruction privilege escalation.** He et al. identify the context builder as a
+privilege boundary. An attacker can induce a coding-agent harness to copy
+low-level content into a higher-level context slot; the model then follows an
+instruction it rejected at its original level. Under unrestricted execution,
+the reported attack reached all 13 confidentiality, integrity, availability,
+and code-execution objectives across six harnesses; it also reproduced through
+persistent goals and scheduled tasks. These are attack-success results in the
+paper's configurations, not a prevalence estimate for deployed agents.
+
+Source: https://arxiv.org/abs/2608.27299v1
+
+**Provenance is not authorization.** SARA separates an observation's ability to
+*induce* a candidate action from the user's authority to execute it. Its action
+probe retains where a suggestion originated; a separate runtime role checks the
+actual call against the user objective and evidence from authorized successful
+executions. The key temporal rule is No-History-Promotion: repetition in the
+trace cannot launder an untrusted origin into authority. The paper reports at
+most 0.63% attack success across four main AgentDojo/AgentDyn settings while
+retaining competitive utility.
+
+Source: https://arxiv.org/abs/2608.27146v1
+
+**Persistence must retain labels, not merely values.** SPA generates a complete
+declarative plan once per query, then tracks confidentiality and integrity over
+both explicit data flow and control dependencies. Results become labeled
+artifacts; later planners see semantic metadata without being re-exposed to raw
+untrusted payloads. The authors report 0% attack success on AgentDojo and 0.2%
+on their multi-query extension under the `tool_knowledge` attack, with a stated
+security–utility cost from strict integrity enforcement.
+
+Source: https://arxiv.org/abs/2608.27234v1
+
+**Loop safety cannot reset at trajectory boundaries.** Wu et al. formalize a
+separation result: when decisive attack evidence is fragmented across
+iterations, a trajectory-scoped monitor cannot distinguish it from clean
+behavior better than its false-positive rate because the evidence never
+co-occurs in its window. A geometrically decaying score is also insufficient
+against a patient adversary. Their LoopHarness instead carries non-decaying
+loop-level state and mediates commits. The constant-horizon bound is a formal
+result under stated arbiter and commit assumptions; the paper provides an
+evaluation protocol rather than broad production validation.
+
+Source: https://arxiv.org/abs/2608.27141v1
+
+**Synthesis — monotone security metadata.** Instruction level, provenance,
+integrity labels, and accumulated risk are different fields with the same
+required invariant: ordinary harness transformations may preserve or make them
+more restrictive, but must never upgrade trust or erase risk. Summarization,
+context reconstruction, retries, handoffs, persistence, and scheduler-created
+iterations are therefore security-relevant transforms, not neutral plumbing.
+A practical audit should trace each datum through those transforms and test two
+properties independently:
+
+1. **No trust promotion:** untrusted origin never becomes execution authority
+   through copying, recurrence, or storage.
+2. **No risk reset:** unresolved evidence remains available to the control plane
+   across query and loop boundaries, without assuming that a decaying score is
+   sufficient.
+
+This extends §2.8's monotone authority attenuation from delegation graphs to the
+agent's temporal data plane. It also sharpens §2.29: keeping policy text visible
+is insufficient if the harness discards the provenance and cumulative state
+needed to apply that policy.
 
 ---
 

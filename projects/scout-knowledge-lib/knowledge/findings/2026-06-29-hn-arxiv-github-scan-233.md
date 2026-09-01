@@ -1,13 +1,14 @@
 <ai_context>
 summary: "Scan #233 — The Governance Plane Coupling Crisis: Identity, Policy, and Memory governance planes have adequate independent solutions but the field lacks integration across planes. Attack surface lives in the transitions between planes (memory-write bypasses policy; identity-impersonation bypasses memory verification; policy-gaps leak identity). Three streams converging: NHI repositories (10+ in June 2026), formal enforcement (ActPlane 62★, SkillGuard, Cedar), memory trust (TrustMem, MemStrata, 'Agents That Know Too Much'). Structural principle: each plane assumes the other two are solved."
 triggers: ["governance plane coupling", "NHI", "non-human identity", "policy-memory gap", "identity-policy gap", "governance integration", "cross-plane attack", "SkillGuard", "TrustMem", "ActPlane"]
-last_updated: "2026-06-29"
+last_updated: "2026-08-19"
 source_basis: "arXiv 2606.26627 (Agents That Know Too Much), 2606.25161 (TrustMem), 2606.25189 (ActPlane), 2606.03024 (SkillGuard), 2606.26511 (MemStrata), 2606.26649 (Cedar Autoformalization), 2606.17203 (Trust-Aware Traceability). GitHub: eunomia-bpf/ActPlane (62★), kamotuneai-maker/NHI-Policy-Gateway (2★), dragoshont/tessera (1★), lambda-alpha-labs/Graphenium (13★), marikagura/kimi-core (26★), 10+ NHI repos created Jun 2026. HN: 48713032 (AI Agent Credential Crisis, 1pt), 48484584 (Fedora agent amok, 552pts)."
+observation_provenance: "Source activity represented in this note is no later than 2026-06-29. Exact retrieval time is not verifiable from embedded evidence. commit 8cd88aa594fba5ec8dc9a6e26f46e78ad9c8073b at 2026-06-29T18:40:50Z is only a repository-observation upper bound, not a retrieval timestamp."
 </ai_context>
 
 # Scan #233: The Governance Plane Coupling Crisis
 
-**Date**: 2026-10-29  
+**Observation provenance**: Source activity through 2026-06-29; exact retrieval time unverified; repository-observed by commit 8cd88aa594fba5ec8dc9a6e26f46e78ad9c8073b at 2026-06-29T18:40:50Z
 **Source**: arXiv + GitHub + HN (cross-source synthesis)  
 **Theme**: Identity, Policy, and Memory governance planes have adequate independent solutions — but the attack surface lives in the uncovered transitions between them
 

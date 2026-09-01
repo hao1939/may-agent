@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: The system's largest cost isn't output or compute — it's the mass of repeated, identical prompt text delivered to sessions that immediately exit. 141MB of task text was delivered across 16K sessions in 3 days. 51.5% of all task-text bytes are evaluator aftermath sessions echoing the original session's full task. Dev burns 93% of its task-text on sessions that exit within 10 ops. The system has invented a novel inefficiency: it pays the full input cost of context-rich prompts even when the session's first act is to determine nothing needs doing. Prior syntheses (Impedance, Observability, Abstention) analyzed the output side and compute side of feedback loops. This note identifies the INPUT side — the prompt mass delivered per session — as a distinct cost center that grows with system maturity and is invisible to all existing metrics."
 triggers: ["prompt mass", "input cost", "task text", "context nesting", "evaluator echo", "template repetition", "cold start cost", "quick exit cost", "token budget", "prompt efficiency"]
-last_updated: "2026-08-07"
-source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment), and app.nz's deterministic 37-turn wire-cost harness (HN 49210901)."
+last_updated: "2026-08-28"
+source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment), app.nz's deterministic 37-turn wire-cost harness (HN 49210901), Shopify's production report on learned gist-token prompt compression (HN 49382646), and Mohammed Reschreiter's dynamic-tool implementation and 417-turn self-audit (HN 49476278)."
 </ai_context>
 
 # The Prompt Mass Problem: Why Input Costs Dwarf Output Costs in Mature Agent Systems
@@ -214,6 +214,141 @@ long-horizon regression checks.
 
 - Source: https://app.nz/blog/app-agent-token-efficiency-optimizations
 - HN: https://news.ycombinator.com/item?id=49210901
+
+## HN Update — Compile Stable Instructions into Model-Specific Gist Tokens (2026-08-21)
+
+A Shopify engineering report newly submitted to HN provides production evidence
+for the “prompt compilation” predicted in this note, but implements it below the
+text layer. Shopify compressed the Sidekick GraphQL agent's roughly **6,000-token
+system prompt into 1,500 learned gist tokens**. The base model is frozen while
+special-token embeddings are trained by knowledge distillation: a teacher pass
+sees the full prompt, a student pass sees only the gist tokens, and KL divergence
+pulls the student's response-position logits toward the teacher's.
+
+Shopify reports that at 350 requests per minute the 4:1 representation reduced
+median time to first token from 438 ms to 354 ms, median end-to-end latency from
+6.8 s to 4.2 s, increased throughput from 20.2 to 23.4 queries per second, and
+allowed the production workload to use 14% fewer GPUs. The deployment does not
+need a custom attention mask or separate encoder: the learned vectors are written
+into the embedding matrix and registered as special tokens, so the request path
+only substitutes the long prompt with the gist-token string.
+
+This complements rather than replaces prefix caching. A cache avoids recomputing
+the stable prefix, but every generated token still attends over that prefix and
+streams its key-value state. Shortening the sequence therefore reduces decode
+work and KV-cache reads even when the full text would have been a cache hit. The
+reported throughput gap widened with concurrency, where those repeated reads
+matter most.
+
+The architectural implication is that stable agent policy can become a
+**compiled model artifact**, not just shorter prose. That creates a new tradeoff:
+
+- learned tokens provide a fast fixed path for high-volume, stable instructions;
+- natural-language policy remains portable, reviewable, and easy to revise;
+- the compiled representation is model-specific and opaque to human inspection;
+- instruction changes need redistillation or a validated continual-learning path;
+- behavioral equivalence must be tested across the action distribution, not
+  inferred from low distillation loss alone.
+
+Shopify says prediction quality was preserved and identifies 4:1 as the point
+before quality degraded for this domain, but the post does not publish the
+evaluation set, sample size, variance, or task-level failure analysis. Its
+latency and capacity numbers are therefore useful production measurements, while
+the quality claim remains an internal result rather than a reproducible external
+benchmark. A safe prompt compiler should retain the source prompt, compiled
+artifact identity, model version, evaluation suite, and rollback threshold as
+one release unit—especially when the compressed text contains governance rules
+rather than only task guidance.
+
+- Source: https://shopify.engineering/gisting
+- HN: https://news.ycombinator.com/item?id=49382646
+
+## HN Update — Redundancy Can Buy Local Adherence, but Only to a Plateau (2026-08-23)
+
+A new HN submission adds an important boundary to prompt minimization: some
+apparently redundant text is behaviorally active. In a public field test, Nitin
+Khola repeated the same syntax rule zero, one, two, four, eight, or sixteen times
+in a system prompt and generated six small Python functions 30 times per
+condition. Across 1,080 Gemini 2.5 Flash runs with thinking disabled, a tokenizer-
+based checker found aggregate adherence rose from 74% with one mention to 97%
+with four; eight and sixteen repetitions remained within the same range as four.
+
+The task-level distribution matters more than the aggregate. Two functions
+already reached 100% adherence after one mention, while merge-interval code rose
+from 20% after one mention to 97% after four. Repetition therefore did not make
+the model uniformly “more obedient”; it rescued contexts where a strong learned
+coding habit overrode the instruction. Three easier candidate rules had first-
+mention adherence near 99%, so repetition would have had no useful headroom.
+
+This qualifies the Prompt Mass Problem rather than refuting it. Blind textual
+deduplication can delete emphasis that changes behavior, but repetitions five
+through sixteen added cost without measurable benefit in this setup. A prompt
+compiler should consequently treat repeated rules as candidates for ablation,
+not automatic deletion: measure each rule on the tasks where it currently fails,
+retain the smallest repetition count that clears an adherence threshold, and
+prefer structural enforcement once repetition plateaus.
+
+The evidence is deliberately narrow. It covers one adjacent block of a literal
+syntax rule, one model configuration, six standalone functions, and no repository-
+scale agent loop. HN commenters also challenged the generalization from six task
+types. The experiment nevertheless exposes a second evaluation lesson with wider
+value: output truncation initially changed the author's headline result from 39%
+to 88% because thinking tokens consumed the generation budget unevenly across
+conditions. Prompt ablations must record termination reasons and include failed
+or truncated generations rather than comparing only surviving outputs.
+
+- Source: https://www.khola.blog/p/say-it-four-times
+- Repo: https://github.com/nkhola/field-tests
+- HN: https://news.ycombinator.com/item?id=49411268
+
+## HN Update — Treat Tools as a Capability Working Set (2026-08-28)
+
+A newly submitted implementation report adds a second input surface to this
+note: **tool schemas are prompt mass too, and the required set changes by
+turn**. Mohammed Reschreiter's Pi extension keeps four core tools (`read`,
+`bash`, `edit`, `write`) active, represents occasional tools as short standby
+hints, activates them through an intercepted shell command, and evicts idle
+schemas after a two-run TTL. Co-activation groups let one request load a bundle
+whose tools are normally used together.
+
+The most useful design idea is not the headline “80%” saving; it is to manage
+capabilities like a working set rather than a permanent registry. Stable policy
+text and callable capability topology need different compression strategies:
+compile or cache policy that is broadly invariant, but load full schemas only
+while their capabilities are locally relevant. This avoids paying the detailed
+JSON-schema cost for every possible action on every turn.
+
+The report's 417-turn self-audit provides a concrete, if non-independent,
+operating trace. Four default tools handled 98.1% of reported coding operations;
+standby tools were called 13 times. Of 30 cache miss or rewrite events, five
+were attributed to tool activation, or 1.2% of turns. The author estimates that
+dynamic activation avoided sending 5.4 million unused schema tokens in that
+session. A separate fresh-session observation reported 3.6K total tokens for
+Pi's four-tool baseline, while screenshots and author-reported tests put Codex
+at 14,534 tokens with 79 callable tools and Antigravity at 19.9K total tokens,
+13.8K of them tool schemas.
+
+Those comparisons should not be read as a controlled cross-harness benchmark:
+models, system prompts, telemetry, and tool descriptions differ, and some
+Claude Code figures in the article explicitly come from community reports. The
+417-turn trace is also a single author's workload. The reusable evaluation
+contract is stronger than any one number:
+
+1. record schema tokens by turn, not only total context;
+2. record activation, eviction, cache-transition, and tool-use events;
+3. measure miss cost and erroneous activation alongside token savings;
+4. retain a tiny always-on recovery path so deferred capability discovery
+   cannot strand the agent;
+5. replay representative long tasks, because a fresh “hi” measures startup
+   mass but not completion quality.
+
+This extends prompt compilation into **capability working-set management**.
+Compression is no longer only “make the same prefix shorter”; it is also “stop
+presenting irrelevant actions as currently callable,” with telemetry proving
+that deferral does not increase turns or failures.
+
+- Source: https://m-reschreiter.at/en/blog/how-i-cut-80-percent-context-overhead-dynamic-tools
+- HN: https://news.ycombinator.com/item?id=49476278
 
 ### The Maturation Trap
 

@@ -40,3 +40,35 @@ ACN is a Rust-based terminal AI assistant that doubles as a **claim network** fo
 - Related to **OptMem** (VictorTaelin) — simpler single-agent persistent memory
 - Complements **AskChem** claim-centered retrieval — similar "claim as atom" philosophy but ACN is multi-agent-native
 - Extends themes in Scout's `agent-architectures.md` re: memory infrastructure category
+
+---
+
+## 2026-08-25 update — Corroboration needs lineage admission, not a vote count
+
+Repo: https://github.com/alizahidraja/isnad  
+Pinned observation: https://github.com/alizahidraja/isnad/commit/867862a5e66a86dc4d01631aef58f0a757cb4b23  
+Observed repository state: 36 stars, Apache-2.0, 7 forks
+
+ISNAD is a second claim-centered design, but it focuses on whether a claim may be served rather than how claims are shared. It records a transmission chain, grades the chain separately from content consistency, and routes the combination through a serve/review/quarantine matrix. This sharpens an important boundary for ACN-style shared claims: **provenance can show how a claim arrived without establishing that the claim is true**. ISNAD's own threat model says the operator remains the root of trust, source metadata is not authenticated, and a clean pipeline over a false source can still grade highly.
+
+The most useful recent change is deliberately fail-closed corroboration. `SharedLineageDetector` checks shared narrator identity, model family, and upstream source. When either chain lacks lineage metadata, it now returns an unknown-lineage score of `0.5`, below the default `0.8` corroboration gate; two differently named narrators no longer count as independent merely because no relationship was recorded. The source tests cover both sides of that policy: empty metadata does not upgrade a weak claim, while explicitly distinct model-family and upstream-source metadata can pass the gate.
+
+That still does **not** prove independence. The repository's `docs/chain-independence.md` explicitly identifies correlated training data, shared model blind spots, and copied source errors as topology's unresolved limit. Its mitigation is bounded rather than magical: known shared ancestry blocks corroboration, unknown lineage does not count, and corroboration alone is capped below the highest grade. The published corroboration experiments are repository-authored evidence, not an external evaluation; the broad 577,024-chain benchmark validates agreement with a mapped historical grading corpus, not truth detection for modern multi-agent claims.
+
+### Reusable design rule
+
+A shared claim network should admit corroboration only when every counted route carries enough lineage to test distinctness, and should emit at least three separate fields:
+
+1. **transmission integrity** — what transformations and actors handled the claim;
+2. **content verdict** — consistent, contradictory, or unverifiable against the available corpus;
+3. **independence status** — shared lineage found, attested-distinct on observed fields, or unknown.
+
+Never collapse “no shared lineage detected” into “independent,” and never collapse a sound transmission chain into “true.” This turns disagreement from a vote into an auditable evidence graph while keeping unknown provenance from manufacturing consensus.
+
+### Primary-source boundaries checked
+
+- Architecture and declared validation boundary: https://github.com/alizahidraja/isnad/blob/867862a5e66a86dc4d01631aef58f0a757cb4b23/README.md
+- Independence limit and PR #83 behavior: https://github.com/alizahidraja/isnad/blob/867862a5e66a86dc4d01631aef58f0a757cb4b23/docs/chain-independence.md
+- Explicit trust boundary and non-goals: https://github.com/alizahidraja/isnad/blob/867862a5e66a86dc4d01631aef58f0a757cb4b23/THREAT_MODEL.md
+- Detector and policy implementation: https://github.com/alizahidraja/isnad/blob/867862a5e66a86dc4d01631aef58f0a757cb4b23/src/isnad/core/corroboration.py
+- Unknown-lineage and attested-lineage tests: https://github.com/alizahidraja/isnad/blob/867862a5e66a86dc4d01631aef58f0a757cb4b23/tests/test_corroboration.py

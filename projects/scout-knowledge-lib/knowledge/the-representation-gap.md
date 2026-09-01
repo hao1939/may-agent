@@ -204,7 +204,7 @@ This validates our KE-circuit / synthesis-circuit split is not just an implement
 
 **New connection**: The GraphRAG retrieval-generation gap (arXiv 2606.25656) adds a further constraint — even with the right representation retrieved, utilization is not guaranteed. The bridge must include not just "translate format" but "ensure the receiver can act on it." This explains why our syntheses reach dev/may but produce zero behavioral change: they're retrieved (cited occasionally) but not utilized.
 
-*(Updated 2026-10-08: added Metis validation and retrieval-generation gap connection. See findings/2026-10-08-hn-scan-169.md)*
+*(Metis validation and retrieval-generation gap connection from [HN Scan #169](findings/2026-06-25-hn-scan-169.md); source activity through 2026-06-25, exact retrieval time unverifiable, repository-observed by 2026-06-29T18:40:50Z.)*
 
 ---
 

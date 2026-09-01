@@ -1,8 +1,8 @@
 <ai_context>
-summary: "arXiv check on 2026-08-04 surfaced ACEM (2608.02582) as a new structurally useful signal for Scout's cost/governance library. Unlike prior notes that explain budget blowouts after deployment, ACEM proposes explicit pre-flight estimation dimensions for agentic software engineering: LLM token spend, HITL oversight effort, and infrastructure/orchestration cost. Its most useful contribution is not a calibrated formula but three planning variables — Revision Factor, Context Factor, and HITL Intensity Score — that make retries, context growth, and human governance visible before work starts."
-triggers: ["ACEM", "agentic cost estimation", "Revision Factor", "Context Factor", "HITL Intensity Score", "agentic software engineering", "token forecasting", "oversight cost", "context growth cost"]
-last_updated: "2026-08-04"
-source_basis: "arXiv API query checked 2026-08-04 via https://export.arxiv.org/api/query?search_query=%28all:%22agentic%20software%20engineering%22%20OR%20all:%22agentic%22%20AND%20all:%22software%20engineering%22%29&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending . Dedup search across /app/projects/scout-knowledge-lib/knowledge found no existing primary-source match for 2608.02582 before writing this finding."
+summary: "ACEM (2608.02582) proposes explicit pre-flight cost dimensions for agentic software engineering: LLM token spend, HITL oversight effort, and infrastructure/orchestration cost. Its planning variables—Revision Factor, Context Factor, and HITL Intensity Score—make retries, context growth, and human governance visible before work starts. An Aug 2026 empirical study (2608.25399) adds evidence that specification detail is itself a cost-control variable: reducing a full specification to a bare user story increased token spend by 29.7% across 2,700 Kimi K3 runs, while sensitivity varied substantially by task."
+triggers: ["ACEM", "agentic cost estimation", "Revision Factor", "Context Factor", "HITL Intensity Score", "agentic software engineering", "token forecasting", "oversight cost", "context growth cost", "task specification", "token spend", "cheap probe"]
+last_updated: "2026-08-27"
+source_basis: "arXiv API query checked 2026-08-04 via https://export.arxiv.org/api/query?search_query=%28all:%22agentic%20software%20engineering%22%20OR%20all:%22agentic%22%20AND%20all:%22software%20engineering%22%29&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending . Updated from the arXiv API abstract for 2608.25399 returned by https://export.arxiv.org/api/query?search_query=all%3A%22AI%20agent%22&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending on 2026-08-27. Primary-source dedup searches preceded both changes."
 </ai_context>
 
 # Agentic Cost Estimation Model (ACEM): Cost Governance Moves Upstream
@@ -81,7 +81,24 @@ Important caveats:
 
 So the useful finding is not "cost estimation is solved." It is: **the estimation surface is changing from labor-only sizing toward agent-runtime governance variables.**
 
-## Primary source
+## 2026-08-27 update — specification detail is a measurable cost input
+
+A follow-up arXiv paper supplies empirical evidence for one part of the planning model: **task specification is not merely an input to quality; it changes token cost.** Across 2,700 agentic coding runs using Kimi K3 at three thinking-effort settings, reducing a full task specification to a bare user story increased token spend by **29.7%**. Prompt sensitivity depended heavily on the task, ranging from **13% to 115%**, while the paper reports that prompt changes did not affect run-to-run variance.
+
+This sharpens ACEM's design-time argument in two ways:
+
+1. **Specification completeness belongs in pre-flight cost estimation.** A short prompt is not necessarily a cheap prompt if omitted constraints force the agent to search, infer, or revise.
+2. **One global “prompt-quality discount” is inadequate.** The 13–115% range implies that teams should estimate sensitivity by task class rather than apply a universal multiplier.
+
+The paper also reports a simple method that uses one cheap probe on an unseen task to price a distribution of specification and thinking-effort configurations within **36%**. This is promising as a calibration mechanism for ACEM-like forecasts: instead of assigning symbolic constants permanently, run a bounded probe, estimate a task-local spend distribution, and then choose the specification/effort configuration.
+
+### Evidence limits
+
+These are abstract-level results from one model family and agentic coding setting. “Within 36%” is still a wide planning interval, and lower token spend does not by itself establish equal task quality. The result therefore supports **specification detail as a cost variable**, not a universal claim that fuller specifications always minimize total cost or maximize correctness. Replication should hold task success criteria constant and test other models, harnesses, and task classes.
+
+## Primary sources
 
 - Source: https://arxiv.org/abs/2608.02582
-- Checked via arXiv API query: `https://export.arxiv.org/api/query?search_query=%28all:%22agentic%20software%20engineering%22%20OR%20all:%22agentic%22%20AND%20all:%22software%20engineering%22%29&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending`
+- Source: https://arxiv.org/abs/2608.25399
+- Checked via original arXiv API query: `https://export.arxiv.org/api/query?search_query=%28all:%22agentic%20software%20engineering%22%20OR%20all:%22agentic%22%20AND%20all:%22software%20engineering%22%29&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending`
+- 2026-08-27 feed: `https://export.arxiv.org/api/query?search_query=all%3A%22AI%20agent%22&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`

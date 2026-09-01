@@ -1,0 +1,180 @@
+<ai_context>
+summary: "GitHub finding on authority placement in agent memory: Halofy demonstrates server-resolved identity, governed writes, scoped retrieval, audit, and erasure for organizational context; Switchboard separates proposal, approval, recall grants, project scope, and consumable handoff custody for local coding-agent memory. Both expose useful limits rather than collapsing governance into retrieval quality."
+triggers: ["Halofy", "Switchboard", "agent memory governance", "organizational context", "server-owned identity", "scoped retrieval", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody"]
+last_updated: "2026-08-26"
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d."
+</ai_context>
+
+# Agent Memory Governance Is an Authority-Placement Problem
+
+Date: 2026-08-26  
+Source: GitHub  
+Repo: https://github.com/halofyai/halofy  
+Repo: https://github.com/Egoist-Machines/switchboard
+
+## Signal
+
+**Halofy** is a new open-source organizational-memory kernel that makes a useful
+architectural claim concrete: governing shared agent context is not primarily a
+better-retrieval problem. It is an **authority-placement problem** spanning
+identity, access, writes, retrieval, audit, and erasure.
+
+At the inspected revision, caller identity is resolved from a credential before
+a memory syscall; namespace and actor are not accepted from the syscall request.
+Connectors and imports feed the same governed write path as agent conversations.
+Retrieval drivers receive an ACL-scoped, read-only view rather than the database,
+and every documented syscall outcome—including denial, miss, brownout, and
+error—is intended to append an audit row. Corrections create supersedence chains
+instead of overwriting prior facts, while deletion is isolated behind a governed
+erasure path that emits a signed certificate.
+
+The strongest source signal is not that these controls are claimed to be
+complete. Halofy's own threat model names where they stop: an in-process
+retrieval driver shares a process trust domain with the kernel, so its
+`ScopedView` is an architectural/static-analysis fence rather than a runtime
+sandbox; and row-level security is present on only part of the schema, excluding
+several older authority-bearing tables. The repository therefore offers both a
+candidate governance design and an unusually explicit map of its residual
+trust.
+
+A second new repository, **Switchboard**, makes the same authority-placement
+principle concrete at a smaller, local-first boundary: memory shared among
+OpenCode, Claude Code, and Codex. Its important move is to keep four permissions
+distinct. A paired client may propose memory, owner approval determines whether
+the proposal becomes memory, an active category grant separately controls
+recall, and repository scope only narrows that grant. Approval therefore does
+not silently confer read access, and a project match cannot widen a missing
+category grant.
+
+Switchboard also treats task handoff as a different authority object from
+memory. A handoff is addressed to one exact client or to a profile plus project,
+expires, can be claimed once, and erases its snapshot behind a deletion fence
+while retaining a content-free receipt. This is a useful refinement to the
+authority map: durable shared knowledge and temporary transfer of work custody
+should not inherit the same retention or replay semantics.
+
+## Source-grounded details
+
+- GitHub Search query `topic:ai-agents created:>=2026-08-20`, sorted by stars,
+  returned the repository with 210 stars and four forks at observation time. It
+  was created on 2026-08-22. These counts show early attention, not adoption.
+- The architecture document defines Postgres (or embedded PGlite for local use)
+  as the authority for memory, embeddings, policy, provenance, tombstones, and
+  audit; retrieval sidecars and warm mirrors are explicitly rebuildable caches.
+- HTTP and MCP calls resolve a credential into an `Identity`; syscalls take that
+  resolved identity rather than caller-supplied actor or namespace fields.
+- The namespace rule exposes a caller's exact namespace and `/`-delimited
+  ancestors, not siblings or descendants. The threat model says direct reads
+  intentionally make a denied foreign identifier indistinguishable from an
+  absent identifier to the caller while preserving the distinction in audit.
+- All ingestion routes are documented as entering one write pipeline:
+  extraction, verification, entity resolution, classification, deterministic
+  dedupe, and insert/supersede. The brownout/verbatim lane still passes through
+  classification, so degradation is not supposed to bypass protection labels.
+- Ordinary corrections close the predecessor's validity interval and insert a
+  new row linked by `supersedes`; concurrent closure is guarded and retried
+  rather than allowing two writers to silently claim the same predecessor.
+- Retrieval extensions receive a per-call `ScopedView` and return references.
+  This sharply reduces the intended plugin contract, but the threat model
+  explicitly states that an in-process malicious driver is only partially
+  controlled because it shares the kernel heap and trust domain.
+- The threat model also records partial database defense-in-depth: it reports
+  row-level security on 63 of 136 tables, while older core tables including
+  `memory_objects`, `audit_log`, `api_keys`, and `sessions` do not have RLS.
+  Application predicates therefore remain a critical single fence for those
+  tables.
+- The repository tree contains focused tests for cross-tenant access, auth,
+  audit durability, erasure, and driver behavior. Public checks on the inspected
+  commit show the four hermetic-test shards, two driver-conformance lanes,
+  typecheck/build, and an end-to-end credential-free story succeeded in one CI
+  run. Scout did **not** independently execute the suite.
+- Check status is not uniformly green: a later `gitleaks` check on the same
+  commit concluded `failure` with one generic exit-code annotation, while an
+  earlier gitleaks run succeeded. The public annotation does not identify the
+  underlying finding, so this observation cannot establish either a leaked
+  secret or a false positive; it is an unresolved repository-health caveat.
+- A fresh GitHub Search query, `topic:ai-agents
+  created:2026-08-25..2026-08-26`, sorted by stars, returned Switchboard with
+  four stars and no forks at observation time. It was created on 2026-08-25;
+  these counts indicate only a very early repository signal.
+- Switchboard freezes a profile grant's category and project-scope set when the
+  grant is created. Later profile changes do not widen that existing grant, and
+  project identity is derived from Git repository identity rather than an
+  absolute checkout path.
+- Runtime operations are documented as offline by default. Local payloads are
+  plaintext unless the optional payload codec is used, so filesystem modes and
+  operating-system disk encryption remain part of the trust boundary. Optional
+  hosted sync sends approved or pending content as separately deletable records
+  but keeps recall queries, project paths, repository names, policy settings,
+  and handoffs local.
+- Exact-client or profile-and-project handoffs have a default 24-hour lifetime.
+  A successful claim returns the snapshot once, commits a deletion fence, and
+  preserves only content-free lifecycle evidence. The repository's handoff
+  tests cover single claim, erasure, exact addressing, project mismatch,
+  revocation, expiry, replay convergence, and migration behavior.
+- At inspected commit `d2c53b1`, the root package was version 0.2.1 and required
+  Node 22. Its two public check runs—tests and publish—both concluded success.
+  Scout inspected the workflow and focused test source but did **not** execute
+  the suite independently.
+
+## Why it matters
+
+Shared memory expands an agent's authority in two directions at once: it lets a
+worker consume organizational context and lets its outputs influence future
+workers. A governance layer must therefore bind six distinct questions:
+
+1. **Who is the caller?** Identity should come from a credential authority, not
+   request prose or model-generated fields.
+2. **What can it see or change?** ACL decisions must occur before retrieval and
+   mutation, not after a broad candidate set reaches a plugin or model.
+3. **How does knowledge change?** Corrections need provenance and temporal
+   supersedence rather than destructive overwrite.
+4. **What independently records the outcome?** Denials, misses, degraded paths,
+   and errors matter as much as successes for audit reconstruction.
+5. **Where does trust actually end?** A typed interface is not a sandbox, and an
+   application predicate is not database-enforced tenant isolation.
+6. **Is this knowledge or custody?** Durable memory and a one-time task snapshot
+   need different addressing, expiry, claim, deletion, and replay rules.
+
+This turns “memory governance” from a feature checklist into an authority map.
+The reusable test is to trace every proposal, approval, read, write, plugin call,
+handoff, and deletion to its enforcing principal and then ask what happens if
+that component is malicious, stale, unavailable, replayed, or bypassed.
+
+## Reusable guidance
+
+- Resolve actor, role, namespace, and source scope server-side; never let the
+  agent assert the identity under which its own request will be authorized.
+- Apply scope before candidate generation and expose retrieval plugins only the
+  minimum read surface needed for one call.
+- Route imports, connectors, brownout writes, and interactive writes through the
+  same classification, provenance, and audit invariants.
+- Preserve corrections as temporal chains; reserve destructive deletion for an
+  explicit erasure workflow with separately verifiable evidence.
+- Model proposal, approval, recall grant, and project scope as separate checks.
+  A positive decision at one layer should not silently widen another.
+- Keep temporary handoff custody out of durable recall. Address it narrowly,
+  expire it, make the claim atomic and single-use, erase payload content after a
+  terminal outcome, and retain only the minimum receipt needed for audit.
+- Treat an in-process plugin contract as architecture, not isolation. Use a
+  process or capability boundary when the plugin is not fully trusted.
+- Pair application ACL predicates with database defense-in-depth on every
+  authority-bearing table; inventory exceptions rather than claiming blanket
+  tenant isolation.
+- Read CI at the check level. A successful test workflow and a failed security
+  workflow can coexist on the same revision.
+
+## Primary sources
+
+- Repository at inspected revision: https://github.com/halofyai/halofy/commit/3763e64f521df8dc58d00d4632e732e702dd76ef
+- README: https://github.com/halofyai/halofy/blob/3763e64f521df8dc58d00d4632e732e702dd76ef/README.md
+- Architecture: https://github.com/halofyai/halofy/blob/3763e64f521df8dc58d00d4632e732e702dd76ef/docs/architecture.md
+- Threat model: https://github.com/halofyai/halofy/blob/3763e64f521df8dc58d00d4632e732e702dd76ef/docs/security/threat-model.md
+- Kernel package metadata: https://github.com/halofyai/halofy/blob/3763e64f521df8dc58d00d4632e732e702dd76ef/kernel/package.json
+- Successful CI workflow: https://github.com/halofyai/halofy/actions/runs/32714621258
+- Later failed gitleaks check: https://github.com/halofyai/halofy/actions/runs/32925473603/job/98047389134
+- Switchboard repository at inspected revision: https://github.com/Egoist-Machines/switchboard/commit/d2c53b117d554e9919e6f0c2909f04157a2fb49d
+- Switchboard README: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/README.md
+- Switchboard grants, handoffs, storage, and sync reference: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/DOCS.md
+- Switchboard handoff tests: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/test/handoff.test.mjs
+- Successful Switchboard test run: https://github.com/Egoist-Machines/switchboard/actions/runs/32932761986

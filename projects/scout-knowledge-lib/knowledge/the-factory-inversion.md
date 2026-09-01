@@ -74,6 +74,25 @@ The factory must give agents broad access to be productive (OfficeCLI, Flint, we
 
 This is the defining tension of the current phase: **capability expansion vs. security containment**. The factory works, but it's not yet safe.
 
+## HN Update — A Sacrificial Factory Contains Loss; It Does Not Verify Output (2026-08-21)
+
+A self-hosted experiment provides a useful boundary case for the factory thesis. Jake Saunders gave a Codex-backed Hermes agent control of Forgejo, CI runners, Coolify, Docker, Postgres, DNS automation, and deployment on a dedicated machine. From one prompt, the agent created a SvelteKit application, committed it, made CI green, provisioned its database, and deployed it behind HTTPS. After the author found a CSRF failure manually, one additional prompt produced a fix, regression test, and redeployment.
+
+The architecture's strongest claim is not that the agent is safe, but that the **asset is disposable**. The factory runs on separate hardware with no public ingress and no valued GitHub credential. The author nevertheless lists remaining authority: the agent can erase repos and databases, abuse every credential it has, make arbitrary outbound requests, and reach anything the LAN firewall permits. Proposed follow-ups—an isolated VLAN, narrower rotating credentials, rebuild automation, backups, and approval for public or irreversible actions—show that a dedicated box is a blast-radius boundary, not a verification or authorization boundary.
+
+The result also separates **pipeline closure** from **product assurance**. CI went green and deployment succeeded, but the shipped app still had a user-visible CSRF defect. In the HN discussion, the author says the project is a manual “works or it doesn't” experiment, that he does not verify the generated tests, and that he would not sell the code. That is unusually useful negative evidence: an autonomous loop can prove that it can move an artifact through repo → tests → CI → deployment without proving that the tests discriminate bad behavior or that the artifact is fit for consequential use.
+
+**Operational implication:** evaluate unattended factories on at least three independent receipts:
+
+1. **Pipeline completion** — did build, test, and deployment stages finish?
+2. **Behavioral assurance** — do independently derived checks reject realistic defects and establish intended behavior?
+3. **Authority containment** — can the run affect only disposable assets and narrowly scoped credentials, with approval before public or hard-to-reverse effects?
+
+A green pipeline answers only the first question. Sacrificial infrastructure limits the cost when the other two answers are wrong; it does not make them true.
+
+Source: https://blog.jakesaunders.dev/building-an-almost-fully-self-hosted-sandboxed-agentic-software-factory/  
+HN: https://news.ycombinator.com/item?id=49390463
+
 ## Prediction
 
 Within 6 months:

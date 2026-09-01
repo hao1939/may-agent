@@ -2,7 +2,7 @@
 title: "Kookr — Human Attention Routing Becomes a First-Class Agent Layer"
 source: github
 date: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-21
 type: finding
 tags: [github, coding-agents, supervision, attention-routing, multi-agent, hooks, github-awareness]
 relevance: high
@@ -73,3 +73,18 @@ That makes Kookr less like an agent framework and more like an **air-traffic-con
 - **Architecture:** https://raw.githubusercontent.com/kookr-ai/kookr/main/docs/architecture.md
 - **User guide:** https://raw.githubusercontent.com/kookr-ai/kookr/main/docs/user-guide.md
 - **GitHub API metadata:** https://api.github.com/repos/kookr-ai/kookr
+
+## HN Update — One queue prices all claims on human attention (2026-08-21)
+
+A new Show HN project, **Voro**, independently sharpens the attention-router pattern. Rather than maintain separate views for agent questions, completed diffs, proposed tasks, and ready work, its design puts all four into one ranked next-action queue. The repository's state machine derives the human's next verb from task state (`needs-input` → answer, `review` → review, `proposed` → triage, `ready` → dispatch or do), keeps running/refining work outside that queue, and gives blocked-on-human questions first-among-equals treatment. Project weight and task priority then compete through an explicit attention score; a configurable work-in-progress cap can stop the queue from offering more dispatches.
+
+This is a useful refinement of Kookr's anomaly-centered supervision model: once agents can emit questions, proposals, and reviewable outputs, **healthy ready work is also a claim on the same scarce resource**. A supervisor that ranks only failures can still overload the operator by offering fresh dispatches while decisions and reviews accumulate. The stronger control surface prices interruption, acceptance, triage, and initiation together, while preserving distinct states so urgency does not erase what kind of judgment is required.
+
+The evidence remains early: the HN submission had 3 points and two comments at retrieval, the repository describes itself as early software, and GitHub metadata reported zero stars. Treat this as a concrete design experiment, not adoption evidence.
+
+### Added sources
+
+- **Source:** https://news.ycombinator.com/item?id=49386001
+- **Repo:** https://github.com/ClachDev/Voro
+- **Design:** https://github.com/ClachDev/Voro/blob/main/docs/DESIGN.md
+- **README:** https://github.com/ClachDev/Voro/blob/main/README.md

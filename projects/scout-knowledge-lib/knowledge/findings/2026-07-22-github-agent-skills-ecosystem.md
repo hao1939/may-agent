@@ -2,7 +2,7 @@
 title: "Agent Behavioral Skills — A Portable Ecosystem Emerges"
 source: github
 date: 2026-07-22
-last_updated: 2026-08-05
+last_updated: 2026-08-27
 type: finding
 tags: [github, agent-skills, coding-agents, portable-behaviors, harness-engineering, workflow-recording]
 ---
@@ -42,6 +42,14 @@ A distinct pattern is crystallizing on GitHub: **single-file "skills"** — port
 
 7. **Skill authoring is being compiled from demonstration, not only hand-written prompts (2026-08-05 update).** `microsoft/skill-recorder` records a user's real desktop workflow, captures screen/app/page context locally, then uses GitHub Copilot CLI to infer a reusable **intent + ordered steps** that can be emitted either as a `SKILL.md` procedure or as a scheduled automation. The architectural signal is that skills are becoming **distilled behavior traces**: instead of experts manually writing agent procedures from scratch, teams can demonstrate a task once and let the agent convert it into a portable skill that prefers native tools (`gh`, `web_fetch`, etc.) over brittle click replay. That shifts skills from pure promptcraft toward **workflow capture + compilation**.
 
+8. **Distribution is outrunning loadability (2026-08-20 HN update).** Toolproof's source-read structural census reports that **43,199 of 445,348 public Claude Code artifact listings (9.70%) would not load as published**. The aggregate hides a format-specific asymmetry: subagents failed at **21.9%**, versus **7.89%** for skills, because Anthropic requires `name` and `description` in subagent frontmatter while skills can fall back to a directory name. Malformed YAML accounted for **38,183 failures (88.4%)**. This changes the ecosystem thesis: provenance and malware scanning are not enough; a distribution layer also needs a parser-backed admission gate and an install receipt that proves the runtime actually registered the artifact.
+
+   The number is a **listing-level structural floor**, not an execution or quality result. The census includes forks and vendored copies—445,348 listings across 14,233 repositories—and discovery is bounded by GitHub search. Toolproof also published a consequential self-correction: an unrelated “missing references” detector had been wrong roughly seven times in eight because of regex and path-resolution bugs. That correction did not affect the 9.70% fatal-load figure, but it is a useful warning that ecosystem health dashboards need row-level evidence, reproducible rules, and explicit corrections rather than an opaque badge.
+
+9. **Instruction portability is not behavioral portability (2026-08-27 update).** `amosblomqvist/learn` is a useful counterexample to the single-file framing. Its teaching policy is written as a skill, but the workflow depends on a graded `quiz` tool, a semantically different ungraded `ask_user_question` tool, a researcher subagent with a runtime-specific `safe_bash` capability, and visual-maker subagents with custom render tools. The two interactive extensions also coordinate through a shared `globalThis` mutex because the host can support only one active pop-up; the quiz emits its shuffled display order before blocking so a separate Markdown logger can preserve what the learner actually saw without leaking the answer. Copying `SKILL.md` alone may preserve prose while losing interaction semantics, serialization, evidence capture, and dependency availability.
+
+   This bounds the earlier portability claim: a skill can be **syntactically portable** yet not **behaviorally equivalent** across hosts. Packages should declare required tool semantics, subagent/capability dependencies, concurrency assumptions, and observable events, then test degraded modes when dependencies are absent. `learn` explicitly describes itself as a personal system for one learner and warns that alternative subagent implementations require adaptation, so it is architecture evidence—not evidence that this pedagogy generalizes or improves learning outcomes.
+
 ## Connection to Harness Engineering
 
 This dovetails with the harness-engineering theme (lopopolo/harness-engineering, 2.2k★): skills are the behavioral-configuration layer of the harness. The harness provides execution infrastructure; skills provide behavioral policy. agent-chief (SmileLikeYe, 1k★) sits at the intersection — an attention-management harness that decides which agent outputs deserve human attention.
@@ -53,9 +61,15 @@ This dovetails with the harness-engineering theme (lopopolo/harness-engineering,
 - Harness engineering as a discipline: covered in [GitHub trending](./github-trending-ai-agents-2026.md)
 - `agentskillexchange/skills` (curated trust-scanned catalog + runtime manifests): added 2026-08-05
 - `microsoft/skill-recorder` (screen-recorded workflow → generated skill/automation): added 2026-08-05
+- Toolproof structural census (published artifacts that fail to load): added from HN 2026-08-20
+- `amosblomqvist/learn` (skill package whose behavior depends on host-specific tools, events, and UI serialization): added 2026-08-27
 
 ---
 
+Source: https://news.ycombinator.com/item?id=49373129
+Source: https://toolproof.kynth.studio/census
+Source: https://toolproof.kynth.studio/methodology
+Source: https://doi.org/10.5281/zenodo.21936490
 Repo: https://github.com/Sahir619/fable-method
 Repo: https://github.com/ayghri/i-have-adhd
 Repo: https://github.com/Kulaxyz/token-diet
@@ -64,3 +78,5 @@ Repo: https://github.com/mattpocock/skills
 Repo: https://github.com/ComposioHQ/awesome-claude-skills
 Repo: https://github.com/agentskillexchange/skills
 Repo: https://github.com/microsoft/skill-recorder
+Repo: https://github.com/amosblomqvist/learn
+Source: https://github.com/amosblomqvist/learn/commit/7cfd8942f82ab9476e63572387e1fe9bcea5082c

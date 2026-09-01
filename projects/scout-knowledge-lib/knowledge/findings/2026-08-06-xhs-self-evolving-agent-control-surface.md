@@ -1,19 +1,24 @@
 <ai_context>
-summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, but the more structurally important August 2026 signal is that control-surface questions are now being surfaced in public titles: self-evolution is being framed through harness+loop composition, challenged on evaluator independence ('the biggest pitfall is letting the agent judge itself'), and tested against shared-workspace interference via SWE-Touch."
-triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface"]
-last_updated: "2026-08-06"
-source_basis: "XHS source packet for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06. Analysis is grounded in current search-result titles, authors, likes, and links only."
+summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles now expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection."
+triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory"]
+last_updated: "2026-08-19"
+source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19. Analysis is grounded in current search-result titles, authors, likes, and links only."
 </ai_context>
 
 # XHS: Self-Evolving Agent Discussion Narrows to the Control Surface
 
 Date: 2026-08-06
-last_updated: 2026-08-06
+last_updated: 2026-08-19
 Source: https://www.xiaohongshu.com/search_result/6a50bbbf000000000803eb62
 Source: https://www.xiaohongshu.com/search_result/69c4a069000000002200fc9a
 Source: https://www.xiaohongshu.com/search_result/6a5df9630000000006010403
 Source: https://www.xiaohongshu.com/search_result/6a7217af00000000210200a2
-Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface
+Source: https://www.xiaohongshu.com/search_result/6a577ffa000000000f02ac21
+Source: https://www.xiaohongshu.com/search_result/6a8276d000000000320307a6
+Source: https://www.xiaohongshu.com/search_result/6a5a6c690000000013027489
+Source: https://www.xiaohongshu.com/search_result/6a59a0dd000000001b01f455
+Source: https://www.xiaohongshu.com/search_result/6a7a89760000000005033b26
+Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface, online-training, bayesian-memory
 
 ## Summary
 
@@ -59,6 +64,20 @@ That is a useful leading indicator because these are production questions, not c
 
 This XHS packet usefully aligns with Scout's recent arXiv note on **SWE-Touch**: shared-workspace awareness is becoming visible not only in benchmark research but also in Chinese practitioner discourse. A non-obvious implication is that **self-evolution and collaboration safety are converging**: a loop that claims to improve an agent is incomplete if it cannot survive outside edits, counter-edits, or user corrections.
 
+## Update: 2026-08-19 — the control surface expands from judgment to learning state
+
+A new result set for the same query reinforces the topic while making the mechanism split more explicit:
+
+| Post | Author | Likes | Metadata-grounded signal |
+|---|---|---:|---|
+| 翁荔长文谈自进化：自进化agent如何评测？ | 奇点逃逸 | 100 | Evaluation remains a named self-evolution problem. |
+| AI Agent不写反思，靠贝叶斯记账越错越强 | 光头不砍树 | 39 | A post title explicitly contrasts free-form reflection with Bayesian bookkeeping. |
+| LLM + Harness？自提升 Agent 的全面综述！ | 轻舟AI | 35 | Harness composition remains part of the public framing. |
+| SEED：面向长程 Agent RL 的自演化在线opd | Davin | 295 | Online self-evolution is being connected to long-horizon reinforcement learning. |
+| 迈向可靠的自进化智能体 全新综述出炉！ | HySEA | 367 | Reliability is now prominent in a comparatively high-engagement overview title. |
+
+The useful shift is from a generic **self-reflection loop** toward a set of separable design choices: the learning substrate (online RL or explicit state updates), the memory/update representation (for example, Bayesian bookkeeping rather than prose reflection), and the evaluator that decides whether change is improvement. Search-result engagement is only an attention signal, but the 295- and 367-like posts suggest that training and reliability framings are not confined to niche criticism.
+
 ## Caveat
 
-This finding is based only on current XHS search-result metadata supplied in the workflow packet. It does **not** claim details of the linked papers or posts beyond what their public titles and engagement counts support.
+This finding is based only on current XHS search-result metadata supplied in the workflow packets. It does **not** claim details of the linked papers or posts beyond what their public titles and engagement counts support. Likes are mutable snapshots, not quality or adoption measures.

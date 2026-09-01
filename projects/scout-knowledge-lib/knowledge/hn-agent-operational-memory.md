@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
-last_updated: "2026-08-06"
-source_basis: "Hacker News discussions on agent architectures, arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation), GitHub brain.md/agent-memory-wiki"
+last_updated: "2026-08-25"
+source_basis: "Hacker News discussions on agent architectures, including HN 49376500 / tenequm/pond, HN 49394827 / OzBrain, HN 49428882 / laude-institute/headlong, and HN 49433217 / wisplu state-file incident; arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation), GitHub brain.md/agent-memory-wiki and lohoz/agenthist"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-06-29: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines. 2026-08-06 maintenance removed future-dated extraction metadata and unverifiable future-dated tracker links."
 </ai_context>
@@ -26,6 +26,77 @@ This is distinct from general user memory or static documentation retrieval. It 
 Our system already implements a basic version of this via the `lessons` array in the `finish` tool (which updates `context.md` for agents). 
 *   **Current State**: We have `context_updates` for durable facts and `lessons` for actionable learnings.
 *   **Opportunity**: We could formalize this into a structured "Agent Experience Cache" that tracks historical tool success/failure rates and contextually surfaces past failure modes when an agent attempts a similar action.
+
+## The session archive is below the memory layer (Aug 2026)
+
+**Pond**, introduced in HN item 49376500, makes a useful architectural
+separation: an agent memory is a selective derived view, while the raw session
+archive is the rebuildable substrate beneath it. The project preserves messages,
+tool calls, and results across multiple clients, maps client-specific records
+through bidirectional adapters into one canonical Session/Message/Part schema,
+and exposes search and replay over CLI, HTTP, and MCP. Its storage can be a
+local directory or an operator-owned object bucket, with Lance embedded in the
+process rather than a separately operated database service.
+
+This changes the operational-memory pipeline from destructive summarization to
+**archive → index → derived memory → bounded context**. Facts, lessons, and
+summaries can be regenerated when extraction logic changes; a summary-only
+system cannot recover omitted evidence. Cross-client replay also makes the
+canonical schema—not any one agent vendor's transcript format—the portability
+boundary.
+
+The HN author reports one deployment containing 14,861 sessions, 2.83 million
+messages, and 10.6 GiB from eight tools, with local searches taking milliseconds
+to two seconds but remote object-storage reads taking 20–30 seconds. Those are
+operator-reported observations, not an independent benchmark. Pond's README
+also labels the software pre-v1, says schemas may break, and makes object-store
+IAM the access-control boundary; it does not add application-level encryption
+or authenticate opaque tenant namespace strings. Its published context-cost
+comparison establishes retrieval token savings, not equivalence of answer
+quality.
+
+**Reusable rule:** preserve source-complete execution records separately from
+what is admitted to working context. Archive completeness and context relevance
+are different objectives; treating the archive itself as prompt memory would
+recreate the memory-as-noise failure this note already documents.
+
+- **Source:** https://news.ycombinator.com/item?id=49376500
+- **Repo:** https://github.com/tenequm/pond
+
+## Shared memory turns knowledge writes into a control-plane operation (Aug 2026)
+
+**OzBrain**, introduced in HN item 49394827, is an early hosted attempt to put
+multiple chat and coding agents behind one mutable knowledge corpus. The launch
+post says it accepts agent reads and writes, tracks changes for audit, handles
+concurrent edits, refactors material into smaller retrieval units, and preserves
+superseded knowledge through links rather than erasure. Its public site describes
+structured articles with provenance and freshness, one connector endpoint for
+several agent clients, and Markdown export.
+
+The useful signal is not merely cross-client sync. Once several agents can change
+the same corpus, the memory write path becomes a **control plane**: it must stage
+candidate writes, identify their source and principal, resolve conflicts, retain
+prior versions, and decide which statement is current before that statement is
+retrieved as authority. A shared brain without these controls turns one agent's
+mistake into reusable context for every connected agent.
+
+OzBrain should be treated as a design signal rather than validated proof. The HN
+author explicitly says its maintenance loop is alpha and is not yet being run on
+customer data; the product is hosted, its public footer labels the version
+`v0.1.0`, and the implementation is not available at the GitHub URL
+advertised in the site's organization metadata. The launch thread also raises an
+unresolved portability distinction: "Markdown export anytime" is weaker than
+Markdown as the live canonical store because exit is possible while day-to-day
+history and merge semantics remain service-owned.
+
+**Reusable rule:** separate raw capture from admitted canon. Give each memory
+mutation a staged proposal, principal, provenance, version, and supersession edge;
+only an explicit admission step should make it retrievable as current authority.
+Exportability is a recovery property, not evidence that the active knowledge
+state is portable or independently auditable.
+
+- **HN:** https://news.ycombinator.com/item?id=49394827
+- **Source:** https://ozbrain.com
 
 ## Practitioner Evidence: Homelab CI-Agent Context Gap (Jun 2026)
 
@@ -844,6 +915,96 @@ surface are orthogonal.
 
 *(Source: [2026-06-22-hn-scan-81.md](./findings/2026-06-22-hn-scan-81.md))*
 *(arXiv: https://arxiv.org/abs/2606.20512)*
+
+## Persistent context makes isolation and spend continuous invariants (Aug 2026)
+
+**Headlong**, discussed in HN item 49428882, makes a useful implementation
+separation between an append-only execution history and the context shown to the
+model. Its trajectory is a fork-and-merge DAG of JSONL files; `context` projects
+that history at exponentially decaying resolution, leaving recent steps verbatim
+and progressively summarizing older steps while retaining raw entries for later
+retrieval. This is stronger than destructive transcript compaction: the durable
+record remains independently inspectable even when the prompt view changes.
+
+The same design exposes why persistence is not merely a memory feature. A Headlong
+identity schedules its next wake-up after a turn ends, runs shell commands between
+human interactions, and places Slack, Telegram, and web conversations into one
+thought stream. The authors explicitly report that this stream has no hard walls
+between users, that their agent discloses one person's material to another despite
+prompt instructions, and that conflicting-user instructions have not been studied.
+They also report a background-thinking cost of **$1–$2 per hour** at their settings
+and recommend a dedicated spend-capped key. These are author-reported operating
+observations, not an independent benchmark.
+
+Persistence therefore moves three controls from session setup into the live loop:
+
+1. **Context admission:** derive bounded prompt views from immutable history rather
+   than rewriting the only copy of the record.
+2. **Principal isolation:** attach every observation and retrieval to an audience;
+   a shared timeline without retrieval-time policy is shared memory, not multi-user
+   privacy.
+3. **Resource admission:** enforce cumulative token, wall-clock, and effect budgets
+   before every autonomous wake-up, with an external stop authority that does not
+   depend on the agent choosing to stop.
+
+Headlong provides Docker-oriented installation, exponential idle backoff, a
+spend-cap recommendation, and a `headlong-killall` panic command, but those
+mechanisms do not by themselves establish per-user confidentiality or bounded
+cumulative effects. The HN thread independently focused on the absent data
+isolation and asked for objective harness benchmarks; another comment challenged
+whether continuous looping constitutes learning. Those critiques mark the right
+evaluation boundary: trajectory persistence proves continuity and auditability,
+not improvement, safe sharing, or useful autonomous work.
+
+**Reusable rule:** treat a persistent agent as a continuously running service.
+At each wake-up, re-admit its effective context, principal, budget, and tool
+authority; preserve the source-complete trajectory below that decision so audits
+can reconstruct what the model actually saw and did.
+
+- **HN:** https://news.ycombinator.com/item?id=49428882
+- **Source:** https://www.laude.org/updates/headlong-a-microharness-for-persistent-agents
+- **Repo:** https://github.com/laude-institute/headlong
+
+## Verify memory topology, not only remembered facts (Aug 2026)
+
+A newly submitted HN incident report describes a four-hourly agent whose entire
+cross-session memory lived in `STATUS.md`. An inverted pair of heading offsets
+made Python return an empty slice; passing that empty string to `replace`
+inserted the replacement between every character. The author reports that a
+roughly **13 KB** state file grew to **49,414,452 bytes and 893,828 lines** over
+three days of repeated wakes.
+
+The operationally useful failure was in verification, not memory retrieval. The
+author's checks searched for expected facts and inspected a few known lines.
+Those checks kept passing because the transformation preserved every original
+character while multiplying structure around it. Scout independently reproduced
+the language-level mechanism: a reversed slice returns `''`, and
+`'abc'.replace('', '-')` returns `'-a-b-c-'`. The incident's production scale
+and three-day duration remain author-reported; the HN submission had one point
+and no comments when checked.
+
+This suggests that durable memory needs two different postcondition families:
+
+1. **Semantic presence:** required facts, checkpoints, and identifiers still
+   exist and parse.
+2. **Structural shape:** byte/line growth stays within an expected envelope;
+   singleton headings remain singleton; section boundaries are ordered and
+   non-empty; the write has a bounded diff or replacement count.
+
+Presence-only probes are especially weak against additive corruption because
+retaining the expected content is exactly why the corruption evades them. A
+coarse size signal catches an unknown structural failure, while cardinality and
+ordering assertions localize the known class. Neither proves the memory's facts
+are correct, so structural checks complement rather than replace semantic and
+provenance validation.
+
+**Reusable rule:** treat persistent memory writes as typed state transitions.
+Fail closed before mutation if anchors are missing, duplicated, inverted, or
+produce an empty replacement range; after mutation, validate both semantic
+content and whole-artifact shape before making the new state authoritative.
+
+- **HN:** https://news.ycombinator.com/item?id=49433217
+- **Source:** https://wisplu.com/blog/en/status-file-blew-up/
 
 ## Next Steps
 

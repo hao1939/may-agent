@@ -1,5 +1,6 @@
 <ai_context>
-Synthesis of six independent June 2026 arXiv papers converging on step-level credit assignment as the binding constraint in agent RL post-training. Names the "Credit Resolution Revolution" — migration from trajectory-level binary to graph-structured, semantically-aware step credit. Connects to Harness Reflexivity (#113), Irreducible Interaction Effect (#150), Iteration Paradox (#119), and Selection Bottleneck (#136).
+Synthesis of six independent June 2026 arXiv papers converging on step-level credit assignment as the binding constraint in agent RL post-training. Names the "Credit Resolution Revolution" — migration from trajectory-level binary to graph-structured, semantically-aware step credit. An August 2026 executed-replay audit now directly challenges the note's strongest inference: tested off-the-shelf credit signals did not recover causal step contribution above shuffled controls in ALFWorld, and apparent training differences were confounded by effective training dose. Connects to Harness Reflexivity (#113), Irreducible Interaction Effect (#150), Iteration Paradox (#119), and Selection Bottleneck (#136).
+last_updated: 2026-08-21
 </ai_context>
 
 # The Credit Resolution Revolution (arXiv Synthesis, 2026-06-24)
@@ -132,6 +133,64 @@ Our agent system has no training loop, but this matters structurally:
 
 4. **The "implicit advantage" idea applies to our knowledge evaluation** — the difference between what a calibrated system produces vs. baseline IS the quality signal, without explicit labeling.
 
+## August 2026 update: causal replay challenges implicit-credit claims
+
+**Credit Without Ground Truth** (arXiv:2608.19760v1) tests a distinction this
+note originally collapsed: a step can be *correct* yet causally inert, or
+incorrect yet pivotal because it changes the states from which recovery is
+possible. Instead of comparing credit scores with annotated correctness, the
+paper re-samples policy-supported alternatives at each ALFWorld decision point,
+executes each continuation, and estimates how the outcome distribution changes.
+This makes executed counterfactual contribution—not plausibility or
+correctness—the audit target.
+
+The negative result is material to the June synthesis:
+
+- On 50 frozen Qwen2.5-7B trajectories, only 30.5% of complete turns with
+  defined replay ground truth were pivotal. Most turns were already in an
+  absorbing outcome region, so a dense step score can manufacture apparent
+  signal where no measurable intervention effect remains.
+- LLM-judge scores, outcome-conditioned log-probability ratios, and the
+  policy's confidence did not rank causal contribution better than their own
+  marginal-matched shuffled controls. The implicit signal instead tracked the
+  policy probability of the scored action (median within-trajectory rank
+  correlation +0.752 on the primary support, replicated near +0.70 in a second
+  model family), consistent with a **fluency echo** rather than a contribution
+  estimate.
+- Counterfactual measurability was itself policy-dependent: 13.1% of intervened
+  Qwen turns and 26.8% of intervened Llama-3.1-8B turns had no
+  policy-supported alternative under the paper's instrument. Credit audits
+  therefore need to report an unmeasurable region rather than force every step
+  onto one score scale.
+- In the paper's seven-arm preregistered offline LoRA experiment, no arm
+  reliably beat the untrained policy. Sparse rules also retained fewer
+  examples, producing an order-of-magnitude spread in optimizer steps; after
+  controlling for realized parameter-change magnitude, the reported
+  instrument-family correspondence disappeared. Credit-rule comparisons that
+  do not dose-match may be comparisons of update volume, not credit content.
+
+This does **not** establish that all graph, semantic-clustering, sibling, or
+privileged-trace methods fail. The audit covers one deterministic,
+single-agent environment with a binary outcome; its training experiment uses
+one model family and scale, lacks a validated positive control, and its
+cross-family run replicates the structural audit rather than the training
+result. But it does falsify this note's stronger claim that the reward-model
+problem had already been "dissolved" by implicit policy signals. The safer
+revised position is:
+
+1. Step-level credit remains a binding measurement problem, but finer
+   resolution is not evidence of causal validity.
+2. A candidate signal should beat a matched shuffled control against executed
+   interventions, not merely correlate with annotated correctness or training
+   gains.
+3. Reports should publish the pivotal, absorbed, and no-supported-counterfactual
+   regions separately.
+4. Training comparisons should match effective examples, optimizer steps, and
+   parameter displacement before attributing gains to credit semantics.
+
+Source: https://arxiv.org/abs/2608.19760v1  
+Primary paper HTML: https://arxiv.org/html/2608.19760v1
+
 ## Predictions
 
 - "Implicit process reward" (no dedicated PRM) becomes default post-training approach within 3mo
@@ -142,4 +201,4 @@ Our agent system has no training loop, but this matters structurally:
 
 ---
 
-*Scan date: 2026-09-13 (arXiv batch 2026-06-22 through 2026-06-24)*
+*Observation date: 2026-06-24 (arXiv batch 2026-06-22 through 2026-06-24; repository-observed by 2026-06-29)*

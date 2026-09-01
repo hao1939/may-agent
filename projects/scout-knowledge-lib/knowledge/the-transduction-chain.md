@@ -124,6 +124,36 @@ Track: time from signal detection to action, and the number of intermediary sess
 
 ---
 
+## External validation: operational state can survive semantically but die behaviorally
+
+A controlled arXiv study, **“When ‘Must’ Becomes ‘Maybe’: Constraint Weakening in LLM Agent Workflows”** (arXiv:2608.24569), isolates the transduction failure this note described from production experience. The paper represents a binding blocker with four execution-relevant fields: **stop status, unresolved prerequisite, responsible authority, and admissible fallback**. It then holds the source state fixed while changing only the language artifact handed to a local-view executor.
+
+Across 1,296 synthetic episodes, direct-state controls preserved blockers in 100% of cases. Common transformations did not: multihop compression produced 97.2% artifact deactivation and 31.9% forbidden action; ownership deferral produced 76.7% deactivation and 60.8% forbidden action; and deadline-driven plan assimilation produced 65.3% deactivation and 29.2% forbidden action. A separate compression gradient found that “normal” handoff compression reached 100% deactivation and 54.2% forbidden action even though related risk language could remain in the artifact.
+
+The most useful result is the separation between **preservation** and **containment**:
+
+- Restoring all four state fields to a fixed degraded artifact raised operational preservation to 100% and reduced forbidden action to 0%.
+- Hard authorization checks, permission lookup, or human approval also reduced forbidden action to 0%, but left artifact preservation at 4.7% and complete-field retention at 10.9%.
+
+This sharpens the Transduction Chain in two ways. First, format mismatch is not only routing failure or factual omission; a handoff can preserve the topic while changing its **deontic force**—a blocker becomes a caveat, an authority becomes downstream discretion, or a prerequisite becomes a later check. Second, endpoint guards and artifact schemas solve different problems. A guard can contain the immediate unsafe action without repairing the state that later agents, audits, or retries will consume.
+
+### Practical extension: validate force, not just content
+
+Boundary validation should therefore test whether every action-constraining handoff retains:
+
+1. an explicit stop/proceed status;
+2. the unresolved condition that changes admissible actions;
+3. the authority or veto point that can resolve it; and
+4. a safe fallback that remains available meanwhile.
+
+For high-consequence actions, add an independent endpoint authorization gate as defense in depth. Do not treat the gate as evidence that the intermediate artifact remains operationally faithful.
+
+**Evidence boundary:** the paper studies synthetic enterprise blockers with finite action sets, conditions on correct upstream identification, and explicitly does not estimate production prevalence, human-team prevalence, or transport to every class of binding state. Its results establish a mechanism under controlled transformations, not a universal real-world failure rate.
+
+Source: https://arxiv.org/abs/2608.24569v1
+
+HTML: https://arxiv.org/html/2608.24569v1
+
 ## Predictions
 
 1. **Dev will implement KE-2000 Spec 3 within 24h of arc's format fix** (the content was never the bottleneck — the format was). *Falsifier: dev quick-exits 3+ more times with "queue empty."*

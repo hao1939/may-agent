@@ -1,8 +1,8 @@
 <ai_context>
 summary: "The Comprehension Cliff discourse arc — complete lifecycle from HN micro-signal to peer-reviewed science to national policy action. Tracks AI-generated output overwhelming human review capacity."
 triggers: "comprehension cliff, reviews expensive, skill atrophy, code review, AI verification bottleneck"
-last_updated: "2026-07-30"
-source_basis: "HN scans #11–#53 (Jun–Aug 2026). Nature controlled trial (Anthropic, 52 engineers). VentureBeat coverage. arXiv 2606.20512 (Probe-and-Refine guidance tuning)."
+last_updated: "2026-08-26"
+source_basis: "HN scans #11–#53 (Jun–Aug 2026). Nature controlled trial (Anthropic, 52 engineers). VentureBeat coverage. arXiv 2606.20512 (Probe-and-Refine guidance tuning). GitHub open-steps repository and published activation/report smoke-test results (2026-08-25 commit)."
 parent_note: "hn-agent-operational-memory.md"
 extraction_reason: "Extracted from parent note (1,303→~907 lines) as thematic companion. The Comprehension Cliff is a complete discourse arc with its own evidence chain, distinct from the parent's operational memory / infrastructure themes."
 </ai_context>
@@ -601,3 +601,27 @@ Companion signal: "What will be left for us to work on?" (84pts, 87c earlier sam
 - The discourse has *not* produced architectural proposals (unlike Tower/Cliff arcs) — remains in the personal-practice register
 
 Source: https://www.artfish.ai/p/offloading-thinking-to-ai, https://news.ycombinator.com/item?id=48908178
+
+---
+
+## Update 2026-08-26: Translation Is a Separate Assurance Layer
+
+GitHub's new [Open Steps](https://github.com/kharmanskyi/open-steps) skill pack treats operator comprehension as an interface requirement. Its completion report separates a short plain-language verdict from a technical handoff, requires proof for every “yes,” gives bad news a dedicated row, and distinguishes “fully done” from “safe to close.” Its intake skill also treats a prior session report as a claim and re-reads machine state before acceptance. These are useful countermeasures to the Comprehension Cliff: compress the review surface without silently erasing uncertainty or technical custody.
+
+The repository's own evaluation exposes an important boundary. Across 54 activation trials per model, the intended skill activated on 79% of prompts for Haiku 4.5, 96% for Sonnet 5, and 100% for Opus 5. But the separate report-quality smoke test scored the required verdict block at 0% for every tested condition and model; warning-row behavior also varied sharply. Activation is therefore not format compliance, and readable prose is not evidence that the interface contract survived generation. The test is small, author-run, Claude-only, and evaluates routing plus a few surface markers rather than whether a non-technical operator made better decisions.
+
+A second boundary is authority. The same package that translates status for a non-technical owner also instructs its acceptance skill to merge verified work without another round trip, unless a task-scoped restriction says otherwise. That may be a deliberate standing policy, but it demonstrates why accessibility and authorization must be modeled separately: making a verdict understandable does not grant action rights, and an action policy should not be inferred from a communication template.
+
+**Reusable design rule:** split the status interface into three independently testable planes:
+
+1. **Observer:** binds claims to current checks, review state, scope, and missing evidence.
+2. **Translator:** produces an accessible verdict while retaining explicit uncertainty and a technical handoff.
+3. **Actuator:** checks a separate, task-scoped authorization immediately before merge, deploy, deletion, or other consequential action.
+
+Test routing, required-field fidelity, reader comprehension, and action authorization separately. Otherwise a skill can fire correctly, sound clear, and still omit its verdict—or turn a reporting request into an operation the reader did not knowingly authorize.
+
+Sources:
+- Repo and design claims: https://github.com/kharmanskyi/open-steps/tree/dad9df5dd49e21612b06ed9db4ef8ef295ad9369
+- Completion-report contract: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/skills/os-done-or-not/SKILL.md
+- Intake and merge policy: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/skills/os-check-work/SKILL.md
+- Published evaluation table: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/evals/results.md
