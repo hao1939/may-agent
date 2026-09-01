@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 10 begins seed-first through the verified WSL Chrome boundary and again confirms the exact 130-ID and metadata fingerprints before source-lane work."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 11 begins seed-first through the verified WSL Chrome boundary, confirms the exact 130-ID and metadata fingerprints, and records restored SkillRise detail availability before source-lane work."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-01"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T12:18:21.873Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against the live Chrome session through 2026-09-01T12:53:44.813Z, including Explore, bounded self-profile collection passes, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,12 +16,12 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | 2026-09-01T12:18:21.873Z |
+| Observation time | 2026-09-01T12:53:13.524Z–12:53:44.813Z |
 | Current direct collection snapshot | **Readable, bounded:** 130 stable note IDs; ID fingerprint `ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`; ID/title/author fingerprint `e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c` |
-| Prior readable snapshot | 2026-09-01T12:01:50Z–12:02:06Z; 130 stable IDs and complete metadata with the same fingerprints |
+| Prior readable snapshot | 2026-09-01T12:18:21.873Z; 130 stable IDs and complete metadata with the same fingerprints |
 | Observable added / changed / absent | IDs `[]` / title-author changes `[]` across all 130 comparable records / IDs `[]` |
 | Collection-membership interpretation | Membership is unchanged under a comparable bounded pass; no collection addition or removal is inferred |
-| Representative availability | Last directly checked in Cycle 9: cards for `6a955b35…afaf` and `6a6ab006…c932` were readable with unchanged title/author, while signed detail GETs resolved to `/404`; Cycle 10 did not repeat detail reads without a new trigger |
+| Representative availability | SkillRise `6a6ab006…c932` card and signed detail are readable without a login wall in Cycle 11; WikiSkill `6a955b35…afaf` remains last observed `/404` in Cycle 9, not reclassified as removed |
 | Removal policy | No post is marked removed until a later comparable readable snapshot confirms absence |
 
 ## Cycle 9 direct WSL Chrome access boundary
@@ -105,6 +105,35 @@ canonical fingerprints exactly, while those four IDs occur outside the
 collection-baseline table. No removal or availability claim uses the rejected
 parser result. This correction happened before Cycle-10 topic selection or
 GitHub work.
+
+## Cycle 11 seed-first reconciliation
+
+Cycle 11 again reconciled the live collection before selecting any topic or
+source lane. The observer ran from `2026-09-01T12:53:13.524Z` through
+`12:53:44.813Z` against the existing authenticated `Alex` collection tab. It
+used the same 18 bounded passes, whose cumulative unique-card counts were
+`30, 30, 34, 40, 47, 54, 61, 67, 73, 79, 85, 92, 99, 105, 111, 117, 124,
+130`. It restored the tab from scroll position zero to zero and did not mutate
+the account or content.
+
+Against the committed 130-record baseline, exact added IDs are `[]`, exact
+title/author changes are `[]`, exact absent IDs are `[]`, and unavailable card
+IDs are `[]`. The ID fingerprint is still
+`ea12a2380dee4c9b72fdf2c318d3dec87241747c48a44aae25b545a2b40deb12`; the
+ordered ID/title/author fingerprint is still
+`e24ce2878aad734a94848d7a63f92a0cd4a9126681de03d49009f8bcb419c11c`.
+The live surface again declared 995 notes, 0 albums, and 14 files. The other
+865 notes and all 14 files were not enumerated, so their item-level added,
+changed, removed, or unavailable state remains unknown rather than empty.
+
+One representative observational read used the current signed collection-card
+link for SkillRise ID `6a6ab006000000001c00c932`. It resolved to its
+`/explore/<stable-id>` detail path with a readable title and no login wall or
+not-found state. This is an access-state improvement from Cycle 9's repeated
+`/404` result; it does not change collection membership or the saved metadata.
+WikiSkill ID `6a955b35000000000400afaf` was not retried and retains its last
+observed detail-unavailable state. No cookie, token, raw profile identifier,
+signed URL, body, media URL, or comment was persisted.
 
 The repository-native observational connector is
 `agents/scout/tools/xhs-browse.mjs`. It supports `status`, Explore feed, search,
@@ -478,3 +507,4 @@ comments, and other account data are not retained.
 | 2026-09-01T11:54:40Z–11:55:05Z | Same direct collection tab; 130 stable IDs; ID and complete metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records | `[]` IDs; no removal inferred | Collection tail and 14-file surface unobserved; representative SkillRise detail readable | Cycle 9 reconciled before discovery. With exact membership and metadata continuity established, reconsider all lanes and select the next seed-linked evaluation question by value. |
 | 2026-09-01T12:01:50Z–12:05:31Z | Direct WSL Chrome boundary verified through PID 2136's network namespace; same 130 IDs and metadata; 995 notes / 0 albums / 14 files declared | `[]` IDs | `[]` across all 130 comparable records | `[]` IDs; no removal inferred | 865-note tail and 14 files unobserved; `6a955b35…afaf` and `6a6ab006…c932` cards readable but signed details `/404` | Preserve the completed pre-discovery Cycle-9 reconciliation. Record live inventory access separately from current detail unavailability; no credential action is required. |
 | 2026-09-01T12:18:21.873Z | Same direct Chrome collection tab; 130 stable IDs and exact ID/metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records | `[]` IDs; no removal inferred | 865-note tail and 14 files retain prior unobserved status; representative details not retried | Cycle 10 reconciled before lane reconsideration. Discard the 134-row full-ledger parser mistake, retain the canonical table comparison, then select the queued Mnemo organization-scope question. |
+| 2026-09-01T12:53:13.524Z–12:53:44.813Z | Same authenticated Chrome collection tab; 130 stable IDs and exact ID/metadata fingerprints unchanged | `[]` IDs | `[]` across all 130 comparable records; SkillRise detail access changed from `/404` to readable | `[]` IDs; no removal inferred | 865-note tail and 14 files unobserved; WikiSkill detail not retried | Cycle 11 reconciled before lane reconsideration. Preserve restored SkillRise detail access, then reconsider the queued general-memory organization audit. |
