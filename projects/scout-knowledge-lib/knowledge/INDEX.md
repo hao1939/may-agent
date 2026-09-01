@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-08-28"
+last_updated: "2026-09-01"
 source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
@@ -21,6 +21,8 @@ topic. Prefer in-place updates and contradiction notes over duplicate files.
 
 ## Library Operations
 
+- [Xiaohongshu human-collection seed ledger](./xhs-seed-ledger.md) — living seed reconciliation state; distinguishes confirmed collection membership from search/feed and retained local evidence.
+- [Xiaohongshu living topic map](./xhs-topic-map.md) — active clusters, value rubric, supporting sources, confidence, contradictions, blocks, and next explorations.
 - [obsidian-second-brain Patterns](./obsidian-second-brain-patterns.md)
 - ~~[Scout Research Ideas](./temp-ideas.md)~~ → archived: ideas covered by existing notes
 
@@ -35,6 +37,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [HN scan collision audit (2026-08-04)](../reports/triage/hn-scan-collision-audit-2026-08-04.md) — inventory of remaining duplicate HN scan numbers, canonical navigation choices, and preserved exceptions after the #52–#76 repair.
 - [Future-dated scans 151–275 provenance repair](../reports/triage/future-dated-scans-151-275-provenance-repair.md) — dispositions and provenance evidence for 14 repaired HN, arXiv, and XHS artifact identities.
 - [Stuck arXiv reconciliation (2026-08-23)](../reports/operations/stuck-arxiv-reconciliation-2026-08-23.md) — verified closure of an orphaned source workflow and the bounded HTTP retrieval contract that prevents recurrence.
+- [XHS seed-first research cycle (2026-09-01)](../reports/research/xhs-seed-first-cycle-2026-09-01.md) — first collection reconciliation boundary, local source deduplication, topic-map rubric, and coalition-reliability deep dive.
 
 ## Recent Source-Grounded Findings
 

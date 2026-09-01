@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates show durable gains require externally grounded verification, pathway-level evaluation, repeated runs, order perturbations, security/effect audits, and explicit separation of optimization spend from deployment cost."
-triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence", "task order", "hidden curriculum", "run variance", "underspecification", "security drift", "unauthorized state change", "artifact-executor compatibility", "agent optimization budget", "deployment cost frontier"]
-source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077."
-last_updated: "2026-08-25"
+summary: "Finding on self-improving agent loops: closed-loop self-evaluation plateaus, while later updates show durable gains require externally grounded verification, pathway- and coalition-level evaluation, repeated runs, order perturbations, security/effect audits, and separate optimization and deployment budgets."
+triggers: ["self-improving agents", "verifier loop", "agent self-improvement", "Goodhart drift", "closed-loop plateau", "retained experience", "skill evolution benchmark", "persistent agents", "pathway evidence", "task order", "hidden curriculum", "run variance", "underspecification", "security drift", "unauthorized state change", "artifact-executor compatibility", "agent optimization budget", "deployment cost frontier", "coalition pollution", "cross-domain utility reversal", "skill reliability"]
+source_basis: "HN story 49012760, loadbearingtech.substack.com, 2026-07-22; arXiv 2607.21461; Lilian Weng harness post + HN 49164896; arXiv 2608.04003; arXiv 2608.03874; arXiv 2608.18066v1; arXiv 2608.17684v1; Agent Lightning v1.0.1 release + HN 49423077; arXiv 2608.22610v1 full paper source."
+last_updated: "2026-09-01"
 </ai_context>
 
 # Most "Self-Improving" AI Agents Don't Improve
@@ -154,3 +154,48 @@ Its evaluation guidance also aligns with this note's stronger claim protocol: ho
 The release announcement says the skill guides systematic improvements and strengthens benchmark reporting, but it publishes no controlled result for the skill itself. The HN thread had 51 points and five comments at retrieval; its technical discussion was minimal and mostly questioned presentation. The skill also says to keep iterating while substantial budget remains, but it does not prescribe confidence intervals, minimum repetitions, a baseline-admission test, or an explicit multiple-comparison correction. Searching more configurations can increase the chance of selecting noise unless validation is protected from repeated optimizer access.
 
 **Reusable rule:** maintain three ledgers during agent optimization: search spend, candidate deployment cost, and protected validation evidence. Stop when the remaining search budget cannot resolve a decision-relevant frontier uncertainty—not merely when budget is exhausted—and do not promote a candidate unless its deployment-visible path beats an admitted baseline on predeclared metrics.
+
+## Update 2026-09-01: skill reliability belongs to the coalition and deployment domain
+
+**Source**: https://arxiv.org/abs/2608.22610v1
+
+*Coalition-Aware Skill Reliability for Self-Evolving Agents* tests a narrower
+version of the evaluation-authority problem: an outcome gate can observe that a
+whole skill bank improved without establishing which skill caused the gain or
+whether that skill remains useful beside different skills or in a new domain.
+The paper calls the two resulting failures **coalition pollution** and
+**cross-domain utility reversal**.
+
+The full-paper evidence is stronger than the abstract alone:
+
+- In one audited transition, the baseline admitted a candidate on a `+0.006`
+  online margin, but a paired 314-query knockout audit measured that candidate
+  at `-0.005`; an incumbent skill carried the bank at `+0.084`.
+- Across 12 proposals and three seeds, Coalition-Aware Skill Selection (CASS)
+  accepted 1 candidate while the MemSkill outcome gate accepted 6. Holding the
+  earlier bank size fixed, the baseline's admitted additions were collectively
+  `-1.38` percentage points on average across LoCoMo, LongMemEval, and
+  HotpotQA-50, despite passing when admitted.
+- The same `insert` skill was significantly helpful on LoCoMo (`+0.084`, 95%
+  confidence interval excluding zero) but had a negative HotpotQA-50 point
+  estimate (`-0.035`) whose interval still included zero. This supports a
+  **directional reversal**, not a statistically established harmful effect.
+- A label-free 20-query target probe masked utility-reversing skills before
+  deployment and improved all six tested banks. The average improvement was
+  `7.17` points for baseline banks and `3.59` for CASS banks, consistent with
+  CASS preventing some pollution earlier rather than repairing it later.
+
+### Stronger admission rule
+
+A self-evolving system should not assign a permanent reliability score to an
+individual skill. Admission evidence must bind the skill to the tested bank
+composition and domain; deployment into a new domain should trigger a new,
+target-conditioned audit. Aggregate improvement is an endpoint observation,
+not attribution proof.
+
+This is a promising but bounded result. The experiments use one MemSkill-based
+framework, Llama-3.3-70B-Instruct for skill extraction, eight H20 GPUs, three
+seeds, and a fixed judge. The target masking result uses only 20 unlabeled
+queries, the clearest target reversal is directional rather than significant,
+and the paper says its audit toolkit, method code, and checkpoints **will be
+released**. Independent reproduction and broader skill types remain open.
