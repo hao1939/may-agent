@@ -35,11 +35,12 @@ function canonicalAttempt(
 function stateWith(
   status: Record<string, unknown>,
   attempts: Record<string, unknown> = {},
+  source = "hn",
 ): Record<string, unknown> {
   return {
     resources: {
-      "explore-hn": {
-        spec: { workflow: "scout-explore", input: { source: "hn" } },
+      [`explore-${source}`]: {
+        spec: { workflow: "scout-explore", input: { source } },
         status,
       },
     },
@@ -72,6 +73,25 @@ describe("latest accepted Scout source output collector", () => {
       "/app/projects/scout-knowledge-lib/knowledge/findings/durable.md",
     ]);
     expect(sample.note.resources).toHaveLength(1);
+  });
+
+  it("counts a converged Reddit resource as a supported source lane", () => {
+    const sample = collectAcceptedSourceOutputs(
+      stateWith(
+        {
+          phase: "converged",
+          updatedAt: "2026-08-21T00:30:00.000Z",
+          evidence: [`${outputPrefix}reddit.md`],
+        },
+        {},
+        "reddit",
+      ),
+      { now },
+    );
+
+    expect(sample.note.resources).toEqual([
+      expect.objectContaining({ taskId: "explore-reddit", source: "reddit" }),
+    ]);
   });
 
   it("excludes a latest evidence-backed no-change resource", () => {

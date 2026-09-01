@@ -62,7 +62,9 @@ function sourceForTask(taskId: string, resource: JsonRecord): string | null {
       : taskId.startsWith("explore-")
         ? taskId.slice("explore-".length)
         : "";
-  return ["arxiv", "hn", "xhs", "github"].includes(source) ? source : null;
+  return ["arxiv", "hn", "xhs", "github", "reddit"].includes(source)
+    ? source
+    : null;
 }
 
 /**

@@ -81,7 +81,7 @@ Use visible names and paths instead of hidden categories.
 
 Domain work changes reusable knowledge:
 
-- explore arXiv, HN, XHS, and GitHub;
+- explore arXiv, HN, XHS, GitHub, and Reddit;
 - write source-grounded findings;
 - absorb high-value findings into canonical notes;
 - split or consolidate oversized notes;
@@ -118,6 +118,7 @@ explore-arxiv                    maintain -> scout-explore
 explore-hn                       maintain -> scout-explore
 explore-xhs                      maintain -> scout-explore
 explore-github                   maintain -> scout-explore
+explore-reddit                   maintain -> scout-explore
 daily-digest                     maintain -> scout-daily-digest
 runtime/library-health-observer  maintain -> library-health
 library-maintenance              maintain -> knowledge-planner

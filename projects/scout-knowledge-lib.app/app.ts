@@ -57,7 +57,7 @@ function ownerRequested(
   });
 }
 
-const scoutSources = new Set(["arxiv", "hn", "xhs", "github"]);
+const scoutSources = new Set(["arxiv", "hn", "xhs", "github", "reddit"]);
 const ownerReviewReasons = new Set([
   "experience-review",
   "library-health-signal",
@@ -312,7 +312,7 @@ export default defineApp({
   version: 1,
   agent: "scout",
   description:
-    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",
@@ -420,6 +420,12 @@ export default defineApp({
       event: scoutEvent("scout.explore", { source: "github" }),
     },
     {
+      id: "scout-explore-reddit",
+      enabled: true,
+      intervalMs: 14_400_000, // 4h
+      event: scoutEvent("scout.explore", { source: "reddit" }),
+    },
+    {
       id: "scout-daily-digest",
       enabled: true,
       intervalMs: 86_400_000, // 24h
@@ -476,7 +482,7 @@ export default defineApp({
     },
     "explore-now": {
       description:
-        "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github).",
+        "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github, reddit).",
       inputSchema: Type.Object(
         {
           source: Type.Optional(
@@ -485,6 +491,7 @@ export default defineApp({
               Type.Literal("hn"),
               Type.Literal("xhs"),
               Type.Literal("github"),
+              Type.Literal("reddit"),
             ]),
           ),
         },
