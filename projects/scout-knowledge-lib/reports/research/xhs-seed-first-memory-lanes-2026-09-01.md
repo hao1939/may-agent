@@ -1725,6 +1725,93 @@ If the XHS surface remains guest and no higher-value seed delta is observable,
 the next exploration is checkpoint organization and metadata ownership or
 another unaudited state-transfer surface.
 
+## Cycle 23 checkpoint — checkpoint tenant ownership is not modeled
+
+What was wrong: the principal-scoped checkpoint repairs correctly stop Alice
+from transferring Bob's state, but a principal is not a tenant. Verified
+capabilities can carry organization scopes while checkpoints have no
+authoritative organization owner. The current code therefore cannot establish
+same-principal, cross-organization isolation for snapshot, replay, branch, or
+merge state.
+
+Seed ordering was preserved. Cycle 23's reconciliation was committed first as
+`0f663d8a4c9a233534975552b241d8ce1ba82f22`, before source-lane work. From
+`2026-09-01T19:29:55.679Z` through `19:31:13.461Z`, the directly reachable WSL
+Chrome ran as Linux user `hao` and exposed one XHS Explore page. Its only
+navigation-history entry was Explore, with no collection label or collection
+address. The public feed yielded 29 IDs and a representative signed public post
+`6a6eb88e00000000320231fc` had readable title, author, and body. Current-user
+reads returned HTTP 406 JSON (`success: false`, code `-1`) or same-origin HTTP
+500 non-JSON, with no authenticated nickname. Public readability does not prove
+collection membership. Added and changed seeds remain unknown, proven removals
+are `[]`, and all 132 durable seed IDs remain unavailable rather than removed.
+No XHS account or content state was changed.
+
+Only after that persisted reconciliation were the permanent lanes reconsidered:
+
+- **GitHub/local code was selected** for high relevance, high expected value,
+  current access, and the queued tenant-ownership question. Public Mnemo `main`
+  remained `2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+  `2026-09-01T19:33:07.724Z–19:33:08.510Z`. Direct inspection used exact local
+  repair `716a1a57753d40f5afe91e0f5f0f5a2d129c0489`. Revisit on upstream
+  revision, review, or deployment; otherwise design a migration-compatible
+  organization owner and same-principal/cross-organization fixture next.
+- **arXiv was retained and deferred** because relevance and retained value
+  remain high but no version or new paper question appeared. The exact Atom
+  lookup at `2026-09-01T19:33:07.730Z–19:33:08.019Z` returned only
+  `2608.30177v1`, published and updated `2026-08-31T02:57:08Z`. It still wins
+  the distinct 15/15 stage-wise rubric. Revisit on a version, attributable
+  artifact, independent replication, stronger study, or content-bearing seed
+  change.
+- **Reddit was deferred without quota work** because relevance remains medium,
+  expected incremental value is low, and an anecdotal thread cannot resolve a
+  missing schema-level owner. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on a seed-linked reproducible tenant
+  deployment, distinct checkpoint evidence, thread delta, or access change.
+
+The selected local deep dive found an absent ownership dimension rather than a
+new runtime reproduction. Checkpoint, branch, merge, and replay inputs do not
+accept `org_id`, and their handlers do not call Mnemo's existing organization
+binder. Core checkpoint requests, the checkpoint model, DuckDB rows, storage
+lookup keys, replay, and agent events also lack an organization owner.
+Checkpoint creation captures memories with an agent-only filter; replay and
+time travel filter memories and events by agent, not tenant.
+
+Free-form checkpoint metadata cannot safely fill this gap because the caller
+supplies it. A tenant-safe change must derive or bind an authorized
+organization, persist it in the schema, include it in checkpoint selection and
+parentage, and apply it to memory/event capture, replay, time travel, branch,
+merge, serialization, indexes, and migrations. A metadata-only patch would
+claim a boundary the code does not enforce, so no Mnemo code change was made in
+this cycle. Repair `716a1a5…c0489` remains the validated principal boundary;
+this checkpoint does not count the static organization finding as a second
+exploit or experimental confirmation.
+
+Scout's full application check passes syntax bundling, TypeScript, Prettier,
+and all 78 tests with 226 assertions. All 19 relative links across the seed
+ledger, topic map, authority finding, and this standing report resolve, and
+`git diff --check` reports no whitespace errors. The read-only health scan at
+`2026-09-01T19:37:48.451Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-date facts, 12 oversized-note facts, and one unsourced
+backlog fact. These are retained maintenance signals, not failures introduced
+by the checkpoint. Mnemo code did not change; the exact `716a1a5…c0489`
+formatting, strict lints, focused regressions, 295 core, 101 MCP, and 79
+HTTP-enabled server results remain the applicable code validation.
+
+The dirty human checkout remained byte-for-byte unchanged across comparable
+full read-only observations. At `2026-09-01T19:29:34.229Z` and
+`19:37:53.090Z`, both returned HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 881 porcelain-v2 entries with all
+untracked files included, and status SHA-256
+`082969aacb8d37eaa6f12b11c195024d0d74f1d27a8be14b082c14bd725495de`.
+Commands there used `git --no-optional-locks` only. All edits, validation,
+caches, staging, and commits remained in goal-owned execution spaces.
+
+Cycle 24 begins seed-first. If no higher-value seed or source trigger appears,
+the next exploration is the migration-compatible checkpoint organization design
+and a same-principal/cross-organization fixture before implementation.
+
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"

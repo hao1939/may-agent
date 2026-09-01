@@ -674,6 +674,46 @@ cannot constrain state transfer. Public Mnemo remains pinned at
 and undeployed. Reviewed `2608.30177v1` remains the controlled 15/15 stage-wise
 anchor, and Reddit remains deferred at its RSS-readable/JSON-403 boundary.
 
+### Principal-bound checkpoints still have no tenant owner
+
+Cycle 23 committed the direct-WSL seed boundary first as Scout commit
+`0f663d8a4c9a233534975552b241d8ce1ba82f22`. The browser exposed public feed
+and post content but no collection address or authenticated nickname. Added and
+changed seeds remained unknown, proven removals were `[]`, and all 132 durable
+seeds remained unavailable rather than removed. Only after that record did the
+rubric retain the memory-governance cluster and select the queued checkpoint
+organization audit.
+
+At exact local repair
+`716a1a57753d40f5afe91e0f5f0f5a2d129c0489`, verified capabilities carry
+organization scopes and ordinary memory handlers can call `bind_org_id`.
+Checkpoint, branch, merge, and replay inputs contain no `org_id`, however, and
+their MCP handlers never invoke that binder. Core `CheckpointRequest`,
+`ReplayRequest`, `BranchRequest`, and `MergeRequest` also omit it. The
+`Checkpoint` model, DuckDB row, storage trait, and `(thread_id, branch_name)`
+latest-checkpoint lookup have no organization owner or key.
+
+The data path preserves the same gap. Checkpoint creation selects active
+memories with `MemoryFilter.agent_id` and leaves `MemoryFilter.org_id` unset.
+Exact replay keeps referenced memories whose `agent_id` matches the checkpoint;
+time travel filters memories and events by agent and thread, not organization.
+Branch and merge now sanitize principal ownership correctly, but they cannot
+enforce an organization that is not represented. Because checkpoint creation
+accepts caller-supplied free-form metadata, treating a metadata `org_id` as
+authority would let the caller assert the boundary it is meant to constrain.
+
+This is direct code-path evidence of an absent ownership dimension, not a new
+runtime cross-organization reproduction and not evidence that the principal
+repair regressed. A safe tenant design must derive or bind the verified
+organization, persist it as an authoritative checkpoint field, include it in
+parent and branch lookup, and scope memory/event capture, replay, time travel,
+branch, merge, serialization, indexes, and migrations together. A metadata-only
+patch would preserve an ambiguous end state, so no such patch was made. Public
+Mnemo `main` remained
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` at
+`2026-09-01T19:33:07.724Z–19:33:08.510Z`; the organization analysis is local,
+unreviewed, and undeployed.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
