@@ -21,9 +21,13 @@ function sha256(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-function generateRows(first: number, last: number): Row[] {
+function generateRows(first: number, last: number, step = 1): Row[] {
   const rows: Row[] = [];
-  for (let runBlockCount = first; runBlockCount <= last; runBlockCount += 1) {
+  for (
+    let runBlockCount = first;
+    runBlockCount <= last;
+    runBlockCount += step
+  ) {
     const calibrationSpec = {
       ...buildToyDirectionalQuantileCalibrationSpec(),
       runBlockCount,
@@ -64,18 +68,19 @@ function generateRows(first: number, last: number): Row[] {
 if (process.argv[2] === "worker") {
   const first = Number(process.argv[3]);
   const last = Number(process.argv[4]);
-  process.stdout.write(JSON.stringify(generateRows(first, last)));
+  const step = Number(process.argv[5] ?? 1);
+  process.stdout.write(JSON.stringify(generateRows(first, last, step)));
   process.exit(0);
 }
 
 const ranges = [
-  [64, 111],
-  [112, 159],
-  [160, 207],
-  [208, 256],
+  [64, 256, 4],
+  [65, 256, 4],
+  [66, 256, 4],
+  [67, 256, 4],
 ] as const;
 const workerRows = await Promise.all(
-  ranges.map(async ([first, last]) => {
+  ranges.map(async ([first, last, step]) => {
     const child = Bun.spawn(
       [
         process.execPath,
@@ -83,12 +88,14 @@ const workerRows = await Promise.all(
         "worker",
         String(first),
         String(last),
+        String(step),
       ],
       { stdout: "pipe", stderr: "inherit" },
     );
     const output = await new Response(child.stdout).text();
     const exitCode = await child.exited;
-    if (exitCode !== 0) throw new Error(`worker ${first}-${last} failed`);
+    if (exitCode !== 0)
+      throw new Error(`worker ${first}-${last}/${step} failed`);
     return JSON.parse(output) as Row[];
   }),
 );
