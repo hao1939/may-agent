@@ -3123,7 +3123,7 @@ unsourced-backlog fact. `.state` remains empty at fingerprint
 
 Only after that clean checkpoint did Cycle 35 begin. Its observational
 Xiaohongshu reconciliation is committed separately as
-`14cfbea265c90d8446b17f251dfeda03ff49dc03`. Direct loopback ports refused
+`14cfbea2655effb088c1f338a8bad6535e5eb2c3`. Direct loopback ports refused
 the worker identity; effective UID 0 inside Chrome PID 2136's network
 namespace reached DevTools but not an authenticated Xiaohongshu principal.
 Three current-user endpoints returned HTTP 500 without identity, the saved
@@ -3154,7 +3154,7 @@ What changed for the user: the newest bounded arXiv refresh found a portable
 memory-evidence protocol, and Scout now records both what its exact release can
 prove and where that proof stops. This deep dive began only after the Cycle 35
 Xiaohongshu reconciliation was committed as
-`14cfbea265c90d8446b17f251dfeda03ff49dc03`; added and changed seeds remained
+`14cfbea2655effb088c1f338a8bad6535e5eb2c3`; added and changed seeds remained
 unknown, proven removals were `[]`, and all 132 durable IDs remained unavailable
 at the absent-identity, zero-rendered-card collection boundary.
 
