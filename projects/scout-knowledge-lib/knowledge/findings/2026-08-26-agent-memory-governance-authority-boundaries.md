@@ -1231,6 +1231,20 @@ Table 8 outside the 250-row primary Table 1, plus one manually named A0 file
 that corresponds to the primary extraction under a different timestamp. This
 is an explicit corpus partition, not independent replication of model calls.
 
+Cycle 40 tests how much of that evidence layer is actually regenerable. With
+their input roots redirected in memory to the published archive, both
+checked-in standard-library analyzers exit 0 without writes. The grid/rule
+analyzer emits 111 lines (SHA-256 `0926fde0…65fd387`) and includes A2D, A2DC,
+A2DO, A2DR, and A2DRC rule rows; the recipe analyzer emits 13 lines (SHA-256
+`c64ea48d‧5b92e2`) with the published per-arm counts. This independently
+recomputes summary metrics from JSON artifacts. It does **not** reproduce the
+canonical TSV bytes: no checked-in Python, shell, or documentation reference
+generates `T1_runs.tsv` through `T8_rules.tsv`. Those eight tables are static
+published extracts, and the selection/normalization step that maps 256 archived
+arm bodies to 250 primary rows plus six specialized rule-policy rows is not
+supplied as an executable manifest. The correct provenance claim is therefore
+summary-recomputable, not end-to-end table-build reproducible.
+
 The authority limit is decisive. Both APIs and their drift schedules are
 authored for the study; prompts, task families, production transfer, and
 independent replication remain untested. The server is assumed honest.

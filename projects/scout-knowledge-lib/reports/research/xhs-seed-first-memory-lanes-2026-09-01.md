@@ -3803,6 +3803,52 @@ removals are `[]`, and all 132 durable seeds remain unavailable rather than
 removed. No Cycle 40 GitHub, arXiv, or Reddit work has started. Commit and
 validate this seed-only checkpoint before the next lane decision.
 
+## Cycle 40 checkpoint — published summaries are not a published table build
+
+Seed ordering remains exact at commit
+`4af3e6d17da405cda8aab35f72e15351c574c271`. Only afterward were the lanes
+reconsidered. GitHub/local code was selected for high relevance and a bounded
+new provenance gap: Cycle 39 found 256 archived arm bodies but a 250-row
+primary table plus six specialized rule-policy rows. arXiv was deferred after
+the fresh full-paper review; last HTTP 200 evidence retains `2608.30177v1`,
+`2609.01235v1`, and `2609.00243v1`. Reddit was deferred without quota work at
+its retained RSS-readable/JSON-403 boundary because anecdotes cannot resolve
+artifact derivation.
+
+On exact client revision `4c0dabd64b36035d6fc18eb66be99d4b7779c641`,
+both checked-in read-only analyzers were redirected in memory to the published
+238-file archive. The grid/rule analyzer exited 0 with 111 output lines and
+SHA-256 `0926fde0…65fd387`; it includes A2D, A2DC, A2DO, A2DR, and A2DRC rule
+rows. The recipe analyzer exited 0 with 13 lines and SHA-256
+`c64ea48d‧5b92e2`, reproducing the archived per-arm summary shape. Neither
+tool wrote source or evidence files.
+
+That is not an exact canonical-table reproduction. Repository-wide search
+finds no checked-in Python, shell, or documentation path that generates
+`T1_runs.tsv` through `T8_rules.tsv`; their names occur only in the dataset
+README and static tables. The executable normalization that maps 256 archived
+arm bodies to 250 primary rows plus six specialized A2DR/A2DRC Table 8 rows is
+not supplied. One manually named A0 artifact also maps to a differently timed
+primary row. The smallest accurate conclusion is summary-recomputable and
+table-inspectable, not end-to-end table-build reproducible.
+
+The accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It is integrated through exact standing equivalents `f9784d9a…fc04` and
+`20fd9d81…dacf`, stable patch IDs, and four identical final blobs. No accepted
+result is deferred, blocked, superseded, or known unintegrated. The
+authoritative three-of-three reflection result and both Cycle 20 pre-fix UUIDs
+remain retained.
+
+The three-document candidate over seed commit `4af3e6d‧4c271` passes
+whitespace, all relative links, syntax, TypeScript, Prettier, 78 tests with 226
+assertions, bounded health, and empty `.state`. Protected source, overlay,
+accepted-source, and peer fingerprints remain unchanged. This is a checkpoint,
+not completion. The next cycle begins seed-first; revisit this line only when a
+generator/selection manifest, repository or paper revision, independent
+reproduction, or production-domain result appears. The mixed-scope event-chain
+exploration remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
