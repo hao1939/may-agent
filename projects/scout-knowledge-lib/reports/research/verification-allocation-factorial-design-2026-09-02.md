@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 96, including exact local uniform-drift regression b652c60a22972619be0212c8f88e23262eeccc1a."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 97, including exact local cost-reserve regression 53cebd440a55eb786b2084d566875f1003d56835."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1292,6 +1292,32 @@ low for real marginals, dependence, provider behavior, costs, and the size or
 shape of actual drift. The next ranked question is to map the Pareto frontier
 between identity-robust episode cost and uniform-drift reserve over the
 retained grid, avoiding an arbitrary reserve threshold.
+
+## Cycle 97 local cost-reserve frontier
+
+Seed reconciliation `b0b184795f35cb7bc5a7a3fb593d70a067d0d8e4`
+preceded this analysis and recorded a material profile-to-login shell
+transition without an attributable saved item. The post-seed accepted-ref
+check at `2026-09-02T23:16:03.519Z–23:16:03.523Z` found all six tracked refs
+unchanged; GitHub, arXiv, and Reddit made zero public requests.
+
+Exact local `53cebd440a55eb786b2084d566875f1003d56835` evaluates all seven
+identity-robust mixtures of the already-frozen 171- and 172-block marginals.
+Totals 1,026–1,028 fail. The passing 1,029-, 1,030-, 1,031-, and 1,032-block
+designs require 32,928, 32,960, 32,992, and 33,024 episodes and tolerate
+uniform per-model downward drift of `0.000007052630048557755`,
+`0.00005600144131830594`, `0.00010495025258775807`, and
+`0.0006254995932550855`, respectively.
+
+The first two extra blocks above the minimum each buy about `0.00004894881127`
+additional probability per model. The final extra block, which eliminates the
+last 171-block placement and therefore its worse moderate-process gap, buys
+about `0.00052054934067`. This supports the equal-172 endpoint over either
+intermediate mixture when the 96-episode maximum premium is affordable. It
+does not prove that another 64–256 vector cannot dominate a local point.
+Confidence is high for the exact seven-point slice and low for the remaining
+grid, real marginals, drift shape, dependence, providers, and operational
+cost. The next ranked work is the complete retained-grid Pareto search.
 
 ## Go/no-go boundary
 
