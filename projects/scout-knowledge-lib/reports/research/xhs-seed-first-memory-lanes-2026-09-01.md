@@ -7664,6 +7664,19 @@ the next observational Xiaohongshu reconciliation when a new seed observation
 trigger occurs, before reconsidering all three lanes. Keep the mixed-scope
 event-chain exploration closed.
 
+The follow-up independent review range
+`4cf33131a7f474feb099e692cc36459973cbd6a3..5c59b3c9025150fdb157ad3ebe301986fb10f96f`
+is also integrated. Reviewer commit `5c59b3c9025150fdb157ad3ebe301986fb10f96f`
+is patch-equivalent to standing commit
+`a464a0e5dab1c5566e6e62c395bafb06f8be83ad` at stable patch ID
+`c545e8540fcc70fb2b8e80978829319d444d6dd0`. It accepts `RV-002` as resolved
+and accepts the `RV-001` policy as a reversible, lower-cost structural repair.
+It does not turn that repair into a measured productivity claim: the first
+eligible no-change opportunity must actually defer without public requests or
+another narrative checkpoint. No result is rejected, superseded, blocked, or
+known unintegrated, and no synthetic source request is made to force that
+future observation.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
