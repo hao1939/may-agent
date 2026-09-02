@@ -3,11 +3,13 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  buildToyPercentileNullCalibrationSpec,
   buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
   buildToyModelRunBlockBootstrapSpec,
   buildToyPracticalEffectDecisionSpec,
   decideFactorialPracticalEffects,
+  calibratePercentileNullProcesses,
   scheduleSha256,
   scoreAllocationAnswer,
   TOY_SCHEDULE_SHA256,
@@ -601,6 +603,81 @@ describe("verification-allocation factorial fixture", () => {
           candidate,
         ).errors,
       ).toEqual(["practical-effect decision specification is invalid"]);
+    }
+  });
+
+  it("exactly calibrates the percentile rule across matched symmetric nulls", () => {
+    const analysis = calibratePercentileNullProcesses(
+      buildToyPercentileNullCalibrationSpec(),
+    );
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.calibrationSpecSha256).toHaveLength(64);
+    expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
+    expect(analysis.monteCarloStandardError).toBe(0);
+    expect(analysis.supportedCandidateMinimumRunBlocks).toBe(64);
+    const rate = (processId: string, runBlockCount: number) =>
+      analysis.report.find(
+        (entry) =>
+          entry.processId === processId &&
+          entry.runBlockCount === runBlockCount,
+      )!;
+    expect(rate("balanced-null", 25).falseDirectionalProbability).toBeCloseTo(
+      0.013210955222106718,
+      14,
+    );
+    expect(rate("dense-null", 48).falseDirectionalProbability).toBeCloseTo(
+      0.013283281562245064,
+      14,
+    );
+    expect(rate("dense-null", 64).falseDirectionalProbability).toBeCloseTo(
+      0.008146902228698577,
+      14,
+    );
+    expect(rate("sparse-null", 64).falseDirectionalProbability).toBeCloseTo(
+      0.0001755936794143284,
+      14,
+    );
+    expect(rate("balanced-null", 25).passesTolerance).toBe(false);
+    expect(rate("dense-null", 48).passesTolerance).toBe(false);
+    expect(rate("dense-null", 64).passesTolerance).toBe(true);
+    expect(analysis.verificationWorstCases).toEqual([
+      {
+        processId: "balanced-null",
+        runBlockCount: 69,
+        falseDirectionalProbability: expect.closeTo(0.002702915775959086, 14),
+      },
+      {
+        processId: "dense-null",
+        runBlockCount: 78,
+        falseDirectionalProbability: expect.closeTo(0.008771714457060233, 14),
+      },
+      {
+        processId: "sparse-null",
+        runBlockCount: 69,
+        falseDirectionalProbability: expect.closeTo(0.00024954884012929815, 14),
+      },
+    ]);
+    expect(analysis.scopeLimit).toContain(
+      "finite-resample implementation and real model behavior remain uncalibrated",
+    );
+  }, 30_000);
+
+  it("rejects asymmetric or incomplete null-calibration rules", () => {
+    const spec = buildToyPercentileNullCalibrationSpec();
+    for (const candidate of [
+      { ...spec, effectSupport: [-1, 1] },
+      { ...spec, falseDirectionalTolerance: Number.NaN },
+      { ...spec, candidateMinimumRunBlocks: 1 },
+      { ...spec, reportRunBlockCounts: [2, 4, 96] },
+      {
+        ...spec,
+        processes: [{ id: "directional", probabilities: [0.1, 0.7, 0.2] }],
+      },
+    ]) {
+      expect(calibratePercentileNullProcesses(candidate).errors).toEqual([
+        "percentile null calibration specification is invalid",
+      ]);
     }
   });
 });

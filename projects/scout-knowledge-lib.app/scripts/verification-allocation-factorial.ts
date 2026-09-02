@@ -180,6 +180,47 @@ export type PracticalEffectDecisionAnalysis = {
   errors: string[];
 };
 
+export type PercentileNullCalibrationSpec = {
+  schema: "scout.verification-allocation-null-calibration/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  calibrationMethod: "exact-trinomial-enumeration";
+  effectSupport: [-1, 0, 1];
+  practicalDelta: number;
+  lowerQuantile: number;
+  upperQuantile: number;
+  falseDirectionalTolerance: number;
+  candidateMinimumRunBlocks: number;
+  verificationMaximumRunBlocks: number;
+  reportRunBlockCounts: number[];
+  processes: Array<{
+    id: string;
+    probabilities: [number, number, number];
+  }>;
+};
+
+export type PercentileNullCalibrationAnalysis = {
+  ok: boolean;
+  calibrationSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  supportedCandidateMinimumRunBlocks: number | null;
+  report: Array<{
+    processId: string;
+    runBlockCount: number;
+    falsePositiveDirectionProbability: number;
+    falseNegativeDirectionProbability: number;
+    falseDirectionalProbability: number;
+    passesTolerance: boolean;
+  }>;
+  verificationWorstCases: Array<{
+    processId: string;
+    runBlockCount: number;
+    falseDirectionalProbability: number;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -856,6 +897,27 @@ export function buildToyPracticalEffectDecisionSpec(): PracticalEffectDecisionSp
   };
 }
 
+export function buildToyPercentileNullCalibrationSpec(): PercentileNullCalibrationSpec {
+  return {
+    schema: "scout.verification-allocation-null-calibration/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    calibrationMethod: "exact-trinomial-enumeration",
+    effectSupport: [-1, 0, 1],
+    practicalDelta: 0.1,
+    lowerQuantile: 0.025,
+    upperQuantile: 0.975,
+    falseDirectionalTolerance: 0.01,
+    candidateMinimumRunBlocks: 64,
+    verificationMaximumRunBlocks: 96,
+    reportRunBlockCounts: [2, 4, 8, 16, 25, 32, 48, 64, 96],
+    processes: [
+      { id: "balanced-null", probabilities: [0.25, 0.5, 0.25] },
+      { id: "dense-null", probabilities: [0.5, 0, 0.5] },
+      { id: "sparse-null", probabilities: [0.1, 0.8, 0.1] },
+    ],
+  };
+}
+
 function invalidBootstrapAnalysis(
   errors: string[],
 ): ModelRunBlockBootstrapAnalysis {
@@ -1190,6 +1252,346 @@ export function decideFactorialPracticalEffects(
       .update(JSON.stringify(decisionSpec))
       .digest("hex"),
     strata,
+    errors: [],
+  };
+}
+
+function invalidPercentileNullCalibrationAnalysis(
+  errors: string[],
+): PercentileNullCalibrationAnalysis {
+  return {
+    ok: false,
+    calibrationSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    supportedCandidateMinimumRunBlocks: null,
+    report: [],
+    verificationWorstCases: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parsePercentileNullCalibrationSpec(
+  candidate: unknown,
+): PercentileNullCalibrationSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "calibrationMethod,candidateMinimumRunBlocks,effectSupport,evidenceClass,falseDirectionalTolerance,lowerQuantile,practicalDelta,processes,reportRunBlockCounts,schema,upperQuantile,verificationMaximumRunBlocks" ||
+    spec.schema !== "scout.verification-allocation-null-calibration/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.calibrationMethod !== "exact-trinomial-enumeration" ||
+    JSON.stringify(spec.effectSupport) !== "[-1,0,1]" ||
+    typeof spec.practicalDelta !== "number" ||
+    !Number.isFinite(spec.practicalDelta) ||
+    spec.practicalDelta <= 0 ||
+    spec.practicalDelta >= 1 ||
+    typeof spec.lowerQuantile !== "number" ||
+    !Number.isFinite(spec.lowerQuantile) ||
+    spec.lowerQuantile <= 0 ||
+    spec.lowerQuantile >= 0.5 ||
+    typeof spec.upperQuantile !== "number" ||
+    !Number.isFinite(spec.upperQuantile) ||
+    spec.upperQuantile <= 0.5 ||
+    spec.upperQuantile >= 1 ||
+    typeof spec.falseDirectionalTolerance !== "number" ||
+    !Number.isFinite(spec.falseDirectionalTolerance) ||
+    spec.falseDirectionalTolerance <= 0 ||
+    spec.falseDirectionalTolerance >= 0.5 ||
+    !Number.isInteger(spec.candidateMinimumRunBlocks) ||
+    (spec.candidateMinimumRunBlocks as number) < 2 ||
+    !Number.isInteger(spec.verificationMaximumRunBlocks) ||
+    (spec.verificationMaximumRunBlocks as number) <
+      (spec.candidateMinimumRunBlocks as number) ||
+    (spec.verificationMaximumRunBlocks as number) > 256 ||
+    !Array.isArray(spec.reportRunBlockCounts) ||
+    spec.reportRunBlockCounts.length === 0 ||
+    !Array.isArray(spec.processes) ||
+    spec.processes.length === 0
+  ) {
+    return null;
+  }
+
+  const reportRunBlockCounts = spec.reportRunBlockCounts as unknown[];
+  if (
+    reportRunBlockCounts.some(
+      (count) =>
+        !Number.isInteger(count) ||
+        (count as number) < 2 ||
+        (count as number) > (spec.verificationMaximumRunBlocks as number),
+    ) ||
+    new Set(reportRunBlockCounts).size !== reportRunBlockCounts.length ||
+    !reportRunBlockCounts.includes(spec.candidateMinimumRunBlocks) ||
+    !reportRunBlockCounts.includes(spec.verificationMaximumRunBlocks)
+  ) {
+    return null;
+  }
+
+  const processes = spec.processes as unknown[];
+  const processIds = new Set<string>();
+  for (const candidateProcess of processes) {
+    if (
+      !candidateProcess ||
+      typeof candidateProcess !== "object" ||
+      Array.isArray(candidateProcess)
+    ) {
+      return null;
+    }
+    const process = candidateProcess as Record<string, unknown>;
+    if (
+      Object.keys(process).sort().join(",") !== "id,probabilities" ||
+      typeof process.id !== "string" ||
+      !/^[a-z][a-z0-9-]*$/.test(process.id) ||
+      processIds.has(process.id) ||
+      !Array.isArray(process.probabilities) ||
+      process.probabilities.length !== 3
+    ) {
+      return null;
+    }
+    const probabilities = process.probabilities as unknown[];
+    if (
+      probabilities.some(
+        (probability) =>
+          typeof probability !== "number" ||
+          !Number.isFinite(probability) ||
+          probability < 0 ||
+          probability > 1,
+      )
+    ) {
+      return null;
+    }
+    const [negative, zero, positive] = probabilities as number[];
+    if (
+      Math.abs(negative - positive) > 1e-12 ||
+      Math.abs(negative + zero + positive - 1) > 1e-12
+    ) {
+      return null;
+    }
+    processIds.add(process.id);
+  }
+  return spec as unknown as PercentileNullCalibrationSpec;
+}
+
+function exactMultinomialProbability(
+  runBlockCount: number,
+  negativeCount: number,
+  zeroCount: number,
+  positiveCount: number,
+  probabilities: [number, number, number],
+  logFactorials: number[],
+): number {
+  const counts = [negativeCount, zeroCount, positiveCount];
+  if (counts.some((count, index) => count > 0 && probabilities[index] === 0))
+    return 0;
+  let logProbability =
+    logFactorials[runBlockCount]! -
+    logFactorials[negativeCount]! -
+    logFactorials[zeroCount]! -
+    logFactorials[positiveCount]!;
+  for (let index = 0; index < counts.length; index += 1) {
+    if (counts[index]! > 0) {
+      logProbability += counts[index]! * Math.log(probabilities[index]!);
+    }
+  }
+  return Math.exp(logProbability);
+}
+
+function exactTrinomialPercentileDecision(
+  runBlockCount: number,
+  negativeCount: number,
+  zeroCount: number,
+  positiveCount: number,
+  lowerQuantile: number,
+  upperQuantile: number,
+  practicalDelta: number,
+): PracticalEffectDecision {
+  const probabilities = [
+    negativeCount / runBlockCount,
+    zeroCount / runBlockCount,
+    positiveCount / runBlockCount,
+  ];
+  let distribution = new Float64Array(2 * runBlockCount + 1);
+  distribution[runBlockCount] = 1;
+  for (let draw = 0; draw < runBlockCount; draw += 1) {
+    const next = new Float64Array(2 * runBlockCount + 1);
+    for (
+      let index = runBlockCount - draw;
+      index <= runBlockCount + draw;
+      index += 1
+    ) {
+      const probability = distribution[index]!;
+      if (probability === 0) continue;
+      next[index - 1]! += probability * probabilities[0]!;
+      next[index]! += probability * probabilities[1]!;
+      next[index + 1]! += probability * probabilities[2]!;
+    }
+    distribution = next;
+  }
+
+  const quantile = (target: number): number => {
+    let cumulative = 0;
+    for (let index = 0; index < distribution.length; index += 1) {
+      cumulative += distribution[index]!;
+      if (cumulative >= target) return (index - runBlockCount) / runBlockCount;
+    }
+    return 1;
+  };
+  return classifyPracticalInterval(
+    quantile(lowerQuantile),
+    quantile(upperQuantile),
+    practicalDelta,
+  );
+}
+
+/**
+ * Enumerate the exact sampling distribution and exact nonparametric
+ * percentile-bootstrap distribution for frozen symmetric trinomial nulls.
+ * This avoids Monte Carlo error, but it does not calibrate the separate
+ * finite-resample implementation or any process outside the declared family.
+ */
+export function calibratePercentileNullProcesses(
+  candidate: unknown,
+): PercentileNullCalibrationAnalysis {
+  const spec = parsePercentileNullCalibrationSpec(candidate);
+  if (!spec) {
+    return invalidPercentileNullCalibrationAnalysis([
+      "percentile null calibration specification is invalid",
+    ]);
+  }
+  const countsToEvaluate = new Set(spec.reportRunBlockCounts);
+  for (
+    let count = spec.candidateMinimumRunBlocks;
+    count <= spec.verificationMaximumRunBlocks;
+    count += 1
+  ) {
+    countsToEvaluate.add(count);
+  }
+  const orderedCounts = [...countsToEvaluate].sort(
+    (left, right) => left - right,
+  );
+  const logFactorials = [0];
+  for (let count = 1; count <= spec.verificationMaximumRunBlocks; count += 1) {
+    logFactorials[count] = logFactorials[count - 1]! + Math.log(count);
+  }
+
+  const rates = new Map<
+    string,
+    {
+      falsePositiveDirectionProbability: number;
+      falseNegativeDirectionProbability: number;
+    }
+  >();
+  for (const runBlockCount of orderedCounts) {
+    for (const process of spec.processes) {
+      rates.set(`${process.id}/${runBlockCount}`, {
+        falsePositiveDirectionProbability: 0,
+        falseNegativeDirectionProbability: 0,
+      });
+    }
+    for (
+      let negativeCount = 0;
+      negativeCount <= runBlockCount;
+      negativeCount += 1
+    ) {
+      for (
+        let zeroCount = 0;
+        zeroCount <= runBlockCount - negativeCount;
+        zeroCount += 1
+      ) {
+        const positiveCount = runBlockCount - negativeCount - zeroCount;
+        const decision = exactTrinomialPercentileDecision(
+          runBlockCount,
+          negativeCount,
+          zeroCount,
+          positiveCount,
+          spec.lowerQuantile,
+          spec.upperQuantile,
+          spec.practicalDelta,
+        );
+        if (decision !== "positive" && decision !== "negative") continue;
+        for (const process of spec.processes) {
+          const probability = exactMultinomialProbability(
+            runBlockCount,
+            negativeCount,
+            zeroCount,
+            positiveCount,
+            process.probabilities,
+            logFactorials,
+          );
+          const rate = rates.get(`${process.id}/${runBlockCount}`)!;
+          if (decision === "positive") {
+            rate.falsePositiveDirectionProbability += probability;
+          } else {
+            rate.falseNegativeDirectionProbability += probability;
+          }
+        }
+      }
+    }
+  }
+
+  const report = spec.processes.flatMap((process) =>
+    spec.reportRunBlockCounts.map((runBlockCount) => {
+      const rate = rates.get(`${process.id}/${runBlockCount}`)!;
+      const falseDirectionalProbability =
+        rate.falsePositiveDirectionProbability +
+        rate.falseNegativeDirectionProbability;
+      return {
+        processId: process.id,
+        runBlockCount,
+        ...rate,
+        falseDirectionalProbability,
+        passesTolerance:
+          falseDirectionalProbability <= spec.falseDirectionalTolerance,
+      };
+    }),
+  );
+  const verificationWorstCases = spec.processes.map((process) => {
+    let worst = {
+      processId: process.id,
+      runBlockCount: spec.candidateMinimumRunBlocks,
+      falseDirectionalProbability: -1,
+    };
+    for (
+      let runBlockCount = spec.candidateMinimumRunBlocks;
+      runBlockCount <= spec.verificationMaximumRunBlocks;
+      runBlockCount += 1
+    ) {
+      const rate = rates.get(`${process.id}/${runBlockCount}`)!;
+      const falseDirectionalProbability =
+        rate.falsePositiveDirectionProbability +
+        rate.falseNegativeDirectionProbability;
+      if (falseDirectionalProbability > worst.falseDirectionalProbability) {
+        worst = {
+          processId: process.id,
+          runBlockCount,
+          falseDirectionalProbability,
+        };
+      }
+    }
+    return worst;
+  });
+  const candidatePasses = verificationWorstCases.every(
+    (worst) =>
+      worst.falseDirectionalProbability <= spec.falseDirectionalTolerance,
+  );
+
+  return {
+    ok: true,
+    calibrationSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    calibrationMethod: spec.calibrationMethod,
+    monteCarloStandardError: 0,
+    supportedCandidateMinimumRunBlocks: candidatePasses
+      ? spec.candidateMinimumRunBlocks
+      : null,
+    report,
+    verificationWorstCases,
+    scopeLimit:
+      "Exact only for the declared symmetric trinomial nulls and run counts through the verification maximum; the separate finite-resample implementation and real model behavior remain uncalibrated.",
     errors: [],
   };
 }
