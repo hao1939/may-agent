@@ -1560,22 +1560,26 @@ describe("verification-allocation factorial fixture", () => {
         analyze(runBlockCount),
       ]),
     );
-    const moderateEndpoint = analyses.get(256)!;
-    const allocation = (strongRunBlockCounts: number[]) => {
+    const allocation = (
+      strongRunBlockCounts: number[],
+      moderateRunBlockCount = 256,
+    ) => {
+      const moderateAnalysis = analyses.get(moderateRunBlockCount)!;
       const correctMarginalSum =
         strongRunBlockCounts.reduce(
           (sum, count) =>
             sum + analyses.get(count)!.strong.correctDirectionalProbability,
           0,
-        ) + moderateEndpoint.moderate.correctDirectionalProbability;
+        ) + moderateAnalysis.moderate.correctDirectionalProbability;
       const wrongMarginalSum =
         strongRunBlockCounts.reduce(
           (sum, count) =>
             sum + analyses.get(count)!.strong.wrongDirectionalProbability,
           0,
-        ) + moderateEndpoint.moderate.wrongDirectionalProbability;
+        ) + moderateAnalysis.moderate.wrongDirectionalProbability;
       const totalRunBlockCount =
-        strongRunBlockCounts.reduce((sum, count) => sum + count, 0) + 256;
+        strongRunBlockCounts.reduce((sum, count) => sum + count, 0) +
+        moderateRunBlockCount;
       return {
         totalRunBlockCount,
         completeFactorialEpisodeCount: totalRunBlockCount * 32,
@@ -1588,6 +1592,7 @@ describe("verification-allocation factorial fixture", () => {
       };
     };
 
+    const moderateEndpoint = analyses.get(256)!;
     expect(moderateEndpoint.calibration.calibrationSpecSha256).toBe(
       "cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c",
     );
@@ -1635,6 +1640,38 @@ describe("verification-allocation factorial fixture", () => {
     expect(candidate.completeFactorialEpisodeCount).toBe(27_488);
     expect(candidate.totalRunBlockCount).toBeLessThan(6 * 172);
     expect(candidate.completeFactorialEpisodeCount).toBe(33_024 - 5_536);
+
+    const moderateAt120 = allocation([120, 121, 121, 121, 256], 120);
+    expect(moderateAt120.totalRunBlockCount).toBe(859);
+    expect(moderateAt120.completeFactorialEpisodeCount).toBe(27_488);
+    expect(moderateAt120.correctMarginalSum).toBeCloseTo(5.061461251302365, 14);
+    expect(moderateAt120.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+      0.6871537504341217,
+      14,
+    );
+    expect(moderateAt120.aggregateCorrectDirectionalLowerBound).toBeLessThan(
+      0.8,
+    );
+    expect(moderateAt120.aggregateWrongDirectionalUpperBound).toBeCloseTo(
+      5.369590192734223e-8,
+      16,
+    );
+
+    const moderateAt121 = allocation([120, 120, 121, 121, 256], 121);
+    expect(moderateAt121.totalRunBlockCount).toBe(859);
+    expect(moderateAt121.completeFactorialEpisodeCount).toBe(27_488);
+    expect(moderateAt121.correctMarginalSum).toBeCloseTo(5.062726969010269, 14);
+    expect(moderateAt121.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+      0.6875756563367563,
+      14,
+    );
+    expect(moderateAt121.aggregateCorrectDirectionalLowerBound).toBeLessThan(
+      0.8,
+    );
+    expect(moderateAt121.aggregateWrongDirectionalUpperBound).toBeCloseTo(
+      5.1284290158212815e-8,
+      16,
+    );
   }, 60_000);
 
   it("enumerates every finite 64-block composition against the exact oracle", () => {
