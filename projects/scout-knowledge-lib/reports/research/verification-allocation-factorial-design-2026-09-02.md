@@ -795,6 +795,41 @@ for the strong pair to reach the 96.67% per-model power required by Cycle 81's
 dependence-honest six-model lower bound, and whether the moderate pair reaches
 that target through 256 blocks.
 
+## Cycle 84 dependence-honest block-count search
+
+Seed reconciliation `ab77e3b1d3dc4b287ffa135b0d6a47c4534be2ad` preceded this
+work. The executable authority remains source commit
+`0320840b91d0c598b7f829b45cb991411291f9a0`; no provider was called. The first
+exact pass used null-range specification SHA-256
+`95a08e5dd2e6a8115c3576698a8209c061f822952845b95b117e1dc9bb18397a`
+to test the selected `0.0025`/`0.9975` interval at every integer count from 105
+through 256 before inspecting power. All counts preserve the 1% contract. The
+worst balanced null is `0.004834055102652536` at 145 blocks, the worst dense
+null is `0.007584811775432895` at 111, and the worst sparse null is
+`0.004991530412381129` at 164.
+
+Only after that range passed, power-search specification SHA-256
+`678c170fccf949646fb9f628fd2f094a147c02a05ad8a8728988339473c988d4`
+scanned the same 152 integer counts against the Cycle 81 requirement of
+`29/30` (96.67%) per-model power. The strong pair is 96.5995% at 132 blocks and
+first passes at 133 with 96.6926%. Its maximum through 256 is 99.9878%. The
+moderate pair never passes; its maximum is 66.9532% at 256. Maximum observed
+wrong-direction probability remains `1.3853047321045128e-12` strong and
+`4.6912051074282397e-7` moderate.
+
+Under Cycle 81's equal-marginal, unknown-dependence Fréchet contract, the
+strong result at 133 implies a six-model unanimous lower bound of about 80.16%
+and therefore clears the synthetic target. It also expands the design to 798
+model-run blocks and 25,536 factorial episodes, versus 20,160 at 105 blocks.
+This is a mathematical sizing result, not evidence that the execution is
+affordable or that real models have equal marginals. Confidence is high for
+the complete exact discrete search and low for transfer to continuous effects,
+real-model dependence, cost, drift, and provider behavior. The next ranked
+question is whether a prespecified non-unanimous six-model aggregation rule can
+reduce the 25,536-episode burden while retaining explicit aggregate power and
+false-direction bounds; no provider run is justified before that contract and
+a cost ceiling exist.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
