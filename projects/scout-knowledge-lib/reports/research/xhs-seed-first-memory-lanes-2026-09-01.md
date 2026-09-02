@@ -3037,7 +3037,71 @@ aggregate-chain fixture. The accepted self-evolution range remains integrated
 by the exact patch and blob equivalence recorded above; no accepted Scout result
 is known to remain unintegrated.
 
+## Cycle 34 checkpoint — a missing link now fails closed
+
+What was wrong: on exact local base
+`9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0`, a two-record memory chain
+and a separate single-principal two-event chain each retained valid content
+hashes while the second `prev_hash` was null. Before any production change,
+both verifiers returned exactly
+`{"valid":true,"total_records":2,"verified_records":2,"first_broken_at":null,"error_message":null}`.
+Deleting the link field therefore disabled the link check and made both broken
+chains appear fully verified. This is not the already-resolved mixed-scope
+event-chain question: Cycle 29's null value described record ownership, whereas
+Cycle 34 deletes the cryptographic link itself.
+
+Goal-owned Mnemo commit
+`d7b8190efa2f4ca8513890622b475b6e7e6bbb5a` is the smallest repair. A
+missing non-first link now returns invalid after one verified record, identifies
+the second record as the first break, and reports an explicit missing-link
+error. No schema, storage query, first-record convention, or public result type
+changed. The strict offline verifier already rejected the file; its
+`--mnemo-compat` switch and documentation now state that the switch reproduces
+legacy behavior through v0.5.28.
+
+Validation is serial and current-revision. Formatting and whitespace pass.
+Strict all-target Clippy with warnings denied passes for both `mnemo-core` and
+the actual CLI package `mnemo-mcp-server`. The full core run passes 302 tests
+with one intentional network test ignored plus two doctests. Both focused
+missing-link regressions pass, and the standalone CLI verifier passes two of
+two tests. The first CLI validation attempt used the nonexistent package ID
+`mnemo-cli`; repository metadata identified `mnemo-mcp-server`, and the
+corrected command passed. The preserved Rust toolchain was available through
+the existing root-owned goal cache even though a fresh worker shell did not put
+`cargo` on `PATH`; no toolchain install or source workaround was needed.
+
+Lane continuity remains evidence-weighted. GitHub/local code was selected and
+delivered the reproduced defect plus local repair above; public `HEAD` and
+`main` were last observed unchanged at
+`2994abf185da50d43e5fa4b3f826812bd09c2f20` during
+`2026-09-02T08:08:31.370Z–08:08:32.200Z`. Revisit on an upstream revision,
+review, deployment, missing-link regression, or evidence of affected stored
+data. Exact arXiv `2608.30177v1`, last looked up at
+`2026-09-02T08:08:32.201Z–08:08:32.705Z`, remains unchanged at v1 and keeps
+the memory-governance cluster's 15/15 rubric score; revisit for a version,
+attributable artifact, independent replication, stronger stage-wise study, or
+content-bearing seed delta. Reddit remains deferred without quota work at its
+last useful RSS HTTP 200/six-comment evidence and JSON HTTP 403 boundary;
+revisit only for a seed-linked reproduction, thread/content delta, or access
+change.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and accepted follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+They remain integrated by standing commits `cb82bee8…f53`, `f9784d9a…fc04`,
+and `20fd9d81…dacf`; the two accepted stable patch IDs remain
+`9a8b80e3…f626d` and `5b5b3937…d18eb9`, all four accepted artifact blobs are
+identical, and no accepted Scout result is deferred, blocked, superseded, or
+known to remain unintegrated.
+
+This is a checkpoint, not goal completion. After the exact Scout candidate is
+validated and committed on `codex/g-c1b31972-scout-loop`, the next action is a
+fresh Xiaohongshu reconciliation before any new lane work or exploration is
+selected. The mixed-scope event-chain exploration remains closed rather than
+repeated.
+
 ## Supervision
+
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"
 - Worker: "goal-a2acd0ab0579d04f3d163e5db9a"
