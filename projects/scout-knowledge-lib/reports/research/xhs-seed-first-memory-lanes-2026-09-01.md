@@ -5228,6 +5228,61 @@ This is the required start of the next cycle, not goal completion. Commit this
 seed boundary before reconsidering any lane or selecting the next exploration;
 keep the mixed-scope event-chain exploration closed.
 
+## Cycle 51 post-seed selection — test intermediate directory replacement
+
+Seed ordering is exact: the Cycle 51 reconciliation above was committed first
+as `5140b1acb7379937ad2bd1a32e89be930fb0bfe9`. Only then were GitHub,
+arXiv, and Reddit reconsidered by relevance, expected value, freshness, and
+access. Cycle 50's source observations remain recent, the seed and public
+inventory did not change, and no revision, artifact, content, registration,
+replication, or access trigger fired. No network request was repeated merely
+for source quota.
+
+- **GitHub/local code is selected only for a bounded local audit.** Public
+  GitHub remains high relevance but low new-source value at exact retained
+  heads: invalidation client `4c0dabd…9c641`, server `567b6a0…2225e`, MutMem
+  `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`. Last useful public GitHub
+  evidence remains Cycle 40. Exact local commit `e5ad29cd71…d2717` closes the
+  reproduced final-component swap. The remaining bounded question is whether
+  a nested directory component can be replaced after recursive inventory but
+  before the final no-follow descriptor open. Revisit public GitHub on a
+  revision, artifact, independent/deployment, signed-stamp, or seed-linked
+  trigger.
+- **arXiv is retained and deferred.** It remains high relevance but low
+  marginal new-source value. Exact HTTP-200 evidence through
+  `2026-09-02T11:47:43.870Z` retains `2608.30177v1`, `2608.25553v3`,
+  `2609.00243v1`, `2609.01235v1`, and deduplicated `2606.12290v1`.
+  MemGauge `2608.30177v1` still wins at 15/15 after the Cycle 51 seed pass;
+  `2608.25553v3` remains the 14/15 marginal result. Revisit on a paper,
+  artifact, registration, replication, or newly readable seed-body trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence is RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit on seed-linked reproducible evidence, thread
+  or content change, or access change.
+
+The selected next exploration is a goal-owned, no-provider-call reproduction
+attempt against an intermediate directory component. It will change code only
+if a fail-open redirect is observed. This is distinct from, and does not begin,
+the prohibited mixed-scope event-chain exploration. The accepted self-evolution
+range remains fully represented by its three standing ancestors, two stable
+patch-ID pairs, and four byte-identical final blobs; no accepted Scout result
+is known unintegrated.
+
+On the exact two-document lane candidate over seed commit `5140b1a…b0bfe9`,
+whitespace, Prettier, and all 21 relative links pass. The full Scout gate passes
+syntax bundling, TypeScript, source formatting, and 98 tests with 274
+assertions. Read-only health at `2026-09-02T12:15:23.973Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library truths, 12
+oversized canonical notes, and one unsourced backlog. `.state` is empty.
+Protected fingerprints remain exact: the dirty source stays
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay stays
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer stays
+clean at `e3b0c442…b855`.
+
+This is a checkpoint, not completion. Validate and commit this lane decision,
+then begin the bounded local reproduction without provider calls.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
