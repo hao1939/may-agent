@@ -5061,6 +5061,71 @@ clean commit, reconsider GitHub, arXiv, and Reddit by relevance, value,
 freshness, and access before selecting the next exploration. Do not begin the
 proposed mixed-scope event-chain exploration.
 
+## Cycle 50 post-seed selection — audit bundle snapshot stability
+
+Seed ordering is exact: the Cycle 50 reconciliation above was committed first
+as `252e8c1ffb`. Only then were GitHub, arXiv, and Reddit reconsidered by the
+standing relevance, expected-value, freshness, and access rubric. The Cycle 49
+source observations were only minutes old, the seed and public inventory had
+not changed, and no revision, artifact, content, registration, replication, or
+access trigger fired. No network request was repeated merely for source quota.
+
+- **GitHub/local code is selected only for a bounded local audit.** Public
+  GitHub remains high relevance but low new-source value at exact Cycle 49
+  heads: invalidation client `4c0dabd…9c641`, server `567b6a0…2225e`, MutMem
+  `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`. Last useful public GitHub
+  evidence remains Cycle 40. Local commit `f44c14bd69…b19e4c6a` is current
+  same-cluster evidence. Its adapter statically rejects traversal, symlinks,
+  non-regular and undeclared entries, but its `readdir`/`realpath`/`readFile`
+  inventory is multi-step. The selected question is whether a concurrent
+  symlink or entry replacement can fail open. Revisit public GitHub on a
+  revision, artifact, independent/deployment, signed-stamp, or seed-linked
+  trigger.
+- **arXiv is retained and deferred.** It remains high relevance but low
+  marginal new-source value. Exact Cycle 49 HTTP-200 evidence through
+  `2026-09-02T11:47:43.870Z` retains `2608.30177v1`, `2608.25553v3`,
+  `2609.00243v1`, `2609.01235v1`, and deduplicated `2606.12290v1`.
+  MemGauge `2608.30177v1` remains the 15/15 stage-wise anchor after the Cycle
+  50 seed pass, and `2608.25553v3` remains the 14/15 marginal result. Revisit
+  on a paper, artifact, registration, replication, or newly readable seed-body
+  trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence is RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit on seed-linked reproducible evidence, thread
+  or content change, or access change.
+
+The selected exploration is a goal-owned, no-provider-call concurrency audit
+of the offline bundle inventory. It will first try to reproduce or falsify a
+fail-open entry swap in a temporary directory and will change code only for a
+proven failure. This is distinct from, and does not begin, the prohibited
+mixed-scope event-chain exploration.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its source patches `8f611fec…0a` and `df80a1da…de` match standing commits
+`f9784d9a…c04` and `20fd9d81…3ac` at stable patch IDs
+`9a8b80e3…f626d` and `5b5b3937…eb9`; all four final blobs remain byte-identical.
+Standing reconciliation commits `cb82bee8…ef53`, `f9784d9a…c04`, and
+`20fd9d81…3ac` remain ancestors. Direct side-tip containment is intentionally
+false because the patches were reconciled rather than merged. No accepted
+Scout result is deferred, superseded, blocked, or known unintegrated.
+
+On the exact two-document lane candidate over seed commit `252e8c1…fad99`,
+whitespace, Prettier, and all 21 relative links pass. The full Scout gate passes
+syntax bundling, TypeScript, source formatting, and 97 tests with 271
+assertions. Read-only health at `2026-09-02T12:03:20.319Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library truths, 12
+oversized canonical notes, and one unsourced backlog. `.state` is empty.
+Protected fingerprints remain exact: the dirty source is still
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay is
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer is clean
+at `e3b0c442…b855`.
+
+This remains a checkpoint, not goal completion. Validate and commit this lane
+decision on the standing branch, then begin the bounded snapshot-stability
+audit without provider calls.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
