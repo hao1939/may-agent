@@ -54,3 +54,20 @@ bun scripts/verification-allocation-factorial.ts
 
 It verifies a synthetic 64-episode toy schedule. Passing it is design-tooling
 evidence, not a model result or proof of a cryptographic lineage authority.
+
+The execution-freeze validator binds a proposed schedule to immutable model
+resolution declarations, a Scout-specific seed policy, exact artifact hashes,
+and completed external-registration metadata while keeping results empty and
+provider authority false:
+
+```bash
+bun test scripts/verification-allocation-freeze.test.ts
+```
+
+Use `verifyExecutionFreezeManifest` from
+[`scripts/verification-allocation-freeze.ts`](scripts/verification-allocation-freeze.ts)
+with the unknown manifest value and the exact supplied artifact bytes. The
+validator also runs the factorial isolation verifier over the bound schedule.
+It is an offline structural and byte-binding gate: it does not contact a
+provider, verify that an external URL or timestamp is genuine, authenticate
+lineage, or grant call or spending authority.

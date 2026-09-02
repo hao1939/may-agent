@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 48 start: Cycle 47 preserves the archive compatibility boundary, then Xiaohongshu is reconciled again before any new lane work."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 47"]
+summary: "Seed-first Scout continuity through the Cycle 48 checkpoint: the exact offline freeze bundle now fails closed on model, seed, schedule, artifact, registration, result, and provider-authority drift."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 48"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 48 observational reconciliation through 2026-09-02T11:28:09.894Z; the saved collection target remained unavailable and no source-lane work preceded it."
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:42:19.412Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
@@ -4519,6 +4519,61 @@ Scout-specific seed semantics, exact schedule/artifact hashes, completed
 external registration, empty results, and explicit provider-call denial. A
 valid structure must remain preparation rather than spending authority. No
 provider call or mixed-scope event-chain exploration is selected.
+
+## Cycle 48 checkpoint — incomplete execution freezes fail closed
+
+What was wrong: Scout had a deterministic factorial verifier, but no executable
+boundary between “these files look frozen” and “the exact offline execution
+package is internally complete.” Hashes alone were also insufficient because a
+body-drifted schedule could simply be re-hashed. Exact local commit
+`f71b2f185a08061cc67340017a31c643e7d0a9cb` adds the missing freeze-manifest
+gate without adding any provider path.
+
+The validator consumes unknown JSON and supplied artifact bytes. It requires
+the offline schema and evidence class, empty results,
+`providerCallsAuthorized: false`, unique immutable model resolutions with
+bound evidence, a Scout-specific seed namespace and policy artifact, exact
+schedule model/seed order, 32 cells per model/seed, a recomputed episode count,
+and verified-status external-registration metadata bound to deposited bundle,
+checksum manifest, and proof artifacts. Every declared artifact is SHA-256
+checked; missing, duplicate, tampered, and undeclared bytes fail.
+
+The bound schedule is parsed and passed through the existing seven-class
+factorial verifier. One regression alters a memory body and correctly updates
+both schedule digests; the gate still rejects it for body drift. The Cycle 47
+source-package fixture is also rejected for its alias resolution, `stale-c1`
+namespace, 18 cells, 5,400 tasks, and pending registration. A passing synthetic
+fixture proves structural behavior only. The validator makes no network call
+and does not prove provider, URL, timestamp, signature, registration, lineage,
+call-cost, or spending authority.
+
+Focused current-revision validation passes 13 tests and 37 assertions across
+the freeze and factorial suites. The full Scout gate passes syntax bundling,
+TypeScript, application formatting, and 91 tests with 263 assertions. The new
+files themselves pass strict Prettier checking and `git diff --check`.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing reconciliations `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` remain ancestors. Both follow-up
+patch IDs and all four material artifact blobs remain exact; the standing
+index keeps its later overlap resolution. No accepted Scout result is known
+deferred, superseded, blocked, or unintegrated.
+
+Cycle 20's exact pre-fix outputs remain
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. The authoritative reflection result
+remains three of three passing on exact local Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`. These are preserved local-code
+evidence, not paper or deployment evidence.
+
+This is a checkpoint, not completion. After the exact documentation candidate
+is validated and committed, begin the next cycle seed-first. Only after that
+reconciliation and lane reconsideration may Scout select a read-only bundle
+adapter or another higher-value exploration. Provider calls and the resolved
+mixed-scope event-chain exploration remain closed.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 

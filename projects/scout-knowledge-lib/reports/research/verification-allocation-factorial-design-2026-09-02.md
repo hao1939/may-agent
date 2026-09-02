@@ -167,6 +167,34 @@ Scout execution package. The 64-episode offline fixture remains the only
 generated Scout schedule, with provider calls still unauthorized and results
 still empty.
 
+## Cycle 48 offline freeze gate
+
+Scout commit `f71b2f185a08061cc67340017a31c643e7d0a9cb` adds a
+[fail-closed freeze validator](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.ts)
+and [seven regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.test.ts).
+It accepts unknown JSON rather than trusting a TypeScript caller, hashes every
+declared artifact's supplied bytes, rejects missing, duplicated, tampered, or
+undeclared artifacts, and binds model resolution evidence plus a Scout-specific
+seed policy to the schedule's exact model and seed order.
+
+The gate requires 32 cells per model/seed, recomputes the episode count, parses
+the byte-bound schedule, preserves empty results and
+`providerCallsAuthorized: false`, and invokes the original factorial verifier.
+A regression changes a memory body and then updates both schedule hashes; the
+freeze still fails because the factorial verifier detects the body drift.
+
+Another regression encodes the observed Cycle 47 incompatibilities: an
+undated alias, `stale-c1` seed namespace, 18 cells, 5,400 episodes, and pending
+external registration. All are rejected. The validator also requires declared
+HTTPS registration metadata, deposited bundle and checksum-manifest hashes,
+and a supplied proof artifact when a fixture says registration is verified.
+
+This is deliberately not a network verifier. It proves that supplied bytes and
+declared relationships agree, not that a model resolution, external URL,
+registration receipt, timestamp proof, signature, or lineage authority is
+authentic. Even a structurally valid manifest remains offline execution
+preparation and never authorizes provider calls or spending.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
