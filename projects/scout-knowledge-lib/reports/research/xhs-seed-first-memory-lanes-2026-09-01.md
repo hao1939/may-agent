@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint through Cycle 36: the accepted Scout range remains integrated, Xiaohongshu was reconciled before discovery, and exact source comparison shows the submitted MutMem-V2 manuscript matches validated orphan v1.0.4 while naming the distinct v1.0.0 release."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 36"]
+summary: "Seed-first Scout checkpoint through the Cycle 37 start: Cycle 36 is clean and integrated, then a fresh Xiaohongshu reconciliation records the disappeared live collection target and changed unattributed shell before any new lane selection."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 36", "XHS seed-first cycle 37"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T09:16:43.716Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, 2608.17684v1, and 2609.01235v1 plus MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c with offline and commit-scoped public validation; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T09:30:25.393Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, 2608.17684v1, and 2609.01235v1 plus MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c with offline and commit-scoped public validation; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -3331,6 +3331,60 @@ This is a checkpoint, not goal completion. Cycle 37 must begin with a fresh
 Xiaohongshu reconciliation. Only afterward, absent a stronger seed trigger, the
 next exploration is a bounded `v1.0.4` release-asset/source-manifest binding
 check. The resolved mixed-scope chain remains closed.
+
+## Cycle 37 seed-first start — live target disappeared before selection
+
+Cycle 36 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`204eb884d84239223143cdc04b400ab1bcd7f7e3`. Exact-tip syntax, TypeScript,
+Prettier, and 78 tests with 226 assertions pass; all 19 changed-document links
+resolve, health remains bounded at 26 facts and 16 wake signals, and `.state`
+remains empty. The accepted self-evolution range is still represented by three
+standing ancestors, two exact stable patch-ID pairs, and four equal final
+blobs. No accepted result is known unintegrated. `/app` retained its newer
+pre-commit baseline of 884 records at `d7e65e29…c9dc`, the user overlay retained
+its three records at `a52b97aa…4a15`, and all other peer worktrees remained
+clean. This completed the integration checkpoint; it did not complete the
+standing goal.
+
+Only then did Cycle 37 begin. From
+`2026-09-02T09:28:25.441Z–09:30:54.976Z`, direct worker reads to 9333 and 9222
+failed with curl exit 7 and HTTP 000. Effective UID 0 inside root-owned Chrome
+PID 2136's network namespace reached Chrome 152 DevTools at HTTP 200. Scout's
+status tool returned `ready=false` and zero readable notes. Its first system-
+Node invocation lacked `WebSocket` and stopped before a page read; the same
+read-only command under the existing Bun runtime succeeded, so this was local
+runtime wiring rather than a Xiaohongshu credential boundary.
+
+The retained login and public Explore pages had no live collection-history
+target. All three current-user endpoints returned HTTP 500 `text/plain`, 54
+bytes, without identity. An immutable read-only query of Chrome's local History
+database found the last known redacted collection target, visited
+`2026-09-01T18:40:22.056Z`; that is observer-history provenance, not live
+collection evidence. One credentialed live GET of that target returned HTTP
+200 and a 149,499-byte, 65-raw-ID shell at fingerprint `0d8093c7…f866`. Cycle
+36's shell was 147,839 bytes with the same count but fingerprint
+`181d9232…c930`. No ID was rendered or attributable as a card, so the exact
+shell delta does not become a seed change.
+
+Public Explore retained the exact 30-ID fingerprint `dbadf511…e529e13`, and
+one current signed read of representative `6a884237…f9f6` again ended at
+`/404` without readable title, author, or description. Added and changed seeds
+remain unknown, proven removals are `[]`, and all 132 durable IDs remain
+unavailable rather than removed. No retained page was navigated and no
+Xiaohongshu account or content state was mutated.
+
+The seed-only three-document candidate over `204eb884…f7e3` passes whitespace
+checks, all 19 relative links, syntax bundling, TypeScript, Prettier, and 78
+tests with 226 assertions. The read-only health scan at
+`2026-09-02T09:32:53.548Z` remains bounded and truncated at 26 facts and 16
+wake signals, and the application `.state` remains empty at
+`e3b0c442…b855` before and after validation.
+
+This seed-first boundary is persisted before source selection. GitHub, arXiv,
+and Reddit still carry their Cycle 36 continuity only; each must now be
+reconsidered for relevance, value, freshness, and access before the
+`v1.0.4` release-manifest check or another exploration is selected. The
+resolved mixed-scope chain remains closed.
 
 ## Supervision
 
