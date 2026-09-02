@@ -566,6 +566,37 @@ next ranked question is to use exact enumeration to measure correct-direction
 power and wrong-direction risk under predeclared symmetric nonzero alternatives
 at the 64-block candidate.
 
+## Cycle 78 exact nonzero-alternative power
+
+Seed reconciliation `2dff87dc8315eb0b62c96408a9fd3bf13913eff2` preceded this
+analysis. Exact local commit `311d68216b49cb664ec0019c3259e00f9246bfda`
+adds a separate fail-closed alternative-calibration schema rather than
+weakening the symmetric-null contract. It requires positive/negative mirror
+pairs whose expected effects exceed the `0.10` practical threshold, fixes 64
+blocks, declares 80% minimum correct-direction power and 1% maximum
+wrong-direction probability, and exactly enumerates positive, negative,
+negligible, and inconclusive outcomes. Specification SHA-256 is
+`22df2188523708cbe52f28ea0dbbacf30563adf2a1447a57175d04e28008f887`.
+
+The moderate pair has expected effects ±0.15. Exact correct-direction power is
+`0.08407170601489997`; wrong-direction probability is
+`0.0000018579349140504212`, and about 91.59% remains inconclusive. The strong
+pair has expected effects ±0.30. Correct-direction power is
+`0.5975522317286325`; wrong-direction probability is
+`0.0000000002298192502702488`, and about 40.24% remains inconclusive. Mirror
+pairs agree to floating-point tolerance and every four-way probability sum is
+one. All processes pass the 1% wrong-direction tolerance, but none passes the
+declared 80% power target.
+
+This directly contradicts treating the 64-block null-safety candidate as a
+generally adequate execution size. It supports only low wrong-direction risk
+for the declared alternatives, not sufficient sensitivity. Confidence is high
+for exact enumeration of these four synthetic processes and low for the
+substantive choice of alternatives, dependence, continuous effects, drift, or
+real models. The next ranked question is to find the minimum exact run count
+that reaches 80% for the ±0.30 pair and determine whether the ±0.15 pair can
+reach it within a bounded 256-block search.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

@@ -1469,6 +1469,16 @@ case become calibration authority. Confidence is high for the declared
 discrete family and low for continuous effects, nonzero alternatives, or real
 provider responses.
 
+Cycle 78 adds exact mirror-paired nonzero alternatives at local commit
+`311d68216b49cb664ec0019c3259e00f9246bfda`. At 64 blocks, expected effects
+±0.15 have only 8.41% correct-direction power and ±0.30 only 59.76%, despite
+wrong-direction probabilities of about 0.000186% and 0.000000023%. All four
+processes therefore pass the declared 1% wrong-direction limit but fail the
+80% power target. This contradicts using the 64-block null-safety result as a
+general execution-size gate. Confidence is high for the exact synthetic
+enumeration and low for alternative selection, dependence, continuous
+effects, drift, or real-model transfer.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
