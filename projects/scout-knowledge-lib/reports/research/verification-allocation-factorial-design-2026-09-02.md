@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 94, including exact local identity-invariant regression b4ffa1c522019bb42cb1d52602efa7e563359a3d."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 95, including exact local robust-minimum regression b638788e80b563c5745274fa5b82c036743d4406."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1214,6 +1214,47 @@ operational cost. Confidence is high for exact permutation invariance and low
 for those transfer questions. The next ranked question is an exhaustive,
 non-monotonic search over the retained 64–256 grid for the minimum allocation
 whose 4-of-6 lower bound passes for every possible moderate-process identity.
+
+## Cycle 95 exhaustive identity-robust minimum
+
+Seed reconciliation `a8ffbc692bffce0f8143c3475e3cec07e494b63f` preceded this
+search and recorded a material profile-to-login shell transition without an
+attributable saved item. Four goal-owned local processes enumerated every
+64–256 count under the frozen exact null and alternative fixtures. All 193
+counts pass the null gate; dense-null at 71 remains worst at
+`0.008554538502693238`. The retained row representation has SHA-256
+`d1792f60380298c205f32f72c1fb04b1e8b1b457bf1423b0c5e6b2fc1f10a6dc`.
+
+For each attainable six-model total, a dynamic program maximized the sum of
+strong-process marginals at every observed strong-minus-moderate gap
+threshold. Taking the worst of all six possible moderate identities then
+tests the exact robust criterion without assuming monotonicity or a known
+process class. The result representation has SHA-256
+`a2f55d41dd3086532897ce695e66c1e5d39e3820d3a20a42864922276659b40c`.
+
+The minimum pass is 1,029 blocks with counts
+`[171,171,171,172,172,172]`, or 32,928 complete factorial episodes. When the
+moderate process receives 171 blocks, the worst correct marginal sum is
+`5.400042315780292`, giving lower bound `0.8000141052600972`; when it receives
+172, the lower bound is `0.800957306318893`. The worst aggregate wrong-
+direction upper bound is `4.778429753042595e-9`.
+
+The strongest cheaper state is 1,028 blocks at
+`[171,171,171,171,172,172]`. Its worst correct marginal sum is
+`5.399748622912675` and lower bound `0.7999162076375583`, so it fails. Exact
+local source `b638788e80b563c5745274fa5b82c036743d4406` pins both adjacent
+vectors using the retained 171- and 172-block calibrations. The focused test
+passes with 56 assertions; TypeScript and formatting pass.
+
+This proves the identity-robust minimum over the declared grid, but it changes
+the operational conclusion: the optimized robust vector saves only three
+blocks and 96 episodes versus equal 172 sampling. Its aggregate lower-bound
+margin is only `0.0000141052600972`, or 0.00141 percentage points. Confidence
+is high for the exact enumeration, dynamic program, edge regression, and
+frozen probabilities; low for marginal estimation, drift, real models,
+dependence, cost, and providers. The next ranked question is to compute the
+uniform downward marginal perturbation that erases this pass and compare its
+buffer with equal 172 before treating the 96-episode saving as actionable.
 
 ## Go/no-go boundary
 
