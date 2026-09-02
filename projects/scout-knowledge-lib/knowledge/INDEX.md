@@ -41,6 +41,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — source-agnostic deep investigation across 984 explicit leads, including all 908 observed collection cards, primary-source comparisons, existing Scout reconciliation, code checks, contradictions, and reproduction limits.
 - [Agent self-evolution unified lead ledger (2026-09-01)](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv) — provenance, access, research question, value, related work, novelty, credibility, disposition, and stopping condition for every lead in the bounded frontier.
 - [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 908 observed stable card IDs, including metadata-only, unresolved, adjacent, and screened-out records.
+- [Verification-allocation factorial design (2026-09-02)](../reports/research/verification-allocation-factorial-design-2026-09-02.md) — preregistration-ready separation of provisional plan, current temptation, and authenticated supersession state; design only, with explicit no-call gates.
 
 ## Recent Source-Grounded Findings
 

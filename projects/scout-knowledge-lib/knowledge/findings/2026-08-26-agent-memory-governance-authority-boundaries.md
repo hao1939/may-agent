@@ -1334,7 +1334,10 @@ decision-context coupling, but cannot estimate whether trustworthy visible
 freshness overrides an assigned plan or a tempting alternative. A defensible
 follow-up must factorially vary those three inputs at allocation time,
 counterbalance which constraint is superseded and record order, and analyze
-selection before downstream decisions. No such model run is claimed here.
+selection before downstream decisions. Scout's
+[preregistration-ready design](../../reports/research/verification-allocation-factorial-design-2026-09-02.md)
+specifies that boundary and its no-call gates. No such model run is claimed
+here.
 
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
