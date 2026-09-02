@@ -7074,6 +7074,35 @@ This is the required start of Cycle 61, not goal completion. Validate and
 commit this seed reconciliation before reconsidering GitHub, arXiv, or Reddit.
 Keep the mixed-scope event-chain exploration closed.
 
+## Cycle 61 post-seed selection — audit cross-version comparison semantics
+
+Seed ordering is exact: Cycle 61 reconciliation
+`ec85487aa9e0bcfb43e130a8809ec84faed7a955` was committed before this source
+reconsideration or comparator audit.
+
+- **GitHub/local code is selected for a bounded audit; a public request is
+  deferred.** Relevance remains high, but Cycle 58's four exact public heads
+  remain the freshest useful evidence and no revision/artifact trigger has
+  appeared. Exact local `8f4f3b4…4a150` is the last useful implementation
+  evidence. The next question is whether the exported comparator's treatment
+  of historical v1 summaries and self-identifying v2 summaries is explicit,
+  deterministic, and fail-closed where required. Revisit public GitHub on a
+  changed head, artifact, independent/deployment, or readable-seed trigger.
+- **arXiv is retained and deferred.** `2608.30177v1` remains the 15/15
+  memory-governance anchor and `2608.25553v3` the distinct 14/15
+  marginal-allocation result. Neither has a version, artifact, registration,
+  replication, or readable-seed trigger for this local comparison question.
+- **Reddit is deferred without quota work.** Last useful evidence remains RSS
+  HTTP 200 at `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six
+  comments; JSON remains last observed HTTP 403. Revisit on seed-linked
+  reproducible evidence, a content delta, or an access change.
+
+Inspect the comparator contract and its callers before changing anything.
+Determine whether it intentionally reinterprets raw observations under current
+semantics or claims to compare persisted fingerprint identities. Add a fixture
+or implementation only for a proven ambiguity, preserve value-free output, and
+keep the proposed mixed-scope event-chain exploration closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
