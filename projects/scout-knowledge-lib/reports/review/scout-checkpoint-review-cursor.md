@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing checkpoint 4c4953b5c0d928513fc08e5d3e5e147ca7b8b48f; source identity is resolved, cadence outcome validation is pending, and a compact integration-ledger candidate addresses recursive report growth."
+summary: "Independent Scout review cursor through standing checkpoint 738e80fb94c0f6e0e1281904ec2a54c342acb24c; source identity and recursive report growth are resolved, while cadence outcome validation remains pending."
 triggers: ["Scout independent review", "checkpoint review cursor", "resolved Scout review findings", "Scout cadence outcome validation", "Scout review integration compaction"]
 last_updated: "2026-09-02"
-source_basis: "Exact standing-branch diffs and trees through 4c4953b5c0d928513fc08e5d3e5e147ca7b8b48f; independent current-tree Scout validation; relative-link, ancestry, and reviewer patch-equivalence checks; bounded public GitHub provenance spot-checks."
+source_basis: "Exact standing-branch diffs and trees through 738e80fb94c0f6e0e1281904ec2a54c342acb24c; independent current-tree Scout validation; relative-link, ancestry, and reviewer patch-equivalence checks; bounded public GitHub provenance spot-checks."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -18,11 +18,10 @@ findings in one place.
 - Review date: `2026-09-02T23:56:30+08:00`
 - Review artifact:
   [Cycle 65 resolution review](./scout-checkpoint-4cf33131-review-2026-09-02.md)
-- Overall disposition: **revise with a compaction candidate prepared**. The
-  source identity correction is proven, and the cadence policy is accepted
-  with outcome validation pending. The standing integration then duplicated
-  review evidence in 78 producer-report lines, so the candidate retains the
-  proof in a compact ledger instead.
+- Overall disposition: **accepted with cadence outcome validation pending**.
+  The source identity correction is proven, and the standing branch integrated
+  the compact ledger that removes recursive review duplication. The first
+  eligible no-change opportunity still must validate the cadence policy.
 
 ## Evidence examined
 
@@ -68,7 +67,7 @@ findings in one place.
 | --- | --- | --- | --- | --- | --- |
 | `RV-001` | Medium | Cycle 65 checkpoint in `xhs-seed-first-memory-lanes-2026-09-01.md` | Four head requests plus a rate request only 44 minutes after the same four heads were checked produced no new decision, while adding 65 lines to a 522 KB report. This spends quota and makes useful findings harder to retrieve. | **Structurally resolved; outcome check pending** | The topic map and producer checkpoint now require a change-bearing trigger or a compact scheduled audit at least 24 hours after the last exact pass. The first eligible no-change opportunity must show that the standing loop defers without public requests or another narrative checkpoint. |
 | `RV-002` | Low | Cycle 65 GitHub evidence paragraph | All four hashes were independently supported, but repository identities required another knowledge note and the primary arXiv record. A future reader cannot reproduce the observations from this checkpoint alone. | **Resolved** | The producer checkpoint and current lane table now name `beining1008/cross-episode-memory-client`, `arquicanedo/self-reflective-apis`, `wallidsaydi-creator/HOM-AIMOS`, and `sattyamjjain/mnemo` beside their exact heads. |
-| `RV-003` | Medium | Cycle 65 independent-review integration in `xhs-seed-first-memory-lanes-2026-09-01.md` | Two integration wrappers added 78 lines that repeat review findings, commit mappings, and validation already recorded in the review artifacts. This recreates the retrieval-cost regression during the act of resolving it. | **Revise; candidate prepared** | Replace the wrappers with one compact integration ledger that preserves exact commit mappings, validation, protected-state limits, and pending status. Integrate the candidate without appending another narrative wrapper. |
+| `RV-003` | Medium | Cycle 65 independent-review integration in `xhs-seed-first-memory-lanes-2026-09-01.md` | Two integration wrappers added 78 lines that repeat review findings, commit mappings, and validation already recorded in the review artifacts. This recreates the retrieval-cost regression during the act of resolving it. | **Resolved** | Reviewer commit `9347d5800fe629cd68e0e8e4791d60ff5e8767eb` is integrated as standing commit `738e80fb94c0f6e0e1281904ec2a54c342acb24c` at patch ID `6cbb18d4b3871669b4983da262bba5a576abc80e`; the compact ledger removes 58 net producer-report lines without another narrative wrapper. |
 
 No finding is rejected, superseded, or blocked. The standing branch integrated
 reviewer commits `7959ccea48c2b5f7f40289cb211cbf38245502ad`,
@@ -81,9 +80,9 @@ visible; standing correction `4cf33131a7f474feb099e692cc36459973cbd6a3`
 supplies the cadence and identity changes.
 
 Integrated results are the three reviewer commits and the standing resolution
-above. Pending are the first eligible outcome check for `RV-001` and standing
-integration of the `RV-003` compaction candidate; no result is rejected,
-superseded, or blocked.
+above, plus the `RV-003` compaction at standing commit
+`738e80fb94c0f6e0e1281904ec2a54c342acb24c`. Pending is only the first eligible
+outcome check for `RV-001`; no result is rejected, superseded, or blocked.
 
 ## Supervision
 
