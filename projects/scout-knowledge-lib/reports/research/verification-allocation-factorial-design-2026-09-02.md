@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 93, including exact local identity-misassignment regression 552532bd9690613ebc5eb8d796f3ab61bd94ccac."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 94, including exact local identity-invariant regression b4ffa1c522019bb42cb1d52602efa7e563359a3d."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1186,6 +1186,34 @@ The next ranked question is the bounded identity-invariant control already
 available from local evidence: give every model 172 blocks, verify that the
 moderate identity cannot change the result, and quantify its robustness
 premium over the targeted 859-block allocation before another global search.
+
+## Cycle 94 identity-invariant equal-allocation control
+
+Seed reconciliation `89f0da7644c37f35d228773435df16f27245c425` preceded this
+control and reproduced the same profile-class access boundary with zero
+attributable items. The regression gives all six named models 172 blocks and
+permutes the one moderate process through every identity. Each of the six
+scenarios has correct marginal sum `5.403752997559532`, sharp 4-of-6 lower
+bound `0.8012509991865105`, and aggregate wrong-direction upper bound about
+`4.567335716582027e-9`. Every placement passes the frozen 80% power and 1%
+wrong-direction gates.
+
+Exact local source `b4ffa1c522019bb42cb1d52602efa7e563359a3d` binds all six
+placements under sensitivity-spec SHA-256
+`a7a31b9d54011af60a523b154d25127d2dc0e230ff40f9c5c0509725e8260328`.
+The equal design costs 1,032 blocks and 33,024 complete factorial episodes.
+That is 173 blocks and 5,536 episodes more than Cycle 92's targeted 859-block
+design. The focused identity-invariance test passes with 44 assertions;
+TypeScript and focused formatting pass.
+
+This supports equal allocation as an identity-invariant control and
+quantifies the price of avoiding the classification assumption. It does not
+prove equal 172 is the cheapest robust unequal vector, nor does it establish
+real-model effects, a classifier, dependence, provider behavior, or
+operational cost. Confidence is high for exact permutation invariance and low
+for those transfer questions. The next ranked question is an exhaustive,
+non-monotonic search over the retained 64–256 grid for the minimum allocation
+whose 4-of-6 lower bound passes for every possible moderate-process identity.
 
 ## Go/no-go boundary
 
