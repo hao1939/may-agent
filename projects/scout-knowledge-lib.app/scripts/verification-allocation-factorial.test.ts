@@ -1570,6 +1570,86 @@ describe("verification-allocation factorial fixture", () => {
     const robustnessPremiumRunBlocks = base.modelIds.length * 172 - 859;
     expect(robustnessPremiumRunBlocks).toBe(173);
     expect(robustnessPremiumRunBlocks * 32).toBe(5_536);
+
+    const heterogeneousCounts = (runBlockCounts: number[]) =>
+      runBlockCounts.map((_, moderateIndex) => {
+        let correctMarginalSum = 0;
+        let wrongMarginalSum = 0;
+        runBlockCounts.forEach((runBlockCount, modelIndex) => {
+          const analysis =
+            runBlockCount === 171
+              ? before
+              : runBlockCount === 172
+                ? recovery
+                : undefined;
+          if (!analysis) throw new Error("unexpected robust-control count");
+          const process =
+            modelIndex === moderateIndex ? analysis.moderate : analysis.strong;
+          correctMarginalSum += process.correctDirectionalProbability;
+          wrongMarginalSum += process.wrongDirectionalProbability;
+        });
+        return {
+          correctMarginalSum,
+          aggregateCorrectDirectionalLowerBound: Math.max(
+            0,
+            (correctMarginalSum - 3) / 3,
+          ),
+          aggregateWrongDirectionalUpperBound: Math.min(
+            1,
+            wrongMarginalSum / 4,
+          ),
+        };
+      });
+
+    const robustCandidate = heterogeneousCounts([171, 171, 171, 172, 172, 172]);
+    expect(
+      Math.min(...robustCandidate.map((entry) => entry.correctMarginalSum)),
+    ).toBeCloseTo(5.400042315780292, 14);
+    expect(
+      Math.min(
+        ...robustCandidate.map(
+          (entry) => entry.aggregateCorrectDirectionalLowerBound,
+        ),
+      ),
+    ).toBeCloseTo(0.8000141052600972, 14);
+    expect(
+      Math.max(
+        ...robustCandidate.map(
+          (entry) => entry.aggregateWrongDirectionalUpperBound,
+        ),
+      ),
+    ).toBeCloseTo(4.778429753042595e-9, 16);
+    expect(robustCandidate).toHaveLength(6);
+    expect(
+      robustCandidate.every(
+        (entry) => entry.aggregateCorrectDirectionalLowerBound >= 0.8,
+      ),
+    ).toBe(true);
+    expect(
+      robustCandidate.every(
+        (entry) => entry.aggregateWrongDirectionalUpperBound <= 0.01,
+      ),
+    ).toBe(true);
+    expect(171 * 3 + 172 * 3).toBe(1_029);
+    expect((171 * 3 + 172 * 3) * 32).toBe(32_928);
+
+    const bestCheaper = heterogeneousCounts([171, 171, 171, 171, 172, 172]);
+    expect(
+      Math.min(...bestCheaper.map((entry) => entry.correctMarginalSum)),
+    ).toBeCloseTo(5.399748622912675, 14);
+    expect(
+      Math.min(
+        ...bestCheaper.map(
+          (entry) => entry.aggregateCorrectDirectionalLowerBound,
+        ),
+      ),
+    ).toBeCloseTo(0.7999162076375583, 14);
+    expect(
+      bestCheaper.some(
+        (entry) => entry.aggregateCorrectDirectionalLowerBound < 0.8,
+      ),
+    ).toBe(true);
+    expect(171 * 4 + 172 * 2).toBe(1_028);
   }, 30_000);
 
   it("pins the exhaustive unequal-allocation boundary", () => {
