@@ -34,11 +34,11 @@ independent causal estimate for plan, temptation, or visible freshness.
 Use a one-slot allocation task with three independently assigned binary
 factors. Keep inherited memory bodies constant across cells.
 
-| Factor | Level 0 | Level 1 | Purpose |
-|---|---|---|---|
-| Provisional plan | plan names the decoy direction | plan names the target direction | Separates prior commitment from the model's endogenous turn-1 intent. |
-| Current temptation | situation favors the decoy direction | situation favors the target direction | Separates immediate pressure from the declared plan. |
-| Authenticated status | target path is current | target path is superseded | Tests whether visible authoritative freshness changes allocation before retrieval. |
+| Factor               | Level 0                              | Level 1                               | Purpose                                                                            |
+| -------------------- | ------------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------- |
+| Provisional plan     | plan names the decoy direction       | plan names the target direction       | Separates prior commitment from the model's endogenous turn-1 intent.              |
+| Current temptation   | situation favors the decoy direction | situation favors the target direction | Separates immediate pressure from the declared plan.                               |
+| Authenticated status | target path is current               | target path is superseded             | Tests whether visible authoritative freshness changes allocation before retrieval. |
 
 The status cue must be a compact, authenticated lineage manifest supplied by
 the archive authority. It must name the latest record for every candidate path
@@ -125,6 +125,47 @@ authority. No serving revision, real seed policy, retry/exclusion package,
 external timestamp, execution credential, or call/token/cost authority is
 present. The fixture therefore closes the mechanical toy-isolation step but
 does not unlock a smoke or confirmatory provider run.
+
+## Cycle 47 source-archive compatibility audit
+
+The next seed-first cycle recovered the authoritative `2608.25553v3` data/code
+archive again rather than inventing model or seed metadata. The downloaded
+61,508,909-byte ZIP matches its published SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+Five preregistration entries also match their internal manifest exactly:
+
+| Entry                       | SHA-256                                                            |
+| --------------------------- | ------------------------------------------------------------------ |
+| `FROZEN_MODEL_LIST.json`    | `add6ac48796c783835896c11c7fbb9c6639bb9650fdec358bd293e4c2c10cd58` |
+| `FROZEN_SEEDS.txt`          | `487b2ab14351bc608a74f6400ef44eb844f46b406917dcd827f0218c10c930c6` |
+| `FROZEN_SEED_POLICY.md`     | `b4a4ae10f83a1e14adb1b45701bbe10a0d120015b7b0b53ce8ff47fe5c3e0c63` |
+| `SCHEDULE.json`             | `c3b509e7ea33490259a163b93bc6f56f751964045a3c5fb7ff7d3000f7ece974` |
+| `FROZEN_EXCLUSION_RULES.md` | `1fc7bd27b43be0cb376f1d2ff3a53b43ecd952cf3ce7615a56de216065698cec` |
+
+Those files resolve six requested aliases: `claude-opus-5`,
+`claude-sonnet-5`, `claude-haiku-4-5`, `gpt-5.6-sol`, `gpt-5.6-terra`, and
+`gpt-5.6-luna`. Only Haiku resolves to a dated snapshot,
+`claude-haiku-4-5-20251001`; Opus and Sonnet explicitly retain undated aliases,
+and the three GPT listing lookups record a 403 permission boundary and make no
+snapshot claim.
+
+The seed material is also not transferable to Scout's proposed factorial.
+It freezes 5,400 `stale-c1` cell seeds over six models, runs 0–24, 18 K/P
+cells, and two world states using `mulberry32(FNV-1a(seed))`. Its schedule has
+900 tasks per model. Scout's design instead has 32 independently
+counterbalanced cells per model/seed and 4,800 episodes. Reusing the source
+experiment's cell seeds would silently change their encoded meaning; treating
+the 25 run numbers as Scout seeds would invent an unregistered seed policy.
+
+Finally, the bundled `EXTERNAL_REGISTRATION.template.json` still has empty
+external URL, identifier, deposit time, artifact hash, local commit, and
+manifest hash fields and says `verification_status: "PENDING"`. The archive
+does contain an OpenTimestamps proof for a development-registration digest,
+but that is not an external timestamp of Scout's proposed schedule. Therefore
+the honest result of this audit is a reusable source constraint, not a frozen
+Scout execution package. The 64-episode offline fixture remains the only
+generated Scout schedule, with provider calls still unauthorized and results
+still empty.
 
 ## Go/no-go boundary
 
