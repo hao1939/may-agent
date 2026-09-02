@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, the event hash chain is aggregate across organization-owned and null-owned records, and integrity verification must fail closed on incomplete queries or missing non-first links. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, the event hash chain is aggregate across organization-owned and null-owned records, and integrity verification must fail closed on incomplete queries or missing non-first links. Isolated fixes and artifact verification pass focused validation, but are not deployed or independently replicated proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2 and 2609.01235v1 plus the exact MutMem-V2 release and offline verifier at fcda26d1e05c729185c09dd11446db2f79c14a0d; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -1081,6 +1081,52 @@ tests pass, and the standalone CLI verifier passes both of its tests. The
 candidate changes no schema, storage query, or public response type. It remains
 local, unreviewed upstream, undeployed, and is not evidence that historical
 stored data contains a missing link.
+
+### Portable verification needs external anchors and complete membership
+
+Cycle 35's bounded newest-first arXiv search surfaced
+[`2609.01235v1`](https://arxiv.org/abs/2609.01235v1), MutMem-V2, above the
+retained MemGauge anchor. The full TeX archive was observed at SHA-256
+`8dd18e6b35777eb0dc645c6bb12f93964dc41a5850684b1a98f5a41ae6490638`.
+Its distinct contribution is a portable evidence contract rather than another
+memory engine: exact canonical bytes, external trust anchors, actor and
+Housekeeper identity epochs and revocation, effective authorization, complete
+`13+5r` recall-object membership, deterministic order, per-result provenance,
+and a signed terminal receipt. This directly complements the Mnemo findings:
+checking a hash only when a field happens to be present is weaker than making
+membership and failure reasons part of the versioned protocol.
+
+The manuscript binds public release tag `v1.0.0` to annotated tag object
+`2f7264dc…e1f` and commit
+`fcda26d1e05c729185c09dd11446db2f79c14a0d`. In a fresh goal-owned clone,
+the advertised `npm run verify` first stopped before verification because
+dependencies had not yet been installed and eager benchmark-runner import
+required `pg`. After the documented locked dependency step, the exact offline
+verifier passed under isolated supported Node 20.19.5 without database,
+keychain, provider, or network access. It reproduced 39 recall-structural and
+15 mutation-structural vectors, 72/72 exact Node/Python verdict-and-reason
+terminals, 42/42 production-conformance cases, 44 rate/Wilson rows, 28
+McNemar/Holm rows, 17 claim rows, and 10 attempt rows. The clone's Git status
+fingerprint remained empty before and after verification.
+
+This result supports released-artifact self-consistency, not independent
+empirical replication. Both verifier implementations and the corpus ship from
+the same project; current V2 utility was not rerun, historical private rows are
+unavailable, the canary covers explicit markers only, and one macOS
+installation is the entire qualified install surface. The exact release
+commit's only public GitHub check failed at “Run source release gates”; its
+live-fire, package, and attestation steps were skipped, while unauthenticated
+log download returned HTTP 403 requiring repository administration. Later
+`v1.0.4`/current-main source gates are green on Node 20, 24, and 26, but that
+line begins from an orphan commit and does not contain `v1.0.0`, so those checks
+cannot be transferred to the paper snapshot.
+
+MutMem-V2 scores 14/15 (`3+3+3+2+3`): direct seed-cluster relevance, strong
+cross-source connection, high uncertainty reduction, narrower single-project
+generality, and highest freshness. It is retained as complementary protocol
+evidence but does not displace `2608.30177v1`'s 15/15 controlled stage-wise
+utility/risk evidence. Neither source validates Mnemo's implementation or any
+deployed service.
 
 ## Why it matters
 
