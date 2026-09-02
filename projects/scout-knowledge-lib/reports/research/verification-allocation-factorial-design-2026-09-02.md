@@ -945,6 +945,42 @@ heterogeneous 4-of-6 marginal sensitivity analysis; it must retain this
 corrected estimand boundary as contradictory evidence rather than treating a
 single rule as uniformly safer.
 
+## Cycle 88 heterogeneous strict-majority sensitivity
+
+Seed reconciliation `eda787b12bed0a4348a5803297f6b178bb876b9a` preceded this
+work. Exact local source commit
+`e8bd94a4f0210ce7f1a88fc330abf2085fcb71ad` adds specification SHA-256
+`10dec5699c1ce2d83502e0fb8d4025d0c1a735e6e8aee242c9528823176654a6`.
+It binds six named synthetic model marginals, Cycle 86 null-range SHA
+`3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5`,
+power-search SHA
+`bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f`,
+104 blocks, the conflict-safe 4-of-6 threshold, unknown dependence, 80%
+aggregate power, and 1% aggregate wrong-direction risk. Missing, duplicate, or
+unknown model identities, invalid probability envelopes, and a non-strict
+majority fail closed.
+
+The unknown-dependence count-moment lower bound requires the six correct-
+direction marginals to sum to at least `5.4`. Six strong synthetic marginals
+sum to `5.418289235832395` and retain the Cycle 86 aggregate lower bound
+`0.8060964119441317`. Replacing one named model with the frozen moderate
+process lowers the sum to `4.741618246106212` and the aggregate lower bound to
+`0.5805394153687372`; replacing two lowers them to `4.064947256380029` and
+`0.3549824187933431`. Only the all-strong scenario passes 80%.
+
+All three wrong-direction upper bounds pass 1%: about
+`2.378646314564966e-12`, `1.2283981426580603e-7`, and
+`2.4567724988529744e-7`. This supports directional safety for this stress
+family but contradicts treating the all-strong aggregate-power pass as robust
+to even one full moderate-process substitution. “Moderate substitution” is a
+synthetic sensitivity control, not an observation of real model
+heterogeneity. Confidence is high for the algebra, exact frozen marginals,
+identities, and schema checks; low for real-model marginals, dependence,
+graded heterogeneity, cost, drift, and provider behavior. The next ranked
+question is the minimum weakest-model marginal that preserves the 80% lower
+bound when the other five remain at the frozen strong marginal, followed by
+graded vectors rather than another full-process substitution.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
