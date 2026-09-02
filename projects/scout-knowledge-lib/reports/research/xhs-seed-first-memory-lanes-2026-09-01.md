@@ -6303,6 +6303,116 @@ truncated at 26 facts and 16 wake signals. Runtime `.state` is empty.
 This is a lane-selection checkpoint, not goal completion. Validate and commit
 the selection before beginning the bounded local fixture.
 
+## Cycle 56 checkpoint — distinguish access equivalence from exact bytes
+
+What was wrong was the evidence model, not the Xiaohongshu response itself.
+Three supported saved-profile reads had different exact body hashes over an
+otherwise identical login-shell boundary. Treating each byte change as an
+access change would create false churn; suppressing the byte hash would lose
+the exact provenance needed to inspect future drift.
+
+Exact reviewed commit `aca9bb524b8605f8aa4e9367f4735a685ceb8c0b` on
+`codex/g-c1b31972-scout-loop`, based on the committed Cycle 56 selection
+`b6e10bd110c0f9b18a955aa9dd53225418cbf564`, adds a versioned stable-access
+fingerprint to `saved-status`. The fingerprint covers only credential-free
+fields: the query-free target fingerprint, sorted safe query-key names, HTTP
+status, bounded content type, final-location class, byte count, attributable
+item count, ID fingerprint, and login state. The exact body SHA-256 stays in
+the output as separate byte provenance and cannot perturb equivalence.
+Duplicate, unsorted, or unsafe query-key names are rejected.
+
+The pure fixture changes the fingerprint when any supported access field
+changes and preserves it when only the body hash changes. Sixteen focused tests
+with 40 assertions pass, including supported non-navigation, output redaction,
+malformed summary denial, every stable-field invalidation, and duplicate or
+unsafe query-key denial. The full Scout gate passes syntax bundling,
+TypeScript, source formatting, and 112 tests with 312 assertions.
+
+One live read-only `saved-status` run from
+`2026-09-02T13:37:06.809Z` through `13:37:08.059Z` reached the existing
+root-owned Chrome session as effective UID 0 in its network namespace. It
+returned stable access fingerprint
+`31e8ffe2808de4ba466e0e42cb658a7e7c078d9dddebbf1c01c127d115574915`
+and exact body SHA-256
+`0034cd5ea8bff43216d4cc3f4f4c5d71cfb782409099ce6de514fd14b28fb9a5`.
+The target fingerprint remained `e860da46…006906e`, safe query keys remained
+empty, HTTP remained 200 `text/html`, final class remained `login`, length
+remained 46,672 bytes, attributable item count remained zero, the ID
+fingerprint remained empty, and login state remained true. A pure comparison
+maps both this body and Cycle 56's earlier `0431b05b…7e10181` body to the same
+access fingerprint. No tab was navigated and no account or content was
+mutated.
+
+Seed ordering remains exact. Reconciliation commit
+`d8e35b568dba1ad33ed72aca016844e92a41ba44` preceded lane selection
+`b6e10bd110c0f9b18a955aa9dd53225418cbf564`, which preceded the local
+implementation. The public Explore surface remains 30 notes; the saved target
+remains a login shell with no attributable post. Added and changed IDs remain
+unknown, observed removals remain `[]`, and all 132 durable seeds remain
+unavailable rather than removed. Cycle 20 remains the last comparable
+authenticated snapshot. Its exact pre-fix bulk-forget outputs remain
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`; the later authoritative
+three-of-three full reflection result on Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`, including its one-of-two Alpha
+projection qualification, remains authoritative.
+
+All three permanent lanes retain explicit continuity:
+
+- **GitHub/local code was selected and completed.** Public GitHub remains high
+  relevance but low marginal value without a trigger. Last useful public
+  evidence remains Cycle 40 at retained invalidation client
+  `4c0dabd…9c641`, server `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and
+  Mnemo `2994abf…2f20`. Exact local `aca9bb5…ceb8c0b` is now the last useful
+  code evidence. Revisit public GitHub on a revision, artifact,
+  independent/deployment, or seed-linked trigger.
+- **arXiv remains retained and deferred.** Exact HTTP-200 evidence through
+  `2026-09-02T11:47:43.870Z` retains `2608.30177v1`, `2608.25553v3`,
+  `2609.00243v1`, `2609.01235v1`, and deduplicated `2606.12290v1`.
+  MemGauge `2608.30177v1` still wins the post-reconciliation rubric at 15/15;
+  `2608.25553v3` remains the distinct 14/15 marginal-allocation result. Revisit
+  on a paper, artifact, registration, replication, or readable-seed trigger.
+- **Reddit remains deferred without quota work.** Last useful evidence remains
+  RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six
+  comments; JSON remains last observed HTTP 403. Revisit on seed-linked
+  reproducible evidence, a content delta, or an access change.
+
+The only accepted Scout range considered is
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its accepted patches have stable patch IDs
+`9a8b80e…626d` and `5b5b393…8eb9`, matching standing commits
+`f9784d9…fc04` and `20fd9d8…dacf`; `cb82bee…f53` and both standing commits
+are ancestors of this branch, and all four accepted final artifacts are
+byte-identical. Direct side-tip ancestry is intentionally false under the
+equivalent-patch strategy. No accepted result is deferred, superseded,
+blocked, or known unintegrated.
+
+Protected Git porcelain-v2/NUL fingerprints remain the preservation baseline.
+The dirty source is at `386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records,
+and `c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`.
+The human overlay is at `fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three
+records, and
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`.
+Other peer worktrees remain clean at the empty fingerprint
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The final preservation rerun reproduces those exact heads, record counts, and
+fingerprints for `/app`, the human overlay, and every listed peer worktree.
+No protected checkout changed.
+
+On the exact two-document candidate over code commit `aca9bb5…ceb8c0b`,
+Prettier, whitespace, and all 21 relative links pass. The focused XHS set
+passes 16 tests with 40 assertions. The full Scout gate passes syntax
+bundling, TypeScript, source formatting, and 112 tests with 312 assertions.
+Read-only health at `2026-09-02T13:45:00.000Z` remains bounded and truncated
+at 26 facts and 16 wake signals. Runtime `.state` is empty. The accepted-range
+patch IDs, three standing ancestors, empty four-file diff, and four exact blob
+pairs were rerun after validation on the same candidate.
+
+This is a checkpoint, not goal completion. The next exploration begins with
+the next bounded Xiaohongshu seed reconciliation, after the unchanged session
+has a new observation trigger. Do not start the proposed mixed-scope
+event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

@@ -289,6 +289,52 @@ added/changed sets, empty observed-removal set, or 132 unavailable seeds.
 Begin the next cycle seed-first before any further lane work. Keep the
 mixed-scope event-chain exploration closed.
 
+## Cycle 56 result — raw response bytes no longer obscure stable access
+
+Three supported saved-profile reads returned different body hashes even though
+the credential-free access boundary was unchanged. Comparing only raw bytes
+would therefore create false access-change signals; ignoring those bytes would
+discard exact provenance.
+
+Exact local commit `aca9bb524b8605f8aa4e9367f4735a685ceb8c0b` adds a
+versioned access-equivalence fingerprint to `saved-status`. It hashes the
+query-free target fingerprint, sorted safe query-key names, HTTP status,
+content type, final-location class, byte count, attributable-item count, ID
+fingerprint, and login state. The exact body hash remains a separate output and
+does not affect equivalence. Duplicate or unsafe query-key names fail closed.
+
+At `2026-09-02T13:37:06.809Z–13:37:08.059Z`, a live read-only run through
+the existing Chrome session returned access fingerprint
+`31e8ffe2808de4ba466e0e42cb658a7e7c078d9dddebbf1c01c127d115574915`
+and body hash
+`0034cd5ea8bff43216d4cc3f4f4c5d71cfb782409099ce6de514fd14b28fb9a5`.
+The prior Cycle 56 body hash `0431b05b…7e10181` produces the same access
+fingerprint under the pure helper because every stable field is identical.
+The target still ends at `/login`, exposes zero attributable items, and proves
+neither identity nor collection membership.
+
+Sixteen focused tests with 40 assertions cover stable-body equivalence,
+invalidation for every access field, unsafe/duplicate query denial, output
+redaction, and the supported no-navigation path. The full Scout gate passes
+112 tests with 312 assertions. This is evidence-semantics tooling, not a new
+seed observation: Cycle 56's unknown added/changed sets, empty observed-removal
+set, and 132 unavailable durable seeds remain unchanged.
+
+GitHub/local code was selected and completed at the exact commit above; public
+GitHub remains trigger-current from Cycle 40. arXiv `2608.30177v1` remains the
+15/15 memory-governance anchor and `2608.25553v3` remains the distinct 14/15
+marginal-allocation result. Reddit remains deferred without quota work at RSS
+HTTP 200 for `t3_1v8a3sh` plus six comments and last-observed JSON HTTP 403.
+Revisit those lanes on, respectively, a public revision or artifact, a paper or
+replication/readable-seed change, and a seed-linked content or access change.
+
+The accepted self-evolution range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+remains fully integrated through standing commits `f9784d9…fc04` and
+`20fd9d8…dacf`, matching stable patch IDs and four byte-identical artifacts.
+Nothing accepted is deferred or unintegrated. Begin the next cycle with a fresh
+seed reconciliation; do not start the mixed-scope event-chain exploration.
+
 ## Cycle 52 result — readable XHS tabs outrank login shells
 
 The exact live target order was `/login`, `/explore`, then a new tab. Before
@@ -2124,3 +2170,4 @@ audit remain the highest supported evidence in this execution environment.
 | 2026-09-02 cycle 55 checkpoint | Seed-first linkage remains exact `0aae619…6a47e3`; the supported-command repair followed selection `a77dd09…9c270f` and does not change unknown added/changed sets, removals `[]`, or 132 unavailable seeds.                                                                                                                                                                                                                                                                                                                                                                                                                                    | Public lanes remain trigger-current and were not called for quota. Exact local `5d960fa…379e29` is the last useful code evidence: supported `saved-status` with credential-free output and no navigation.                                                                                                                                                                   | Safe histories produce only target/body/ID hashes, safe key names, HTTP/content metadata, location class, and counts. Unsafe histories no-op; malformed summaries fail closed. Focused 15/28 and full Scout 111/300 pass; live status reproduces `/login` and zero items.                                                                                                     | `2608.30177v1` remains 15/15; `2608.25553v3` remains 14/15; Reddit remains RSS-readable/JSON-403. Supported observation is not authentication or collection evidence.                                                                                     | Begin the next cycle seed-first before selecting another lane or audit. Keep the mixed-scope event-chain exploration closed.                                                                                                                      |
 | 2026-09-02 cycle 56 start      | Began only after clean Cycle 55 checkpoint `59746c7…4fc982`. Direct ports refused; effective UID 0 reached PID 2136's DevTools. Supported public status remained ready with 30 notes; supported saved status returned the same target fingerprint, no query keys, HTTP 200 final class `login`, 46,672 bytes, zero items, empty ID fingerprint, and changed shell hash `0431b05b…7e10181`. Added/changed unknown, removals `[]`, all 132 durable IDs unavailable.                                                                                                                                                                               | Not yet reconsidered; Cycle 55 lane evidence remains continuity only.                                                                                                                                                                                                                                                                                                       | Persist the shell-only access delta before GitHub, arXiv, Reddit, provider, new implementation, or mixed-scope work. No representative saved post was available to read.                                                                                                                                                                                                      | Keep Cycle 20 as the last comparable authenticated snapshot. Public status and raw shell-hash drift are not seed membership or semantic evidence.                                                                                                         | Commit this seed-only boundary, then reconsider all three lanes by the standing rubric. Keep the mixed-scope event-chain exploration closed.                                                                                                      |
 | 2026-09-02 cycle 56 selection  | Seed-first linkage is exact commit `d8e35b5…41ba44`; added/changed remain unknown, observed removals are `[]`, and all 132 durable IDs remain unavailable at the saved-profile login boundary.                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Public GitHub/arXiv evidence remains trigger-current; Reddit remains RSS-readable/JSON-403. No lane was called for quota. Exact local `5d960fa…379e29` is the latest repair; three supported reads now have distinct body hashes over otherwise identical access fields.                                                                                                    | Public-source marginal value is low. The selected question is whether Scout can preserve exact-byte provenance while separately fingerprinting stable access equivalence.                                                                                                                                                                                                     | Retain `2608.30177v1` at 15/15 and `2608.25553v3` at 14/15. Equivalence must not suppress raw provenance or convert login-shell sameness into collection evidence.                                                                                        | Add a pure deterministic fixture first; implement only if it distinguishes raw-byte change from access-boundary equivalence. Keep mixed-scope work closed.                                                                                        |
+| 2026-09-02 cycle 56 checkpoint | Seed-first linkage remains exact `d8e35b5…41ba44`; the access-equivalence repair followed selection `b6e10bd…f564` and does not change unknown added/changed sets, removals `[]`, or 132 unavailable seeds.                                                                                                                                                                                                                                                                                                                                                                                                                                     | Public lanes remain trigger-current and were not called for quota. Exact local `aca9bb5…ceb8c0b` is the last useful code evidence: supported `saved-status` now emits both stable access equivalence and exact body provenance.                                                                                                                                             | Both observed Cycle 56 body hashes map to access fingerprint `31e8ffe…574915`; every stable-field mutation invalidates it, while unsafe or duplicate query keys fail closed. Focused 16/40 and full Scout 112/312 pass.                                                                                                                                                       | `2608.30177v1` remains 15/15; `2608.25553v3` remains 14/15; Reddit remains RSS-readable/JSON-403. Equivalent login shells are access evidence, not authenticated collection evidence.                                                                     | Begin the next cycle seed-first. Revisit public lanes only on their recorded triggers, and keep the mixed-scope event-chain exploration closed.                                                                                                   |
