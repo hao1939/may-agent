@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Current Hermes Agent and OpenClaw both have native learning loops, subagents, persistent memory, and recovery machinery. Their useful distinction is direct mutation versus governed state transitions; neither has controlled evidence of general self-improvement."
 triggers: ["Hermes Agent comparison", "OpenClaw comparison", "learning-loop governance", "Skill Workshop", "background skill review"]
-last_updated: "2026-09-03"
+last_updated: "2026-09-02"
 source_basis: "Official repositories pinned at Hermes 1cb3ab6 and OpenClaw 1212f99, official docs/releases, bounded isolated Hermes checks, and six attributed issue records."
 </ai_context>
 
@@ -28,6 +28,9 @@ Hermes' review fork can run 16 model/tool iterations with a default aggregate
 input budget of 600,000 tokens. Its controls—read-before-write, protected skill
 classes, content scanning, bounded memory, optional approval, and
 notifications—are real, but they do not substitute for a regression test.
+Hermes separately documents an RL training pipeline powered by external
+Atropos and implements trajectory export; that training integration is real,
+but it is not the runtime self-review loop and was not evaluated here.
 
 OpenClaw's memory is now layered: curated files, daily notes, transcripts,
 provenance and session-kind gates, hybrid/trigger recall, Active Memory,
@@ -81,4 +84,4 @@ based only on successful writes.
   impact was not reproduced.
 
 Full lead reconciliation, rubric, issue evidence, and source index:
-[Hermes Agent and OpenClaw comparative investigation](../../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-03.md).
+[Hermes Agent and OpenClaw comparative investigation](../../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md).
