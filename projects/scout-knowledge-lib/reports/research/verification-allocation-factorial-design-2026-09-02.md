@@ -754,6 +754,47 @@ comparison must predeclare a stricter directional interval calibration against
 all three nulls before measuring retained alternative power; it must not tune
 the interval after selecting the most favorable alternative.
 
+## Cycle 83 null-first directional interval calibration
+
+Seed reconciliation `c4cf683ab8d867ac9ba802e2a745b0e5ef9c6356` preceded this
+change. Exact local commit `0320840b91d0c598b7f829b45cb991411291f9a0`
+separates interval selection from power measurement. Null-only specification
+SHA-256 `1d8633f0591d9e4a1cd7c2fdc919a9546a26edf27a9761ab3ce113ab815b2ba8`
+freezes 105 blocks, the same three symmetric nulls, the 1% false-direction
+limit, and lower-tail candidates `0.025`, `0.01`, `0.005`, and `0.0025` in
+least-to-most-strict order. Alternative outcomes are absent from this schema.
+
+The first three candidates fail at least one null. At `0.005`/`0.995`, the
+balanced and sparse risks pass at `0.009568589909137726` and
+`0.009521856408058721`, but dense risk remains `0.010817905625820424` and
+fails. The selected `0.0025`/`0.9975` interval yields exact false-direction
+probabilities `0.004746432583487716` balanced,
+`0.006016081515250353` dense, and `0.004673936662618542` sparse. All pass the
+frozen limit with zero Monte Carlo error.
+
+Only after reproducing that null selection, power specification SHA-256
+`b5715c37201d532faf4067286232fe390e959b98b76651958b3a0cb3a693bef9`
+binds the null-specification hash, selected quantiles, run count, and disjoint
+alternative process IDs. Strong-process correct-direction power is
+`0.9066218357309971`; moderate-process power is `0.2298628645622084`.
+Wrong-direction probability is `1.3853047321045116e-12` strong and
+`4.6912051074282143e-7` moderate. The negative mirrors agree to
+floating-point tolerance. Reordered candidates, altered binding fields, and
+cross-class null/alternative process-ID collisions fail closed.
+
+This qualifies the Cycle 82 result: a directional estimand can meet the frozen
+null-risk contract when its interval is made stricter, and it retains more
+strong-process power than the 95% practical-exceedance rule (90.66% versus
+80.45%). It is not a general shortcut. The stricter interval loses much of the
+95% directional rule's power (98.46% strong and 53.44% moderate), and moderate
+power remains only 22.99%, below the 80% target. Confidence is high for the
+exact frozen grid and synthetic processes, and low for grid optimality,
+continuous effects, cross-model dependence, affordability, provider behavior,
+and real models. The next ranked question is the exact run-block count needed
+for the strong pair to reach the 96.67% per-model power required by Cycle 81's
+dependence-honest six-model lower bound, and whether the moderate pair reaches
+that target through 256 blocks.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
