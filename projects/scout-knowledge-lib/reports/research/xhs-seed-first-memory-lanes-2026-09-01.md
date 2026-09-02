@@ -6521,6 +6521,96 @@ wake signals. Runtime `.state` is empty.
 This is a lane-selection checkpoint, not goal completion. Validate and commit
 the selection before beginning the bounded pure audit.
 
+## Cycle 57 checkpoint — attribute access changes without exposing values
+
+What was wrong was resumability, not fingerprint correctness. Cycle 57's
+fingerprint changed exactly because the configured byte-count field changed,
+but an opaque hash alone did not identify that field. The surrounding safe
+values allowed an ad hoc manual comparison, yet Scout had no reusable,
+fail-closed contract for a fresh worker to distinguish access change from exact
+body-provenance drift.
+
+Exact reviewed commit `bc58969b5d7cdc9641c0189301145ddb2cb3c81a` on
+`codex/g-c1b31972-scout-loop`, based on Cycle 57 selection
+`059d7dbfcbd184892970f6c6e8633f9e47ef2bdf`, adds the smallest bounded
+repair: `compareXhsSavedProfileAccess` is pure, validates both summaries, and
+returns only `equivalent`, ordered changed safe-field names, and
+`bodyChanged`. It never returns a target fingerprint, query value, body hash,
+raw body, cookie, account identifier, or any other evidence value. It performs
+no browser or network operation.
+
+The deterministic fixture uses the exact credential-free Cycle 56 and Cycle 57
+observations. The two Cycle 56 bodies compare as equivalent with body
+provenance changed. The later Cycle 56 observation and Cycle 57 compare as
+non-equivalent with `changedAccessFields:["byteLength"]` and
+`bodyChanged:true`. Separate cases change and attribute every one of the nine
+stable access fields. Unsafe query keys and malformed exact-body provenance
+fail closed. Focused XHS validation passes 18 tests with 55 assertions; the
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 114
+tests with 327 assertions.
+
+Cycle ordering remains exact. Seed reconciliation
+`9b3ae48452e4d1d410eace1f9198cc91deca018e` preceded lane selection
+`059d7dbfcbd184892970f6c6e8633f9e47ef2bdf`, which preceded the
+implementation. The local repair does not reinterpret the saved login shell
+as seed evidence. Added and changed IDs remain unknown, observed removals
+remain `[]`, and all 132 durable seeds remain unavailable rather than removed.
+Cycle 20 remains the last comparable authenticated snapshot. Its exact pre-fix
+bulk-forget outputs remain `01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`; the authoritative three-of-three
+full reflection result on Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`, with its one-of-two Alpha
+projection qualification, remains retained.
+
+All three source lanes retain explicit continuity:
+
+- **GitHub/local code was selected and completed.** Public GitHub remains high
+  relevance and low marginal value without a trigger. Last useful public
+  evidence remains Cycle 40 at invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo
+  `2994abf…2f20`. Exact local `bc58969…3c81a` is now the last useful code
+  evidence. Revisit public GitHub on a revision, artifact,
+  independent/deployment, or seed-linked trigger.
+- **arXiv remains retained and deferred.** Exact HTTP-200 evidence through
+  `2026-09-02T11:47:43.870Z` remains current enough for this local evidence
+  question. MemGauge `2608.30177v1` still wins at 15/15, and
+  `2608.25553v3` remains the distinct 14/15 marginal-allocation result. Revisit
+  on a paper, artifact, registration, replication, or readable-seed trigger.
+- **Reddit remains deferred without quota work.** Last useful evidence remains
+  RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six
+  comments; JSON remains last observed HTTP 403. Revisit on seed-linked
+  reproducible evidence, a content delta, or an access change.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its source commits retain the same two stable patch IDs as standing commits
+`f9784d9…fc04` and `20fd9d8…dacf`; those commits and predecessor
+reconciliation `cb82bee…f53` remain ancestors, and all four accepted final
+artifacts remain byte-identical. Direct side-tip ancestry remains intentionally
+false under the equivalent-patch strategy. No accepted result is deferred,
+superseded, blocked, or known unintegrated.
+
+Protected Git porcelain-v2/NUL baselines remain the dirty source at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records, fingerprint
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`,
+and the human overlay at `fd4c68ecd6fe2ce14afd93815b63f790c1514663`,
+three records, fingerprint
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`.
+Every other peer remains clean at `e3b0c442…b855`. The final current-tree
+validation and preservation proof are rerun before this documentation is
+committed.
+
+On the exact two-document candidate over code commit `bc58969…3c81a`,
+Prettier, whitespace, and all 21 relative links pass. The focused XHS set
+passes 18 tests with 55 assertions. The full Scout gate passes syntax
+bundling, TypeScript, source formatting, and 114 tests with 327 assertions.
+Read-only health at `2026-09-02T14:05:00.000Z` remains bounded and truncated
+at 26 facts and 16 wake signals. Runtime `.state` is empty.
+
+This is a checkpoint, not goal completion. The next cycle must begin with a
+fresh Xiaohongshu reconciliation before any source-lane or implementation work.
+Do not begin the mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
