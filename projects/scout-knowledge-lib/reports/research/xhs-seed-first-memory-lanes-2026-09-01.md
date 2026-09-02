@@ -5620,6 +5620,63 @@ records before reconsidering GitHub, arXiv, and Reddit by relevance, expected
 value, freshness, and access. Do not begin the mixed-scope event-chain
 exploration.
 
+## Cycle 53 post-seed selection — deduplicate supported status evidence
+
+Seed ordering is exact: the Cycle 53 access reconciliation above was committed
+first as `06f8d076568ddecd739cc273f16814825288e078`. Only then were
+GitHub, arXiv, and Reddit reconsidered by relevance, expected value, freshness,
+and access. No public source trigger fired, so no request was repeated merely
+for lane coverage.
+
+- **GitHub/local code is selected for one bounded status-evidence audit.**
+  Public GitHub remains highly relevant but has low marginal new-source value.
+  Retained heads remain invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`;
+  last useful public GitHub evidence remains Cycle 40. Exact local
+  `26c8d771006acbc7ec301a18d679ee0556c2de56` is the latest repair. The
+  current supported status path reports 150 overlapping selector matches for
+  the same Explore surface whose last deduplicated inventory contains 30
+  cards. Reproduce that discrepancy deterministically, then change code only
+  if `noteCount` can represent unique stable cards without weakening readiness
+  for source-bearing pages. Revisit public GitHub on a revision, artifact,
+  independent/deployment, or seed-linked trigger.
+- **arXiv is retained and deferred.** It remains highly relevant and current
+  but has low marginal value without a new seed question or source trigger.
+  Exact HTTP-200 evidence through `2026-09-02T11:47:43.870Z` retains
+  `2608.30177v1`, `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and
+  deduplicated `2606.12290v1`. MemGauge `2608.30177v1` still wins the
+  post-reconciliation rubric at 15/15; `2608.25553v3` remains the distinct
+  14/15 marginal-allocation result. Revisit on a paper, artifact,
+  registration, replication, or newly readable seed-body trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a thread/content delta, or an access change.
+
+The selected next exploration is a goal-owned deterministic reproduction of
+the live 150-selector/30-card mismatch, followed—only if reproduced—by the
+smallest status summarizer repair and focused plus live read-only validation.
+It will not navigate a retained tab, infer collection membership, poll an
+unchanged saved-profile surface, or begin the prohibited mixed-scope event-chain
+exploration.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains fully integrated by the standing ancestors, exact stable patch IDs,
+and four byte-identical final artifacts recorded above. Direct side-tip
+ancestry remains intentionally false. Nothing accepted is deferred,
+superseded, blocked, or known unintegrated.
+
+On the exact two-document candidate over seed commit `06f8d07…88e078`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 102 tests with 281
+assertions. Runtime state is empty, and the protected source, overlay, and peer
+fingerprints remain exactly those recorded in the seed checkpoint.
+
+This is a lane-selection checkpoint, not goal completion. Validate and commit
+the selection before beginning the bounded local reproduction.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
