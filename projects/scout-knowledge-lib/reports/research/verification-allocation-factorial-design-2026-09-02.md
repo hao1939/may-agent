@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–68 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f and 3aaba3f61478ba2ee8493fbb668139ba0b1c8599."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–69 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f, 3aaba3f61478ba2ee8493fbb668139ba0b1c8599, and 6a22b251079a751819ca5a927ebd04eea3589447."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -275,6 +275,47 @@ decision rule, authenticated generator, timestamped real result bundle, or
 provider execution. The next bounded analysis question is whether a frozen
 block-resampling rule can preserve the declared model/run inference unit and
 surface this heterogeneity without making provider calls.
+
+## Cycle 69 frozen model/run block resampling
+
+Exact local commit `6a22b251079a751819ca5a927ebd04eea3589447`
+implements the next deterministic gate. Its schema fixes 1,024 resamples,
+2.5% and 97.5% empirical quantiles, equal weights for the named model set, and
+SHA-256 seed
+`b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3`.
+The exact specification SHA-256 is
+`81c7bca2fec86527dc75cbdc8c5b90a69638821f83944509e173b52bc826b8e0`.
+Malformed, episode-level, unfrozen-seed, non-finite-quantile, and out-of-bound
+resample specifications fail closed.
+
+The resampler first scores every complete model/seed run block, then samples
+those blocks with replacement within each named model. All 32 factorial cells
+for a run remain together. Model estimates and percentile intervals are
+reported before the equal-model summary; the named model set itself is not
+resampled, so the interval is conditional on those models and cannot support
+generalization to an unseen model population.
+
+Two matched controls make the boundary visible. On the exact Cycle 68 schedule
+and result bundle, the authority model stays `[+1,+1]`, the inverse model stays
+`[-1,-1]`, and the equal-model interval is `[0,0]` in all four strata while an
+explicit direction-conflict flag remains true. On a one-model schedule with
+one authority run and one inverse run, the point estimate is zero and the
+run-block interval is `[-1,+1]` throughout. The latter schedule and bundle
+SHA-256 values are
+`6ba3977f6d4d069a2896b453eea5ddf5dd15142db73acba05c5ead91bc4019c4`
+and `8006bbdecf38c3f66312d73d576c8f559654e781d94d28a7049faae2ed36d1dd`.
+
+This supports the mechanical claim that whole-run resampling can expose
+within-model uncertainty without splitting registered factors. It also
+contradicts treating a narrow aggregate interval as evidence of homogeneous
+behavior: the aggregate `[0,0]` is compatible with maximally opposed named
+models. Confidence is high for deterministic execution and fail-closed input
+handling, but low for interval coverage, practical significance, or real-model
+behavior. Two synthetic runs cannot calibrate a percentile interval, and no
+provider call, authenticated producer, external timestamp, or cost authority
+exists. The next bounded question is to freeze and test a practical-effect
+decision rule that refuses a pooled conclusion when named-model directions
+conflict.
 
 ## Go/no-go boundary
 

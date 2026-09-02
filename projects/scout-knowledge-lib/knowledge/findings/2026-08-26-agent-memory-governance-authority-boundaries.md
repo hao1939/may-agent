@@ -1368,6 +1368,18 @@ authenticated result producer or external timestamp is present, and provider
 calls remain unauthorized. Confidence is high for the tested accounting
 behavior and low for transfer beyond it.
 
+Cycle 69 adds deterministic model/run block resampling at exact local commit
+`6a22b251079a751819ca5a927ebd04eea3589447`. The frozen fixture samples
+complete model/seed blocks within each named model, keeps equal model weights,
+and reports model intervals before aggregation. Opposed deterministic models
+retain `+1` and `-1` intervals while their aggregate interval collapses to
+`[0,0]` with an explicit direction conflict; a single model with opposed runs
+instead produces point zero and interval `[-1,+1]`. This supports whole-run
+accounting and contradicts interpreting aggregate precision as agreement.
+Confidence is high for the tested mechanics and low for statistical coverage
+or real-model transfer: the model set is fixed, only two synthetic runs are
+used, and neither an authenticated producer nor provider execution is present.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
