@@ -7103,6 +7103,63 @@ semantics or claims to compare persisted fingerprint identities. Add a fixture
 or implementation only for a proven ambiguity, preserve value-free output, and
 keep the proposed mixed-scope event-chain exploration closed.
 
+## Cycle 61 checkpoint — cross-version output is reinterpreted, not trusted
+
+The audit found no repository callers or persistence path for
+`compareXhsSavedProfileAccess`. Its original commit and implementation validate
+and compare raw observation fields under the current contract; they do not
+compare or authenticate stored fingerprint identities. A runtime change would
+therefore have narrowed the intended reinterpretation behavior without a
+proven consumer requirement.
+
+Exact commit `ce249e6fe4f46209c8d4387e831b348e7146c12c` clarifies that contract and
+adds a regression using Cycle 59's historical v1 target/fingerprint/byte/body
+evidence and Cycle 60's self-identifying v2 evidence. Under current v2
+semantics the raw observations compare as `equivalent:true`, with no changed
+semantic access fields and separate `byteLengthChanged:true` and
+`bodyChanged:true`. The result contains neither stored fingerprint identity nor
+version. This is deliberate current-semantic reinterpretation, not proof that
+v1 and v2 hashes themselves are equal or interchangeable.
+
+Focused validation passes 7 tests with 42 assertions. The full Scout gate
+passes syntax bundling, TypeScript, source formatting, and 115 tests with 330
+assertions. No browser, network, credential, account, or content behavior
+changed.
+
+Cycle ordering remains exact. Seed reconciliation
+`ec85487aa9e0bcfb43e130a8809ec84faed7a955` preceded committed lane selection
+`988bf34b00c7a9bde26b00f3f01c8c1d4548a757`, which preceded the audit and
+regression. Added and changed seed IDs remain unknown, observed removals remain
+`[]`, and all 132 durable seeds remain unavailable rather than removed.
+
+GitHub/local code was selected and completed at `ce249e6…46c12c`; public
+GitHub remains deferred until a changed revision, artifact,
+independent/deployment, or readable-seed trigger. arXiv `2608.30177v1` remains
+the 15/15 memory-governance anchor and `2608.25553v3` the distinct 14/15
+marginal-allocation result. Reddit remains RSS-readable/JSON-403 and deferred
+without quota until seed-linked reproducible evidence, content delta, or access
+change.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its two source patches remain equal to standing commits `f9784d9…fc04` and
+`20fd9d8…dacf`; those commits and `cb82bee…f53` remain ancestors, and all four
+accepted final artifacts remain byte-identical. The range is integrated; no
+accepted result is deferred, superseded, blocked, or known unintegrated.
+
+Read-only protected fingerprints remain unchanged: dirty source HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` has 882 records and fingerprint
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`;
+human overlay HEAD `fd4c68ecd6fe2ce14afd93815b63f790c1514663` has three records and
+fingerprint `a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`;
+every other peer remains clean at `e3b0c442…b855`. Read-only health remains
+bounded and truncated at 26 facts and 16 wake signals, runtime `.state` is
+empty, formatting and whitespace pass, and all 21 relative links resolve.
+
+This checkpoint does not complete the standing goal. Begin the next cycle with
+a fresh observational Xiaohongshu reconciliation before any source-lane work.
+Keep the proposed mixed-scope event-chain exploration closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
