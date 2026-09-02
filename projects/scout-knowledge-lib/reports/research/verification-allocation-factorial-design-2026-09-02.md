@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 95, including exact local robust-minimum regression b638788e80b563c5745274fa5b82c036743d4406."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 96, including exact local uniform-drift regression b652c60a22972619be0212c8f88e23262eeccc1a."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1255,6 +1255,43 @@ frozen probabilities; low for marginal estimation, drift, real models,
 dependence, cost, and providers. The next ranked question is to compute the
 uniform downward marginal perturbation that erases this pass and compare its
 buffer with equal 172 before treating the 96-episode saving as actionable.
+
+## Cycle 96 matched uniform-drift sensitivity
+
+Seed reconciliation `7e129894260daf75bd1eb54de6b9bccdc480d0b2`
+preceded this analysis and recorded a material login-to-profile shell
+transition without an attributable saved item. The local accepted-ref check
+at `2026-09-02T23:07:59.654Z–23:07:59.658Z` found all six tracked refs present
+and unchanged. GitHub, arXiv, and Reddit therefore made zero public requests.
+
+Exact local source `b652c60a22972619be0212c8f88e23262eeccc1a` applies the
+same downward perturbation to each of the six frozen correct-direction
+marginals while leaving the already-passing wrong-direction bounds unchanged.
+For the identity-robust `[171,171,171,172,172,172]` vector, the worst marginal
+sum is `5.400042315780292`. Its largest passing per-model downward drift is
+therefore `(5.400042315780292 - 5.4) / 6`, or
+`0.000007052630048557755` probability (`0.0007052630048557755` percentage
+points). The matched equal-172 sum gives an exact fixture-derived buffer of
+`0.0006254995932550855` probability (`0.06254995932550855` percentage
+points), `88.69026008006738` times larger. The displayed equal-allocation sum
+is rounded to 15 decimal places; the buffer pins the underlying fixture value.
+
+Both six-identity designs pass the frozen 80% aggregate lower-bound target at
+their exact buffers and fail when their respective buffer is increased by
+`1e-12`; their retained aggregate wrong-direction upper bounds remain below
+1%. The focused regression passes with 65 assertions, and TypeScript and
+focused formatting pass.
+
+This supports equal 172 as the materially more drift-tolerant choice despite
+its extra three blocks and 96 episodes, and contradicts treating the declared-
+grid minimum's tiny cost saving as operationally robust. The calculation is a
+matched deterministic sensitivity analysis, not an observed drift estimate,
+confidence interval, provider result, or claim that real drift is uniform or
+always adverse. Confidence is high for the frozen algebra and boundary tests;
+low for real marginals, dependence, provider behavior, costs, and the size or
+shape of actual drift. The next ranked question is to map the Pareto frontier
+between identity-robust episode cost and uniform-drift reserve over the
+retained grid, avoiding an arbitrary reserve threshold.
 
 ## Go/no-go boundary
 
