@@ -5353,6 +5353,67 @@ This is a checkpoint, not goal completion. Commit the exact reviewed records,
 then begin Cycle 52 with Xiaohongshu reconciliation before selecting its next
 exploration. Do not begin the proposed mixed-scope event-chain exploration.
 
+## Cycle 52 seed-first start — saved profile access flickered before comparison
+
+Cycle 52 began only after the Cycle 51 descriptor implementation and durable
+checkpoint were cleanly committed on standing tip
+`434a52b8ae91bc1496fddab03fdfc5903b3b431a`. No GitHub, arXiv,
+Reddit, provider, new implementation, or mixed-scope event-chain work preceded
+this observation.
+
+From `2026-09-02T12:25:39.021Z` through `12:29:29.090Z`, worker UID 1000
+(`hao`) could not reach direct ports 9333 or 9222: curl returned exit 7 and
+HTTP 000. Passwordless `sudo nsenter` reached root-owned Chrome PID 2136's
+network namespace and DevTools 9222 as effective UID 0. That authority is the
+local process plus its existing cookies, not a proven Xiaohongshu principal.
+Three credentialed identity GETs returned HTTP 406, 27-byte JSON,
+`success:false`, code `-1`, and no guest, nickname, or stable identity field.
+
+Immutable observer history supplied the saved Alex profile target without
+publishing any query value. Its first credentialed GET returned HTTP 200 at the
+profile path, document title `Alex - 小红书`, 149,369 bytes, 76 raw IDs, ten
+note sections, and ten collection-associated links. Before the observer had
+retained those ten card identities, the same GET ended at `/login` with zero
+cards. One bounded confirmation also ended at `/login`, returned 46,541 bytes,
+and exposed zero attributable items. Exact response and raw-set fingerprints
+are retained in the seed ledger. This is a real access-state change, but not a
+comparable membership snapshot.
+
+Public Explore retained 30 stable IDs at the exact sorted-ID fingerprint
+`dbadf511…e529e13`, with 30 titles/authors. Its representative
+`6a884237…f9f6` remained present; a fresh current signed-link GET returned HTTP
+200 ending at `/404`, 106,924 bytes, zero note sections, and no requested ID.
+No retained tab was navigated and no Xiaohongshu account or content state was
+mutated.
+
+Compared with Cycle 51, the identity response and transient profile shell
+changed, but no comparable card set materialized. Added IDs and title/author
+changes remain unknown; observed removals are `[]`; all 132 durable seeds
+remain unavailable rather than removed. Cycle 20 remains the last comparable
+authenticated collection snapshot. GitHub, arXiv, and Reddit retain their
+Cycle 51 continuity only until this seed-only checkpoint is validated and
+committed. The accepted self-evolution range remains fully reconciled by its
+standing ancestors, stable patch IDs, and byte-identical final blobs; nothing
+accepted is known unintegrated.
+
+On the exact three-document candidate over clean Cycle 51 tip
+`434a52b…b431a`, Prettier, whitespace, and all 21 relative links pass. The
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 99
+tests with 277 assertions. Read-only health at
+`2026-09-02T12:31:43.432Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-dated-library truths, 12 oversized canonical notes,
+and one unsourced backlog. `.state` is empty.
+
+Protected fingerprints remain exact: the dirty source stays at
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay stays at
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer stays
+clean at `e3b0c442…b855`. No protected checkout changed.
+
+This is the required start of the next cycle, not goal completion. Validate and
+commit this seed-only reconciliation before reconsidering any source lane or
+selecting the next exploration. Keep the mixed-scope event-chain exploration
+closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
