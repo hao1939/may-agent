@@ -195,6 +195,25 @@ registration receipt, timestamp proof, signature, or lineage authority is
 authentic. Even a structurally valid manifest remains offline execution
 preparation and never authorizes provider calls or spending.
 
+## Cycle 49 read-only directory gate
+
+Scout commit `f44c14bd69a601b1ad0a248159906793b19e4c6a` adds a
+[read-only directory adapter](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.ts)
+and [six regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.test.ts).
+The adapter requires an explicit absolute directory rather than choosing a
+default execution package. It reads a fixed `freeze-manifest.json`, inventories
+all nested files, and rejects a symlinked root, any nested symlink or
+non-regular entry, traversal-shaped artifact names, and undeclared bytes before
+calling the Cycle 48 manifest gate.
+
+The passing fixture is synthetic and goal-owned. Negative regressions cover a
+relative root, `..` traversal, a readable symlink, an undeclared file, and a
+manifest that attempts to authorize provider calls. The adapter performs no
+network or provider operation. Passing it establishes only local path,
+inventory, byte-binding, and schedule consistency; it does not authenticate
+provider listings, external registration, timestamp proofs, signatures,
+lineage, call cost, or spending authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

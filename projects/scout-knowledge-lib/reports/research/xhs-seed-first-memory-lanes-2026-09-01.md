@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 49 selection: Cycle 48's accepted-range integration and offline freeze gate are committed, the current Xiaohongshu boundary is reconciled first, and a read-only bundle adapter wins the post-seed rubric."
+summary: "Seed-first Scout continuity through the Cycle 49 checkpoint: after the accepted-range integration and seed-first lane pass, explicit offline freeze directories now fail closed on traversal, symlinks, undeclared files, and provider authority."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 49"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 49 observational reconciliation through 2026-09-02T11:43:19.059Z; the saved collection target remained unavailable and no source-lane work preceded it."
@@ -4676,6 +4676,66 @@ reject traversal, symlink escape, missing or undeclared files, and preserve
 `providerCallsAuthorized: false`. It must not contact a provider or turn local
 path discipline into URL, registration, timestamp, lineage, or spending proof.
 The mixed-scope event-chain exploration remains closed.
+
+## Cycle 49 checkpoint — frozen directories cannot widen authority
+
+What was wrong: Cycle 48 could validate supplied bytes but did not safely map a
+real directory into that byte set. A caller could otherwise build ad hoc
+loading logic that overlooks an undeclared file or accepts a path outside the
+intended bundle. Exact local commit
+`f44c14bd69a601b1ad0a248159906793b19e4c6a` adds the smallest read-only
+adapter without adding an execution or provider path.
+
+The adapter requires an explicit absolute directory and fixed
+`freeze-manifest.json`. It rejects a symlinked root, nested symlinks,
+non-regular entries, traversal-shaped artifact names, and undeclared files. It
+then passes the inventoried bytes to the existing freeze gate, which continues
+to enforce hashes, Scout model/seed/schedule relationships, external-
+registration structure, empty results, and
+`providerCallsAuthorized: false`.
+
+Six new regressions accept one synthetic nested fixture and reject a relative
+root, `..` artifact name, readable symlink, undeclared file, and provider-call
+authorization. The combined adapter, freeze, and factorial gate passes 19
+tests and 45 assertions. The full current-revision Scout gate passes syntax
+bundling, TypeScript, application formatting, and 97 tests with 271 assertions.
+The three changed code/documentation files pass strict Prettier and whitespace
+checks. Read-only health at `2026-09-02T11:52:44.868Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library-truth, 12
+oversized-canonical-note, and one unsourced-backlog fact. `.state` remains
+empty.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing reconciliations `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` remain ancestors. The two
+follow-up stable patch IDs remain `9a8b80e3…f626d` and `5b5b3937…d18eb9`,
+and all four material blobs remain byte-identical. Direct side-tip containment
+is false because the reviewed patches were reconciled rather than merged. No
+accepted result is deferred, superseded, blocked, or known unintegrated.
+
+Cycle 20's exact pre-fix outputs remain
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. The authoritative reflection result
+remains three of three passing on exact local Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`. These remain local-code evidence,
+not paper or deployment evidence.
+
+Protected NUL-delimited porcelain-v2 fingerprints with optional Git locks
+disabled preserve the dirty source at exact HEAD `386b445c…4641fec8`, 882
+records, and `c1940fbb…51eb7001`; the user overlay remains
+`fd4c68ec…1514663`, three records, and `a52b97aa…25394a15`; every other peer
+remains clean at `e3b0c442…b855`. The prior 884-to-882 discontinuity remains
+recorded and is not attributed to Scout.
+
+This proves local path and byte discipline only. It does not authenticate a
+provider listing, external registration, timestamp, signature, lineage,
+result, call cost, or spending authority, and makes no network or provider
+call. This is a checkpoint, not completion. Begin the next cycle seed-first
+before any further source or tooling selection; keep the mixed-scope
+event-chain exploration closed.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
