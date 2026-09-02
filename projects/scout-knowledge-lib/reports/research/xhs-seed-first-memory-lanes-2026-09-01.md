@@ -4486,6 +4486,40 @@ navigated and no Xiaohongshu account or content state was mutated. Commit this
 seed-only reconciliation before Cycle 48 GitHub, arXiv, Reddit, provider, or
 mixed-scope work.
 
+## Cycle 48 post-seed selection — validate the freeze contract offline
+
+Seed-first linkage is exact commit
+`026b54834519bc56cf267abb60c762215e7f5880`. Only after that commit were all
+three permanent lanes reconsidered from `2026-09-02T11:31:07.677Z` through
+`11:31:10.996Z`.
+
+- **GitHub/local code is selected locally** for high relevance and high
+  expected tooling value, while the public lane is deferred for low new-source
+  value. Exact public heads remain invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`. Revisit
+  public repositories on a revision, generator/selection manifest,
+  independent/deployed result, signed-stamp implementation, or seed-linked
+  trigger.
+- **arXiv is retained but deferred** for high relevance, low new-source value,
+  and current access. `2608.30177v1`, `2608.25553v3`, `2609.00243v1`,
+  `2609.01235v1`, and deduplicated `2606.12290v1` all returned HTTP 200.
+  MemGauge remains the 15/15 anchor and `2608.25553v3` remains the 14/15
+  marginal result. Revisit on a paper/artifact revision, immutable model
+  resolution, completed external registration, independent replication, or a
+  seed-linked candidate.
+- **Reddit is deferred without quota work** for medium relevance, low
+  incremental value, and no seed, content, or access trigger. Last useful
+  evidence remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, post
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. Revisit
+  on seed-linked reproducible evidence, a thread delta, or an access change.
+
+The selected next exploration is an offline fail-closed Scout freeze-manifest
+validator. It should require immutable model-resolution evidence,
+Scout-specific seed semantics, exact schedule/artifact hashes, completed
+external registration, empty results, and explicit provider-call denial. A
+valid structure must remain preparation rather than spending authority. No
+provider call or mixed-scope event-chain exploration is selected.
+
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
 What changes for the user: the open allocation question is now a concrete,

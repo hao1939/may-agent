@@ -64,6 +64,20 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
+Cycle 48 supersedes the Cycle 47 table snapshot below. After exact seed commit
+`026b54834519bc56cf267abb60c762215e7f5880`, read-only checks at
+`2026-09-02T11:31:07.677Z–11:31:10.996Z` found all four GitHub heads unchanged
+and all five retained arXiv versions HTTP 200. GitHub remains high relevance
+but low public-source marginal value; local no-call tooling is selected. arXiv
+remains high relevance but low new-source value after the archive compatibility
+audit. Reddit remains medium relevance and low incremental value at its last
+useful RSS-readable/JSON-403 boundary, so it is deferred without quota work.
+The next exploration is an offline, fail-closed Scout freeze-manifest validator
+that rejects incomplete model resolution, seed semantics, registration, hashes,
+results, or provider-call denial. Revisit GitHub on a revision or artifact
+trigger, arXiv on a paper/artifact/registration trigger, and Reddit on a
+seed-linked content or access change.
+
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                                                    | Access and last useful evidence                                                                                                                                                                                                                                                                          | Decision and revisit trigger                                                                                                                                                                                                                                                                                           |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **GitHub / local code** | **High relevance / high realized local-tooling value / current; public source deferred in Cycle 47.** Exact post-seed reads at `2026-09-02T11:18:36Z–11:18:40Z` found no public revision trigger; the checksum-verified local archive audit was selected instead. | Public heads remain invalidation client `4c0dabd…9c641`, server `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`. Last useful public GitHub evidence remains Cycle 40. Exact local commit `957390080c9a77dc2adc88ed91d66c7f5ba86d50` remains the useful verifier evidence.              | Revisit public sources on a revision, generator/selection manifest, independent/deployment result, signed-stamp implementation, or seed-linked trigger. Revisit local execution only after a genuinely transferable frozen Scout model/seed/retry package; the source archive does not supply one.                     |
@@ -79,6 +93,11 @@ Cycle 47 seed reconciliation was committed first at
 `f867784683f251869f1560fa1fb5d9b1ad566381`. Only then did the archive
 compatibility audit win the rubric; unchanged public GitHub and Reddit were
 deferred without source quota work.
+
+Cycle 48 seed reconciliation was committed first at
+`026b54834519bc56cf267abb60c762215e7f5880`. Only then were all three lanes
+reconsidered. No public source trigger fired; local no-call tooling won the
+rubric.
 
 ## Cycle 47 result — source freeze metadata cannot be relabeled as Scout's
 
@@ -96,6 +115,16 @@ provider call, authenticate lineage, externally timestamp Scout's schedule, or
 produce a result. The next execution revisit requires a Scout-specific frozen
 model/seed/retry package plus credentials and explicit cost authority. The
 mixed-scope event-chain exploration remains closed.
+
+## Cycle 48 selection — make incomplete freezes fail closed
+
+The next exploration is an offline Scout freeze-manifest validator. It should
+check immutable model-resolution evidence, Scout-specific seed semantics,
+schedule and artifact hashes, completed external registration, empty results,
+and explicit `providerCallsAuthorized: false`. Its tests should prove that the
+Cycle 47 source metadata cannot pass as Scout's freeze. It must not call a
+provider, claim cryptographic lineage, or turn a structurally complete manifest
+into spending authority.
 
 ## Cycle 46 result — the toy isolation gate is executable
 
