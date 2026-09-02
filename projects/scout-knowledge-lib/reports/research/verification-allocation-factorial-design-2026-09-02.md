@@ -1015,6 +1015,59 @@ at which five strong-process marginals plus one moderate-process marginal
 recover the 80% 4-of-6 guarantee while every frozen null still passes 1%,
 without assuming power is monotone.
 
+## Cycle 90 mixed-marginal recovery boundary
+
+Seed reconciliation `bf53cef114c946a2e5ae959379bbffd1354649de` preceded this
+work. A one-time exact scan evaluated every integer block count from 64 through
+256 under the retained 99.5% directional interval. The immutable power output
+has SHA-256
+`a69681e4532b513a8ed622ad9c26be8f3b76572c3700f919ae32a0e4ca1d6875`;
+the search manifest has SHA-256
+`2d60ee8cdeaac072884b596e0dbf7a1e9cf35bad0dc064eaa163d3976cc0bbda`.
+The scan did not assume monotonicity and found no later regression after the
+first pass.
+
+At 171 blocks, strong correct-direction power is
+`0.9931639463253494`, moderate power is `0.43334150555065293`, and the
+five-strong/one-moderate marginal sum is `5.399161237177401`. Its sharp
+unknown-dependence 4-of-6 lower bound is `0.7997204123924669`, so it fails the
+80% target. At 172 blocks, the corresponding powers are
+`0.9934576391929564` and `0.43646480159465234`, the sum is
+`5.403752997559434`, and the lower bound is `0.801250999186478`, so it passes.
+At 256 blocks the lower bound reaches `0.8896410833501275`.
+
+Every declared null passed the frozen 1% false-direction limit throughout the
+64–256 scan. The largest observed null risk was the dense null at 71 blocks,
+`0.008554538502693238`. Exact null-record SHA-256 values at 71, 171, 172, and
+256 blocks are respectively
+`e7b35ad29a6226319fa5b191696348f7c0ade414d85e9f6a745d1b35af35b641`,
+`486655fa1d6d62ead8a1dfdde7a42e837568257b6535751e39b833ea83c780c4`,
+`a0e0d92ee7ae22dad567a1c183b7014427b163364284fb9cf71ae0a9c4d8743e`,
+and `cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c`.
+The adjacent and endpoint power-record SHA-256 values are
+`32e257c2206d350128bc6a8e24b3421bb9e7b472bebf922410a97f2c20bb55df`,
+`b8446c95d53279d73bfb12826cbb64a1ddf49f2ad17cba83297d47478c4c2681`,
+and `6bc9a70bdbc9b9a44d1e12f4b8377d86230187a55ff061e18cfd15e99e3529d1`.
+
+Exact test source `c79f2a32042ff1e5433bf15897800fd44dabd178` pins only the
+decision-relevant 171/172 edge rather than adding the 12-minute exhaustive
+scan to routine validation. Its independently regenerated calibration/power
+specification pairs are `486655fa…80c4` / `26f54702…3d5e` at 171 and
+`a0e0d92e…743e` / `956ad848…295c` at 172; floating-point accumulation differs
+from the saved scan only below the reported precision and gives the same
+pass/fail decisions.
+
+This answers the frozen equal-block question but makes the operational burden
+worse: 172 blocks for each of six models means 33,024 complete factorial
+episodes, 13,056 more than the 104-block all-strong design and far above the
+retained 25 seed blocks per model. Confidence is high for exact discrete
+enumeration, the adjacent regression, and the sharp first-moment bound; it is
+low for identifying a real weaker model in advance, unequal allocation,
+cross-model dependence, drift, cost, provider behavior, and transfer from the
+synthetic processes. The next ranked question is whether a predeclared unequal
+block allocation can meet the same 5.4 marginal budget with fewer total
+episodes, without weakening any model's 1% null control.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
