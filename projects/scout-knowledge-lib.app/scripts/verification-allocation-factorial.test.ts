@@ -739,6 +739,74 @@ describe("verification-allocation factorial fixture", () => {
     ).toEqual(["finite percentile comparison specification is invalid"]);
   });
 
+  it("keeps the null tolerance stable while model and seed salts expose finite sensitivity", () => {
+    const modelIds = [
+      "calibration-model",
+      "calibration-model-b",
+      "calibration-model-c",
+    ];
+    const resamplingSeeds = [
+      "b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3",
+      "182d0240d5d1ff20be112d03fe169ed9397ad7a0cb562da4c96e348d79f9978e",
+      "505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932",
+    ];
+    const analyses = resamplingSeeds.flatMap((resamplingSeedSha256) =>
+      modelIds.map((modelId) =>
+        compareFinitePercentileNullProcesses(
+          buildToyPercentileNullCalibrationSpec(),
+          {
+            ...buildToyModelRunBlockBootstrapSpec(),
+            resamplingSeedSha256,
+          },
+          modelId,
+        ),
+      ),
+    );
+    const rates = (processId: string, field: "finite" | "mismatch") =>
+      analyses.map((analysis) => {
+        const process = analysis.processes.find(
+          (entry) => entry.processId === processId,
+        )!;
+        return field === "finite"
+          ? process.finiteFalseDirectionalProbability
+          : process.decisionMismatchProbability;
+      });
+    const range = (values: number[]) => [
+      Math.min(...values),
+      Math.max(...values),
+    ];
+
+    expect(analyses.every((analysis) => analysis.ok)).toBe(true);
+    expect(
+      analyses.every((analysis) =>
+        analysis.processes.every(
+          (process) => process.finiteFalseDirectionalProbability < 0.01,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      analyses
+        .map((analysis) => analysis.decisionMismatchCount)
+        .sort((a, b) => a - b),
+    ).toEqual([10, 14, 15, 15, 18, 18, 20, 26, 32]);
+    expect(range(rates("balanced-null", "finite"))).toEqual([
+      expect.closeTo(0.0018220732433059704, 14),
+      expect.closeTo(0.003173180319440574, 14),
+    ]);
+    expect(range(rates("dense-null", "finite"))).toEqual([
+      expect.closeTo(0.00368996427654005, 14),
+      expect.closeTo(0.008146902228698577, 14),
+    ]);
+    expect(range(rates("sparse-null", "finite"))).toEqual([
+      expect.closeTo(0.00013702289768857516, 14),
+      expect.closeTo(0.00025673753238608036, 14),
+    ]);
+    expect(Math.max(...rates("sparse-null", "mismatch"))).toBeCloseTo(
+      0.022723637739035525,
+      14,
+    );
+  });
+
   it("matches the exact dense-null decision boundary at 64 run blocks", () => {
     const seedIds = Array.from(
       { length: 64 },
