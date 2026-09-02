@@ -1323,6 +1323,19 @@ inference or causal mediation. They show strong coupling between verification
 order and the agent's current decision framing, while neither selection nor
 order reveals whether the chosen provenance is stale.
 
+Cycle 44 audits why that correlation cannot answer the next causal question.
+Across all 300 `agrees`/`withdraws` pairs, the turn-1 prompt and memory block
+are byte-identical; supersession is hidden until a selected archive path is
+returned. All 600 episodes also share one current-situation text fingerprint
+(`7d4a5d81…eba0b8`). Intended action is a model response rather than an
+assigned factor, and the pricing, activation, and onboarding pressures never
+vary independently. The existing archive can therefore describe
+decision-context coupling, but cannot estimate whether trustworthy visible
+freshness overrides an assigned plan or a tempting alternative. A defensible
+follow-up must factorially vary those three inputs at allocation time,
+counterbalance which constraint is superseded and record order, and analyze
+selection before downstream decisions. No such model run is claimed here.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
