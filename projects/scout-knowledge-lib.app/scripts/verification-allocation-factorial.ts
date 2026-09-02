@@ -221,6 +221,47 @@ export type PercentileNullCalibrationAnalysis = {
   errors: string[];
 };
 
+export type PercentileAlternativeCalibrationSpec = {
+  schema: "scout.verification-allocation-alternative-calibration/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  calibrationMethod: "exact-trinomial-enumeration";
+  effectSupport: [-1, 0, 1];
+  practicalDelta: number;
+  lowerQuantile: number;
+  upperQuantile: number;
+  runBlockCount: number;
+  minimumCorrectDirectionalPower: number;
+  maximumWrongDirectionalProbability: number;
+  processes: Array<{
+    id: string;
+    pairId: string;
+    expectedDirection: "positive" | "negative";
+    probabilities: [number, number, number];
+  }>;
+};
+
+export type PercentileAlternativeCalibrationAnalysis = {
+  ok: boolean;
+  calibrationSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  runBlockCount: number;
+  report: Array<{
+    processId: string;
+    pairId: string;
+    expectedDirection: "positive" | "negative";
+    expectedEffect: number;
+    correctDirectionalProbability: number;
+    wrongDirectionalProbability: number;
+    negligibleProbability: number;
+    inconclusiveProbability: number;
+    passesPowerTarget: boolean;
+    passesWrongDirectionTolerance: boolean;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -951,6 +992,47 @@ export function buildToyPercentileNullCalibrationSpec(): PercentileNullCalibrati
   };
 }
 
+export function buildToyPercentileAlternativeCalibrationSpec(): PercentileAlternativeCalibrationSpec {
+  return {
+    schema: "scout.verification-allocation-alternative-calibration/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    calibrationMethod: "exact-trinomial-enumeration",
+    effectSupport: [-1, 0, 1],
+    practicalDelta: 0.1,
+    lowerQuantile: 0.025,
+    upperQuantile: 0.975,
+    runBlockCount: 64,
+    minimumCorrectDirectionalPower: 0.8,
+    maximumWrongDirectionalProbability: 0.01,
+    processes: [
+      {
+        id: "moderate-positive",
+        pairId: "moderate",
+        expectedDirection: "positive",
+        probabilities: [0.2, 0.45, 0.35],
+      },
+      {
+        id: "moderate-negative",
+        pairId: "moderate",
+        expectedDirection: "negative",
+        probabilities: [0.35, 0.45, 0.2],
+      },
+      {
+        id: "strong-positive",
+        pairId: "strong",
+        expectedDirection: "positive",
+        probabilities: [0.15, 0.4, 0.45],
+      },
+      {
+        id: "strong-negative",
+        pairId: "strong",
+        expectedDirection: "negative",
+        probabilities: [0.45, 0.4, 0.15],
+      },
+    ],
+  };
+}
+
 function invalidBootstrapAnalysis(
   errors: string[],
 ): ModelRunBlockBootstrapAnalysis {
@@ -1633,6 +1715,250 @@ export function calibratePercentileNullProcesses(
     verificationWorstCases,
     scopeLimit:
       "Exact only for the declared symmetric trinomial nulls and run counts through the verification maximum; the separate finite-resample implementation and real model behavior remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidPercentileAlternativeCalibrationAnalysis(
+  errors: string[],
+): PercentileAlternativeCalibrationAnalysis {
+  return {
+    ok: false,
+    calibrationSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    runBlockCount: 0,
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parsePercentileAlternativeCalibrationSpec(
+  candidate: unknown,
+): PercentileAlternativeCalibrationSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "calibrationMethod,effectSupport,evidenceClass,lowerQuantile,maximumWrongDirectionalProbability,minimumCorrectDirectionalPower,practicalDelta,processes,runBlockCount,schema,upperQuantile" ||
+    spec.schema !==
+      "scout.verification-allocation-alternative-calibration/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.calibrationMethod !== "exact-trinomial-enumeration" ||
+    JSON.stringify(spec.effectSupport) !== "[-1,0,1]" ||
+    typeof spec.practicalDelta !== "number" ||
+    !Number.isFinite(spec.practicalDelta) ||
+    spec.practicalDelta <= 0 ||
+    spec.practicalDelta >= 1 ||
+    typeof spec.lowerQuantile !== "number" ||
+    !Number.isFinite(spec.lowerQuantile) ||
+    spec.lowerQuantile <= 0 ||
+    spec.lowerQuantile >= 0.5 ||
+    typeof spec.upperQuantile !== "number" ||
+    !Number.isFinite(spec.upperQuantile) ||
+    spec.upperQuantile <= 0.5 ||
+    spec.upperQuantile >= 1 ||
+    !Number.isInteger(spec.runBlockCount) ||
+    (spec.runBlockCount as number) < 2 ||
+    (spec.runBlockCount as number) > 256 ||
+    typeof spec.minimumCorrectDirectionalPower !== "number" ||
+    !Number.isFinite(spec.minimumCorrectDirectionalPower) ||
+    spec.minimumCorrectDirectionalPower <= 0 ||
+    spec.minimumCorrectDirectionalPower >= 1 ||
+    typeof spec.maximumWrongDirectionalProbability !== "number" ||
+    !Number.isFinite(spec.maximumWrongDirectionalProbability) ||
+    spec.maximumWrongDirectionalProbability <= 0 ||
+    spec.maximumWrongDirectionalProbability >= 0.5 ||
+    !Array.isArray(spec.processes) ||
+    spec.processes.length < 2
+  ) {
+    return null;
+  }
+
+  const processIds = new Set<string>();
+  const pairs = new Map<
+    string,
+    Array<{
+      expectedDirection: "positive" | "negative";
+      probabilities: [number, number, number];
+    }>
+  >();
+  for (const candidateProcess of spec.processes as unknown[]) {
+    if (
+      !candidateProcess ||
+      typeof candidateProcess !== "object" ||
+      Array.isArray(candidateProcess)
+    ) {
+      return null;
+    }
+    const process = candidateProcess as Record<string, unknown>;
+    if (
+      Object.keys(process).sort().join(",") !==
+        "expectedDirection,id,pairId,probabilities" ||
+      typeof process.id !== "string" ||
+      !/^[a-z][a-z0-9-]*$/.test(process.id) ||
+      processIds.has(process.id) ||
+      typeof process.pairId !== "string" ||
+      !/^[a-z][a-z0-9-]*$/.test(process.pairId) ||
+      (process.expectedDirection !== "positive" &&
+        process.expectedDirection !== "negative") ||
+      !Array.isArray(process.probabilities) ||
+      process.probabilities.length !== 3
+    ) {
+      return null;
+    }
+    const probabilities = process.probabilities as unknown[];
+    if (
+      probabilities.some(
+        (probability) =>
+          typeof probability !== "number" ||
+          !Number.isFinite(probability) ||
+          probability < 0 ||
+          probability > 1,
+      )
+    ) {
+      return null;
+    }
+    const [negative, zero, positive] = probabilities as [
+      number,
+      number,
+      number,
+    ];
+    const expectedEffect = positive - negative;
+    if (
+      Math.abs(negative + zero + positive - 1) > 1e-12 ||
+      (process.expectedDirection === "positive" &&
+        expectedEffect <= (spec.practicalDelta as number)) ||
+      (process.expectedDirection === "negative" &&
+        expectedEffect >= -(spec.practicalDelta as number))
+    ) {
+      return null;
+    }
+    processIds.add(process.id);
+    const pair = pairs.get(process.pairId) ?? [];
+    pair.push({
+      expectedDirection: process.expectedDirection,
+      probabilities: [negative, zero, positive],
+    });
+    pairs.set(process.pairId, pair);
+  }
+  if (
+    [...pairs.values()].some((pair) => {
+      if (pair.length !== 2) return true;
+      const positive = pair.find(
+        (entry) => entry.expectedDirection === "positive",
+      );
+      const negative = pair.find(
+        (entry) => entry.expectedDirection === "negative",
+      );
+      return (
+        !positive ||
+        !negative ||
+        Math.abs(positive.probabilities[0] - negative.probabilities[2]) >
+          1e-12 ||
+        Math.abs(positive.probabilities[1] - negative.probabilities[1]) >
+          1e-12 ||
+        Math.abs(positive.probabilities[2] - negative.probabilities[0]) > 1e-12
+      );
+    })
+  ) {
+    return null;
+  }
+  return spec as unknown as PercentileAlternativeCalibrationSpec;
+}
+
+/**
+ * Enumerate exact decision probabilities for mirror-paired nonzero
+ * alternatives at one frozen run-block count. This measures power for the
+ * declared synthetic family and does not authorize provider execution.
+ */
+export function calibratePercentileAlternativeProcesses(
+  candidate: unknown,
+): PercentileAlternativeCalibrationAnalysis {
+  const spec = parsePercentileAlternativeCalibrationSpec(candidate);
+  if (!spec) {
+    return invalidPercentileAlternativeCalibrationAnalysis([
+      "percentile alternative calibration specification is invalid",
+    ]);
+  }
+  const logFactorials = [0];
+  for (let count = 1; count <= spec.runBlockCount; count += 1) {
+    logFactorials[count] = logFactorials[count - 1]! + Math.log(count);
+  }
+  const rates = new Map(
+    spec.processes.map((process) => [
+      process.id,
+      { positive: 0, negative: 0, negligible: 0, inconclusive: 0 },
+    ]),
+  );
+  for (
+    let negativeCount = 0;
+    negativeCount <= spec.runBlockCount;
+    negativeCount += 1
+  ) {
+    for (
+      let zeroCount = 0;
+      zeroCount <= spec.runBlockCount - negativeCount;
+      zeroCount += 1
+    ) {
+      const positiveCount = spec.runBlockCount - negativeCount - zeroCount;
+      const decision = exactTrinomialPercentileDecision(
+        spec.runBlockCount,
+        negativeCount,
+        zeroCount,
+        positiveCount,
+        spec.lowerQuantile,
+        spec.upperQuantile,
+        spec.practicalDelta,
+      );
+      for (const process of spec.processes) {
+        rates.get(process.id)![decision] += exactMultinomialProbability(
+          spec.runBlockCount,
+          negativeCount,
+          zeroCount,
+          positiveCount,
+          process.probabilities,
+          logFactorials,
+        );
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    calibrationSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    calibrationMethod: spec.calibrationMethod,
+    monteCarloStandardError: 0,
+    runBlockCount: spec.runBlockCount,
+    report: spec.processes.map((process) => {
+      const rate = rates.get(process.id)!;
+      const correctDirectionalProbability = rate[process.expectedDirection];
+      const wrongDirectionalProbability =
+        rate[
+          process.expectedDirection === "positive" ? "negative" : "positive"
+        ];
+      return {
+        processId: process.id,
+        pairId: process.pairId,
+        expectedDirection: process.expectedDirection,
+        expectedEffect: process.probabilities[2] - process.probabilities[0],
+        correctDirectionalProbability,
+        wrongDirectionalProbability,
+        negligibleProbability: rate.negligible,
+        inconclusiveProbability: rate.inconclusive,
+        passesPowerTarget:
+          correctDirectionalProbability >= spec.minimumCorrectDirectionalPower,
+        passesWrongDirectionTolerance:
+          wrongDirectionalProbability <=
+          spec.maximumWrongDirectionalProbability,
+      };
+    }),
+    scopeLimit:
+      "Exact only for the declared mirror-paired trinomial alternatives at the frozen run count; other effects, dependence, drift, power targets, finite resampling, and real models remain uncalibrated.",
     errors: [],
   };
 }

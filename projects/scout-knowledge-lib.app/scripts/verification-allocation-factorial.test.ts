@@ -3,6 +3,7 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  buildToyPercentileAlternativeCalibrationSpec,
   buildToyPercentileNullCalibrationSpec,
   buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
@@ -10,6 +11,7 @@ import {
   buildToyPracticalEffectDecisionSpec,
   compareFinitePercentileNullProcesses,
   decideFactorialPracticalEffects,
+  calibratePercentileAlternativeProcesses,
   calibratePercentileNullProcesses,
   scheduleSha256,
   scoreAllocationAnswer,
@@ -613,7 +615,9 @@ describe("verification-allocation factorial fixture", () => {
     );
 
     expect(analysis.ok).toBe(true);
-    expect(analysis.calibrationSpecSha256).toHaveLength(64);
+    expect(analysis.calibrationSpecSha256).toBe(
+      "6ac043cd0cab150dae665af183045dfc076cb9dfd007f1f2f5900eb8d40ffcc2",
+    );
     expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
     expect(analysis.monteCarloStandardError).toBe(0);
     expect(analysis.supportedCandidateMinimumRunBlocks).toBe(64);
@@ -679,6 +683,85 @@ describe("verification-allocation factorial fixture", () => {
       expect(calibratePercentileNullProcesses(candidate).errors).toEqual([
         "percentile null calibration specification is invalid",
       ]);
+    }
+  });
+
+  it("exactly measures matched nonzero-alternative power at 64 blocks", () => {
+    const analysis = calibratePercentileAlternativeProcesses(
+      buildToyPercentileAlternativeCalibrationSpec(),
+    );
+    const process = (processId: string) =>
+      analysis.report.find((entry) => entry.processId === processId)!;
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.calibrationSpecSha256).toBe(
+      "22df2188523708cbe52f28ea0dbbacf30563adf2a1447a57175d04e28008f887",
+    );
+    expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
+    expect(analysis.monteCarloStandardError).toBe(0);
+    expect(analysis.runBlockCount).toBe(64);
+    expect(analysis.report).toHaveLength(4);
+    for (const entry of analysis.report) {
+      expect(
+        entry.correctDirectionalProbability +
+          entry.wrongDirectionalProbability +
+          entry.negligibleProbability +
+          entry.inconclusiveProbability,
+      ).toBeCloseTo(1, 12);
+      expect(entry.passesWrongDirectionTolerance).toBe(true);
+    }
+    for (const pairId of ["moderate", "strong"]) {
+      const positive = process(`${pairId}-positive`);
+      const negative = process(`${pairId}-negative`);
+      expect(positive.correctDirectionalProbability).toBeCloseTo(
+        negative.correctDirectionalProbability,
+        14,
+      );
+      expect(positive.wrongDirectionalProbability).toBeCloseTo(
+        negative.wrongDirectionalProbability,
+        14,
+      );
+      expect(positive.inconclusiveProbability).toBeCloseTo(
+        negative.inconclusiveProbability,
+        13,
+      );
+    }
+    expect(
+      process("moderate-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.08407170601489997, 14);
+    expect(
+      process("moderate-positive").wrongDirectionalProbability,
+    ).toBeCloseTo(0.0000018579349140504212, 14);
+    expect(
+      process("strong-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.5975522317286325, 14);
+    expect(process("strong-positive").wrongDirectionalProbability).toBeCloseTo(
+      2.298192502702488e-10,
+      14,
+    );
+    expect(analysis.report.every((entry) => !entry.passesPowerTarget)).toBe(
+      true,
+    );
+  });
+
+  it("rejects incomplete or non-mirrored alternative calibration", () => {
+    const spec = buildToyPercentileAlternativeCalibrationSpec();
+    for (const candidate of [
+      { ...spec, processes: spec.processes.slice(1) },
+      {
+        ...spec,
+        processes: spec.processes.map((process, index) =>
+          index === 1
+            ? { ...process, probabilities: [0.34, 0.46, 0.2] }
+            : process,
+        ),
+      },
+      { ...spec, minimumCorrectDirectionalPower: 1 },
+      { ...spec, runBlockCount: 1 },
+    ]) {
+      expect(calibratePercentileAlternativeProcesses(candidate).errors).toEqual(
+        ["percentile alternative calibration specification is invalid"],
+      );
     }
   });
 
