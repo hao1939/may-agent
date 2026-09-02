@@ -5677,6 +5677,81 @@ fingerprints remain exactly those recorded in the seed checkpoint.
 This is a lane-selection checkpoint, not goal completion. Validate and commit
 the selection before beginning the bounded local reproduction.
 
+## Cycle 53 checkpoint — status now reports unique public notes
+
+The selected local audit confirmed that Scout's supported status command
+counted overlapping DOM selectors, not distinct notes. The unchanged public
+Explore page had the known 30-card inventory, but status returned
+`ready:true`, `noteCount:150`, and no login wall. This did not corrupt the seed
+ledger, which already kept the two counts separate, but it made the supported
+access evidence needlessly ambiguous.
+
+Exact reviewed commit `0e4bbaee0e7ab804bd6bda60890dd2cdc82e4076` is the
+smallest repair. It moves page-status summarization into a pure helper and
+deduplicates stable 24-hex note IDs across HTTPS Xiaohongshu Explore,
+search-result, and discovery paths. It rejects deceptive hosts. A page with
+source sections but no stable link remains readable with `noteCount:0` rather
+than an invented cardinality, while a login wall remains unavailable even if
+stale note links remain in the DOM.
+
+On the same already-open Explore tab at `2026-09-02T12:52:53.372Z`, the
+read-only command returned `ready:true`, `noteCount:30`, no login wall, and
+“source content is readable.” No tab was navigated, no saved-profile surface
+was reread, and no Xiaohongshu account or content state was mutated. Eleven
+focused tests with 15 assertions cover endpoint wiring, target selection,
+duplicate links, source-only sections, deceptive hosts, and login denial. The
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 105
+tests with 284 assertions.
+
+The scope remains narrow. Thirty is a deduplicated public Explore count, not a
+saved-profile inventory, authenticated identity, collection-membership result,
+or seed delta. Cycle 53's seed reconciliation therefore remains unchanged:
+added and changed IDs are unknown, observed removals are `[]`, and all 132
+durable seeds remain unavailable at the saved-profile login boundary.
+
+GitHub's last useful public evidence remains Cycle 40; exact local
+`0e4bbaee0e…e4076` is now the last useful code evidence. arXiv
+`2608.30177v1` remains the post-reconciliation 15/15 stage-wise anchor and
+`2608.25553v3` the 14/15 marginal-allocation result. Reddit remains deferred
+without quota work at RSS-readable/JSON-403. Their next revisit triggers remain
+a public revision/artifact/independent or seed link, a paper/artifact/
+registration/replication or readable-seed change, and a seed-linked content or
+access change, respectively.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains integrated through patch-equivalent standing commits
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04` and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf`, exact stable patch IDs,
+three standing reconciliation ancestors, and four byte-identical final
+artifacts. Direct side-tip ancestry remains intentionally false. Nothing
+accepted is deferred, superseded, blocked, or known unintegrated. Cycle 20's
+two pre-fix UUID outputs and the authoritative three-of-three reflection result
+remain retained above.
+
+On the exact two-document candidate over repair commit `0e4bbae…e4076`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 105 tests with 284
+assertions. Read-only health at `2026-09-02T12:55:48.172Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library truths, 12
+oversized canonical notes, and one unsourced backlog. Runtime `.state` is
+empty.
+
+Protected Git porcelain-v2/NUL fingerprints remain exact. The dirty source
+stays at `386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records, and
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`;
+the human overlay stays at
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`.
+Every other peer remains clean at
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+No protected checkout changed.
+
+This is a checkpoint, not goal completion. After exact-candidate documentation,
+validation, clean-tip, integration-equivalence, and protected-fingerprint
+proof, commit this record and begin the next cycle seed-first. Do not begin the
+mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
