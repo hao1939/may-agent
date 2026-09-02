@@ -338,6 +338,52 @@ export function fingerprintXhsSavedProfileAccess(value) {
     .digest("hex");
 }
 
+const XHS_SAVED_PROFILE_ACCESS_FIELDS = [
+  "targetEvidenceSha256",
+  "targetQueryKeys",
+  "httpStatus",
+  "contentType",
+  "finalLocation",
+  "byteLength",
+  "attributableItemCount",
+  "idFingerprint",
+  "loginWall",
+];
+
+function comparableXhsSavedProfileAccess(value) {
+  fingerprintXhsSavedProfileAccess(value);
+  const summary = safeSavedProfileSummary(value);
+  return {
+    targetEvidenceSha256: value.targetEvidenceSha256,
+    targetQueryKeys: value.targetQueryKeys,
+    httpStatus: summary.httpStatus,
+    contentType: summary.contentType,
+    finalLocation: summary.finalLocation,
+    byteLength: summary.byteLength,
+    attributableItemCount: summary.attributableItemCount,
+    idFingerprint: summary.idFingerprint,
+    loginWall: summary.loginWall,
+    bodySha256: summary.bodySha256,
+  };
+}
+
+/**
+ * Attribute an access-fingerprint change without returning any evidence value.
+ * Exact body drift remains a separate provenance signal.
+ */
+export function compareXhsSavedProfileAccess(previous, current) {
+  const before = comparableXhsSavedProfileAccess(previous);
+  const after = comparableXhsSavedProfileAccess(current);
+  const changedAccessFields = XHS_SAVED_PROFILE_ACCESS_FIELDS.filter(
+    (field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]),
+  );
+  return {
+    equivalent: changedAccessFields.length === 0,
+    changedAccessFields,
+    bodyChanged: before.bodySha256 !== after.bodySha256,
+  };
+}
+
 function historyTabRank(tab) {
   try {
     return new URL(tab.url).pathname === "/login" ? 0 : 1;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  compareXhsSavedProfileAccess,
   fingerprintXhsSavedProfileAccess,
   inspectXhsSavedProfileStatus,
 } from "./xhs-browse.mjs";
@@ -195,5 +196,96 @@ describe("XHS saved-profile status inspection", () => {
         targetQueryKeys: ["token"],
       }),
     ).toThrow("invalid");
+  });
+
+  it("attributes observed body-only and one-byte access deltas without values", () => {
+    const cycle56 = {
+      targetEvidenceSha256:
+        "e860da46506d774eced62830a670ea284f5150429482f8003c706bc6b006906e",
+      targetQueryKeys: [],
+      httpStatus: 200,
+      contentType: "text/html; charset=utf-8",
+      finalLocation: "login",
+      byteLength: 46672,
+      bodySha256:
+        "0431b05b15b81a7e57a73dea0f30a3cb34f64928a5ac721fe32afbb0d7e10181",
+      attributableItemCount: 0,
+      idFingerprint: EMPTY_SHA256,
+      loginWall: true,
+    };
+    const laterCycle56 = {
+      ...cycle56,
+      bodySha256:
+        "0034cd5ea8bff43216d4cc3f4f4c5d71cfb782409099ce6de514fd14b28fb9a5",
+    };
+    expect(compareXhsSavedProfileAccess(cycle56, laterCycle56)).toEqual({
+      equivalent: true,
+      changedAccessFields: [],
+      bodyChanged: true,
+    });
+
+    const cycle57 = {
+      ...cycle56,
+      byteLength: 46673,
+      bodySha256:
+        "ea6c911ee4f5e957a44328cd16e3c7b7ecfc7d4d358becab77555f945e0a2384",
+    };
+    const delta = compareXhsSavedProfileAccess(laterCycle56, cycle57);
+    expect(delta).toEqual({
+      equivalent: false,
+      changedAccessFields: ["byteLength"],
+      bodyChanged: true,
+    });
+    expect(JSON.stringify(delta)).not.toContain(cycle57.bodySha256);
+    expect(JSON.stringify(delta)).not.toContain("e860da46506d");
+  });
+
+  it("attributes every stable field and rejects unsafe evidence", () => {
+    const baseline = {
+      targetEvidenceSha256: "1".repeat(64),
+      targetQueryKeys: ["tab"],
+      httpStatus: 200,
+      contentType: "text/html",
+      finalLocation: "login",
+      byteLength: 46672,
+      bodySha256: "2".repeat(64),
+      attributableItemCount: 0,
+      idFingerprint: EMPTY_SHA256,
+      loginWall: true,
+    };
+    for (const [field, value] of [
+      ["targetEvidenceSha256", "3".repeat(64)],
+      ["targetQueryKeys", ["subTab", "tab"]],
+      ["httpStatus", 403],
+      ["contentType", "application/json"],
+      ["finalLocation", "profile"],
+      ["byteLength", 46673],
+      ["attributableItemCount", 1],
+      ["idFingerprint", "4".repeat(64)],
+      ["loginWall", false],
+    ]) {
+      expect(
+        compareXhsSavedProfileAccess(baseline, {
+          ...baseline,
+          [field]: value,
+        }),
+      ).toEqual({
+        equivalent: false,
+        changedAccessFields: [field],
+        bodyChanged: false,
+      });
+    }
+    expect(() =>
+      compareXhsSavedProfileAccess(baseline, {
+        ...baseline,
+        targetQueryKeys: ["token"],
+      }),
+    ).toThrow("invalid");
+    expect(() =>
+      compareXhsSavedProfileAccess(baseline, {
+        ...baseline,
+        bodySha256: "not-a-digest",
+      }),
+    ).toThrow("invalid summary");
   });
 });
