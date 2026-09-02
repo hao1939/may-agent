@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, the event hash chain is aggregate across organization-owned and null-owned records, and integrity verification must fail closed on incomplete queries or missing non-first links. Isolated fixes and artifact verification pass focused validation, but are not deployed or independently replicated proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2 and 2609.01235v1 plus exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full source of arXiv 2604.16548v2, 2608.25553v3, and 2609.01235v1, including checksum-verified Zenodo record 22147784 and its byte-identical recomputation/full audit; exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -14,6 +14,7 @@ Repo: https://github.com/halofyai/halofy<br>
 Repo: https://github.com/Egoist-Machines/switchboard<br>
 Repo: https://github.com/sattyamjjain/mnemo<br>
 Paper: https://arxiv.org/abs/2604.16548v2
+Paper: https://arxiv.org/abs/2608.25553v3
 
 ## Signal
 
@@ -1270,6 +1271,58 @@ evidence but does not displace `2608.30177v1`'s 15/15 controlled stage-wise
 utility/risk evidence. Neither source validates Mnemo's implementation or any
 deployed service.
 
+## Verification allocation qualification
+
+Full-source and artifact review of arXiv `2608.25553v3` adds another authority
+boundary: a provenance link can be immutable and reachable while the agent
+still acts on stale memory because it spends a scarce verification budget on
+other records. In the paper's controlled six-memory store with two available
+reads, native agents inspect the stated constraint's path in 20.1% and 23.1%
+of primary and fresh-wording episodes. Once that constraint is superseded,
+native stale-consistent decisions occur in 77.3%, 74.7%, and 74.7% of primary,
+replication, and original held-out episodes.
+
+The same-budget forced-critical intervention improves the current-consistent
+decision by 74.0, 72.7, and 61.3 points in those runs. A corrected held-out
+run reports +73.3, an interleaved replication +80.7, and a ten-model,
+nine-organization extension +62.0. These are source-reported results whose
+locked episode files and generated tables Scout independently re-audited; they
+are not independent model-call replications. The intervention uses
+experimenter knowledge, delivers the record unsolicited, and is explicitly a
+diagnostic rather than a deployable scheduler.
+
+The budget sweep locates the effect more narrowly. Native selection of the
+critical path is 5.3%, 17.0%, 41.7%, and 88.7% at budgets one through four;
+the forced-critical decision gain shrinks from +76.7 at two slots to +10.7 at
+four. In a second three-constraint store, a target-blind rule—prefer inherited
+memories that state a limit or prohibition on a candidate direction—moves
+two-slot target selection by +89.7 points and current-consistent decisions by
++89.3. Dates alone do not materially redirect allocation. That rule has not
+been tested where relevance and staleness diverge, and its instruction may
+influence the decision as well as the allocation.
+
+The artifact boundary was directly checked at Zenodo concept DOI
+[`10.5281/zenodo.22108557`](https://doi.org/10.5281/zenodo.22108557), immutable
+v3 record `22147784`. Its 61,508,909-byte archive matches published SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+ZIP integrity, all 14,370 archive-manifest checks, every completion manifest,
+and the audit's 8,400 locked-file checks pass. The independent 139-line
+recomputation is byte-identical to its committed output at SHA-256
+`fe54a5d87f094703a97971a33cbf19ac2b419bcfceba40fcaa074aa789f69989`.
+After supplying the separately published checksum-matched PDF to the audit's
+documented output location, the full 69-line release audit passes at SHA-256
+`47b5e52e5ca11a5cbc71a6c155b148ee2b0f29c7a5595375f4cac0ba5c519d9a`.
+
+This raises confidence in project-authored reproducibility, not external
+validity. The stores, stale state, and current truth are synthetic; memory
+scale is fixed; all replications are by the same author; most model aliases
+were not snapshot-pinned; and repeating the original calls requires provider
+credentials without recreating the historical model versions. The durable
+design rule is therefore to govern four separate layers: immutable source,
+immutable provenance link, append-only supersession/current record, and the
+policy that decides which path to verify. Provenance availability cannot stand
+in for allocation, just as freshness cannot stand in for mutation authority.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -1352,6 +1405,8 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Switchboard handoff tests: https://github.com/Egoist-Machines/switchboard/blob/d2c53b117d554e9919e6f0c2909f04157a2fb49d/test/handoff.test.mjs
 - Successful Switchboard test run: https://github.com/Egoist-Machines/switchboard/actions/runs/32932761986
 - Long-term memory security survey v2: https://arxiv.org/abs/2604.16548v2
+- Budgeted verification paper v3: https://arxiv.org/abs/2608.25553v3
+- Budgeted verification data/code archive v3: https://doi.org/10.5281/zenodo.22147784
 - Mnemo repository at inspected revision: https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703
 - Mnemo agent-managed tool inputs: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/tools/agent_managed.rs
 - Mnemo tool handlers and request dispatch: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/server.rs
