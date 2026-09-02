@@ -1531,7 +1531,7 @@ describe("verification-allocation factorial fixture", () => {
     });
   }, 30_000);
 
-  it("tests a lower-cost unequal allocation against the same marginal budget", () => {
+  it("pins the exhaustive unequal-allocation boundary", () => {
     const analyze = (runBlockCount: number) => {
       const calibrationSpec = {
         ...buildToyDirectionalQuantileCalibrationSpec(),
@@ -1554,19 +1554,31 @@ describe("verification-allocation factorial fixture", () => {
         )!,
       };
     };
-    const moderateEndpoint = analyze(256);
-    const allocation = (strongRunBlockCount: number) => {
-      const strong = analyze(strongRunBlockCount);
+    const analyses = new Map(
+      [120, 121, 256].map((runBlockCount) => [
+        runBlockCount,
+        analyze(runBlockCount),
+      ]),
+    );
+    const moderateEndpoint = analyses.get(256)!;
+    const allocation = (strongRunBlockCounts: number[]) => {
       const correctMarginalSum =
-        5 * strong.strong.correctDirectionalProbability +
-        moderateEndpoint.moderate.correctDirectionalProbability;
+        strongRunBlockCounts.reduce(
+          (sum, count) =>
+            sum + analyses.get(count)!.strong.correctDirectionalProbability,
+          0,
+        ) + moderateEndpoint.moderate.correctDirectionalProbability;
       const wrongMarginalSum =
-        5 * strong.strong.wrongDirectionalProbability +
-        moderateEndpoint.moderate.wrongDirectionalProbability;
+        strongRunBlockCounts.reduce(
+          (sum, count) =>
+            sum + analyses.get(count)!.strong.wrongDirectionalProbability,
+          0,
+        ) + moderateEndpoint.moderate.wrongDirectionalProbability;
+      const totalRunBlockCount =
+        strongRunBlockCounts.reduce((sum, count) => sum + count, 0) + 256;
       return {
-        strong,
-        totalRunBlockCount: 5 * strongRunBlockCount + 256,
-        completeFactorialEpisodeCount: (5 * strongRunBlockCount + 256) * 32,
+        totalRunBlockCount,
+        completeFactorialEpisodeCount: totalRunBlockCount * 32,
         correctMarginalSum,
         aggregateCorrectDirectionalLowerBound: Math.max(
           0,
@@ -1582,51 +1594,47 @@ describe("verification-allocation factorial fixture", () => {
     expect(moderateEndpoint.power.powerSpecSha256).toBe(
       "7bfc47ad5f700c00e85fe4b6f02d0324083781061a26c3b8c3551b0a94ecd42d",
     );
-    expect(
-      moderateEndpoint.calibration.candidates[0]!.nullReport.every(
-        (entry) => entry.passesWrongDirectionTolerance,
-      ),
-    ).toBe(true);
-
-    const before = allocation(120);
-    expect(before.strong.calibration.calibrationSpecSha256).toBe(
+    expect(analyses.get(120)!.calibration.calibrationSpecSha256).toBe(
       "e75f18903c731197715e52a06ea708f7eacd7f57050ad6e247adc447bfca4666",
     );
-    expect(before.correctMarginalSum).toBeCloseTo(5.395690744262129, 14);
-    expect(before.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
-      0.7985635814207098,
-      14,
+    expect(analyses.get(121)!.calibration.calibrationSpecSha256).toBe(
+      "87e9c39e40e21215807c9bf152fc1119b0a81554c59456cb3d21e24ccb0a683f",
     );
-    expect(before.totalRunBlockCount).toBe(856);
-    expect(before.completeFactorialEpisodeCount).toBe(27_392);
     expect(
-      before.strong.calibration.candidates[0]!.nullReport.every(
-        (entry) => entry.passesWrongDirectionTolerance,
+      [...analyses.values()].every((analysis) =>
+        analysis.calibration.candidates[0]!.nullReport.every(
+          (entry) => entry.passesWrongDirectionTolerance,
+        ),
       ),
     ).toBe(true);
 
-    const candidate = allocation(121);
-    expect(candidate.strong.calibration.calibrationSpecSha256).toBe(
-      "87e9c39e40e21215807c9bf152fc1119b0a81554c59456cb3d21e24ccb0a683f",
+    const before = allocation([120, 120, 120, 121, 121]);
+    expect(before.correctMarginalSum).toBeCloseTo(5.399832488499611, 14);
+    expect(before.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+      0.7999441628332038,
+      14,
     );
-    expect(candidate.correctMarginalSum).toBeCloseTo(5.406045104855835, 14);
+    expect(before.aggregateWrongDirectionalUpperBound).toBeCloseTo(
+      1.3424681652057761e-10,
+      20,
+    );
+    expect(before.totalRunBlockCount).toBe(858);
+    expect(before.completeFactorialEpisodeCount).toBe(27_456);
+
+    const candidate = allocation([120, 120, 121, 121, 121]);
+    expect(candidate.correctMarginalSum).toBeCloseTo(5.401903360618353, 14);
     expect(candidate.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
-      0.8020150349519449,
+      0.800634453539451,
       14,
     );
     expect(candidate.aggregateWrongDirectionalUpperBound).toBeCloseTo(
-      1.3423176283386044e-10,
+      1.3424179862500522e-10,
       20,
     );
-    expect(candidate.totalRunBlockCount).toBe(861);
-    expect(candidate.completeFactorialEpisodeCount).toBe(27_552);
+    expect(candidate.totalRunBlockCount).toBe(859);
+    expect(candidate.completeFactorialEpisodeCount).toBe(27_488);
     expect(candidate.totalRunBlockCount).toBeLessThan(6 * 172);
-    expect(candidate.completeFactorialEpisodeCount).toBe(33_024 - 5_472);
-    expect(
-      candidate.strong.calibration.candidates[0]!.nullReport.every(
-        (entry) => entry.passesWrongDirectionTolerance,
-      ),
-    ).toBe(true);
+    expect(candidate.completeFactorialEpisodeCount).toBe(33_024 - 5_536);
   }, 60_000);
 
   it("enumerates every finite 64-block composition against the exact oracle", () => {
