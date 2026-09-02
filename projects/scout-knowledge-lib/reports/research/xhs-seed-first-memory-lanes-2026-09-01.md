@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 46 start: the clean Cycle 45 integration checkpoint is proven, Xiaohongshu is reconciled before lane work, and its changed access shell remains excluded from seed evidence."
+summary: "Seed-first Scout continuity through the Cycle 46 checkpoint: the integration line remains proven, Xiaohongshu was reconciled before lane work, and the selected offline factor-isolation gate passes without provider authority or results."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 46"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 46 observational reconciliation through 2026-09-02T11:06:53.704Z; the saved collection target remained unavailable and no source-lane work preceded it."
@@ -4292,6 +4292,42 @@ input difference. It remains design tooling, not empirical evidence. Provider
 calls still require reviewed frozen artifacts, execution-identity credentials,
 and explicit call/token/cost authority. The mixed-scope event-chain
 exploration remains closed.
+
+## Cycle 46 checkpoint — the toy isolation gate now fails closed
+
+What changes for the user: the allocation design now has an executable offline
+gate instead of seven prose-only checks. Exact local commit
+`957390080c9a77dc2adc88ed91d66c7f5ba86d50` adds a deterministic generator,
+verifier, command-line report, and negative regression suite.
+
+The seed-first and lane ordering above is unchanged. The fixture uses one
+synthetic model identity, two synthetic seeds, all eight
+plan/temptation/status cells, two target identities, and two presentation
+orders. Its 64 unique episodes have frozen SHA-256
+`cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd`.
+The verifier reconstructs every prompt, requires complete within-cell
+counterbalance, checks byte-stable memory bodies, structurally and
+length-matched plan/temptation wording, symmetric non-outcome lineage fields,
+unique scheduling, and a scorer that accepts only `selected_memory_id`.
+
+Six focused tests and 13 assertions pass, including deliberate prompt drift,
+memory-body drift, missing counterbalance, asymmetric/outcome-oriented lineage,
+and extra scorer input. On the same candidate, the full Scout gate passes 84
+tests and 239 assertions plus syntax bundling, TypeScript, and Prettier; the
+two new scripts also pass a strict focused Prettier check. The read-only CLI
+reports 64/64 and no verifier errors.
+
+The schedule is explicitly a `synthetic-design-fixture`, its results array is
+empty, and `providerCallsAuthorized` is false. `fixture-only` is not a
+signature or authenticated archive authority. Real serving revisions,
+confirmatory seed and retry/exclusion policy, an external timestamp,
+execution-identity credentials, and explicit call/token/cost authority remain
+absent. No provider call occurred, no causal result is claimed, and the
+mixed-scope event-chain exploration remains closed.
+
+This is a checkpoint, not completion. Begin the next cycle seed-first, then
+reconsider all three lanes before choosing whether a real no-call artifact
+freeze has more value than new source evidence.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 

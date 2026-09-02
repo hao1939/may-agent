@@ -44,3 +44,13 @@ bun scripts/library-health-readonly.ts
 ```
 
 Run it from an isolated worktree when using it as Herdr completion evidence.
+
+The allocation-design isolation fixture is offline and authorizes no provider
+calls:
+
+```bash
+bun scripts/verification-allocation-factorial.ts
+```
+
+It verifies a synthetic 64-episode toy schedule. Passing it is design-tooling
+evidence, not a model result or proof of a cryptographic lineage authority.

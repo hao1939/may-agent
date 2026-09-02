@@ -100,6 +100,32 @@ The frozen design, prompt generator, verifier, model listing, seed policy,
 schedule, exclusion rules, and empty result manifest must be content-addressed
 and externally timestamped before confirmatory calls.
 
+## Offline isolation fixture
+
+Scout commit `957390080c9a77dc2adc88ed91d66c7f5ba86d50` adds the
+[deterministic generator and verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.ts)
+plus [regression tests](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.test.ts).
+Its deliberately smaller smoke fixture contains one synthetic model identity,
+two synthetic seeds, and all 32 factor/counterbalance cells: 64 episodes at
+SHA-256
+`cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd`.
+
+The verifier reconstructs every prompt, requires one unique episode for every
+cell, balances target identity and presentation order within each
+plan/temptation/status cell, keeps each memory body byte-stable, checks matched
+factor wording and symmetric lineage fields, and gives the scorer only the
+one-field structured allocation answer. Regression fixtures prove rejection
+of unregistered prompt text, body drift, missing counterbalance cells,
+asymmetric or outcome-oriented lineage, and extra scorer fields.
+
+The schedule labels itself `synthetic-design-fixture`, sets
+`providerCallsAuthorized` to false, and contains an empty results array. Its
+`fixture-only` attestation is not a signature or an authenticated archive
+authority. No serving revision, real seed policy, retry/exclusion package,
+external timestamp, execution credential, or call/token/cost authority is
+present. The fixture therefore closes the mechanical toy-isolation step but
+does not unlock a smoke or confirmatory provider run.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
