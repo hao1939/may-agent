@@ -7643,7 +7643,15 @@ that external activity. The human overlay remained three records at
 `a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`, and
 every inspected peer worktree remained clean at
 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
-A final read-only rerun brackets this report against the new source state.
+The final bounded rerun at `2026-09-02T15:52:15Z` found continued external
+drift at the same source HEAD: 884 records and
+`9f104fea1fa9470def150a604ebf49a95a90ba38bf074882d4ea3bd6bcc709d2`.
+The added record was the newly created, separately owned clean review worktree
+`g-8c5b597e-cycle65-resolution-review` at correction commit `4cf33131…bd6a3`;
+it was inspected read-only and not treated as an accepted result. This bounded
+evidence proves every goal-external worktree inspected was left clean, while
+also proving the enclosing dirty source fingerprint was not stationary enough
+for an equality claim.
 
 Seed continuity remains exact Cycle 65 commit `8b546b8…b36ae2`: added and
 changed seeds are unknown, removals are `[]`, and all 132 durable identities
