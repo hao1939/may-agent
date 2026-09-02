@@ -5283,6 +5283,76 @@ clean at `e3b0c442…b855`.
 This is a checkpoint, not completion. Validate and commit this lane decision,
 then begin the bounded local reproduction without provider calls.
 
+## Cycle 51 checkpoint — nested directory replacement is descriptor-bound
+
+The selected local audit reproduced the remaining gap before changing code. A
+goal-owned bundle used 500 nested directories and declared 504 artifacts.
+After root inventory, the harness replaced `entry-0324` with a symlink to
+same-byte `entry-0339`. The target was observably a directory symlink, but the
+pre-fix adapter returned `ok: true`, `errors: []`, `artifactCount: 504`,
+`modelCount: 1`, `seedCount: 2`, `episodeCount: 64`, and
+`providerCallsAuthorized: false`. The hashes still matched; the false claim was
+that checking only the final component also secured the intermediate path.
+
+Exact reviewed commit `5232795e29c2385837d5033d6abe33698b10ecbb` is the
+smallest repair. It pins the opened root to the device and inode first observed,
+then opens every recursive directory and file relative to its Linux
+`/proc/self/fd` descriptor chain with `O_NOFOLLOW` and verifies each opened
+descriptor's type. A runtime without procfs fails closed rather than silently
+falling back to path traversal. The real-filesystem regression performs the
+same 500-directory replacement and now observes the expected denial.
+
+Three consecutive focused runs each pass eight tests and 14 assertions. On
+the exact committed revision, syntax bundling, TypeScript, source formatting,
+and all 99 Scout tests with 277 assertions pass. No network request, provider
+call, account mutation, install, or source-checkout test was made. This is
+bounded Linux filesystem evidence; it does not authenticate an external URL,
+provider, registration, timestamp, signature, or lineage, guarantee an atomic
+snapshot against in-place byte writes, or grant spending authority.
+
+Seed ordering remains exact: Cycle 51's no-change Xiaohongshu boundary was
+committed first at `5140b1acb7379937ad2bd1a32e89be930fb0bfe9`, and lane
+selection followed at `ce543a10696e31f811fa39d3c3c93ecb687e021f` before this
+audit. Added and changed seeds remain unknown, observed removals are `[]`, and
+all 132 durable seeds remain unavailable rather than removed. GitHub's last
+useful public evidence remains Cycle 40; `5232795e29…ecbb` is now the exact
+local-code evidence and closes the selected directory-race question. arXiv
+`2608.30177v1` remains the post-reconciliation 15/15 stage-wise anchor;
+`2608.25553v3` remains the 14/15 marginal result. Reddit remains deferred
+without quota work at its last RSS HTTP-200 / JSON HTTP-403 boundary. Their
+revisit triggers remain, respectively, a public revision or artifact, a paper
+or replication change, and seed-linked content or access change.
+
+The only accepted Scout side range considered is
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing commits `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` remain ancestors. The two
+accepted patches retain stable patch IDs `9a8b80e36cb8b6effb3d651d3f22940ab46f626d`
+and `5b5b393747d74d9b8cb9b59f4dceedb460d18eb9`, and all four final
+blobs are byte-identical. Direct side-tip ancestry is false because the range
+was reconciled by equivalent patches. Nothing accepted is deferred,
+superseded, blocked, or known unintegrated.
+
+On the exact two-document candidate over `5232795…ecbb`, Prettier,
+whitespace, and all 21 relative links pass. The full Scout gate again passes
+syntax bundling, TypeScript, source formatting, and 99 tests with 277
+assertions. Read-only health at `2026-09-02T12:24:10.446Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library truths, 12
+oversized canonical notes, and one unsourced backlog. These are pre-existing
+health signals, not malformed Cycle 51 evidence. `.state` is empty.
+
+Protected fingerprints remain exact: the dirty source stays at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records, and
+`c1940fbb…51eb7001`; the human overlay stays at
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and
+`a52b97aa…25394a15`; every other peer remains clean at
+`e3b0c442…b855`. No protected checkout was changed.
+
+This is a checkpoint, not goal completion. Commit the exact reviewed records,
+then begin Cycle 52 with Xiaohongshu reconciliation before selecting its next
+exploration. Do not begin the proposed mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
