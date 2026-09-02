@@ -1068,6 +1068,46 @@ synthetic processes. The next ranked question is whether a predeclared unequal
 block allocation can meet the same 5.4 marginal budget with fewer total
 episodes, without weakening any model's 1% null control.
 
+## Cycle 91 bounded unequal-allocation probe
+
+Seed reconciliation `51f62b0ab5e7a4f6a9093cbdf50573229707ef5b` preceded this
+probe. Exact local test source
+`1cf95c026d659f6f1c678b8af61231bf5c98c94d` fixes the moderate synthetic
+model at the tested 256-block endpoint and compares five strong synthetic
+models at 120 versus 121 blocks. This is a named sensitivity allocation; it
+does not infer which real model, if any, would be weaker.
+
+At 120 strong blocks, per-model strong power is `0.9452316649448583`; paired
+with moderate endpoint power `0.6695324195378379`, the six marginal sum is
+`5.395690744262129` and the 4-of-6 lower bound is `0.7985635814207098`.
+The 856-block, 27,392-episode design therefore fails. Raising each of the five
+strong models to 121 blocks gives strong power `0.9473025370635995`, marginal
+sum `5.406045104855835`, and lower bound `0.8020150349519449`. That 861-block,
+27,552-episode candidate passes and saves 171 blocks or 5,472 episodes relative
+to Cycle 90's equal 172-block design.
+
+The exact 120-, 121-, and 256-block null specification SHA-256 values are
+`e75f18903c731197715e52a06ea708f7eacd7f57050ad6e247adc447bfca4666`,
+`87e9c39e40e21215807c9bf152fc1119b0a81554c59456cb3d21e24ccb0a683f`,
+and `cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c`.
+Their largest declared null risks are respectively `0.004715853666719678`,
+`0.006150808149995726`, and `0.004818913568993839`, all below 1%. The passing
+candidate's aggregate wrong-direction upper bound is
+`1.3423176283386044e-10`.
+
+This supports the decision-relevant claim that equal block counts are not
+cost-minimal within the tested synthetic controls. It does not establish a
+global optimum: the committed regression pins only the adjacent 120/121 edge
+with the moderate model fixed at 256, while the exploratory check covered
+strong counts 115–121. It also assumes the weaker identity is known before
+allocation and does not price latency, parallelism, retries, or model-specific
+calls. Confidence is high for the frozen exact probabilities, null checks,
+episode arithmetic, and first-moment bound; low for other allocations,
+real-model identification, dependence, drift, cost, and provider behavior.
+The next ranked question is an exhaustive, non-monotonic total-block search
+over the retained 64–256 grid to determine whether another named allocation
+improves on 861 blocks while every selected count retains null control.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
