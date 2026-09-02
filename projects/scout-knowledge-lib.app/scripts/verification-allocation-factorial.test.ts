@@ -4,9 +4,11 @@ import {
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
   boundDirectionalStrictMajority,
+  boundHeterogeneousDirectionalMajority,
   buildToyDirectionalQuantileCalibrationSpec,
   buildToyDirectionalQuantilePowerSpec,
   buildToyDirectionalStrictMajoritySpec,
+  buildToyHeterogeneousDirectionalMajoritySpec,
   buildToyPercentileEstimandComparisonSpec,
   buildToyPercentileUnanimousPowerSpec,
   buildToyPercentileAlternativeCalibrationSpec,
@@ -1275,6 +1277,97 @@ describe("verification-allocation factorial fixture", () => {
       "per-model calibration: directional quantile power specification is invalid or not bound to the selected null calibration",
     ]);
   }, 30_000);
+
+  it("bounds named heterogeneous model marginals without assuming independence", () => {
+    const analysis = boundHeterogeneousDirectionalMajority(
+      buildToyHeterogeneousDirectionalMajoritySpec(),
+    );
+    const scenario = (scenarioId: string) =>
+      analysis.report.find((entry) => entry.scenarioId === scenarioId)!;
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.sensitivitySpecSha256).toBe(
+      "10dec5699c1ce2d83502e0fb8d4025d0c1a735e6e8aee242c9528823176654a6",
+    );
+    expect(analysis.sourceNullRangeSpecSha256).toBe(
+      "3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5",
+    );
+    expect(analysis.sourcePowerSearchSpecSha256).toBe(
+      "bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f",
+    );
+    expect(analysis.runBlockCount).toBe(104);
+    expect(analysis.modelCount).toBe(6);
+    expect(analysis.minimumSupportingModels).toBe(4);
+    expect(analysis.totalCorrectMarginalRequired).toBe(5.4);
+    expect(analysis.directionConflictStructurallyImpossible).toBe(true);
+    expect(scenario("all-strong")).toEqual({
+      scenarioId: "all-strong",
+      correctMarginalSum: 5.418289235832395,
+      aggregateCorrectDirectionalLowerBound: 0.8060964119441317,
+      aggregateCorrectDirectionalUpperBound: 1,
+      wrongMarginalSum: 9.514585258259864e-12,
+      aggregateWrongDirectionalLowerBound: 0,
+      aggregateWrongDirectionalUpperBound: 2.378646314564966e-12,
+      passesAggregatePowerTarget: true,
+      passesAggregateWrongDirectionTolerance: true,
+    });
+    expect(scenario("one-moderate")).toEqual({
+      scenarioId: "one-moderate",
+      correctMarginalSum: 4.741618246106212,
+      aggregateCorrectDirectionalLowerBound: 0.5805394153687372,
+      aggregateCorrectDirectionalUpperBound: 1,
+      wrongMarginalSum: 4.913592570632241e-7,
+      aggregateWrongDirectionalLowerBound: 0,
+      aggregateWrongDirectionalUpperBound: 1.2283981426580603e-7,
+      passesAggregatePowerTarget: false,
+      passesAggregateWrongDirectionTolerance: true,
+    });
+    expect(scenario("two-moderate")).toEqual({
+      scenarioId: "two-moderate",
+      correctMarginalSum: 4.064947256380029,
+      aggregateCorrectDirectionalLowerBound: 0.3549824187933431,
+      aggregateCorrectDirectionalUpperBound: 1,
+      wrongMarginalSum: 9.827089995411897e-7,
+      aggregateWrongDirectionalLowerBound: 0,
+      aggregateWrongDirectionalUpperBound: 2.4567724988529744e-7,
+      passesAggregatePowerTarget: false,
+      passesAggregateWrongDirectionTolerance: true,
+    });
+    expect(
+      analysis.report.every(
+        (entry) => entry.passesAggregateWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+    expect(analysis.scopeLimit).toContain(
+      "moderate-process substitution is a stress control",
+    );
+  });
+
+  it("rejects malformed heterogeneous model identities and probability envelopes", () => {
+    const spec = buildToyHeterogeneousDirectionalMajoritySpec();
+    const missingMarginal = structuredClone(spec);
+    missingMarginal.scenarios[0]!.marginals.pop();
+    const duplicateMarginal = structuredClone(spec);
+    duplicateMarginal.scenarios[0]!.marginals[0]!.modelId =
+      duplicateMarginal.scenarios[0]!.marginals[1]!.modelId;
+    const invalidEnvelope = structuredClone(spec);
+    invalidEnvelope.scenarios[0]!.marginals[0] = {
+      ...invalidEnvelope.scenarios[0]!.marginals[0]!,
+      correctDirectionalProbability: 0.8,
+      wrongDirectionalProbability: 0.3,
+    };
+    for (const candidate of [
+      { ...spec, modelIds: [...spec.modelIds.slice(0, -1), spec.modelIds[0]!] },
+      { ...spec, minimumSupportingModels: 3 },
+      missingMarginal,
+      duplicateMarginal,
+      invalidEnvelope,
+    ]) {
+      expect(boundHeterogeneousDirectionalMajority(candidate).errors).toEqual([
+        "heterogeneous directional-majority specification is invalid",
+      ]);
+    }
+  });
 
   it("enumerates every finite 64-block composition against the exact oracle", () => {
     const analysis = compareFinitePercentileNullProcesses(

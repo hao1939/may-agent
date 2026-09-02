@@ -489,6 +489,56 @@ export type DirectionalStrictMajorityAnalysis = {
   errors: string[];
 };
 
+export type HeterogeneousDirectionalMajoritySpec = {
+  schema: "scout.verification-allocation-heterogeneous-majority/v1";
+  evidenceClass: "synthetic-sensitivity-fixture";
+  dependenceTreatment: "unknown-count-moment-bounds";
+  thresholdPolicy: "smallest-strict-majority";
+  conflictPolicy: "inconclusive";
+  sourceNullRangeSpecSha256: string;
+  sourcePowerSearchSpecSha256: string;
+  runBlockCount: number;
+  modelIds: string[];
+  minimumSupportingModels: number;
+  minimumAggregateCorrectDirectionalPower: number;
+  maximumAggregateWrongDirectionalProbability: number;
+  scenarios: Array<{
+    id: string;
+    evidenceClass: "synthetic-sensitivity-control";
+    marginals: Array<{
+      modelId: string;
+      correctDirectionalProbability: number;
+      wrongDirectionalProbability: number;
+    }>;
+  }>;
+};
+
+export type HeterogeneousDirectionalMajorityAnalysis = {
+  ok: boolean;
+  sensitivitySpecSha256: string;
+  sourceNullRangeSpecSha256: string;
+  sourcePowerSearchSpecSha256: string;
+  dependenceTreatment: "unknown-count-moment-bounds" | "";
+  runBlockCount: number;
+  modelCount: number;
+  minimumSupportingModels: number;
+  totalCorrectMarginalRequired: number;
+  directionConflictStructurallyImpossible: boolean;
+  report: Array<{
+    scenarioId: string;
+    correctMarginalSum: number;
+    aggregateCorrectDirectionalLowerBound: number;
+    aggregateCorrectDirectionalUpperBound: number;
+    wrongMarginalSum: number;
+    aggregateWrongDirectionalLowerBound: number;
+    aggregateWrongDirectionalUpperBound: number;
+    passesAggregatePowerTarget: boolean;
+    passesAggregateWrongDirectionTolerance: boolean;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1380,6 +1430,50 @@ export function buildToyDirectionalStrictMajoritySpec(): DirectionalStrictMajori
     maximumAggregateWrongDirectionalProbability: 0.01,
     calibrationSpec,
     perModelPowerSpec: buildToyDirectionalQuantilePowerSpec(calibration),
+  };
+}
+
+export function buildToyHeterogeneousDirectionalMajoritySpec(): HeterogeneousDirectionalMajoritySpec {
+  const modelIds = Array.from(
+    { length: 6 },
+    (_, index) => `calibration-model-${index + 1}`,
+  );
+  const strong = {
+    correctDirectionalProbability: 0.9030482059720658,
+    wrongDirectionalProbability: 1.5857642097099773e-12,
+  };
+  const moderate = {
+    correctDirectionalProbability: 0.22637721624588303,
+    wrongDirectionalProbability: 4.913513282421755e-7,
+  };
+  const scenario = (id: string, weakModelCount: number) => ({
+    id,
+    evidenceClass: "synthetic-sensitivity-control" as const,
+    marginals: modelIds.map((modelId, index) => ({
+      modelId,
+      ...(index >= modelIds.length - weakModelCount ? moderate : strong),
+    })),
+  });
+  return {
+    schema: "scout.verification-allocation-heterogeneous-majority/v1",
+    evidenceClass: "synthetic-sensitivity-fixture",
+    dependenceTreatment: "unknown-count-moment-bounds",
+    thresholdPolicy: "smallest-strict-majority",
+    conflictPolicy: "inconclusive",
+    sourceNullRangeSpecSha256:
+      "3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5",
+    sourcePowerSearchSpecSha256:
+      "bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f",
+    runBlockCount: 104,
+    modelIds,
+    minimumSupportingModels: 4,
+    minimumAggregateCorrectDirectionalPower: 0.8,
+    maximumAggregateWrongDirectionalProbability: 0.01,
+    scenarios: [
+      scenario("all-strong", 0),
+      scenario("one-moderate", 1),
+      scenario("two-moderate", 2),
+    ],
   };
 }
 
@@ -3329,6 +3423,212 @@ export function boundDirectionalStrictMajority(
     report,
     scopeLimit:
       "Sharp count-moment bounds for equal frozen per-model marginals with unknown dependence; they do not establish equal real-model marginals, exchangeability, affordability, provider behavior, or power under drift and heterogeneous effects.",
+    errors: [],
+  };
+}
+
+function invalidHeterogeneousDirectionalMajorityAnalysis(
+  errors: string[],
+): HeterogeneousDirectionalMajorityAnalysis {
+  return {
+    ok: false,
+    sensitivitySpecSha256: "",
+    sourceNullRangeSpecSha256: "",
+    sourcePowerSearchSpecSha256: "",
+    dependenceTreatment: "",
+    runBlockCount: 0,
+    modelCount: 0,
+    minimumSupportingModels: 0,
+    totalCorrectMarginalRequired: 0,
+    directionConflictStructurallyImpossible: false,
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+/** Bound named heterogeneous model marginals without an independence claim. */
+export function boundHeterogeneousDirectionalMajority(
+  candidate: unknown,
+): HeterogeneousDirectionalMajorityAnalysis {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return invalidHeterogeneousDirectionalMajorityAnalysis([
+      "heterogeneous directional-majority specification is invalid",
+    ]);
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "conflictPolicy,dependenceTreatment,evidenceClass,maximumAggregateWrongDirectionalProbability,minimumAggregateCorrectDirectionalPower,minimumSupportingModels,modelIds,runBlockCount,scenarios,schema,sourceNullRangeSpecSha256,sourcePowerSearchSpecSha256,thresholdPolicy" ||
+    spec.schema !== "scout.verification-allocation-heterogeneous-majority/v1" ||
+    spec.evidenceClass !== "synthetic-sensitivity-fixture" ||
+    spec.dependenceTreatment !== "unknown-count-moment-bounds" ||
+    spec.thresholdPolicy !== "smallest-strict-majority" ||
+    spec.conflictPolicy !== "inconclusive" ||
+    typeof spec.sourceNullRangeSpecSha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(spec.sourceNullRangeSpecSha256) ||
+    typeof spec.sourcePowerSearchSpecSha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(spec.sourcePowerSearchSpecSha256) ||
+    !Number.isInteger(spec.runBlockCount) ||
+    (spec.runBlockCount as number) < 2 ||
+    !Array.isArray(spec.modelIds) ||
+    spec.modelIds.length < 2 ||
+    spec.modelIds.length > 32 ||
+    !Array.isArray(spec.scenarios) ||
+    spec.scenarios.length === 0 ||
+    typeof spec.minimumAggregateCorrectDirectionalPower !== "number" ||
+    !Number.isFinite(spec.minimumAggregateCorrectDirectionalPower) ||
+    spec.minimumAggregateCorrectDirectionalPower <= 0 ||
+    spec.minimumAggregateCorrectDirectionalPower >= 1 ||
+    typeof spec.maximumAggregateWrongDirectionalProbability !== "number" ||
+    !Number.isFinite(spec.maximumAggregateWrongDirectionalProbability) ||
+    spec.maximumAggregateWrongDirectionalProbability <= 0 ||
+    spec.maximumAggregateWrongDirectionalProbability >= 0.5
+  ) {
+    return invalidHeterogeneousDirectionalMajorityAnalysis([
+      "heterogeneous directional-majority specification is invalid",
+    ]);
+  }
+  const modelIds = spec.modelIds as unknown[];
+  if (
+    modelIds.some(
+      (modelId) =>
+        typeof modelId !== "string" || !/^[a-z][a-z0-9-]*$/.test(modelId),
+    ) ||
+    new Set(modelIds).size !== modelIds.length ||
+    spec.minimumSupportingModels !== Math.floor(modelIds.length / 2) + 1
+  ) {
+    return invalidHeterogeneousDirectionalMajorityAnalysis([
+      "heterogeneous directional-majority specification is invalid",
+    ]);
+  }
+  const expectedModelIds = [...(modelIds as string[])].sort().join(",");
+  const scenarioIds = new Set<string>();
+  const scenarios = spec.scenarios as unknown[];
+  for (const candidateScenario of scenarios) {
+    if (
+      !candidateScenario ||
+      typeof candidateScenario !== "object" ||
+      Array.isArray(candidateScenario)
+    ) {
+      return invalidHeterogeneousDirectionalMajorityAnalysis([
+        "heterogeneous directional-majority specification is invalid",
+      ]);
+    }
+    const scenario = candidateScenario as Record<string, unknown>;
+    if (
+      Object.keys(scenario).sort().join(",") !== "evidenceClass,id,marginals" ||
+      typeof scenario.id !== "string" ||
+      !/^[a-z][a-z0-9-]*$/.test(scenario.id) ||
+      scenarioIds.has(scenario.id) ||
+      scenario.evidenceClass !== "synthetic-sensitivity-control" ||
+      !Array.isArray(scenario.marginals) ||
+      scenario.marginals.length !== modelIds.length
+    ) {
+      return invalidHeterogeneousDirectionalMajorityAnalysis([
+        "heterogeneous directional-majority specification is invalid",
+      ]);
+    }
+    const marginalIds: string[] = [];
+    for (const candidateMarginal of scenario.marginals) {
+      if (
+        !candidateMarginal ||
+        typeof candidateMarginal !== "object" ||
+        Array.isArray(candidateMarginal)
+      ) {
+        return invalidHeterogeneousDirectionalMajorityAnalysis([
+          "heterogeneous directional-majority specification is invalid",
+        ]);
+      }
+      const marginal = candidateMarginal as Record<string, unknown>;
+      if (
+        Object.keys(marginal).sort().join(",") !==
+          "correctDirectionalProbability,modelId,wrongDirectionalProbability" ||
+        typeof marginal.modelId !== "string" ||
+        typeof marginal.correctDirectionalProbability !== "number" ||
+        !Number.isFinite(marginal.correctDirectionalProbability) ||
+        marginal.correctDirectionalProbability < 0 ||
+        marginal.correctDirectionalProbability > 1 ||
+        typeof marginal.wrongDirectionalProbability !== "number" ||
+        !Number.isFinite(marginal.wrongDirectionalProbability) ||
+        marginal.wrongDirectionalProbability < 0 ||
+        marginal.wrongDirectionalProbability > 1 ||
+        marginal.correctDirectionalProbability +
+          marginal.wrongDirectionalProbability >
+          1 + 1e-12
+      ) {
+        return invalidHeterogeneousDirectionalMajorityAnalysis([
+          "heterogeneous directional-majority specification is invalid",
+        ]);
+      }
+      marginalIds.push(marginal.modelId);
+    }
+    if ([...marginalIds].sort().join(",") !== expectedModelIds) {
+      return invalidHeterogeneousDirectionalMajorityAnalysis([
+        "heterogeneous directional-majority specification is invalid",
+      ]);
+    }
+    scenarioIds.add(scenario.id);
+  }
+  const modelCount = modelIds.length;
+  const minimumSupportingModels = spec.minimumSupportingModels as number;
+  const bounds = (sum: number) => ({
+    lower: Math.max(
+      0,
+      (sum - (minimumSupportingModels - 1)) /
+        (modelCount - minimumSupportingModels + 1),
+    ),
+    upper: Math.min(1, sum / minimumSupportingModels),
+  });
+  const report = (
+    scenarios as HeterogeneousDirectionalMajoritySpec["scenarios"]
+  ).map((scenario) => {
+    const correctMarginalSum = scenario.marginals.reduce(
+      (sum, marginal) => sum + marginal.correctDirectionalProbability,
+      0,
+    );
+    const wrongMarginalSum = scenario.marginals.reduce(
+      (sum, marginal) => sum + marginal.wrongDirectionalProbability,
+      0,
+    );
+    const correct = bounds(correctMarginalSum);
+    const wrong = bounds(wrongMarginalSum);
+    return {
+      scenarioId: scenario.id,
+      correctMarginalSum,
+      aggregateCorrectDirectionalLowerBound: correct.lower,
+      aggregateCorrectDirectionalUpperBound: correct.upper,
+      wrongMarginalSum,
+      aggregateWrongDirectionalLowerBound: wrong.lower,
+      aggregateWrongDirectionalUpperBound: wrong.upper,
+      passesAggregatePowerTarget:
+        correct.lower >=
+        (spec.minimumAggregateCorrectDirectionalPower as number),
+      passesAggregateWrongDirectionTolerance:
+        wrong.upper <=
+        (spec.maximumAggregateWrongDirectionalProbability as number),
+    };
+  });
+  return {
+    ok: true,
+    sensitivitySpecSha256: createHash("sha256")
+      .update(JSON.stringify(candidate))
+      .digest("hex"),
+    sourceNullRangeSpecSha256: spec.sourceNullRangeSpecSha256,
+    sourcePowerSearchSpecSha256: spec.sourcePowerSearchSpecSha256,
+    dependenceTreatment: spec.dependenceTreatment,
+    runBlockCount: spec.runBlockCount as number,
+    modelCount,
+    minimumSupportingModels,
+    totalCorrectMarginalRequired:
+      minimumSupportingModels -
+      1 +
+      (spec.minimumAggregateCorrectDirectionalPower as number) *
+        (modelCount - minimumSupportingModels + 1),
+    directionConflictStructurallyImpossible:
+      2 * minimumSupportingModels > modelCount,
+    report,
+    scopeLimit:
+      "Sharp count-moment sensitivity bounds for frozen named synthetic marginals with unknown dependence; moderate-process substitution is a stress control, not observed model heterogeneity, and real-model marginals, cost, drift, and provider behavior remain unmeasured.",
     errors: [],
   };
 }
