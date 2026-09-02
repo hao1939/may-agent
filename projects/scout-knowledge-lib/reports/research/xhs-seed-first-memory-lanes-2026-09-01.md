@@ -3820,7 +3820,7 @@ both checked-in read-only analyzers were redirected in memory to the published
 238-file archive. The grid/rule analyzer exited 0 with 111 output lines and
 SHA-256 `0926fde0…65fd387`; it includes A2D, A2DC, A2DO, A2DR, and A2DRC rule
 rows. The recipe analyzer exited 0 with 13 lines and SHA-256
-`c64ea48d‧5b92e2`, reproducing the archived per-arm summary shape. Neither
+`c64ea48d…5b92e2`, reproducing the archived per-arm summary shape. Neither
 tool wrote source or evidence files.
 
 That is not an exact canonical-table reproduction. Repository-wide search
@@ -3840,7 +3840,7 @@ result is deferred, blocked, superseded, or known unintegrated. The
 authoritative three-of-three reflection result and both Cycle 20 pre-fix UUIDs
 remain retained.
 
-The three-document candidate over seed commit `4af3e6d‧4c271` passes
+The three-document candidate over seed commit `4af3e6d…4c271` passes
 whitespace, all relative links, syntax, TypeScript, Prettier, 78 tests with 226
 assertions, bounded health, and empty `.state`. Protected source, overlay,
 accepted-source, and peer fingerprints remain unchanged. This is a checkpoint,
@@ -3848,6 +3848,28 @@ not completion. The next cycle begins seed-first; revisit this line only when a
 generator/selection manifest, repository or paper revision, independent
 reproduction, or production-domain result appears. The mixed-scope event-chain
 exploration remains closed.
+
+## Cycle 41 seed-first start — Cycle 40's boundary reproduces exactly
+
+Cycle 40 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`ca70756e0a3d16142d5244d4c58eef331f3153fd`. Exact-tip validation passes
+whitespace, all 19 relative links, syntax, TypeScript, Prettier, 78 tests with
+226 assertions, health 26/16, and empty `.state`; accepted-range equivalence
+and protected fingerprints remain unchanged.
+
+Only then did Cycle 41 begin. From `2026-09-02T10:12:24.879Z` through
+`10:12:39.450Z`, direct worker ports 9222/9333 again failed with curl exit 7
+and HTTP 000, while effective UID 0 inside Chrome PID 2136's network namespace
+reached DevTools at HTTP 200. Scout remained `ready=false` with zero notes. The
+saved target again returned HTTP 200 ending at `/login`, 46,672 bytes, 34 raw
+IDs at `8503b26a…f6eed`, and zero attributable cards or collection links.
+Public Explore remained 30 cards at `dbadf511…e529e13`; representative
+`6a884237…f9f6` again ended at `/404` with no readable detail. No page was
+navigated and no Xiaohongshu state was mutated.
+
+Every observed field matches Cycle 40. Added/changed remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable. Commit and
+validate this seed-only checkpoint before any Cycle 41 lane work.
 
 ## Supervision
 
