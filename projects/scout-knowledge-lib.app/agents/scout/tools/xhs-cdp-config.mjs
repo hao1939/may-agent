@@ -77,6 +77,69 @@ export function selectXhsCdpTab(tabs) {
 }
 
 /**
+ * Select the newest credential-safe saved-profile entry from the explicit
+ * history returned by DevTools. Query values remain available only for an
+ * eventual same-origin request; the evidence URL deliberately strips them.
+ * Unknown or duplicate keys fail closed so a token-like value cannot be
+ * reclassified as harmless provenance.
+ *
+ * @param {unknown[]} entries
+ * @returns {{ requestUrl: string, evidenceUrl: string, entryId: string, queryKeys: string[] } | null}
+ */
+export function selectXhsProfileHistoryTarget(entries) {
+  if (!Array.isArray(entries)) return null;
+  const allowedQueryKeys = new Set(["tab", "subTab"]);
+
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    if (typeof entry.url !== "string") continue;
+
+    let url;
+    try {
+      url = new URL(entry.url);
+    } catch {
+      continue;
+    }
+    if (
+      url.protocol !== "https:" ||
+      (url.hostname !== "xiaohongshu.com" &&
+        !url.hostname.endsWith(".xiaohongshu.com")) ||
+      url.hash
+    ) {
+      continue;
+    }
+    if (!/^\/user\/profile\/[0-9a-f]{24}\/?$/i.test(url.pathname)) {
+      continue;
+    }
+
+    const queryKeys = [...url.searchParams.keys()];
+    const uniqueKeys = new Set(queryKeys);
+    if (
+      queryKeys.length !== uniqueKeys.size ||
+      queryKeys.some(
+        (key) =>
+          !allowedQueryKeys.has(key) || !url.searchParams.get(key)?.trim(),
+      )
+    ) {
+      continue;
+    }
+
+    return {
+      requestUrl: url.href,
+      evidenceUrl: `${url.origin}${url.pathname}`,
+      entryId:
+        typeof entry.id === "number" || typeof entry.id === "string"
+          ? String(entry.id)
+          : "unknown",
+      queryKeys: [...uniqueKeys].sort(),
+    };
+  }
+
+  return null;
+}
+
+/**
  * Summarize one already-open XHS page without treating overlapping DOM
  * selectors as distinct notes. A page can still be readable when its source
  * sections have not exposed stable note links yet; in that case noteCount is

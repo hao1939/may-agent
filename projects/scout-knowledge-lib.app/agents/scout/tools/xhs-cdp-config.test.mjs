@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   resolveXhsCdpEndpoint,
   selectXhsCdpTab,
+  selectXhsProfileHistoryTarget,
   summarizeXhsPageStatus,
 } from "./xhs-cdp-config.mjs";
 
@@ -140,5 +141,78 @@ describe("XHS page status summarization", () => {
       loginWall: true,
       reason: "XHS browser login is required",
     });
+  });
+});
+
+describe("XHS profile history target selection", () => {
+  it("selects the newest safe profile and strips query values from evidence", () => {
+    expect(
+      selectXhsProfileHistoryTarget([
+        {
+          id: 11,
+          url: "https://www.xiaohongshu.com/user/profile/6a1111110000000011111111?tab=older",
+        },
+        {
+          id: 12,
+          url: "https://www.xiaohongshu.com/login",
+        },
+        {
+          id: 13,
+          url: "https://www.xiaohongshu.com/user/profile/6a2222220000000022222222?subTab=note&tab=collect",
+        },
+      ]),
+    ).toEqual({
+      requestUrl:
+        "https://www.xiaohongshu.com/user/profile/6a2222220000000022222222?subTab=note&tab=collect",
+      evidenceUrl:
+        "https://www.xiaohongshu.com/user/profile/6a2222220000000022222222",
+      entryId: "13",
+      queryKeys: ["subTab", "tab"],
+    });
+  });
+
+  it("rejects credential-like, duplicate, empty, and fragmented queries", () => {
+    expect(
+      selectXhsProfileHistoryTarget([
+        {
+          id: 1,
+          url: "https://www.xiaohongshu.com/user/profile/6a1111110000000011111111?xsec_token=secret",
+        },
+        {
+          id: 2,
+          url: "https://www.xiaohongshu.com/user/profile/6a2222220000000022222222?tab=a&tab=b",
+        },
+        {
+          id: 3,
+          url: "https://www.xiaohongshu.com/user/profile/6a3333330000000033333333?subTab=",
+        },
+        {
+          id: 4,
+          url: "https://www.xiaohongshu.com/user/profile/6a4444440000000044444444?tab=collect#saved",
+        },
+      ]),
+    ).toBeNull();
+  });
+
+  it("rejects deceptive hosts, non-HTTPS routes, and malformed entries", () => {
+    expect(
+      selectXhsProfileHistoryTarget([
+        null,
+        { id: 1, url: "not a URL" },
+        {
+          id: 2,
+          url: "https://xiaohongshu.com.example.test/user/profile/6a1111110000000011111111",
+        },
+        {
+          id: 3,
+          url: "http://www.xiaohongshu.com/user/profile/6a2222220000000022222222",
+        },
+        {
+          id: 4,
+          url: "https://www.xiaohongshu.com/user/profile/not-a-stable-id",
+        },
+      ]),
+    ).toBeNull();
+    expect(selectXhsProfileHistoryTarget(undefined)).toBeNull();
   });
 });
