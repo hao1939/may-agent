@@ -1460,6 +1460,15 @@ already reported sub-1% risk, but contradicts using even the 16,384-draw result
 as an exact boundary authority. Confidence is high for the frozen enumeration
 and low for other effect supports, dependence, salts, or real models.
 
+Cycle 77 makes the resulting authority boundary executable at exact local
+commit `09f33e3831a0be56140c0255f7c9b78141e5e99b`. The exact trinomial oracle,
+not the finite bootstrap, now supplies authoritative false-direction rates and
+the 1% tolerance decision; finite output is explicitly diagnostic-only. This
+preserves mismatch evidence without letting a finite-only directional boundary
+case become calibration authority. Confidence is high for the declared
+discrete family and low for continuous effects, nonzero alternatives, or real
+provider responses.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

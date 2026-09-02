@@ -544,6 +544,28 @@ models. The next ranked question is to freeze a mismatch-aware disposition that
 keeps finite-only directional boundary cases inconclusive while preserving
 directions supported by the exact declared trinomial oracle.
 
+## Cycle 77 exact-oracle authority disposition
+
+Seed reconciliation `2a40cbe28b8625df5a550bb3650281f6d154fa55` preceded this
+change. Exact local commit `09f33e3831a0be56140c0255f7c9b78141e5e99b`
+makes the comparison output name `exact-trinomial-oracle` as its decision
+authority and `diagnostic-comparison-only` as the finite result's role. Each
+process now exposes an authoritative false-direction probability copied from
+the exact enumeration and computes tolerance pass/fail from that value, never
+from the finite approximation. Invalid comparisons return neither authority
+nor disposition.
+
+All three declared 64-block nulls pass the authoritative 1% tolerance. The
+finite rates and mismatch categories remain visible because they are useful
+implementation diagnostics, including the Cycle 76 finite-only directional
+cases, but they cannot silently replace the exact decision. This resolves the
+declared trinomial calibration ambiguity without claiming an exact method for
+continuous effects or real provider outputs. Confidence is high for the
+schema-backed disposition and low for transfer beyond its frozen support. The
+next ranked question is to use exact enumeration to measure correct-direction
+power and wrong-direction risk under predeclared symmetric nonzero alternatives
+at the 64-block candidate.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
