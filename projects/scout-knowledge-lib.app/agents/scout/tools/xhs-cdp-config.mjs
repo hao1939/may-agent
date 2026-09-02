@@ -103,6 +103,8 @@ export function selectXhsProfileHistoryTarget(entries) {
     }
     if (
       url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
       (url.hostname !== "xiaohongshu.com" &&
         !url.hostname.endsWith(".xiaohongshu.com")) ||
       url.hash

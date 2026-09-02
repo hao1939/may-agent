@@ -211,6 +211,10 @@ describe("XHS profile history target selection", () => {
           id: 4,
           url: "https://www.xiaohongshu.com/user/profile/not-a-stable-id",
         },
+        {
+          id: 5,
+          url: "https://user:password@www.xiaohongshu.com/user/profile/6a3333330000000033333333",
+        },
       ]),
     ).toBeNull();
     expect(selectXhsProfileHistoryTarget(undefined)).toBeNull();
