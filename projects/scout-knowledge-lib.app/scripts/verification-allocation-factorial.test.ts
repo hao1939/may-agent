@@ -1,11 +1,34 @@
 import { describe, expect, it } from "bun:test";
 import {
+  analyzeFactorialOutcomes,
   buildToyFactorialSchedule,
   scheduleSha256,
   scoreAllocationAnswer,
   TOY_SCHEDULE_SHA256,
   verifyFactorialSchedule,
 } from "./verification-allocation-factorial";
+
+type ToyPolicy = "plan" | "temptation" | "authority";
+
+function toyPolicyOutcomes(
+  policy: ToyPolicy,
+  schedule = buildToyFactorialSchedule(),
+) {
+  return schedule.episodes.map((episode) => {
+    const selectsTarget =
+      policy === "authority"
+        ? episode.factors.targetStatus === "current"
+        : episode.factors[policy] === "target";
+    return {
+      episodeId: episode.id,
+      answer: {
+        selected_memory_id: selectsTarget
+          ? episode.targetMemoryId
+          : episode.decoyMemoryId,
+      },
+    };
+  });
+}
 
 describe("verification-allocation factorial fixture", () => {
   it("builds and verifies every balanced toy cell without results or provider authority", () => {
@@ -103,5 +126,94 @@ describe("verification-allocation factorial fixture", () => {
       valid: false,
       reason: "answer must be a structured object",
     });
+  });
+
+  it("separates plan, temptation, and authority policy signatures", () => {
+    const schedule = buildToyFactorialSchedule();
+    const plan = analyzeFactorialOutcomes(
+      schedule,
+      toyPolicyOutcomes("plan", schedule),
+    );
+    const temptation = analyzeFactorialOutcomes(
+      schedule,
+      toyPolicyOutcomes("temptation", schedule),
+    );
+    const authority = analyzeFactorialOutcomes(
+      schedule,
+      toyPolicyOutcomes("authority", schedule),
+    );
+
+    expect(plan.ok).toBe(true);
+    expect(temptation.ok).toBe(true);
+    expect(authority.ok).toBe(true);
+    expect(authority.scheduleSha256).toBe(TOY_SCHEDULE_SHA256);
+    expect(authority.suppliedOutcomeCount).toBe(64);
+    expect(authority.analyzedOutcomeCount).toBe(64);
+    expect(plan.strata.map((stratum) => stratum.deltaStatus)).toEqual([
+      0, 0, 0, 0,
+    ]);
+    expect(
+      plan.strata.map((stratum) => stratum.current.selectedTargetRate),
+    ).toEqual([0, 0, 1, 1]);
+    expect(
+      temptation.strata.map((stratum) => stratum.current.selectedTargetRate),
+    ).toEqual([0, 1, 0, 1]);
+    expect(
+      authority.strata.map((stratum) => ({
+        current: stratum.current.selectedTargetRate,
+        superseded: stratum.superseded.selectedTargetRate,
+        deltaStatus: stratum.deltaStatus,
+      })),
+    ).toEqual([
+      { current: 1, superseded: 0, deltaStatus: 1 },
+      { current: 1, superseded: 0, deltaStatus: 1 },
+      { current: 1, superseded: 0, deltaStatus: 1 },
+      { current: 1, superseded: 0, deltaStatus: 1 },
+    ]);
+    expect(authority.strata[0]?.current.scheduledCount).toBe(8);
+    expect(authority.strata[0]?.superseded.scheduledCount).toBe(8);
+  });
+
+  it("keeps invalid answers in the estimand denominator", () => {
+    const schedule = buildToyFactorialSchedule();
+    const outcomes = toyPolicyOutcomes("authority", schedule);
+    outcomes[0]!.answer = {
+      selected_memory_id: schedule.episodes[0]!.targetMemoryId,
+      explanation: "not allowed",
+    };
+
+    const analysis = analyzeFactorialOutcomes(schedule, outcomes);
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.invalidAnswerCount).toBe(1);
+    expect(analysis.strata[0]?.current).toEqual({
+      scheduledCount: 8,
+      validCount: 7,
+      invalidCount: 1,
+      selectedTargetCount: 7,
+      selectedTargetRate: 0.875,
+    });
+  });
+
+  it("fails closed on missing, duplicate, or unknown episode outcomes", () => {
+    const schedule = buildToyFactorialSchedule();
+    const outcomes = toyPolicyOutcomes("authority", schedule);
+    const missing = outcomes.pop()!;
+    outcomes.push(structuredClone(outcomes[0]!));
+    outcomes.push({
+      episodeId: "unknown-episode",
+      answer: { selected_memory_id: "memory-a" },
+    });
+
+    const analysis = analyzeFactorialOutcomes(schedule, outcomes);
+
+    expect(analysis.ok).toBe(false);
+    expect(analysis.errors).toContain(
+      `${outcomes[0]!.episodeId}: duplicate outcome`,
+    );
+    expect(analysis.errors).toContain(
+      "unknown-episode: outcome references an unknown episode",
+    );
+    expect(analysis.errors).toContain(`${missing.episodeId}: missing outcome`);
   });
 });

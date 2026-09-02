@@ -47,6 +47,38 @@ export type VerificationResult = {
   errors: string[];
 };
 
+export type AllocationOutcome = {
+  episodeId: string;
+  answer: unknown;
+};
+
+export type AllocationStatusSummary = {
+  scheduledCount: number;
+  validCount: number;
+  invalidCount: number;
+  selectedTargetCount: number;
+  selectedTargetRate: number;
+};
+
+export type AllocationStratumSummary = {
+  plan: DirectionLevel;
+  temptation: DirectionLevel;
+  current: AllocationStatusSummary;
+  superseded: AllocationStatusSummary;
+  deltaStatus: number;
+};
+
+export type AllocationAnalysis = {
+  ok: boolean;
+  scheduleSha256: string;
+  suppliedOutcomeCount: number;
+  analyzedOutcomeCount: number;
+  expectedOutcomeCount: number;
+  invalidAnswerCount: number;
+  strata: AllocationStratumSummary[];
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -411,6 +443,124 @@ export function scoreAllocationAnswer(
     valid: true,
     selectedTarget: selected === episode.targetMemoryId,
     selectedMemoryId: selected as TargetIdentity,
+  };
+}
+
+type MutableStatusSummary = Omit<AllocationStatusSummary, "selectedTargetRate">;
+
+function emptyStatusSummary(): MutableStatusSummary {
+  return {
+    scheduledCount: 0,
+    validCount: 0,
+    invalidCount: 0,
+    selectedTargetCount: 0,
+  };
+}
+
+function finishStatusSummary(
+  summary: MutableStatusSummary,
+): AllocationStatusSummary {
+  return {
+    ...summary,
+    selectedTargetRate:
+      summary.scheduledCount === 0
+        ? 0
+        : summary.selectedTargetCount / summary.scheduledCount,
+  };
+}
+
+/**
+ * Compute the toy fixture's primary status contrast from one answer per
+ * scheduled episode. Invalid answers remain in the denominator and are also
+ * reported separately; missing, duplicate, or unknown episode identities make
+ * the analysis fail closed. This is a deterministic smoke analyzer, not the
+ * model-block inference required for a confirmatory run.
+ */
+export function analyzeFactorialOutcomes(
+  schedule: FactorialSchedule,
+  outcomes: AllocationOutcome[],
+): AllocationAnalysis {
+  const scheduleCheck = verifyFactorialSchedule(schedule);
+  const errors = scheduleCheck.errors.map((error) => `schedule: ${error}`);
+  const episodes = new Map(
+    schedule.episodes.map((episode) => [episode.id, episode]),
+  );
+  const seen = new Set<string>();
+  const cells = new Map<string, Record<TargetStatus, MutableStatusSummary>>();
+  for (const plan of DIRECTIONS) {
+    for (const temptation of DIRECTIONS) {
+      cells.set(`${plan}/${temptation}`, {
+        current: emptyStatusSummary(),
+        superseded: emptyStatusSummary(),
+      });
+    }
+  }
+
+  for (const outcome of outcomes) {
+    const episode = episodes.get(outcome.episodeId);
+    if (!episode) {
+      errors.push(
+        `${outcome.episodeId}: outcome references an unknown episode`,
+      );
+      continue;
+    }
+    if (seen.has(outcome.episodeId)) {
+      errors.push(`${outcome.episodeId}: duplicate outcome`);
+      continue;
+    }
+    seen.add(outcome.episodeId);
+
+    const cell = cells.get(
+      `${episode.factors.plan}/${episode.factors.temptation}`,
+    );
+    if (!cell) {
+      errors.push(`${outcome.episodeId}: outcome factors are outside the grid`);
+      continue;
+    }
+    const status = cell[episode.factors.targetStatus];
+    status.scheduledCount += 1;
+    const score = scoreAllocationAnswer(outcome.answer, episode);
+    if (!score.valid) {
+      status.invalidCount += 1;
+      continue;
+    }
+    status.validCount += 1;
+    if (score.selectedTarget) status.selectedTargetCount += 1;
+  }
+
+  for (const episodeId of episodes.keys()) {
+    if (!seen.has(episodeId)) errors.push(`${episodeId}: missing outcome`);
+  }
+
+  const strata = [...cells.entries()].map(([key, statuses]) => {
+    const [plan, temptation] = key.split("/") as [
+      DirectionLevel,
+      DirectionLevel,
+    ];
+    const current = finishStatusSummary(statuses.current);
+    const superseded = finishStatusSummary(statuses.superseded);
+    return {
+      plan,
+      temptation,
+      current,
+      superseded,
+      deltaStatus: current.selectedTargetRate - superseded.selectedTargetRate,
+    };
+  });
+
+  return {
+    ok: errors.length === 0,
+    scheduleSha256: scheduleCheck.scheduleSha256,
+    suppliedOutcomeCount: outcomes.length,
+    analyzedOutcomeCount: seen.size,
+    expectedOutcomeCount: schedule.episodes.length,
+    invalidAnswerCount: strata.reduce(
+      (total, stratum) =>
+        total + stratum.current.invalidCount + stratum.superseded.invalidCount,
+      0,
+    ),
+    strata,
+    errors,
   };
 }
 
