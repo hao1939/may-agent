@@ -1529,6 +1529,47 @@ describe("verification-allocation factorial fixture", () => {
       passesAggregatePowerTarget: true,
       passesAggregateWrongDirectionTolerance: true,
     });
+
+    const identityInvariant = boundHeterogeneousDirectionalMajority({
+      ...base,
+      runBlockCount: 172,
+      sourceNullRangeSpecSha256: recovery.calibration.calibrationSpecSha256,
+      sourcePowerSearchSpecSha256: recovery.power.powerSpecSha256,
+      scenarios: base.modelIds.map((_, moderateIndex) => ({
+        id: `moderate-at-${moderateIndex + 1}`,
+        evidenceClass: "synthetic-sensitivity-control",
+        marginals: base.modelIds.map((modelId, modelIndex) => {
+          const process =
+            modelIndex === moderateIndex ? recovery.moderate : recovery.strong;
+          return {
+            modelId,
+            correctDirectionalProbability:
+              process.correctDirectionalProbability,
+            wrongDirectionalProbability: process.wrongDirectionalProbability,
+          };
+        }),
+      })),
+    });
+    expect(identityInvariant.sensitivitySpecSha256).toBe(
+      "a7a31b9d54011af60a523b154d25127d2dc0e230ff40f9c5c0509725e8260328",
+    );
+    expect(identityInvariant.report).toHaveLength(6);
+    for (const scenario of identityInvariant.report) {
+      expect(scenario.correctMarginalSum).toBeCloseTo(5.403752997559532, 14);
+      expect(scenario.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+        0.8012509991865105,
+        14,
+      );
+      expect(scenario.aggregateWrongDirectionalUpperBound).toBeCloseTo(
+        4.567335716582027e-9,
+        16,
+      );
+      expect(scenario.passesAggregatePowerTarget).toBe(true);
+      expect(scenario.passesAggregateWrongDirectionTolerance).toBe(true);
+    }
+    const robustnessPremiumRunBlocks = base.modelIds.length * 172 - 859;
+    expect(robustnessPremiumRunBlocks).toBe(173);
+    expect(robustnessPremiumRunBlocks * 32).toBe(5_536);
   }, 30_000);
 
   it("pins the exhaustive unequal-allocation boundary", () => {
