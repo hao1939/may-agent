@@ -96,9 +96,12 @@ Integrated results are the three reviewer commits and the standing resolution
 above, plus the `RV-003` compaction at standing commit
 `738e80fb94c0f6e0e1281904ec2a54c342acb24c`, and Cycle 66 producer commits
 `9bbbe71471ea063b609ea5bde3cfc8e662149b71` and
-`fb241b243d4711d05169bc3ecb7c72b3459eb3e8`. Pending are standing integration
-of this Cycle 66 review result and the first eligible unchanged-source outcome
-check for `RV-001`; no result is rejected, superseded, or blocked.
+`fb241b243d4711d05169bc3ecb7c72b3459eb3e8`. Cycle 66 reviewer source
+`faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b` is integrated as standing commit
+`3826aa2f69dcb3ed8b311bde8ce6f307591a482b` at patch ID
+`29f61a3de9ecc1dab0c3c615e65bb38a11e9fa98`; their trees are identical.
+Pending is only the first eligible unchanged-source outcome check for `RV-001`;
+no result is rejected, superseded, blocked, or unintegrated.
 
 ## Supervision
 
