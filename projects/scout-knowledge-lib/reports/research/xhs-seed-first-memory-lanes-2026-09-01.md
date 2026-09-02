@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 47: the offline isolation gate remains valid, and an authoritative archive audit proves its real model/seed metadata cannot be relabeled as Scout's frozen execution package."
+summary: "Seed-first Scout continuity through the Cycle 48 start: Cycle 47 preserves the archive compatibility boundary, then Xiaohongshu is reconciled again before any new lane work."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 47"]
 last_updated: "2026-09-02"
-latest_seed_basis: "Cycle 47 observational reconciliation through 2026-09-02T11:16:50.633Z; the saved collection target remained unavailable and no source-lane work preceded it."
+latest_seed_basis: "Cycle 48 observational reconciliation through 2026-09-02T11:28:09.894Z; the saved collection target remained unavailable and no source-lane work preceded it."
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:42:19.412Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
@@ -4453,6 +4453,38 @@ baseline for the post-commit check.
 This is a checkpoint, not completion. After validation and a clean commit,
 begin the next cycle seed-first. Do not begin provider calls or the resolved
 mixed-scope event-chain exploration.
+
+## Cycle 48 seed-first start — shell drift is not a collection delta
+
+Cycle 47 is committed cleanly on `codex/g-c1b31972-scout-loop` as exact tip
+`ae3cca1a7e7ae13a9deb065a37949ca2fe2c3a8d`. The accepted self-evolution
+predecessor and follow-up remain represented by the three standing
+reconciliation commits and exact follow-up patch IDs; no accepted Scout result
+is known unintegrated.
+
+Only then did Cycle 48 begin. From `2026-09-02T11:27:01.330Z` through
+`11:28:09.894Z`, direct worker ports 9333 and 9222 refused. Passwordless
+`sudo nsenter` reached Chrome PID 2136's DevTools listener as effective UID 0;
+the worker itself is UID 1000 (`hao`). The goal-owned connector returned
+`ready=false`, zero readable notes, and no detected login-wall phrase. Three
+credentialed identity endpoints remained HTTP 406, 27-byte JSON,
+`success:false`, code `-1`, with no guest or nickname evidence.
+
+The saved profile-note target still ended at `/login` with zero note sections,
+attributable cards, or collection links. Its unauthenticated response changed
+from Cycle 47's 46,541-byte/33-string `9be6ea7c…f891847` shell to a previously
+seen 46,672-byte/34-string `8503b26a…f6eed` shell. Public Explore retained 30
+sections and exact ID fingerprint `dbadf511…e529e13`. One disposable token-free
+read of representative `6a884237…f9f6` ended at `/404`, error `300031`, with
+no author or description; its tab was closed.
+
+These are access changes, not evidence that the human changed the collection.
+Added IDs and title/author changes remain unknown, observed removals are `[]`,
+all 132 durable seeds remain unavailable rather than removed, and Cycle 20
+remains the last comparable authenticated snapshot. No retained page was
+navigated and no Xiaohongshu account or content state was mutated. Commit this
+seed-only reconciliation before Cycle 48 GitHub, arXiv, Reddit, provider, or
+mixed-scope work.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
