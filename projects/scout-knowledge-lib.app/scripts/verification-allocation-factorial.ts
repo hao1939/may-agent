@@ -223,6 +223,8 @@ export type PercentileNullCalibrationAnalysis = {
 
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
+  decisionAuthority: "exact-trinomial-oracle" | "";
+  finiteDecisionRole: "diagnostic-comparison-only" | "";
   comparisonSpecSha256: string;
   calibrationSpecSha256: string;
   bootstrapSpecSha256: string;
@@ -241,6 +243,8 @@ export type FinitePercentileComparisonAnalysis = {
     processId: string;
     exactFalseDirectionalProbability: number;
     finiteFalseDirectionalProbability: number;
+    authoritativeFalseDirectionalProbability: number;
+    passesAuthoritativeTolerance: boolean;
     decisionMismatchProbability: number;
     finiteDirectionalExactNonDirectionalProbability: number;
     exactDirectionalFiniteNonDirectionalProbability: number;
@@ -1638,6 +1642,8 @@ function invalidFinitePercentileComparisonAnalysis(
 ): FinitePercentileComparisonAnalysis {
   return {
     ok: false,
+    decisionAuthority: "",
+    finiteDecisionRole: "",
     comparisonSpecSha256: "",
     calibrationSpecSha256: "",
     bootstrapSpecSha256: "",
@@ -1826,6 +1832,8 @@ export function compareFinitePercentileNullProcesses(
 
   return {
     ok: true,
+    decisionAuthority: "exact-trinomial-oracle",
+    finiteDecisionRole: "diagnostic-comparison-only",
     comparisonSpecSha256,
     calibrationSpecSha256,
     bootstrapSpecSha256,
@@ -1834,12 +1842,20 @@ export function compareFinitePercentileNullProcesses(
     compositionCount,
     decisionMismatchCount,
     mismatchExamples,
-    processes: calibrationSpec.processes.map((process) => ({
-      processId: process.id,
-      ...processRates.get(process.id)!,
-    })),
+    processes: calibrationSpec.processes.map((process) => {
+      const rates = processRates.get(process.id)!;
+      return {
+        processId: process.id,
+        ...rates,
+        authoritativeFalseDirectionalProbability:
+          rates.exactFalseDirectionalProbability,
+        passesAuthoritativeTolerance:
+          rates.exactFalseDirectionalProbability <=
+          calibrationSpec.falseDirectionalTolerance,
+      };
+    }),
     scopeLimit:
-      "Exact only for the frozen 64-block -1/0/+1 composition space, null processes, resampling seed, and model ID; other run counts, identifiers, effects, dependence, alternatives, and real models remain uncalibrated.",
+      "The exact oracle is the calibration decision authority; finite results are diagnostic only. Exact only for the frozen 64-block -1/0/+1 composition space, null processes, resampling seed, and model ID; other run counts, identifiers, effects, dependence, alternatives, and real models remain uncalibrated.",
     errors: [],
   };
 }

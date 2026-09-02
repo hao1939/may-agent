@@ -690,6 +690,8 @@ describe("verification-allocation factorial fixture", () => {
     );
 
     expect(analysis.ok).toBe(true);
+    expect(analysis.decisionAuthority).toBe("exact-trinomial-oracle");
+    expect(analysis.finiteDecisionRole).toBe("diagnostic-comparison-only");
     expect(analysis.comparisonSpecSha256).toBe(
       "83926b57b4561a0dd39e238ddf2ee010ade6818fdc38d2d6123bf0c19ab30de8",
     );
@@ -721,6 +723,11 @@ describe("verification-allocation factorial fixture", () => {
         0.008146902228698577,
         14,
       ),
+      authoritativeFalseDirectionalProbability: expect.closeTo(
+        0.008146902228698577,
+        14,
+      ),
+      passesAuthoritativeTolerance: true,
       decisionMismatchProbability: 0,
       finiteDirectionalExactNonDirectionalProbability: 0,
       exactDirectionalFiniteNonDirectionalProbability: 0,
@@ -729,6 +736,14 @@ describe("verification-allocation factorial fixture", () => {
     expect(
       process("sparse-null").finiteFalseDirectionalProbability,
     ).toBeCloseTo(0.00025673753238608036, 14);
+    expect(
+      analysis.processes.every(
+        (entry) =>
+          entry.authoritativeFalseDirectionalProbability ===
+            entry.exactFalseDirectionalProbability &&
+          entry.passesAuthoritativeTolerance,
+      ),
+    ).toBe(true);
     expect(analysis.scopeLimit).toContain("resampling seed, and model ID");
   });
 
