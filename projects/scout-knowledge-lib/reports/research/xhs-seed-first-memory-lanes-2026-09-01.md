@@ -6971,6 +6971,70 @@ ambiguity is observable. Preserve the exact v2 hash, byte/body provenance,
 credential redaction, and fail-closed behavior. Do not begin the proposed
 mixed-scope event-chain exploration.
 
+## Cycle 60 checkpoint — saved access fingerprints identify their schema
+
+The bounded audit found one repository producer, no repository persistence or
+consumer, one focused test surface, and the durable research/topic-map records.
+The command output therefore carried an observable ambiguity: an isolated
+`accessFingerprint` value did not state whether v1 or v2 semantics produced
+it. The strengthened supported-output fixture failed with the version field
+missing while the other five safety and equivalence cases continued to pass.
+
+Code commit `8f4f3b4d5e12bb52422b36d558425b79d6f4a150` adds one exported version
+constant, derives the existing hash domain from it, and returns
+`accessFingerprintVersion:2` beside the opaque hash. The exact v2 hash is
+unchanged. Access decisions, target/query evidence, exact byte length and body
+hash, item/ID evidence, login classification, credential redaction, and
+non-navigation behavior are unchanged.
+
+Focused validation passes 6 tests with 39 assertions. The full Scout gate
+passes syntax bundling, TypeScript, source formatting, and 114 tests with 327
+assertions. A supported live read from `2026-09-02T14:12:22.730Z` through
+`14:12:23.584Z` reached root-owned Chrome PID 2136 as effective UID 0 without
+navigation and returned version 2, semantic fingerprint
+`3dab1b6d4f615fb77d6fbf76e82c4015937a83f3b18fc85d6a93f931d08af420`,
+46,672 bytes, and exact body SHA-256
+`06212eb440ac625442876113c5085cd59f54645cbe3dcf90412487e9c22d45ca`.
+It remained HTTP 200 final class `login` with zero attributable items. This is
+access/provenance validation, not a second seed reconciliation or proof of an
+account principal.
+
+Cycle ordering remains exact. Seed reconciliation
+`7fb4b1db49bd4c73589c47c215c9f4625aabbc9c` preceded committed lane selection
+`48f3a4dbd303714c86ffd7d4ca398086bb590c02`, which preceded the fixture and
+implementation. Added and changed seed IDs remain unknown, observed removals
+remain `[]`, and all 132 durable seeds remain unavailable rather than removed.
+
+Source-lane continuity is unchanged by the local repair. GitHub/local code was
+selected and completed at `8f4f3b4…4a150`; public GitHub remains deferred until
+a changed revision, artifact, independent/deployment, or readable-seed
+trigger. arXiv `2608.30177v1` remains the 15/15 memory-governance anchor and
+`2608.25553v3` the distinct 14/15 marginal-allocation result. Reddit remains
+RSS-readable/JSON-403 and deferred without quota until seed-linked reproducible
+evidence, content delta, or access change.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its two source patches remain equal to standing commits `f9784d9…fc04` and
+`20fd9d8…dacf`; those commits and `cb82bee…f53` remain ancestors, and all four
+accepted final artifacts remain byte-identical. The side tip remains
+intentionally non-ancestral under the equivalent-patch strategy. The range is
+integrated; no accepted result is deferred, superseded, blocked, or known
+unintegrated.
+
+Read-only protected fingerprints remain unchanged: dirty source HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` has 882 records and fingerprint
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`;
+human overlay HEAD `fd4c68ecd6fe2ce14afd93815b63f790c1514663` has three records and
+fingerprint `a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`;
+every other peer remains clean at `e3b0c442…b855`. Read-only health remains
+bounded and truncated at 26 facts and 16 wake signals, runtime `.state` is
+empty, formatting and whitespace pass, and all 21 relative links resolve.
+
+This checkpoint does not complete the standing goal. Begin the next cycle with
+a fresh observational Xiaohongshu reconciliation before any source-lane work.
+Keep the proposed mixed-scope event-chain exploration closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
