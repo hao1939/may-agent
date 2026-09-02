@@ -3557,6 +3557,103 @@ The next action is to reconsider all three lanes by relevance, expected value,
 freshness, and access, then name a new exploration from that reconciled state.
 The resolved mixed-scope event chain is not preselected.
 
+## Cycle 38 checkpoint — package verification needs a dependency surface
+
+What was uncertain: Cycle 37 proved that the release package, source, SBOM,
+and attestation bind exactly, but the tarball omits six source/build-control
+files. That left a narrower user question: can the published package run its
+offline verifier without a source checkout, and what must be supplied first?
+
+Seed ordering remained exact. Cycle 38's Xiaohongshu reconciliation above was
+validated and committed first as
+`76db675d0c66273bbe131502cdf55bbe56d6c936`. Only afterward were all three
+lanes reconsidered at `2026-09-02T09:48:31.338Z–09:48:31.879Z`:
+
+- **GitHub/local code was selected** for high relevance, bounded expected
+  value, fresh exact access, and the new package-only trigger. HTTP 200 reads
+  retained annotated MutMem `v1.0.4` object `cf8a6608…768`, main
+  `2b93af11…9e7`, the same three release assets and digests, and Mnemo main
+  `2994abf…2f20`. Revisit MutMem on a paper/tag/release delta, external
+  replication, or a lockfile/dependency-portability artifact. Revisit Mnemo on
+  an upstream revision, review, deployment, regression, or attributable
+  stored-data trigger.
+- **arXiv was retained and deferred** for high relevance, low incremental
+  value, and current HTTP 200 access. Exact lookup retained `2608.30177v1`
+  updated `2026-08-31T02:57:08Z` and `2609.01235v1` updated
+  `2026-09-01T13:34:44Z`. MemGauge remains the 15/15 controlled stage-wise
+  anchor, while MutMem-V2 remains complementary at 14/15. Revisit on a
+  version, released artifact/private rows, independent replication, broader
+  install evidence, stronger controlled study, or content-bearing seed delta.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and unchanged access. Last useful evidence remains RSS
+  HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments;
+  JSON remains last observed HTTP 403. Revisit on seed-linked reproducible
+  evidence, a thread/content delta, or an access change.
+
+The exact release tarball contains `package.json`, the full verifier, both
+Node/Python conformance implementations, and its public evidence corpus. A
+fresh goal-owned extraction has 995 files and fingerprint `60e3f66c…4806`
+before and after every run. With no dependency installation, a Node 26
+read-only/network-disabled container exits 1 before verification:
+`ERR_MODULE_NOT_FOUND` names imported package `pg`. This is a real package
+boundary, not a verifier verdict.
+
+Supplying the exact `abbcae3…6c0c` lockfile-installed `node_modules` as a
+separate read-only mount closes that convenience boundary without supplying
+other source files. The first container retry failed at OCI mount setup because
+the tarball had no `node_modules` mountpoint; creating that empty directory in
+the disposable extraction allowed startup. The Node-only image then reached
+the cross-language audit and failed because it lacked `python3`. A first
+Bubblewrap retry hid the Node binary behind its temporary `/tmp` overlay and
+never launched it. Removing that overlay produced the final controlled run.
+These are bounded local environment dispositions, not source failures.
+
+The final run uses the already-cached supported Node 20.19.5 binary, host
+Python, the extracted package and exact dependencies mounted read-only, and an
+unshared network namespace. It exits 0 with `success:true`: 39 recall and 15
+mutation structural vectors; 72/72 Node/Python exact terminals; 42/42
+read-only production-corpus parity cases; 44 rate/Wilson rows; 28
+McNemar/Holm rows; 17 claim rows; and 10 attempt rows. It reports no database,
+keychain, private-key, provider, or network access. This proves the verifier
+can run independently of a source checkout **after** dependency provisioning.
+
+It does not prove that the tarball is self-contained or can reproduce its
+dependency tree from package bytes. `package-lock.json` is absent, and
+`package.json` declares semver ranges. The published 160-component CycloneDX
+SBOM captures the release builder's exact closure and hashes, but npm does not
+consume it as a lockfile. Package content, dependency closure, and tagged
+source identity remain three separately verifiable surfaces.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and accepted follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing ancestors `cb82bee8…f53`, `f9784d9a…fc04`, and `20fd9d81…dacf`,
+stable patch IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all four
+blob-identical final artifacts preserve exact equivalence. Nothing accepted is
+deferred, blocked, superseded, or known unintegrated. Cycle 20's exact UUIDs
+and the authoritative three-of-three reflection result remain unchanged.
+
+On the exact three-document candidate over seed commit `76db675d…6c936`,
+`git diff --check` passes and all 19 relative links resolve. The full Scout
+gate passes syntax bundling, TypeScript, Prettier, and 78 tests with 226
+assertions. Read-only health at `2026-09-02T09:53:58.608Z` remains bounded and
+truncated at 26 facts and 16 wake signals: 13 future-dated-library-truth, 12
+oversized-canonical-note, and one unsourced-backlog fact. `.state` stays empty
+at `e3b0c442…b855` before and after. Accepted range-diff remains two exact
+matches and all four source/standing blobs compare equal.
+
+Protected fingerprinting again used read-only Git commands with optional locks
+disabled. `/app` remains `386b445c…fec8`, 884 status records, and
+`d7e65e29…c9dc`; the user overlay remains `fd4c68ec…663`, three records, and
+`a52b97aa…4a15`. Both accepted-source worktrees and every other peer remain
+clean on their recorded revisions at `e3b0c442…b855`. The source checkout and
+peer worktrees were unchanged by the package tests or Scout validation.
+
+This is a checkpoint, not goal completion. After its exact Scout candidate is
+validated and committed on the standing branch, Cycle 39 begins with a fresh
+Xiaohongshu reconciliation. The next exploration will be selected from that
+new state; the resolved mixed-scope event chain remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

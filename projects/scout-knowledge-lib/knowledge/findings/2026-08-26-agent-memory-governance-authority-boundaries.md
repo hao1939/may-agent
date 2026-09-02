@@ -1166,6 +1166,30 @@ passes. These results strengthen release identity and dependency provenance,
 not empirical replication, package-only source completeness, or deployment
 proof.
 
+Cycle 38 tests the remaining package-only portability boundary. The exact
+release tarball ships `package.json`, the verifier, both Node/Python
+conformance implementations, and the full public evidence corpus. A fresh
+goal-owned extraction mounted read-only in a network-disabled Node 26
+container fails before verification with `ERR_MODULE_NOT_FOUND` for `pg`:
+the package does not contain its runtime dependencies. Supplying the exact
+lockfile-installed `node_modules` from the tagged source as a separate
+read-only mount, then running the package under its supported Node 20.19.5,
+host Python, a read-only filesystem, and an unshared network namespace makes
+the complete verifier pass. It reports 39 recall and 15 mutation structural
+vectors, 72/72 Node/Python terminals, 42/42 read-only production-corpus
+parity cases, 44 rate/Wilson rows, 28 McNemar/Holm rows, 17 claim rows, and 10
+attempt rows, with no database, keychain, private key, provider, or network
+access. The exact 995-file extraction fingerprint is unchanged before and
+after at `60e3f66c…4806`.
+
+This establishes source-checkout independence **after** dependency
+provisioning, not a self-contained package. The tarball omits
+`package-lock.json`, while its `package.json` uses semver ranges, so it cannot
+reconstruct the exact dependency tree from package bytes alone. The published
+CycloneDX SBOM records the release builder's precise 160-component closure,
+but npm does not consume it as a lockfile. Package bytes, dependency closure,
+and tagged source identity are therefore separately verifiable surfaces.
+
 MutMem-V2 scores 14/15 (`3+3+3+2+3`): direct seed-cluster relevance, strong
 cross-source connection, high uncertainty reduction, narrower single-project
 generality, and highest freshness. It is retained as complementary protocol
