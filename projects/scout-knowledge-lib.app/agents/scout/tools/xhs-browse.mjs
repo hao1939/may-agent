@@ -293,8 +293,8 @@ function safeSavedProfileSummary(value) {
 }
 
 /**
- * Fingerprint only the supported access boundary. The exact response-body hash
- * remains separate byte provenance and deliberately cannot perturb this value.
+ * Fingerprint only the supported semantic access boundary. Exact response byte
+ * length and body hash remain separate provenance and cannot perturb this value.
  */
 export function fingerprintXhsSavedProfileAccess(value) {
   const sha256 = /^[0-9a-f]{64}$/;
@@ -323,13 +323,12 @@ export function fingerprintXhsSavedProfileAccess(value) {
   return createHash("sha256")
     .update(
       JSON.stringify([
-        "xhs-saved-profile-access/v1",
+        "xhs-saved-profile-access/v2",
         value.targetEvidenceSha256,
         value.targetQueryKeys,
         summary.httpStatus,
         summary.contentType,
         summary.finalLocation,
-        summary.byteLength,
         summary.attributableItemCount,
         summary.idFingerprint,
         summary.loginWall,
@@ -344,7 +343,6 @@ const XHS_SAVED_PROFILE_ACCESS_FIELDS = [
   "httpStatus",
   "contentType",
   "finalLocation",
-  "byteLength",
   "attributableItemCount",
   "idFingerprint",
   "loginWall",
@@ -369,7 +367,7 @@ function comparableXhsSavedProfileAccess(value) {
 
 /**
  * Attribute an access-fingerprint change without returning any evidence value.
- * Exact body drift remains a separate provenance signal.
+ * Exact byte-length and body drift remain separate provenance signals.
  */
 export function compareXhsSavedProfileAccess(previous, current) {
   const before = comparableXhsSavedProfileAccess(previous);
@@ -380,6 +378,7 @@ export function compareXhsSavedProfileAccess(previous, current) {
   return {
     equivalent: changedAccessFields.length === 0,
     changedAccessFields,
+    byteLengthChanged: before.byteLength !== after.byteLength,
     bodyChanged: before.bodySha256 !== after.bodySha256,
   };
 }

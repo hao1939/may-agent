@@ -74,7 +74,7 @@ describe("XHS saved-profile status inspection", () => {
         "1d842861979e899b1aea8df8498d6f1a42c5906df2aab47693231d91e114a5bd",
       targetQueryKeys: ["tab"],
       accessFingerprint:
-        "60da356b88ea030c2f6e87e48803b8ac900fa38c9c3bb296c88ad932e3788e17",
+        "9f942fcdd0fbb5a042ff914b8786c7f16569b0a21681ca9daf0c1ecffcab04a0",
       httpStatus: 200,
       contentType: "text/html; charset=utf-8",
       finalLocation: "login",
@@ -146,7 +146,7 @@ describe("XHS saved-profile status inspection", () => {
     expect(calls.at(-1)).toBe("close");
   });
 
-  it("separates volatile body provenance from stable access equivalence", () => {
+  it("separates volatile byte provenance from stable access equivalence", () => {
     const evidence = {
       targetEvidenceSha256: "1".repeat(64),
       targetQueryKeys: ["subTab", "tab"],
@@ -169,13 +169,18 @@ describe("XHS saved-profile status inspection", () => {
         bodySha256: "b".repeat(64),
       }),
     ).toBe(baseline);
+    expect(
+      fingerprintXhsSavedProfileAccess({
+        ...evidence,
+        byteLength: 46673,
+      }),
+    ).toBe(baseline);
     for (const changed of [
       { targetEvidenceSha256: "2".repeat(64) },
       { targetQueryKeys: ["tab"] },
       { httpStatus: 403 },
       { contentType: "application/json" },
       { finalLocation: "profile" },
-      { byteLength: 46673 },
       { attributableItemCount: 1 },
       { idFingerprint: "3".repeat(64) },
       { loginWall: false },
@@ -221,6 +226,7 @@ describe("XHS saved-profile status inspection", () => {
     expect(compareXhsSavedProfileAccess(cycle56, laterCycle56)).toEqual({
       equivalent: true,
       changedAccessFields: [],
+      byteLengthChanged: false,
       bodyChanged: true,
     });
 
@@ -232,8 +238,9 @@ describe("XHS saved-profile status inspection", () => {
     };
     const delta = compareXhsSavedProfileAccess(laterCycle56, cycle57);
     expect(delta).toEqual({
-      equivalent: false,
-      changedAccessFields: ["byteLength"],
+      equivalent: true,
+      changedAccessFields: [],
+      byteLengthChanged: true,
       bodyChanged: true,
     });
     expect(JSON.stringify(delta)).not.toContain(cycle57.bodySha256);
@@ -259,7 +266,6 @@ describe("XHS saved-profile status inspection", () => {
       ["httpStatus", 403],
       ["contentType", "application/json"],
       ["finalLocation", "profile"],
-      ["byteLength", 46673],
       ["attributableItemCount", 1],
       ["idFingerprint", "4".repeat(64)],
       ["loginWall", false],
@@ -272,9 +278,21 @@ describe("XHS saved-profile status inspection", () => {
       ).toEqual({
         equivalent: false,
         changedAccessFields: [field],
+        byteLengthChanged: false,
         bodyChanged: false,
       });
     }
+    expect(
+      compareXhsSavedProfileAccess(baseline, {
+        ...baseline,
+        byteLength: 46673,
+      }),
+    ).toEqual({
+      equivalent: true,
+      changedAccessFields: [],
+      byteLengthChanged: true,
+      bodyChanged: false,
+    });
     expect(() =>
       compareXhsSavedProfileAccess(baseline, {
         ...baseline,
