@@ -14,7 +14,7 @@
  */
 
 import http from "node:http";
-import { resolveXhsCdpEndpoint } from "./xhs-cdp-config.mjs";
+import { resolveXhsCdpEndpoint, selectXhsCdpTab } from "./xhs-cdp-config.mjs";
 
 let CDP_HOST;
 let CDP_PORT;
@@ -62,9 +62,7 @@ function cdpPut(path) {
 
 async function getXHSTab() {
   const tabs = await cdpGet("/json/list");
-  const xhsTab = tabs.find(
-    (t) => t.url.includes("xiaohongshu.com") && t.type === "page",
-  );
+  const xhsTab = selectXhsCdpTab(tabs);
   if (xhsTab) return xhsTab;
   throw new Error(
     "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
