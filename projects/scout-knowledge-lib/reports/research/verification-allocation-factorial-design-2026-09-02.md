@@ -420,6 +420,41 @@ Confidence is high for the reproduced defect and regression, moderate for the
 question is to enumerate the canonical finite-resample decisions over all
 64-block compositions and compare its operating rates with the exact oracle.
 
+## Cycle 73 complete finite-versus-exact comparison
+
+Seed reconciliation `1eb84e065046b80a1201a236f265cf9cb05f8482` preceded this
+analysis. Exact local commit `8667408cd28d224e6cab1eb2a2dc2b405b0af337`
+then enumerates all 2,145 negative/zero/positive compositions at the frozen
+64-block candidate and compares the canonical 1,024-resample decision with the
+Cycle 71 exact conditional oracle. The comparison specification SHA-256 is
+`83926b57b4561a0dd39e238ddf2ee010ade6818fdc38d2d6123bf0c19ab30de8`;
+it binds calibration specification
+`6ac043cd0cab150dae665af183045dfc076cb9dfd007f1f2f5900eb8d40ffcc2`,
+bootstrap specification
+`81c7bca2fec86527dc75cbdc8c5b90a69638821f83944509e173b52bc826b8e0`,
+and model ID `calibration-model`.
+
+The finite and exact decisions differ on 26 compositions. The first mismatch
+has counts `1/49/14`: exact is inconclusive while finite is positive. Under the
+balanced null, exact false-direction probability is
+`0.002307919821710335`, finite is `0.003173180319440574`, and mismatch
+probability is `0.000867460474092118`. Under the dense null, both
+false-direction probabilities are `0.008146902228698577` and mismatch
+probability is zero. Under the sparse null, exact false-direction probability
+is `0.0001755936794143284`, finite is `0.00025673753238608036`, and
+mismatch probability is `0.0005090313721621996`.
+
+This supports the narrower claim that the frozen finite implementation remains
+below the declared 1% false-direction tolerance for all three declared nulls at
+64 blocks. The 26 mismatches contradict treating that implementation as the
+exact oracle, even after the Cycle 72 permutation repair. Confidence is high
+for the exhaustive composition enumeration and exact null integration, but
+low outside the fixed block count, effect support, null families, resampling
+seed, and model identifier. Dependence, drift, alternatives, power, real-model
+behavior, and provider execution remain untested. The next ranked question is
+whether changing the model identifier or resampling seed materially changes
+the finite operating rates or the 1% decision.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

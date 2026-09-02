@@ -1413,6 +1413,19 @@ boundary decisions. This supports permutation-invariant accounting, while
 leaving the finite resampler's complete operating rates and real-model transfer
 uncalibrated.
 
+Cycle 73 exhausts the remaining fixed-setting comparison at exact local commit
+`8667408cd28d224e6cab1eb2a2dc2b405b0af337`. Across all 2,145 possible
+64-block `-1/0/+1` compositions, the canonical finite resampler and exact
+oracle disagree on 26. Balanced-null false-direction probability rises from
+`0.002307919821710335` exact to `0.003173180319440574` finite; sparse rises
+from `0.0001755936794143284` to `0.00025673753238608036`; dense remains
+`0.008146902228698577` under both. Thus the finite rule still passes the
+declared 1% tolerance for these three nulls, supporting the bounded 64-block
+candidate, while the nonzero mismatches contradict calling it exact. Confidence
+is high only for this complete frozen enumeration. The rates remain conditional
+on one resampling seed and model ID, and do not establish power, robustness to
+dependence or drift, real-model behavior, or provider authority.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
