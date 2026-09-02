@@ -486,6 +486,36 @@ frozen resample-count ladder reduces the worst observed classification
 sensitivity enough to justify the added computation, while retaining the
 exact oracle as the calibration authority.
 
+## Cycle 75 frozen resample-count ladder
+
+Seed reconciliation `0c313b7160c8061569db48e3bef2c903b8fb8fdc` preceded this
+matched ladder. Exact local regression commit
+`bbbcd6e7418293e0e5427bfd1b47f4a6a0114757` holds the worst Cycle 74
+sparse-disagreement salt fixed at model ID `calibration-model` and seed
+`505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932`,
+then compares 1,024, 4,096, and 16,384 draws. Their comparison SHA-256 values
+are respectively
+`4a0dfbd13f6be113b1aae96cdeaed339b36022173beb3925b947e09dd15a0fb6`,
+`69ff21c62db4b08b56ba3303a4eb34cab65ea7e6de5282d7f5e95eec09d39e2a`,
+and `5a4cee68a880cb2d6a7c20934c114d30d4fb7b76adddd4a1adc443ebab94274d`.
+
+Composition mismatch counts fall from 18 to 11 to 3. Sparse-null decision
+disagreement falls from `0.022723637739035525` to
+`0.00002061050403066235` to `0.000000013726857835043323`. Every finite
+false-direction rate remains below 1%. Convergence is not uniform or monotone:
+balanced disagreement is `0.00023599279460173557` at 4,096 but
+`0.0003965403610030345` at 16,384, while dense false-direction probability is
+`0.005918433252619305` at 4,096 and returns to the exact
+`0.008146902228698577` at 16,384.
+
+This supports more draws as a strong reduction for the selected sparse
+disagreement and total composition count. It contradicts a blanket claim that
+each intermediate operating metric approaches the oracle monotonically.
+Confidence is high for this fixed salt and low for other salts, an optimal
+draw count, real effects, or provider behavior. The next ranked question is to
+classify the three residual 16,384-draw mismatch compositions and determine
+whether any are directional errors or only boundary-label differences.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

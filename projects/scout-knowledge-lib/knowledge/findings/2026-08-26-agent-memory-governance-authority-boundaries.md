@@ -1439,6 +1439,17 @@ classification at 1,024 draws. Confidence is high for the replayed nine-control
 fixture and low for untested salts, convergence, alternatives, dependence, or
 real models.
 
+Cycle 75 freezes the worst observed sparse-disagreement salt and varies only
+the draw count at exact local commit
+`bbbcd6e7418293e0e5427bfd1b47f4a6a0114757`. From 1,024 to 4,096 to
+16,384 draws, mismatch compositions fall 18→11→3 and sparse disagreement
+probability falls 2.2724%→0.00206%→0.00000137%; all false-direction rates
+remain below 1%. Supporting convergence is qualified by contradictory
+non-monotonic detail: balanced disagreement rises between 4,096 and 16,384,
+and the intermediate dense false-direction rate moves below both endpoints.
+Confidence is high for this one matched ladder and low for other salts,
+optimal-cost selection, alternatives, dependence, or real-model behavior.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
