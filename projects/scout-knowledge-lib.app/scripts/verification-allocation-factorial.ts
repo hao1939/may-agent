@@ -339,6 +339,44 @@ export type PercentileUnanimousPowerAnalysis = {
   errors: string[];
 };
 
+export type PercentileEstimandComparisonSpec = {
+  schema: "scout.verification-allocation-estimand-comparison/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  calibrationMethod: "exact-trinomial-enumeration";
+  effectSupport: [-1, 0, 1];
+  directionalDecisionDelta: 0;
+  practicalDecisionDelta: number;
+  lowerQuantile: number;
+  upperQuantile: number;
+  runBlockCount: number;
+  minimumCorrectDirectionalPower: number;
+  maximumWrongDirectionalProbability: number;
+  nullProcesses: PercentileNullCalibrationSpec["processes"];
+  alternativeProcesses: PercentileAlternativeCalibrationSpec["processes"];
+};
+
+export type PercentileEstimandComparisonAnalysis = {
+  ok: boolean;
+  comparisonSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  runBlockCount: number;
+  estimands: Array<{
+    estimand: "directional" | "practical-exceedance";
+    decisionDelta: number;
+    nullReport: Array<{
+      processId: string;
+      falsePositiveDirectionProbability: number;
+      falseNegativeDirectionProbability: number;
+      falseDirectionalProbability: number;
+      passesWrongDirectionTolerance: boolean;
+    }>;
+    alternativeReport: PercentileAlternativeCalibrationAnalysis["report"];
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1136,6 +1174,28 @@ export function buildToyPercentileUnanimousPowerSpec(): PercentileUnanimousPower
       ...buildToyPercentileAlternativeCalibrationSpec(),
       runBlockCount: 105,
     },
+  };
+}
+
+export function buildToyPercentileEstimandComparisonSpec(): PercentileEstimandComparisonSpec {
+  const nullCalibration = buildToyPercentileNullCalibrationSpec();
+  const alternativeCalibration = buildToyPercentileAlternativeCalibrationSpec();
+  return {
+    schema: "scout.verification-allocation-estimand-comparison/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    calibrationMethod: "exact-trinomial-enumeration",
+    effectSupport: [-1, 0, 1],
+    directionalDecisionDelta: 0,
+    practicalDecisionDelta: alternativeCalibration.practicalDelta,
+    lowerQuantile: alternativeCalibration.lowerQuantile,
+    upperQuantile: alternativeCalibration.upperQuantile,
+    runBlockCount: 105,
+    minimumCorrectDirectionalPower:
+      alternativeCalibration.minimumCorrectDirectionalPower,
+    maximumWrongDirectionalProbability:
+      alternativeCalibration.maximumWrongDirectionalProbability,
+    nullProcesses: nullCalibration.processes,
+    alternativeProcesses: alternativeCalibration.processes,
   };
 }
 
@@ -2409,6 +2469,207 @@ export function calibratePercentileUnanimousPower(
     }),
     scopeLimit:
       "Exact per-model only for the frozen trinomial calibration. Unanimous named-model bounds assume equal marginals but unknown dependence; the independence product is illustrative, and aggregate-interval support, heterogeneous models, provider behavior, and final-gate power remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidPercentileEstimandComparisonAnalysis(
+  errors: string[],
+): PercentileEstimandComparisonAnalysis {
+  return {
+    ok: false,
+    comparisonSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    runBlockCount: 0,
+    estimands: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parsePercentileEstimandComparisonSpec(
+  candidate: unknown,
+): PercentileEstimandComparisonSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "alternativeProcesses,calibrationMethod,directionalDecisionDelta,effectSupport,evidenceClass,lowerQuantile,maximumWrongDirectionalProbability,minimumCorrectDirectionalPower,nullProcesses,practicalDecisionDelta,runBlockCount,schema,upperQuantile" ||
+    spec.schema !== "scout.verification-allocation-estimand-comparison/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.calibrationMethod !== "exact-trinomial-enumeration" ||
+    JSON.stringify(spec.effectSupport) !== "[-1,0,1]" ||
+    spec.directionalDecisionDelta !== 0 ||
+    typeof spec.practicalDecisionDelta !== "number" ||
+    !Number.isFinite(spec.practicalDecisionDelta) ||
+    spec.practicalDecisionDelta <= 0 ||
+    spec.practicalDecisionDelta >= 1 ||
+    !Number.isInteger(spec.runBlockCount) ||
+    (spec.runBlockCount as number) < 2 ||
+    (spec.runBlockCount as number) > 256
+  ) {
+    return null;
+  }
+
+  const nullSpec = parsePercentileNullCalibrationSpec({
+    schema: "scout.verification-allocation-null-calibration/v1",
+    evidenceClass: spec.evidenceClass,
+    calibrationMethod: spec.calibrationMethod,
+    effectSupport: spec.effectSupport,
+    practicalDelta: spec.practicalDecisionDelta,
+    lowerQuantile: spec.lowerQuantile,
+    upperQuantile: spec.upperQuantile,
+    falseDirectionalTolerance: spec.maximumWrongDirectionalProbability,
+    candidateMinimumRunBlocks: spec.runBlockCount,
+    verificationMaximumRunBlocks: spec.runBlockCount,
+    reportRunBlockCounts: [spec.runBlockCount],
+    processes: spec.nullProcesses,
+  });
+  const alternativeSpec = parsePercentileAlternativeCalibrationSpec({
+    schema: "scout.verification-allocation-alternative-calibration/v1",
+    evidenceClass: spec.evidenceClass,
+    calibrationMethod: spec.calibrationMethod,
+    effectSupport: spec.effectSupport,
+    practicalDelta: spec.practicalDecisionDelta,
+    lowerQuantile: spec.lowerQuantile,
+    upperQuantile: spec.upperQuantile,
+    runBlockCount: spec.runBlockCount,
+    minimumCorrectDirectionalPower: spec.minimumCorrectDirectionalPower,
+    maximumWrongDirectionalProbability: spec.maximumWrongDirectionalProbability,
+    processes: spec.alternativeProcesses,
+  });
+  if (
+    !nullSpec ||
+    !alternativeSpec ||
+    new Set([
+      ...nullSpec.processes.map((process) => process.id),
+      ...alternativeSpec.processes.map((process) => process.id),
+    ]).size !==
+      nullSpec.processes.length + alternativeSpec.processes.length
+  )
+    return null;
+  return spec as unknown as PercentileEstimandComparisonSpec;
+}
+
+/**
+ * Compare a directional effect claim with a practical-exceedance claim while
+ * holding the run count, interval rule, nulls, and alternatives fixed. The
+ * exact trinomial oracle remains the decision authority for both estimands.
+ */
+export function comparePercentileEstimands(
+  candidate: unknown,
+): PercentileEstimandComparisonAnalysis {
+  const spec = parsePercentileEstimandComparisonSpec(candidate);
+  if (!spec) {
+    return invalidPercentileEstimandComparisonAnalysis([
+      "percentile estimand-comparison specification is invalid",
+    ]);
+  }
+  const logFactorials = [0];
+  for (let count = 1; count <= spec.runBlockCount; count += 1) {
+    logFactorials[count] = logFactorials[count - 1]! + Math.log(count);
+  }
+  const allProcesses = [...spec.nullProcesses, ...spec.alternativeProcesses];
+  const estimands = (
+    [
+      ["directional", spec.directionalDecisionDelta],
+      ["practical-exceedance", spec.practicalDecisionDelta],
+    ] as const
+  ).map(([estimand, decisionDelta]) => {
+    const rates = new Map(
+      allProcesses.map((process) => [
+        process.id,
+        { positive: 0, negative: 0, negligible: 0, inconclusive: 0 },
+      ]),
+    );
+    for (
+      let negativeCount = 0;
+      negativeCount <= spec.runBlockCount;
+      negativeCount += 1
+    ) {
+      for (
+        let zeroCount = 0;
+        zeroCount <= spec.runBlockCount - negativeCount;
+        zeroCount += 1
+      ) {
+        const positiveCount = spec.runBlockCount - negativeCount - zeroCount;
+        const decision = exactTrinomialPercentileDecision(
+          spec.runBlockCount,
+          negativeCount,
+          zeroCount,
+          positiveCount,
+          spec.lowerQuantile,
+          spec.upperQuantile,
+          decisionDelta,
+        );
+        for (const process of allProcesses) {
+          rates.get(process.id)![decision] += exactMultinomialProbability(
+            spec.runBlockCount,
+            negativeCount,
+            zeroCount,
+            positiveCount,
+            process.probabilities,
+            logFactorials,
+          );
+        }
+      }
+    }
+    return {
+      estimand,
+      decisionDelta,
+      nullReport: spec.nullProcesses.map((process) => {
+        const rate = rates.get(process.id)!;
+        const falseDirectionalProbability = rate.positive + rate.negative;
+        return {
+          processId: process.id,
+          falsePositiveDirectionProbability: rate.positive,
+          falseNegativeDirectionProbability: rate.negative,
+          falseDirectionalProbability,
+          passesWrongDirectionTolerance:
+            falseDirectionalProbability <=
+            spec.maximumWrongDirectionalProbability,
+        };
+      }),
+      alternativeReport: spec.alternativeProcesses.map((process) => {
+        const rate = rates.get(process.id)!;
+        const correctDirectionalProbability = rate[process.expectedDirection];
+        const wrongDirectionalProbability =
+          rate[
+            process.expectedDirection === "positive" ? "negative" : "positive"
+          ];
+        return {
+          processId: process.id,
+          pairId: process.pairId,
+          expectedDirection: process.expectedDirection,
+          expectedEffect: process.probabilities[2] - process.probabilities[0],
+          correctDirectionalProbability,
+          wrongDirectionalProbability,
+          negligibleProbability: rate.negligible,
+          inconclusiveProbability: rate.inconclusive,
+          passesPowerTarget:
+            correctDirectionalProbability >=
+            spec.minimumCorrectDirectionalPower,
+          passesWrongDirectionTolerance:
+            wrongDirectionalProbability <=
+            spec.maximumWrongDirectionalProbability,
+        };
+      }),
+    };
+  });
+
+  return {
+    ok: true,
+    comparisonSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    calibrationMethod: spec.calibrationMethod,
+    monteCarloStandardError: 0,
+    runBlockCount: spec.runBlockCount,
+    estimands,
+    scopeLimit:
+      "Exact only for the two frozen estimands, symmetric trinomial nulls, mirror-paired alternatives, and one run count; the directional claim does not inherit the practical claim's null-risk result, and dependence, continuous effects, provider behavior, and real models remain uncalibrated.",
     errors: [],
   };
 }

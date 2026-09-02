@@ -3,6 +3,7 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  buildToyPercentileEstimandComparisonSpec,
   buildToyPercentileUnanimousPowerSpec,
   buildToyPercentileAlternativeCalibrationSpec,
   buildToyPercentileAlternativePowerSearchSpec,
@@ -16,6 +17,7 @@ import {
   calibratePercentileAlternativeProcesses,
   calibratePercentileNullProcesses,
   calibratePercentileUnanimousPower,
+  comparePercentileEstimands,
   searchPercentileAlternativePower,
   scheduleSha256,
   scoreAllocationAnswer,
@@ -941,6 +943,109 @@ describe("verification-allocation factorial fixture", () => {
     ]) {
       expect(calibratePercentileUnanimousPower(candidate).errors).toEqual([
         "percentile unanimous-power specification is invalid",
+      ]);
+    }
+  });
+
+  it("compares directional and practical estimands under matched exact controls", () => {
+    const analysis = comparePercentileEstimands(
+      buildToyPercentileEstimandComparisonSpec(),
+    );
+    const directional = analysis.estimands.find(
+      (entry) => entry.estimand === "directional",
+    )!;
+    const practical = analysis.estimands.find(
+      (entry) => entry.estimand === "practical-exceedance",
+    )!;
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.comparisonSpecSha256).toBe(
+      "c4f6c80564d7e83c2b99024a7d9ac0f84e98fdb0fc1aeb22bd00fb77b8adf24c",
+    );
+    expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
+    expect(analysis.monteCarloStandardError).toBe(0);
+    expect(analysis.runBlockCount).toBe(105);
+    expect(directional.decisionDelta).toBe(0);
+    expect(practical.decisionDelta).toBe(0.1);
+    expect(directional.nullReport).toHaveLength(3);
+    expect(directional.alternativeReport).toHaveLength(4);
+    expect(
+      directional.nullReport.every(
+        (entry) => !entry.passesWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+    expect(
+      practical.nullReport.every(
+        (entry) => entry.passesWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+    expect(
+      directional.nullReport.find((entry) => entry.processId === "dense-null")!
+        .falseDirectionalProbability,
+    ).toBeCloseTo(0.05044215663997886, 14);
+    expect(
+      practical.nullReport.find((entry) => entry.processId === "dense-null")!
+        .falseDirectionalProbability,
+    ).toBeCloseTo(0.0032209898687990566, 14);
+    for (const directionalProcess of directional.alternativeReport) {
+      const practicalProcess = practical.alternativeReport.find(
+        (entry) => entry.processId === directionalProcess.processId,
+      )!;
+      expect(directionalProcess.correctDirectionalProbability).toBeGreaterThan(
+        practicalProcess.correctDirectionalProbability,
+      );
+      expect(
+        directionalProcess.correctDirectionalProbability +
+          directionalProcess.wrongDirectionalProbability +
+          directionalProcess.negligibleProbability +
+          directionalProcess.inconclusiveProbability,
+      ).toBeCloseTo(1, 12);
+      expect(
+        practicalProcess.correctDirectionalProbability +
+          practicalProcess.wrongDirectionalProbability +
+          practicalProcess.negligibleProbability +
+          practicalProcess.inconclusiveProbability,
+      ).toBeCloseTo(1, 12);
+    }
+    expect(
+      directional.alternativeReport.find(
+        (entry) => entry.processId === "strong-positive",
+      )!.correctDirectionalProbability,
+    ).toBeCloseTo(0.9845896004887843, 14);
+    expect(
+      directional.alternativeReport.find(
+        (entry) => entry.processId === "moderate-positive",
+      )!.correctDirectionalProbability,
+    ).toBeCloseTo(0.5344140683113935, 14);
+    expect(analysis.scopeLimit).toContain(
+      "directional claim does not inherit the practical claim's null-risk result",
+    );
+  });
+
+  it("rejects an unfrozen estimand comparison", () => {
+    const spec = buildToyPercentileEstimandComparisonSpec();
+    for (const candidate of [
+      { ...spec, directionalDecisionDelta: 0.01 },
+      { ...spec, practicalDecisionDelta: 0 },
+      { ...spec, runBlockCount: 257 },
+      {
+        ...spec,
+        nullProcesses: spec.nullProcesses.map((process, index) =>
+          index === 0
+            ? { ...process, probabilities: [0.2, 0.5, 0.3] }
+            : process,
+        ),
+      },
+      { ...spec, alternativeProcesses: spec.alternativeProcesses.slice(1) },
+      {
+        ...spec,
+        alternativeProcesses: spec.alternativeProcesses.map((process, index) =>
+          index === 0 ? { ...process, id: spec.nullProcesses[0]!.id } : process,
+        ),
+      },
+    ]) {
+      expect(comparePercentileEstimands(candidate).errors).toEqual([
+        "percentile estimand-comparison specification is invalid",
       ]);
     }
   });
