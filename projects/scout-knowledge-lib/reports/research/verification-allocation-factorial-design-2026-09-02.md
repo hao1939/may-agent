@@ -597,6 +597,48 @@ real models. The next ranked question is to find the minimum exact run count
 that reaches 80% for the ±0.30 pair and determine whether the ±0.15 pair can
 reach it within a bounded 256-block search.
 
+## Cycle 79 exact bounded power search
+
+Seed reconciliation `afe03387668faa46e48c4adb3f65290cf5366687` preceded this
+search. Exact local commit `e19f5cb72a1916268c894da1366ba5373ba81aa3`
+adds a separate fail-closed, content-addressed power-search schema while
+preserving Cycle 78's single-count contract. It scans every integer run count
+from 64 through 256, records first crossings and observed maxima, and makes no
+monotonicity assumption. Search specification SHA-256 is
+`bffe0129348403b1e6059a24889b9d823763423aa0cb9433c72751cfbc1023cb`.
+The exhaustive run covered all 193 counts at
+`2026-09-02T19:34:13.476Z–19:41:38.298Z` with zero Monte Carlo error.
+
+The ±0.30 pair is below the synthetic 80% target at 104 blocks: positive-side
+correct, wrong, negligible, and inconclusive probabilities are respectively
+`0.7973065499459407`, `4.981433348942849e-14`,
+`1.815042056657329e-14`, and `0.20269345005412967`. It first crosses at 105
+blocks, where the same four probabilities are `0.8045178323414782`,
+`4.462239207721462e-14`, `9.878447314110688e-15`, and
+`0.1954821676586286`. The mirrored negative process agrees to floating-point
+tolerance.
+
+The ±0.15 pair never reaches 80% anywhere in the bounded search. Its largest
+conservative mirror-pair power is only `0.20370063408471942` at 249 blocks;
+the positive process there has wrong, negligible, and inconclusive
+probabilities `1.6918725993772752e-13`, `0.0006700234221932275`, and
+`0.7956293424930317`. At the 256-block endpoint, correct, wrong, negligible,
+and inconclusive probabilities are `0.19986471777037063`,
+`7.831916288574057e-14`, `0.0008245605443736368`, and
+`0.7993107216856294`. The moderate power maximum occurring before the endpoint
+is direct contradictory evidence against inferring bounded results from a
+single endpoint or assuming monotone power.
+
+This supports 105 as the first exact crossing only for the declared strong
+synthetic pair. It contradicts using 64 blocks as a universal gate and shows
+that even quadrupling to 256 does not make the moderate pair adequately
+sensitive under this rule. Confidence is high for the exhaustive discrete
+search and low for the synthetic 80% target, operational affordability,
+continuous effects, dependence, provider drift, alternative interval rules,
+or real-model transfer. The next ranked question is whether 105 complete model
+run blocks are operationally acceptable; if not, the design needs a different
+estimand or interval rule rather than a weaker claim about 64 blocks.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

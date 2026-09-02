@@ -1479,6 +1479,21 @@ general execution-size gate. Confidence is high for the exact synthetic
 enumeration and low for alternative selection, dependence, continuous
 effects, drift, or real-model transfer.
 
+Cycle 79 searches every integer count from 64 through 256 at exact local
+commit `e19f5cb72a1916268c894da1366ba5373ba81aa3`, under content-addressed
+search specification
+`bffe0129348403b1e6059a24889b9d823763423aa0cb9433c72751cfbc1023cb`.
+The ±0.30 pair rises from 79.73% correct-direction power at 104 blocks to
+80.45% at its first passing count, 105. The ±0.15 pair never passes; its
+largest power is only 20.37% at 249, then 19.99% at 256. This non-endpoint
+maximum supports the exhaustive search and contradicts assuming monotone power.
+Wrong-direction risk remains below the declared 1% tolerance throughout.
+Confidence is high for all 193 exact discrete counts and low for the synthetic
+80% target, operational cost, other interval rules, dependence, continuous
+effects, drift, or real-model transfer. Before provider execution, decide
+whether 105 complete model-run blocks are affordable or revise the estimand or
+interval rule explicitly.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
