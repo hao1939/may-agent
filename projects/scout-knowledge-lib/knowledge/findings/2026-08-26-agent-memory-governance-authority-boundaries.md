@@ -1524,6 +1524,18 @@ support, and provider behavior. The next comparison must freeze directional
 and practical-exceedance estimands separately rather than weakening the
 practical claim after observing low power.
 
+Cycle 82 tests that next distinction at exact local commit
+`ee0d64bf3821fd9b65980cdb9fc33b0dad87cd1d`. With the run count, exact
+trinomial controls, and percentile interval held fixed, a directional
+threshold raises strong-process power from 80.45% to 98.46% and moderate power
+from 11.13% to 53.44%. It also raises symmetric-null false-direction risk to
+4.27–5.04%, failing the frozen 1% limit; the practical-exceedance threshold
+stays at 0.0024–0.3221%. The directional shortcut is therefore contradicted,
+not adopted. Confidence is high for the matched exact controls and low beyond
+their discrete support, fixed interval, synthetic alternatives, and absent
+provider/model evidence. Any stricter directional interval must be calibrated
+against the null family before its alternative power is inspected.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

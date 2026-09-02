@@ -723,6 +723,37 @@ current practical-exceedance estimand (`effect > 0.10`) under matched exact
 null and alternative controls, without weakening either claim after seeing
 the result.
 
+## Cycle 82 matched estimand comparison
+
+Seed reconciliation `0f0812d89908e1f0e4451b3cbd9ccc527e0e4e85` preceded this
+change. Exact local commit `ee0d64bf3821fd9b65980cdb9fc33b0dad87cd1d`
+adds a fail-closed, exact comparison at specification SHA-256
+`c4f6c80564d7e83c2b99024a7d9ac0f84e98fdb0fc1aeb22bd00fb77b8adf24c`.
+It freezes the same 105 run blocks, 2.5%/97.5% percentile interval, three
+symmetric nulls, two mirror-paired alternatives, 80% power target, and 1%
+false-direction limit for both estimands. Only the decision threshold changes:
+zero for a directional claim and `0.10` for practical exceedance. Null and
+alternative process IDs must be disjoint, and malformed or asymmetric inputs
+fail closed.
+
+The directional claim improves alternative power but fails the matched null
+contract. Its exact false-direction probabilities are 4.4935% balanced,
+5.0442% dense, and 4.2680% sparse, all above 1%. The practical-exceedance
+claim yields 0.0815%, 0.3221%, and 0.0024%, respectively, so all three pass.
+At the same time, strong-process correct-direction power rises from 80.45% for
+practical exceedance to 98.46% for direction alone, and moderate-process power
+rises from 11.13% to 53.44%. The moderate directional claim therefore remains
+below the 80% target even while accepting too much null-direction risk.
+
+This supports keeping the two questions separate and contradicts treating a
+directional estimand as a cost-free substitute for the practical claim. The
+calculation has zero Monte Carlo error. Confidence is high for the exact
+frozen trinomial controls and low for continuous effects, other interval
+rules, model dependence, provider behavior, and real factorial results. A next
+comparison must predeclare a stricter directional interval calibration against
+all three nulls before measuring retained alternative power; it must not tune
+the interval after selecting the most favorable alternative.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
