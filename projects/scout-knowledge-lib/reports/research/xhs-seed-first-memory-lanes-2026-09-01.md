@@ -6938,6 +6938,39 @@ This is the required start of Cycle 60, not goal completion. Validate and
 commit this seed reconciliation before reconsidering GitHub, arXiv, or Reddit.
 Keep the mixed-scope event-chain exploration closed.
 
+## Cycle 60 post-seed selection — make fingerprint version provenance explicit
+
+Seed ordering is exact: Cycle 60 reconciliation
+`7fb4b1db49bd4c73589c47c215c9f4625aabbc9c` was committed before this source
+reconsideration. The fresh live observation confirmed the new semantic
+boundary; it did not expose any saved post or change the unknown seed delta.
+
+- **GitHub/local code is selected for a bounded audit; a public request is
+  deferred.** Relevance remains high, but Cycle 58's four public heads are
+  minutes-old and unchanged, so expected public value is low. Exact local
+  `eeafab60d2a87483312221af26ba5e5e3b3cbb78` is the last useful code
+  evidence. The next question is whether durable `saved-status` output must
+  declare its fingerprint schema version so a fresh worker can distinguish v1
+  and v2 observations without reconstructing commit context. Revisit public
+  GitHub on a changed head, artifact, independent/deployment, or readable-seed
+  trigger.
+- **arXiv is retained and deferred.** It remains highly relevant to the
+  selected memory-governance cluster but offers low incremental value for this
+  local provenance question. MemGauge `2608.30177v1` remains the post-seed
+  15/15 winner and `2608.25553v3` the distinct 14/15 result. Revisit on a
+  version, artifact, registration, replication, or readable-seed trigger.
+- **Reddit is deferred without quota work.** Relevance remains medium and
+  expected incremental value low. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a content delta, or an access change.
+
+Do not assume an implementation gap. First inspect every persisted or consumed
+access-fingerprint path and add a deterministic fixture only if version
+ambiguity is observable. Preserve the exact v2 hash, byte/body provenance,
+credential redaction, and fail-closed behavior. Do not begin the proposed
+mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
