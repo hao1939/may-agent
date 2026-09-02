@@ -1633,6 +1633,81 @@ describe("verification-allocation factorial fixture", () => {
     expect(171 * 3 + 172 * 3).toBe(1_029);
     expect((171 * 3 + 172 * 3) * 32).toBe(32_928);
 
+    const applyUniformCorrectMarginalDrift = (
+      scenarios: typeof robustCandidate,
+      downwardDrift: number,
+    ) =>
+      scenarios.map((scenario) => {
+        const correctMarginalSum =
+          scenario.correctMarginalSum - base.modelIds.length * downwardDrift;
+        return {
+          correctMarginalSum,
+          aggregateCorrectDirectionalLowerBound: Math.max(
+            0,
+            (correctMarginalSum - 3) / 3,
+          ),
+          aggregateWrongDirectionalUpperBound:
+            scenario.aggregateWrongDirectionalUpperBound,
+        };
+      });
+    const equalAllocation = identityInvariant.report.map((scenario) => ({
+      correctMarginalSum: scenario.correctMarginalSum,
+      aggregateCorrectDirectionalLowerBound:
+        scenario.aggregateCorrectDirectionalLowerBound,
+      aggregateWrongDirectionalUpperBound:
+        scenario.aggregateWrongDirectionalUpperBound,
+    }));
+    const minimumPassingMarginalSum = 5.4;
+    const uniformDriftBuffer = (scenarios: typeof robustCandidate) =>
+      (Math.min(...scenarios.map((scenario) => scenario.correctMarginalSum)) -
+        minimumPassingMarginalSum) /
+      base.modelIds.length;
+    const robustUniformDriftBuffer = uniformDriftBuffer(robustCandidate);
+    const equalUniformDriftBuffer = uniformDriftBuffer(equalAllocation);
+    expect(robustUniformDriftBuffer).toBeCloseTo(0.000007052630048557755, 18);
+    expect(equalUniformDriftBuffer).toBeCloseTo(0.0006254995932550855, 18);
+    expect(equalUniformDriftBuffer / robustUniformDriftBuffer).toBeCloseTo(
+      88.69026008006738,
+      12,
+    );
+
+    const expectPassAtButNotBeyondUniformDrift = (
+      scenarios: typeof robustCandidate,
+      downwardDrift: number,
+    ) => {
+      const atBoundary = applyUniformCorrectMarginalDrift(
+        scenarios,
+        downwardDrift,
+      );
+      expect(
+        Math.min(
+          ...atBoundary.map(
+            (scenario) => scenario.aggregateCorrectDirectionalLowerBound,
+          ),
+        ),
+      ).toBeCloseTo(0.8, 14);
+      expect(
+        atBoundary.every(
+          (scenario) =>
+            scenario.aggregateCorrectDirectionalLowerBound >= 0.8 &&
+            scenario.aggregateWrongDirectionalUpperBound <= 0.01,
+        ),
+      ).toBe(true);
+      expect(
+        applyUniformCorrectMarginalDrift(scenarios, downwardDrift + 1e-12).some(
+          (scenario) => scenario.aggregateCorrectDirectionalLowerBound < 0.8,
+        ),
+      ).toBe(true);
+    };
+    expectPassAtButNotBeyondUniformDrift(
+      robustCandidate,
+      robustUniformDriftBuffer,
+    );
+    expectPassAtButNotBeyondUniformDrift(
+      equalAllocation,
+      equalUniformDriftBuffer,
+    );
+
     const bestCheaper = heterogeneousCounts([171, 171, 171, 171, 172, 172]);
     expect(
       Math.min(...bestCheaper.map((entry) => entry.correctMarginalSum)),
