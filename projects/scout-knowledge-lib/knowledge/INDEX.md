@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-01"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-03"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current additions include the pinned Hermes Agent/OpenClaw comparison. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -43,8 +43,13 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Agent self-evolution unified lead ledger (2026-09-01)](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv) — provenance, access, research question, value, related work, novelty, credibility, disposition, and stopping condition for every lead in the bounded frontier.
 - [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 908 observed stable card IDs, including metadata-only, unresolved, adjacent, and screened-out records.
 - [Verification-allocation factorial design (2026-09-02)](../reports/research/verification-allocation-factorial-design-2026-09-02.md) — preregistration-ready separation of provisional plan, current temptation, and authenticated supersession state; design only, with explicit no-call gates.
+- [Hermes Agent and OpenClaw comparative investigation (2026-09-03)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-03.md) — pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-03
+
+- [Hermes Agent vs OpenClaw: the difference is mutation governance](./findings/2026-09-03-hermes-agent-openclaw-comparison.md) — both now have native learning loops, memory, subagents, and recovery; Hermes favors direct review-driven mutation while OpenClaw favors versioned proposals, writer ownership, staleness checks, and rollback, with no held-out self-improvement proof from either project.
 
 ### 2026-09-01
 
