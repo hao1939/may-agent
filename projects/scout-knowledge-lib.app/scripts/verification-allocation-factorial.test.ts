@@ -1435,6 +1435,102 @@ describe("verification-allocation factorial fixture", () => {
     });
   });
 
+  it("pins the first five-strong one-moderate 80% recovery", () => {
+    const base = buildToyHeterogeneousDirectionalMajoritySpec();
+    const analyze = (runBlockCount: number) => {
+      const calibrationSpec = {
+        ...buildToyDirectionalQuantileCalibrationSpec(),
+        runBlockCount,
+        candidateLowerQuantiles: [0.0025],
+      };
+      const calibration = calibrateDirectionalQuantiles(calibrationSpec);
+      const power = measureCalibratedDirectionalPower(
+        calibrationSpec,
+        buildToyDirectionalQuantilePowerSpec(calibration),
+      );
+      const strong = power.report.find(
+        (entry) => entry.processId === "strong-positive",
+      )!;
+      const moderate = power.report.find(
+        (entry) => entry.processId === "moderate-positive",
+      )!;
+      const majority = boundHeterogeneousDirectionalMajority({
+        ...base,
+        runBlockCount,
+        sourceNullRangeSpecSha256: calibration.calibrationSpecSha256,
+        sourcePowerSearchSpecSha256: power.powerSpecSha256,
+        scenarios: [
+          {
+            id: "five-strong-one-moderate",
+            evidenceClass: "synthetic-sensitivity-control",
+            marginals: base.modelIds.map((modelId, index) => {
+              const process =
+                index === base.modelIds.length - 1 ? moderate : strong;
+              return {
+                modelId,
+                correctDirectionalProbability:
+                  process.correctDirectionalProbability,
+                wrongDirectionalProbability:
+                  process.wrongDirectionalProbability,
+              };
+            }),
+          },
+        ],
+      });
+      return { calibration, power, strong, moderate, majority };
+    };
+
+    const before = analyze(171);
+    expect(before.calibration.calibrationSpecSha256).toBe(
+      "486655fa1d6d62ead8a1dfdde7a42e837568257b6535751e39b833ea83c780c4",
+    );
+    expect(before.power.powerSpecSha256).toBe(
+      "26f5470256c25d712c382a8991bc39d1d16b95421274f6ed03f6a8e5ecbf3d5e",
+    );
+    expect(before.strong.correctDirectionalProbability).toBeCloseTo(
+      0.9931639463253574,
+      14,
+    );
+    expect(before.moderate.correctDirectionalProbability).toBeCloseTo(
+      0.43334150555065293,
+      14,
+    );
+    expect(before.majority.report[0]).toMatchObject({
+      correctMarginalSum: expect.closeTo(5.399161237177441, 14),
+      aggregateCorrectDirectionalLowerBound: expect.closeTo(
+        0.7997204123924803,
+        14,
+      ),
+      passesAggregatePowerTarget: false,
+      passesAggregateWrongDirectionTolerance: true,
+    });
+
+    const recovery = analyze(172);
+    expect(recovery.calibration.calibrationSpecSha256).toBe(
+      "a0e0d92ee7ae22dad567a1c183b7014427b163364284fb9cf71ae0a9c4d8743e",
+    );
+    expect(recovery.power.powerSpecSha256).toBe(
+      "956ad848625656668306eebc86bdab6aada0516f94952bdb4048697a4c32295c",
+    );
+    expect(recovery.strong.correctDirectionalProbability).toBeCloseTo(
+      0.9934576391929748,
+      14,
+    );
+    expect(recovery.moderate.correctDirectionalProbability).toBeCloseTo(
+      0.43646480159465734,
+      14,
+    );
+    expect(recovery.majority.report[0]).toMatchObject({
+      correctMarginalSum: expect.closeTo(5.403752997559532, 14),
+      aggregateCorrectDirectionalLowerBound: expect.closeTo(
+        0.8012509991865105,
+        14,
+      ),
+      passesAggregatePowerTarget: true,
+      passesAggregateWrongDirectionTolerance: true,
+    });
+  }, 30_000);
+
   it("enumerates every finite 64-block composition against the exact oracle", () => {
     const analysis = compareFinitePercentileNullProcesses(
       buildToyPercentileNullCalibrationSpec(),
