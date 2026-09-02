@@ -1369,6 +1369,72 @@ describe("verification-allocation factorial fixture", () => {
     }
   });
 
+  it("pins the weakest-model and graded-vector 80% boundaries", () => {
+    const base = buildToyHeterogeneousDirectionalMajoritySpec();
+    const strongMarginal = 0.9030482059720658;
+    const wrongDirectionalMarginal = 1.5857642097099773e-12;
+    const weakestMarginal = 5.4 - 5 * strongMarginal;
+    const analyze = (id: string, correctMarginals: number[]) =>
+      boundHeterogeneousDirectionalMajority({
+        ...base,
+        scenarios: [
+          {
+            id,
+            evidenceClass: "synthetic-sensitivity-control",
+            marginals: base.modelIds.map((modelId, index) => ({
+              modelId,
+              correctDirectionalProbability: correctMarginals[index],
+              wrongDirectionalProbability: wrongDirectionalMarginal,
+            })),
+          },
+        ],
+      });
+
+    expect(weakestMarginal).toBe(0.8847589701396714);
+    const weakestBoundary = analyze("single-weak-boundary", [
+      strongMarginal,
+      strongMarginal,
+      strongMarginal,
+      strongMarginal,
+      strongMarginal,
+      weakestMarginal,
+    ]);
+    expect(weakestBoundary.sensitivitySpecSha256).toBe(
+      "94ebee148ee1ae7c0b4a905a83efe39efae606df46113bbb58ed159851938ffb",
+    );
+    expect(weakestBoundary.report[0]).toMatchObject({
+      correctMarginalSum: 5.4,
+      aggregateCorrectDirectionalLowerBound: 0.8000000000000002,
+      passesAggregatePowerTarget: true,
+    });
+
+    const gradedBoundary = analyze(
+      "graded-boundary",
+      [0.88, 0.89, 0.9, 0.91, 0.92, 0.9],
+    );
+    expect(gradedBoundary.sensitivitySpecSha256).toBe(
+      "dd37d582b2347f573fadddf0c394a4ff22f0feb7d139b2d1263d3b745c1c30d1",
+    );
+    expect(gradedBoundary.report[0]).toMatchObject({
+      correctMarginalSum: 5.4,
+      aggregateCorrectDirectionalLowerBound: 0.8000000000000002,
+      passesAggregatePowerTarget: true,
+    });
+
+    const gradedBelow = analyze(
+      "graded-below",
+      [0.879, 0.89, 0.9, 0.91, 0.92, 0.9],
+    );
+    expect(gradedBelow.sensitivitySpecSha256).toBe(
+      "fd54d04de55d8c9594f8f1116b8bf903ad39b493d27dde05110c1ca85ca5a1e0",
+    );
+    expect(gradedBelow.report[0]).toMatchObject({
+      correctMarginalSum: 5.399000000000001,
+      aggregateCorrectDirectionalLowerBound: 0.799666666666667,
+      passesAggregatePowerTarget: false,
+    });
+  });
+
   it("enumerates every finite 64-block composition against the exact oracle", () => {
     const analysis = compareFinitePercentileNullProcesses(
       buildToyPercentileNullCalibrationSpec(),
