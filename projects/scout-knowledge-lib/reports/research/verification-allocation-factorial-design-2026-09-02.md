@@ -262,7 +262,10 @@ effects; the equal-model mean is `0` in every stratum. This is supporting
 evidence that a pooled null can conceal complete model disagreement and that
 model blocks must be reported before aggregation. It is simultaneously
 contradictory evidence against treating the equal-model zero as evidence that
-status has no effect.
+status has no effect. The exact 128-episode schedule SHA-256 is
+`19d0356964f181fb05cb426e6045cc72c4e000f2ba8d8a8591253ecb6cb1e4ec`;
+the matched result-bundle SHA-256 is
+`aca705e7cf2b3e47ccd0a6cfcbbeabf967b6e48556b563f992957e330c69a513`.
 
 Focused validation passes 11 tests with 43 assertions, TypeScript, formatting,
 and whitespace checks. Confidence is high for the deterministic schema and
