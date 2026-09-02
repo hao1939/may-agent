@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-five cycles: Cycle 25 commits the unavailable Xiaohongshu reconciliation first, proves mixed-organization checkpoint chronology and live PostgreSQL legacy migration on the tenant-scoped repair, retains arXiv 2608.30177v1, records Reddit at its actual access boundary, and begins Cycle 26 with an organization-scoped trajectory-audit fixture."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "XHS seed-first cycle 25"]
-last_updated: "2026-09-01"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-01T23:35:02.534Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, mixed-organization chronology, and a live PostgreSQL legacy migration."
+summary: "Seed-first Scout checkpoint across twenty-six cycles: Cycle 26 commits the unavailable Xiaohongshu reconciliation first, reproduces and repairs cross-organization trajectory aggregation with schema-backed event ownership, retains arXiv 2608.30177v1, records Reddit at its actual access boundary, and reconciles the accepted self-evolution audit into the standing Scout branch."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 26"]
+last_updated: "2026-09-02"
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-01T23:35:02.534Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, and live PostgreSQL legacy migrations."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -2062,8 +2062,97 @@ quota work at its last RSS HTTP 200 with six comments and JSON HTTP 403;
 revisit requires seed-linked deployment evidence, thread change, or access
 change.
 
+## Cycle 26 checkpoint — event ownership and accepted work are now durable
+
+What was wrong: one authenticated principal could own events in more than one
+organization, but trajectory audit selected only by principal. On exact Mnemo
+base `4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7`, Alice's valid Alpha
+capability therefore received her Beta event too. Separately, an accepted
+self-evolution audit was clean and validated on its side branch but absent from
+the standing Scout integration branch, so later workers could not rely on it.
+
+Seed-first ordering remained intact. Cycle 26's direct Xiaohongshu boundary was
+committed first as `c834ae83e8eeadf6a2c8ea748f4671e3eaefd90a` before the topic was
+selected. The saved browser profile was followed by login, current-user
+returned HTTP 500 without identity, and all 132 durable seeds remained
+unavailable. Added and changed sets are unknown, proven removals are `[]`, and
+the separate 30-card public Explore window plus representative `/404` are not
+collection evidence.
+
+Only afterward did GitHub/local code win the memory-governance rubric. The
+pre-fix Alpha and Beta memory outputs were exactly
+`01a05f77-e5bc-7992-9ec0-6edb82548a4e` and
+`01a05f77-e5e7-7101-9d66-d420aa44fa98`. Alpha audit reported two events and
+peak active size 2. Mnemo commit
+`a6649e56abd8da17bec5b9c339707eb02e04ddbb` adds nullable schema-backed event
+organization to DuckDB and PostgreSQL, exact scoped storage queries, migrations
+and an index, and passes authoritative scope through checkpoint, replay, as-of
+replay, and trajectory audit. Legacy null-owned events fail closed for scoped
+reads. The strengthened fixture reports one Alpha event/peak 1 and rejects an
+explicit Beta request. These generated UUIDs are two records in one local
+counterexample, not production data or independent confirmations.
+
+The other permanent lanes were explicitly reconsidered. arXiv remains highly
+relevant and current but deferred because no version, artifact, replication,
+stronger study, or content-bearing seed trigger fired. Exact
+`2608.30177v1`, published and updated `2026-08-31T02:57:08Z`, remains the
+separate 15/15 stage-wise memory-governance anchor. Reddit remains medium-
+relevance, low incremental value, and deferred without quota work: last useful
+evidence is RSS HTTP 200 for `t3_1v8a3sh` with six comments, while JSON remains
+last observed HTTP 403. Revisit Reddit on seed-linked deployment evidence,
+thread change, or access change.
+
+### Accepted Scout range reconciliation
+
+The standing branch considered both accepted self-evolution branches. The
+predecessor branch `codex/g-8c56b7d5-self-evolution` at
+`8c5d8747a6b4be8d65703792911360a9082d8b51` supplied two absent Markdown
+artifacts, two new ledgers, and one index overlap. It was reconciled as
+`cb82bee8e2` while preserving the standing index and updating its accepted
+counts to 984 leads and 908 cards. The follow-up branch
+`codex/g-475c9885-xhs-body-evolution`, accepted range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`,
+was reconciled as `f9784d9adc` and `20fd9d81f8`. Patch IDs match source commits
+`8f611fec0adb19a6a44ac0202c094fe30ee298de` and
+`df80a1daa26e353bd33fcf2e9d24860917b695de`, and all four final artifact trees
+are byte-for-byte equal to `df80a1da`. No accepted Scout result is known to
+remain unintegrated.
+
+### Proof and remaining limits
+
+Mnemo validation is commit-scoped to `a6649e56…ddbb`. Focused trajectory audit,
+mixed-organization checkpoint/replay, and live PostgreSQL migration regressions
+pass. Full suites pass 298 core tests with one intentional network test ignored,
+105 MCP tests, 85 HTTP-enabled server tests, and nine PostgreSQL tests. Strict
+all-target Clippy passes for core, MCP, the HTTP-enabled server, and PostgreSQL;
+formatting and whitespace checks also pass. The first PostgreSQL lint command
+selected a crate cache unreadable by `uid=1000(hao)` and stopped before project
+code; rerouting to the existing goal-owned cache passed in 5m11s without an
+install or source edit.
+
+Scout's integrated candidate passes syntax bundling, TypeScript, Prettier, and
+all 78 tests with 226 assertions. Schema checks read 908 unique XHS rows at
+nine columns and 984 unique unified leads at 14 columns, with zero duplicate
+IDs or malformed rows. All 25 relative links across the integrated synthesis,
+deep dive, topic map, authority finding, and this report resolve; all four new
+index targets exist. A full index scan still finds 67 missing historical
+targets, all reproduced at pre-integration tip `445c672…` and none introduced
+by this checkpoint. The read-only health scan at
+`2026-09-02T03:07:08.000Z` returned its bounded, truncated 26 facts and 16 wake
+signals: 13 future-date facts, 12 oversized-note facts, and one unsourced-
+backlog fact. Its app state was empty before and after. `git diff --check`
+reports no whitespace errors.
+
+The Mnemo fix is local, unreviewed upstream, undeployed, and not production-
+migration proof. The self-evolution material is accepted source synthesis, not
+independent confirmation of its cited model results. This is a checkpoint, not
+goal completion. The next exploration begins with another Xiaohongshu seed
+reconciliation; absent a higher-value trigger, it inventories remaining null-
+owned event producers and callable audit/export consumers, beginning with
+reflection and ingestion records.
+
 ## Supervision
-- Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, and maintain a provenance-backed, deduplicated, validated knowledge library and living topic map until the human explicitly stops or replaces this goal.
+- Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"
 - Worker: "goal-a2acd0ab0579d04f3d163e5db9a"
 - Codex session: "01a05c5f-cb03-7760-9c42-893d669f7762"

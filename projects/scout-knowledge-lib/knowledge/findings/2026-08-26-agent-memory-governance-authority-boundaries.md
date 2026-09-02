@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery and exact reads, provenance reads, integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
-last_updated: "2026-09-01"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, and memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+last_updated: "2026-09-02"
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
 
 Date: 2026-08-26<br>
-Last updated: 2026-09-01<br>
+Last updated: 2026-09-02<br>
 Source: GitHub and arXiv<br>
 Repo: https://github.com/halofyai/halofy<br>
 Repo: https://github.com/Egoist-Machines/switchboard<br>
@@ -803,6 +803,43 @@ changes. Public Mnemo `main` remained
 `2994abf185da50d43e5fa4b3f826812bd09c2f20` over HTTP 200 at
 `2026-09-01T20:45:33.321Z–20:45:34.083Z`. The repair and regression remain
 local, unreviewed upstream, and undeployed.
+
+### Trajectory audit now uses schema-backed tenant ownership
+
+Cycle 26 preserved seed-first ordering in Scout commit
+`c834ae83e8eeadf6a2c8ea748f4671e3eaefd90a`: the saved Chrome profile was
+followed by login, current-user returned HTTP 500 without identity, and all 132
+durable collected seeds remained unavailable. No addition, change, or removal
+was inferred from the separate public Explore and `/404` observations.
+
+Only then did the selected Alice/Alpha versus Alice/Beta trajectory fixture run
+on exact local Mnemo base `4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7`.
+The two exact memory outputs were
+`01a05f77-e5bc-7992-9ec0-6edb82548a4e` (Alpha) and
+`01a05f77-e5e7-7101-9d66-d420aa44fa98` (Beta). Alice's valid Alpha
+capability received both events: `event_count=2` and peak active size 2. The
+two UUIDs are records in one local counterexample, not two confirmations.
+
+Repair `a6649e56abd8da17bec5b9c339707eb02e04ddbb` adds nullable,
+schema-backed organization ownership to `AgentEvent`, a DuckDB version-8
+migration, an additive PostgreSQL migration and `(agent_id, org_id)` index,
+and mandatory exact-scope queries in both backends. Checkpoint, replay, as-of
+replay, and MCP trajectory audit now query by authoritative organization;
+producers stamp the organization they already know. Legacy null-owned events
+remain readable through compatibility paths but fail closed for scoped replay
+and audit. The strengthened fixture returns one Alpha event with peak active
+size 1, and a request explicitly naming Beta is rejected by capability scope.
+
+Focused trajectory, mixed-organization chronology, and live PostgreSQL legacy-
+migration regressions pass. Full current-revision suites pass 298 core tests
+with one intentional network test ignored, 105 MCP tests, 85 HTTP-enabled
+server tests, and nine PostgreSQL tests. Formatting, whitespace checks, and
+strict all-target Clippy pass for core, MCP, the HTTP-enabled server, and
+PostgreSQL. The first PostgreSQL lint invocation stopped before project code
+because it selected a crate cache unreadable by `uid=1000(hao)`; the existing
+goal-owned cache completed the same lint in 5m11s. This is local migration and
+behavior evidence only: it has not been reviewed upstream, deployed, or run
+against production data.
 
 ## Why it matters
 
