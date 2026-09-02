@@ -1390,6 +1390,18 @@ negligible. This supports conflict-aware interpretation and contradicts a
 pooled-only decision. Confidence is high for the deterministic gate and low
 for threshold choice or statistical calibration; no provider result is used.
 
+Cycle 71 calibrates the ideal percentile rule over three frozen symmetric
+trinomial null families at exact local commit
+`4cce1a0da52ead9f520337eb89442d4ddc0edcaf`. Exact enumeration contradicts a
+25-run minimum: balanced and dense nulls produce 1.3211% and 1.4633% false
+directional conclusions, above the predeclared 1% tolerance. The dense null
+also fails at 48 blocks. A 64-block candidate stays below 1% for all three
+families at every checked integer count through 96, with the worst case 0.8772%
+at 78 dense blocks. This supports only a bounded exact-oracle candidate, not a
+provider gate: the separate 1,024-resample implementation, process families
+outside `-1/0/+1`, dependence, power, and real models remain uncalibrated.
+Confidence is high for exact enumeration and low for external transfer.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

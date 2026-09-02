@@ -347,6 +347,45 @@ to test false-conclusion behavior under known synthetic run-generating
 processes and establish a defensible minimum run-block gate before any provider
 execution.
 
+## Cycle 71 exact null calibration
+
+Exact local commit `4cce1a0da52ead9f520337eb89442d4ddc0edcaf` replaces the
+earlier finite preview with a content-addressed calibration oracle. Specification
+SHA-256 `6ac043cd0cab150dae665af183045dfc076cb9dfd007f1f2f5900eb8d40ffcc2`
+predeclares the same `0.10` practical threshold, 2.5%/97.5% percentile rule, a
+1% false-direction tolerance, a candidate minimum of 64 complete run blocks,
+and verification through every integer count from 64 through 96. Three matched
+zero-mean run processes use effects `-1/0/+1`: balanced probabilities
+`0.25/0.50/0.25`, dense `0.50/0/0.50`, and sparse `0.10/0.80/0.10`.
+Asymmetric, malformed, duplicated, or incomplete specifications fail closed.
+
+For every possible observed negative/zero/positive count, the oracle enumerates
+the exact multinomial sampling probability and the exact conditional
+nonparametric percentile-bootstrap distribution. It therefore has zero Monte
+Carlo standard error. The earlier 25-run preview is contradicted as a safe 1%
+gate: exact false-direction probabilities are 1.3211% for the balanced null and
+1.4633% for the dense null. Dense-null risk remains 1.3283% at 48 blocks.
+At 64 blocks the exact rates are 0.2308% balanced, 0.8147% dense, and 0.0176%
+sparse. Across every integer count from 64 through 96, the worst cases are
+0.2703% at 69 for balanced, 0.8772% at 78 for dense, and 0.0250% at 69 for
+sparse. All remain below the predeclared 1% tolerance.
+
+Focused validation passes 19 tests with 86 assertions. The full Scout gate
+passes syntax bundling, TypeScript, source formatting, and 128 tests with 403
+assertions; whitespace and all 22 relative links pass. Read-only health remains
+bounded at 33 facts and 16 wake signals, and runtime state is empty.
+
+This supports 64 as a **bounded candidate minimum for the declared exact null
+family through 96 blocks**, not as a universal provider-run gate. The existing
+1,024-resample implementation is a separate finite approximation and is not
+calibrated by this exact oracle; other effect supports, dependence, drift,
+nonzero alternatives, power, real model behavior, and counts above 96 remain
+unknown. Confidence is high for the enumerated probabilities and low for
+transfer outside the frozen family. The next decision-relevant question is
+whether the finite 1,024-resample implementation agrees with the oracle on the
+boundary compositions that determine the 1% result; until then, provider
+execution remains unauthorized.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
