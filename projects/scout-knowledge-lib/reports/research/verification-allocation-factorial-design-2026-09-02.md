@@ -981,6 +981,40 @@ question is the minimum weakest-model marginal that preserves the 80% lower
 bound when the other five remain at the frozen strong marginal, followed by
 graded vectors rather than another full-process substitution.
 
+## Cycle 89 weakest-marginal and graded boundaries
+
+Seed reconciliation `eb4a2fc15292d08ba5d4667dd7db6e19164a9111` preceded this
+work. Exact local test commit
+`4ecb85ac510a3fb8f656bcb9b290de4f06fa9737` exercises the Cycle 88 analyzer
+without changing its schema or source specification. With five models frozen
+at correct-direction marginal `0.9030482059720658`, the sixth must be at least
+`0.8847589701396714` to reach the required total `5.4`. Exact boundary
+specification SHA-256 is
+`94ebee148ee1ae7c0b4a905a83efe39efae606df46113bbb58ed159851938ffb`;
+it produces lower bound `0.8000000000000002` and passes.
+
+A matched graded vector `[0.88,0.89,0.90,0.91,0.92,0.90]` also sums to `5.4`
+and passes at exact SHA-256
+`dd37d582b2347f573fadddf0c394a4ff22f0feb7d139b2d1263d3b745c1c30d1`.
+Reducing only its weakest component from `0.880` to `0.879` gives total
+`5.399000000000001`, lower bound `0.799666666666667`, and a failure at SHA-256
+`fd54d04de55d8c9594f8f1116b8bf903ad39b493d27dde05110c1ca85ca5a1e0`.
+The wrong-direction marginals are matched across all three controls, so their
+4-of-6 upper bound remains `2.378646314564966e-12` and passes 1%.
+
+This supports a precise aggregate budget interpretation: under the declared
+unknown-dependence first-moment bound, the sum of named correct-direction
+marginals determines the guarantee, not equality of those marginals. It also
+contradicts treating the all-strong pass as comfortable—the permitted drop for
+one model with the other five frozen is only about 1.83 percentage points.
+These graded vectors remain synthetic controls, not observed model behavior.
+Confidence is high for the algebra and exact regression hashes, and low for
+real marginals, cross-model dependence, continuous effects, drift, cost, and
+provider behavior. The next accessible question is the earliest block count
+at which five strong-process marginals plus one moderate-process marginal
+recover the 80% 4-of-6 guarantee while every frozen null still passes 1%,
+without assuming power is monotone.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
