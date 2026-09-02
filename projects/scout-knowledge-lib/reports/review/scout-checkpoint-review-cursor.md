@@ -31,10 +31,10 @@ findings in one place.
   TypeScript, and formatting passed on the reviewed tree.
 - Independent whitespace and relative-link checks: no whitespace errors and
   all 21 relative links resolved.
-- Independent public GitHub checks: the client, server, and Mnemo heads still
-  matched the three reported full hashes. MutMem was not re-queried because the
-  checkpoint does not name its repository and a bounded repository search did
-  not resolve it.
+- Independent public GitHub checks: the client, server, MutMem, and Mnemo heads
+  still matched all four reported full hashes. MutMem required following the
+  primary arXiv record to `wallidsaydi-creator/HOM-AIMOS` because the checkpoint
+  does not name its repository.
 - Accepted self-evolution ancestry: `f9784d9adcc575d35ad714e1e5719e7fa5adfc04`,
   `20fd9d81f85e93e9a9b794afc9631c801dd3dacf`, and
   `cb82bee8e24b446ff9aea2e3ff947205e44fef53` are ancestors of the reviewed
@@ -45,7 +45,7 @@ findings in one place.
 | ID | Severity | Affected artifact | User impact | Disposition | Resolution condition |
 | --- | --- | --- | --- | --- | --- |
 | `RV-001` | Medium | Cycle 65 checkpoint in `xhs-seed-first-memory-lanes-2026-09-01.md` | Four head requests plus a rate request only 44 minutes after the same four heads were checked produced no new decision, while adding 65 lines to a 522 KB report. This spends quota and makes useful findings harder to retrieve. | Revise | Use a change-bearing trigger or a materially longer compact audit cadence for unchanged heads; record repeated no-change state in a compact cursor instead of another narrative checkpoint. |
-| `RV-002` | Low | Cycle 65 GitHub evidence paragraph | Three exact hashes can be traced through another knowledge note, but the checkpoint itself omits repository identities or links, and the MutMem repository could not be resolved by the bounded independent check. A future reader cannot reproduce all four observations from this checkpoint alone. | Revise | Name the owner/repository or stable source link beside every refreshed head, including MutMem. |
+| `RV-002` | Low | Cycle 65 GitHub evidence paragraph | All four hashes were independently supported, but repository identities required another knowledge note and the primary arXiv record. A future reader cannot reproduce the observations from this checkpoint alone. | Revise | Name the owner/repository or stable source link beside every refreshed head, including MutMem. |
 
 No finding is rejected, superseded, or blocked. Both remain pending until the
 standing owner either integrates the refinements or records a reasoned

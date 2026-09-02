@@ -71,10 +71,10 @@ material narrative commit. Admit another no-change checkpoint only when a
 longer audit is due or when it resolves a live uncertainty.
 
 `RV-002` is a low-severity provenance finding. The affected paragraph reports
-four hashes but omits owner/repository names or stable links. Three hashes were
-independently resolved through an existing knowledge note and still matched;
-MutMem was not independently resolved within the bounded review. For the user,
-this makes later verification unnecessarily dependent on corpus-wide search.
+four hashes but omits owner/repository names or stable links. All four hashes
+still matched independently, but resolving MutMem required following the
+primary arXiv record to `wallidsaydi-creator/HOM-AIMOS`. For the user, this
+makes later verification unnecessarily dependent on other artifacts.
 **Disposition: revise.** Name each refreshed repository beside its full hash.
 
 Overall disposition: **revise, not reject**. The factual checkpoint can remain
@@ -92,15 +92,14 @@ Independent proof on the exact reviewed tree:
 - All 21 relative links in the two affected documents resolved.
 - The three accepted self-evolution standing commits named by the checkpoint
   are ancestors of `577986efc1`.
-- Fresh anonymous reads still matched the reported client, server, and Mnemo
-  heads. This later spot-check supports identity, not the original timestamps.
+- Fresh anonymous reads still matched all four reported heads. This later
+  spot-check supports identity, not the original timestamps.
 
 The review did not access protected evaluation material, mutate an external
-account, rerun Xiaohongshu observations, or independently resolve the unnamed
-MutMem repository. No producer code change was justified by this documentation
-checkpoint. This review remains pending until the standing branch integrates
-the reviewer commit or patch-equivalent changes and validates its then-current
-tip.
+account, or rerun Xiaohongshu observations. No producer code change was
+justified by this documentation checkpoint. This review remains pending until
+the standing branch integrates the reviewer commit or patch-equivalent changes
+and validates its then-current tip.
 
 ## Supervision
 
