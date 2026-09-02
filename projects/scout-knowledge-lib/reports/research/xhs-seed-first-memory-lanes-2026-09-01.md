@@ -3779,6 +3779,30 @@ invalidation-contract result on a paper/repository revision, independent
 reproduction, production-domain evaluation, or implemented signed-stamp/threat
 model. The resolved mixed-scope event-chain exploration remains closed.
 
+## Cycle 40 seed-first start — the login boundary is unchanged
+
+Cycle 39 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`b1926bb0f997b6b075102fb8c7f8cda385c8b487`. Exact-tip validation passes
+whitespace, all 19 relative links, syntax, TypeScript, Prettier, and all 78
+tests with 226 assertions. Read-only health remains 26 facts and 16 wake
+signals, `.state` is empty, the accepted range still has two exact range-diff
+matches, and protected fingerprints remain unchanged.
+
+Only then did Cycle 40 begin. From `2026-09-02T10:07:21.904Z` through
+`10:07:35.914Z`, worker ports 9222/9333 again failed with curl exit 7 and HTTP
+000, while effective UID 0 in Chrome PID 2136's network namespace reached
+DevTools at HTTP 200. Scout remained `ready=false` with zero notes. The saved
+target read again returned HTTP 200 ending at `/login`, 46,672 bytes, 34 raw
+IDs at `8503b26a…f6eed`, and zero note sections, attributable cards, or
+collection links. Public Explore retained 30 cards at `dbadf511…e529e13`, and
+representative `6a884237…f9f6` again ended at `/404` with no readable detail.
+No page was navigated and no Xiaohongshu state was mutated.
+
+This exactly reproduces Cycle 39. Added/changed remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable rather than
+removed. No Cycle 40 GitHub, arXiv, or Reddit work has started. Commit and
+validate this seed-only checkpoint before the next lane decision.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
