@@ -866,6 +866,38 @@ for the first block count at which the selected interval keeps every null below
 1% and strong per-model power reaches the 90% required by the 4-of-6 lower
 bound; the moderate process must remain reported rather than optimized away.
 
+## Cycle 86 earliest strict-majority operating point
+
+Seed reconciliation `6c5e68c2175c7dba70fb88508d17e82c32c3b6d7` preceded this
+work. The exact executable source remains
+`930fc9e7aa269642291c9687fa46f3f8f22a9547`; no provider was called. Null-range
+specification SHA-256
+`3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5`
+checks every integer count from 64 through 105 under the Cycle 83 interval.
+Every count passes 1%. The worst dense risk is 0.8555% at 71 blocks; balanced
+and sparse worst cases are 0.5283% and 0.5740% at 64. At the selected 104-block
+point, exact risks are 0.4738% balanced, 0.4233% dense, and 0.4675% sparse.
+
+Power-search specification SHA-256
+`bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f`
+checks the same 42 counts without assuming monotonicity. Strong per-model power
+is `0.8993227186947798` at 103 blocks and first exceeds 90% at 104 with
+`0.9030482059720658`. Under the frozen 4-of-6 count bound, 104 therefore gives
+aggregate power `[0.8060964119441317,1]`; its strong wrong-direction upper
+bound is about `2.378646314564966e-12`. Moderate per-model power is only
+`0.22637721624588303` at 104, giving aggregate power `[0,0.33956582436882455]`.
+
+The selected design contains 19,968 episodes. It saves 192 episodes relative
+to Cycle 85's 105-block rule and 5,568 relative to Cycle 84's 133-block
+unanimous rule, but still needs 104 blocks per model while the retained plan
+has only 25 seeds per model. This supports 104 as the earliest point in the
+declared range, not as an affordable or provider-ready design. Confidence is
+high for exact discrete enumeration and low for real-model marginals,
+heterogeneity, repeated-run independence, cost, drift, and provider behavior.
+The next ranked question is to generalize the count bound to a frozen
+heterogeneous six-model marginal vector and measure how one or two weaker
+models change the 80% guarantee before any execution proposal.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
