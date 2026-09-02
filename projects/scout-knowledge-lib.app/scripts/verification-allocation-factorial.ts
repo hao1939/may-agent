@@ -262,6 +262,43 @@ export type PercentileAlternativeCalibrationAnalysis = {
   errors: string[];
 };
 
+export type PercentileAlternativePowerSearchSpec = Omit<
+  PercentileAlternativeCalibrationSpec,
+  "schema" | "runBlockCount"
+> & {
+  schema: "scout.verification-allocation-alternative-power-search/v1";
+  minimumRunBlockCount: number;
+  maximumRunBlockCount: number;
+  reportRunBlockCounts: number[];
+};
+
+export type PercentileAlternativePowerSearchAnalysis = {
+  ok: boolean;
+  searchSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  scannedRunBlockCounts: {
+    minimum: number;
+    maximum: number;
+    total: number;
+  } | null;
+  pairs: Array<{
+    pairId: string;
+    expectedEffectMagnitude: number;
+    firstPassingRunBlockCount: number | null;
+    maximumCorrectDirectionalProbability: number;
+    maximumCorrectDirectionalProbabilityRunBlockCount: number;
+    maximumWrongDirectionalProbability: number;
+    passesPowerWithinRange: boolean;
+  }>;
+  report: Array<{
+    runBlockCount: number;
+    processes: PercentileAlternativeCalibrationAnalysis["report"];
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1030,6 +1067,21 @@ export function buildToyPercentileAlternativeCalibrationSpec(): PercentileAltern
         probabilities: [0.45, 0.4, 0.15],
       },
     ],
+  };
+}
+
+export function buildToyPercentileAlternativePowerSearchSpec(): PercentileAlternativePowerSearchSpec {
+  const {
+    schema: _schema,
+    runBlockCount: _runBlockCount,
+    ...calibration
+  } = buildToyPercentileAlternativeCalibrationSpec();
+  return {
+    ...calibration,
+    schema: "scout.verification-allocation-alternative-power-search/v1",
+    minimumRunBlockCount: 64,
+    maximumRunBlockCount: 256,
+    reportRunBlockCounts: [64, 96, 128, 192, 256],
   };
 }
 
@@ -1959,6 +2011,214 @@ export function calibratePercentileAlternativeProcesses(
     }),
     scopeLimit:
       "Exact only for the declared mirror-paired trinomial alternatives at the frozen run count; other effects, dependence, drift, power targets, finite resampling, and real models remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidPercentileAlternativePowerSearchAnalysis(
+  errors: string[],
+): PercentileAlternativePowerSearchAnalysis {
+  return {
+    ok: false,
+    searchSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    scannedRunBlockCounts: null,
+    pairs: [],
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parsePercentileAlternativePowerSearchSpec(
+  candidate: unknown,
+): PercentileAlternativePowerSearchSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "calibrationMethod,effectSupport,evidenceClass,lowerQuantile,maximumRunBlockCount,maximumWrongDirectionalProbability,minimumCorrectDirectionalPower,minimumRunBlockCount,practicalDelta,processes,reportRunBlockCounts,schema,upperQuantile" ||
+    spec.schema !==
+      "scout.verification-allocation-alternative-power-search/v1" ||
+    !Number.isInteger(spec.minimumRunBlockCount) ||
+    (spec.minimumRunBlockCount as number) < 2 ||
+    !Number.isInteger(spec.maximumRunBlockCount) ||
+    (spec.maximumRunBlockCount as number) <
+      (spec.minimumRunBlockCount as number) ||
+    (spec.maximumRunBlockCount as number) > 256 ||
+    !Array.isArray(spec.reportRunBlockCounts) ||
+    spec.reportRunBlockCounts.length === 0
+  ) {
+    return null;
+  }
+  const reportRunBlockCounts = spec.reportRunBlockCounts as unknown[];
+  if (
+    reportRunBlockCounts.some(
+      (count, index) =>
+        !Number.isInteger(count) ||
+        (count as number) < (spec.minimumRunBlockCount as number) ||
+        (count as number) > (spec.maximumRunBlockCount as number) ||
+        (index > 0 &&
+          (count as number) <= (reportRunBlockCounts[index - 1] as number)),
+    )
+  ) {
+    return null;
+  }
+
+  const calibrationSpec = parsePercentileAlternativeCalibrationSpec({
+    schema: "scout.verification-allocation-alternative-calibration/v1",
+    evidenceClass: spec.evidenceClass,
+    calibrationMethod: spec.calibrationMethod,
+    effectSupport: spec.effectSupport,
+    practicalDelta: spec.practicalDelta,
+    lowerQuantile: spec.lowerQuantile,
+    upperQuantile: spec.upperQuantile,
+    runBlockCount: spec.minimumRunBlockCount,
+    minimumCorrectDirectionalPower: spec.minimumCorrectDirectionalPower,
+    maximumWrongDirectionalProbability: spec.maximumWrongDirectionalProbability,
+    processes: spec.processes,
+  });
+  return calibrationSpec
+    ? (spec as unknown as PercentileAlternativePowerSearchSpec)
+    : null;
+}
+
+/**
+ * Exhaustively scan every declared run-block count for the frozen,
+ * mirror-paired trinomial alternatives. No monotonicity assumption is used:
+ * first crossings and observed maxima are derived from every exact count.
+ */
+export function searchPercentileAlternativePower(
+  candidate: unknown,
+): PercentileAlternativePowerSearchAnalysis {
+  const spec = parsePercentileAlternativePowerSearchSpec(candidate);
+  if (!spec) {
+    return invalidPercentileAlternativePowerSearchAnalysis([
+      "percentile alternative power-search specification is invalid",
+    ]);
+  }
+
+  const pairIds = [...new Set(spec.processes.map((process) => process.pairId))];
+  const pairState = new Map(
+    pairIds.map((pairId) => [
+      pairId,
+      {
+        firstPassingRunBlockCount: null as number | null,
+        maximumCorrectDirectionalProbability: -1,
+        maximumCorrectDirectionalProbabilityRunBlockCount:
+          spec.minimumRunBlockCount,
+        maximumWrongDirectionalProbability: 0,
+      },
+    ]),
+  );
+  const reports = new Map<
+    number,
+    PercentileAlternativeCalibrationAnalysis["report"]
+  >();
+
+  for (
+    let runBlockCount = spec.minimumRunBlockCount;
+    runBlockCount <= spec.maximumRunBlockCount;
+    runBlockCount += 1
+  ) {
+    const analysis = calibratePercentileAlternativeProcesses({
+      schema: "scout.verification-allocation-alternative-calibration/v1",
+      evidenceClass: spec.evidenceClass,
+      calibrationMethod: spec.calibrationMethod,
+      effectSupport: spec.effectSupport,
+      practicalDelta: spec.practicalDelta,
+      lowerQuantile: spec.lowerQuantile,
+      upperQuantile: spec.upperQuantile,
+      runBlockCount,
+      minimumCorrectDirectionalPower: spec.minimumCorrectDirectionalPower,
+      maximumWrongDirectionalProbability:
+        spec.maximumWrongDirectionalProbability,
+      processes: spec.processes,
+    });
+    if (!analysis.ok) {
+      return invalidPercentileAlternativePowerSearchAnalysis(
+        analysis.errors.map((error) => `alternative calibration: ${error}`),
+      );
+    }
+    reports.set(runBlockCount, analysis.report);
+
+    for (const pairId of pairIds) {
+      const pair = analysis.report.filter((entry) => entry.pairId === pairId);
+      const correctDirectionalProbability = Math.min(
+        ...pair.map((entry) => entry.correctDirectionalProbability),
+      );
+      const wrongDirectionalProbability = Math.max(
+        ...pair.map((entry) => entry.wrongDirectionalProbability),
+      );
+      const state = pairState.get(pairId)!;
+      if (
+        correctDirectionalProbability >
+        state.maximumCorrectDirectionalProbability
+      ) {
+        state.maximumCorrectDirectionalProbability =
+          correctDirectionalProbability;
+        state.maximumCorrectDirectionalProbabilityRunBlockCount = runBlockCount;
+      }
+      state.maximumWrongDirectionalProbability = Math.max(
+        state.maximumWrongDirectionalProbability,
+        wrongDirectionalProbability,
+      );
+      if (
+        state.firstPassingRunBlockCount === null &&
+        pair.every((entry) => entry.passesPowerTarget)
+      ) {
+        state.firstPassingRunBlockCount = runBlockCount;
+      }
+    }
+  }
+
+  const retainedRunBlockCounts = new Set(spec.reportRunBlockCounts);
+  for (const state of pairState.values()) {
+    retainedRunBlockCounts.add(
+      state.maximumCorrectDirectionalProbabilityRunBlockCount,
+    );
+    if (state.firstPassingRunBlockCount !== null) {
+      retainedRunBlockCounts.add(state.firstPassingRunBlockCount);
+      if (state.firstPassingRunBlockCount > spec.minimumRunBlockCount) {
+        retainedRunBlockCounts.add(state.firstPassingRunBlockCount - 1);
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    searchSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    calibrationMethod: spec.calibrationMethod,
+    monteCarloStandardError: 0,
+    scannedRunBlockCounts: {
+      minimum: spec.minimumRunBlockCount,
+      maximum: spec.maximumRunBlockCount,
+      total: spec.maximumRunBlockCount - spec.minimumRunBlockCount + 1,
+    },
+    pairs: pairIds.map((pairId) => {
+      const process = spec.processes.find((entry) => entry.pairId === pairId)!;
+      const state = pairState.get(pairId)!;
+      return {
+        pairId,
+        expectedEffectMagnitude: Math.abs(
+          process.probabilities[2] - process.probabilities[0],
+        ),
+        ...state,
+        passesPowerWithinRange: state.firstPassingRunBlockCount !== null,
+      };
+    }),
+    report: [...retainedRunBlockCounts]
+      .sort((left, right) => left - right)
+      .map((runBlockCount) => ({
+        runBlockCount,
+        processes: reports.get(runBlockCount)!,
+      })),
+    scopeLimit:
+      "Exact only for every integer count in the declared bounded search and the frozen mirror-paired trinomial alternatives; the 80% target is synthetic, and other effects, dependence, drift, interval rules, finite resampling, operational cost, and real models remain uncalibrated.",
     errors: [],
   };
 }

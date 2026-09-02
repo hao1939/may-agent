@@ -4,6 +4,7 @@ import {
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
   buildToyPercentileAlternativeCalibrationSpec,
+  buildToyPercentileAlternativePowerSearchSpec,
   buildToyPercentileNullCalibrationSpec,
   buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
@@ -13,6 +14,7 @@ import {
   decideFactorialPracticalEffects,
   calibratePercentileAlternativeProcesses,
   calibratePercentileNullProcesses,
+  searchPercentileAlternativePower,
   scheduleSha256,
   scoreAllocationAnswer,
   TOY_SCHEDULE_SHA256,
@@ -762,6 +764,71 @@ describe("verification-allocation factorial fixture", () => {
       expect(calibratePercentileAlternativeProcesses(candidate).errors).toEqual(
         ["percentile alternative calibration specification is invalid"],
       );
+    }
+  });
+
+  it("finds an exact alternative-power crossing without assuming monotonicity", () => {
+    const spec = {
+      ...buildToyPercentileAlternativePowerSearchSpec(),
+      minimumRunBlockCount: 104,
+      maximumRunBlockCount: 105,
+      reportRunBlockCounts: [104, 105],
+    };
+    const analysis = searchPercentileAlternativePower(spec);
+    const pair = (pairId: string) =>
+      analysis.pairs.find((entry) => entry.pairId === pairId)!;
+    const process = (runBlockCount: number, processId: string) =>
+      analysis.report
+        .find((entry) => entry.runBlockCount === runBlockCount)!
+        .processes.find((entry) => entry.processId === processId)!;
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.searchSpecSha256).toBe(
+      "8332fbce020cff46e5df660be6cd9c742d1b2d43063693ac3e59e69a427d8213",
+    );
+    expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
+    expect(analysis.monteCarloStandardError).toBe(0);
+    expect(analysis.scannedRunBlockCounts).toEqual({
+      minimum: 104,
+      maximum: 105,
+      total: 2,
+    });
+    expect(pair("strong").firstPassingRunBlockCount).toBe(105);
+    expect(pair("strong").passesPowerWithinRange).toBe(true);
+    expect(pair("moderate").firstPassingRunBlockCount).toBeNull();
+    expect(pair("moderate").passesPowerWithinRange).toBe(false);
+    expect(
+      process(104, "strong-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.7973065499459407, 14);
+    expect(
+      process(105, "strong-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.8045178323414782, 14);
+    for (const run of analysis.report) {
+      expect(run.processes).toHaveLength(4);
+      for (const entry of run.processes) {
+        expect(
+          entry.correctDirectionalProbability +
+            entry.wrongDirectionalProbability +
+            entry.negligibleProbability +
+            entry.inconclusiveProbability,
+        ).toBeCloseTo(1, 12);
+      }
+    }
+    expect(analysis.scopeLimit).toContain("80% target is synthetic");
+  }, 30_000);
+
+  it("rejects incomplete alternative-power search bounds", () => {
+    const spec = buildToyPercentileAlternativePowerSearchSpec();
+    for (const candidate of [
+      { ...spec, minimumRunBlockCount: 1 },
+      { ...spec, maximumRunBlockCount: 257 },
+      { ...spec, reportRunBlockCounts: [64, 64, 256] },
+      { ...spec, reportRunBlockCounts: [63, 256] },
+      { ...spec, processes: spec.processes.slice(1) },
+    ]) {
+      expect(searchPercentileAlternativePower(candidate).errors).toEqual([
+        "percentile alternative power-search specification is invalid",
+      ]);
     }
   });
 
