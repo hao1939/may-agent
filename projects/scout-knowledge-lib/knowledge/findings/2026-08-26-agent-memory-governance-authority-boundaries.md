@@ -1,14 +1,14 @@
 <ai_context>
 summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere and that a relevance-only rule follows decision context while trading precision for recall when current constraints compete with a stale one; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
-last_updated: "2026-09-02"
+last_updated: "2026-09-03"
 source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full source of arXiv 2604.16548v2, 2608.25553v3, and 2609.01235v1, including checksum-verified Zenodo record 22147784 and its byte-identical recomputation/full audit; exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
 
 Date: 2026-08-26<br>
-Last updated: 2026-09-02<br>
+Last updated: 2026-09-03<br>
 Source: GitHub and arXiv<br>
 Repo: https://github.com/halofyai/halofy<br>
 Repo: https://github.com/Egoist-Machines/switchboard<br>
@@ -1342,6 +1342,17 @@ now checks all 64 cells in a synthetic toy schedule at exact commit
 `957390080c9a77dc2adc88ed91d66c7f5ba86d50`; the fixture-only attestation and
 empty results remain design tooling, not an authenticated manifest or model
 run.
+
+Cycle 67 makes the primary descriptive contrast executable at exact local
+commit `e8ce4879dfe649377051801927aa145df514640f`. On the unchanged 64-episode
+synthetic schedule, plan-only and temptation-only controls each yield
+current-minus-superseded target-selection contrast zero in all four strata;
+an authority-aware oracle yields `+1` in all four. Missing, duplicate, and
+unknown episode outcomes fail closed, while malformed answers remain in the
+scheduled denominator and are reported separately. This proves the analyzer
+can distinguish the three intended signatures. It does not show how any model
+allocates verification, validate the fixture's lineage authority, or authorize
+a provider call; model-block inference and real results remain open.
 
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is

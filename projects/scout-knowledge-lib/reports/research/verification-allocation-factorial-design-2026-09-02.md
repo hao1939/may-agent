@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Preregistration-ready design for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is a design artifact, not a completed experiment or causal result."
+summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
-last_updated: "2026-09-02"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits."
+last_updated: "2026-09-03"
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67 deterministic control analysis of the 64-episode synthetic schedule at commit e8ce4879dfe649377051801927aa145df514640f."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -213,6 +213,35 @@ network or provider operation. Passing it establishes only local path,
 inventory, byte-binding, and schedule consistency; it does not authenticate
 provider listings, external registration, timestamp proofs, signatures,
 lineage, call cost, or spending authority.
+
+## Cycle 67 deterministic analysis controls
+
+Exact local commit `e8ce4879dfe649377051801927aa145df514640f`
+adds a strict analyzer for the existing 64-episode toy schedule without
+changing its SHA-256
+`cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd`.
+It requires one outcome for every known episode, fails closed on missing,
+duplicate, or unknown episode identities, keeps malformed answers in the
+scheduled denominator, reports them separately, and computes the declared
+current-minus-superseded target-selection contrast in each of the four
+plan-by-temptation strata.
+
+Three deterministic controls prove that the analyzer distinguishes the
+registered factors. A plan-only control has current/superseded target rates
+`0/0`, `0/0`, `1/1`, and `1/1`; a temptation-only control has `0/0`, `1/1`,
+`0/0`, and `1/1`. Both therefore have status contrast zero in every stratum.
+An authority-aware oracle selects the target only when its manifest record is
+current, producing `1/0` and status contrast `+1` in all four strata. Each
+status cell contains eight scheduled episodes. A malformed control output
+produces seven target selections across eight scheduled attempts, rate
+`0.875`, with one invalid answer rather than silently changing the denominator.
+
+Focused validation passes nine tests with 32 assertions, TypeScript, and
+formatting. These are synthetic policy controls, not sampled model behavior,
+an authenticated lineage authority, or evidence that a deployed allocator
+follows freshness. The analyzer also does not implement the model-block
+bootstrap required for confirmatory inference. Provider calls remain
+unauthorized and the schedule's results array remains empty.
 
 ## Go/no-go boundary
 
