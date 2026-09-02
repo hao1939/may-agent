@@ -49,7 +49,17 @@ all 132 durable seeds remain unavailable rather than removed. No attributable
 saved post existed for a representative read. No page or account state was
 mutated. The protected source's 386-record and human overlay's three-record
 dirty states were observed before this pass as external state; neither was
-written or tested.
+written or tested. A final read-only fingerprint after Cycle 68 validation
+found `/app` at the same HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` but 891 status records and
+fingerprint
+`f2aeb63cb4cede536e6a8b0739b64c925a911b82559a59f66295c4ff78df8975`,
+versus 386 records and
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`
+at cycle start. This is externally observed protected-checkout drift; no
+cause or ownership is inferred. The human overlay remained at HEAD
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and fingerprint
+`ad8d222c69b5a596d495dca1e72b885a384eb9c3f7aff7a9748d4a0df3e74780`.
 
 ## Cycle 67 direct WSL Chrome access boundary
 
