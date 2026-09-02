@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 45: Xiaohongshu is reconciled before lane work, accepted side work remains integrated, and a preregistration-ready design separates plan, temptation, and authenticated freshness without claiming an experiment."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 45"]
+summary: "Seed-first Scout continuity through the Cycle 46 start: the clean Cycle 45 integration checkpoint is proven, Xiaohongshu is reconciled before lane work, and its changed access shell remains excluded from seed evidence."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 46"]
 last_updated: "2026-09-02"
-latest_seed_basis: "Cycle 45 observational reconciliation through 2026-09-02T10:58:28.385Z; the saved collection target remained unavailable and no source-lane work preceded it."
+latest_seed_basis: "Cycle 46 observational reconciliation through 2026-09-02T11:06:53.704Z; the saved collection target remained unavailable and no source-lane work preceded it."
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:42:19.412Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
@@ -4212,6 +4212,50 @@ Added and changed items remain unknown, observed removals are `[]`, and all
 was mutated. Commit and validate this seed-only reconciliation before any
 Cycle 45 source-lane or factorial-design work; the mixed-scope event-chain
 exploration remains closed.
+
+## Cycle 46 seed-first start — access drift is not a seed delta
+
+Cycle 45 is committed cleanly on `codex/g-c1b31972-scout-loop` as exact tip
+`c2806ac639a5c0b09870cd5afb849ca44221463c`. The accepted predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+were considered. Reconciliations `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` are ancestors. The two source
+commits match the latter two reconciliations at stable patch IDs
+`9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all four final blobs match.
+Direct containment is false because the reviewed work was reconciled rather
+than merged. Nothing accepted is deferred, superseded, blocked, or known
+unintegrated.
+
+Exact-tip validation passed whitespace, every added relative link, syntax
+bundling, TypeScript, Prettier, and 78 tests with 226 assertions. Read-only
+health at `2026-09-02T11:03:23.971Z` remained bounded and truncated at 26
+facts and 16 wake signals; `.state` remained empty. The dirty source remained
+HEAD `386b445c…4641fec8`, 884 records, and
+`d7e65e29…04f79c9dc`; the user overlay remained HEAD
+`fd4c68ec…1514663`, three records, and `a52b97aa…25394a15`; every other
+peer remained clean at `e3b0c442…b855`. Cycle 20's exact pre-fix UUIDs and
+authoritative three-of-three reflection result remain retained in the Cycle 45
+checkpoint below.
+
+Only then did Cycle 46 begin. From `2026-09-02T11:05:16.976Z` through
+`11:06:53.704Z`, direct ports refused, effective UID 0 reached root-owned
+Chrome PID 2136's DevTools through its network namespace, and the repository
+connector reported no readable source content. Three identity endpoints
+changed from HTTP 500 to HTTP 406, returning 27-byte JSON, `success:false`,
+code `-1`, and no identity. The ordinary history read was locked, so the
+existing Python SQLite library used `mode=ro&immutable=1`; no install or
+profile write occurred.
+
+The saved target returned HTTP 200 ending at `/login`, with a changed
+46,541-byte/33-string shell (`9be6ea7c…f891847`) but zero attributable cards
+or collection links. Public Explore retained its exact 30-ID fingerprint, and
+representative `6a884237…f9f6` remained `/404`. Added and changed items remain
+unknown, observed removals are `[]`, and all 132 durable seeds remain
+unavailable rather than removed. No Xiaohongshu state was mutated. Commit and
+validate this seed-only reconciliation before any Cycle 46 GitHub, arXiv,
+Reddit, provider-backed factorial, or mixed-scope event-chain work.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
