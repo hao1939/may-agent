@@ -1108,6 +1108,52 @@ The next ranked question is an exhaustive, non-monotonic total-block search
 over the retained 64–256 grid to determine whether another named allocation
 improves on 861 blocks while every selected count retains null control.
 
+## Cycle 92 exhaustive unequal-allocation minimum
+
+Seed reconciliation `80cd9450fc66c13e6a96fc4afddfdeaf8acf7158` preceded this
+search. One goal-owned exact process enumerated all 193 run counts from 64
+through 256, retained each null and alternative result, and then used dynamic
+programming to maximize the five strong-process marginals at every attainable
+block total before pairing each state with every moderate-process count. This
+covers unequal counts among the five strong models and makes no monotonicity
+assumption. All 193 counts passed every frozen null. The exact row table has
+SHA-256 `f26c11984cf283978fb8e1b551ab12b7729c6a04a6fce6d62911359d36ae7402`;
+the derived result has SHA-256
+`d17d44ed7e48c18ec86c6193e74e72f2ce011f901ba56c5b4f30b9d9dceccbcd`.
+
+The minimum passing total is 859 blocks: strong-model counts
+`[120,120,121,121,121]` and moderate-model count `256`. Their correct-
+direction marginal sum is `5.401903360618353`, giving the sharp 4-of-6 lower
+bound `0.800634453539451`; the wrong-direction upper bound is
+`1.3424179862500522e-10`. This is 27,488 complete factorial episodes, 64 fewer
+than Cycle 91's five-by-121 probe and 5,536 fewer than the equal 172-block
+design.
+
+The strongest allocation at every cheaper total occurs at 858 blocks, with
+strong counts `[120,120,120,121,121]` and the same 256-block moderate model.
+Its marginal sum is `5.399832488499611` and its lower bound is
+`0.7999441628332038`, so it fails. The dynamic program retained 961 exact
+five-model total states; comparing all of them with all 193 moderate counts
+proves no cheaper allocation in the declared grid passes the frozen
+first-moment rule. The largest null risk across the grid remains dense-null
+`0.008554538502693238` at 71 blocks.
+
+Exact local test source `03e66b1063fa3eeadcbb34c27c6870c7aeeb70c7`
+pins the decision-relevant 858/859 edge using the 120-, 121-, and 256-block
+calibration and power digests. It deliberately does not add the roughly
+24-minute exhaustive search to routine validation.
+
+This resolves the named-grid minimum, but not operational allocation. It
+assumes the moderate model is identified in advance and assigns that model the
+largest budget. It also treats the five strong models as the same synthetic
+process apart from count, and does not model latency, parallelism, retries,
+cost tiers, drift, or provider behavior. Confidence is high for exhaustive
+grid coverage, digests, the sharp bound, and the adjacent regression; low for
+real-model classification and transfer. The next ranked question is a matched
+identity-misassignment control: swap the 256-block budget onto a strong model
+and place the moderate process at one of the 120/121 counts, then measure how
+much of the claimed saving survives.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
