@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint through Cycle 35: the accepted Scout range remains patch-equivalent on the clean standing line, Xiaohongshu was reconciled before discovery, and a fresh MutMem-V2 deep dive adds portable evidence-contract findings without displacing MemGauge."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 35"]
+summary: "Seed-first Scout checkpoint through Cycle 36: the accepted Scout range remains integrated, Xiaohongshu was reconciled before discovery, and exact source comparison shows the submitted MutMem-V2 manuscript matches validated orphan v1.0.4 while naming the distinct v1.0.0 release."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 36"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T08:58:02.682Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, 2608.17684v1, and 2609.01235v1 plus exact MutMem-V2 release fcda26d1e05c729185c09dd11446db2f79c14a0d and its offline verifier; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T09:16:43.716Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, 2608.17684v1, and 2609.01235v1 plus MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c with offline and commit-scoped public validation; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -3187,9 +3187,10 @@ private historical rows are unavailable, the canary covers explicit markers
 only, and one macOS install is the qualified install surface. The exact
 `v1.0.0` release's only public check failed at “Run source release gates”; its
 live-fire, package, and attestation steps were skipped, and unauthenticated log
-download returned HTTP 403 requiring repository administration. Green Node
-20/24/26 checks on `v1.0.4`/current main begin from orphan commit `abbcae3` and
-do not contain `v1.0.0`, so they cannot validate the paper snapshot.
+download returned HTTP 403 requiring repository administration. Cycle 35 had
+not yet established which tree the submitted TeX matched, so it conservatively
+did not transfer `v1.0.4`'s green checks. Cycle 36 resolves that content identity
+below while keeping the named `v1.0.0` release distinct.
 
 MutMem-V2 scores 14/15 (`3+3+3+2+3`): direct cluster relevance, strong
 cross-source connection, high uncertainty reduction, narrower single-project
@@ -3232,6 +3233,104 @@ reconciliation. Only then, if no stronger seed trigger fires, the next
 exploration is a bounded contract comparison between the `v1.0.0` paper
 artifact and orphan-history `v1.0.4`. The resolved mixed-scope chain remains
 closed.
+
+## Cycle 36 checkpoint — submitted source and named release are distinct
+
+What was wrong: Cycle 35 correctly kept later green checks separate from the
+failing `v1.0.0` tree, but it had not yet compared the submitted arXiv files to
+the orphan release. That made “the paper snapshot” too broad. Cycle 36 now
+records the exact content identity: the submission matches `v1.0.4`, while its
+own release box names `v1.0.0`.
+
+Seed ordering was preserved. Cycle 36's observational Xiaohongshu pass was
+committed first as `9e7a3344c4eec17e73763f8d9f1aff9cce5281fe` on
+`codex/g-c1b31972-scout-loop`. From
+`2026-09-02T09:14:32.769Z–09:16:43.716Z`, direct 9333/9222 reads failed with
+curl exit 7 and HTTP 000. Effective UID 0 inside Chrome PID 2136's network
+namespace reached DevTools, but Scout status was not ready, three current-user
+endpoints returned HTTP 500 without identity, and the saved collection surface
+rendered zero cards. Its unauthenticated shell retained 65 raw strings; exact
+fingerprint `181d9232…c930` is newly recorded without a prior comparable hash.
+Public Explore retained exact 30-ID fingerprint `dbadf511…e529e13`, and current
+signed `6a884237…f9f6` returned HTTP 200 followed by `/404`. Added and changed
+seeds remain unknown, proven removals are `[]`, and all 132 durable seeds remain
+unavailable. No Xiaohongshu state was mutated.
+
+Only after that commit were all lanes reconsidered. GitHub had high relevance,
+high expected value, current evidence, HTTP 200 access, and the queued
+provenance question, so it was selected. At
+`2026-09-02T09:18:01.463Z–09:18:02.642Z`, annotated `v1.0.0` remained object
+`2f7264dc…e1f`, annotated `v1.0.4` remained object `cf8a6608…768`, and main
+remained `2b93af11…9e7`. arXiv had high relevance but low incremental value and
+was deferred after exact HTTP 200 lookup at
+`2026-09-02T09:18:12.623Z–09:18:12.885Z` retained `2608.30177v1` and
+`2609.01235v1` unchanged. Reddit remained medium-relevance, low-value, and
+deferred without quota work at its last useful RSS HTTP 200, stable
+`t3_1v8a3sh`, six-comment evidence and JSON HTTP 403 boundary.
+
+The selected comparison found no merge base between `v1.0.0` commit
+`fcda26d1e05c729185c09dd11446db2f79c14a0d` and `v1.0.4` commit
+`abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c`; the release builder creates a
+fresh one-commit history. The trees differ in 21 files. `v1.0.4` adds explicit
+release binding to `v1.0.0` and changes historical PoisonedRAG reporting from
+attacked attack-success rate 3/100 to baseline-aware induced rate 1/98. The
+portable verifier entrypoint has identical SHA-256
+`f07cc4e26b0364229a00d029504a68298277b6af3a01ea7d62af8998ed929347`
+and its corpus is unchanged across both tags.
+
+All six submitted arXiv files—the manuscript and five generated tables—are
+byte-identical to `v1.0.4`. The manuscript, evidence-values table, and
+historical-results table differ from `v1.0.0`; the other three generated tables
+are unchanged. In a separate goal-owned worktree, exact `abbcae3…6c0c` passes
+the offline verifier under supported Node 20.19.5 after a locked offline install:
+39 recall and 15 mutation structural vectors, 72/72 Node/Python terminals,
+42/42 conformance cases, 44 rate/Wilson rows, 28 McNemar/Holm rows, 17 claim
+rows, and 10 attempt rows. The worktree remains Git-clean. All ten public check
+runs on exact `abbcae3…6c0c` are successful, including Node 20/24/26 source
+gates, secret scan, and Fresh Genesis with signed live-fire proof.
+
+This validates the submitted source tree and corrects Cycle 35's overly broad
+limitation. It does not make the separate `v1.0.0` tree green, turn project-owned
+CI into independent empirical replication, rerun current V2 utility, release
+private historical rows, broaden the marker-specific canary, or validate Mnemo.
+MutMem-V2 remains complementary at 14/15; `2608.30177v1` remains the distinct
+15/15 controlled stage-wise anchor.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing commits `cb82bee8…f53`, `f9784d9a…fc04`, and `20fd9d81…dacf` remain
+ancestors. Stable patch IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9` remain
+one-for-one matches, and all four accepted final artifacts remain blob-equal.
+No accepted Scout result is deferred, blocked, superseded, or known
+unintegrated. Cycle 20's exact UUIDs and the later authoritative three-of-three
+reflection result remain unchanged.
+
+On the exact three-document candidate over standing parent
+`9e7a3344c40f087cfa2806d402bbb648aaddd109`, `git diff --check` passes, all 19
+relative links resolve, and the full Scout check passes syntax bundling,
+TypeScript, Prettier, and 78 tests with 226 assertions. The read-only health
+scan at `2026-09-02T09:26:33.117Z` remains bounded and truncated at 26 facts
+and 16 wake signals: 13 future-dated-library-truth, 12
+oversized-canonical-note, and one unsourced-backlog fact. The application
+`.state` remains empty at exact fingerprint `e3b0c442…b855` before and after
+validation. One app-check invocation from the worktree root stopped before
+project code with `Script not found`; rerunning from the repository-declared
+Scout app directory produced the passing results above.
+
+Protected fingerprinting used read-only Git commands with optional locks
+disabled. `/app` remains at HEAD `386b445c…fec8`; its full porcelain-v2 state
+was already 884 records with fingerprint `d7e65e29…c9dc` at this checkpoint's
+pre-commit boundary. That is three records beyond the prior 881-record
+fingerprint and is retained as newer human-owned state without inspection or
+mutation. The user overlay remains at `fd4c68ec…663`, three records, and
+`a52b97aa…4a15`. Both accepted-source worktrees and every other peer remain
+clean at `e3b0c442…b855`; their recorded HEADs are unchanged.
+
+This is a checkpoint, not goal completion. Cycle 37 must begin with a fresh
+Xiaohongshu reconciliation. Only afterward, absent a stronger seed trigger, the
+next exploration is a bounded `v1.0.4` release-asset/source-manifest binding
+check. The resolved mixed-scope chain remains closed.
 
 ## Supervision
 
