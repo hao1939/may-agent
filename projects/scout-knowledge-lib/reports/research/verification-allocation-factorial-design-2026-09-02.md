@@ -386,6 +386,40 @@ whether the finite 1,024-resample implementation agrees with the oracle on the
 boundary compositions that determine the 1% result; until then, provider
 execution remains unauthorized.
 
+## Cycle 72 finite-resampler permutation repair
+
+Seed reconciliation `c756182c62c41ee0a88ed2f7513ebf5709f63d63` preceded this
+work. Boundary fixture `84f0b189a69c54eafecfc2e93e571c901c6028c6` then instantiated
+one named model with 64 complete dense-null run blocks. Exact enumeration says
+21 negative/43 positive blocks are positive, 22/42 and 42/22 are inconclusive,
+and 43/21 is negative under the `0.10` rule.
+
+The first matched placement check exposed a finite-resampler defect. At 21/43,
+grouping negative blocks produced interval `[0.125, 0.5625]` and decision
+positive, while spreading the identical multiset produced
+`[0.09375, 0.5625]` and inconclusive. The symmetric 43/21 case changed from
+`[-0.5625, -0.125]` and negative when grouped to
+`[-0.5625, -0.09375]` and inconclusive when spread. Block order is not an
+inference unit, so these were contradictory outputs for the same evidence.
+
+Exact repair `6cac8790071f1688c00595082ef2902fee795420` lexicographically
+canonicalizes each model's run-effect vectors before deterministic block draws.
+The regression now exercises front, back, and evenly spread placements at all
+four boundary compositions. Every placement returns the same four-stratum
+intervals and the exact-oracle positive/inconclusive/inconclusive/negative
+decisions. Focused validation passes 20 tests with 134 assertions; the full
+Scout gate passes syntax, TypeScript, formatting, and 129 tests with 451
+assertions.
+
+This establishes permutation invariance for the exercised dense-null boundary
+and removes one implementation artifact. It does not calibrate the finite
+1,024-resample false-direction rate over every possible composition, other
+null families, model identifiers, nonzero alternatives, or real providers.
+Confidence is high for the reproduced defect and regression, moderate for the
+64-block dense boundary, and low for statistical transfer. The next ranked
+question is to enumerate the canonical finite-resample decisions over all
+64-block compositions and compare its operating rates with the exact oracle.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

@@ -1402,6 +1402,17 @@ provider gate: the separate 1,024-resample implementation, process families
 outside `-1/0/+1`, dependence, power, and real models remain uncalibrated.
 Confidence is high for exact enumeration and low for external transfer.
 
+Cycle 72 finds that the finite deterministic resampler was sensitive to an
+irrelevant ordering of the same run-effect multiset. Before repair, a 21/43
+dense-null composition was positive when negative blocks were grouped but
+inconclusive when spread; the symmetric 43/21 composition changed from negative
+to inconclusive. Exact local commit
+`6cac8790071f1688c00595082ef2902fee795420` canonicalizes run-effect vectors
+before drawing and makes front, back, and spread controls match the exact
+boundary decisions. This supports permutation-invariant accounting, while
+leaving the finite resampler's complete operating rates and real-model transfer
+uncalibrated.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
