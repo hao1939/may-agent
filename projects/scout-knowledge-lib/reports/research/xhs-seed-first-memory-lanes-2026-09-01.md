@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-seven completed cycles with Cycle 28 underway: Cycle 27 defines REST/gRPC organization as an optional operator filter rather than tenant authorization and proves all known accepted self-evolution work remains integrated; Cycle 28 then reconciles Xiaohongshu first and selects the reflection-authority trace."
+summary: "Seed-first Scout checkpoint across twenty-eight cycles: Cycle 27 defines REST/gRPC organization as an optional operator filter rather than tenant authorization; Cycle 28 then reconciles Xiaohongshu first and distinguishes agent-wide reflection plus operator-wide OTLP null ownership from a tenant authorization defect."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 28"]
 last_updated: "2026-09-02"
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T04:39:49.735Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, and REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2."
@@ -2276,7 +2276,7 @@ standing goal. The next exploration begins seed-first; absent a higher-value
 seed or source trigger, it audits null-owned reflection/ingestion producers and
 unscoped integrity consumers before changing more code.
 
-## Cycle 28 has begun seed-first
+## Cycle 28 checkpoint — null ownership is an evidence boundary
 
 Cycle 28 reconciliation is committed separately as
 `a8cefdc1baf78f6f12f398101252b43a7b203e28`, after checkpoint
@@ -2301,17 +2301,49 @@ selected for high relevance, high expected value, and current local evidence.
 Exact `24d27c375318b30f70ebc5521f75f9641e2b60b2` review shows reflection
 rewrite and completion events explicitly carry `org_id: None`, their cadence
 helper reads the agent-wide event list, and REST OpenTelemetry ingestion also
-stamps no organization. This is code structure, not a reproduced scope defect.
-The next exploration traces whether reflection entrypoints carry tenant
-authority and whether cadence is intended per organization before creating a
-fixture or changing code.
+stamps no organization.
+
+The completed call trace shows reflection is a public core-library API whose
+direct caller already holds the engine. It accepts an agent identifier, has no
+transport credential or organization input, and has no non-test callsite in the
+inspected tree despite a module comment referring to CLI-driven cadence. Its
+agent-wide memory filter, cadence read, rewrite event, and completion event are
+therefore aggregate behavior and incomplete tenant-scoped observability, not a
+reproduced credential bypass. Dream-report ingestion separately preserves the
+source record's organization. Three focused reflection integration tests pass.
+
+REST OTLP is callable, but its boundary is different: the route has only the
+optional deployment-wide bearer gate, derives agent identity from resource
+attributes or the engine default, and has no documented tenant authority.
+Persisting `org_id: None` is more accurate than inventing a tenant from an
+operator token or arbitrary telemetry payload. Organization-filtered trajectory
+audits intentionally omit these events. No Mnemo code change is justified by
+the present evidence.
 
 arXiv `2608.30177v1` remains the separate 15/15 anchor and is retained but
 deferred without quota work: no version, attributable artifact, replication,
 stronger study, or content-bearing seed trigger fired. Reddit remains deferred
 without quota work at its last RSS HTTP 200 with six comments and JSON HTTP 403;
 revisit requires seed-linked reproducible evidence, thread change, or access
-change. The standing goal remains active.
+change.
+
+The accepted Scout branches and ranges were reconsidered again. Predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+remain reconciled as `cb82bee8e2`, `f9784d9adc`, and `20fd9d81f8`. The two
+follow-up patch IDs match, all four final accepted artifacts remain blob-equal
+to `df80a1da`, and all three reconciliation commits remain ancestors of the
+standing tip. No accepted Scout result is known to remain unintegrated.
+
+This is a documentation/research checkpoint rather than a code fix. Focused
+Mnemo reflection validation passes three tests with zero failures on
+`24d27c3…b60b2`; the broader current-revision validation from Cycle 27 remains
+applicable because Mnemo did not change. Scout's documentation, links, health
+scan, and whitespace checks are rerun on the resulting candidate before commit.
+The next exploration begins seed-first. If no higher-value trigger fires, it
+tests whether agent-wide event hashes interleaving organization-owned and null-
+owned records can support a scoped integrity subsequence or require an
+explicitly aggregate-only integrity contract. The standing goal remains active.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

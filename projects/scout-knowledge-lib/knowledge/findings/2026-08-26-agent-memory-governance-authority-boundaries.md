@@ -868,6 +868,45 @@ with two documentation examples intentionally ignored, and 85 HTTP-enabled
 server tests. Formatting and whitespace checks pass. The result remains local,
 unreviewed upstream, and undeployed.
 
+### Residual null-owned events are not one authorization defect
+
+Cycle 28 traced the remaining null-owned producers on exact local Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2` instead of assuming every missing
+organization stamp represented the same bug. The reflection entrypoints are
+public core-library methods that accept an engine and agent identifier. They
+have no transport credential, caller context, or organization parameter, and
+the inspected tree contains no non-test callsite. Although the module comment
+says periodic cadence is driven from the CLI, exact Rust callsite search finds
+only the methods themselves and core integration tests. This does not exclude
+external embedders, but it does mean the repository does not prove a live CLI,
+REST, gRPC, or MCP reflection surface.
+
+Reflection is agent-wide by its current contract. Its initial `MemoryFilter`
+sets `agent_id` but no organization; its cadence helper reads the agent-wide
+event list; date-rewrite and completion events explicitly store `org_id: None`.
+The separate dream-report ingestion path does preserve the source record's
+organization. A direct engine caller already possesses the storage engine, so
+these observations establish aggregate behavior and an audit-completeness
+limit, not a credential bypass. Three focused reflection integration tests pass
+on the inspected revision.
+
+OpenTelemetry ingestion has a different boundary. `/v1/ingest/otlp` is a real
+REST route behind the same optional deployment-wide bearer gate as other REST
+operations. It derives `agent_id` from `agent.id` or `service.name` resource
+attributes (or the engine default) and stores `org_id: None`. The token does not
+identify a tenant and the payload has no documented organization authority, so
+inventing a tenant stamp would be less accurate than preserving unknown
+ownership. Organization-filtered trajectory audits intentionally omit these
+null-owned events. The result is incomplete tenant-scoped observability, not
+evidence that one tenant can claim another's event.
+
+This distinction prevents three source facts—a null field, an agent-wide core
+API, and an operator-wide ingestion route—from being inflated into three
+security confirmations. The next bounded question is whether agent-wide hash
+chains that interleave scoped and null-owned events can support a future
+organization-scoped integrity check, or whether integrity is explicitly an
+aggregate-only contract.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
