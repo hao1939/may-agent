@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 43 begins seed-first after the clean Cycle 42 checkpoint, exactly reproduces the saved-target login boundary, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 44 begins seed-first after the clean Cycle 43 checkpoint, exactly reproduces the saved-target login boundary, and preserves all 132 durable seeds as temporarily unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-02"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-02T10:42:19.412Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab and immutable local-history inventory attempts, public-feed inventory, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-02T10:51:15.375Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab and immutable local-history inventory attempts, public-feed inventory, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,13 +16,40 @@ useful evidence, but do not prove collection membership.
 
 | Field | State |
 |---|---|
-| Observation time | Cycle 43 inventory and access diagnostics `2026-09-02T10:42:06.868Z–10:42:19.412Z` |
-| Current direct collection snapshot | **Unavailable and not comparable:** direct ports 9333 and 9222 refuse from the worker namespace; passwordless `sudo nsenter` with the worker PATH reaches Chrome PID 2136's DevTools listener on 9222 as HTTP 200 and effective UID 0. Three identity reads returned HTTP 500, 54 bytes, and no identity or nickname. A credentialed read-only fetch of the immutable-history saved profile-note target returned HTTP 200 but ended at `/login`: its 46,672-byte response contains 34 raw 24-hex strings, fingerprint `80cb18f0…dbfc9`, zero note sections, zero attributable cards, and zero collection links. These fields exactly reproduce Cycle 42 and remain access evidence rather than seed evidence |
+| Observation time | Cycle 44 inventory and access diagnostics `2026-09-02T10:50:35.904Z–10:51:15.375Z` |
+| Current direct collection snapshot | **Unavailable and not comparable:** direct ports 9333 and 9222 refuse from the worker namespace; passwordless `sudo nsenter` with the worker PATH reaches Chrome PID 2136's DevTools listener on 9222 as HTTP 200 and effective UID 0. The repository connector reports `ready=false`, zero notes, and no readable source content. Three identity reads returned HTTP 500, 54 bytes, and no identity or nickname. A credentialed read-only fetch of the immutable-history saved profile-note target returned HTTP 200 but ended at `/login`: its 46,672-byte response contains 34 raw 24-hex strings, fingerprint `80cb18f0…dbfc9`, zero note sections, zero attributable cards, and zero collection links. These fields exactly reproduce Cycle 43 and remain access evidence rather than seed evidence |
 | Prior readable snapshot | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs |
 | Observable added / changed / absent | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable |
 | Collection-membership interpretation | Proven removed IDs `[]`. The unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed |
-| Representative availability | The public Explore DOM again materializes the same 30-ID fingerprint as Cycles 27–43. Public representative `6a884237…f9f6` remains present in Explore, while a fresh read-only GET using its current signed Explore link again finishes at `/404` with no readable title, author, or description. This is unchanged public-detail availability evidence, not collection-membership or semantic evidence |
+| Representative availability | The public Explore DOM again materializes the same 30-ID fingerprint as Cycles 27–44. Public representative `6a884237…f9f6` remains present in Explore, while a fresh read-only GET using its current signed Explore link again finishes at `/404` with no readable title, author, or description. This is unchanged public-detail availability evidence, not collection-membership or semantic evidence |
 | Removal policy | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone |
+
+## Cycle 44 direct WSL Chrome access boundary
+
+Cycle 44 began only after the Cycle 43 decision-context checkpoint was
+committed and exact-tip validated on clean standing tip
+`435d9cf0f841cbd096f654a1747acffa3687eb53`. No GitHub, arXiv, Reddit, or
+mixed-scope event-chain work preceded this reconciliation. At
+`2026-09-02T10:50:35.904Z`, direct worker reads to 9222 and 9333 failed with
+curl exit 7 and HTTP 000. Effective UID 0 inside Chrome PID 2136's network
+namespace reached DevTools at HTTP 200. The repository-native observational
+connector then returned `ready=false`, zero notes, and no readable source
+content; this is an account-access boundary, not an empty collection.
+
+From `10:51:07.287Z` through `10:51:15.375Z`, three read-only identity
+endpoints each returned HTTP 500, 54 bytes, and no identity or nickname.
+Immutable local Chrome history supplied the saved target for one credentialed
+fetch. It returned HTTP 200 ending at `/login`, 46,672 bytes, 34 raw strings at
+`80cb18f0…dbfc9`, and zero note sections, attributable cards, or collection
+links. Public Explore retained 30 IDs at `dbadf511…e529e13`; one current signed
+read of representative `6a884237000000003400f9f6` again ended at `/404` with
+no readable title, author, or description. No retained page was navigated, the
+disposable detail tab was closed, and no Xiaohongshu state was mutated.
+
+Every comparable field matches Cycle 43. Added IDs and title/author changes
+remain unknown; observed removals are `[]`; all 132 durable seeds remain
+unavailable rather than removed. Cycle 20 remains the last comparable
+authenticated snapshot.
 
 ## Cycle 43 direct WSL Chrome access boundary
 
@@ -1794,3 +1821,4 @@ comments, and other account data are not retained.
 | 2026-09-02T10:12:24.879Z–10:12:39.450Z | Direct 9333/9222 refused; DevTools 9222 remained HTTP 200 through PID 2136's namespace as effective UID 0. Scout stayed not ready. Saved target `/login` response, zero cards/links, exact public 30-ID Explore, and representative `/404` all reproduced Cycle 40. | unknown | unknown; no observed access, collection, public-inventory, or detail change | `[]` observed removals | All 132 canonical IDs unavailable | Cycle 41 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot and reconsider all source lanes only afterward. |
 | 2026-09-02T10:31:30.567Z–10:32:00.780Z | Direct 9333/9222 refused; DevTools 9222 remained HTTP 200 through PID 2136's namespace as effective UID 0. Scout stayed not ready and three identity endpoints returned HTTP 500 without identity. Immutable history supplied the saved target; its HTTP-200 fetch ended at `/login`, with 46,672 bytes, 34 raw strings (`80cb18f0…dbfc9`), and zero attributable cards or links. Public Explore retained exact 30-ID fingerprint `dbadf511…e529e13`; representative `6a884237…f9f6` remained `/404`. | unknown | unknown; unauthenticated-shell fingerprint changed from `8503b26a…f6eed` without collection or semantic evidence | `[]` observed removals | All 132 canonical IDs unavailable | Cycle 42 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot; treat shell drift as access evidence and reconsider all source lanes only afterward. |
 | 2026-09-02T10:42:06.868Z–10:42:19.412Z | Direct 9333/9222 refused; the first namespace command lacked `bun` in root's PATH, then the worker PATH exposed the existing runtime and DevTools remained reachable through PID 2136's namespace as effective UID 0. Three identity endpoints returned HTTP 500 without identity. Saved target `/login` bytes/count/fingerprint and zero attributable cards, exact public 30-ID Explore, and representative `/404` all reproduced Cycle 42. | unknown | unknown; no observed access, collection, public-inventory, or detail change | `[]` observed removals | All 132 canonical IDs unavailable | Cycle 43 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot and reconsider all source lanes only afterward. |
+| 2026-09-02T10:50:35.904Z–10:51:15.375Z | Direct 9333/9222 refused; the repository connector reached DevTools through PID 2136's namespace as effective UID 0 but reported no readable source content. Three identity endpoints returned HTTP 500 without identity. Saved target `/login` bytes/count/fingerprint and zero attributable cards, exact public 30-ID Explore, and representative `/404` all reproduced Cycle 43. | unknown | unknown; no observed access, collection, public-inventory, or detail change | `[]` observed removals | All 132 canonical IDs unavailable | Cycle 44 reconciliation is persisted before lane work. Preserve Cycle 20 as the last comparable snapshot and reconsider all source lanes only afterward. |
