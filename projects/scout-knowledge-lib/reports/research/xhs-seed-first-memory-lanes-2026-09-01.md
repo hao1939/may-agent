@@ -3698,6 +3698,87 @@ next action is to commit and validate this seed checkpoint, then reconsider all
 three lanes and select a new exploration from the reconciled state. The
 mixed-scope event-chain exploration remains closed.
 
+## Cycle 39 checkpoint — version freshness does not authorize a repair
+
+What changed for the user: Scout now distinguishes two controls that are easy
+to collapse into one. A cached recovery suggestion needs externally observable
+dependency freshness so it can be invalidated after server drift, but a fresh
+server suggestion still needs separate content/mutation authority. The new
+evidence strengthens stale-memory governance without treating server-declared
+metadata as trustworthy authorization.
+
+Seed ordering is exact. Cycle 39's Xiaohongshu reconciliation was committed
+first as `903ed521ea4f450ddb36487d55391d6019e4ccb1`. It found the saved target
+fetch ending at `/login`, zero attributable cards, unchanged public Explore,
+added/changed unknown, observed removals `[]`, and all 132 durable seeds
+unavailable. Only then were the permanent lanes reconsidered:
+
+- **GitHub/local code was deferred** for high relevance but low marginal value.
+  HTTP 200 reads at `2026-09-02T10:01:53.493Z` retained MutMem tag
+  `cf8a6608…a3768`, main `2b93af11…8d9e7`, all three exact release assets,
+  and Mnemo `2994abf…2f20`. After arXiv selected the new paper, its primary
+  artifact provenance was inspected at client
+  `4c0dabd64b36035d6fc18eb66be99d4b7779c641` and server
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`. Revisit these lines on a
+  revision, independent reproduction, deployment result, or a new signed-stamp
+  or dependency artifact.
+- **arXiv was selected** for high relevance, high expected information value,
+  current HTTP 200 access, and the freshest distinct lead. Exact lookup
+  retained `2608.30177v1` and `2609.01235v1`. A 12-result newest-first search
+  at `2026-09-02T10:02:04.689Z` selected `2609.00243v1`, _Invalidation
+  Contracts for Cross-Episode Agent Memory_. It scores 14/15
+  (`3+2+3+3+3`); MemGauge `2608.30177v1` remains the 15/15 controlled
+  stage-wise anchor.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and no content/access trigger. Last useful evidence
+  remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and
+  six comments; JSON remains last observed HTTP 403. Revisit on seed-linked
+  reproducible evidence, a content delta, or an access change.
+
+The exact arXiv v1 PDF has SHA-256 `676741d3…c100f9cd`. The paper reports 250
+arm-level primary runs, 9,432 episodes, seven models, three serving paths, and
+two synthetic domains. Row-level invalidation raises compliance by 0–66.7
+percentage points and reaches 1.00 eviction precision under its row oracle;
+coarse table invalidation over-evicts unaffected entries. The public client
+runbook pins server `977ac97` for main grids and `567b6a0` for rule-drift
+cells. Read-only recomputation of the archive confirms 250 primary table rows,
+9,432 episodes, 9,273 successes, 159 failures, 238 JSON artifacts, exact
+requested/served model identity in every artifact, and the published
+compliance, precision, retry, and token rows.
+
+This is strong project-authored provenance, not independent replication. The
+archive also contains six specialized A2DR/A2DRC rule-policy arms represented
+in Table 8 outside the 250-row primary Table 1, plus one manually named A0
+artifact corresponding to the primary extraction under a different timestamp.
+Both domains and drift schedules are synthetic; prompts and production transfer
+are untested; the server is assumed honest. The paper explicitly identifies
+the compliance mechanism as a parameter-injection channel, notes that stamps
+can pin stale memory or force re-derivation, and leaves signed stamps, bump-rate
+bounds, and a threat model unimplemented. The server repository also says its
+redistribution/production license is pending.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and accepted follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing commits `f9784d9a…fc04` and `20fd9d81…dacf`, stable patch IDs
+`9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all four blob-identical final
+artifacts preserve exact equivalence. Nothing accepted is deferred, blocked,
+superseded, or known unintegrated. Cycle 20's exact pre-fix UUIDs and the
+authoritative three-of-three reflection result remain unchanged.
+
+On the exact three-document candidate over seed commit `903ed521…9e4ccb1`,
+whitespace, all relative links, syntax bundling, TypeScript, Prettier, and all
+78 Scout tests with 226 assertions pass. Read-only health remains bounded at 26
+facts and 16 wake signals, and `.state` remains empty. Protected fingerprinting
+retains `/app` at `386b445c…fec8`, 884 records, and `d7e65e29…c9dc`; the
+three-record user overlay remains `a52b97aa…4a15`; accepted-source and other
+clean peers remain `e3b0c442…b855`. No protected checkout was changed.
+
+This is a checkpoint, not completion. Begin Cycle 40 seed-first. Revisit the
+invalidation-contract result on a paper/repository revision, independent
+reproduction, production-domain evaluation, or implemented signed-stamp/threat
+model. The resolved mixed-scope event-chain exploration remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

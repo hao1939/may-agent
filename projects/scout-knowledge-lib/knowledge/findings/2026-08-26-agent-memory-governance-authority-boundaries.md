@@ -1190,6 +1190,65 @@ CycloneDX SBOM records the release builder's precise 160-component closure,
 but npm does not consume it as a lockfile. Package bytes, dependency closure,
 and tagged source identity are therefore separately verifiable surfaces.
 
+### Invalidation contracts separate server freshness from model compliance
+
+The Cycle 39 newest-first arXiv pass selected
+[`2609.00243v1`](https://arxiv.org/abs/2609.00243v1), _Invalidation Contracts
+for Cross-Episode Agent Memory_, after seed-first commit `903ed521…9e4ccb1`.
+It studies a narrower lifecycle boundary than MemGauge or MutMem: an API
+recovery suggestion can be valid when cached and become stale when a server
+table or derivation rule changes. The proposed wire contract attaches
+cacheability, table/version dependencies, structured row diffs, and a rules
+fingerprint so the client can evict or restamp memory without first replaying a
+known-bad request.
+
+The primary source reports 250 arm-level runs over 9,432 episodes, seven
+models, three serving paths, and two synthetic domains. Row-level invalidation
+raises first-try compliance by 0–66.7 percentage points and has 1.00 eviction
+precision under the paper's row oracle; table-level invalidation has 0.25–0.31
+precision on six models and destroys unaffected co-located entries. Four of
+seven models retain 29–33% token savings against no memory, while one loses
+1.1 points against naive memory. A separate rule-drift comparison finds that a
+response-wide rules stamp plus cached dependency vectors matches lazy
+disposition, detects one episode earlier, and changes tokens by only
+−0.11% to +0.20% across three models.
+
+The public evidence layer is unusually inspectable. The exact v1 PDF has
+SHA-256 `676741d3…c100f9cd`. The MIT-licensed client/evidence repository was
+observed at
+[`4c0dabd64b36035d6fc18eb66be99d4b7779c641`](https://github.com/beining1008/cross-episode-memory-client/commit/4c0dabd64b36035d6fc18eb66be99d4b7779c641),
+and its runbook pins server refs `977ac97` for the main grids and `567b6a0` for
+rules. The server repository was observed at
+[`567b6a0e01b49de6b353eb32a3e2f6774052225e`](https://github.com/arquicanedo/self-reflective-apis/commit/567b6a0e01b49de6b353eb32a3e2f6774052225e);
+its README says redistribution/production licensing remains pending.
+
+Read-only local recomputation over the archived evidence confirms 250 primary
+table rows, 9,432 episodes, 9,273 successes, 159 failures, 238 JSON artifacts,
+and exact requested/served model identity in every artifact. The per-cell TSVs
+reproduce the paper's compliance, eviction-precision, retry, and token rows.
+The archive also contains six specialized A2DR/A2DRC rule-detection arms in
+Table 8 outside the 250-row primary Table 1, plus one manually named A0 file
+that corresponds to the primary extraction under a different timestamp. This
+is an explicit corpus partition, not independent replication of model calls.
+
+The authority limit is decisive. Both APIs and their drift schedules are
+authored for the study; prompts, task families, production transfer, and
+independent replication remain untested. The server is assumed honest.
+Version stamps can therefore pin stale memory or force repeated derivation,
+and precise table/graph metadata discloses internal schema. Most importantly,
+the levels that improve compliance tell the planner to merge server parameters
+verbatim: the paper correctly notes that compliance and credulity become the
+same measurement, making suggestions a parameter-injection channel. Signed
+stamps, bump-rate bounds, and a threat model are proposed but not implemented.
+
+The result scores 14/15 (`3+2+3+3+3`): direct durable-seed relevance, strong
+but project-authored cross-source evidence, high operational impact, a
+resolvable stale-memory gap, and highest freshness. It complements rather than
+supersedes MemGauge's controlled stage-wise utility/risk result. The durable
+rule is to bind cached recovery memory to externally observed dependency
+versions **and** separately authorize suggestion content; freshness metadata
+cannot confer mutation authority.
+
 MutMem-V2 scores 14/15 (`3+3+3+2+3`): direct seed-cluster relevance, strong
 cross-source connection, high uncertainty reduction, narrower single-project
 generality, and highest freshness. It is retained as complementary protocol
