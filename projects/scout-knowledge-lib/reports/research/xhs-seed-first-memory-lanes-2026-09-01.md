@@ -6778,6 +6778,45 @@ commit this seed reconciliation before reconsidering GitHub, arXiv, Reddit, or
 the access-equivalence implementation. Keep the mixed-scope event-chain
 exploration closed.
 
+## Cycle 59 post-seed selection — stable access excludes volatile byte count
+
+Seed ordering is exact: Cycle 59 reconciliation
+`4fb65069f90f4cffada6d44d1fe8b9d4df582ecd` was committed before this
+selection or any implementation work. The four consecutive observations now
+show an alternating 46,672/46,673-byte login shell while every semantic access
+field remains identical.
+
+- **GitHub/local code is selected; a public request is deferred.** The lane is
+  highly relevant, but the four public heads refreshed in Cycle 58 remain
+  fresh enough and unchanged: client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo
+  `2994abf…2f20`. Exact local `bc58969…3c81a` is the last useful code
+  evidence. The highest-value accessible question is whether `byteLength`
+  belongs in stable access equivalence now that direct observations show it
+  alternating independently of the boundary. Revisit public GitHub on a
+  changed revision, artifact, independent/deployment, or readable-seed
+  trigger.
+- **arXiv is retained and deferred.** It remains highly relevant to the
+  memory-governance cluster, but expected incremental value is low without a
+  version, artifact, registration, replication, or readable-seed trigger.
+  Exact HTTP-200 evidence through `2026-09-02T11:47:43.870Z` remains current
+  enough for this local semantics question. MemGauge `2608.30177v1` still
+  wins the post-reconciliation rubric at 15/15; `2608.25553v3` remains the
+  distinct 14/15 marginal-allocation result.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low expected incremental value. Last useful evidence is RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible
+  evidence, a content delta, or an access change.
+
+The selected local audit must preserve exact `byteLength` and `bodySha256` as
+response provenance while removing byte count from stable access equivalence.
+The fingerprint domain must change so old and new contracts cannot be mistaken
+for the same schema. The comparator should report byte-count drift separately
+from stable-field drift and retain fail-closed validation. Start with the exact
+Cycle 58→59 fixture; change implementation only if that regression proves the
+gap. Do not begin the mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
