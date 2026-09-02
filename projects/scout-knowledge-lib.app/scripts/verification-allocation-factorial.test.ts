@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
   analyzeFactorialOutcomes,
+  analyzeFactorialResultBundle,
+  buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
   scheduleSha256,
   scoreAllocationAnswer,
@@ -83,6 +85,32 @@ describe("verification-allocation factorial fixture", () => {
 
     expect(verifyFactorialSchedule(schedule).errors).toContain(
       `${cell}: target identity/order counterbalance is incomplete`,
+    );
+  });
+
+  it("rejects empty or duplicated model and seed blocks", () => {
+    const emptyErrors = verifyFactorialSchedule(
+      buildSyntheticFactorialSchedule([], []),
+    ).errors;
+    expect(emptyErrors).toContain(
+      "schedule models must be non-empty and unique",
+    );
+    expect(emptyErrors).toContain(
+      "schedule seeds must be non-empty and unique",
+    );
+    expect(
+      verifyFactorialSchedule(
+        buildSyntheticFactorialSchedule(
+          ["fixture-model-a", "fixture-model-a"],
+          ["fixture-seed-00", "fixture-seed-00"],
+        ),
+      ).errors,
+    ).toContain("schedule models must be non-empty and unique");
+
+    const undeclared = structuredClone(buildToyFactorialSchedule());
+    undeclared.models = ["different-model"];
+    expect(verifyFactorialSchedule(undeclared).errors).toContain(
+      `${undeclared.episodes[0]!.id}: episode model is not declared`,
     );
   });
 
@@ -215,5 +243,69 @@ describe("verification-allocation factorial fixture", () => {
       "unknown-episode: outcome references an unknown episode",
     );
     expect(analysis.errors).toContain(`${missing.episodeId}: missing outcome`);
+  });
+
+  it("binds results to the exact schedule and preserves cancelling model effects", () => {
+    const schedule = buildSyntheticFactorialSchedule(
+      ["authority-model", "inverse-model"],
+      ["fixture-seed-00", "fixture-seed-01"],
+    );
+    const outcomes = schedule.episodes.map((episode) => {
+      const authoritySelectsTarget = episode.factors.targetStatus === "current";
+      const selectsTarget =
+        episode.modelId === "authority-model"
+          ? authoritySelectsTarget
+          : !authoritySelectsTarget;
+      return {
+        episodeId: episode.id,
+        answer: {
+          selected_memory_id: selectsTarget
+            ? episode.targetMemoryId
+            : episode.decoyMemoryId,
+        },
+      };
+    });
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes,
+    };
+
+    const analysis = analyzeFactorialResultBundle(schedule, bundle);
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.bundleSha256).toHaveLength(64);
+    expect(analysis.models[0]?.strata.map((cell) => cell.deltaStatus)).toEqual([
+      1, 1, 1, 1,
+    ]);
+    expect(analysis.models[1]?.strata.map((cell) => cell.deltaStatus)).toEqual([
+      -1, -1, -1, -1,
+    ]);
+    expect(analysis.equalModelDeltaStatus.map((cell) => cell.mean)).toEqual([
+      0, 0, 0, 0,
+    ]);
+
+    expect(
+      analyzeFactorialResultBundle(schedule, {
+        ...bundle,
+        scheduleSha256: "0".repeat(64),
+      }),
+    ).toEqual({
+      ok: false,
+      bundleSha256: "",
+      scheduleSha256: "",
+      pooled: null,
+      models: [],
+      equalModelDeltaStatus: [],
+      errors: ["result bundle does not match the supplied schedule"],
+    });
+
+    expect(
+      analyzeFactorialResultBundle(schedule, {
+        ...bundle,
+        outcomes: [null],
+      }).errors,
+    ).toEqual(["result outcome envelope is invalid"]);
   });
 });

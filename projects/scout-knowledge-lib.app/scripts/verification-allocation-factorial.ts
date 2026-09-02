@@ -79,6 +79,31 @@ export type AllocationAnalysis = {
   errors: string[];
 };
 
+export type FactorialResultBundle = {
+  schema: "scout.verification-allocation-results/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  scheduleSha256: string;
+  outcomes: AllocationOutcome[];
+};
+
+export type ModelBlockAnalysis = {
+  ok: boolean;
+  bundleSha256: string;
+  scheduleSha256: string;
+  pooled: AllocationAnalysis | null;
+  models: Array<{
+    modelId: string;
+    strata: AllocationStratumSummary[];
+  }>;
+  equalModelDeltaStatus: Array<{
+    plan: DirectionLevel;
+    temptation: DirectionLevel;
+    modelCount: number;
+    mean: number;
+  }>;
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -221,10 +246,13 @@ function buildEpisode(
   return episode;
 }
 
-export function buildToyFactorialSchedule(): FactorialSchedule {
+export function buildSyntheticFactorialSchedule(
+  modelIds: string[],
+  seedIds: string[],
+): FactorialSchedule {
   const episodes: FactorialEpisode[] = [];
-  for (const modelId of MODEL_IDS) {
-    for (const seedId of SEED_IDS) {
+  for (const modelId of modelIds) {
+    for (const seedId of seedIds) {
       for (const plan of DIRECTIONS) {
         for (const temptation of DIRECTIONS) {
           for (const targetStatus of STATUSES) {
@@ -250,11 +278,15 @@ export function buildToyFactorialSchedule(): FactorialSchedule {
     schema: "scout.verification-allocation-schedule/v1",
     evidenceClass: "synthetic-design-fixture",
     providerCallsAuthorized: false,
-    models: [...MODEL_IDS],
-    seeds: [...SEED_IDS],
+    models: [...modelIds],
+    seeds: [...seedIds],
     episodes,
     results: [],
   };
+}
+
+export function buildToyFactorialSchedule(): FactorialSchedule {
+  return buildSyntheticFactorialSchedule(MODEL_IDS, SEED_IDS);
 }
 
 export function scheduleSha256(schedule: FactorialSchedule): string {
@@ -316,6 +348,18 @@ export function verifyFactorialSchedule(
     errors.push("schedule schema changed");
   }
   if (
+    schedule.models.length === 0 ||
+    new Set(schedule.models).size !== schedule.models.length
+  ) {
+    errors.push("schedule models must be non-empty and unique");
+  }
+  if (
+    schedule.seeds.length === 0 ||
+    new Set(schedule.seeds).size !== schedule.seeds.length
+  ) {
+    errors.push("schedule seeds must be non-empty and unique");
+  }
+  if (
     schedule.evidenceClass !== "synthetic-design-fixture" ||
     schedule.providerCallsAuthorized !== false ||
     schedule.results.length !== 0
@@ -349,6 +393,12 @@ export function verifyFactorialSchedule(
       episode.id !== episodeId(episode.modelId, episode.seedId, episode.factors)
     ) {
       errors.push(`${episode.id}: episode identity does not match its factors`);
+    }
+    if (!schedule.models.includes(episode.modelId)) {
+      errors.push(`${episode.id}: episode model is not declared`);
+    }
+    if (!schedule.seeds.includes(episode.seedId)) {
+      errors.push(`${episode.id}: episode seed is not declared`);
     }
     if (episode.prompt !== renderFactorialPrompt(episode)) {
       errors.push(`${episode.id}: prompt contains an unregistered difference`);
@@ -399,11 +449,22 @@ export function verifyFactorialSchedule(
       errors.push(`${kind} wording is not structurally and length matched`);
     }
   }
-  for (const [cell, members] of balance) {
-    if (members.size !== 4) {
-      errors.push(
-        `${cell}: target identity/order counterbalance is incomplete`,
-      );
+  for (const modelId of schedule.models) {
+    for (const seedId of schedule.seeds) {
+      for (const plan of DIRECTIONS) {
+        for (const temptation of DIRECTIONS) {
+          for (const targetStatus of STATUSES) {
+            const cell = [modelId, seedId, plan, temptation, targetStatus].join(
+              "/",
+            );
+            if (balance.get(cell)?.size !== 4) {
+              errors.push(
+                `${cell}: target identity/order counterbalance is incomplete`,
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -561,6 +622,131 @@ export function analyzeFactorialOutcomes(
     ),
     strata,
     errors,
+  };
+}
+
+function invalidBundleAnalysis(errors: string[]): ModelBlockAnalysis {
+  return {
+    ok: false,
+    bundleSha256: "",
+    scheduleSha256: "",
+    pooled: null,
+    models: [],
+    equalModelDeltaStatus: [],
+    errors,
+  };
+}
+
+/**
+ * Bind synthetic outcomes to one exact schedule and preserve model-level
+ * status contrasts before computing the equal-model mean. This remains a
+ * deterministic analysis fixture: it performs no resampling or provider call.
+ */
+export function analyzeFactorialResultBundle(
+  schedule: FactorialSchedule,
+  candidate: unknown,
+): ModelBlockAnalysis {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return invalidBundleAnalysis(["result bundle must be an object"]);
+  }
+  const bundle = candidate as Record<string, unknown>;
+  if (
+    Object.keys(bundle).sort().join(",") !==
+      "evidenceClass,outcomes,scheduleSha256,schema" ||
+    bundle.schema !== "scout.verification-allocation-results/v1" ||
+    bundle.evidenceClass !== "synthetic-analysis-fixture" ||
+    typeof bundle.scheduleSha256 !== "string" ||
+    !Array.isArray(bundle.outcomes)
+  ) {
+    return invalidBundleAnalysis(["result bundle shape is invalid"]);
+  }
+  if (
+    bundle.outcomes.some(
+      (outcome) =>
+        !outcome ||
+        typeof outcome !== "object" ||
+        Array.isArray(outcome) ||
+        Object.keys(outcome).sort().join(",") !== "answer,episodeId" ||
+        typeof (outcome as Record<string, unknown>).episodeId !== "string",
+    )
+  ) {
+    return invalidBundleAnalysis(["result outcome envelope is invalid"]);
+  }
+
+  const expectedScheduleSha256 = scheduleSha256(schedule);
+  if (bundle.scheduleSha256 !== expectedScheduleSha256) {
+    return invalidBundleAnalysis([
+      "result bundle does not match the supplied schedule",
+    ]);
+  }
+  const outcomes = bundle.outcomes as AllocationOutcome[];
+  const pooled = analyzeFactorialOutcomes(schedule, outcomes);
+  let encodedBundle: string;
+  try {
+    encodedBundle = JSON.stringify(candidate);
+  } catch {
+    return invalidBundleAnalysis(["result bundle is not JSON serializable"]);
+  }
+  const bundleSha256 = createHash("sha256").update(encodedBundle).digest("hex");
+  if (!pooled.ok) {
+    return {
+      ...invalidBundleAnalysis(pooled.errors),
+      bundleSha256,
+      scheduleSha256: expectedScheduleSha256,
+      pooled,
+    };
+  }
+
+  const episodeModels = new Map(
+    schedule.episodes.map((episode) => [episode.id, episode.modelId]),
+  );
+  const modelErrors: string[] = [];
+  const models = schedule.models.map((modelId) => {
+    const modelSchedule: FactorialSchedule = {
+      ...schedule,
+      models: [modelId],
+      episodes: schedule.episodes.filter(
+        (episode) => episode.modelId === modelId,
+      ),
+    };
+    const modelOutcomes = outcomes.filter(
+      (outcome) => episodeModels.get(outcome.episodeId) === modelId,
+    );
+    const analysis = analyzeFactorialOutcomes(modelSchedule, modelOutcomes);
+    if (!analysis.ok) {
+      modelErrors.push(
+        ...analysis.errors.map((error) => `${modelId}: ${error}`),
+      );
+    }
+    return { modelId, strata: analysis.strata };
+  });
+  if (modelErrors.length > 0) {
+    return {
+      ...invalidBundleAnalysis(modelErrors),
+      bundleSha256,
+      scheduleSha256: expectedScheduleSha256,
+      pooled,
+      models,
+    };
+  }
+  const equalModelDeltaStatus = pooled.strata.map((stratum, index) => {
+    const effects = models.map((model) => model.strata[index]!.deltaStatus);
+    return {
+      plan: stratum.plan,
+      temptation: stratum.temptation,
+      modelCount: effects.length,
+      mean: effects.reduce((sum, effect) => sum + effect, 0) / effects.length,
+    };
+  });
+
+  return {
+    ok: true,
+    bundleSha256,
+    scheduleSha256: expectedScheduleSha256,
+    pooled,
+    models,
+    equalModelDeltaStatus,
+    errors: [],
   };
 }
 
