@@ -639,6 +639,46 @@ or real-model transfer. The next ranked question is whether 105 complete model
 run blocks are operationally acceptable; if not, the design needs a different
 estimand or interval rule rather than a weaker claim about 64 blocks.
 
+## Cycle 80 operational sizing boundary
+
+Seed reconciliation `7adec24b78b0f1bc5c43d048955ce30d63c3ae01` preceded this
+analysis. The existing inference implementation resamples complete seed blocks
+**within each named model** and applies a unanimous named-model decision before
+the equal-model aggregate can decide. The Cycle 79 count is therefore a
+per-model calibration input, not a pooled six-model total.
+
+The retained design has six models, 25 seeds per model, and 32 episodes per
+model/seed block: 150 blocks and 4,800 episodes. Exact 25-block matched-control
+specification SHA-256
+`a15de1f8e8899632f30bdb6ddd143b1c3637038213acac37cbf54379f55a122b`
+shows only `0.30605391271020227` correct-direction power for the ±0.30 pair and
+`0.0691999011766968` for ±0.15. Wrong-direction probabilities remain below 1%,
+but Cycle 71 separately shows balanced and dense null false-direction rates of
+1.3211% and 1.4633% at 25 blocks. Thus the original 4,800-episode grid fails
+both the declared null-safety and power criteria under the synthetic families.
+
+Supplying the Cycle 79 strong-effect crossing to every named model would
+require 105 seeds per model, 630 complete blocks, and 20,160 episodes—4.2 times
+the retained grid. Even this is not an 80%-powered six-model unanimous gate.
+Under the additional illustrative assumptions that all six models share the
+same process and decide independently, per-model power
+`0.8045178323414782` yields only
+`0.2711527720864071` probability that all six decide correctly. Those
+assumptions are not established, so this product is a warning against pooled
+interpretation, not a calibrated multi-model result. At 256 blocks per model,
+the ±0.15 pair still fails while the grid would reach 49,152 episodes, 10.24
+times the retained plan.
+
+The current design is therefore not operationally justified as a confirmatory
+unanimous six-model run. No call, token, cost ceiling, frozen current model set,
+or execution credential closes that gap. Confidence is high for schedule
+arithmetic, the 25-block exact control, and the within-model code path; low for
+cross-model independence, real effect distributions, affordability, or
+provider behavior. The next ranked question is to freeze a multi-model power
+contract that separates per-model and unanimous-gate power, then compare a
+directional estimand with the current “exceeds 0.10” practical estimand under
+the same exact false-direction discipline.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

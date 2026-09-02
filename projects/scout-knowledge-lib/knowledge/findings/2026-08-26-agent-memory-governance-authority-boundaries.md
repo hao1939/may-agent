@@ -1494,6 +1494,22 @@ effects, drift, or real-model transfer. Before provider execution, decide
 whether 105 complete model-run blocks are affordable or revise the estimand or
 interval rule explicitly.
 
+Cycle 80 resolves the immediate sizing interpretation from the same local
+implementation. Blocks are resampled within each named model, and the final
+rule requires unanimous named-model decisions. The retained six-model,
+25-seed design therefore supplies 25—not 150—blocks to each model interval.
+Its 4,800 episodes have exact synthetic power of only 30.61% for ±0.30 and
+6.92% for ±0.15; the prior 25-block null controls also exceed the 1%
+false-direction limit for balanced and dense families. Reaching the Cycle 79
+strong per-model crossing would require 20,160 episodes, and under an
+illustrative independent-identical six-model assumption its 80.45% per-model
+power compounds to only 27.12% unanimous power. This supports neither the
+original grid nor 105 pooled blocks as a confirmatory gate. Confidence is high
+for the code-path and schedule arithmetic, and low for independence, real
+effects, affordability, and provider transfer. A next design must calibrate
+per-model and unanimous power explicitly and distinguish a directional claim
+from the current practical-effect claim.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
