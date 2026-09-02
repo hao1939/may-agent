@@ -3499,6 +3499,64 @@ reconciliation before any GitHub, arXiv, Reddit, or implementation work. The
 next exploration must be selected from that reconciled state; the resolved
 mixed-scope chain remains closed.
 
+## Cycle 38 seed-first start — a restored target is still not a collection
+
+Cycle 37 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`9805a78f1e096582060e0713edab797ed80e7f6b`. Exact-tip validation passes all
+19 changed-document links, syntax bundling, TypeScript, Prettier, and 78 tests
+with 226 assertions. The read-only health rerun at
+`2026-09-02T09:42:24.470Z` remains bounded and truncated at 26 facts and 16
+wake signals, and `.state` remains empty before and after. The accepted
+self-evolution range remains represented by its three standing ancestors, two
+exact stable patch-ID pairs, and four equal final blobs; no accepted result is
+known unintegrated. This completed the Cycle 37 checkpoint, not the standing
+goal.
+
+Only then did Cycle 38 begin. The bounded observer ran from
+`2026-09-02T09:42:30.949Z` through `09:45:52.206Z`. Direct worker reads to
+ports 9333 and 9222 failed with curl exit 7 and HTTP 000. Passwordless
+`sudo nsenter` reached root-owned Chrome PID 2136's DevTools port as effective
+UID 0 and HTTP 200. That is process/network authority and access to the
+browser's existing session, not Xiaohongshu account authority. Scout's
+supported read-only status command returned `ready=false`, zero notes, and “no
+readable XHS source content found.”
+
+The saved profile-note collection redirect has reappeared in the live login
+URL, but this access change did not restore collection authority. Three
+credentialed current-user endpoints each returned HTTP 500 `text/plain`, 54
+bytes, without success, code, guest, or nickname evidence. One read-only fetch
+of the saved target returned HTTP 200 and a 149,499-byte shell with login and
+collection markers, but zero note sections, zero attributable title/author
+items, and zero collection links. Its 65 raw 24-hex strings have exact
+sorted-set fingerprint `a607c2de…ff5cd`, changed from Cycle 37's
+`0d8093c7…f866` at the same count and byte length. This exact shell delta is
+dynamic unattributed state and does not become a seed change.
+
+Public Explore retains the exact 30-card ID fingerprint
+`dbadf511…e529e13`, with all 30 titles and authors readable. Representative
+`6a884237…f9f6` remains present, while a same-page read-only fetch through its
+current signed link returned HTTP 200, 106,924 bytes, and final path `/404`
+with no readable detail title or description. Added and changed seeds remain
+unknown, proven removals are `[]`, and all 132 durable seeds remain unavailable
+rather than removed. No retained page was navigated and no Xiaohongshu account
+or content state was mutated. A first richer browser expression failed before
+its network read; the syntax-safe retry succeeded, so that error is observer
+wiring rather than source evidence.
+
+This Cycle 38 reconciliation is persisted before source selection. GitHub,
+arXiv, and Reddit retain their Cycle 37 continuity only until the seed commit
+is clean. The three-document seed candidate passes whitespace and all 19
+relative-link checks, syntax bundling, TypeScript, Prettier, and 78 tests with
+226 assertions. Read-only health at `2026-09-02T09:47:39.136Z` remains bounded
+and truncated at 26 facts and 16 wake signals, and `.state` remains empty at
+`e3b0c442…b855`. `/app` remains at `386b445c…fec8`, 884 status records, and
+`d7e65e29…c9dc`; the user overlay retains three records at
+`a52b97aa…4a15`; all other peers remain clean on their recorded revisions.
+
+The next action is to reconsider all three lanes by relevance, expected value,
+freshness, and access, then name a new exploration from that reconciled state.
+The resolved mixed-scope event chain is not preselected.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
