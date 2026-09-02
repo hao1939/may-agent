@@ -807,6 +807,53 @@ describe("verification-allocation factorial fixture", () => {
     );
   });
 
+  it("reduces worst-salt sparse disagreement without claiming monotone convergence", () => {
+    const analyses = [1024, 4096, 16_384].map((resamples) =>
+      compareFinitePercentileNullProcesses(
+        buildToyPercentileNullCalibrationSpec(),
+        {
+          ...buildToyModelRunBlockBootstrapSpec(),
+          resamplingSeedSha256:
+            "505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932",
+          resamples,
+        },
+        "calibration-model",
+      ),
+    );
+    const process = (analysisIndex: number, processId: string) =>
+      analyses[analysisIndex]!.processes.find(
+        (entry) => entry.processId === processId,
+      )!;
+
+    expect(analyses.map((analysis) => analysis.comparisonSpecSha256)).toEqual([
+      "4a0dfbd13f6be113b1aae96cdeaed339b36022173beb3925b947e09dd15a0fb6",
+      "69ff21c62db4b08b56ba3303a4eb34cab65ea7e6de5282d7f5e95eec09d39e2a",
+      "5a4cee68a880cb2d6a7c20934c114d30d4fb7b76adddd4a1adc443ebab94274d",
+    ]);
+    expect(analyses.map((analysis) => analysis.decisionMismatchCount)).toEqual([
+      18, 11, 3,
+    ]);
+    expect(
+      analyses.map(
+        (_, index) => process(index, "sparse-null").decisionMismatchProbability,
+      ),
+    ).toEqual([
+      expect.closeTo(0.022723637739035525, 14),
+      expect.closeTo(0.00002061050403066235, 14),
+      expect.closeTo(1.3726857835043323e-8, 14),
+    ]);
+    expect(
+      process(2, "balanced-null").decisionMismatchProbability,
+    ).toBeGreaterThan(process(1, "balanced-null").decisionMismatchProbability);
+    expect(
+      analyses.every((analysis) =>
+        analysis.processes.every(
+          (entry) => entry.finiteFalseDirectionalProbability < 0.01,
+        ),
+      ),
+    ).toBe(true);
+  });
+
   it("matches the exact dense-null decision boundary at 64 run blocks", () => {
     const seedIds = Array.from(
       { length: 64 },
