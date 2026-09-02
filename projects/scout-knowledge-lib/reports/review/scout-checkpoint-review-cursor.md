@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing checkpoint fb241b243d4711d05169bc3ecb7c72b3459eb3e8; Cycle 66 correctly quarantines a material XHS access-shell change and defers public lanes at zero request cost, while RV-001 outcome validation remains pending."
+summary: "Independent Scout review cursor through standing tip 7dd678a9887ffd49f7872eb01ea2138961b32a65; Cycle 66 and its review are integrated, while RV-001 outcome validation remains pending until an eligible unchanged-source opportunity."
 triggers: ["Scout independent review", "checkpoint review cursor", "resolved Scout review findings", "Scout cadence outcome validation", "Scout review integration compaction", "Cycle 66 access boundary"]
 last_updated: "2026-09-03"
-source_basis: "Exact standing-branch diffs and trees through fb241b243d4711d05169bc3ecb7c72b3459eb3e8; independent current-tree Scout validation; relative-link, ancestry, and reviewer patch-equivalence checks; bounded public GitHub provenance spot-checks."
+source_basis: "Exact standing-branch diffs and trees through 7dd678a9887ffd49f7872eb01ea2138961b32a65; independent current-tip Scout validation; relative-link, ancestry, reviewer patch-equivalence, and integration-status checks; bounded public GitHub provenance spot-checks."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -14,14 +14,15 @@ findings in one place.
 ## Current cursor
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
-- Last reviewed commit: `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`
-- Review date: `2026-09-03T00:08:51+08:00`
+- Last reviewed commit: `7dd678a9887ffd49f7872eb01ea2138961b32a65`
+- Review date: `2026-09-03T00:17:56+08:00`
 - Review artifact:
   [Cycle 66 checkpoint review](./scout-checkpoint-fb241b24-review-2026-09-03.md)
-- Overall disposition: **accepted with cadence outcome validation pending**.
-  Cycle 66 records the access-shell change without promoting it to seed or
-  authentication evidence and defers all public lanes with zero requests. It
-  does not close `RV-001` because the seed access state materially changed.
+- Overall disposition: **accepted and integrated, with cadence outcome
+  validation pending**. Cycle 66 records the access-shell change without
+  promoting it to seed or authentication evidence and defers all public lanes
+  with zero requests. It does not close `RV-001` because the seed access state
+  materially changed.
 
 ## Evidence examined
 
@@ -73,6 +74,19 @@ findings in one place.
   26-fact standing-tip packet is limited to the review filename and the two
   review `last_updated` values using the current Shanghai date while the
   detector compares calendar dates in UTC.
+- Reviewer commit `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b` and standing
+  integration `3826aa2f69dcb3ed8b311bde8ce6f307591a482b` both have parent
+  `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, identical trees, and stable patch
+  ID `29f61a3de9ecc1dab0c3c615e65bb38a11e9fa98`.
+- Exact integration-status diff
+  `3826aa2f69dcb3ed8b311bde8ce6f307591a482b..7dd678a9887ffd49f7872eb01ea2138961b32a65`
+  changes only this cursor by six insertions and three deletions, replacing the
+  stale pending-integration statement with the proven commit mapping.
+- Independent validation in a reviewer-owned worktree at exact standing tip
+  `7dd678a9887ffd49f7872eb01ea2138961b32a65` passed syntax, TypeScript, source
+  formatting, 115 tests with 330 assertions, whitespace, all 13 relative links
+  across the four Cycle 66 affected documents, read-only health at 29 facts and
+  16 wake signals, empty runtime state, and a clean tree.
 
 ## Findings and standing-owner resolution
 
@@ -81,6 +95,16 @@ findings in one place.
 | `RV-001` | Medium | Cycle 65 checkpoint in `xhs-seed-first-memory-lanes-2026-09-01.md` | Four head requests plus a rate request only 44 minutes after the same four heads were checked produced no new decision, while adding 65 lines to a 522 KB report. This spends quota and makes useful findings harder to retrieve. | **Structurally resolved; outcome check pending** | The topic map and producer checkpoint now require a change-bearing trigger or a compact scheduled audit at least 24 hours after the last exact pass. The first eligible no-change opportunity must show that the standing loop defers without public requests or another narrative checkpoint. |
 | `RV-002` | Low | Cycle 65 GitHub evidence paragraph | All four hashes were independently supported, but repository identities required another knowledge note and the primary arXiv record. A future reader cannot reproduce the observations from this checkpoint alone. | **Resolved** | The producer checkpoint and current lane table now name `beining1008/cross-episode-memory-client`, `arquicanedo/self-reflective-apis`, `wallidsaydi-creator/HOM-AIMOS`, and `sattyamjjain/mnemo` beside their exact heads. |
 | `RV-003` | Medium | Cycle 65 independent-review integration in `xhs-seed-first-memory-lanes-2026-09-01.md` | Two integration wrappers added 78 lines that repeat review findings, commit mappings, and validation already recorded in the review artifacts. This recreates the retrieval-cost regression during the act of resolving it. | **Resolved** | Reviewer commit `9347d5800fe629cd68e0e8e4791d60ff5e8767eb` is integrated as standing commit `738e80fb94c0f6e0e1281904ec2a54c342acb24c` at patch ID `6cbb18d4b3871669b4983da262bba5a576abc80e`; the compact ledger removes 58 net producer-report lines without another narrative wrapper. |
+
+`RV-001` cannot be advanced by independent reviewer work now. Its exact
+observed regression remains five public requests 44 minutes after the prior
+pass, 65 added report lines, and no changed source or decision. The cadence
+policy is structurally integrated, but Cycle 66 is not its protected outcome
+case because the XHS access class and semantic fingerprint changed. Repeating a
+public check now would consume quota and contaminate the first eligible
+unchanged-source comparison. The next review trigger is a material standing
+checkpoint; absent one, the first eligible periodic boundary is
+`2026-09-03T15:11:24.235Z`.
 
 No finding is rejected, superseded, or blocked. The standing branch integrated
 reviewer commits `7959ccea48c2b5f7f40289cb211cbf38245502ad`,
@@ -100,8 +124,10 @@ above, plus the `RV-003` compaction at standing commit
 `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b` is integrated as standing commit
 `3826aa2f69dcb3ed8b311bde8ce6f307591a482b` at patch ID
 `29f61a3de9ecc1dab0c3c615e65bb38a11e9fa98`; their trees are identical.
-Pending is only the first eligible unchanged-source outcome check for `RV-001`;
-no result is rejected, superseded, blocked, or unintegrated.
+Standing commit `7dd678a9887ffd49f7872eb01ea2138961b32a65` closes the stale
+integration status. Pending is only the first eligible unchanged-source
+outcome check for `RV-001`; no result is rejected, superseded, blocked, or
+unintegrated.
 
 ## Supervision
 
