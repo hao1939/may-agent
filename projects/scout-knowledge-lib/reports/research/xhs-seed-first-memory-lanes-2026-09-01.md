@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 49 start: Cycle 48's accepted-range integration and offline freeze gate are committed, then the current Xiaohongshu boundary is reconciled before any new lane work."
+summary: "Seed-first Scout continuity through the Cycle 49 selection: Cycle 48's accepted-range integration and offline freeze gate are committed, the current Xiaohongshu boundary is reconciled first, and a read-only bundle adapter wins the post-seed rubric."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 49"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 49 observational reconciliation through 2026-09-02T11:43:19.059Z; the saved collection target remained unavailable and no source-lane work preceded it."
@@ -4635,6 +4635,47 @@ still the last comparable authenticated snapshot. Commit this exact seed-only
 boundary before reconsidering GitHub, arXiv, Reddit, the bundle adapter, or any
 other exploration. Provider calls and the mixed-scope event-chain exploration
 remain closed.
+
+## Cycle 49 post-seed selection — load frozen bytes without widening authority
+
+Seed ordering is exact: the Cycle 49 reconciliation above was committed first
+as `48eb47189cc506ec35c9c4464e5b0ed1240136bb`. Only then were all three
+permanent lanes reconsidered by relevance, expected value, freshness, and
+access:
+
+- **GitHub/local code was deferred publicly and selected locally.** Exact
+  read-only HEAD checks at `2026-09-02T11:47:35.461Z–11:47:38.002Z` retained
+  invalidation client `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, server
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`, MutMem
+  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and Mnemo
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`. No revision, generator,
+  deployment, or seed-linked public-code trigger fired; Cycle 40 remains the
+  last useful public GitHub evidence. Local freeze-validator commit
+  `f71b2f185a08061cc67340017a31c643e7d0a9cb` exposes the highest-value
+  unresolved gap: applying the byte gate to a real directory without allowing
+  traversal or undeclared files.
+- **arXiv was retained and deferred** for high relevance, current access, but
+  low new-source value. Exact HTTP 200 checks at
+  `2026-09-02T11:47:42.710Z–11:47:43.870Z` retained `2608.30177v1`,
+  `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and deduplicated
+  `2606.12290v1`. MemGauge `2608.30177v1` still wins the cluster rubric at
+  15/15; `2608.25553v3` remains the distinct 14/15 allocation result and last
+  useful artifact evidence. Revisit on a paper, artifact, or external-
+  registration revision, independent replication, or newly readable seed
+  body.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and no seed, thread, content, or access trigger. Last
+  useful evidence remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. Revisit
+  on seed-linked reproducible evidence, a content delta, or an access change.
+
+The selected next exploration is the smallest read-only bundle adapter around
+the existing offline freeze validator. It may accept only an explicit
+goal-owned directory, resolve every declared artifact beneath that root,
+reject traversal, symlink escape, missing or undeclared files, and preserve
+`providerCallsAuthorized: false`. It must not contact a provider or turn local
+path discipline into URL, registration, timestamp, lineage, or spending proof.
+The mixed-scope event-chain exploration remains closed.
 
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
