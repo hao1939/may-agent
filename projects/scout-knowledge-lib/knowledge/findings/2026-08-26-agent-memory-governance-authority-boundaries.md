@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, while the event hash chain is aggregate across organization-owned and null-owned records rather than independently verifiable per organization. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, and verification completeness must reach every request operation. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, the event hash chain is aggregate across organization-owned and null-owned records, and bounded verification must not report whole-chain success after silently omitting records. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -977,6 +977,35 @@ goal-owned PostgreSQL fixture pass. The live database used an existing
 goal-owned pgvector container and isolated schema; its credential was not
 published. The candidate remains local, unreviewed upstream, and undeployed.
 
+### A bounded verifier must disclose an incomplete chain
+
+Cycle 31 tested the fixed 10,000-event query bound on exact local base
+`5bf23661edc50ff341c7328c05629b8929cabd48`. A controlled DuckDB transaction
+stored one valid 10,001-event chain for `limit-agent` and `limit-thread`.
+Before repair, both `verify_event_integrity(agent, None)` and
+`verify_event_integrity(agent, Some(thread))` returned the same successful
+result: `valid: true`, `total_records: 10000`, `verified_records: 10000`, no
+first broken record, and no error. The agent-wide path had silently omitted the
+oldest record; the thread path had silently omitted the newest. Neither result
+proved the integrity of the stored whole chain.
+
+Local repair `222060b4f6ca7a4de3d0990fc3a30fbac100ba06` fetches one sentinel record
+beyond the supported bound in both paths. When that record exists, it returns
+`valid: false`, 10,001 observed records, zero verified records, no fabricated
+break UUID, and the explicit error `event chain exceeds verification limit of
+10000 records; complete chain was not verified`. Chains within the bound keep
+the existing verifier and result schema. The repair does not make tail
+truncation intrinsically detectable; it prevents an implementation-owned query
+cap from being misreported as whole-chain success.
+
+Rust formatting and whitespace checks pass. Strict all-target core Clippy with
+warnings denied passes. The full core package passes 299 tests with one
+intentional network test ignored plus two doctests, including the 10,001-row
+regression across both selector forms. The PostgreSQL package compiles and its
+available tests pass; live-gated cases lacked their URL wiring and no storage or
+schema code changed. This remains local executable evidence, not upstream
+review, deployment, or proof for chains beyond the reported bound.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -1035,6 +1064,9 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
   tenant isolation.
 - Require every derived memory to retain source lineage before promising exact
   rollback or verified deletion; deleting one visible row is not recovery.
+- Treat a bounded integrity scan as incomplete unless it proves the result set
+  is complete; fetch a sentinel record or return an explicit truncation state
+  instead of silently certifying a prefix or suffix as the whole chain.
 - Test governance properties separately: authenticated write admission,
   cross-principal leakage, provenance completeness, rollback fidelity, and
   post-deletion reappearance measure different failure boundaries.
