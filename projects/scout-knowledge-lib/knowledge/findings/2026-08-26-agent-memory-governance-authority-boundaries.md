@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere and that a relevance-only rule trades precision for recall when current constraints compete with a stale one; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
 source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full source of arXiv 2604.16548v2, 2608.25553v3, and 2609.01235v1, including checksum-verified Zenodo record 22147784 and its byte-identical recomputation/full audit; exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
@@ -1297,9 +1297,29 @@ the forced-critical decision gain shrinks from +76.7 at two slots to +10.7 at
 four. In a second three-constraint store, a target-blind rule—prefer inherited
 memories that state a limit or prohibition on a candidate direction—moves
 two-slot target selection by +89.7 points and current-consistent decisions by
-+89.3. Dates alone do not materially redirect allocation. That rule has not
-been tested where relevance and staleness diverge, and its instruction may
-influence the decision as well as the allocation.
++89.3. Dates alone do not materially redirect allocation.
+
+Cycle 42's independent enumeration of all 600 raw P1 episodes makes the rule's
+precision boundary explicit. In the withdrawn world at one slot, it chose the
+stale target in 66/150 episodes and a current onboarding constraint in 84/150;
+the agrees-world split was nearly identical at 65/150 versus 85/150. At two
+slots, it achieved 150/150 stale-target recall in the withdrawn world, but the
+other 150/300 verification slots all went to the current constraint. Across
+both worlds, the archive's published counts are 131 target versus 169 current
+decoy selections at one slot, and target-plus-current pairs in 296/300
+two-slot episodes. Thus the rule prioritizes decision-relevant constraints but
+does not detect staleness: high recall is bought with current-record work, and
+one-slot stale precision is only 44% in the world where stale state exists.
+
+The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
+but its wording uniquely identifies that path in this synthetic store; it is
+not a general scheduler. P2 dates alone move target selection only +2.3 points.
+The supported design implication is staged allocation: use relevance to form a
+candidate set, then use trustworthy current-record/supersession state to rank
+within it, while preserving uncertainty when those signals conflict. The
+study still does not test a stale constraint that is less decision-relevant
+than a current one, and the instruction may influence decisions directly as
+well as allocation.
 
 The artifact boundary was directly checked at Zenodo concept DOI
 [`10.5281/zenodo.22108557`](https://doi.org/10.5281/zenodo.22108557), immutable

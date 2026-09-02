@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 42 start: the latest Xiaohongshu boundary is reconciled before lane work, accepted side work remains integrated, and unauthenticated-shell drift is separated from seed evidence."
+summary: "Seed-first Scout continuity through Cycle 42: Xiaohongshu is reconciled before lane work, accepted side work remains integrated, and raw arXiv evidence shows that relevance-based verification improves recall without identifying staleness."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 42"]
 last_updated: "2026-09-02"
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:32:00.780Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
@@ -4022,6 +4022,102 @@ snapshot. This state is persisted before any Cycle 42 GitHub, arXiv, Reddit,
 allocation-rule, or mixed-scope event-chain work. Commit and validate this
 seed-only checkpoint, then reconsider all three permanent lanes. The
 mixed-scope event-chain exploration remains closed.
+
+## Cycle 42 checkpoint — relevance is not a staleness classifier
+
+What was wrong: the prior summary said the target-blind rule had not been
+tested where relevance and staleness diverge. The released Experiment C store
+already contains one stale constraint and two current constraints, so that
+statement hid useful precision evidence. Scout now records the rule as a
+recall–precision tradeoff: relevance moves verification toward constraints, but
+it does not identify which constraint is stale.
+
+Seed ordering is exact. Cycle 42's unavailable Xiaohongshu state was committed
+first as `2d3b8309a2a1ad54756b27d2933cf16888eafc04`. The live read-only boundary
+was `2026-09-02T10:31:30.567Z–10:32:00.780Z`: direct worker ports refused,
+effective UID 0 in Chrome PID 2136's namespace reached DevTools, three identity
+reads returned HTTP 500 without identity, and the saved target ended at
+`/login` with zero attributable cards. Its changed 34-string shell fingerprint
+`80cb18f0…dbfc9` is access drift, not seed evidence. Public Explore retained
+30 IDs at `dbadf511…e529e13`; representative `6a884237…f9f6` remained
+`/404`. Added/changed remain unknown, observed removals are `[]`, all 132
+durable seeds are unavailable, and no Xiaohongshu state was mutated.
+
+Only then were the permanent lanes reconsidered:
+
+- **GitHub/local code was deferred** for high relevance but low incremental
+  value. Read-only `HEAD` checks at `2026-09-02T10:36:32.170Z` retained exact
+  invalidation-client `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, server
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`, MutMem
+  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and Mnemo
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Last useful GitHub evidence
+  remains Cycle 40's analyzer/table-build boundary. Revisit on a revision,
+  generator/selection manifest, independent or deployment result,
+  signed-stamp implementation, or seed-linked code trigger.
+- **arXiv was selected** for high relevance, high marginal value, and current
+  access. Exact HTTP 200 reads at `2026-09-02T10:36:32.179Z` retained
+  `2608.30177v1`, `2608.25553v3`, `2609.00243v1`, and `2609.01235v1`.
+  MemGauge remains the 15/15 stage-wise anchor; `2608.25553v3` remains the
+  14/15 marginal result because Cycle 42 deepens an existing artifact rather
+  than adding independent or production evidence.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and no seed, content, or access trigger. Last useful
+  evidence remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. Revisit
+  on seed-linked reproducible evidence, a thread delta, or an access change.
+
+The selected deep dive enumerated all 600 raw P1 rule episodes from the
+checksum-verified v3 archive. At one slot in the withdrawn world, the
+relevance-only rule chose the stale `memory_73` target 66/150 times and current
+`memory_86` 84/150 times; the agrees-world split was 65/150 and 85/150. At two
+slots it achieved 150/150 stale-target recall in the withdrawn world, while
+all 150 other slots went to the current constraint. Across both worlds, the
+published 131-target/169-current one-slot count and 296/300 target-plus-current
+pair count reproduce exactly. P2 dates alone move target selection only +2.3
+points. P3 reaches 98.7%, but is an instruction-following ceiling that uniquely
+identifies the target in this store. The supported change is narrower than a
+scheduler claim: relevance should form the candidate set, then trusted
+supersession/current-record state should rank it.
+
+The accepted Scout inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing commits `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` remain ancestors. Stable patch
+IDs remain `9a8b80e36cb8b6effb3d651d3f22940ab46f626d` and
+`5b5b393747d74d9b8cb9b59f4dceedb460d18eb9`; all four accepted final blobs
+remain identical. No accepted result is deferred, superseded, blocked, or
+known unintegrated.
+
+Cycle 20's exact pre-fix outputs remain
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. The authoritative reflection result
+remains three of three passing on exact local Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`. These are retained as local-code
+provenance and are not relabeled as paper evidence.
+
+On the exact four-document Cycle 42 sequence—the committed seed boundary plus
+this three-document finding/map/report candidate—whitespace and all 19 relative
+links pass. The full Scout gate passes syntax bundling, TypeScript, Prettier,
+and 78 tests with 226 assertions. Read-only health at
+`2026-09-02T10:40:43.624Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-dated-library-truth, 12 oversized-canonical-note, and
+one unsourced-backlog fact. `.state` remains empty at
+`e3b0c442…b855`.
+
+Protected fingerprinting used NUL-delimited porcelain v2 with optional Git
+locks disabled. The dirty source remains at HEAD `386b445c…fec8`, 884 records,
+and `d7e65e29…c9dc`; the user overlay remains at `fd4c68ec…4663`, three
+records, and `a52b97aa…4a15`. The accepted-source worktrees and every other
+peer remain clean at `e3b0c442…b855` on their recorded revisions. No protected
+checkout was changed.
+
+This is a checkpoint, not completion. After clean current-tip validation and
+commit, begin the next cycle seed-first. The next discriminating exploration
+is a store where a stale constraint is less decision-relevant than a current
+constraint; select it only after the new seed and lane review. The mixed-scope
+event-chain exploration remains closed.
 
 ## Supervision
 
