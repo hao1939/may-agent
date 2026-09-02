@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 97, including exact local cost-reserve regression 53cebd440a55eb786b2084d566875f1003d56835."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 98, including exact full-grid verifier 6fd185a54b4fa386d92ceba26b187a3a7963a6fe."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1318,6 +1318,55 @@ does not prove that another 64–256 vector cannot dominate a local point.
 Confidence is high for the exact seven-point slice and low for the remaining
 grid, real marginals, drift shape, dependence, providers, and operational
 cost. The next ranked work is the complete retained-grid Pareto search.
+
+## Cycle 98 complete retained-grid frontier
+
+Seed reconciliation `468376aaf0f1ae3a4f9b446cb267ca92c08e252b`
+preceded the search and retained the saved-target login wall with only body-
+byte drift. Added and changed IDs remain unknown, removals are `[]`, and all
+132 durable seeds remain unavailable. The post-seed accepted-ref check at
+`2026-09-02T23:55:59.924Z–23:55:59.929Z` found all six tracked refs unchanged;
+GitHub, arXiv, and Reddit made zero public requests.
+
+The [exact frontier verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-robust-frontier.ts)
+at `6fd185a54b4fa386d92ceba26b187a3a7963a6fe` regenerates every count from 64
+through 256 in four interleaved local workers. All 193 rows retain the frozen
+null gate; dense-null at 71 is again worst at `0.008554538502693238`. The
+canonical row representation has SHA-256
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`.
+
+For every attainable six-model total, the verifier maximizes strong-process
+marginal sum under each observed strong-minus-moderate gap threshold, then
+recomputes the selected allocation in sorted count order. The stable result
+representation has SHA-256
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Two complete runs reproduced the row evidence; the stabilized final run binds
+this result hash to the reviewed source.
+
+The first passing point remains 1,029 blocks at
+`[171,171,171,172,172,172]`: 32,928 episodes, worst correct marginal sum
+`5.400042315780292`, per-model uniform drift reserve
+`0.000007052630048557755`, and aggregate wrong-direction upper bound
+`4.778429753042595e-9`. The globally optimal results at totals 1,030–1,032 are
+exactly the Cycle 97 mixtures, so no other retained-grid vector dominates a
+local point at the same or lower cost.
+
+Every integer total from 1,029 through 1,536 strictly increases the best
+reserve. All 508 passing totals are therefore nondominated. At the declared
+grid endpoint, `[256,256,256,256,256,256]` costs 49,152 episodes and raises the
+per-model reserve to `0.044820541675075244`; its aggregate wrong-direction
+upper bound is `1.3405852452814177e-10`.
+
+This resolves the complete-grid dominance question but contradicts choosing a
+single design from optimization alone: cost and reserve improve together at
+every passing total. The calculation remains exact synthetic sensitivity, not
+a real drift estimate, confidence interval, provider result, or operating-
+cost judgment. Confidence is high for coverage, repeated row hashes, stable
+arithmetic, and the dynamic program; low for real marginals, dependence, drift
+shape, provider behavior, and the missing policy preference. The next ranked
+question is to require an independently justified reserve target or episode
+ceiling before selecting a frontier point, rejecting an implicit post-hoc
+choice.
 
 ## Go/no-go boundary
 
