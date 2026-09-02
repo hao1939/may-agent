@@ -3,8 +3,10 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  boundDirectionalStrictMajority,
   buildToyDirectionalQuantileCalibrationSpec,
   buildToyDirectionalQuantilePowerSpec,
+  buildToyDirectionalStrictMajoritySpec,
   buildToyPercentileEstimandComparisonSpec,
   buildToyPercentileUnanimousPowerSpec,
   buildToyPercentileAlternativeCalibrationSpec,
@@ -1132,6 +1134,64 @@ describe("verification-allocation factorial fixture", () => {
       }).errors,
     ).toEqual([
       "directional quantile power specification is invalid or not bound to the selected null calibration",
+    ]);
+  }, 30_000);
+
+  it("bounds the smallest strict majority without assuming model independence", () => {
+    const analysis = boundDirectionalStrictMajority(
+      buildToyDirectionalStrictMajoritySpec(),
+    );
+    const process = (processId: string) =>
+      analysis.report.find((entry) => entry.processId === processId)!;
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.majoritySpecSha256).toBe(
+      "f2263724b736580c776796983ca0df095e06eefd793a3347868f69bf58196dca",
+    );
+    expect(analysis.modelCount).toBe(6);
+    expect(analysis.minimumSupportingModels).toBe(4);
+    expect(analysis.directionConflictStructurallyImpossible).toBe(true);
+    expect(analysis.runBlockCountPerModel).toBe(105);
+    expect(analysis.completeFactorialEpisodeCount).toBe(20_160);
+    expect(
+      process("strong-positive").aggregateCorrectDirectionalLowerBound,
+    ).toBeCloseTo(0.813243671461994, 14);
+    expect(
+      process("strong-positive").aggregateWrongDirectionalUpperBound,
+    ).toBeCloseTo(2.0779570981567675e-12, 20);
+    expect(process("strong-positive").passesAggregatePowerTarget).toBe(true);
+    expect(
+      process("moderate-positive").aggregateCorrectDirectionalLowerBound,
+    ).toBe(0);
+    expect(
+      process("moderate-positive").aggregateCorrectDirectionalUpperBound,
+    ).toBeCloseTo(0.3447942968433126, 14);
+    expect(process("moderate-positive").passesAggregatePowerTarget).toBe(false);
+    expect(
+      analysis.report.every(
+        (entry) => entry.passesAggregateWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+  }, 30_000);
+
+  it("rejects a non-majority threshold and an unbound nested calibration", () => {
+    const spec = buildToyDirectionalStrictMajoritySpec();
+    expect(
+      boundDirectionalStrictMajority({
+        ...spec,
+        minimumSupportingModels: 3,
+      }).errors,
+    ).toEqual(["directional strict-majority specification is invalid"]);
+    expect(
+      boundDirectionalStrictMajority({
+        ...spec,
+        perModelPowerSpec: {
+          ...spec.perModelPowerSpec,
+          calibrationSpecSha256: "0".repeat(64),
+        },
+      }).errors,
+    ).toEqual([
+      "per-model calibration: directional quantile power specification is invalid or not bound to the selected null calibration",
     ]);
   }, 30_000);
 

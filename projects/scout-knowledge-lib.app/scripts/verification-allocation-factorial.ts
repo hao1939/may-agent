@@ -437,6 +437,49 @@ export type DirectionalQuantilePowerAnalysis = {
   errors: string[];
 };
 
+export type DirectionalStrictMajoritySpec = {
+  schema: "scout.verification-allocation-directional-majority/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  dependenceTreatment: "unknown-count-moment-bounds";
+  thresholdPolicy: "smallest-strict-majority";
+  conflictPolicy: "inconclusive";
+  modelCount: number;
+  minimumSupportingModels: number;
+  factorialEpisodesPerModelRunBlock: 32;
+  minimumAggregateCorrectDirectionalPower: number;
+  maximumAggregateWrongDirectionalProbability: number;
+  calibrationSpec: DirectionalQuantileCalibrationSpec;
+  perModelPowerSpec: DirectionalQuantilePowerSpec;
+};
+
+export type DirectionalStrictMajorityAnalysis = {
+  ok: boolean;
+  majoritySpecSha256: string;
+  calibrationSpecSha256: string;
+  perModelPowerSpecSha256: string;
+  dependenceTreatment: "unknown-count-moment-bounds" | "";
+  modelCount: number;
+  minimumSupportingModels: number;
+  directionConflictStructurallyImpossible: boolean;
+  runBlockCountPerModel: number;
+  completeFactorialEpisodeCount: number;
+  report: Array<{
+    processId: string;
+    pairId: string;
+    expectedDirection: "positive" | "negative";
+    perModelCorrectDirectionalProbability: number;
+    aggregateCorrectDirectionalLowerBound: number;
+    aggregateCorrectDirectionalUpperBound: number;
+    perModelWrongDirectionalProbability: number;
+    aggregateWrongDirectionalLowerBound: number;
+    aggregateWrongDirectionalUpperBound: number;
+    passesAggregatePowerTarget: boolean;
+    passesAggregateWrongDirectionTolerance: boolean;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1303,6 +1346,25 @@ export function buildToyDirectionalQuantilePowerSpec(
     maximumWrongDirectionalProbability:
       alternativeCalibration.maximumWrongDirectionalProbability,
     alternativeProcesses: alternativeCalibration.processes,
+  };
+}
+
+export function buildToyDirectionalStrictMajoritySpec(): DirectionalStrictMajoritySpec {
+  const calibrationSpec = buildToyDirectionalQuantileCalibrationSpec();
+  const calibration = calibrateDirectionalQuantiles(calibrationSpec);
+  return {
+    schema: "scout.verification-allocation-directional-majority/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    dependenceTreatment: "unknown-count-moment-bounds",
+    thresholdPolicy: "smallest-strict-majority",
+    conflictPolicy: "inconclusive",
+    modelCount: 6,
+    minimumSupportingModels: 4,
+    factorialEpisodesPerModelRunBlock: 32,
+    minimumAggregateCorrectDirectionalPower: 0.8,
+    maximumAggregateWrongDirectionalProbability: 0.01,
+    calibrationSpec,
+    perModelPowerSpec: buildToyDirectionalQuantilePowerSpec(calibration),
   };
 }
 
@@ -3088,6 +3150,131 @@ export function measureCalibratedDirectionalPower(
     report,
     scopeLimit:
       "Exact only for the null-selected interval, frozen mirror-paired trinomial alternatives, and 105 run blocks; the candidate grid and synthetic effects may not transfer to continuous effects, dependence, provider behavior, or real models.",
+    errors: [],
+  };
+}
+
+function invalidDirectionalStrictMajorityAnalysis(
+  errors: string[],
+): DirectionalStrictMajorityAnalysis {
+  return {
+    ok: false,
+    majoritySpecSha256: "",
+    calibrationSpecSha256: "",
+    perModelPowerSpecSha256: "",
+    dependenceTreatment: "",
+    modelCount: 0,
+    minimumSupportingModels: 0,
+    directionConflictStructurallyImpossible: false,
+    runBlockCountPerModel: 0,
+    completeFactorialEpisodeCount: 0,
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+/**
+ * Bound a strict-majority directional decision with only equal per-model
+ * marginals and no dependence assumption. For S supporting models, E[S]=np;
+ * the sharp count-moment bounds are
+ * max(0,(np-(k-1))/(n-k+1)) <= P(S>=k) <= min(1,np/k).
+ */
+export function boundDirectionalStrictMajority(
+  candidate: unknown,
+): DirectionalStrictMajorityAnalysis {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return invalidDirectionalStrictMajorityAnalysis([
+      "directional strict-majority specification is invalid",
+    ]);
+  const spec = candidate as Record<string, unknown>;
+  const modelCount = spec.modelCount as number;
+  const minimumSupportingModels = spec.minimumSupportingModels as number;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "calibrationSpec,conflictPolicy,dependenceTreatment,evidenceClass,factorialEpisodesPerModelRunBlock,maximumAggregateWrongDirectionalProbability,minimumAggregateCorrectDirectionalPower,minimumSupportingModels,modelCount,perModelPowerSpec,schema,thresholdPolicy" ||
+    spec.schema !== "scout.verification-allocation-directional-majority/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.dependenceTreatment !== "unknown-count-moment-bounds" ||
+    spec.thresholdPolicy !== "smallest-strict-majority" ||
+    spec.conflictPolicy !== "inconclusive" ||
+    !Number.isInteger(modelCount) ||
+    modelCount < 2 ||
+    modelCount > 32 ||
+    minimumSupportingModels !== Math.floor(modelCount / 2) + 1 ||
+    spec.factorialEpisodesPerModelRunBlock !== 32 ||
+    typeof spec.minimumAggregateCorrectDirectionalPower !== "number" ||
+    !Number.isFinite(spec.minimumAggregateCorrectDirectionalPower) ||
+    spec.minimumAggregateCorrectDirectionalPower <= 0 ||
+    spec.minimumAggregateCorrectDirectionalPower >= 1 ||
+    typeof spec.maximumAggregateWrongDirectionalProbability !== "number" ||
+    !Number.isFinite(spec.maximumAggregateWrongDirectionalProbability) ||
+    spec.maximumAggregateWrongDirectionalProbability <= 0 ||
+    spec.maximumAggregateWrongDirectionalProbability >= 0.5
+  ) {
+    return invalidDirectionalStrictMajorityAnalysis([
+      "directional strict-majority specification is invalid",
+    ]);
+  }
+  const perModel = measureCalibratedDirectionalPower(
+    spec.calibrationSpec,
+    spec.perModelPowerSpec,
+  );
+  if (!perModel.ok) {
+    return invalidDirectionalStrictMajorityAnalysis(
+      perModel.errors.map((error) => `per-model calibration: ${error}`),
+    );
+  }
+  const probabilityBounds = (probability: number) => ({
+    lower: Math.max(
+      0,
+      (modelCount * probability - (minimumSupportingModels - 1)) /
+        (modelCount - minimumSupportingModels + 1),
+    ),
+    upper: Math.min(1, (modelCount * probability) / minimumSupportingModels),
+  });
+  const report = perModel.report.map((process) => {
+    const correct = probabilityBounds(process.correctDirectionalProbability);
+    const wrong = probabilityBounds(process.wrongDirectionalProbability);
+    return {
+      processId: process.processId,
+      pairId: process.pairId,
+      expectedDirection: process.expectedDirection,
+      perModelCorrectDirectionalProbability:
+        process.correctDirectionalProbability,
+      aggregateCorrectDirectionalLowerBound: correct.lower,
+      aggregateCorrectDirectionalUpperBound: correct.upper,
+      perModelWrongDirectionalProbability: process.wrongDirectionalProbability,
+      aggregateWrongDirectionalLowerBound: wrong.lower,
+      aggregateWrongDirectionalUpperBound: wrong.upper,
+      passesAggregatePowerTarget:
+        correct.lower >=
+        (spec.minimumAggregateCorrectDirectionalPower as number),
+      passesAggregateWrongDirectionTolerance:
+        wrong.upper <=
+        (spec.maximumAggregateWrongDirectionalProbability as number),
+    };
+  });
+  return {
+    ok: true,
+    majoritySpecSha256: createHash("sha256")
+      .update(JSON.stringify(candidate))
+      .digest("hex"),
+    calibrationSpecSha256: perModel.calibrationSpecSha256,
+    perModelPowerSpecSha256: perModel.powerSpecSha256,
+    dependenceTreatment: spec.dependenceTreatment,
+    modelCount,
+    minimumSupportingModels,
+    directionConflictStructurallyImpossible:
+      2 * minimumSupportingModels > modelCount,
+    runBlockCountPerModel: perModel.runBlockCount,
+    completeFactorialEpisodeCount:
+      modelCount *
+      perModel.runBlockCount *
+      (spec.factorialEpisodesPerModelRunBlock as number),
+    report,
+    scopeLimit:
+      "Sharp count-moment bounds for equal frozen per-model marginals with unknown dependence; they do not establish equal real-model marginals, exchangeability, affordability, provider behavior, or power under drift and heterogeneous effects.",
     errors: [],
   };
 }
