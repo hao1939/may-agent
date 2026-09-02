@@ -1426,6 +1426,19 @@ is high only for this complete frozen enumeration. The rates remain conditional
 on one resampling seed and model ID, and do not establish power, robustness to
 dependence or drift, real-model behavior, or provider authority.
 
+Cycle 74 tests that conditionality at exact local commit
+`59268cc62629ebcf3cf274835d259b3b158ac2d6`. A matched three-by-three cross
+of model identifiers and frozen resampling seeds keeps every balanced, dense,
+and sparse finite false-direction rate below 1%, supporting the bounded
+go/no-go conclusion. It also exposes meaningful finite sensitivity: mismatch
+counts range from 10 to 32 compositions, dense-null false-direction rates range
+from 0.3690% to 0.8147%, and sparse-null overall decision disagreement reaches
+2.2724%. The latter includes negligible-versus-inconclusive differences rather
+than only false directional calls. This contradicts salt-invariant
+classification at 1,024 draws. Confidence is high for the replayed nine-control
+fixture and low for untested salts, convergence, alternatives, dependence, or
+real models.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

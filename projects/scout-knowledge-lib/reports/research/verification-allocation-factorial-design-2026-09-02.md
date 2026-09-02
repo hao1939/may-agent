@@ -455,6 +455,37 @@ behavior, and provider execution remain untested. The next ranked question is
 whether changing the model identifier or resampling seed materially changes
 the finite operating rates or the 1% decision.
 
+## Cycle 74 model-ID and resampling-seed sensitivity
+
+Seed reconciliation `9ac993e73cb94829360f43e404d26502aa5c8706` preceded this
+matched-control analysis. Exact local regression commit
+`59268cc62629ebcf3cf274835d259b3b158ac2d6` holds the 64-block
+calibration, 1,024-resample count, quantiles, effect support, and three null
+processes fixed while crossing model IDs `calibration-model`,
+`calibration-model-b`, and `calibration-model-c` with three frozen seeds:
+`b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3`,
+`182d0240d5d1ff20be112d03fe169ed9397ad7a0cb562da4c96e348d79f9978e`,
+and `505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932`.
+
+Across the nine deterministic controls, decision-mismatch counts range from 10
+to 32 of 2,145 compositions. Finite false-direction rates range from
+`0.0018220732433059704` to `0.003173180319440574` for balanced,
+`0.00368996427654005` to `0.008146902228698577` for dense, and
+`0.00013702289768857516` to `0.00025673753238608036` for sparse.
+Every value remains below the frozen 1% tolerance. Sparse-null total decision
+disagreement nevertheless reaches `0.022723637739035525`; these disagreements
+include non-direction classifications and therefore can exceed the much
+smaller false-direction rate.
+
+This supports stability of the bounded 1% go/no-go conclusion across the nine
+declared salts. It contradicts any claim that 1,024 deterministic draws make
+all practical classifications salt-invariant. Confidence is high for these
+nine replayable controls and low for unsampled identifiers, seeds, dependence,
+alternatives, or real-model responses. The next ranked question is whether a
+frozen resample-count ladder reduces the worst observed classification
+sensitivity enough to justify the added computation, while retaining the
+exact oracle as the calibration authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
