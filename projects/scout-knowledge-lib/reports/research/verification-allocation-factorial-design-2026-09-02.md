@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67 deterministic control analysis of the 64-episode synthetic schedule at commit e8ce4879dfe649377051801927aa145df514640f."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–68 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f and 3aaba3f61478ba2ee8493fbb668139ba0b1c8599."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -242,6 +242,36 @@ an authenticated lineage authority, or evidence that a deployed allocator
 follows freshness. The analyzer also does not implement the model-block
 bootstrap required for confirmatory inference. Provider calls remain
 unauthorized and the schedule's results array remains empty.
+
+## Cycle 68 result binding and model blocks
+
+Exact local commit `3aaba3f61478ba2ee8493fbb668139ba0b1c8599`
+adds a strict result-bundle envelope for the synthetic analyzer. The envelope
+names its schema and evidence class, carries the SHA-256 of one exact schedule,
+and receives its own SHA-256 after structural validation. It rejects an
+unmatched schedule digest, malformed outcome envelopes, missing or duplicate
+outcomes, unknown episode identities, and schedules with empty, duplicated, or
+undeclared model and seed blocks. These checks bind analysis to the scheduled
+episode population; they do not authenticate who generated a bundle or when.
+
+The matched synthetic control contains the same two seeds and complete 32-cell
+counterbalance for each of two declared models. An authority policy produces
+`Delta_status = +1` in all four plan-by-temptation strata, while an inverse
+policy produces `-1` in the same strata. Per-model analysis preserves both
+effects; the equal-model mean is `0` in every stratum. This is supporting
+evidence that a pooled null can conceal complete model disagreement and that
+model blocks must be reported before aggregation. It is simultaneously
+contradictory evidence against treating the equal-model zero as evidence that
+status has no effect.
+
+Focused validation passes 11 tests with 43 assertions, TypeScript, formatting,
+and whitespace checks. Confidence is high for the deterministic schema and
+aggregation behavior exercised by these fixtures, but low for any claim about
+real model behavior. There is still no bootstrap, interval, practical-effect
+decision rule, authenticated generator, timestamped real result bundle, or
+provider execution. The next bounded analysis question is whether a frozen
+block-resampling rule can preserve the declared model/run inference unit and
+surface this heterogeneity without making provider calls.
 
 ## Go/no-go boundary
 

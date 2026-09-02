@@ -1354,6 +1354,20 @@ can distinguish the three intended signatures. It does not show how any model
 allocates verification, validate the fixture's lineage authority, or authorize
 a provider call; model-block inference and real results remain open.
 
+Cycle 68 closes the narrower result-binding and model-block accounting gap at
+exact local commit `3aaba3f61478ba2ee8493fbb668139ba0b1c8599`.
+A schema-constrained result envelope now carries the exact schedule SHA-256,
+rejects malformed or population-incomplete inputs, and preserves per-model
+status contrasts before an equal-model mean. In a matched two-model synthetic
+control, one policy has `Delta_status=+1` and the inverse policy has `-1` in
+all four strata, while their equal-model mean is zero throughout. This directly
+supports block-aware reporting and contradicts an interpretation of the pooled
+zero as “no status response.” It does not estimate sampling uncertainty or
+describe any real model: both policies are deterministic fixtures, no
+authenticated result producer or external timestamp is present, and provider
+calls remain unauthorized. Confidence is high for the tested accounting
+behavior and low for transfer beyond it.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
