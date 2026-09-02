@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 70 reproduces the saved-target access boundary while the exact login-wall body changes, leaving all 132 durable seeds unavailable rather than removed."
+summary: "Living reconciliation ledger for the human's collected Xiaohongshu seed set. Cycle 71 observes the saved target return to the login-class boundary, leaving all 132 durable seeds unavailable rather than removed."
 triggers: ["XHS collected posts", "XHS seed reconciliation", "human collection", "seed ledger", "Xiaohongshu collection changes"]
 last_updated: "2026-09-03"
-source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-02T18:31:18.224Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab and immutable local-history inventory attempts, public-feed inventory, and representative-detail checks."
+source_basis: "Observational XHS browser preflights and accepted Scout repository inventories through 2026-09-01T10:45:50Z; then goal-owned observers against live Chrome sessions through 2026-09-02T18:37:52.360Z, including Explore, bounded self-profile collection passes, authentication-state diagnostics, current-tab and immutable local-history inventory attempts, public-feed inventory, and representative-detail checks."
 </ai_context>
 
 # Xiaohongshu Human-Collection Seed Ledger
@@ -16,13 +16,44 @@ useful evidence, but do not prove collection membership.
 
 | Field                                | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Observation time                     | Cycle 70 inventory and access diagnostics `2026-09-02T18:31:17.629Z–18:31:18.224Z`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Current direct collection snapshot   | **Unavailable for comparison:** the initiating UID 1000 (`hao`) used passwordless `sudo nsenter` to reach root-owned Chrome PID 2136's DevTools listener as effective UID 0. Supported public `status` reported `/explore` readable with 30 notes. Supported non-navigating `saved-status` returned HTTP 200 at final class `profile`, 102,929 bytes, a login wall, and zero attributable items. This is browser/process authority, not a proven Xiaohongshu principal, and public readiness is not a collection inventory. |
+| Observation time                     | Cycle 71 inventory and access diagnostics `2026-09-02T18:37:27.545Z–18:37:52.360Z`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Current direct collection snapshot   | **Unavailable for comparison:** direct worker reads to ports 9222 and 9333 failed with curl exit 7 and HTTP 000. The initiating UID 1000 (`hao`) then used passwordless `sudo nsenter` to reach root-owned Chrome PID 2136's DevTools listener as effective UID 0. Supported public `status` reported `/explore` readable with 30 notes. Supported non-navigating `saved-status` returned HTTP 200 at final class `login`, 46,672 bytes, a login wall, and zero attributable items. This is browser/process authority, not a proven Xiaohongshu principal, and public readiness is not a collection inventory. |
 | Prior readable snapshot              | Cycle 20: two matching 130-card views with ID fingerprint `d83bbde4bc3344cd49b4c419b4fefd9bb8545fb4006cb3eb6d802cee6c5d6cd9` and ID/title/author fingerprint `567485e8e7aa20f7950550af0405b7a69424e274a7ae5e60e3c6d6d4cc556118`; durable confirmed-seed union 132 IDs                                                                                                                                                                                                                                                                                               |
 | Observable added / changed / absent  | Added IDs unknown; title-author changes unknown; all 132 canonical IDs below are currently unavailable because no collection membership surface was readable                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Collection-membership interpretation | Proven removed IDs `[]`. The unaddressable collection state is an access failure, not an empty authenticated collection, so none of the 132 durable seeds is inferred removed                                                                                                                                                                                                                                                                                                                                                                                       |
 | Representative availability          | Public `/explore` remains `ready=true` with 30 notes and no login wall. The saved inventory yielded no attributable stable post, so no representative saved-post read was supported or attempted. This is public availability evidence, not collection-membership or semantic evidence.                                                                                                     |
 | Removal policy                       | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone                                                                                                                                                                                                                                                                                                                                                                                          |
+
+## Cycle 71 direct WSL Chrome access boundary
+
+Cycle 71 began from clean standing tip
+`fc2a7b4f4bcd0b86a9fcf928fb38b73da01eccac`, before calibration or source-lane
+work. Direct worker reads to ports 9222 and 9333 at
+`2026-09-02T18:37:27.545Z` each failed with curl exit 7 and HTTP 000. One
+supported read-only pass then ran at
+`2026-09-02T18:37:51.480Z–18:37:52.360Z` as initiating UID 1000 (`hao`) and
+effective UID 0 in root-owned Chrome PID 2136's network namespace. This is
+browser/process authority, not account authority.
+
+Public Explore remained ready with 30 notes and no login wall. Non-navigating
+`saved-status` retained the query-free target, version 2, HTTP 200
+`text/html; charset=utf-8`, zero attributable items, the empty ID fingerprint,
+and login-wall state. Its final class changed `profile`→`login`, length changed
+102,929→46,672 bytes, semantic access fingerprint changed
+`74a9cdb73d2f8b37e8888154a2f2a67761178f8a6f64cd20e1fc384965cc2e44`→`3dab1b6d4f615fb77d6fbf76e82c4015937a83f3b18fc85d6a93f931d08af420`,
+and exact body SHA-256 changed
+`73fc3c6351f8dd60ec6542017ce9f9ba03a9a475ba101241c7aa03a4a8612580`→`3efa88f247158e25942209f79e4dd9d4f821ffd960f36fbeb5cb57e991458d9f`.
+This is a material access-boundary delta, not authentication, collection
+membership, or post-content evidence.
+
+Added IDs and title/author changes remain unknown; observed removals are `[]`;
+all 132 durable seeds remain unavailable rather than removed. No attributable
+saved post existed, so no representative saved-post read was supported or
+attempted. No XHS state was mutated. Protected `/app` remained externally
+observed at HEAD `386b445c…1fec8`, 891 records, fingerprint
+`f2aeb63c…df8975`; the human overlay remained at HEAD `fd4c68ec…e3`, three
+records, fingerprint `ad8d222c…e74780`. Neither was written or tested, and no
+cause or ownership is inferred from protected state.
 
 ## Cycle 70 direct WSL Chrome access boundary
 
