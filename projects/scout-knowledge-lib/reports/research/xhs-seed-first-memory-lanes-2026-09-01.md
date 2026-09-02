@@ -7591,6 +7591,71 @@ beside all four exact hashes above. The reviewer independently matched all four
 heads, including MutMem after the arXiv record resolved it to
 `wallidsaydi-creator/HOM-AIMOS`.
 
+## Cycle 65 independent-review integration checkpoint
+
+What was wrong was retrieval cost without decision value: Cycle 65 repeated
+four unchanged GitHub-head reads and a rate read only 44 minutes after Cycle
+63, and its standalone evidence named roles such as MutMem without stable
+repository identities. For the next worker, short elapsed time no longer
+causes public requests, and every retained GitHub head is directly attributable
+to its owner/repository.
+
+The final accepted reviewer range is
+`577986efc1095aa4ceab403d911cc544161a58e5..ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`.
+It contains review commits `7959ccea48c2b5f7f40289cb211cbf38245502ad`
+then `ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`, integrated in that order as
+standing commits `24e0f91f6e1e1e7b9fb4794a0a6c0a11051b42d6` and
+`18ab0bc8afc6e884361482cd5d9ab0a4b258b996`. Their stable patch IDs match
+pairwise: `01928e429241ffc7584db20acda9eaceea26cf7a` and
+`74a08ce5c3c107af4374a279f97338771af591fa`. Standing correction commit
+`4cf33131a7f474feb099e692cc36459973cbd6a3` accepts and resolves both findings.
+The independent review artifacts remain intact; the producer checkpoint,
+topic map, and compact review cursor hold the standing-owner correction.
+
+On exact correction commit `4cf33131a7f474feb099e692cc36459973cbd6a3`,
+the full Scout gate passed syntax bundling, TypeScript, source formatting, 115
+tests, and 330 assertions. Whitespace passed; all 22 relative links across the
+producer, topic-map, and two review artifacts resolved; read-only health at
+`2026-09-02T15:49:17.580Z` remained the known bounded and truncated 26 facts
+and 16 wake signals; runtime `.state` was empty. A supplemental whole-document
+Markdown-Prettier probe is not a repository gate and flagged the independently
+authored review artifact plus the pre-existing large topic-map table; no
+formatter rewrite was applied, while the repository's governing format check
+passed.
+
+The accepted self-evolution range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+remains integrated by the previously proved standing ancestors, equal patch
+IDs, and four byte-identical final artifacts. The review branch is clean at
+`ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`; no accepted Scout result is
+deferred, superseded, blocked, or known unintegrated.
+
+The protected-state audit found concurrent external drift and does not hide it.
+The dirty source remained at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, but changed from Cycle 65's 882
+records / `c1940fbb…eb7001` to 883 records /
+`21f94bd60ff7fea09b41367682f00997839294c853fd1a7f448fb7beff6615d8`.
+The newest paths were unrelated Herdr Supervisor source and tests modified at
+`2026-09-02T15:41:42.655Z–15:45:31.060Z`, plus the separately owned reviewer
+worktree path. This worker ran only read-only Git inspection in `/app`; exact
+preservation against the earlier dirty fingerprint cannot be claimed across
+that external activity. The human overlay remained three records at
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`, and
+every inspected peer worktree remained clean at
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+A final read-only rerun brackets this report against the new source state.
+
+Seed continuity remains exact Cycle 65 commit `8b546b8…b36ae2`: added and
+changed seeds are unknown, removals are `[]`, and all 132 durable identities
+remain unavailable. No new seed observation was triggered by this review, so
+no source call was manufactured. GitHub is deferred until a change-bearing
+signal or a compact audit at least 24 hours after the last pass; arXiv retains
+`2608.30177v1` at 15/15 and `2608.25553v3` at 14/15; Reddit remains
+RSS-readable/JSON-403 and deferred without quota work. The next exploration is
+the next observational Xiaohongshu reconciliation when a new seed observation
+trigger occurs, before reconsidering all three lanes. Keep the mixed-scope
+event-chain exploration closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
