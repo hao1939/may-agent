@@ -5126,6 +5126,60 @@ This remains a checkpoint, not goal completion. Validate and commit this lane
 decision on the standing branch, then begin the bounded snapshot-stability
 audit without provider calls.
 
+## Cycle 50 checkpoint — replaced entries cannot redirect freeze reads
+
+The selected local audit found a narrower but real gap. A goal-owned temporary
+bundle declared 1,504 artifacts. After directory inventory captured
+`filler-1210.txt` as a regular entry, the harness atomically replaced it with
+an in-root symlink to same-byte `filler-1075.txt`. The target was observably a
+symlink, but the pre-fix adapter returned exactly `ok: true`, `errors: []`,
+`artifactCount: 1504`, `modelCount: 1`, `seedCount: 2`, `episodeCount: 64`, and
+`providerCallsAuthorized: false`. Hash validation still protected the bytes;
+what failed was the stronger documented claim that a bundle symlink is always
+rejected.
+
+Exact reviewed commit `e5ad29cd71f0895df4a6915e8e3f760c406d2717`
+is the smallest repair. The manifest and each artifact are opened with
+`O_NOFOLLOW`; the opened descriptor must be a regular file, and the verifier
+reads from that same descriptor. The regression performs the real
+post-inventory atomic replacement and now observes a fail-closed result. Three
+consecutive focused runs each pass seven tests and 11 assertions. On the exact
+committed revision, syntax bundling, TypeScript, source formatting, and all 98
+Scout tests with 274 assertions pass. No network or provider call was made.
+
+The proof is deliberately bounded to final-component replacement on the tested
+Linux filesystem. It does not establish an atomic snapshot for every
+intermediate directory component, authenticate an external URL, registration,
+timestamp, signature, or lineage, or grant provider-call or spending
+authority. Public GitHub, arXiv, and Reddit decisions remain those recorded in
+the post-seed section. MemGauge `2608.30177v1` remains the 15/15 anchor.
+
+The accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+At lane-selection tip `ddfbdff7b6e9b6849a13c1f39d533e2213ce6ac9`, all three
+standing reconciliation commits were ancestors, both stable patch-ID pairs
+remained exact, and all four final blobs were byte-identical. Direct side-tip
+containment remains false by the documented cherry-pick/reconciliation
+strategy, not because content is missing. No accepted result is deferred,
+superseded, blocked, or known unintegrated.
+
+On the exact two-document checkpoint candidate over repair commit
+`e5ad29c…d2717`, whitespace, Prettier, and all 32 relative links pass. The full
+Scout gate again passes syntax bundling, TypeScript, source formatting, and 98
+tests with 274 assertions. Read-only health at
+`2026-09-02T12:08:47.793Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-dated-library truths, 12 oversized canonical notes,
+and one unsourced backlog. `.state` is empty. The dirty source remains
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay remains
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer remains
+clean at `e3b0c442…b855`.
+
+This is a checkpoint, not completion. After final documentation, link, health,
+full Scout, integration-equivalence, clean-tip, and protected-fingerprint
+proof, begin Cycle 51 with Xiaohongshu reconciliation before any further lane
+or directory-component exploration. The mixed-scope event-chain exploration
+remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
