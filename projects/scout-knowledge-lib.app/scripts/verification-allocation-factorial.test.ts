@@ -2,8 +2,10 @@ import { describe, expect, it } from "bun:test";
 import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
+  bootstrapFactorialModelRunBlocks,
   buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
+  buildToyModelRunBlockBootstrapSpec,
   scheduleSha256,
   scoreAllocationAnswer,
   TOY_SCHEDULE_SHA256,
@@ -307,5 +309,175 @@ describe("verification-allocation factorial fixture", () => {
         outcomes: [null],
       }).errors,
     ).toEqual(["result outcome envelope is invalid"]);
+
+    const unserializable = structuredClone(bundle);
+    const circularAnswer: Record<string, unknown> = {};
+    circularAnswer.self = circularAnswer;
+    unserializable.outcomes[0]!.answer = circularAnswer;
+    expect(
+      analyzeFactorialResultBundle(schedule, unserializable).errors,
+    ).toEqual(["result bundle is not JSON serializable"]);
+  });
+
+  it("resamples complete run blocks and keeps opposing model effects visible", () => {
+    const schedule = buildSyntheticFactorialSchedule(
+      ["authority-model", "inverse-model"],
+      ["fixture-seed-00", "fixture-seed-01"],
+    );
+    const outcomes = schedule.episodes.map((episode) => {
+      const authoritySelectsTarget = episode.factors.targetStatus === "current";
+      const selectsTarget =
+        episode.modelId === "authority-model"
+          ? authoritySelectsTarget
+          : !authoritySelectsTarget;
+      return {
+        episodeId: episode.id,
+        answer: {
+          selected_memory_id: selectsTarget
+            ? episode.targetMemoryId
+            : episode.decoyMemoryId,
+        },
+      };
+    });
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes,
+    };
+    const spec = buildToyModelRunBlockBootstrapSpec();
+
+    const first = bootstrapFactorialModelRunBlocks(schedule, bundle, spec);
+    const second = bootstrapFactorialModelRunBlocks(schedule, bundle, spec);
+
+    expect(first).toEqual(second);
+    expect(first.ok).toBe(true);
+    expect(first.resamplingUnit).toBe("model-seed-block");
+    expect(first.bootstrapSpecSha256).toHaveLength(64);
+    expect(first.models.map((model) => model.runBlockCount)).toEqual([2, 2]);
+    expect(
+      first.models.map((model) =>
+        model.strata.map((stratum) => [
+          stratum.pointEstimate,
+          stratum.lower,
+          stratum.upper,
+        ]),
+      ),
+    ).toEqual([
+      [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+      ],
+      [
+        [-1, -1, -1],
+        [-1, -1, -1],
+        [-1, -1, -1],
+        [-1, -1, -1],
+      ],
+    ]);
+    expect(
+      first.equalModel.map((stratum) => ({
+        pointEstimate: stratum.pointEstimate,
+        lower: stratum.lower,
+        upper: stratum.upper,
+        modelMinimum: stratum.modelMinimum,
+        modelMaximum: stratum.modelMaximum,
+        directionConflict: stratum.directionConflict,
+      })),
+    ).toEqual(
+      Array.from({ length: 4 }, () => ({
+        pointEstimate: 0,
+        lower: 0,
+        upper: 0,
+        modelMinimum: -1,
+        modelMaximum: 1,
+        directionConflict: true,
+      })),
+    );
+  });
+
+  it("shows run-block uncertainty without splitting factorial cells", () => {
+    const schedule = buildSyntheticFactorialSchedule(
+      ["mixed-model"],
+      ["authority-run", "inverse-run"],
+    );
+    const outcomes = schedule.episodes.map((episode) => {
+      const current = episode.factors.targetStatus === "current";
+      const selectsTarget =
+        episode.seedId === "authority-run" ? current : !current;
+      return {
+        episodeId: episode.id,
+        answer: {
+          selected_memory_id: selectsTarget
+            ? episode.targetMemoryId
+            : episode.decoyMemoryId,
+        },
+      };
+    });
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes,
+    };
+
+    const analysis = bootstrapFactorialModelRunBlocks(
+      schedule,
+      bundle,
+      buildToyModelRunBlockBootstrapSpec(),
+    );
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.models[0]?.runBlockCount).toBe(2);
+    expect(
+      analysis.models[0]?.strata.map((stratum) => [
+        stratum.pointEstimate,
+        stratum.lower,
+        stratum.upper,
+      ]),
+    ).toEqual([
+      [0, -1, 1],
+      [0, -1, 1],
+      [0, -1, 1],
+      [0, -1, 1],
+    ]);
+  });
+
+  it("rejects an unfrozen or incompatible block-resampling rule", () => {
+    const schedule = buildToyFactorialSchedule();
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: toyPolicyOutcomes("authority", schedule),
+    };
+    const spec = buildToyModelRunBlockBootstrapSpec();
+
+    expect(
+      bootstrapFactorialModelRunBlocks(schedule, bundle, {
+        ...spec,
+        resamplingUnit: "episode",
+      }).errors,
+    ).toEqual(["model/run block bootstrap specification is invalid"]);
+    expect(
+      bootstrapFactorialModelRunBlocks(schedule, bundle, {
+        ...spec,
+        resamplingSeedSha256: "not-frozen",
+      }).errors,
+    ).toEqual(["model/run block bootstrap specification is invalid"]);
+    expect(
+      bootstrapFactorialModelRunBlocks(schedule, bundle, {
+        ...spec,
+        resamples: 0,
+      }).errors,
+    ).toEqual(["model/run block bootstrap specification is invalid"]);
+    expect(
+      bootstrapFactorialModelRunBlocks(schedule, bundle, {
+        ...spec,
+        lowerQuantile: Number.NaN,
+      }).errors,
+    ).toEqual(["model/run block bootstrap specification is invalid"]);
   });
 });

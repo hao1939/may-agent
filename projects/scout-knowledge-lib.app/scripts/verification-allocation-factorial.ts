@@ -104,6 +104,47 @@ export type ModelBlockAnalysis = {
   errors: string[];
 };
 
+export type ModelRunBlockBootstrapSpec = {
+  schema: "scout.verification-allocation-block-bootstrap/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  resamplingUnit: "model-seed-block";
+  modelWeighting: "equal-model";
+  resamplingSeedSha256: string;
+  resamples: number;
+  lowerQuantile: number;
+  upperQuantile: number;
+};
+
+type BootstrapInterval = {
+  plan: DirectionLevel;
+  temptation: DirectionLevel;
+  pointEstimate: number;
+  lower: number;
+  upper: number;
+};
+
+export type ModelRunBlockBootstrapAnalysis = {
+  ok: boolean;
+  bundleSha256: string;
+  scheduleSha256: string;
+  bootstrapSpecSha256: string;
+  resamplingUnit: "model-seed-block" | "";
+  models: Array<{
+    modelId: string;
+    runBlockCount: number;
+    strata: BootstrapInterval[];
+  }>;
+  equalModel: Array<
+    BootstrapInterval & {
+      modelCount: number;
+      modelMinimum: number;
+      modelMaximum: number;
+      directionConflict: boolean;
+    }
+  >;
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -114,6 +155,9 @@ const MEMORY_IDS: TargetIdentity[] = ["memory-a", "memory-b"];
 
 export const TOY_SCHEDULE_SHA256 =
   "cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd";
+
+export const TOY_BLOCK_BOOTSTRAP_SEED_SHA256 =
+  "b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3";
 
 const CANDIDATES: Record<TargetIdentity, Candidate> = {
   "memory-a": {
@@ -681,10 +725,13 @@ export function analyzeFactorialResultBundle(
   }
   const outcomes = bundle.outcomes as AllocationOutcome[];
   const pooled = analyzeFactorialOutcomes(schedule, outcomes);
-  let encodedBundle: string;
+  let encodedBundle: string | undefined;
   try {
     encodedBundle = JSON.stringify(candidate);
   } catch {
+    return invalidBundleAnalysis(["result bundle is not JSON serializable"]);
+  }
+  if (typeof encodedBundle !== "string") {
     return invalidBundleAnalysis(["result bundle is not JSON serializable"]);
   }
   const bundleSha256 = createHash("sha256").update(encodedBundle).digest("hex");
@@ -746,6 +793,218 @@ export function analyzeFactorialResultBundle(
     pooled,
     models,
     equalModelDeltaStatus,
+    errors: [],
+  };
+}
+
+export function buildToyModelRunBlockBootstrapSpec(): ModelRunBlockBootstrapSpec {
+  return {
+    schema: "scout.verification-allocation-block-bootstrap/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    resamplingUnit: "model-seed-block",
+    modelWeighting: "equal-model",
+    resamplingSeedSha256: TOY_BLOCK_BOOTSTRAP_SEED_SHA256,
+    resamples: 1024,
+    lowerQuantile: 0.025,
+    upperQuantile: 0.975,
+  };
+}
+
+function invalidBootstrapAnalysis(
+  errors: string[],
+): ModelRunBlockBootstrapAnalysis {
+  return {
+    ok: false,
+    bundleSha256: "",
+    scheduleSha256: "",
+    bootstrapSpecSha256: "",
+    resamplingUnit: "",
+    models: [],
+    equalModel: [],
+    errors,
+  };
+}
+
+function parseModelRunBlockBootstrapSpec(
+  candidate: unknown,
+): ModelRunBlockBootstrapSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "evidenceClass,lowerQuantile,modelWeighting,resamples,resamplingSeedSha256,resamplingUnit,schema,upperQuantile" ||
+    spec.schema !== "scout.verification-allocation-block-bootstrap/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.resamplingUnit !== "model-seed-block" ||
+    spec.modelWeighting !== "equal-model" ||
+    typeof spec.resamplingSeedSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(spec.resamplingSeedSha256) ||
+    !Number.isInteger(spec.resamples) ||
+    (spec.resamples as number) < 100 ||
+    (spec.resamples as number) > 100_000 ||
+    typeof spec.lowerQuantile !== "number" ||
+    !Number.isFinite(spec.lowerQuantile) ||
+    spec.lowerQuantile <= 0 ||
+    spec.lowerQuantile >= 0.5 ||
+    typeof spec.upperQuantile !== "number" ||
+    !Number.isFinite(spec.upperQuantile) ||
+    spec.upperQuantile <= 0.5 ||
+    spec.upperQuantile >= 1
+  ) {
+    return null;
+  }
+  return spec as ModelRunBlockBootstrapSpec;
+}
+
+function mean(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function empiricalQuantile(values: number[], quantile: number): number {
+  const ordered = [...values].sort((left, right) => left - right);
+  const index = Math.max(
+    0,
+    Math.min(ordered.length - 1, Math.ceil(quantile * ordered.length) - 1),
+  );
+  return ordered[index]!;
+}
+
+function deterministicBlockIndex(
+  seedSha256: string,
+  replicate: number,
+  modelId: string,
+  draw: number,
+  blockCount: number,
+): number {
+  const digest = createHash("sha256")
+    .update(`${seedSha256}/${replicate}/${modelId}/${draw}`)
+    .digest();
+  return digest.readUInt32BE(0) % blockCount;
+}
+
+/**
+ * Resample complete model/seed run blocks within each declared model, then
+ * combine models with equal weight. The named model set remains fixed. This is
+ * a deterministic synthetic inference fixture, not a provider run or a claim
+ * of generalization to models outside the schedule.
+ */
+export function bootstrapFactorialModelRunBlocks(
+  schedule: FactorialSchedule,
+  resultBundle: unknown,
+  bootstrapSpecCandidate: unknown,
+): ModelRunBlockBootstrapAnalysis {
+  const spec = parseModelRunBlockBootstrapSpec(bootstrapSpecCandidate);
+  if (!spec) {
+    return invalidBootstrapAnalysis([
+      "model/run block bootstrap specification is invalid",
+    ]);
+  }
+  const bundleAnalysis = analyzeFactorialResultBundle(schedule, resultBundle);
+  if (!bundleAnalysis.ok) {
+    return invalidBootstrapAnalysis(
+      bundleAnalysis.errors.map((error) => `result bundle: ${error}`),
+    );
+  }
+  const bundle = resultBundle as FactorialResultBundle;
+  const episodeById = new Map(
+    schedule.episodes.map((episode) => [episode.id, episode]),
+  );
+  const blockEffects = schedule.models.map((modelId) => {
+    const blocks = schedule.seeds.map((seedId) => {
+      const blockSchedule: FactorialSchedule = {
+        ...schedule,
+        models: [modelId],
+        seeds: [seedId],
+        episodes: schedule.episodes.filter(
+          (episode) => episode.modelId === modelId && episode.seedId === seedId,
+        ),
+      };
+      const blockOutcomes = bundle.outcomes.filter((outcome) => {
+        const episode = episodeById.get(outcome.episodeId);
+        return episode?.modelId === modelId && episode.seedId === seedId;
+      });
+      const analysis = analyzeFactorialOutcomes(blockSchedule, blockOutcomes);
+      return analysis.strata.map((stratum) => stratum.deltaStatus);
+    });
+    return { modelId, blocks };
+  });
+
+  const modelReplicates = blockEffects.map(({ modelId, blocks }) => {
+    const strata = bundleAnalysis.pooled!.strata.map((_, stratumIndex) =>
+      Array.from({ length: spec.resamples }, (_, replicate) =>
+        mean(
+          Array.from({ length: blocks.length }, (_, draw) => {
+            const blockIndex = deterministicBlockIndex(
+              spec.resamplingSeedSha256,
+              replicate,
+              modelId,
+              draw,
+              blocks.length,
+            );
+            return blocks[blockIndex]![stratumIndex]!;
+          }),
+        ),
+      ),
+    );
+    return { modelId, blocks, strata };
+  });
+
+  const models = modelReplicates.map(({ modelId, blocks, strata }) => ({
+    modelId,
+    runBlockCount: blocks.length,
+    strata: bundleAnalysis.pooled!.strata.map((stratum, stratumIndex) => {
+      const pointEstimate = mean(blocks.map((block) => block[stratumIndex]!));
+      return {
+        plan: stratum.plan,
+        temptation: stratum.temptation,
+        pointEstimate,
+        lower: empiricalQuantile(strata[stratumIndex]!, spec.lowerQuantile),
+        upper: empiricalQuantile(strata[stratumIndex]!, spec.upperQuantile),
+      };
+    }),
+  }));
+
+  const equalModel = bundleAnalysis.pooled!.strata.map(
+    (stratum, stratumIndex) => {
+      const modelPoints = models.map(
+        (model) => model.strata[stratumIndex]!.pointEstimate,
+      );
+      const replicates = Array.from(
+        { length: spec.resamples },
+        (_, replicate) =>
+          mean(
+            modelReplicates.map(
+              (model) => model.strata[stratumIndex]![replicate]!,
+            ),
+          ),
+      );
+      const modelMinimum = Math.min(...modelPoints);
+      const modelMaximum = Math.max(...modelPoints);
+      return {
+        plan: stratum.plan,
+        temptation: stratum.temptation,
+        modelCount: models.length,
+        pointEstimate: mean(modelPoints),
+        lower: empiricalQuantile(replicates, spec.lowerQuantile),
+        upper: empiricalQuantile(replicates, spec.upperQuantile),
+        modelMinimum,
+        modelMaximum,
+        directionConflict: modelMinimum < 0 && modelMaximum > 0,
+      };
+    },
+  );
+
+  return {
+    ok: true,
+    bundleSha256: bundleAnalysis.bundleSha256,
+    scheduleSha256: bundleAnalysis.scheduleSha256,
+    bootstrapSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    resamplingUnit: spec.resamplingUnit,
+    models,
+    equalModel,
     errors: [],
   };
 }
