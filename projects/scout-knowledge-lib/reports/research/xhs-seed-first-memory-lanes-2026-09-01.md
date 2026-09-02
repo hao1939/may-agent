@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 55 start: the accepted range and Cycle 54 credential-safe history checkpoint remain proven, and the next cycle records a stable public Explore status plus an unavailable saved-profile seed surface before source-lane work."
+summary: "Seed-first Scout continuity through the Cycle 55 selection: the accepted range and Cycle 54 credential-safe history checkpoint remain proven, the saved-profile seed surface remains unavailable, and the next bounded exploration addresses the supported-observer gap without public-source quota work."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 55 observational reconciliation through 2026-09-02T13:17:35.736Z; the public Explore status path returned 30 unique notes, the saved-profile target remained unavailable, and no source-lane work preceded it."
@@ -6053,6 +6053,63 @@ This is the required start of the next cycle, not goal completion. Validate and
 commit this seed-only reconciliation before reconsidering any source lane or
 selecting the next exploration. Keep the mixed-scope event-chain exploration
 closed.
+
+## Cycle 55 post-seed selection — make saved-profile status supportable
+
+Seed ordering is exact: the Cycle 55 access reconciliation above was committed
+first as `0aae61926302a7081c2347989ad3dede016a47e3`. Only then were
+GitHub, arXiv, and Reddit reconsidered by relevance, expected value, freshness,
+and access. No public-source trigger fired, so no request was repeated merely
+for lane coverage.
+
+- **GitHub/local code is selected for one bounded observer-contract audit.**
+  Public GitHub remains highly relevant but has low marginal new-source value.
+  Retained heads remain invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo
+  `2994abf…2f20`; last useful public evidence remains Cycle 40. Exact local
+  `e29bfba2bf841bd09816cfee95ae2c2218974163` remains the latest repair.
+  Cycle 55 reproduced a supported capability split: `status` safely reports
+  the current public tab, but saved-profile access still requires a bespoke
+  DevTools script even after safe target selection exists. Revisit public
+  GitHub on a revision, artifact, independent/deployment, or seed-linked
+  trigger.
+- **arXiv is retained and deferred.** It remains highly relevant and current
+  but has low marginal value without an attributable seed or source trigger.
+  Exact HTTP-200 evidence through `2026-09-02T11:47:43.870Z` retains
+  `2608.30177v1`, `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and
+  deduplicated `2606.12290v1`. MemGauge `2608.30177v1` still wins at 15/15;
+  `2608.25553v3` remains the distinct 14/15 marginal-allocation result. Revisit
+  on a paper, artifact, registration, replication, or readable-seed trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a content delta, or an access change.
+
+The selected next exploration is a goal-owned inspection and deterministic
+fixture for a supported, non-navigating saved-profile status path. It may reuse
+the credential-safe history selector and report bounded HTTP status, final
+origin/path class, byte and attributable-item counts, and body/ID fingerprints.
+It must expose no target URL, query value, cookie, raw body, or account
+identifier; it must not navigate a tab or mutate Xiaohongshu. Code changes
+follow only if the supported gap remains exact under the fixture. The prohibited
+mixed-scope event-chain exploration remains closed.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains fully integrated by the standing ancestors, stable patch IDs, and
+four byte-identical final artifacts. Direct side-tip ancestry remains
+intentionally false. Nothing accepted is deferred, superseded, blocked, or
+known unintegrated.
+
+On the exact two-document candidate over seed commit `0aae619…6a47e3`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 108 tests with 288
+assertions. Read-only health at `2026-09-02T13:23:01.838Z` remains bounded and
+truncated at 26 facts and 16 wake signals. Runtime `.state` is empty.
+
+This is a lane-selection checkpoint, not goal completion. Validate and commit
+the selection before beginning the bounded local audit.
 
 ## Supervision
 
