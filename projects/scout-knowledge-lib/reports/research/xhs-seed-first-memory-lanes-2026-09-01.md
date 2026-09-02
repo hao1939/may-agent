@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 64: saved seeds remain unavailable after another semantically equivalent v2 observation, with source lanes pending post-seed reconsideration."
+summary: "Seed-first Scout continuity through Cycle 64: saved seeds remain unavailable, exact arXiv versions remain unchanged, and every permanent lane has an explicit evidence and revisit decision."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 64 observational reconciliation through 2026-09-02T14:30:50.396Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 64 at 2026-09-02T14:30:50.396Z; exact GitHub head freshness through 2026-09-02T14:27:09.738Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 64 at 2026-09-02T14:30:50.396Z; exact GitHub head freshness through 2026-09-02T14:27:09.738Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -7379,6 +7379,94 @@ retained in the durable checkpoint record.
 This is the required start of Cycle 64, not goal completion. Validate and
 commit this seed reconciliation before reconsidering GitHub, arXiv, or Reddit.
 Keep the mixed-scope event-chain exploration closed.
+
+## Cycle 64 checkpoint — exact arXiv versions remain unchanged
+
+What changed for the user is continuity rather than a new claim. Seed
+reconciliation is exact commit
+`9ff9fdc3ffa81d712150425372758c5877ff8c80`, so every source decision below
+was made after the current saved-set boundary was durably recorded. The
+supported observation still exposed no comparable saved inventory: added and
+changed IDs remain unknown, observed removals are `[]`, and all 132 durable
+seeds remain unavailable rather than removed.
+
+All three permanent lanes were explicitly reconsidered by relevance, expected
+value, freshness, and access:
+
+- **GitHub is retained and deferred.** Relevance to governed memory remains
+  high, but incremental value is low because four anonymous read-only HEAD
+  requests at `2026-09-02T14:27:07.976Z–14:27:09.738Z` were only minutes old.
+  Client `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, server
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`, MutMem
+  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and Mnemo
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20` were unchanged, with anonymous
+  capacity 55/60 after that pass. Exact local `ce249e6…46c12c` remains the
+  last useful code evidence. Revisit on a changed revision, artifact,
+  independent/deployment result, or readable seed.
+- **arXiv was selected for one bounded exact-ID freshness check and is now
+  deferred.** Relevance remains high and the exact version evidence was older
+  than the GitHub evidence. At `2026-09-02T14:33:07.425Z–14:33:07.944Z`, the
+  Atom body contained exactly `2608.30177v1`, updated
+  `2026-08-31T02:57:08Z`, and `2608.25553v3`, updated
+  `2026-08-28T16:13:37Z`; its 6,183-byte body SHA-256 was
+  `2a8ee35289a9c01a7b52e93a60d5adbd2987b8e552d87da8e769aa7d3fda2e34`,
+  with feed update `2026-09-02T14:33:08Z`. A local evidence-parser mistake
+  retained only the last digit of that run's HTTP marker, so it is not used as
+  status proof. One corrected status-only repeat of the same exact-ID query at
+  `14:33:20.055Z–14:33:20.288Z` returned HTTP 200 with curl exit 0. No version
+  changed. MemGauge `2608.30177v1` therefore remains the 15/15 stage-wise
+  memory-governance anchor, while `2608.25553v3` remains the distinct 14/15
+  marginal-allocation result. Revisit on a version, artifact, registration,
+  replication, or readable-seed trigger.
+- **Reddit is deferred without quota work.** Relevance remains medium and
+  expected incremental value low. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a content delta, or an access change.
+
+No source result displaced the retained memory-governance cluster, and no deep
+dive was invented to satisfy a quota. Cycle 20's pre-fix bulk-forget outputs
+remain `01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf`. The authoritative three-of-three
+reflection result remains exact Mnemo commit
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`, with its retained one-of-two
+Alpha projection qualification.
+
+The only accepted Scout range considered is
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Source commits `8f611fec0adb19a6a44ac0202c094fe30ee298de` and
+`df80a1daa26e353bd33fcf2e9d24860917b695de` retain stable patch IDs
+`9a8b80e36cb8b6effb3d651d3f22940ab46f626d` and
+`5b5b393747d74d9b8cb9b59f4dceedb460d18eb9`, equal to standing commits
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04` and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf`. Both standing commits and
+predecessor reconciliation `cb82bee8e24b446ff9aea2e3ff947205e44fef53`
+are ancestors. The four final artifacts have empty diffs and exact matching
+blob IDs `d4a0d99d…93ba`, `8f59dfe3…8dc7`, `bd2753fd…0464`, and
+`d48a29c9…ba32`. The range is integrated by equivalent patches; direct side-tip
+ancestry is intentionally false. No accepted result is deferred, superseded,
+blocked, or known unintegrated.
+
+The seed commit passed the full current-revision Scout gate: syntax bundling,
+TypeScript, formatting, 115 tests with 330 assertions, whitespace, all 21
+relative links, bounded read-only health at 26 facts and 16 wake signals, and
+an empty runtime `.state`. This two-document lane candidate is revalidated
+before commit.
+
+Protected read-only fingerprints still match their baselines. The dirty source
+remains HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records, fingerprint
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`.
+The human overlay remains HEAD `fd4c68ecd6fe2ce14afd93815b63f790c1514663`,
+three records, fingerprint
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`.
+Every other protected peer remains clean at
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+No protected checkout was modified or tested.
+
+This is a reviewable checkpoint, not goal completion. The next exploration is
+the next Xiaohongshu seed reconciliation after a new observation trigger,
+before any source request or topic selection. Then reconsider all three lanes
+under the standing rubric. Keep the mixed-scope event-chain exploration closed.
 
 ## Supervision
 
