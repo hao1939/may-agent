@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 56 start: the accepted range and Cycle 55 supported saved-status checkpoint remain proven, while a new seed-first pass records stable public/saved access fields plus volatile unauthenticated-shell bytes before source-lane work."
+summary: "Seed-first Scout continuity through the Cycle 56 selection: the accepted range and supported saved-status checkpoint remain proven, the seed surface remains unavailable, and the next bounded exploration separates stable access equivalence from volatile raw-byte provenance."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 56 observational reconciliation through 2026-09-02T13:30:48.856Z; public Explore returned 30 unique notes, supported saved status remained unavailable, and no source-lane work preceded it."
@@ -6246,6 +6246,62 @@ wake signals. Runtime `.state` is empty.
 This is the required start of the next cycle, not goal completion. Validate and
 commit this seed-only reconciliation before reconsidering any source lane or
 selecting the next exploration. Keep mixed-scope event-chain work closed.
+
+## Cycle 56 post-seed selection — separate access equivalence from raw bytes
+
+Seed ordering is exact: the Cycle 56 access reconciliation above was committed
+first as `d8e35b568dba1ad33ed72aca016844e92a41ba44`. Only then were
+GitHub, arXiv, and Reddit reconsidered by relevance, expected value, freshness,
+and access. No public-source trigger fired, so no request was repeated merely
+for lane coverage.
+
+- **GitHub/local code is selected for one bounded evidence-semantics audit.**
+  Public GitHub remains highly relevant but has low marginal new-source value.
+  Retained heads remain invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo
+  `2994abf…2f20`; last useful public evidence remains Cycle 40. Exact local
+  `5d960fa3a58e3d6254a3d7bc71f2f7ca6e379e29` remains the latest repair.
+  Three supported saved-target reads now have distinct raw body hashes while
+  target fingerprint, query keys, status, content type, final class, byte
+  length, item count, ID fingerprint, and login state remain identical. Revisit
+  public GitHub on a revision, artifact, independent/deployment, or seed-linked
+  trigger.
+- **arXiv is retained and deferred.** It remains highly relevant and current
+  but has low marginal value without a source trigger. Exact HTTP-200 evidence
+  through `2026-09-02T11:47:43.870Z` retains `2608.30177v1`,
+  `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and deduplicated
+  `2606.12290v1`. MemGauge `2608.30177v1` still wins at 15/15;
+  `2608.25553v3` remains the distinct 14/15 result. Revisit on a paper,
+  artifact, registration, replication, or readable-seed trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a content delta, or an access change.
+
+The selected next exploration is a pure deterministic fixture for a stable
+access-equivalence fingerprint. It must exclude the volatile body hash while
+retaining that exact hash separately as byte provenance; include only bounded,
+credential-free access fields; change when the target, location class, status,
+content type, byte count, attributable-item count, ID fingerprint, login state,
+or safe query-key set changes; and make no browser request. A code change follows
+only if the fixture proves the distinction. The mixed-scope event-chain
+exploration remains closed.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains fully integrated by the standing ancestors, stable patch IDs, and
+four byte-identical final artifacts. Nothing accepted is deferred, superseded,
+blocked, or known unintegrated.
+
+On the exact two-document candidate over seed commit `d8e35b5…41ba44`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 111 tests with 300
+assertions. Read-only health at `2026-09-02T13:35:12.247Z` remains bounded and
+truncated at 26 facts and 16 wake signals. Runtime `.state` is empty.
+
+This is a lane-selection checkpoint, not goal completion. Validate and commit
+the selection before beginning the bounded local fixture.
 
 ## Supervision
 
