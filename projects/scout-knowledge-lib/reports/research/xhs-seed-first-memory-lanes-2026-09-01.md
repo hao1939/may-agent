@@ -3386,6 +3386,119 @@ reconsidered for relevance, value, freshness, and access before the
 `v1.0.4` release-manifest check or another exploration is selected. The
 resolved mixed-scope chain remains closed.
 
+## Cycle 37 checkpoint — the release binds exactly, with a package-only limit
+
+What was missing: Cycle 36 established that the submitted paper files match
+orphan-history `v1.0.4`, but it had not shown whether users could bind the
+published package and dependency inventory back to that exact source. Cycle 37
+now establishes that binding and records where it stops.
+
+Ordering remained seed-first. The Xiaohongshu access and no-change
+reconciliation above was committed separately as
+`918cc82e211180d68d708883c33934ecc249bc6d` before any source selection.
+Added and changed seeds remain unknown, proven removals are `[]`, and all 132
+durable seeds remain unavailable rather than removed. No Xiaohongshu state was
+mutated.
+
+Only after that commit were all three permanent lanes reconsidered at
+`2026-09-02T09:33:42.985Z–09:33:44.073Z`:
+
+- **GitHub was selected** for high relevance, high expected uncertainty
+  reduction, current HTTP 200 access, and the queued release-provenance
+  question. Annotated `v1.0.4` remained `cf8a6608…768`, main remained
+  `2b93af11…9e7`, and the release exposed exactly three assets. Revisit MutMem
+  on a paper, tag, or release delta, external replication, or a distinct
+  package-only portability trigger. Mnemo's last useful local-code evidence
+  remains `d7b8190…bbb5a`; revisit it on an upstream revision, review,
+  deployment, regression, or attributable stored-data trigger.
+- **arXiv was retained and deferred** for high relevance, low incremental
+  value, and current HTTP 200 access. Exact lookup retained `2608.30177v1`
+  and `2609.01235v1` unchanged. MemGauge remains the controlled 15/15 anchor;
+  MutMem-V2 remains complementary at 14/15. Revisit on a version, artifact,
+  replication, released private rows, broader install evidence, stronger
+  controlled study, or content-bearing seed delta.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and unchanged access. Last useful evidence remains RSS
+  HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments;
+  JSON remains last observed HTTP 403. Revisit on seed-linked reproducible
+  evidence, a thread/content delta, or an access change.
+
+The selected GitHub release was published at `2026-09-01T15:10:44Z`. Read-only
+downloads at `2026-09-02T09:34:34.953Z` obtained the 3,009,287-byte
+`aimos-backend-1.0.4.tgz`, 140,857-byte CycloneDX SBOM, and 179-byte
+`SHA256SUMS`. All three files match GitHub's API-advertised SHA-256 digests:
+`eaad3069…88787`, `2f35f0a4…7ccb`, and `365560d2…f42`; the checksum file
+also verifies both payloads.
+
+At exact source `abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c`, `npm pack
+--dry-run` reproduces the downloaded package byte-for-byte: 3,009,287 bytes,
+SHA-1 `9ac6c335…34611`, identical SHA-512 integrity, and 995 files. The
+embedded `RELEASE-SOURCE-MANIFEST.json` equals source blob SHA-256
+`96e98593…5d5e8`, with self-hash `433fdf58…9fa58`, 1,000 declared files,
+and root `8a41e778…9e5f`. An exact Git-archive snapshot passes the manifest's
+source-content, private-path, and disclosure verifier.
+
+The package contains 994 source files plus the self-excluded manifest. It omits
+`.github/dependabot.yml`, `.github/workflows/ci.yml`,
+`.github/workflows/release-ceremony.yml`, `.gitignore`, `.npmignore`, and
+`package-lock.json`, so the 1,000-file source manifest cannot be independently
+recomputed from package bytes alone. The stronger binding is exact package
+reproduction plus the verified keyless CycloneDX attestation. That attestation
+binds package SHA-256 `eaad3069…88787` to source `abbcae3…6c0c`,
+`refs/tags/v1.0.4`, and the GitHub-hosted release workflow. Its CycloneDX 1.5
+predicate exactly equals the published 160-component, 161-dependency SBOM.
+The default SLSA predicate lookup returned `no matching predicate`; CycloneDX
+is the verifiable public predicate.
+
+Two verifier failures are dispositioned rather than hidden. The first
+goal-owned source worktree contained ignored Python bytecode left by its prior
+offline verification. A separate clean multi-tag worktree reached only the
+final single-root assertion and found two orphan roots. An exact Git archive,
+which excludes both local bytecode and repository history without changing
+source, passes every source-content check. This is exact release identity and
+dependency-provenance evidence, not package-only source completeness,
+independent empirical replication, deployed Mnemo proof, or a green claim for
+the distinct `v1.0.0` tree.
+
+The accepted inputs considered remain predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and accepted follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Standing ancestors `cb82bee8…f53`, `f9784d9a…fc04`, and `20fd9d81…dacf`,
+stable patch IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9`, and four
+blob-identical accepted artifacts retain exact patch-equivalence proof. No
+accepted result is deferred, blocked, superseded, or known unintegrated.
+Cycle 20's exact pre-fix bulk-forget UUID outputs
+`01a05d88-e769-7a20-98d5-bfdb63b27b82` and
+`01a05d88-e7a4-7f71-99a8-d873033baeaf` remain recorded, as does the later
+authoritative three-of-three full reflection chain with its one-of-two Alpha
+projection qualification.
+
+On the exact three-document candidate over standing parent
+`918cc82e211180d68d708883c33934ecc249bc6d`, `git diff --check` passes and all
+19 relative links resolve. The full Scout gate passes syntax bundling,
+TypeScript, Prettier, and 78 tests with 226 assertions. The read-only health
+scan at `2026-09-02T09:41:12.889Z` remains bounded and truncated at 26 facts
+and 16 wake signals: 13 future-dated-library-truth, 12
+oversized-canonical-note, and one unsourced-backlog fact. These are retained
+library-health backlog, not broken Cycle 37 links or malformed evidence. The
+application `.state` remained empty before and after validation at exact
+fingerprint `e3b0c442…b855`.
+
+Protected checkout fingerprinting used read-only Git commands with optional
+locks disabled. `/app` remains at HEAD `386b445c…fec8`, 884 NUL-delimited
+porcelain-v2 records, and SHA-256 `d7e65e29…c9dc`. The user overlay remains at
+`fd4c68ec…663`, three records, and `a52b97aa…4a15`. The accepted follow-up
+worktree remains clean at `df80a1da…95de`, its predecessor remains clean at
+`8c5d8747…b51`, and every other peer remains clean at
+`e3b0c442…b855` on its recorded revision. These exactly match the Cycle 36/37
+pre-checkpoint fingerprints; no protected source or peer worktree was changed.
+
+This is a checkpoint, not goal completion. After the exact candidate is
+validated and committed, Cycle 38 begins with another Xiaohongshu
+reconciliation before any GitHub, arXiv, Reddit, or implementation work. The
+next exploration must be selected from that reconciled state; the resolved
+mixed-scope chain remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

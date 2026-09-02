@@ -1134,6 +1134,38 @@ installation remains the qualified install surface. The arXiv-to-`v1.0.4`
 byte match narrows source provenance but does not erase the explicit
 manuscript-to-`v1.0.0` release-binding distinction.
 
+Cycle 37 closes the queued release-asset/source-manifest question. GitHub's
+`v1.0.4` release exposes a 3,009,287-byte package, a CycloneDX software bill of
+materials (SBOM), and `SHA256SUMS`; all three downloaded files match GitHub's
+published SHA-256 digests, and the checksum file verifies both payloads. At
+exact source commit `abbcae3…6c0c`, `npm pack --dry-run` reproduces the
+downloaded package exactly at SHA-1, SHA-512 integrity, size, and 995-file
+inventory. The package embeds the exact source-tree manifest blob
+`96e98593…5d5e8`, whose self-hash is `433fdf58…9fa58` and whose 1,000-file root
+is `8a41e778…9e5f`; an exact Git-archive snapshot passes that manifest's file,
+private-path, and disclosure verifier.
+
+The package contains 994 of those source files plus the self-excluded manifest.
+It intentionally omits six repository/build-control files: three `.github`
+files, `.gitignore`, `.npmignore`, and `package-lock.json`. Therefore the
+embedded 1,000-file source manifest cannot be rechecked from the package alone;
+it describes the tagged source tree. The stronger cross-surface binding comes
+from exact package reproduction and GitHub's keyless CycloneDX attestation.
+That attestation verifies for package SHA-256 `eaad3069…88787`, names
+`abbcae3…6c0c` and `refs/tags/v1.0.4` as signer/source identity, and carries a
+CycloneDX 1.5 predicate exactly equal to the published 160-component,
+161-dependency SBOM.
+
+The default SLSA-provenance predicate lookup returns “no matching predicate”;
+the verifiable public predicate is CycloneDX. Two local source-verifier
+failures were environmental rather than source mismatches: the earlier
+offline run left ignored Python bytecode, and a clean multi-tag clone exposed
+two orphan roots to a single-root repository assertion. The exact archive
+snapshot, which removes both local contaminants without altering source,
+passes. These results strengthen release identity and dependency provenance,
+not empirical replication, package-only source completeness, or deployment
+proof.
+
 MutMem-V2 scores 14/15 (`3+3+3+2+3`): direct seed-cluster relevance, strong
 cross-source connection, high uncertainty reduction, narrower single-project
 generality, and highest freshness. It is retained as complementary protocol
