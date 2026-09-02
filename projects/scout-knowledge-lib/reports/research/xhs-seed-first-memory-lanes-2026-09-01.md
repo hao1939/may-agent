@@ -2146,10 +2146,37 @@ reports no whitespace errors.
 The Mnemo fix is local, unreviewed upstream, undeployed, and not production-
 migration proof. The self-evolution material is accepted source synthesis, not
 independent confirmation of its cited model results. This is a checkpoint, not
-goal completion. The next exploration begins with another Xiaohongshu seed
-reconciliation; absent a higher-value trigger, it inventories remaining null-
-owned event producers and callable audit/export consumers, beginning with
-reflection and ingestion records.
+goal completion.
+
+## Cycle 27 has begun seed-first
+
+The next cycle did not begin with source-lane work. Commit
+`80f4504414a8831757d997feae3ae46903cc618e` first reconciles the current
+Xiaohongshu boundary: direct loopback refused, DevTools was reachable inside
+Chrome PID 2136's namespace, the saved target remained followed by `/login`,
+and current-user returned HTTP 406/code `-1` with no nickname. Added and
+changed seeds remain unknown, removals are `[]`, and all 132 durable seeds are
+unavailable. Public Explore exposed 30 cards, and representative public post
+`6a884237…f9f6` loaded with title, author, description, and a login overlay;
+neither is collection-membership evidence.
+
+Only after that seed commit were all lanes reconsidered. GitHub/local code was
+selected for a source-complete inventory of remaining null-owned event
+producers and callable audit/export consumers. Exact `a6649e56…ddbb` review
+finds runtime null-owned producers in REST OpenTelemetry ingestion, subject
+forget, and reflection, plus unscoped consumers in REST/gRPC trajectory, core
+event integrity, reflection, and administrative views. REST and gRPC can gate
+requests with one deployment-wide bearer token, but it does not identify a
+principal or tenant; their trajectory schemas carry agent/thread and no
+organization. This is source analysis, not a reproduced transport defect.
+
+arXiv `2608.30177v1` remains the 15/15 anchor but is deferred without a version,
+artifact, replication, stronger study, or content-bearing seed trigger. Reddit
+remains deferred without quota work at its last RSS HTTP 200/six-comment and
+JSON HTTP 403 boundary. The next exploration fixtures the REST/gRPC trajectory
+organization contract and decides whether organization is an operator filter
+or authenticated authority before changing its query; it will not describe a
+shared bearer token as tenant identity.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
