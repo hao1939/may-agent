@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. REST/gRPC trajectory filters are separately documented as operator narrowing, not tenant authorization. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, while the event hash chain is aggregate across organization-owned and null-owned records rather than independently verifiable per organization. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -906,6 +906,47 @@ security confirmations. The next bounded question is whether agent-wide hash
 chains that interleave scoped and null-owned events can support a future
 organization-scoped integrity check, or whether integrity is explicitly an
 aggregate-only contract.
+
+### Organization filtering is a projection, not a second hash chain
+
+Cycle 29 answered that bounded question on exact local Mnemo lineage
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`. Event builders obtain the latest
+event content hash without an organization selector. Each new `prev_hash`
+therefore commits to the immediately preceding event for the selected agent or
+thread even when its `org_id` is different or null. `verify_event_integrity`
+accepts only agent and optional thread, while `list_events_for_org` is used for
+trajectory analysis rather than chain verification. The compliance module
+already states that trajectory findings are not a record-level integrity
+check. No public REST, gRPC, or MCP operation promises organization-scoped
+event-chain verification.
+
+The strengthened DuckDB fixture stores three chronological events in one
+thread: Alpha write, null-owned reflection completion, Alpha write. The
+complete chain verifies all three records. Filtering it to Alpha leaves two
+records, but the second Alpha event still links through the omitted null-owned
+event; verification stops after one record with `event chain hash mismatch` at
+the second Alpha event. That failure is not tampering. It proves that an
+organization-filtered projection cannot be treated as an independent chain.
+
+Local test-only commit `52001f0e01144726aa9be11b8f0f153c40857e78`
+records this aggregate contract in the core API comment and regression without
+adding an organization selector or changing storage. The focused fixture,
+Rust formatting, strict all-target core Clippy, 299 core tests with one
+intentional network test ignored, and two doctests pass. The first validation
+attempt failed before compilation because `cargo` was absent from the shell
+`PATH`; a direct existing Rust 1.98 toolchain resolved that convenience gap.
+The first offline registry was root-readable only and failed on
+`fnv-1.0.7/lib.rs` permission denied; the existing readable goal-owned cache
+completed the same offline build without an install or source workaround.
+
+The supported conclusion is deliberately narrow: full-chain verification and
+organization-filtered trajectory analysis can coexist, but the latter does not
+inherit the former's integrity proof. A real organization-verifiable design
+would need a separate per-organization chain, inclusion proofs anchored in the
+aggregate chain, or disclosure of the omitted links. Simply adding `org_id` to
+the verifier would turn healthy interleaving into false integrity violations.
+There is no deployed or upstream-reviewed evidence for the local test-only
+clarification.
 
 ## Why it matters
 

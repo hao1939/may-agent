@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-eight completed cycles with Cycle 29 selected: Cycle 28 distinguishes agent-wide reflection plus operator-wide OTLP null ownership from a tenant authorization defect, proves the accepted self-evolution range integrated, and Cycle 29 then reconciles Xiaohongshu before selecting an integrity-contract audit."
+summary: "Seed-first Scout checkpoint across twenty-nine cycles: Cycle 28 distinguishes agent-wide reflection plus operator-wide OTLP null ownership from a tenant authorization defect and proves the accepted self-evolution range integrated; Cycle 29 then reconciles Xiaohongshu first and proves organization filtering is a projection of the aggregate event hash chain, not an independent integrity proof."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 29"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T04:53:14.054Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, and REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T04:53:14.054Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, and aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -2411,6 +2411,83 @@ deferred until a version, artifact, replication, stronger study, or
 content-bearing seed trigger. Reddit remains deferred at its last useful RSS
 HTTP 200/six-comment evidence and JSON HTTP 403 boundary until a seed-linked
 reproduction, thread delta, or access change. The standing goal remains active.
+
+## Cycle 29 checkpoint — organization filtering is not integrity verification
+
+What was wrong: an organization-filtered event list looked like it might be a
+separately verifiable integrity chain, even though Mnemo stores one chronological
+chain across organization-owned and null-owned events. Treating that projection
+as a chain would report healthy interleaving as tampering. Cycle 29 kept the
+authoritative seed-first ordering through reconciliation commit
+`496d29590d95a9189aa32aeebde0187263a7a20b`, then answered the bounded contract
+question without adding a misleading API parameter or changing storage.
+
+The exact source trace starts from local Mnemo
+`24d27c375318b30f70ebc5521f75f9641e2b60b2`. Event builders select the latest
+agent/thread event without an organization predicate, and
+`verify_event_integrity` accepts an agent plus optional thread rather than an
+organization. Organization-filtered reads belong to trajectory analysis; the
+compliance module expressly separates trajectory findings from record-level
+integrity. Public REST, gRPC, and MCP surfaces verify memory chains rather than
+promising organization-filtered event-chain verification.
+
+Goal-owned test commit `52001f0e01144726aa9be11b8f0f153c40857e78`
+strengthens the DuckDB fixture with one thread containing an Alpha write, a
+null-owned reflection-completed event, and another Alpha write. The complete
+chronology verifies three of three records. The Alpha-only projection verifies
+one of two and then returns `event chain hash mismatch`: its second record still
+commits to the omitted null-owned predecessor. This is provenance-backed
+GitHub/local-code evidence for the aggregate contract, not an upstream-reviewed
+or deployed result. A future organization-verifiable design would require
+separate chains, inclusion proofs, or explicit omitted-link disclosure.
+
+Validation is commit-scoped to `52001f0…e78`: the focused mixed-scope fixture,
+`cargo fmt --all -- --check`, strict `mnemo-core --all-targets` Clippy with
+warnings denied, 299 core tests with one intentional network test ignored, and
+two doctests all pass. The shell initially lacked `cargo` in `PATH`; invoking the
+existing Rust 1.98 toolchain resolved that convenience gap. An offline registry
+cache then failed before compilation because `fnv-1.0.7/lib.rs` was readable
+only by root. The existing readable goal-owned cache
+`/tmp/g-c1b31972-pg-cargo-owned` completed the build without installs or source
+mutation. The completed validation target is goal-owned and no build remains
+running.
+
+All source lanes were reconsidered after the seed reconciliation. GitHub/local
+code was selected for high relevance, high realized value, exact current
+revision evidence, and full local access; its last useful result is the
+`52001f0…e78` aggregate-integrity fixture, and its next trigger is a new seed,
+upstream revision, or the queued agent/thread-selector question. arXiv
+`2608.30177v1` remains the distinct 15/15 stage-wise memory-governance anchor,
+but is deferred until a new version, artifact, replication, stronger study, or
+content-bearing seed appears. Reddit remains deferred without quota work at its
+last useful RSS HTTP 200/six-comment evidence and JSON HTTP 403 boundary; its
+next trigger is a seed-linked reproduction, thread delta, or access change.
+
+The accepted Scout inputs were reconsidered again: predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+remain integrated as `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf`. Their ancestry, matching
+follow-up patch IDs, and exact final four-artifact blob equivalence are checked
+again on the resulting Scout tip. No accepted result is deferred, blocked,
+superseded, or known to remain unintegrated. The prior Cycle 20 exact pre-fix
+UUID outputs and later provenance remain unchanged in this report and topic
+map; this checkpoint does not recast them as new evidence.
+
+On exact Scout parent `2c75fe446df1e6851965ee434f8b84b319cfd97e`,
+the three-document candidate passes `git diff --check`, all 19 relative links
+resolve, and the full application gate passes syntax bundling, TypeScript,
+Prettier, and 78 tests with 226 assertions. The read-only health scan at
+`2026-09-02T05:20:29.135Z` remains bounded at 26 facts and 16 wake signals: 13
+future-date facts, 12 oversized-note facts, and one unsourced-backlog fact. It
+is truncated by design and leaves the app `.state` file count at zero and its
+empty fingerprint unchanged at `e3b0c442…b855`. The dirty source checkout and
+peer worktrees are fingerprinted without mutation after commit. This checkpoint
+does not complete the standing goal. The next cycle begins by reconciling
+Xiaohongshu again; only after that ordering gate, absent a stronger trigger, it
+will test whether `verify_event_integrity(agent_id, Some(thread_id))` actually
+honors the agent selector when one thread contains multiple principals.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
