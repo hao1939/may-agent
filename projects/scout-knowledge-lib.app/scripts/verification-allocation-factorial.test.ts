@@ -1708,6 +1708,64 @@ describe("verification-allocation factorial fixture", () => {
       equalUniformDriftBuffer,
     );
 
+    const localCostDriftFrontier = Array.from(
+      { length: base.modelIds.length + 1 },
+      (_, count172) => {
+        const scenarios = heterogeneousCounts([
+          ...Array(base.modelIds.length - count172).fill(171),
+          ...Array(count172).fill(172),
+        ]);
+        const runBlockCount = 171 * base.modelIds.length + count172;
+        return {
+          runBlockCount,
+          episodeCount: runBlockCount * 32,
+          uniformDriftBuffer: uniformDriftBuffer(scenarios),
+        };
+      },
+    );
+    expect(localCostDriftFrontier).toEqual([
+      {
+        runBlockCount: 1_026,
+        episodeCount: 32_832,
+        uniformDriftBuffer: -0.00013979380376009468,
+      },
+      {
+        runBlockCount: 1_027,
+        episodeCount: 32_864,
+        uniformDriftBuffer: -0.00009084499249064255,
+      },
+      {
+        runBlockCount: 1_028,
+        episodeCount: 32_896,
+        uniformDriftBuffer: -0.00004189618122089437,
+      },
+      {
+        runBlockCount: 1_029,
+        episodeCount: 32_928,
+        uniformDriftBuffer: 0.000007052630048557755,
+      },
+      {
+        runBlockCount: 1_030,
+        episodeCount: 32_960,
+        uniformDriftBuffer: 0.00005600144131830594,
+      },
+      {
+        runBlockCount: 1_031,
+        episodeCount: 32_992,
+        uniformDriftBuffer: 0.00010495025258775807,
+      },
+      {
+        runBlockCount: 1_032,
+        episodeCount: 33_024,
+        uniformDriftBuffer: 0.0006254995932550855,
+      },
+    ]);
+    expect(
+      localCostDriftFrontier
+        .filter((entry) => entry.uniformDriftBuffer >= 0)
+        .map((entry) => entry.runBlockCount),
+    ).toEqual([1_029, 1_030, 1_031, 1_032]);
+
     const bestCheaper = heterogeneousCounts([171, 171, 171, 171, 172, 172]);
     expect(
       Math.min(...bestCheaper.map((entry) => entry.correctMarginalSum)),
