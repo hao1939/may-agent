@@ -14,7 +14,11 @@
  */
 
 import http from "node:http";
-import { resolveXhsCdpEndpoint, selectXhsCdpTab } from "./xhs-cdp-config.mjs";
+import {
+  resolveXhsCdpEndpoint,
+  selectXhsCdpTab,
+  summarizeXhsPageStatus,
+} from "./xhs-cdp-config.mjs";
 
 let CDP_HOST;
 let CDP_PORT;
@@ -187,19 +191,17 @@ async function handleStatus(cdp) {
   const result = await cdp.evaluate(`
     (function() {
       const body = document.body?.innerText || '';
-      const noteCount = document.querySelectorAll(
-        'section.note-item, a[href*="xsec_token"], a[href*="/explore/"]'
-      ).length;
-      const loginWall = /扫码登录|手机号登录|登录后查看更多|请先登录/.test(body);
-      const ready = noteCount > 0 && !loginWall;
+      const hrefs = Array.from(document.querySelectorAll(
+        'a[href*="xsec_token"], a[href*="/explore/"], a[href*="/search_result/"], a[href*="/discovery/item/"]'
+      ), anchor => anchor.href);
+      const summarize = ${summarizeXhsPageStatus.toString()};
       return {
-        ready,
         url: window.location.href,
-        noteCount,
-        loginWall,
-        reason: ready
-          ? 'source content is readable'
-          : (loginWall ? 'XHS browser login is required' : 'no readable XHS source content found')
+        ...summarize({
+          body,
+          hrefs,
+          sectionCount: document.querySelectorAll('section.note-item').length
+        })
       };
     })()
   `);

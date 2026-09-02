@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { resolveXhsCdpEndpoint, selectXhsCdpTab } from "./xhs-cdp-config.mjs";
+import {
+  resolveXhsCdpEndpoint,
+  selectXhsCdpTab,
+  summarizeXhsPageStatus,
+} from "./xhs-cdp-config.mjs";
 
 describe("XHS Chrome DevTools endpoint configuration", () => {
   it("preserves the existing localhost default", () => {
@@ -87,5 +91,54 @@ describe("XHS Chrome DevTools target selection", () => {
       ]),
     ).toBeNull();
     expect(selectXhsCdpTab(null)).toBeNull();
+  });
+});
+
+describe("XHS page status summarization", () => {
+  it("deduplicates overlapping links by stable note ID", () => {
+    expect(
+      summarizeXhsPageStatus({
+        body: "public explore",
+        sectionCount: 2,
+        hrefs: [
+          "https://www.xiaohongshu.com/explore/6a884237000000003400f9f6?xsec_token=first",
+          "https://www.xiaohongshu.com/explore/6a884237000000003400f9f6?xsec_token=second",
+          "/search_result/6a9690dc000000001c034a3b?xsec_token=third",
+          "https://example.test/explore/6a1111110000000011111111",
+        ],
+      }),
+    ).toEqual({
+      ready: true,
+      noteCount: 2,
+      loginWall: false,
+      reason: "source content is readable",
+    });
+  });
+
+  it("keeps source sections readable without inventing stable note IDs", () => {
+    expect(
+      summarizeXhsPageStatus({
+        body: "rendering source cards",
+        sectionCount: 3,
+        hrefs: ["invalid", null],
+      }),
+    ).toMatchObject({ ready: true, noteCount: 0, loginWall: false });
+  });
+
+  it("keeps a login wall unavailable even when note links remain in the DOM", () => {
+    expect(
+      summarizeXhsPageStatus({
+        body: "请先登录",
+        sectionCount: 1,
+        hrefs: [
+          "https://www.xiaohongshu.com/discovery/item/6a884237000000003400f9f6",
+        ],
+      }),
+    ).toEqual({
+      ready: false,
+      noteCount: 1,
+      loginWall: true,
+      reason: "XHS browser login is required",
+    });
   });
 });

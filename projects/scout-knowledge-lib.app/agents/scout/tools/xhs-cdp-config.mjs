@@ -75,3 +75,57 @@ export function selectXhsCdpTab(tabs) {
       )[0]?.tab ?? null
   );
 }
+
+/**
+ * Summarize one already-open XHS page without treating overlapping DOM
+ * selectors as distinct notes. A page can still be readable when its source
+ * sections have not exposed stable note links yet; in that case noteCount is
+ * deliberately zero rather than an invented cardinality.
+ *
+ * @param {{ body?: unknown, hrefs?: unknown, sectionCount?: unknown }} input
+ * @returns {{ ready: boolean, noteCount: number, loginWall: boolean, reason: string }}
+ */
+export function summarizeXhsPageStatus(input = {}) {
+  const body = typeof input.body === "string" ? input.body : "";
+  const hrefs = Array.isArray(input.hrefs) ? input.hrefs : [];
+  const sectionCount =
+    Number.isInteger(input.sectionCount) && input.sectionCount > 0
+      ? input.sectionCount
+      : 0;
+  const noteIds = new Set();
+
+  for (const value of hrefs) {
+    if (typeof value !== "string") continue;
+    let url;
+    try {
+      url = new URL(value, "https://www.xiaohongshu.com");
+    } catch {
+      continue;
+    }
+    if (
+      url.protocol !== "https:" ||
+      (url.hostname !== "xiaohongshu.com" &&
+        !url.hostname.endsWith(".xiaohongshu.com"))
+    ) {
+      continue;
+    }
+    const match = url.pathname.match(
+      /^\/(?:explore|search_result|discovery\/item)\/([0-9a-f]{24})(?:\/|$)/i,
+    );
+    if (match) noteIds.add(match[1].toLowerCase());
+  }
+
+  const loginWall = /扫码登录|手机号登录|登录后查看更多|请先登录/.test(body);
+  const noteCount = noteIds.size;
+  const ready = (noteCount > 0 || sectionCount > 0) && !loginWall;
+  return {
+    ready,
+    noteCount,
+    loginWall,
+    reason: ready
+      ? "source content is readable"
+      : loginWall
+        ? "XHS browser login is required"
+        : "no readable XHS source content found",
+  };
+}
