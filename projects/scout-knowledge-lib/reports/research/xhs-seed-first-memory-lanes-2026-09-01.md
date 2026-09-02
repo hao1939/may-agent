@@ -5414,6 +5414,70 @@ commit this seed-only reconciliation before reconsidering any source lane or
 selecting the next exploration. Keep the mixed-scope event-chain exploration
 closed.
 
+## Cycle 52 post-seed selection — preserve one successful profile response
+
+Seed ordering is exact: the Cycle 52 access reconciliation above was committed
+first as `9761b62d6d873528bb4eeaac605d2ba515ad31b6`. Only then were
+GitHub, arXiv, and Reddit reconsidered by relevance, expected value, freshness,
+and access. The public-source observations remain trigger-current, and the
+transient profile response exposed a higher-value local evidence-capture
+question. No network request was repeated merely for lane coverage.
+
+- **GitHub/local code is selected only for a bounded local observer audit.**
+  Public GitHub remains high relevance but low new-source value at exact
+  retained heads: invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`.
+  Last useful public GitHub evidence remains Cycle 40; exact local
+  `5232795e29…ecbb` is the latest closed tooling result. The selected question
+  is whether the current Scout connector/parser retains IDs, titles, and
+  authors from one successful profile response before any later reread can
+  fail. Revisit public GitHub on a revision, artifact, independent/deployment,
+  or seed-linked trigger.
+- **arXiv is retained and deferred.** It remains high relevance but low
+  marginal new-source value. Exact HTTP-200 evidence through
+  `2026-09-02T11:47:43.870Z` retains `2608.30177v1`, `2608.25553v3`,
+  `2609.00243v1`, `2609.01235v1`, and deduplicated `2606.12290v1`.
+  MemGauge `2608.30177v1` still wins at 15/15 after the Cycle 52 seed pass;
+  `2608.25553v3` remains the 14/15 marginal result. Revisit on a paper,
+  artifact, registration, replication, or newly readable seed-body trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence is RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments; JSON remains
+  last observed HTTP 403. Revisit on seed-linked reproducible evidence, thread
+  or content change, or access change.
+
+The selected next exploration is a goal-owned inspection of the current XHS
+connector/parser and its fixtures, followed by a local capture-order
+reproduction only if the supported path can lose a successful response. It
+will change code only for a deterministic failure. It will not poll unchanged
+Xiaohongshu access, navigate a retained tab, or begin the prohibited mixed-scope
+event-chain exploration.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its two side commits remain patch-equivalent to standing commits
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04` and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf`; all four accepted final blobs
+remain byte-identical, and the three reconciliation commits remain ancestors.
+Direct side-tip containment is intentionally false under the documented
+equivalent-patch strategy. Nothing accepted is deferred, superseded, blocked,
+or known unintegrated.
+
+On the exact two-document lane candidate over seed commit
+`9761b62…ad31b6`, Prettier, whitespace, and all 21 relative links pass. The
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 99
+tests with 277 assertions. Read-only health at
+`2026-09-02T12:34:18.182Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-dated-library truths, 12 oversized canonical notes,
+and one unsourced backlog. `.state` is empty. The dirty source remains
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay remains
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer remains
+clean at `e3b0c442…b855`.
+
+This is a checkpoint, not goal completion. Validate and commit this lane
+decision, then begin the bounded local inspection without another Xiaohongshu
+request.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
