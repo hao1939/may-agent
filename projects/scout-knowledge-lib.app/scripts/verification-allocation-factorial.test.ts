@@ -8,6 +8,7 @@ import {
   buildToyFactorialSchedule,
   buildToyModelRunBlockBootstrapSpec,
   buildToyPracticalEffectDecisionSpec,
+  compareFinitePercentileNullProcesses,
   decideFactorialPracticalEffects,
   calibratePercentileNullProcesses,
   scheduleSha256,
@@ -679,6 +680,63 @@ describe("verification-allocation factorial fixture", () => {
         "percentile null calibration specification is invalid",
       ]);
     }
+  });
+
+  it("enumerates every finite 64-block composition against the exact oracle", () => {
+    const analysis = compareFinitePercentileNullProcesses(
+      buildToyPercentileNullCalibrationSpec(),
+      buildToyModelRunBlockBootstrapSpec(),
+      "calibration-model",
+    );
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.comparisonSpecSha256).toBe(
+      "83926b57b4561a0dd39e238ddf2ee010ade6818fdc38d2d6123bf0c19ab30de8",
+    );
+    expect(analysis.compositionCount).toBe(2145);
+    expect(analysis.decisionMismatchCount).toBe(26);
+    expect(analysis.mismatchExamples[0]).toEqual({
+      negativeCount: 1,
+      zeroCount: 49,
+      positiveCount: 14,
+      exactDecision: "inconclusive",
+      finiteDecision: "positive",
+    });
+    const process = (processId: string) =>
+      analysis.processes.find((entry) => entry.processId === processId)!;
+    expect(
+      process("balanced-null").finiteFalseDirectionalProbability,
+    ).toBeCloseTo(0.003173180319440574, 14);
+    expect(process("balanced-null").decisionMismatchProbability).toBeCloseTo(
+      0.000867460474092118,
+      14,
+    );
+    expect(process("dense-null")).toEqual({
+      processId: "dense-null",
+      exactFalseDirectionalProbability: expect.closeTo(
+        0.008146902228698577,
+        14,
+      ),
+      finiteFalseDirectionalProbability: expect.closeTo(
+        0.008146902228698577,
+        14,
+      ),
+      decisionMismatchProbability: 0,
+    });
+    expect(
+      process("sparse-null").finiteFalseDirectionalProbability,
+    ).toBeCloseTo(0.00025673753238608036, 14);
+    expect(analysis.scopeLimit).toContain("resampling seed, and model ID");
+  });
+
+  it("rejects an unsafe finite-comparison identity", () => {
+    expect(
+      compareFinitePercentileNullProcesses(
+        buildToyPercentileNullCalibrationSpec(),
+        buildToyModelRunBlockBootstrapSpec(),
+        "../other-model",
+      ).errors,
+    ).toEqual(["finite percentile comparison specification is invalid"]);
   });
 
   it("matches the exact dense-null decision boundary at 64 run blocks", () => {

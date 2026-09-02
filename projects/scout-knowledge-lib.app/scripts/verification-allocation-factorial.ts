@@ -221,6 +221,32 @@ export type PercentileNullCalibrationAnalysis = {
   errors: string[];
 };
 
+export type FinitePercentileComparisonAnalysis = {
+  ok: boolean;
+  comparisonSpecSha256: string;
+  calibrationSpecSha256: string;
+  bootstrapSpecSha256: string;
+  modelId: string;
+  runBlockCount: number;
+  compositionCount: number;
+  decisionMismatchCount: number;
+  mismatchExamples: Array<{
+    negativeCount: number;
+    zeroCount: number;
+    positiveCount: number;
+    exactDecision: PracticalEffectDecision;
+    finiteDecision: PracticalEffectDecision;
+  }>;
+  processes: Array<{
+    processId: string;
+    exactFalseDirectionalProbability: number;
+    finiteFalseDirectionalProbability: number;
+    decisionMismatchProbability: number;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -1600,6 +1626,199 @@ export function calibratePercentileNullProcesses(
     verificationWorstCases,
     scopeLimit:
       "Exact only for the declared symmetric trinomial nulls and run counts through the verification maximum; the separate finite-resample implementation and real model behavior remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidFinitePercentileComparisonAnalysis(
+  errors: string[],
+): FinitePercentileComparisonAnalysis {
+  return {
+    ok: false,
+    comparisonSpecSha256: "",
+    calibrationSpecSha256: "",
+    bootstrapSpecSha256: "",
+    modelId: "",
+    runBlockCount: 0,
+    compositionCount: 0,
+    decisionMismatchCount: 0,
+    mismatchExamples: [],
+    processes: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+/**
+ * Compare the canonical finite deterministic resampler with the exact
+ * conditional percentile oracle for every -1/0/+1 composition at the frozen
+ * candidate run count. Null-process probabilities are integrated exactly;
+ * the result remains conditional on the declared resampling seed and model ID.
+ */
+export function compareFinitePercentileNullProcesses(
+  calibrationCandidate: unknown,
+  bootstrapCandidate: unknown,
+  modelIdCandidate: unknown,
+): FinitePercentileComparisonAnalysis {
+  const calibrationSpec =
+    parsePercentileNullCalibrationSpec(calibrationCandidate);
+  const bootstrapSpec = parseModelRunBlockBootstrapSpec(bootstrapCandidate);
+  if (
+    !calibrationSpec ||
+    !bootstrapSpec ||
+    typeof modelIdCandidate !== "string" ||
+    !/^[a-z][a-z0-9-]*$/.test(modelIdCandidate)
+  ) {
+    return invalidFinitePercentileComparisonAnalysis([
+      "finite percentile comparison specification is invalid",
+    ]);
+  }
+  const modelId = modelIdCandidate;
+  const runBlockCount = calibrationSpec.candidateMinimumRunBlocks;
+  const calibrationSpecSha256 = createHash("sha256")
+    .update(JSON.stringify(calibrationSpec))
+    .digest("hex");
+  const bootstrapSpecSha256 = createHash("sha256")
+    .update(JSON.stringify(bootstrapSpec))
+    .digest("hex");
+  const comparisonSpecSha256 = createHash("sha256")
+    .update(
+      JSON.stringify({
+        schema: "scout.verification-allocation-finite-comparison/v1",
+        evidenceClass: "synthetic-analysis-fixture",
+        calibrationSpecSha256,
+        bootstrapSpecSha256,
+        modelId,
+        runBlockCount,
+        compositionEnumeration: "complete",
+      }),
+    )
+    .digest("hex");
+
+  const sampledPrefixes = Array.from(
+    { length: bootstrapSpec.resamples },
+    (_, replicate) => {
+      const indexCounts = new Uint16Array(runBlockCount);
+      for (let draw = 0; draw < runBlockCount; draw += 1) {
+        const blockIndex = deterministicBlockIndex(
+          bootstrapSpec.resamplingSeedSha256,
+          replicate,
+          modelId,
+          draw,
+          runBlockCount,
+        );
+        indexCounts[blockIndex]! += 1;
+      }
+      const prefix = new Uint16Array(runBlockCount + 1);
+      for (let index = 0; index < runBlockCount; index += 1) {
+        prefix[index + 1] = prefix[index]! + indexCounts[index]!;
+      }
+      return prefix;
+    },
+  );
+  const logFactorials = [0];
+  for (let count = 1; count <= runBlockCount; count += 1) {
+    logFactorials[count] = logFactorials[count - 1]! + Math.log(count);
+  }
+  const processRates = new Map(
+    calibrationSpec.processes.map((process) => [
+      process.id,
+      {
+        exactFalseDirectionalProbability: 0,
+        finiteFalseDirectionalProbability: 0,
+        decisionMismatchProbability: 0,
+      },
+    ]),
+  );
+  const mismatchExamples: FinitePercentileComparisonAnalysis["mismatchExamples"] =
+    [];
+  let compositionCount = 0;
+  let decisionMismatchCount = 0;
+
+  for (
+    let negativeCount = 0;
+    negativeCount <= runBlockCount;
+    negativeCount += 1
+  ) {
+    for (
+      let zeroCount = 0;
+      zeroCount <= runBlockCount - negativeCount;
+      zeroCount += 1
+    ) {
+      const positiveCount = runBlockCount - negativeCount - zeroCount;
+      compositionCount += 1;
+      const exactDecision = exactTrinomialPercentileDecision(
+        runBlockCount,
+        negativeCount,
+        zeroCount,
+        positiveCount,
+        calibrationSpec.lowerQuantile,
+        calibrationSpec.upperQuantile,
+        calibrationSpec.practicalDelta,
+      );
+      const finiteReplicates = sampledPrefixes.map((prefix) => {
+        const negativeDraws = prefix[negativeCount]!;
+        const nonPositiveDraws = prefix[negativeCount + zeroCount]!;
+        return (
+          (runBlockCount - nonPositiveDraws - negativeDraws) / runBlockCount
+        );
+      });
+      const finiteDecision = classifyPracticalInterval(
+        empiricalQuantile(finiteReplicates, bootstrapSpec.lowerQuantile),
+        empiricalQuantile(finiteReplicates, bootstrapSpec.upperQuantile),
+        calibrationSpec.practicalDelta,
+      );
+      const mismatch = finiteDecision !== exactDecision;
+      if (mismatch) {
+        decisionMismatchCount += 1;
+        if (mismatchExamples.length < 12) {
+          mismatchExamples.push({
+            negativeCount,
+            zeroCount,
+            positiveCount,
+            exactDecision,
+            finiteDecision,
+          });
+        }
+      }
+
+      for (const process of calibrationSpec.processes) {
+        const probability = exactMultinomialProbability(
+          runBlockCount,
+          negativeCount,
+          zeroCount,
+          positiveCount,
+          process.probabilities,
+          logFactorials,
+        );
+        const rates = processRates.get(process.id)!;
+        if (exactDecision === "positive" || exactDecision === "negative") {
+          rates.exactFalseDirectionalProbability += probability;
+        }
+        if (finiteDecision === "positive" || finiteDecision === "negative") {
+          rates.finiteFalseDirectionalProbability += probability;
+        }
+        if (mismatch) rates.decisionMismatchProbability += probability;
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    comparisonSpecSha256,
+    calibrationSpecSha256,
+    bootstrapSpecSha256,
+    modelId,
+    runBlockCount,
+    compositionCount,
+    decisionMismatchCount,
+    mismatchExamples,
+    processes: calibrationSpec.processes.map((process) => ({
+      processId: process.id,
+      ...processRates.get(process.id)!,
+    })),
+    scopeLimit:
+      "Exact only for the frozen 64-block -1/0/+1 composition space, null processes, resampling seed, and model ID; other run counts, identifiers, effects, dependence, alternatives, and real models remain uncalibrated.",
     errors: [],
   };
 }
