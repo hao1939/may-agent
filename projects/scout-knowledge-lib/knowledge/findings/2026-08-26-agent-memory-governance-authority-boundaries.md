@@ -2,7 +2,7 @@
 summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. REST/gRPC trajectory filters are operator narrowing rather than tenant authorization, while the event hash chain is aggregate across organization-owned and null-owned records rather than independently verifiable per organization. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -947,6 +947,35 @@ aggregate chain, or disclosure of the omitted links. Simply adding `org_id` to
 the verifier would turn healthy interleaving into false integrity violations.
 There is no deployed or upstream-reviewed evidence for the local test-only
 clarification.
+
+### Agent and thread are a conjunctive integrity scope
+
+Cycle 30 tested the independent selector question on exact base
+`52001f0e01144726aa9be11b8f0f153c40857e78`. The fixture wrote one Alice event
+and one Bob event under the same thread. Pre-fix Alice/thread and Bob/thread
+calls returned the same invalid two-record result: each verified one record and
+then failed at Bob event `01a06095-9b27-7740-86d1-e492279db9ea` with `event
+chain hash mismatch`. The identical outputs were not evidence that either
+agent's chain was corrupt. Source trace showed that `verify_event_integrity`
+resolved its `agent_id`, but discarded it whenever `thread_id` was present and
+loaded every event in the thread.
+
+Local repair `5bf23661edc50ff341c7328c05629b8929cabd48` adds one chronological
+`(agent_id, thread_id)` storage query to both DuckDB and PostgreSQL and uses it
+for thread-scoped verification. The strengthened DuckDB regression now returns
+valid one-of-one results for both Alice and Bob. The existing isolated-schema
+PostgreSQL migration fixture inserts both principals under the shared thread
+and retrieves only the selected event for each pair. This preserves the Cycle
+29 aggregate organization contract: organizations can interleave inside one
+agent chain, while distinct agents retain distinct chains even when they share
+a thread label.
+
+Formatting, strict all-target Clippy for both changed packages, the focused
+regression, the full core suite (299 passing with one intentional network test
+ignored), two core doctests, the full PostgreSQL package, and the live
+goal-owned PostgreSQL fixture pass. The live database used an existing
+goal-owned pgvector container and isolated schema; its credential was not
+published. The candidate remains local, unreviewed upstream, and undeployed.
 
 ## Why it matters
 
