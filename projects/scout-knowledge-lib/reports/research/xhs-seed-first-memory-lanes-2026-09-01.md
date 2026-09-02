@@ -5478,6 +5478,65 @@ This is a checkpoint, not goal completion. Validate and commit this lane
 decision, then begin the bounded local inspection without another Xiaohongshu
 request.
 
+## Cycle 52 checkpoint — status now selects the readable XHS tab
+
+The local inspection found that Scout did not fetch the transient saved profile
+at all, so there was no supported profile-response race to repair. It did expose
+a smaller deterministic defect in the supported status path. Chrome listed the
+XHS `/login` page before `/explore`; Scout selected the first matching page and
+returned `ready:false`, the login URL, `noteCount:0`, `loginWall:false`, and “no
+readable XHS source content found.” The unchanged Explore page already held the
+known 30-card public inventory.
+
+Exact reviewed commit `26c8d771006acbc7ec301a18d679ee0556c2de56` is the
+smallest repair. It parses target URLs, admits only HTTPS Xiaohongshu page
+targets, ranks Explore/search above profile and other routes, ranks login last,
+and preserves browser order among equal-ranked targets. The same observational
+status command now chooses `/explore` and returns `ready:true`,
+`noteCount:150`, `loginWall:false`, and “source content is readable.” The 150
+value counts overlapping selectors in the existing readiness check; it is not
+150 distinct posts and does not replace the deduplicated 30-card fingerprint.
+
+Six focused tests with nine assertions cover the reproduced tab order, profile
+fallback, equal-rank stability, non-page targets, deceptive hosts, and invalid
+input. The repository-compatible Node 22 and Bun runtimes both reproduce the
+live success inside Chrome PID 2136's network namespace. Root's default Node 18
+returns `WebSocket is not defined`; that is the exact runtime-wiring boundary,
+not evidence about Xiaohongshu access. No page was navigated and no account or
+content state was mutated.
+
+The scope remains narrow: this repair makes supported source status observe an
+already-readable tab. It does not add saved-profile history lookup, fetch a
+collection snapshot, retain the transient ten profile cards, establish an
+authenticated principal, or change the Cycle 52 reconciliation. GitHub public
+evidence and its triggers remain unchanged; arXiv `2608.30177v1` remains the
+15/15 anchor; Reddit remains deferred at RSS-readable/JSON-403 without quota
+work.
+
+The only accepted Scout side range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+Its accepted commits remain patch-equivalent to standing `f9784d9…c04` and
+`20fd9d8…3ac`, all four final blobs remain byte-identical, and all three
+standing reconciliation commits remain ancestors. Direct side-tip ancestry is
+false by the documented equivalent-patch strategy. Nothing accepted is
+deferred, superseded, blocked, or known unintegrated.
+
+On the exact two-document checkpoint candidate over repair commit
+`26c8d77…2de56`, Prettier, whitespace, and all 21 relative links pass. The
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 102
+tests with 281 assertions. Read-only health at
+`2026-09-02T12:40:47.705Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-dated-library truths, 12 oversized canonical notes,
+and one unsourced backlog. `.state` is empty. The dirty source remains
+`386b445c…1fec8`, 882 records, `c1940fbb…51eb7001`; the human overlay remains
+`fd4c68ec…4663`, three records, `a52b97aa…25394a15`; every other peer remains
+clean at `e3b0c442…b855`.
+
+This is a checkpoint, not goal completion. After exact-candidate validation,
+documentation, integration-equivalence, clean-tip, and protected-fingerprint
+proof, commit the durable record and begin the next cycle seed-first. Do not
+begin the mixed-scope event-chain exploration.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
