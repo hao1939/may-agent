@@ -71,3 +71,10 @@ validator also runs the factorial isolation verifier over the bound schedule.
 It is an offline structural and byte-binding gate: it does not contact a
 provider, verify that an external URL or timestamp is genuine, authenticate
 lineage, or grant call or spending authority.
+
+For an explicit goal-owned directory, use `verifyExecutionFreezeBundle` from
+[`scripts/verification-allocation-freeze-bundle.ts`](scripts/verification-allocation-freeze-bundle.ts).
+It reads the fixed `freeze-manifest.json`, inventories the directory, and
+rejects relative roots, traversal-shaped artifact names, symlinks, non-regular
+entries, and undeclared files before invoking the same offline gate. Directory
+validation does not authenticate provenance or authorize provider calls.
