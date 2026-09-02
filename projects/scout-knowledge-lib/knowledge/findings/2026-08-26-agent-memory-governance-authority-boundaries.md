@@ -1380,6 +1380,16 @@ Confidence is high for the tested mechanics and low for statistical coverage
 or real-model transfer: the model set is fixed, only two synthetic runs are
 used, and neither an authenticated producer nor provider execution is present.
 
+Cycle 70 freezes the downstream practical-effect policy at exact local commit
+`96b5762c675d8710438bdf5aae75cd132d7f708c`. With a synthetic `0.10`
+threshold, unanimous-model requirement, and conflict-to-inconclusive rule, the
+opposed-model aggregate `[0,0]` is no longer misreported as negligible: every
+stratum remains inconclusive because the named models are positive and
+negative. Unanimous authority and plan controls still resolve as positive and
+negligible. This supports conflict-aware interpretation and contradicts a
+pooled-only decision. Confidence is high for the deterministic gate and low
+for threshold choice or statistical calibration; no provider result is used.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

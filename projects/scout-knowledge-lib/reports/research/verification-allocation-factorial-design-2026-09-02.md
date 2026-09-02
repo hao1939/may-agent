@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–69 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f, 3aaba3f61478ba2ee8493fbb668139ba0b1c8599, and 6a22b25107c1e77b79b4b55e6a0057ce7ee9b424."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–70 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f, 3aaba3f61478ba2ee8493fbb668139ba0b1c8599, 6a22b25107c1e77b79b4b55e6a0057ce7ee9b424, and 96b5762c675d8710438bdf5aae75cd132d7f708c."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -316,6 +316,36 @@ provider call, authenticated producer, external timestamp, or cost authority
 exists. The next bounded question is to freeze and test a practical-effect
 decision rule that refuses a pooled conclusion when named-model directions
 conflict.
+
+## Cycle 70 practical-effect decision gate
+
+Exact local commit `96b5762c675d8710438bdf5aae75cd132d7f708c`
+adds a content-addressed decision layer above the schedule-bound block
+bootstrap. The synthetic policy fixes a practical-delta threshold of `0.10`,
+percentile intervals, unanimous named-model decisions, and an inconclusive
+conflict disposition. Its exact SHA-256 is
+`378f8988ddcef4d1905a4cf24ce67a069521db8f0281468c442b11d66531f0aa`.
+Non-finite or boundary thresholds and policies that pool or ignore conflict
+fail closed.
+
+On the exact 128-episode schedule, result bundle, and bootstrap specification
+from Cycles 68–69, the aggregate interval `[0,0]` falls wholly inside the toy
+negligible region. The authority model is nevertheless positive and the
+inverse model negative. The gate therefore returns **inconclusive** in all four
+plan-by-temptation strata with reason “named-model point estimates have
+opposing directions.” Matched unanimous authority models return positive in
+all four strata; matched plan-only models return negligible throughout.
+
+This supports the mechanical claim that a pooled interval cannot override
+named-model disagreement under the frozen policy. It contradicts promoting the
+same aggregate `[0,0]` to a negligible-behavior conclusion. Confidence is high
+for deterministic classification and provenance binding, but low for the
+substantive `0.10` threshold or frequentist operating characteristics: the
+threshold is a synthetic fixture value, the percentile intervals remain
+uncalibrated, and no model response was sampled. The next bounded question is
+to test false-conclusion behavior under known synthetic run-generating
+processes and establish a defensible minimum run-block gate before any provider
+execution.
 
 ## Go/no-go boundary
 
