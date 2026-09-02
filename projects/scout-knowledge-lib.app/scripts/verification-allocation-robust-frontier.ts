@@ -177,20 +177,27 @@ for (const gapLimit of gaps) {
       selectedRows.push(row);
       remaining -= row.runBlockCount;
     }
+    const orderedRows = selectedRows.sort(
+      (left, right) => left.runBlockCount - right.runBlockCount,
+    );
     const actualGap = Math.max(
-      ...selectedRows.map(
+      ...orderedRows.map(
         (row) =>
           row.strongCorrectDirectionalProbability -
           row.moderateCorrectDirectionalProbability,
       ),
     );
-    const worstCorrectMarginalSum = previous[total]! - actualGap;
+    const worstCorrectMarginalSum =
+      orderedRows.reduce(
+        (sum, row) => sum + row.strongCorrectDirectionalProbability,
+        0,
+      ) - actualGap;
     const existing = bestByTotal[total];
     if (existing && existing.worstCorrectMarginalSum >= worstCorrectMarginalSum)
       continue;
     const worstWrongSum = Math.max(
-      ...selectedRows.map((moderateRow, moderateIndex) =>
-        selectedRows.reduce(
+      ...orderedRows.map((moderateRow, moderateIndex) =>
+        orderedRows.reduce(
           (sum, row, index) =>
             sum +
             (index === moderateIndex
@@ -203,9 +210,7 @@ for (const gapLimit of gaps) {
     bestByTotal[total] = {
       runBlockCount: total,
       episodeCount: total * 32,
-      allocation: selectedRows
-        .map((row) => row.runBlockCount)
-        .sort((left, right) => left - right),
+      allocation: orderedRows.map((row) => row.runBlockCount),
       worstCorrectMarginalSum,
       uniformDriftBuffer:
         (worstCorrectMarginalSum - minimumCorrectMarginalSum) / modelCount,
