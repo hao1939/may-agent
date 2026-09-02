@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { inspectXhsSavedProfileStatus } from "./xhs-browse.mjs";
+import {
+  fingerprintXhsSavedProfileAccess,
+  inspectXhsSavedProfileStatus,
+} from "./xhs-browse.mjs";
 
 const EMPTY_SHA256 =
   "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -69,6 +72,8 @@ describe("XHS saved-profile status inspection", () => {
       targetEvidenceSha256:
         "1d842861979e899b1aea8df8498d6f1a42c5906df2aab47693231d91e114a5bd",
       targetQueryKeys: ["tab"],
+      accessFingerprint:
+        "60da356b88ea030c2f6e87e48803b8ac900fa38c9c3bb296c88ad932e3788e17",
       httpStatus: 200,
       contentType: "text/html; charset=utf-8",
       finalLocation: "login",
@@ -138,5 +143,57 @@ describe("XHS saved-profile status inspection", () => {
       ),
     ).rejects.toThrow("invalid summary");
     expect(calls.at(-1)).toBe("close");
+  });
+
+  it("separates volatile body provenance from stable access equivalence", () => {
+    const evidence = {
+      targetEvidenceSha256: "1".repeat(64),
+      targetQueryKeys: ["subTab", "tab"],
+      httpStatus: 200,
+      contentType: "text/html; charset=utf-8",
+      finalLocation: "login",
+      byteLength: 46672,
+      attributableItemCount: 0,
+      idFingerprint: EMPTY_SHA256,
+      loginWall: true,
+    };
+    const baseline = fingerprintXhsSavedProfileAccess({
+      ...evidence,
+      bodySha256: "a".repeat(64),
+    });
+
+    expect(
+      fingerprintXhsSavedProfileAccess({
+        ...evidence,
+        bodySha256: "b".repeat(64),
+      }),
+    ).toBe(baseline);
+    for (const changed of [
+      { targetEvidenceSha256: "2".repeat(64) },
+      { targetQueryKeys: ["tab"] },
+      { httpStatus: 403 },
+      { contentType: "application/json" },
+      { finalLocation: "profile" },
+      { byteLength: 46673 },
+      { attributableItemCount: 1 },
+      { idFingerprint: "3".repeat(64) },
+      { loginWall: false },
+    ]) {
+      expect(
+        fingerprintXhsSavedProfileAccess({ ...evidence, ...changed }),
+      ).not.toBe(baseline);
+    }
+    expect(() =>
+      fingerprintXhsSavedProfileAccess({
+        ...evidence,
+        targetQueryKeys: ["tab", "tab"],
+      }),
+    ).toThrow("invalid");
+    expect(() =>
+      fingerprintXhsSavedProfileAccess({
+        ...evidence,
+        targetQueryKeys: ["token"],
+      }),
+    ).toThrow("invalid");
   });
 });

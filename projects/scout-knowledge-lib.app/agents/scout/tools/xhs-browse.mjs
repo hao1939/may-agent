@@ -292,6 +292,52 @@ function safeSavedProfileSummary(value) {
   };
 }
 
+/**
+ * Fingerprint only the supported access boundary. The exact response-body hash
+ * remains separate byte provenance and deliberately cannot perturb this value.
+ */
+export function fingerprintXhsSavedProfileAccess(value) {
+  const sha256 = /^[0-9a-f]{64}$/;
+  const allowedKeys = new Set(["tab", "subTab"]);
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    typeof value.targetEvidenceSha256 !== "string" ||
+    !sha256.test(value.targetEvidenceSha256) ||
+    !Array.isArray(value.targetQueryKeys) ||
+    value.targetQueryKeys.some(
+      (key) => typeof key !== "string" || !allowedKeys.has(key),
+    ) ||
+    new Set(value.targetQueryKeys).size !== value.targetQueryKeys.length ||
+    JSON.stringify(value.targetQueryKeys) !==
+      JSON.stringify([...value.targetQueryKeys].sort())
+  ) {
+    throw new Error("Saved-profile access evidence is invalid");
+  }
+
+  const summary = safeSavedProfileSummary({
+    ...value,
+    bodySha256: "0".repeat(64),
+  });
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        "xhs-saved-profile-access/v1",
+        value.targetEvidenceSha256,
+        value.targetQueryKeys,
+        summary.httpStatus,
+        summary.contentType,
+        summary.finalLocation,
+        summary.byteLength,
+        summary.attributableItemCount,
+        summary.idFingerprint,
+        summary.loginWall,
+      ]),
+    )
+    .digest("hex");
+}
+
 function historyTabRank(tab) {
   try {
     return new URL(tab.url).pathname === "/login" ? 0 : 1;
@@ -334,15 +380,22 @@ export async function inspectXhsSavedProfileStatus(
       const observed = safeSavedProfileSummary(
         await cdp.evaluate(savedProfileFetchExpression(target.requestUrl)),
       );
+      const targetEvidenceSha256 = createHash("sha256")
+        .update(target.evidenceUrl)
+        .digest("hex");
+      const accessFingerprint = fingerprintXhsSavedProfileAccess({
+        targetEvidenceSha256,
+        targetQueryKeys: target.queryKeys,
+        ...observed,
+      });
       return {
         ready:
           observed.finalLocation === "profile" &&
           !observed.loginWall &&
           observed.attributableItemCount > 0,
-        targetEvidenceSha256: createHash("sha256")
-          .update(target.evidenceUrl)
-          .digest("hex"),
+        targetEvidenceSha256,
         targetQueryKeys: target.queryKeys,
+        accessFingerprint,
         ...observed,
       };
     } finally {
