@@ -1,6 +1,12 @@
 import { constants } from "node:fs";
-import { lstat, open, readdir, realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import {
+  type FileHandle,
+  lstat,
+  open,
+  readdir,
+  realpath,
+} from "node:fs/promises";
+import { isAbsolute } from "node:path";
 import {
   type FreezeVerificationResult,
   verifyExecutionFreezeManifest,
@@ -18,11 +24,6 @@ function failed(errors: string[]): FreezeVerificationResult {
     episodeCount: 0,
     providerCallsAuthorized: false,
   };
-}
-
-function staysWithin(root: string, candidate: string): boolean {
-  const path = relative(root, candidate);
-  return path === "" || (!path.startsWith(`..${sep}`) && path !== "..");
 }
 
 function safeArtifactName(value: unknown): value is string {
@@ -52,8 +53,19 @@ function declaredArtifactNames(manifest: unknown): unknown[] {
   );
 }
 
-async function readRegularFileNoFollow(path: string): Promise<Uint8Array> {
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+function descriptorPath(parent: FileHandle, name = ""): string {
+  const root = `/proc/self/fd/${parent.fd}`;
+  return name ? `${root}/${name}` : root;
+}
+
+async function readRegularChildNoFollow(
+  parent: FileHandle,
+  name: string,
+): Promise<Uint8Array> {
+  const handle = await open(
+    descriptorPath(parent, name),
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
   try {
     const status = await handle.stat();
     if (!status.isFile()) throw new Error("entry is not a regular file");
@@ -64,35 +76,46 @@ async function readRegularFileNoFollow(path: string): Promise<Uint8Array> {
 }
 
 async function collectFiles(
-  root: string,
-  directory: string,
+  directory: FileHandle,
+  prefix: string,
   errors: string[],
   files: Map<string, Uint8Array>,
 ): Promise<void> {
-  const entries = await readdir(directory, { withFileTypes: true });
+  const entries = await readdir(descriptorPath(directory), {
+    withFileTypes: true,
+  });
   for (const entry of entries) {
-    const path = resolve(directory, entry.name);
-    const name = relative(root, path).split(sep).join("/");
+    const name = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.isSymbolicLink()) {
       errors.push(`symbolic links are not allowed in a freeze bundle: ${name}`);
       continue;
     }
     if (entry.isDirectory()) {
-      await collectFiles(root, path, errors, files);
+      let child: FileHandle | undefined;
+      try {
+        child = await open(
+          descriptorPath(directory, entry.name),
+          constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+        );
+        const status = await child.stat();
+        if (!status.isDirectory()) throw new Error("entry is not a directory");
+        await collectFiles(child, name, errors, files);
+      } catch (error) {
+        errors.push(
+          `bundle directory could not be opened without following symbolic links: ${name}: ${String(error)}`,
+        );
+      } finally {
+        await child?.close();
+      }
       continue;
     }
     if (!entry.isFile()) {
       errors.push(`non-regular bundle entry is not allowed: ${name}`);
       continue;
     }
-    const canonical = await realpath(path);
-    if (!staysWithin(root, canonical)) {
-      errors.push(`bundle entry escapes its root: ${name}`);
-      continue;
-    }
     if (name !== MANIFEST_NAME) {
       try {
-        files.set(name, await readRegularFileNoFollow(path));
+        files.set(name, await readRegularChildNoFollow(directory, entry.name));
       } catch (error) {
         errors.push(
           `bundle entry could not be opened without following symbolic links: ${name}: ${String(error)}`,
@@ -116,53 +139,68 @@ export async function verifyExecutionFreezeBundle(
     return failed(["bundle root must be an explicit absolute path"]);
   }
 
-  let root: string;
+  let rootHandle: FileHandle | undefined;
   try {
     const rootStatus = await lstat(bundleRoot);
     if (rootStatus.isSymbolicLink() || !rootStatus.isDirectory()) {
       return failed(["bundle root must be a real directory, not a symlink"]);
     }
-    root = await realpath(bundleRoot);
+    const root = await realpath(bundleRoot);
+    rootHandle = await open(
+      root,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+    );
+    const openedStatus = await rootHandle.stat();
+    if (
+      openedStatus.dev !== rootStatus.dev ||
+      openedStatus.ino !== rootStatus.ino
+    ) {
+      await rootHandle.close();
+      rootHandle = undefined;
+      return failed(["bundle root changed while it was being opened"]);
+    }
   } catch (error) {
+    await rootHandle?.close();
     return failed([`bundle root is not readable: ${String(error)}`]);
   }
 
-  const manifestPath = resolve(root, MANIFEST_NAME);
-  let manifest: unknown;
   try {
-    const manifestStatus = await lstat(manifestPath);
-    if (manifestStatus.isSymbolicLink() || !manifestStatus.isFile()) {
-      return failed(["freeze-manifest.json must be a regular file"]);
+    let manifest: unknown;
+    try {
+      manifest = JSON.parse(
+        new TextDecoder().decode(
+          await readRegularChildNoFollow(rootHandle, MANIFEST_NAME),
+        ),
+      ) as unknown;
+    } catch (error) {
+      return failed([
+        `freeze-manifest.json is not readable JSON: ${String(error)}`,
+      ]);
     }
-    manifest = JSON.parse(
-      new TextDecoder().decode(await readRegularFileNoFollow(manifestPath)),
-    ) as unknown;
-  } catch (error) {
-    return failed([
-      `freeze-manifest.json is not readable JSON: ${String(error)}`,
-    ]);
-  }
 
-  const unsafeNames = declaredArtifactNames(manifest).filter(
-    (name) => !safeArtifactName(name),
-  );
-  if (unsafeNames.length > 0) {
-    return failed(
-      unsafeNames.map(
-        (name) =>
-          `artifact name is not a canonical relative path: ${String(name)}`,
-      ),
+    const unsafeNames = declaredArtifactNames(manifest).filter(
+      (name) => !safeArtifactName(name),
     );
-  }
+    if (unsafeNames.length > 0) {
+      return failed(
+        unsafeNames.map(
+          (name) =>
+            `artifact name is not a canonical relative path: ${String(name)}`,
+        ),
+      );
+    }
 
-  const errors: string[] = [];
-  const files = new Map<string, Uint8Array>();
-  try {
-    await collectFiles(root, root, errors, files);
-  } catch (error) {
-    errors.push(`freeze bundle could not be inventoried: ${String(error)}`);
-  }
-  if (errors.length > 0) return failed(errors);
+    const errors: string[] = [];
+    const files = new Map<string, Uint8Array>();
+    try {
+      await collectFiles(rootHandle, "", errors, files);
+    } catch (error) {
+      errors.push(`freeze bundle could not be inventoried: ${String(error)}`);
+    }
+    if (errors.length > 0) return failed(errors);
 
-  return verifyExecutionFreezeManifest(manifest, Object.fromEntries(files));
+    return verifyExecutionFreezeManifest(manifest, Object.fromEntries(files));
+  } finally {
+    await rootHandle.close();
+  }
 }

@@ -78,6 +78,9 @@ It reads the fixed `freeze-manifest.json`, inventories the directory, and
 rejects relative roots, traversal-shaped artifact names, symlinks, non-regular
 entries, and undeclared files before invoking the same offline gate. Regular
 files are opened through no-follow descriptors, so replacing an inventoried
-file with a final-component symlink cannot redirect the subsequent read.
-Directory validation does not authenticate provenance or authorize provider
-calls.
+file with a final-component symlink cannot redirect the subsequent read. On
+the Linux Scout runtime, the root directory remains pinned and recursive
+children are opened relative to its `/proc/self/fd` descriptor chain, so an
+intermediate directory replacement also fails closed. A runtime without that
+descriptor filesystem cannot validate a directory bundle. Directory
+validation does not authenticate provenance or authorize provider calls.

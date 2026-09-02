@@ -186,6 +186,63 @@ describe("verification-allocation freeze bundle", () => {
     ).toBe(true);
   });
 
+  it("rejects a directory replaced by a symlink after root inventory", async () => {
+    const { root, manifest } = await fixture();
+    const directoryNames = Array.from(
+      { length: 500 },
+      (_, index) => `entry-${index.toString().padStart(4, "0")}`,
+    );
+    await Promise.all(
+      directoryNames.map(async (name) => {
+        const directory = join(root, name);
+        await mkdir(directory);
+        await writeFile(join(directory, "payload.txt"), "same");
+      }),
+    );
+    manifest.artifacts.push(
+      ...directoryNames.map((name) => ({
+        name: `${name}/payload.txt`,
+        sha256: freezeArtifactSha256("same"),
+      })),
+    );
+    const inventoryOrder = await readdir(root);
+    const target = inventoryOrder.findLast((name) =>
+      directoryNames.includes(name),
+    )!;
+    const source = directoryNames.find((name) => name !== target)!;
+    manifest.seedPolicy.policyArtifact = `${target}/payload.txt`;
+    manifest.models[0]!.resolutionEvidenceArtifact = `${source}/payload.txt`;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const replacementRoot = await mkdtemp(
+      join(tmpdir(), "scout-freeze-directory-swap-"),
+    );
+    temporaryRoots.push(replacementRoot);
+    const replacement = join(replacementRoot, "replacement");
+    await mkdir(replacement);
+    await writeFile(join(replacement, "payload.txt"), "same");
+
+    const resultPromise = verifyExecutionFreezeBundle(root);
+    await Bun.sleep(5);
+    await rename(join(root, target), join(replacementRoot, "moved"));
+    await rename(replacement, join(root, ".replacement"));
+    await symlink(".replacement", join(root, target));
+    const result = await resultPromise;
+
+    expect((await lstat(join(root, target))).isSymbolicLink()).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(
+      result.errors.some((error) =>
+        error.includes(
+          `bundle directory could not be opened without following symbolic links: ${target}`,
+        ),
+      ),
+    ).toBe(true);
+  });
+
   it("rejects undeclared files discovered by the directory inventory", async () => {
     const { root } = await fixture();
     await writeFile(join(root, "undeclared.txt"), "not in the manifest");
