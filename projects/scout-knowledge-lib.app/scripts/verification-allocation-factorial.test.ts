@@ -966,33 +966,102 @@ describe("verification-allocation factorial fixture", () => {
 
     expect(analysis.ok).toBe(true);
     expect(analysis.comparisonSpecSha256).toBe(
-      "c4f6c80564d7e83c2b99024a7d9ac0f84e98fdb0fc1aeb22bd00fb77b8adf24c",
+      "465a3c1041b4dce920f323df04e50276aeac0e1c7f804ed1dbd356d751de1542",
     );
+    expect(
+      buildToyPercentileEstimandComparisonSpec()
+        .maximumWrongDirectionalProbability,
+    ).toBe(0.01);
     expect(analysis.calibrationMethod).toBe("exact-trinomial-enumeration");
     expect(analysis.monteCarloStandardError).toBe(0);
     expect(analysis.runBlockCount).toBe(105);
     expect(directional.decisionDelta).toBe(0);
     expect(practical.decisionDelta).toBe(0.1);
-    expect(directional.nullReport).toHaveLength(3);
+    expect(directional.nullReport).toHaveLength(4);
     expect(directional.alternativeReport).toHaveLength(4);
     expect(
-      directional.nullReport.every(
-        (entry) => !entry.passesWrongDirectionTolerance,
-      ),
+      directional.nullReport
+        .filter((entry) => entry.expectedEffect === 0)
+        .every((entry) => !entry.passesWrongDirectionTolerance),
     ).toBe(true);
     expect(
-      practical.nullReport.every(
-        (entry) => entry.passesWrongDirectionTolerance,
-      ),
+      practical.nullReport
+        .filter((entry) => entry.expectedEffect === 0)
+        .every((entry) => entry.passesWrongDirectionTolerance),
     ).toBe(true);
+    const nullDecisionRates = (
+      report: typeof directional.nullReport,
+      processId: string,
+    ) => {
+      const entry = report.find(
+        (candidate) => candidate.processId === processId,
+      )!;
+      return [
+        entry.positiveDecisionProbability,
+        entry.negativeDecisionProbability,
+        entry.falseDirectionalProbability,
+      ];
+    };
+    expect(nullDecisionRates(directional.nullReport, "balanced-null")).toEqual([
+      expect.closeTo(0.0224673763533166, 14),
+      expect.closeTo(0.02246737635331652, 14),
+      expect.closeTo(0.04493475270663312, 14),
+    ]);
+    expect(nullDecisionRates(directional.nullReport, "dense-null")).toEqual([
+      expect.closeTo(0.025221078319989557, 14),
+      expect.closeTo(0.02522107831998931, 14),
+      expect.closeTo(0.05044215663997886, 14),
+    ]);
+    expect(nullDecisionRates(directional.nullReport, "sparse-null")).toEqual([
+      expect.closeTo(0.021339991156998733, 14),
+      expect.closeTo(0.021339991156998687, 14),
+      expect.closeTo(0.04267998231399742, 14),
+    ]);
     expect(
-      directional.nullReport.find((entry) => entry.processId === "dense-null")!
-        .falseDirectionalProbability,
-    ).toBeCloseTo(0.05044215663997886, 14);
+      nullDecisionRates(
+        directional.nullReport,
+        "positive-practical-boundary-null",
+      ),
+    ).toEqual([
+      expect.closeTo(0.289256693611456, 14),
+      expect.closeTo(0.00027161058571514634, 14),
+      expect.closeTo(0.00027161058571514634, 14),
+    ]);
+    expect(nullDecisionRates(practical.nullReport, "balanced-null")).toEqual([
+      expect.closeTo(0.00040765099445983454, 14),
+      expect.closeTo(0.0004076509944598306, 14),
+      expect.closeTo(0.0008153019889196652, 14),
+    ]);
+    expect(nullDecisionRates(practical.nullReport, "dense-null")).toEqual([
+      expect.closeTo(0.0016104949343995274, 14),
+      expect.closeTo(0.0016104949343995292, 14),
+      expect.closeTo(0.0032209898687990566, 14),
+    ]);
+    expect(nullDecisionRates(practical.nullReport, "sparse-null")).toEqual([
+      expect.closeTo(0.00001203362988695852, 14),
+      expect.closeTo(0.000012033629886958369, 14),
+      expect.closeTo(0.000024067259773916887, 14),
+    ]);
     expect(
-      practical.nullReport.find((entry) => entry.processId === "dense-null")!
-        .falseDirectionalProbability,
-    ).toBeCloseTo(0.0032209898687990566, 14);
+      nullDecisionRates(
+        practical.nullReport,
+        "positive-practical-boundary-null",
+      ),
+    ).toEqual([
+      expect.closeTo(0.028051868524189363, 14),
+      expect.closeTo(7.753540473255935e-7, 14),
+      expect.closeTo(0.028052643878236687, 14),
+    ]);
+    const directionalBoundary = directional.nullReport.find(
+      (entry) => entry.processId === "positive-practical-boundary-null",
+    )!;
+    const practicalBoundary = practical.nullReport.find(
+      (entry) => entry.processId === "positive-practical-boundary-null",
+    )!;
+    expect(directionalBoundary.expectedEffect).toBeCloseTo(0.1, 14);
+    expect(directionalBoundary.falsePositiveDirectionProbability).toBe(0);
+    expect(directionalBoundary.passesWrongDirectionTolerance).toBe(true);
+    expect(practicalBoundary.passesWrongDirectionTolerance).toBe(false);
     for (const directionalProcess of directional.alternativeReport) {
       const practicalProcess = practical.alternativeReport.find(
         (entry) => entry.processId === directionalProcess.processId,
@@ -1023,8 +1092,18 @@ describe("verification-allocation factorial fixture", () => {
         (entry) => entry.processId === "moderate-positive",
       )!.correctDirectionalProbability,
     ).toBeCloseTo(0.5344140683113935, 14);
+    expect(
+      practical.alternativeReport.find(
+        (entry) => entry.processId === "strong-positive",
+      )!.correctDirectionalProbability,
+    ).toBeCloseTo(0.8045178323414782, 14);
+    expect(
+      practical.alternativeReport.find(
+        (entry) => entry.processId === "moderate-positive",
+      )!.correctDirectionalProbability,
+    ).toBeCloseTo(0.11132478415415377, 14);
     expect(analysis.scopeLimit).toContain(
-      "directional claim does not inherit the practical claim's null-risk result",
+      "false-direction accounting is estimand-specific",
     );
   });
 
@@ -1033,12 +1112,14 @@ describe("verification-allocation factorial fixture", () => {
     for (const candidate of [
       { ...spec, directionalDecisionDelta: 0.01 },
       { ...spec, practicalDecisionDelta: 0 },
+      { ...spec, maximumWrongDirectionalProbability: 0.02 },
       { ...spec, runBlockCount: 257 },
+      { ...spec, nullProcesses: spec.nullProcesses.slice(0, 3) },
       {
         ...spec,
         nullProcesses: spec.nullProcesses.map((process, index) =>
           index === 0
-            ? { ...process, probabilities: [0.2, 0.5, 0.3] }
+            ? { ...process, probabilities: [0.2, 0.4, 0.4] }
             : process,
         ),
       },

@@ -366,6 +366,9 @@ export type PercentileEstimandComparisonAnalysis = {
     decisionDelta: number;
     nullReport: Array<{
       processId: string;
+      expectedEffect: number;
+      positiveDecisionProbability: number;
+      negativeDecisionProbability: number;
       falsePositiveDirectionProbability: number;
       falseNegativeDirectionProbability: number;
       falseDirectionalProbability: number;
@@ -399,7 +402,13 @@ export type DirectionalQuantileCalibrationAnalysis = {
   candidates: Array<{
     lowerQuantile: number;
     upperQuantile: number;
-    nullReport: PercentileEstimandComparisonAnalysis["estimands"][number]["nullReport"];
+    nullReport: Array<{
+      processId: string;
+      falsePositiveDirectionProbability: number;
+      falseNegativeDirectionProbability: number;
+      falseDirectionalProbability: number;
+      passesWrongDirectionTolerance: boolean;
+    }>;
     passesAllNulls: boolean;
   }>;
   selectedLowerQuantile: number | null;
@@ -1297,7 +1306,13 @@ export function buildToyPercentileEstimandComparisonSpec(): PercentileEstimandCo
       alternativeCalibration.minimumCorrectDirectionalPower,
     maximumWrongDirectionalProbability:
       alternativeCalibration.maximumWrongDirectionalProbability,
-    nullProcesses: nullCalibration.processes,
+    nullProcesses: [
+      ...nullCalibration.processes,
+      {
+        id: "positive-practical-boundary-null",
+        probabilities: [0.2, 0.5, 0.3],
+      },
+    ],
     alternativeProcesses: alternativeCalibration.processes,
   };
 }
@@ -2677,25 +2692,54 @@ function parsePercentileEstimandComparisonSpec(
     spec.practicalDecisionDelta >= 1 ||
     !Number.isInteger(spec.runBlockCount) ||
     (spec.runBlockCount as number) < 2 ||
-    (spec.runBlockCount as number) > 256
+    (spec.runBlockCount as number) > 256 ||
+    spec.maximumWrongDirectionalProbability !== 0.01
   ) {
     return null;
   }
 
-  const nullSpec = parsePercentileNullCalibrationSpec({
-    schema: "scout.verification-allocation-null-calibration/v1",
-    evidenceClass: spec.evidenceClass,
-    calibrationMethod: spec.calibrationMethod,
-    effectSupport: spec.effectSupport,
-    practicalDelta: spec.practicalDecisionDelta,
-    lowerQuantile: spec.lowerQuantile,
-    upperQuantile: spec.upperQuantile,
-    falseDirectionalTolerance: spec.maximumWrongDirectionalProbability,
-    candidateMinimumRunBlocks: spec.runBlockCount,
-    verificationMaximumRunBlocks: spec.runBlockCount,
-    reportRunBlockCounts: [spec.runBlockCount],
-    processes: spec.nullProcesses,
-  });
+  if (!Array.isArray(spec.nullProcesses) || spec.nullProcesses.length === 0)
+    return null;
+  const nullProcessIds = new Set<string>();
+  let hasAsymmetricPracticalNull = false;
+  for (const candidateProcess of spec.nullProcesses as unknown[]) {
+    if (
+      !candidateProcess ||
+      typeof candidateProcess !== "object" ||
+      Array.isArray(candidateProcess)
+    )
+      return null;
+    const process = candidateProcess as Record<string, unknown>;
+    if (
+      Object.keys(process).sort().join(",") !== "id,probabilities" ||
+      typeof process.id !== "string" ||
+      !/^[a-z][a-z0-9-]*$/.test(process.id) ||
+      nullProcessIds.has(process.id) ||
+      !Array.isArray(process.probabilities) ||
+      process.probabilities.length !== 3 ||
+      process.probabilities.some(
+        (probability) =>
+          typeof probability !== "number" ||
+          !Number.isFinite(probability) ||
+          probability < 0 ||
+          probability > 1,
+      )
+    )
+      return null;
+    const [negative, zero, positive] = process.probabilities as [
+      number,
+      number,
+      number,
+    ];
+    const expectedEffect = positive - negative;
+    if (
+      Math.abs(negative + zero + positive - 1) > 1e-12 ||
+      Math.abs(expectedEffect) > (spec.practicalDecisionDelta as number) + 1e-12
+    )
+      return null;
+    hasAsymmetricPracticalNull ||= Math.abs(expectedEffect) > 1e-12;
+    nullProcessIds.add(process.id);
+  }
   const alternativeSpec = parsePercentileAlternativeCalibrationSpec({
     schema: "scout.verification-allocation-alternative-calibration/v1",
     evidenceClass: spec.evidenceClass,
@@ -2710,13 +2754,13 @@ function parsePercentileEstimandComparisonSpec(
     processes: spec.alternativeProcesses,
   });
   if (
-    !nullSpec ||
+    !hasAsymmetricPracticalNull ||
     !alternativeSpec ||
     new Set([
-      ...nullSpec.processes.map((process) => process.id),
+      ...nullProcessIds,
       ...alternativeSpec.processes.map((process) => process.id),
     ]).size !==
-      nullSpec.processes.length + alternativeSpec.processes.length
+      nullProcessIds.size + alternativeSpec.processes.length
   )
     return null;
   return spec as unknown as PercentileEstimandComparisonSpec;
@@ -2790,11 +2834,21 @@ export function comparePercentileEstimands(
       decisionDelta,
       nullReport: spec.nullProcesses.map((process) => {
         const rate = rates.get(process.id)!;
-        const falseDirectionalProbability = rate.positive + rate.negative;
+        const expectedEffect =
+          process.probabilities[2] - process.probabilities[0];
+        const falsePositiveDirectionProbability =
+          expectedEffect <= decisionDelta + 1e-12 ? rate.positive : 0;
+        const falseNegativeDirectionProbability =
+          expectedEffect >= -decisionDelta - 1e-12 ? rate.negative : 0;
+        const falseDirectionalProbability =
+          falsePositiveDirectionProbability + falseNegativeDirectionProbability;
         return {
           processId: process.id,
-          falsePositiveDirectionProbability: rate.positive,
-          falseNegativeDirectionProbability: rate.negative,
+          expectedEffect,
+          positiveDecisionProbability: rate.positive,
+          negativeDecisionProbability: rate.negative,
+          falsePositiveDirectionProbability,
+          falseNegativeDirectionProbability,
           falseDirectionalProbability,
           passesWrongDirectionTolerance:
             falseDirectionalProbability <=
@@ -2838,7 +2892,7 @@ export function comparePercentileEstimands(
     runBlockCount: spec.runBlockCount,
     estimands,
     scopeLimit:
-      "Exact only for the two frozen estimands, symmetric trinomial nulls, mirror-paired alternatives, and one run count; the directional claim does not inherit the practical claim's null-risk result, and dependence, continuous effects, provider behavior, and real models remain uncalibrated.",
+      "Exact only for the two frozen estimands, declared trinomial practical-null processes (including one asymmetric positive boundary), mirror-paired alternatives, and one run count; the asymmetric practical null is a positive directional process, so false-direction accounting is estimand-specific, and dependence, continuous effects, provider behavior, and real models remain uncalibrated.",
     errors: [],
   };
 }
