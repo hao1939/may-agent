@@ -7523,10 +7523,13 @@ relevance, expected value, freshness, and access.
 - **GitHub was selected for one bounded refresh and is now deferred.** Its
   last exact head evidence was more than thirty minutes old. Four anonymous
   read-only commit requests from `2026-09-02T15:11:22.425Z` through
-  `15:11:24.235Z` returned HTTP 200. Cross-episode memory client remains
-  `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, self-reflective API server
-  remains `567b6a0e01b49de6b353eb32a3e2f6774052225e`, MutMem remains
-  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and Mnemo remains
+  `15:11:24.235Z` returned HTTP 200. Repository identities and heads are
+  `beining1008/cross-episode-memory-client` at
+  `4c0dabd64b36035d6fc18eb66be99d4b7779c641`,
+  `arquicanedo/self-reflective-apis` at
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`,
+  `wallidsaydi-creator/HOM-AIMOS` (MutMem) at
+  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at
   `2994abf185da50d43e5fa4b3f826812bd09c2f20`. This curl build rejected the
   attempted response-header writeout variable, so its four emitted `}` rate
   strings are unusable. The read-only rate endpoint at
@@ -7573,6 +7576,20 @@ bounded wait. The next trigger is any new seed observation, accepted Scout ref,
 repository revision, paper version or artifact, Reddit content or access
 change, independent/deployment result, or readable seed. Keep mixed-scope
 event-chain work closed.
+
+Independent review range
+`577986efc1095aa4ceab403d911cc544161a58e5..ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`
+supports the factual and validation claims but dispositions the process as
+**revise**. `RV-001` is accepted: four unchanged-head reads plus a rate read 44
+minutes after Cycle 63 did not change any decision, so sub-hour elapsed age is
+no longer a request trigger. Future public GitHub reads require a revision,
+artifact, independent/deployment, or readable-seed signal; absent such a
+signal, a scheduled no-change audit waits at least 24 hours and updates the
+compact continuity cursor rather than appending another narrative checkpoint.
+`RV-002` is accepted and resolved by the stable owner/repository identities
+beside all four exact hashes above. The reviewer independently matched all four
+heads, including MutMem after the arXiv record resolved it to
+`wallidsaydi-creator/HOM-AIMOS`.
 
 ## Supervision
 

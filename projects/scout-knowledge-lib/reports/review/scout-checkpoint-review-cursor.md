@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing checkpoint 577986efc1095aa4ceab403d911cc544161a58e5; its factual continuity evidence is supported, while two process findings remain open."
+summary: "Independent Scout review cursor through standing checkpoint 577986efc1095aa4ceab403d911cc544161a58e5; its factual continuity evidence is supported and both review findings are accepted and resolved on the standing branch."
 triggers: ["Scout independent review", "checkpoint review cursor", "open Scout review findings"]
 last_updated: "2026-09-02"
 source_basis: "Exact standing-branch diff and tree at 577986efc1095aa4ceab403d911cc544161a58e5; independent current-tree Scout validation; relative-link and ancestry checks; bounded public GitHub provenance spot-checks."
@@ -18,8 +18,9 @@ findings in one place.
 - Review date: `2026-09-02T23:43:22+08:00`
 - Review artifact:
   [Cycle 65 checkpoint review](./scout-checkpoint-577986ef-review-2026-09-02.md)
-- Overall disposition: **revise**. The no-change facts and validation claims are
-  supported, but the refresh cadence and standalone provenance need revision.
+- Overall disposition: **revised**. The no-change facts and validation claims
+  are supported; the standing owner accepted and resolved both findings after
+  integrating the two reviewer commits in order.
 
 ## Evidence examined
 
@@ -40,19 +41,20 @@ findings in one place.
   `cb82bee8e24b446ff9aea2e3ff947205e44fef53` are ancestors of the reviewed
   standing commit.
 
-## Unresolved findings
+## Findings and standing-owner resolution
 
 | ID | Severity | Affected artifact | User impact | Disposition | Resolution condition |
 | --- | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 checkpoint in `xhs-seed-first-memory-lanes-2026-09-01.md` | Four head requests plus a rate request only 44 minutes after the same four heads were checked produced no new decision, while adding 65 lines to a 522 KB report. This spends quota and makes useful findings harder to retrieve. | Revise | Use a change-bearing trigger or a materially longer compact audit cadence for unchanged heads; record repeated no-change state in a compact cursor instead of another narrative checkpoint. |
-| `RV-002` | Low | Cycle 65 GitHub evidence paragraph | All four hashes were independently supported, but repository identities required another knowledge note and the primary arXiv record. A future reader cannot reproduce the observations from this checkpoint alone. | Revise | Name the owner/repository or stable source link beside every refreshed head, including MutMem. |
+| `RV-001` | Medium | Cycle 65 checkpoint in `xhs-seed-first-memory-lanes-2026-09-01.md` | Four head requests plus a rate request only 44 minutes after the same four heads were checked produced no new decision, while adding 65 lines to a 522 KB report. This spends quota and makes useful findings harder to retrieve. | **Resolved** | The topic map and producer checkpoint now require a change-bearing trigger or a compact scheduled audit at least 24 hours after the last exact pass. Sub-hour age alone no longer triggers requests, and repeated no-change state goes in the compact cursor. |
+| `RV-002` | Low | Cycle 65 GitHub evidence paragraph | All four hashes were independently supported, but repository identities required another knowledge note and the primary arXiv record. A future reader cannot reproduce the observations from this checkpoint alone. | **Resolved** | The producer checkpoint and current lane table now name `beining1008/cross-episode-memory-client`, `arquicanedo/self-reflective-apis`, `wallidsaydi-creator/HOM-AIMOS`, and `sattyamjjain/mnemo` beside their exact heads. |
 
-No finding is rejected, superseded, or blocked. Both remain pending until the
-standing owner either integrates the refinements or records a reasoned
-disagreement. The reviewed producer checkpoint is already integrated on the
-standing branch; this reviewer result is not landed until the standing branch
-contains this artifact or a patch-equivalent resolution and validates its
-current tip.
+No finding is rejected, superseded, or blocked. The standing branch integrated
+reviewer commits `7959ccea48c2b5f7f40289cb211cbf38245502ad` and
+`ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355` in order as standing commits
+`24e0f91f6e1e1e7b9fb4794a0a6c0a11051b42d6` and
+`18ab0bc8afc6e884361482cd5d9ab0a4b258b996`. The accepted producer facts stay
+visible; the current standing-owner documents supply the cadence and identity
+corrections.
 
 ## Supervision
 
