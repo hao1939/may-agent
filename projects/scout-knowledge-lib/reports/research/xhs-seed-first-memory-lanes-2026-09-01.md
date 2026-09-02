@@ -2932,6 +2932,70 @@ Xiaohongshu reconciliation before any source-lane work or new exploration is
 selected. The already-answered mixed-scope event-chain question remains
 deferred rather than repeated.
 
+## Accepted-range reconciliation gate after Cycle 33
+
+What was wrong: the accepted self-evolution follow-up still lived on a branch
+that is not an ancestor of the standing line, so commit presence alone could
+not prove that its result was reconciled. Cycle 33's exact reviewed material is
+first committed cleanly on `codex/g-c1b31972-scout-loop` as
+`4cd5c2db7d128dd4e451f993e996f7e211abdd15`. This gate then compares the
+accepted range against the standing result rather than replaying already
+applied content.
+
+The accepted inputs considered are predecessor
+`8c5d8747a6b4be8d65703792911360a9082d8b51` on
+`codex/g-8c56b7d5-self-evolution` and follow-up range
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+on `codex/g-475c9885-xhs-body-evolution`. Predecessor content was reconciled as
+standing commit `cb82bee8e24b446ff9aea2e3ff947205e44fef53`. Source commits
+`8f611fec0adb19a6a44ac0202c094fe30ee298de` and
+`df80a1daa26e353bd33fcf2e9d24860917b695de` match standing commits
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04` and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf` one for one in `git range-diff`.
+Their stable patch IDs are exactly `9a8b80e36cb8b6effb3d651d3f22940ab46f626d`
+and `5b5b393747d74d9b8cb9b59f4dceedb460d18eb9` on both sides.
+
+Every accepted overlap was also checked at the final-tree boundary. The
+canonical synthesis blob is `d4a0d99d…93ba`, the deep-dive report is
+`8f59dfe3…dc7`, the unified ledger is `bd2753fd…0464`, and the Xiaohongshu
+ledger is `d48a29c9…0ebd` at both accepted `df80a1da` and the standing line.
+The four-file diff is empty. A merge or second cherry-pick would therefore
+duplicate changes instead of preserving an omitted side; exact patch
+equivalence is the safer reconciliation. No accepted Scout result is deferred,
+blocked, superseded, or known to remain unintegrated.
+
+The integration does not rewrite earlier findings. Cycle 20's exact generated
+resource UUIDs and marker strings remain in this report, and the later
+authoritative three-of-three full-chain result remains recorded with its
+one-of-two Alpha projection qualification. GitHub/local code's last useful
+Cycle 33 evidence remains Mnemo regression `9e4a1fee…f5fa0`; arXiv
+`2608.30177v1` remains the separate 15/15 stage-wise anchor; Reddit remains
+deferred at RSS HTTP 200/six comments and JSON HTTP 403. Their existing revisit
+triggers remain unchanged.
+
+Validation covers both sides of the reconciliation. The accepted ledgers have
+908 unique nine-column Xiaohongshu rows and 984 unique fourteen-column lead
+rows with no empty research question; they reproduce the 163 core / 296
+adjacent / 449 out-of-scope split, 896 metadata-only / 11 readable-body / one
+image-only access split, and sorted-ID SHA-256 `f66e7c76…e77b6`. The standing
+Scout gate passes syntax bundling, TypeScript, Prettier, and all 78 tests with
+226 assertions. All 25 relative links across the three current documents and
+two accepted Markdown artifacts resolve. The read-only health scan at
+`2026-09-02T08:04:07.463Z` remains truncated at 26 facts and 16 wake signals:
+13 future-date, 12 oversized-note, and one unsourced-backlog fact. The app
+`.state` remains empty before and after validation at `e3b0c442…b855`.
+
+Protected fingerprints remain unchanged after the integration review. `/app`
+is still `386b445c…fec8` with 881 NUL-delimited porcelain-v2 records and
+`1f6163f7…d31b`; the user overlay is still `fd4c68ec…663` with three records
+and `a52b97aa…4a15`. Both accepted source worktrees and every other peer keep
+their recorded revisions and clean `e3b0c442…b855` status.
+
+This reconciliation is a checkpoint, not goal completion. On a clean validated
+standing tip, Cycle 34 must begin with a fresh observational Xiaohongshu
+reconciliation before any GitHub, arXiv, Reddit, or implementation selection.
+The mixed-scope event-chain exploration stays deferred.
+
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"
