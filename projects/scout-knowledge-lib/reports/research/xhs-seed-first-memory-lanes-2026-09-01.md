@@ -3654,6 +3654,50 @@ validated and committed on the standing branch, Cycle 39 begins with a fresh
 Xiaohongshu reconciliation. The next exploration will be selected from that
 new state; the resolved mixed-scope event chain remains closed.
 
+## Cycle 39 seed-first start — saved collection fetch now ends at login
+
+Cycle 38 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`a417160edcee5a8162265f37b7a7c5c96ef72eee`. Exact-tip validation passes
+syntax bundling, TypeScript, Prettier, all 78 tests with 226 assertions, and all
+19 relative links. Read-only health at `2026-09-02T09:56:00.988Z` remains
+bounded and truncated at 26 facts and 16 wake signals. `.state` is empty. The
+accepted self-evolution range remains represented by two exact range-diff
+matches, stable patch IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9`, and four
+identical final blobs. Nothing accepted is deferred, blocked, superseded, or
+known unintegrated. The authoritative three-of-three reflection result and
+Cycle 20's exact pre-fix UUIDs remain retained.
+
+Only then did Cycle 39 begin. The bounded observer ran from
+`2026-09-02T09:57:13.423Z` through `09:58:39.399Z`. Worker-loopback reads to
+9222 and 9333 failed with curl exit 7 and HTTP 000. Effective UID 0 inside
+root-owned Chrome PID 2136's network namespace reached DevTools at HTTP 200.
+That grants observational use of the existing browser session, not
+Xiaohongshu account authority. The repository adapter under system Node first
+stopped locally because `WebSocket` was unavailable; under the compatible Bun
+runtime it returned `ready=false`, zero notes, and no readable source content.
+
+One credentialed read-only fetch used the saved profile-note target without
+navigating a tab. It returned HTTP 200 but ended at `/login`. The 46,672-byte
+response had 34 raw 24-hex strings at fingerprint `8503b26a…f6eed`, zero note
+sections, zero attributable cards, and zero collection links. Cycle 38's
+unattributed shell had 149,499 bytes and 65 strings at `a607c2de…ff5cd`; the
+new response is a stricter access boundary, not collection evidence.
+
+Public Explore retained exactly 30 cards at fingerprint `dbadf511…e529e13`.
+Representative `6a884237000000003400f9f6` remained present, while its current
+signed link again returned HTTP 200 ending at `/404`, 106,924 bytes, without a
+readable detail title or description. A first richer expression failed at
+local parse time before any browser read; the corrected observer succeeded.
+No page was navigated and no Xiaohongshu state was mutated.
+
+Against Cycle 38, added IDs and title/author changes remain unknown, observed
+removed IDs are `[]`, and all 132 durable seeds remain unavailable rather than
+removed. Cycle 20 stays the last comparable authenticated snapshot. This
+reconciliation is persisted before any GitHub, arXiv, or Reddit decision. The
+next action is to commit and validate this seed checkpoint, then reconsider all
+three lanes and select a new exploration from the reconciled state. The
+mixed-scope event-chain exploration remains closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
