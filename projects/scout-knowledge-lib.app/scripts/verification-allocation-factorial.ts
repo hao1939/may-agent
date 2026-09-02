@@ -242,6 +242,9 @@ export type FinitePercentileComparisonAnalysis = {
     exactFalseDirectionalProbability: number;
     finiteFalseDirectionalProbability: number;
     decisionMismatchProbability: number;
+    finiteDirectionalExactNonDirectionalProbability: number;
+    exactDirectionalFiniteNonDirectionalProbability: number;
+    remainingDecisionMismatchProbability: number;
   }>;
   scopeLimit: string;
   errors: string[];
@@ -1727,6 +1730,9 @@ export function compareFinitePercentileNullProcesses(
         exactFalseDirectionalProbability: 0,
         finiteFalseDirectionalProbability: 0,
         decisionMismatchProbability: 0,
+        finiteDirectionalExactNonDirectionalProbability: 0,
+        exactDirectionalFiniteNonDirectionalProbability: 0,
+        remainingDecisionMismatchProbability: 0,
       },
     ]),
   );
@@ -1769,6 +1775,10 @@ export function compareFinitePercentileNullProcesses(
         calibrationSpec.practicalDelta,
       );
       const mismatch = finiteDecision !== exactDecision;
+      const exactDirectional =
+        exactDecision === "positive" || exactDecision === "negative";
+      const finiteDirectional =
+        finiteDecision === "positive" || finiteDecision === "negative";
       if (mismatch) {
         decisionMismatchCount += 1;
         if (mismatchExamples.length < 12) {
@@ -1792,13 +1802,24 @@ export function compareFinitePercentileNullProcesses(
           logFactorials,
         );
         const rates = processRates.get(process.id)!;
-        if (exactDecision === "positive" || exactDecision === "negative") {
+        if (exactDirectional) {
           rates.exactFalseDirectionalProbability += probability;
         }
-        if (finiteDecision === "positive" || finiteDecision === "negative") {
+        if (finiteDirectional) {
           rates.finiteFalseDirectionalProbability += probability;
         }
-        if (mismatch) rates.decisionMismatchProbability += probability;
+        if (mismatch) {
+          rates.decisionMismatchProbability += probability;
+          if (finiteDirectional && !exactDirectional) {
+            rates.finiteDirectionalExactNonDirectionalProbability +=
+              probability;
+          } else if (exactDirectional && !finiteDirectional) {
+            rates.exactDirectionalFiniteNonDirectionalProbability +=
+              probability;
+          } else {
+            rates.remainingDecisionMismatchProbability += probability;
+          }
+        }
       }
     }
   }

@@ -722,6 +722,9 @@ describe("verification-allocation factorial fixture", () => {
         14,
       ),
       decisionMismatchProbability: 0,
+      finiteDirectionalExactNonDirectionalProbability: 0,
+      exactDirectionalFiniteNonDirectionalProbability: 0,
+      remainingDecisionMismatchProbability: 0,
     });
     expect(
       process("sparse-null").finiteFalseDirectionalProbability,
@@ -845,6 +848,44 @@ describe("verification-allocation factorial fixture", () => {
     expect(
       process(2, "balanced-null").decisionMismatchProbability,
     ).toBeGreaterThan(process(1, "balanced-null").decisionMismatchProbability);
+    expect(analyses[2]!.mismatchExamples).toEqual([
+      {
+        negativeCount: 6,
+        zeroCount: 36,
+        positiveCount: 22,
+        exactDecision: "inconclusive",
+        finiteDecision: "positive",
+      },
+      {
+        negativeCount: 8,
+        zeroCount: 31,
+        positiveCount: 25,
+        exactDecision: "inconclusive",
+        finiteDecision: "positive",
+      },
+      {
+        negativeCount: 25,
+        zeroCount: 31,
+        positiveCount: 8,
+        exactDecision: "inconclusive",
+        finiteDecision: "negative",
+      },
+    ]);
+    expect(
+      process(2, "balanced-null")
+        .finiteDirectionalExactNonDirectionalProbability,
+    ).toBeCloseTo(0.0003965403610030345, 14);
+    expect(
+      process(2, "sparse-null").finiteDirectionalExactNonDirectionalProbability,
+    ).toBeCloseTo(1.3726857835043323e-8, 14);
+    for (const processId of ["balanced-null", "dense-null", "sparse-null"]) {
+      expect(
+        process(2, processId).exactDirectionalFiniteNonDirectionalProbability,
+      ).toBe(0);
+      expect(process(2, processId).remainingDecisionMismatchProbability).toBe(
+        0,
+      );
+    }
     expect(
       analyses.every((analysis) =>
         analysis.processes.every(
@@ -852,6 +893,15 @@ describe("verification-allocation factorial fixture", () => {
         ),
       ),
     ).toBe(true);
+    for (const analysis of analyses) {
+      for (const entry of analysis.processes) {
+        expect(
+          entry.finiteDirectionalExactNonDirectionalProbability +
+            entry.exactDirectionalFiniteNonDirectionalProbability +
+            entry.remainingDecisionMismatchProbability,
+        ).toBeCloseTo(entry.decisionMismatchProbability, 14);
+      }
+    }
   });
 
   it("matches the exact dense-null decision boundary at 64 run blocks", () => {
