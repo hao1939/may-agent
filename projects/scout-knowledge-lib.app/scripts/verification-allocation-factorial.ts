@@ -145,6 +145,41 @@ export type ModelRunBlockBootstrapAnalysis = {
   errors: string[];
 };
 
+export type PracticalEffectDecision =
+  | "positive"
+  | "negative"
+  | "negligible"
+  | "inconclusive";
+
+export type PracticalEffectDecisionSpec = {
+  schema: "scout.verification-allocation-practical-decision/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  practicalDelta: number;
+  intervalRule: "percentile";
+  namedModelPolicy: "unanimous";
+  conflictPolicy: "inconclusive";
+};
+
+export type PracticalEffectDecisionAnalysis = {
+  ok: boolean;
+  scheduleSha256: string;
+  bundleSha256: string;
+  bootstrapSpecSha256: string;
+  decisionSpecSha256: string;
+  strata: Array<{
+    plan: DirectionLevel;
+    temptation: DirectionLevel;
+    modelDecisions: Array<{
+      modelId: string;
+      decision: PracticalEffectDecision;
+    }>;
+    aggregateIntervalDecision: PracticalEffectDecision;
+    decision: PracticalEffectDecision;
+    reason: string;
+  }>;
+  errors: string[];
+};
+
 const MODEL_IDS = ["fixture-model-a"];
 const SEED_IDS = ["fixture-seed-00", "fixture-seed-01"];
 const DIRECTIONS: DirectionLevel[] = ["decoy", "target"];
@@ -810,6 +845,17 @@ export function buildToyModelRunBlockBootstrapSpec(): ModelRunBlockBootstrapSpec
   };
 }
 
+export function buildToyPracticalEffectDecisionSpec(): PracticalEffectDecisionSpec {
+  return {
+    schema: "scout.verification-allocation-practical-decision/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    practicalDelta: 0.1,
+    intervalRule: "percentile",
+    namedModelPolicy: "unanimous",
+    conflictPolicy: "inconclusive",
+  };
+}
+
 function invalidBootstrapAnalysis(
   errors: string[],
 ): ModelRunBlockBootstrapAnalysis {
@@ -1005,6 +1051,145 @@ export function bootstrapFactorialModelRunBlocks(
     resamplingUnit: spec.resamplingUnit,
     models,
     equalModel,
+    errors: [],
+  };
+}
+
+function invalidPracticalDecisionAnalysis(
+  errors: string[],
+): PracticalEffectDecisionAnalysis {
+  return {
+    ok: false,
+    scheduleSha256: "",
+    bundleSha256: "",
+    bootstrapSpecSha256: "",
+    decisionSpecSha256: "",
+    strata: [],
+    errors,
+  };
+}
+
+function parsePracticalEffectDecisionSpec(
+  candidate: unknown,
+): PracticalEffectDecisionSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "conflictPolicy,evidenceClass,intervalRule,namedModelPolicy,practicalDelta,schema" ||
+    spec.schema !== "scout.verification-allocation-practical-decision/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    typeof spec.practicalDelta !== "number" ||
+    !Number.isFinite(spec.practicalDelta) ||
+    spec.practicalDelta <= 0 ||
+    spec.practicalDelta >= 1 ||
+    spec.intervalRule !== "percentile" ||
+    spec.namedModelPolicy !== "unanimous" ||
+    spec.conflictPolicy !== "inconclusive"
+  ) {
+    return null;
+  }
+  return spec as PracticalEffectDecisionSpec;
+}
+
+function classifyPracticalInterval(
+  lower: number,
+  upper: number,
+  practicalDelta: number,
+): PracticalEffectDecision {
+  if (lower > practicalDelta) return "positive";
+  if (upper < -practicalDelta) return "negative";
+  if (lower >= -practicalDelta && upper <= practicalDelta) return "negligible";
+  return "inconclusive";
+}
+
+/**
+ * Apply a frozen practical-effect rule to the schedule-bound block bootstrap.
+ * A pooled interval cannot decide the result unless every named model has the
+ * same conclusive classification. This remains synthetic decision tooling.
+ */
+export function decideFactorialPracticalEffects(
+  schedule: FactorialSchedule,
+  resultBundle: unknown,
+  bootstrapSpec: unknown,
+  decisionSpecCandidate: unknown,
+): PracticalEffectDecisionAnalysis {
+  const decisionSpec = parsePracticalEffectDecisionSpec(decisionSpecCandidate);
+  if (!decisionSpec) {
+    return invalidPracticalDecisionAnalysis([
+      "practical-effect decision specification is invalid",
+    ]);
+  }
+  const bootstrap = bootstrapFactorialModelRunBlocks(
+    schedule,
+    resultBundle,
+    bootstrapSpec,
+  );
+  if (!bootstrap.ok) {
+    return invalidPracticalDecisionAnalysis(
+      bootstrap.errors.map((error) => `block bootstrap: ${error}`),
+    );
+  }
+
+  const strata = bootstrap.equalModel.map((aggregate, stratumIndex) => {
+    const modelDecisions = bootstrap.models.map((model) => ({
+      modelId: model.modelId,
+      decision: classifyPracticalInterval(
+        model.strata[stratumIndex]!.lower,
+        model.strata[stratumIndex]!.upper,
+        decisionSpec.practicalDelta,
+      ),
+    }));
+    const aggregateIntervalDecision = classifyPracticalInterval(
+      aggregate.lower,
+      aggregate.upper,
+      decisionSpec.practicalDelta,
+    );
+    const namedDecisions = new Set(
+      modelDecisions.map((model) => model.decision),
+    );
+    let decision: PracticalEffectDecision = "inconclusive";
+    let reason = "named-model intervals are inconclusive";
+
+    if (aggregate.directionConflict) {
+      reason = "named-model point estimates have opposing directions";
+    } else if (
+      modelDecisions.some((model) => model.decision === "inconclusive")
+    ) {
+      reason = "at least one named-model interval is inconclusive";
+    } else if (namedDecisions.size !== 1) {
+      reason = "named-model practical-effect decisions disagree";
+    } else {
+      const unanimousDecision = modelDecisions[0]!.decision;
+      if (aggregateIntervalDecision !== unanimousDecision) {
+        reason =
+          "aggregate interval does not support the unanimous model decision";
+      } else {
+        decision = unanimousDecision;
+        reason = "aggregate and all named-model intervals agree";
+      }
+    }
+
+    return {
+      plan: aggregate.plan,
+      temptation: aggregate.temptation,
+      modelDecisions,
+      aggregateIntervalDecision,
+      decision,
+      reason,
+    };
+  });
+
+  return {
+    ok: true,
+    scheduleSha256: bootstrap.scheduleSha256,
+    bundleSha256: bootstrap.bundleSha256,
+    bootstrapSpecSha256: bootstrap.bootstrapSpecSha256,
+    decisionSpecSha256: createHash("sha256")
+      .update(JSON.stringify(decisionSpec))
+      .digest("hex"),
+    strata,
     errors: [],
   };
 }

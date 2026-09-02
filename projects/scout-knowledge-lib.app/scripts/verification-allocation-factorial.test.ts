@@ -6,6 +6,8 @@ import {
   buildSyntheticFactorialSchedule,
   buildToyFactorialSchedule,
   buildToyModelRunBlockBootstrapSpec,
+  buildToyPracticalEffectDecisionSpec,
+  decideFactorialPracticalEffects,
   scheduleSha256,
   scoreAllocationAnswer,
   TOY_SCHEDULE_SHA256,
@@ -479,5 +481,126 @@ describe("verification-allocation factorial fixture", () => {
         lowerQuantile: Number.NaN,
       }).errors,
     ).toEqual(["model/run block bootstrap specification is invalid"]);
+  });
+
+  it("refuses a pooled practical conclusion when named models conflict", () => {
+    const schedule = buildSyntheticFactorialSchedule(
+      ["authority-model", "inverse-model"],
+      ["fixture-seed-00", "fixture-seed-01"],
+    );
+    const outcomes = schedule.episodes.map((episode) => {
+      const current = episode.factors.targetStatus === "current";
+      const selectsTarget =
+        episode.modelId === "authority-model" ? current : !current;
+      return {
+        episodeId: episode.id,
+        answer: {
+          selected_memory_id: selectsTarget
+            ? episode.targetMemoryId
+            : episode.decoyMemoryId,
+        },
+      };
+    });
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes,
+    };
+
+    const analysis = decideFactorialPracticalEffects(
+      schedule,
+      bundle,
+      buildToyModelRunBlockBootstrapSpec(),
+      buildToyPracticalEffectDecisionSpec(),
+    );
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.decisionSpecSha256).toHaveLength(64);
+    expect(
+      analysis.strata.map((stratum) => ({
+        modelDecisions: stratum.modelDecisions.map((model) => model.decision),
+        aggregateIntervalDecision: stratum.aggregateIntervalDecision,
+        decision: stratum.decision,
+        reason: stratum.reason,
+      })),
+    ).toEqual(
+      Array.from({ length: 4 }, () => ({
+        modelDecisions: ["positive", "negative"],
+        aggregateIntervalDecision: "negligible",
+        decision: "inconclusive",
+        reason: "named-model point estimates have opposing directions",
+      })),
+    );
+  });
+
+  it("requires unanimous model and aggregate practical decisions", () => {
+    const schedule = buildSyntheticFactorialSchedule(
+      ["model-a", "model-b"],
+      ["fixture-seed-00", "fixture-seed-01"],
+    );
+    const bundleFor = (policy: "authority" | "plan") => ({
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: schedule.episodes.map((episode) => {
+        const selectsTarget =
+          policy === "authority"
+            ? episode.factors.targetStatus === "current"
+            : episode.factors.plan === "target";
+        return {
+          episodeId: episode.id,
+          answer: {
+            selected_memory_id: selectsTarget
+              ? episode.targetMemoryId
+              : episode.decoyMemoryId,
+          },
+        };
+      }),
+    });
+    const decide = (policy: "authority" | "plan") =>
+      decideFactorialPracticalEffects(
+        schedule,
+        bundleFor(policy),
+        buildToyModelRunBlockBootstrapSpec(),
+        buildToyPracticalEffectDecisionSpec(),
+      );
+
+    expect(
+      decide("authority").strata.map((stratum) => stratum.decision),
+    ).toEqual(["positive", "positive", "positive", "positive"]);
+    expect(decide("plan").strata.map((stratum) => stratum.decision)).toEqual([
+      "negligible",
+      "negligible",
+      "negligible",
+      "negligible",
+    ]);
+  });
+
+  it("rejects an unfrozen practical-effect rule", () => {
+    const schedule = buildToyFactorialSchedule();
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: toyPolicyOutcomes("authority", schedule),
+    };
+    const spec = buildToyPracticalEffectDecisionSpec();
+
+    for (const candidate of [
+      { ...spec, practicalDelta: Number.NaN },
+      { ...spec, practicalDelta: 0 },
+      { ...spec, namedModelPolicy: "pooled" },
+      { ...spec, conflictPolicy: "ignore" },
+    ]) {
+      expect(
+        decideFactorialPracticalEffects(
+          schedule,
+          bundle,
+          buildToyModelRunBlockBootstrapSpec(),
+          candidate,
+        ).errors,
+      ).toEqual(["practical-effect decision specification is invalid"]);
+    }
   });
 });
