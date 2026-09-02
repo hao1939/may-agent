@@ -680,4 +680,85 @@ describe("verification-allocation factorial fixture", () => {
       ]);
     }
   });
+
+  it("matches the exact dense-null decision boundary at 64 run blocks", () => {
+    const seedIds = Array.from(
+      { length: 64 },
+      (_, index) => `boundary-run-${String(index).padStart(2, "0")}`,
+    );
+    const seedIndexes = new Map(
+      seedIds.map((seedId, index) => [seedId, index]),
+    );
+    const schedule = buildSyntheticFactorialSchedule(
+      ["calibration-model"],
+      seedIds,
+    );
+    const bundleFor = (negativeRunCount: number) => ({
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: schedule.episodes.map((episode) => {
+        const inverse = seedIndexes.get(episode.seedId)! < negativeRunCount;
+        const current = episode.factors.targetStatus === "current";
+        const selectsTarget = inverse ? !current : current;
+        return {
+          episodeId: episode.id,
+          answer: {
+            selected_memory_id: selectsTarget
+              ? episode.targetMemoryId
+              : episode.decoyMemoryId,
+          },
+        };
+      }),
+    });
+
+    for (const expected of [
+      {
+        negativeRunCount: 21,
+        interval: [0.34375, 0.125, 0.5625],
+        decision: "positive",
+      },
+      {
+        negativeRunCount: 22,
+        interval: [0.3125, 0.09375, 0.53125],
+        decision: "inconclusive",
+      },
+      {
+        negativeRunCount: 42,
+        interval: [-0.3125, -0.53125, -0.09375],
+        decision: "inconclusive",
+      },
+      {
+        negativeRunCount: 43,
+        interval: [-0.34375, -0.5625, -0.125],
+        decision: "negative",
+      },
+    ] as const) {
+      const bundle = bundleFor(expected.negativeRunCount);
+      const bootstrap = bootstrapFactorialModelRunBlocks(
+        schedule,
+        bundle,
+        buildToyModelRunBlockBootstrapSpec(),
+      );
+      const decision = decideFactorialPracticalEffects(
+        schedule,
+        bundle,
+        buildToyModelRunBlockBootstrapSpec(),
+        buildToyPracticalEffectDecisionSpec(),
+      );
+
+      expect(bootstrap.ok).toBe(true);
+      expect(
+        bootstrap.models[0]!.strata.map((stratum) => [
+          stratum.pointEstimate,
+          stratum.lower,
+          stratum.upper,
+        ]),
+      ).toEqual(Array.from({ length: 4 }, () => expected.interval));
+      expect(decision.ok).toBe(true);
+      expect(decision.strata.map((stratum) => stratum.decision)).toEqual(
+        Array.from({ length: 4 }, () => expected.decision),
+      );
+    }
+  }, 30_000);
 });
