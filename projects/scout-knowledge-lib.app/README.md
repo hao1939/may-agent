@@ -76,5 +76,8 @@ For an explicit goal-owned directory, use `verifyExecutionFreezeBundle` from
 [`scripts/verification-allocation-freeze-bundle.ts`](scripts/verification-allocation-freeze-bundle.ts).
 It reads the fixed `freeze-manifest.json`, inventories the directory, and
 rejects relative roots, traversal-shaped artifact names, symlinks, non-regular
-entries, and undeclared files before invoking the same offline gate. Directory
-validation does not authenticate provenance or authorize provider calls.
+entries, and undeclared files before invoking the same offline gate. Regular
+files are opened through no-follow descriptors, so replacing an inventoried
+file with a final-component symlink cannot redirect the subsequent read.
+Directory validation does not authenticate provenance or authorize provider
+calls.

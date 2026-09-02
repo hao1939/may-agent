@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdtemp,
+  mkdir,
+  readdir,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
@@ -130,6 +139,51 @@ describe("verification-allocation freeze bundle", () => {
     expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
       "symbolic links are not allowed in a freeze bundle: linked-policy.md",
     );
+  });
+
+  it("rejects an entry replaced by a symlink after directory inventory", async () => {
+    const { root, manifest } = await fixture();
+    const fillerNames = Array.from(
+      { length: 1_500 },
+      (_, index) => `filler-${index.toString().padStart(4, "0")}.txt`,
+    );
+    await Promise.all(
+      fillerNames.map((name) => writeFile(join(root, name), "same")),
+    );
+    manifest.artifacts.push(
+      ...fillerNames.map((name) => ({
+        name,
+        sha256: freezeArtifactSha256("same"),
+      })),
+    );
+    const inventoryOrder = await readdir(root);
+    const target = inventoryOrder.findLast((name) =>
+      fillerNames.includes(name),
+    )!;
+    const source = fillerNames.find((name) => name !== target)!;
+    manifest.seedPolicy.policyArtifact = target;
+    manifest.models[0]!.resolutionEvidenceArtifact = source;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const resultPromise = verifyExecutionFreezeBundle(root);
+    await Bun.sleep(5);
+    const swap = join(root, ".swap-link");
+    await symlink(source, swap);
+    await rename(swap, join(root, target));
+    const result = await resultPromise;
+
+    expect((await lstat(join(root, target))).isSymbolicLink()).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(
+      result.errors.some((error) =>
+        error.includes(
+          `bundle entry could not be opened without following symbolic links: ${target}`,
+        ),
+      ),
+    ).toBe(true);
   });
 
   it("rejects undeclared files discovered by the directory inventory", async () => {

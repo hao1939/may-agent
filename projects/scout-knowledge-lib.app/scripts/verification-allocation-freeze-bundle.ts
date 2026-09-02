@@ -1,4 +1,5 @@
-import { lstat, readFile, readdir, realpath } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import {
   type FreezeVerificationResult,
@@ -51,6 +52,17 @@ function declaredArtifactNames(manifest: unknown): unknown[] {
   );
 }
 
+async function readRegularFileNoFollow(path: string): Promise<Uint8Array> {
+  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const status = await handle.stat();
+    if (!status.isFile()) throw new Error("entry is not a regular file");
+    return new Uint8Array(await handle.readFile());
+  } finally {
+    await handle.close();
+  }
+}
+
 async function collectFiles(
   root: string,
   directory: string,
@@ -78,7 +90,15 @@ async function collectFiles(
       errors.push(`bundle entry escapes its root: ${name}`);
       continue;
     }
-    if (name !== MANIFEST_NAME) files.set(name, await readFile(canonical));
+    if (name !== MANIFEST_NAME) {
+      try {
+        files.set(name, await readRegularFileNoFollow(path));
+      } catch (error) {
+        errors.push(
+          `bundle entry could not be opened without following symbolic links: ${name}: ${String(error)}`,
+        );
+      }
+    }
   }
 }
 
@@ -114,7 +134,9 @@ export async function verifyExecutionFreezeBundle(
     if (manifestStatus.isSymbolicLink() || !manifestStatus.isFile()) {
       return failed(["freeze-manifest.json must be a regular file"]);
     }
-    manifest = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+    manifest = JSON.parse(
+      new TextDecoder().decode(await readRegularFileNoFollow(manifestPath)),
+    ) as unknown;
   } catch (error) {
     return failed([
       `freeze-manifest.json is not readable JSON: ${String(error)}`,
