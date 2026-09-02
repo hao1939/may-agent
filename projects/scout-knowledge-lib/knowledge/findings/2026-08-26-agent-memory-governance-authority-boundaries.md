@@ -1450,6 +1450,16 @@ and the intermediate dense false-direction rate moves below both endpoints.
 Confidence is high for this one matched ladder and low for other salts,
 optimal-cost selection, alternatives, dependence, or real-model behavior.
 
+Cycle 76 classifies the three residual 16,384-draw mismatches at exact local
+commit `433ac5165384e04f901bb62f3118b2a0c4aa18dc`. All are finite-only
+directional errors: counts `6/36/22` and `8/31/25` move from exact
+inconclusive to positive, while `25/31/8` moves from exact inconclusive to
+negative. Their combined probability is 0.03965% balanced, zero dense, and
+approximately 0.00000137% sparse. This remains within the finite rule's
+already reported sub-1% risk, but contradicts using even the 16,384-draw result
+as an exact boundary authority. Confidence is high for the frozen enumeration
+and low for other effect supports, dependence, salts, or real models.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.

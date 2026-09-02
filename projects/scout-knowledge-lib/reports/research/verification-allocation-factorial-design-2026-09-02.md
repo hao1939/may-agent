@@ -516,6 +516,34 @@ draw count, real effects, or provider behavior. The next ranked question is to
 classify the three residual 16,384-draw mismatch compositions and determine
 whether any are directional errors or only boundary-label differences.
 
+## Cycle 76 residual mismatch classification
+
+Seed reconciliation `15e5a7cf86e7eeaabc9508038e354d2565f549fa` preceded this
+classification. Exact local commit
+`433ac5165384e04f901bb62f3118b2a0c4aa18dc` extends each null-process result
+with finite-directional/exact-nondirectional, exact-directional/finite-
+nondirectional, and remaining mismatch probabilities, and verifies that the
+three categories sum to total mismatch probability.
+
+At the exact Cycle 75 16,384-draw comparison SHA-256
+`5a4cee68a880cb2d6a7c20934c114d30d4fb7b76adddd4a1adc443ebab94274d`,
+all three residual compositions are directional errors by the finite rule. The
+`6/36/22` and `8/31/25` negative/zero/positive counts change from exact
+inconclusive to finite positive; `25/31/8` changes from exact inconclusive to
+finite negative. No residual is an exact-directional call lost by the finite
+rule or a remaining non-directional/opposed mismatch. Their combined
+finite-only directional probability is `0.0003965403610030345` under the
+balanced null, zero under dense, and `0.000000013726857835043323` under sparse.
+
+This supports the 1% operating bound because the residual directional risk is
+already included in the reported finite false-direction rates. It contradicts
+treating the finite interval as authoritative for individual boundary
+compositions, even at 16,384 draws. Confidence is high for the exhaustive
+frozen classification and low for other salts, supports, dependence, or real
+models. The next ranked question is to freeze a mismatch-aware disposition that
+keeps finite-only directional boundary cases inconclusive while preserving
+directions supported by the exact declared trinomial oracle.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
