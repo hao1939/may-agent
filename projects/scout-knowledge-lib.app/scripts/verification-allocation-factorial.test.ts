@@ -1531,6 +1531,104 @@ describe("verification-allocation factorial fixture", () => {
     });
   }, 30_000);
 
+  it("tests a lower-cost unequal allocation against the same marginal budget", () => {
+    const analyze = (runBlockCount: number) => {
+      const calibrationSpec = {
+        ...buildToyDirectionalQuantileCalibrationSpec(),
+        runBlockCount,
+        candidateLowerQuantiles: [0.0025],
+      };
+      const calibration = calibrateDirectionalQuantiles(calibrationSpec);
+      const power = measureCalibratedDirectionalPower(
+        calibrationSpec,
+        buildToyDirectionalQuantilePowerSpec(calibration),
+      );
+      return {
+        calibration,
+        power,
+        strong: power.report.find(
+          (entry) => entry.processId === "strong-positive",
+        )!,
+        moderate: power.report.find(
+          (entry) => entry.processId === "moderate-positive",
+        )!,
+      };
+    };
+    const moderateEndpoint = analyze(256);
+    const allocation = (strongRunBlockCount: number) => {
+      const strong = analyze(strongRunBlockCount);
+      const correctMarginalSum =
+        5 * strong.strong.correctDirectionalProbability +
+        moderateEndpoint.moderate.correctDirectionalProbability;
+      const wrongMarginalSum =
+        5 * strong.strong.wrongDirectionalProbability +
+        moderateEndpoint.moderate.wrongDirectionalProbability;
+      return {
+        strong,
+        totalRunBlockCount: 5 * strongRunBlockCount + 256,
+        completeFactorialEpisodeCount: (5 * strongRunBlockCount + 256) * 32,
+        correctMarginalSum,
+        aggregateCorrectDirectionalLowerBound: Math.max(
+          0,
+          (correctMarginalSum - 3) / 3,
+        ),
+        aggregateWrongDirectionalUpperBound: Math.min(1, wrongMarginalSum / 4),
+      };
+    };
+
+    expect(moderateEndpoint.calibration.calibrationSpecSha256).toBe(
+      "cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c",
+    );
+    expect(moderateEndpoint.power.powerSpecSha256).toBe(
+      "7bfc47ad5f700c00e85fe4b6f02d0324083781061a26c3b8c3551b0a94ecd42d",
+    );
+    expect(
+      moderateEndpoint.calibration.candidates[0]!.nullReport.every(
+        (entry) => entry.passesWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+
+    const before = allocation(120);
+    expect(before.strong.calibration.calibrationSpecSha256).toBe(
+      "e75f18903c731197715e52a06ea708f7eacd7f57050ad6e247adc447bfca4666",
+    );
+    expect(before.correctMarginalSum).toBeCloseTo(5.395690744262129, 14);
+    expect(before.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+      0.7985635814207098,
+      14,
+    );
+    expect(before.totalRunBlockCount).toBe(856);
+    expect(before.completeFactorialEpisodeCount).toBe(27_392);
+    expect(
+      before.strong.calibration.candidates[0]!.nullReport.every(
+        (entry) => entry.passesWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+
+    const candidate = allocation(121);
+    expect(candidate.strong.calibration.calibrationSpecSha256).toBe(
+      "87e9c39e40e21215807c9bf152fc1119b0a81554c59456cb3d21e24ccb0a683f",
+    );
+    expect(candidate.correctMarginalSum).toBeCloseTo(5.406045104855835, 14);
+    expect(candidate.aggregateCorrectDirectionalLowerBound).toBeCloseTo(
+      0.8020150349519449,
+      14,
+    );
+    expect(candidate.aggregateWrongDirectionalUpperBound).toBeCloseTo(
+      1.3423176283386044e-10,
+      20,
+    );
+    expect(candidate.totalRunBlockCount).toBe(861);
+    expect(candidate.completeFactorialEpisodeCount).toBe(27_552);
+    expect(candidate.totalRunBlockCount).toBeLessThan(6 * 172);
+    expect(candidate.completeFactorialEpisodeCount).toBe(33_024 - 5_472);
+    expect(
+      candidate.strong.calibration.candidates[0]!.nullReport.every(
+        (entry) => entry.passesWrongDirectionTolerance,
+      ),
+    ).toBe(true);
+  }, 60_000);
+
   it("enumerates every finite 64-block composition against the exact oracle", () => {
     const analysis = compareFinitePercentileNullProcesses(
       buildToyPercentileNullCalibrationSpec(),
