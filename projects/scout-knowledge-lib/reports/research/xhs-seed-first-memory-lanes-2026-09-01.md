@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across twenty-seven cycles: Cycle 27 commits the unavailable Xiaohongshu reconciliation first, defines REST/gRPC organization as an optional operator filter rather than tenant authorization, retains arXiv 2608.30177v1, records Reddit at its actual boundary, and proves all known accepted self-evolution work remains integrated in the standing Scout branch."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 27"]
+summary: "Seed-first Scout checkpoint across twenty-seven completed cycles with Cycle 28 underway: Cycle 27 defines REST/gRPC organization as an optional operator filter rather than tenant authorization and proves all known accepted self-evolution work remains integrated; Cycle 28 then reconciles Xiaohongshu first and selects the reflection-authority trace."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 28"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T03:10:25.071Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, and REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T04:39:49.735Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, and REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -2275,6 +2275,43 @@ and not production authorization proof. This checkpoint does not complete the
 standing goal. The next exploration begins seed-first; absent a higher-value
 seed or source trigger, it audits null-owned reflection/ingestion producers and
 unscoped integrity consumers before changing more code.
+
+## Cycle 28 has begun seed-first
+
+Cycle 28 reconciliation is committed separately as
+`a8cefdc1baf78f6f12f398101252b43a7b203e28`, after checkpoint
+`e71abfcef90bbdba98282f5e97e9c8a5adf2d251` and before any new source-lane
+work. From `2026-09-02T04:39:12.861Z–04:39:49.735Z`, direct ports 9333 and
+9222 refused while effective UID 0 inside Chrome PID 2136's network namespace
+reached DevTools. The saved target remained followed by `/login`; current-user
+again returned HTTP 406/code `-1` without nickname; zero collection IDs or
+labels materialized. Added and changed collected seeds remain unknown, proven
+removals are `[]`, and all 132 durable seeds remain unavailable.
+
+Both 30-card public Explore fingerprints and representative
+`6a884237…f9f6`'s title/author/description fingerprint reproduced exactly. Its
+rendered length changed from 2,374 to 2,219 characters behind the same login
+overlay, so the ledger records dynamic rendering rather than a seed or semantic
+delta. A first observer attempt selected system Node 18 and failed at the
+missing `WebSocket` global before page connection; the existing Bun runtime
+completed the read without an install or source edit. No XHS state was mutated.
+
+Only after the seed commit were all lanes reconsidered. GitHub/local code is
+selected for high relevance, high expected value, and current local evidence.
+Exact `24d27c375318b30f70ebc5521f75f9641e2b60b2` review shows reflection
+rewrite and completion events explicitly carry `org_id: None`, their cadence
+helper reads the agent-wide event list, and REST OpenTelemetry ingestion also
+stamps no organization. This is code structure, not a reproduced scope defect.
+The next exploration traces whether reflection entrypoints carry tenant
+authority and whether cadence is intended per organization before creating a
+fixture or changing code.
+
+arXiv `2608.30177v1` remains the separate 15/15 anchor and is retained but
+deferred without quota work: no version, attributable artifact, replication,
+stronger study, or content-bearing seed trigger fired. Reddit remains deferred
+without quota work at its last RSS HTTP 200 with six comments and JSON HTTP 403;
+revisit requires seed-linked reproducible evidence, thread change, or access
+change. The standing goal remains active.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
