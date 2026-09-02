@@ -830,6 +830,42 @@ reduce the 25,536-episode burden while retaining explicit aggregate power and
 false-direction bounds; no provider run is justified before that contract and
 a cost ceiling exist.
 
+## Cycle 85 conflict-safe strict-majority bound
+
+Seed reconciliation `0e624606b29ab4ce5e2c985745af30f954bbb719` preceded this
+change. Exact local source commit
+`930fc9e7aa269642291c9687fa46f3f8f22a9547` adds specification SHA-256
+`f2263724b736580c776796983ca0df095e06eefd793a3347868f69bf58196dca`.
+The specification binds the Cycle 83 null and power hashes, six equal-marginal
+models, the smallest strict majority (four), an inconclusive conflict policy,
+the 80% aggregate-power target, the 1% aggregate wrong-direction limit, and 32
+factorial episodes per model-run block. A threshold of three fails closed
+because three positive and three negative models could simultaneously satisfy
+it; altered nested calibration binding also fails closed.
+
+No independence assumption is introduced. If `S` of `n` models support one
+direction, each with marginal probability `p`, the exact count-moment bounds
+are `max(0,(np-(k-1))/(n-k+1)) <= P(S>=k) <= min(1,np/k)`. For the strong
+positive process at 105 blocks, per-model power `0.9066218357309971` therefore
+gives aggregate power `[0.813243671461994, 1]`. The aggregate wrong-direction
+upper bound is `2.0779570981567675e-12`. The negative mirror agrees to
+floating-point tolerance. Both pass.
+
+The moderate process remains non-passing: per-model power
+`0.2298628645622084` gives aggregate power `[0, 0.3447942968433126]`, while its
+wrong-direction upper bound is `7.036807661142322e-7`. The 4-of-6 rule uses
+20,160 episodes at 105 blocks per model, 5,376 fewer than the 25,536-episode
+133-block unanimous design from Cycle 84, a 21.05% reduction.
+
+This supports a conflict-safe reduction in the strong synthetic design's
+burden and contradicts treating majority voting as either independence or a
+remedy for weak marginals. Confidence is high for the algebra and bound inputs,
+and low for equal real-model marginals, heterogeneous effects, affordability,
+provider behavior, and drift. The next ranked question is to search downward
+for the first block count at which the selected interval keeps every null below
+1% and strong per-model power reaches the 90% required by the 4-of-6 lower
+bound; the moderate process must remain reported rather than optimized away.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
