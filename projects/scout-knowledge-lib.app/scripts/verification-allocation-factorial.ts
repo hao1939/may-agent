@@ -299,6 +299,46 @@ export type PercentileAlternativePowerSearchAnalysis = {
   errors: string[];
 };
 
+export type PercentileUnanimousPowerSpec = {
+  schema: "scout.verification-allocation-unanimous-power/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  dependenceTreatment: "unknown-frechet-bounds-with-independent-illustration";
+  modelCount: number;
+  minimumUnanimousCorrectDirectionalPower: number;
+  perModelCalibration: PercentileAlternativeCalibrationSpec;
+};
+
+export type PercentileUnanimousPowerAnalysis = {
+  ok: boolean;
+  unanimousPowerSpecSha256: string;
+  perModelCalibrationSpecSha256: string;
+  dependenceTreatment:
+    | "unknown-frechet-bounds-with-independent-illustration"
+    | "";
+  modelCount: number;
+  runBlockCountPerModel: number;
+  requiredPerModelPowerForGuaranteedUnanimity: number;
+  requiredPerModelPowerUnderIndependentIllustration: number;
+  report: Array<{
+    processId: string;
+    pairId: string;
+    expectedDirection: "positive" | "negative";
+    expectedEffect: number;
+    perModelCorrectDirectionalProbability: number;
+    unanimousCorrectDirectionalLowerBound: number;
+    unanimousCorrectDirectionalUpperBound: number;
+    independentCorrectDirectionalIllustration: number;
+    perModelWrongDirectionalProbability: number;
+    unanimousWrongDirectionalLowerBound: number;
+    unanimousWrongDirectionalUpperBound: number;
+    independentWrongDirectionalIllustration: number;
+    passesGuaranteedUnanimousPowerTarget: boolean;
+    passesIndependentIllustrationPowerTarget: boolean;
+  }>;
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1082,6 +1122,20 @@ export function buildToyPercentileAlternativePowerSearchSpec(): PercentileAltern
     minimumRunBlockCount: 64,
     maximumRunBlockCount: 256,
     reportRunBlockCounts: [64, 96, 128, 192, 256],
+  };
+}
+
+export function buildToyPercentileUnanimousPowerSpec(): PercentileUnanimousPowerSpec {
+  return {
+    schema: "scout.verification-allocation-unanimous-power/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    dependenceTreatment: "unknown-frechet-bounds-with-independent-illustration",
+    modelCount: 6,
+    minimumUnanimousCorrectDirectionalPower: 0.8,
+    perModelCalibration: {
+      ...buildToyPercentileAlternativeCalibrationSpec(),
+      runBlockCount: 105,
+    },
   };
 }
 
@@ -2219,6 +2273,142 @@ export function searchPercentileAlternativePower(
       })),
     scopeLimit:
       "Exact only for every integer count in the declared bounded search and the frozen mirror-paired trinomial alternatives; the 80% target is synthetic, and other effects, dependence, drift, interval rules, finite resampling, operational cost, and real models remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidPercentileUnanimousPowerAnalysis(
+  errors: string[],
+): PercentileUnanimousPowerAnalysis {
+  return {
+    ok: false,
+    unanimousPowerSpecSha256: "",
+    perModelCalibrationSpecSha256: "",
+    dependenceTreatment: "",
+    modelCount: 0,
+    runBlockCountPerModel: 0,
+    requiredPerModelPowerForGuaranteedUnanimity: 0,
+    requiredPerModelPowerUnderIndependentIllustration: 0,
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parsePercentileUnanimousPowerSpec(
+  candidate: unknown,
+): PercentileUnanimousPowerSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "dependenceTreatment,evidenceClass,minimumUnanimousCorrectDirectionalPower,modelCount,perModelCalibration,schema" ||
+    spec.schema !== "scout.verification-allocation-unanimous-power/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.dependenceTreatment !==
+      "unknown-frechet-bounds-with-independent-illustration" ||
+    !Number.isInteger(spec.modelCount) ||
+    (spec.modelCount as number) < 2 ||
+    (spec.modelCount as number) > 32 ||
+    typeof spec.minimumUnanimousCorrectDirectionalPower !== "number" ||
+    !Number.isFinite(spec.minimumUnanimousCorrectDirectionalPower) ||
+    spec.minimumUnanimousCorrectDirectionalPower <= 0 ||
+    spec.minimumUnanimousCorrectDirectionalPower >= 1 ||
+    !parsePercentileAlternativeCalibrationSpec(spec.perModelCalibration)
+  ) {
+    return null;
+  }
+  return spec as unknown as PercentileUnanimousPowerSpec;
+}
+
+function repeatedEventFrechetBounds(
+  marginalProbability: number,
+  eventCount: number,
+): { lower: number; upper: number } {
+  return {
+    lower: Math.max(0, eventCount * marginalProbability - (eventCount - 1)),
+    upper: marginalProbability,
+  };
+}
+
+/**
+ * Lift exact per-model directional probabilities into dependence-honest bounds
+ * for unanimity across a fixed named-model set. Independence is reported only
+ * as an illustration and never replaces the unknown-dependence lower bound.
+ */
+export function calibratePercentileUnanimousPower(
+  candidate: unknown,
+): PercentileUnanimousPowerAnalysis {
+  const spec = parsePercentileUnanimousPowerSpec(candidate);
+  if (!spec) {
+    return invalidPercentileUnanimousPowerAnalysis([
+      "percentile unanimous-power specification is invalid",
+    ]);
+  }
+  const perModel = calibratePercentileAlternativeProcesses(
+    spec.perModelCalibration,
+  );
+  if (!perModel.ok) {
+    return invalidPercentileUnanimousPowerAnalysis(
+      perModel.errors.map((error) => `per-model calibration: ${error}`),
+    );
+  }
+  const target = spec.minimumUnanimousCorrectDirectionalPower;
+  const guaranteedMarginalTarget =
+    (target + spec.modelCount - 1) / spec.modelCount;
+  const independentMarginalTarget = Math.pow(target, 1 / spec.modelCount);
+
+  return {
+    ok: true,
+    unanimousPowerSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    perModelCalibrationSpecSha256: perModel.calibrationSpecSha256,
+    dependenceTreatment: spec.dependenceTreatment,
+    modelCount: spec.modelCount,
+    runBlockCountPerModel: spec.perModelCalibration.runBlockCount,
+    requiredPerModelPowerForGuaranteedUnanimity: guaranteedMarginalTarget,
+    requiredPerModelPowerUnderIndependentIllustration:
+      independentMarginalTarget,
+    report: perModel.report.map((process) => {
+      const correctBounds = repeatedEventFrechetBounds(
+        process.correctDirectionalProbability,
+        spec.modelCount,
+      );
+      const wrongBounds = repeatedEventFrechetBounds(
+        process.wrongDirectionalProbability,
+        spec.modelCount,
+      );
+      const independentCorrect = Math.pow(
+        process.correctDirectionalProbability,
+        spec.modelCount,
+      );
+      const independentWrong = Math.pow(
+        process.wrongDirectionalProbability,
+        spec.modelCount,
+      );
+      return {
+        processId: process.processId,
+        pairId: process.pairId,
+        expectedDirection: process.expectedDirection,
+        expectedEffect: process.expectedEffect,
+        perModelCorrectDirectionalProbability:
+          process.correctDirectionalProbability,
+        unanimousCorrectDirectionalLowerBound: correctBounds.lower,
+        unanimousCorrectDirectionalUpperBound: correctBounds.upper,
+        independentCorrectDirectionalIllustration: independentCorrect,
+        perModelWrongDirectionalProbability:
+          process.wrongDirectionalProbability,
+        unanimousWrongDirectionalLowerBound: wrongBounds.lower,
+        unanimousWrongDirectionalUpperBound: wrongBounds.upper,
+        independentWrongDirectionalIllustration: independentWrong,
+        passesGuaranteedUnanimousPowerTarget: correctBounds.lower >= target,
+        passesIndependentIllustrationPowerTarget: independentCorrect >= target,
+      };
+    }),
+    scopeLimit:
+      "Exact per-model only for the frozen trinomial calibration. Unanimous named-model bounds assume equal marginals but unknown dependence; the independence product is illustrative, and aggregate-interval support, heterogeneous models, provider behavior, and final-gate power remain uncalibrated.",
     errors: [],
   };
 }

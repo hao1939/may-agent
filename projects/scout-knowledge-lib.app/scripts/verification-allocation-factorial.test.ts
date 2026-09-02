@@ -3,6 +3,7 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  buildToyPercentileUnanimousPowerSpec,
   buildToyPercentileAlternativeCalibrationSpec,
   buildToyPercentileAlternativePowerSearchSpec,
   buildToyPercentileNullCalibrationSpec,
@@ -14,6 +15,7 @@ import {
   decideFactorialPracticalEffects,
   calibratePercentileAlternativeProcesses,
   calibratePercentileNullProcesses,
+  calibratePercentileUnanimousPower,
   searchPercentileAlternativePower,
   scheduleSha256,
   scoreAllocationAnswer,
@@ -828,6 +830,117 @@ describe("verification-allocation factorial fixture", () => {
     ]) {
       expect(searchPercentileAlternativePower(candidate).errors).toEqual([
         "percentile alternative power-search specification is invalid",
+      ]);
+    }
+  });
+
+  it("bounds unanimous named-model power without assuming independence", () => {
+    const analysis = calibratePercentileUnanimousPower(
+      buildToyPercentileUnanimousPowerSpec(),
+    );
+    const process = (processId: string) =>
+      analysis.report.find((entry) => entry.processId === processId)!;
+    const strong = process("strong-positive");
+
+    expect(analysis.ok).toBe(true);
+    expect(analysis.unanimousPowerSpecSha256).toBe(
+      "438cb3dc3964a76de7927ffa43eea7423fa6ae1dc025e66eefe8d40a186827ff",
+    );
+    expect(analysis.perModelCalibrationSpecSha256).toBe(
+      "6cf0c60769fc8d0691fac797a4439eaae5b728a6826824f055e1d708a0c96bbc",
+    );
+    expect(analysis.dependenceTreatment).toBe(
+      "unknown-frechet-bounds-with-independent-illustration",
+    );
+    expect(analysis.modelCount).toBe(6);
+    expect(analysis.runBlockCountPerModel).toBe(105);
+    expect(analysis.requiredPerModelPowerForGuaranteedUnanimity).toBeCloseTo(
+      0.9666666666666667,
+      14,
+    );
+    expect(
+      analysis.requiredPerModelPowerUnderIndependentIllustration,
+    ).toBeCloseTo(0.9634924839989961, 14);
+    expect(strong.perModelCorrectDirectionalProbability).toBeCloseTo(
+      0.8045178323414782,
+      14,
+    );
+    expect(strong.unanimousCorrectDirectionalLowerBound).toBe(0);
+    expect(strong.unanimousCorrectDirectionalUpperBound).toBeCloseTo(
+      0.8045178323414782,
+      14,
+    );
+    expect(strong.independentCorrectDirectionalIllustration).toBeCloseTo(
+      0.2711527720864071,
+      14,
+    );
+    expect(strong.unanimousWrongDirectionalLowerBound).toBe(0);
+    expect(strong.unanimousWrongDirectionalUpperBound).toBeCloseTo(
+      4.462239207721462e-14,
+      14,
+    );
+    expect(strong.passesGuaranteedUnanimousPowerTarget).toBe(false);
+    expect(strong.passesIndependentIllustrationPowerTarget).toBe(false);
+    expect(
+      analysis.report.every(
+        (entry) => !entry.passesGuaranteedUnanimousPowerTarget,
+      ),
+    ).toBe(true);
+    expect(analysis.scopeLimit).toContain("aggregate-interval support");
+  });
+
+  it("passes unanimous-power bounds only when the lower bound reaches target", () => {
+    const spec = buildToyPercentileUnanimousPowerSpec();
+    const analysis = calibratePercentileUnanimousPower({
+      ...spec,
+      perModelCalibration: {
+        ...spec.perModelCalibration,
+        runBlockCount: 2,
+        processes: [
+          {
+            id: "deterministic-positive",
+            pairId: "deterministic",
+            expectedDirection: "positive",
+            probabilities: [0, 0, 1],
+          },
+          {
+            id: "deterministic-negative",
+            pairId: "deterministic",
+            expectedDirection: "negative",
+            probabilities: [1, 0, 0],
+          },
+        ],
+      },
+    });
+
+    expect(analysis.ok).toBe(true);
+    for (const entry of analysis.report) {
+      expect(entry.perModelCorrectDirectionalProbability).toBe(1);
+      expect(entry.unanimousCorrectDirectionalLowerBound).toBe(1);
+      expect(entry.unanimousCorrectDirectionalUpperBound).toBe(1);
+      expect(entry.independentCorrectDirectionalIllustration).toBe(1);
+      expect(entry.passesGuaranteedUnanimousPowerTarget).toBe(true);
+      expect(entry.passesIndependentIllustrationPowerTarget).toBe(true);
+    }
+  });
+
+  it("rejects an unfrozen unanimous-power contract", () => {
+    const spec = buildToyPercentileUnanimousPowerSpec();
+    for (const candidate of [
+      { ...spec, modelCount: 1 },
+      { ...spec, modelCount: 33 },
+      { ...spec, minimumUnanimousCorrectDirectionalPower: 1 },
+      { ...spec, dependenceTreatment: "independent" },
+      {
+        ...spec,
+        perModelCalibration: {
+          ...spec.perModelCalibration,
+          runBlockCount: 1,
+        },
+      },
+    ]) {
+      expect(calibratePercentileUnanimousPower(candidate).errors).toEqual([
+        "percentile unanimous-power specification is invalid",
       ]);
     }
   });
