@@ -3100,6 +3100,54 @@ fresh Xiaohongshu reconciliation before any new lane work or exploration is
 selected. The mixed-scope event-chain exploration remains closed rather than
 repeated.
 
+## Cycle 35 start — integration proven, seed reconciliation first
+
+What changed for the user: Cycle 34's missing-link evidence and repair record
+are committed on the standing branch as
+`274d614d727ff7cb6192c0189468ae8c6e386fb3`, rather than being left in an
+isolated Mnemo worktree. The accepted self-evolution follow-up was considered
+again before later research. Source commits `8f611fec…298de` and
+`df80a1da…95de` remain one-for-one range-diff matches for standing commits
+`f9784d9a…fc04` and `20fd9d81…dacf`; their stable patch IDs are respectively
+`9a8b80e3…f626d` and `5b5b3937…d18eb9` on both sides. All four accepted
+artifact blobs remain identical at `df80a1da` and standing tip `274d614d`.
+Nothing accepted is deferred, blocked, superseded, or known unintegrated.
+
+The exact integration tip passes the Scout syntax bundle, TypeScript,
+application Prettier gate, and all 78 tests with 226 assertions. All 19
+relative links across the three Cycle 34 documents resolve. The read-only
+health scan at `2026-09-02T08:55:16.265Z` remains bounded and truncated at 26
+facts and 16 wake signals: 13 future-date, 12 oversized-note, and one
+unsourced-backlog fact. `.state` remains empty at fingerprint
+`e3b0c442…b855`.
+
+Only after that clean checkpoint did Cycle 35 begin. Its observational
+Xiaohongshu reconciliation is committed separately as
+`14cfbea265c90d8446b17f251dfeda03ff49dc03`. Direct loopback ports refused
+the worker identity; effective UID 0 inside Chrome PID 2136's network
+namespace reached DevTools but not an authenticated Xiaohongshu principal.
+Three current-user endpoints returned HTTP 500 without identity, the saved
+collection fetch returned an unauthenticated 65-string profile shell with zero
+rendered cards, public Explore retained its exact 30-ID fingerprint, and the
+representative post remained `/404`. Added and changed seeds are unknown,
+proven removals are `[]`, and all 132 durable seeds remain unavailable.
+
+Lane decisions follow that seed commit. GitHub is deferred after fresh HTTP
+200 reads showed Mnemo still at `2994abf…2f20` and SkillOpt still at
+`db46cd9…751d`; repair `d7b8190…bbb5a` remains the last useful local-code
+evidence. arXiv is selected: exact HTTP 200 lookup retained unchanged
+`2608.30177v1` and `2608.17684v1`, and memory governance remains tied at 15/15
+with the fresher primary evidence. Reddit is deferred without quota work at
+its last useful RSS HTTP 200/six-comment evidence and JSON HTTP 403 boundary
+because no seed, content, or access trigger fired.
+
+The next exploration is one bounded newest-first arXiv related-discovery
+refresh for stronger stage-wise memory-governance or integrity evidence. A
+candidate will be deep-dived only if it beats the retained rubric; otherwise
+`2608.30177v1` remains the anchor. The resolved mixed-organization/null-owned
+aggregate-chain question is explicitly excluded. This is another checkpoint,
+not goal completion.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
