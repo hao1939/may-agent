@@ -6611,6 +6611,56 @@ This is a checkpoint, not goal completion. The next cycle must begin with a
 fresh Xiaohongshu reconciliation before any source-lane or implementation work.
 Do not begin the mixed-scope event-chain exploration.
 
+## Cycle 58 seed-first start — the one-byte access delta reverts
+
+Cycle 58 began only after the clean Cycle 57 checkpoint at
+`69e35437c91a7edb2a75f8fcac7ab9b03afeb767`. No GitHub, arXiv, Reddit,
+provider, implementation, or mixed-scope event-chain work preceded this
+observation.
+
+At `2026-09-02T13:51:53.244Z`, direct worker reads to ports 9222 and 9333
+again failed with curl exit 7 and HTTP 000. The initiating worker remained UID
+1000 (`hao`). Passwordless `sudo nsenter` reached root-owned Chrome PID 2136's
+DevTools listener as effective UID 0 in that process's network namespace. This
+is browser/process access, not proof of a Xiaohongshu account principal.
+
+From `2026-09-02T13:51:53.258Z` through `13:51:54.295Z`, the supported
+read-only commands ran without navigation. Public `status` remained
+`ready:true` with 30 notes and no login wall. `saved-status` remained
+`ready:false` with the same query-free target fingerprint, no query keys, HTTP
+200 `text/html; charset=utf-8`, final class `login`, zero attributable items,
+the empty ID fingerprint, and login state true. The body returned to 46,672
+bytes with new exact SHA-256
+`604a74ea8df5ed9f84805a0425cb8d775c38577bef1a2f71e5ff7983e509e955`.
+Accordingly, the stable access fingerprint returned from Cycle 57's
+`8fb1998a…aef26d` to Cycle 56's
+`31e8ffe2808de4ba466e0e42cb658a7e7c078d9dddebbf1c01c127d115574915`.
+
+The exact committed comparator reports Cycle 57→58 as non-equivalent with
+only `byteLength` changed and `bodyChanged:true`. This is an access-shell
+reversion plus new byte provenance, not collection or semantic evidence. The
+saved inventory exposed no attributable post, so no representative saved post
+could be read. Added IDs and title/author changes remain unknown; observed
+removals are `[]`; all 132 durable seeds remain unavailable rather than
+removed. Cycle 20 remains the last comparable authenticated snapshot. No
+Xiaohongshu account or content state was mutated.
+
+The only accepted Scout range remains fully reconciled through equal patch
+IDs, three standing ancestors, and four byte-identical artifacts. Nothing
+accepted is deferred, superseded, blocked, or known unintegrated. Cycle 20's
+two exact pre-fix UUIDs and authoritative three-of-three reflection result
+remain retained.
+
+On the exact two-document seed candidate over clean Cycle 57 tip
+`69e3543…feb767`, Prettier, whitespace, and all 21 relative links pass. The
+full Scout gate passes syntax bundling, TypeScript, source formatting, and 114
+tests with 327 assertions. Read-only health remains bounded and truncated at
+26 facts and 16 wake signals. Runtime `.state` is empty.
+
+This is the required start of the next seed-first cycle, not goal completion.
+Validate and commit this reconciliation before reconsidering GitHub, arXiv, or
+Reddit. Keep the mixed-scope event-chain exploration closed.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
