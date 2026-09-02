@@ -679,6 +679,50 @@ contract that separates per-model and unanimous-gate power, then compare a
 directional estimand with the current “exceeds 0.10” practical estimand under
 the same exact false-direction discipline.
 
+## Cycle 81 dependence-honest unanimous power
+
+Seed reconciliation `439a49247138fd38c145d99ffdeea1f99be352e2` preceded this
+change. Exact local commit `aca937e3f66661e0ccee5aed434cfbe7c309cf64`
+adds a fail-closed unanimous named-model power contract at specification
+SHA-256
+`438cb3dc3964a76de7927ffa43eea7423fa6ae1dc025e66eefe8d40a186827ff`.
+It binds the exact 105-block per-model calibration SHA-256
+`6cf0c60769fc8d0691fac797a4439eaae5b728a6826824f055e1d708a0c96bbc`,
+six named models, an 80% unanimous target, and one explicit dependence
+treatment: Fréchet bounds under unknown dependence, with an independence
+product labeled as illustration rather than authority.
+
+For the strong positive process, per-model correct-direction power is
+`0.8045178323414782`. Unknown-dependence unanimous power is therefore bounded
+by `[0, 0.8045178323414782]`; the independence illustration is
+`0.2711527720864071`. Per-model wrong-direction probability is
+`4.462239207721462e-14`, giving unanimous wrong-direction bounds
+`[0, 4.462239207721462e-14]` and an independence illustration of
+`7.894362904086226e-81`. The negative mirror agrees to floating-point
+tolerance. For the moderate positive process, per-model correct-direction
+power is `0.11132478415415377`, unanimous bounds are
+`[0, 0.11132478415415377]`, and the independence illustration is only
+`0.0000019034925024798922`.
+
+To guarantee 80% unanimous power across six equal-marginal models without a
+dependence assumption, per-model power must reach at least
+`0.9666666666666667`. Under independence it would need at least
+`0.9634924839989961`, but independence is not evidence-backed here. Neither
+declared process passes either target at 105 blocks. A deterministic matched
+control with per-model power one reaches lower bound, upper bound, and
+independence illustration one, proving the pass path; malformed model counts,
+dependence policies, targets, and nested calibrations fail closed.
+
+This makes the Cycle 80 warning executable and contradicts promoting the
+single-model 105-block crossing to multi-model confirmation. Confidence is
+high for the exact per-model input and sharp equal-marginal Fréchet bounds;
+low for equal real-model marginals, any cross-model dependence structure,
+aggregate-interval support, provider behavior, or final-gate power. The next
+ranked question is to compare a directional estimand (`effect > 0`) with the
+current practical-exceedance estimand (`effect > 0.10`) under matched exact
+null and alternative controls, without weakening either claim after seeing
+the result.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

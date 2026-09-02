@@ -1510,6 +1510,20 @@ effects, affordability, and provider transfer. A next design must calibrate
 per-model and unanimous power explicitly and distinguish a directional claim
 from the current practical-effect claim.
 
+Cycle 81 makes that separation executable at exact local commit
+`aca937e3f66661e0ccee5aed434cfbe7c309cf64`. A fail-closed six-model contract
+uses sharp Fréchet bounds as the unknown-dependence authority and labels the
+independence product as illustration only. At 105 blocks per model, the strong
+process's 80.45% marginal power implies unanimous bounds `[0, 80.45%]`, while
+the independence illustration is 27.12%; guaranteeing an 80% lower bound
+would require at least 96.67% marginal power. The moderate process has only
+11.13% marginal power. This directly contradicts lifting a single-model
+crossing into a multi-model claim. Confidence is high for the bound
+calculation and low for equal real-model marginals, dependence, aggregate
+support, and provider behavior. The next comparison must freeze directional
+and practical-exceedance estimands separately rather than weakening the
+practical claim after observing low power.
+
 The rule-plus-date P3 ceiling chooses the target in 98.7% of one-slot episodes,
 but its wording uniquely identifies that path in this synthetic store; it is
 not a general scheduler. P2 dates alone move target selection only +2.3 points.
