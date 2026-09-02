@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 42: Xiaohongshu is reconciled before lane work, accepted side work remains integrated, and raw arXiv evidence shows that relevance-based verification improves recall without identifying staleness."
-triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 42"]
+summary: "Seed-first Scout continuity through the Cycle 43 start: the latest Xiaohongshu state is reconciled before lane work, accepted side work remains integrated, and Cycle 42's raw arXiv result separates allocation recall from staleness precision."
+triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 43"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:32:00.780Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T10:42:19.412Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2608.25553v3, 2605.23904v2, 2608.17684v1, 2609.00243v1, and 2609.01235v1, plus checksum- and audit-verified Zenodo 22147784 and MutMem-V2 v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -4118,6 +4118,41 @@ commit, begin the next cycle seed-first. The next discriminating exploration
 is a store where a stale constraint is less decision-relevant than a current
 constraint; select it only after the new seed and lane review. The mixed-scope
 event-chain exploration remains closed.
+
+## Cycle 43 seed-first start — Cycle 42's boundary reproduces exactly
+
+Cycle 42 is committed cleanly on `codex/g-c1b31972-scout-loop` as
+`1c8aae6b2abf6f5714324864e25480161d9e5247`. Exact-tip whitespace and all 19
+relative links pass. The full Scout gate passes syntax bundling, TypeScript,
+Prettier, and 78 tests with 226 assertions. Read-only health at
+`2026-09-02T10:41:24.519Z` remains bounded and truncated at 26 facts and 16
+wake signals; `.state` is empty. Accepted commits `cb82bee8…f53`,
+`f9784d9a…fc04`, and `20fd9d81…dacf` remain ancestors; both source/standing
+stable patch-ID pairs and all four final artifact blobs match. Nothing accepted
+is known unintegrated. Protected source and peer fingerprints remain exact.
+
+Only then did Cycle 43 begin. At `2026-09-02T10:42:06.868Z`, direct worker
+ports 9222/9333 failed with curl exit 7 and HTTP 000. Chrome PID 2136 remained
+root-owned. The first namespace invocation failed before browser access because
+`bun` was absent from root's inherited PATH; passing the existing worker PATH
+corrected this convenience wiring without an install or source change.
+Effective UID 0 then reached DevTools, and the read-only observation completed
+at `10:42:19.412Z`.
+
+Three identity endpoints each returned HTTP 500, 54 bytes, and no identity or
+nickname. Immutable local Chrome history supplied the saved target. Its single
+credentialed fetch returned HTTP 200 ending at `/login`, 46,672 bytes, 34 raw
+strings at `80cb18f0…dbfc9`, and zero attributable cards or collection links.
+Public Explore retained 30 IDs at `dbadf511…e529e13`; a current signed read of
+representative `6a884237…f9f6` again ended at `/404` with no readable title,
+author, or description. No retained page was navigated, the disposable detail
+tab was closed, and no Xiaohongshu state was mutated.
+
+Every comparable field matches Cycle 42. Added/changed remain unknown,
+observed removals are `[]`, and all 132 durable seeds remain unavailable rather
+than removed. Cycle 20 remains the last comparable authenticated snapshot.
+Commit and validate this seed-only reconciliation before any Cycle 43 GitHub,
+arXiv, Reddit, allocation-experiment, or mixed-scope event-chain work.
 
 ## Supervision
 
