@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Seed-first Scout checkpoint across thirty-two completed cycles with Cycle 33 selected: Cycle 32's bounded memory repair is committed, Cycle 33 reconciles Xiaohongshu first, and wrapper-level incomplete-result propagation is the next exploration."
+summary: "Seed-first Scout checkpoint across thirty-three completed cycles: Cycle 33 reconciled Xiaohongshu first, then proved REST, gRPC, and MCP preserve the bounded incomplete-memory result without a production transport fix."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 33"]
 last_updated: "2026-09-02"
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T07:02:40.454Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, and memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z and unavailable/public-only direct-WSL observations through 2026-09-02T07:02:40.454Z; bounded public GitHub, Hugging Face, arXiv, and Reddit observations; full-source reviews including arXiv 2608.30177v1, 2605.23904v2, and 2608.17684v1; pinned SkillRise, Microsoft SkillOpt, Mnemo, third-party WikiSkill, and probable self-optimize-skill revisions; the accepted self-evolution audit through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line reconciliations cb82bee8e24b446ff9aea2e3ff947205e44fef53, f9784d9adcc575d35ad714e1e5719e7fa5adfc04, and 20fd9d81f85e93e9a9b794afc9631c801dd3dacf; and goal-owned MCP principal/organization validation through duplex and real Streamable HTTP transports, checkpoint storage/replay/branch/merge, schema-backed event ownership, mixed-organization chronology, live PostgreSQL legacy migrations, REST/gRPC operator filtering at 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, and exact REST/gRPC/MCP incomplete-result regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -2861,6 +2861,76 @@ REST, gRPC, and MCP, recording each exact serialized response before any code
 change. The accepted self-evolution range remains fully integrated and no
 accepted Scout result is known to remain unintegrated. This is a selection
 checkpoint, not goal completion.
+
+## Cycle 33 checkpoint — every wrapper preserves the incomplete result
+
+What was uncertain: Cycle 32 proved the core verifier failed closed above its
+10,000-memory bound, but source call graphs alone did not prove that REST,
+gRPC, or MCP would preserve every field. On exact repaired base
+`90a5790fbd986ee189726537e30b9e39abbf9672`, three controlled DuckDB fixtures
+each stored the same valid 10,001-memory chain before invoking one public
+wrapper. No production code changed before observation.
+
+REST returned HTTP 200 and exact JSON
+`{"error_message":"memory chain exceeds verification limit of 10000 records; complete chain was not verified","first_broken_at":null,"status":"integrity_violation","total_records":10001,"valid":false,"verified_records":0}`.
+MCP returned those same six fields through a real signed-capability duplex
+`tools/call`. gRPC decoded to `valid=false`, 10,001 total, zero verified, no
+first broken UUID, and the same error. Its exact protobuf bytes were
+`10914e2a596d656d6f727920636861696e206578636565647320766572696669636174696f6e206c696d6974206f66203130303030207265636f7264733b20636f6d706c65746520636861696e20776173206e6f74207665726966696564`;
+proto3 omits default false/zero/absent fields and reconstructs them from the
+schema. All wrappers therefore preserve the fail-closed result. No handler fix
+was warranted; regression-only Mnemo commit
+`9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0` records the behavior.
+
+Validation is serial and current-candidate. `cargo fmt --all -- --check` and
+`git diff --check` pass. Focused Clippy with warnings denied passes for the REST
+test, gRPC library/tests, and MCP test. The complete REST package passes 18
+tests; gRPC passes three tests with two intentional documentation-test ignores;
+MCP passes 106 tests; core passes 300 tests with one intentional OpenAI network
+test ignored plus two doctests. The host lacked `protoc`; isolated Ubuntu
+`protobuf-compiler` and `libprotoc32t64` version 3.21.12 packages (SHA-256
+`f3087882…91a` and `a6f24177…febe`) supplied that convenience tool without a
+system install or source change. After validation, 77.7 GiB of goal-owned,
+rebuildable target artifacts were removed; source changes and results remained.
+
+Lane decisions stay evidence-weighted. GitHub/local code delivered the exact
+transport proof and local commit above; public Mnemo remained pinned at
+`2994abf185da50d43e5fa4b3f826812bd09c2f20`. arXiv `2608.30177v1` remains
+the reviewed 15/15 stage-wise memory-governance anchor and is deferred until a
+version, artifact, replication, stronger study, or content-bearing seed
+change. Reddit remains deferred without quota work at its last useful RSS HTTP
+200/six-comment evidence and JSON HTTP 403 boundary until a seed-linked
+reproduction, content delta, or access change. The three wrappers are one
+implementation result, not three independent source confirmations.
+
+The accepted Scout range `8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
+remains integrated through standing ancestors `cb82bee8e24b446ff9aea2e3ff947205e44fef53`,
+`f9784d9adcc575d35ad714e1e5719e7fa5adfc04`, and
+`20fd9d81f85e93e9a9b794afc9631c801dd3dacf`; the accepted patch IDs remain
+`9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all four accepted artifacts remain
+blob-identical to `df80a1da`. No accepted Scout result is known to remain
+unintegrated, deferred, blocked, or superseded.
+
+The exact Scout candidate passes whitespace checks, syntax bundling,
+TypeScript, Prettier, and all 78 tests with 226 assertions. All 19 relative
+links across the three changed documents resolve. The read-only health scan at
+`2026-09-02T08:00:43.064Z` remains bounded and truncated at 26 facts and 16
+wake signals: 13 future-date, 12 oversized-note, and one unsourced-backlog
+fact. The app `.state` file count remained zero with fingerprint
+`e3b0c442…b855` before and after the check and health scan.
+
+Protected read-only fingerprints also remain exact. `/app` stays at HEAD
+`386b445c…fec8`, 881 NUL-delimited porcelain-v2 records, and
+`1f6163f7…d31b`; the user overlay stays at `fd4c68ec…663`, three records, and
+`a52b97aa…4a15`. The accepted source branch stays clean at `df80a1da…95de`,
+its predecessor stays clean at `8c5d874…b51`, and every other peer remains
+clean at `e3b0c442…b855`. Commands in protected worktrees were limited to
+read-only Git revision and status inspection.
+
+This is a checkpoint, not goal completion. The next action is Cycle 34's fresh
+Xiaohongshu reconciliation before any source-lane work or new exploration is
+selected. The already-answered mixed-scope event-chain question remains
+deferred rather than repeated.
 
 ## Supervision
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.

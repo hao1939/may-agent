@@ -1023,6 +1023,35 @@ local tests; four live-gated tests lacked `MNEMO_TEST_POSTGRES_URL`, and no
 schema or backend code changed. This remains local executable evidence, not
 upstream review or deployment.
 
+Cycle 33 then exercised that exact incomplete memory result at every public
+wrapper instead of inferring propagation from call graphs. Goal-owned commit
+`9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0`, based directly on
+`90a5790fbd986ee189726537e30b9e39abbf9672`, adds one real DuckDB-backed
+10,001-memory fixture to each transport. Before any production-code change:
+
+- REST returned HTTP 200 with
+  `{"error_message":"memory chain exceeds verification limit of 10000 records; complete chain was not verified","first_broken_at":null,"status":"integrity_violation","total_records":10001,"valid":false,"verified_records":0}`.
+- gRPC decoded to `VerifyResponse { valid: false, total_records: 10001,
+  verified_records: 0, first_broken_at: None, error_message: Some("memory chain
+  exceeds verification limit of 10000 records; complete chain was not
+  verified") }`. Its exact protobuf bytes were
+  `10914e2a596d656d6f727920636861696e206578636565647320766572696669636174696f6e206c696d6974206f66203130303030207265636f7264733b20636f6d706c65746520636861696e20776173206e6f74207665726966696564`;
+  proto3 omits the default-valued false, zero, and absent fields while clients
+  decode those values from the schema.
+- MCP returned the same six JSON fields and values as REST through a real
+  signed-capability duplex `tools/call` path.
+
+All three wrappers therefore preserve the repaired fail-closed result; no
+production handler change was justified. Strict focused Clippy passes for the
+REST test, gRPC library/tests, and MCP test. The complete REST package passes
+18 tests, gRPC passes three tests with two intentionally ignored documentation
+examples, MCP passes 106 tests, and core again passes 300 tests with its one
+intentional network ignore plus two doctests. The host initially lacked
+`protoc`; an isolated, checksum-recorded Ubuntu `libprotoc 3.21.12` tool resolved
+that convenience boundary without installing a system package or changing
+source. This remains local regression evidence, not upstream review or
+deployment.
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
