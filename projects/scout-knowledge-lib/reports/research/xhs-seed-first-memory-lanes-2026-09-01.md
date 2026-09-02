@@ -4257,6 +4257,42 @@ unavailable rather than removed. No Xiaohongshu state was mutated. Commit and
 validate this seed-only reconciliation before any Cycle 46 GitHub, arXiv,
 Reddit, provider-backed factorial, or mixed-scope event-chain work.
 
+## Cycle 46 post-seed selection — verify factor isolation before model calls
+
+The seed-only boundary was committed first as
+`8ec554315dcc8f28a2a5e33ca3871154745270f0`. Only afterward were the permanent
+lanes reconsidered by relevance, expected value, freshness, and access:
+
+- **GitHub/local code was deferred as a source** for high relevance but low
+  incremental source value. Exact read-only `HEAD` checks at
+  `2026-09-02T11:08:50.980Z–11:08:55.420Z` retained invalidation client
+  `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, server
+  `567b6a0e01b49de6b353eb32a3e2f6774052225e`, MutMem
+  `2b93af11e79d114ed64eec04100e6c390778d9e7`, and Mnemo
+  `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Last useful GitHub evidence
+  remains Cycle 40's analyzer/table-build boundary. Revisit on a revision,
+  generator or selection manifest, independent/deployed result, signed-stamp
+  implementation, or seed-linked code trigger.
+- **arXiv was retained as the selected design anchor** for high relevance,
+  medium marginal source value, and current access. Exact HTTP 200 checks at
+  `2026-09-02T11:08:55.420Z–11:08:56.595Z` retained `2608.30177v1`,
+  `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and already deduplicated
+  `2606.12290v1`. No new source content or empirical result is claimed.
+- **Reddit was deferred without quota work** for medium relevance, low
+  incremental value, and no seed, thread, or access trigger. Last useful
+  evidence remains RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable
+  `t3_1v8a3sh`, and six comments; JSON remains last observed HTTP 403. Revisit
+  on seed-linked reproducible evidence, a content delta, or an access change.
+
+The selected next exploration is a deterministic factor-isolation verifier
+and frozen toy schedule for the existing allocation design. It can proceed
+without provider calls and should fail on any unregistered prompt span,
+memory-body, status wording, target/order balance, schedule-identity, or scorer
+input difference. It remains design tooling, not empirical evidence. Provider
+calls still require reviewed frozen artifacts, execution-identity credentials,
+and explicit call/token/cost authority. The mixed-scope event-chain
+exploration remains closed.
+
 ## Cycle 45 checkpoint — freeze the independent factors before execution
 
 What changes for the user: the open allocation question is now a concrete,
