@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through the Cycle 55 selection: the accepted range and Cycle 54 credential-safe history checkpoint remain proven, the saved-profile seed surface remains unavailable, and the next bounded exploration addresses the supported-observer gap without public-source quota work."
+summary: "Seed-first Scout continuity through the Cycle 55 checkpoint: the accepted range remains fully reconciled, the saved-profile seed surface remains unavailable, and a supported non-navigating status path now reports credential-free access evidence."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-02"
 latest_seed_basis: "Cycle 55 observational reconciliation through 2026-09-02T13:17:35.736Z; the public Explore status path returned 30 unique notes, the saved-profile target remained unavailable, and no source-lane work preceded it."
@@ -6110,6 +6110,92 @@ truncated at 26 facts and 16 wake signals. Runtime `.state` is empty.
 
 This is a lane-selection checkpoint, not goal completion. Validate and commit
 the selection before beginning the bounded local audit.
+
+## Cycle 55 checkpoint — saved-profile access has a supported safe status path
+
+What was wrong was operational and repeatable. Scout's supported `status`
+command could describe the current public tab, but the seed-first saved-profile
+boundary still required a bespoke DevTools script even after safe history
+target selection existed. That made fresh-worker continuation harder and left
+the output/redaction contract outside normal regression coverage.
+
+Exact reviewed commit
+`5d960fa3a58e3d6254a3d7bc71f2f7ca6e379e29` on
+`codex/g-c1b31972-scout-loop`, based on Cycle 55 selection
+`a77dd0980a94bd4ac6a41b9704b04607249c270f`, adds `saved-status`. It
+scans validated XHS page histories with login tabs first, reuses the
+credential-safe selector, and performs one credentialed GET inside the existing
+page context without `Page.navigate`. The command returns only a query-free
+target hash, safe query-key names, bounded HTTP/content metadata,
+final-location class, byte/item counts, body and ID fingerprints, and login
+state. Target URLs, query values, cookies, raw bodies, and account identifiers
+do not leave browser evaluation. Unsafe histories return a supported no-op;
+malformed summaries fail closed.
+
+Fifteen focused tests with 28 assertions cover credential-safe target/history
+selection, zero navigation calls, output redaction, supported no-op, and
+malformed-summary denial. The exact committed code tip passes syntax bundling,
+TypeScript, Prettier, and the full Scout suite: 111 tests and 300 assertions.
+Runtime `.state` is empty.
+
+One live read-only validation ran from `2026-09-02T13:26:15.934Z` through
+`13:26:16.844Z` as effective UID 0 in Chrome PID 2136's network namespace.
+The command returned `ready:false`, the same target fingerprint, no query keys,
+HTTP 200 `text/html`, final class `login`, 46,672 bytes, zero attributable
+items, the empty ID fingerprint, login state true, and body SHA-256
+`60680a63c34016bbe97b7512405af6bc5e321519b22a814418da2a4cc0c70c31`.
+No raw target or account identifier appeared and no tab was navigated. The
+changing unauthenticated shell hash remains access noise, not seed evidence.
+
+Cycle ordering remains exact: seed reconciliation
+`0aae61926302a7081c2347989ad3dede016a47e3` preceded lane selection
+`a77dd0980a94bd4ac6a41b9704b04607249c270f`, which preceded the
+supported-command repair. The public Explore status remains 30 unique notes;
+the saved target remains a login shell with zero attributable items and no
+proven identity. Added and changed IDs remain unknown, observed removals remain
+`[]`, and all 132 durable seeds remain unavailable rather than removed. Cycle
+20 remains the last comparable authenticated snapshot, including its retained
+two exact pre-fix UUIDs and the later authoritative three-of-three reflection
+result.
+
+Lane continuity is unchanged by the local repair. Last useful public GitHub
+evidence remains Cycle 40; exact local `5d960fa3a5…379e29` is now the last
+useful code evidence. MemGauge `2608.30177v1` remains the 15/15 arXiv anchor and
+`2608.25553v3` the distinct 14/15 marginal result. Reddit remains deferred
+without quota work at RSS HTTP 200 with stable `t3_1v8a3sh` and six comments,
+while JSON remains last observed HTTP 403. Their revisit triggers remain a
+public revision/artifact/independent or seed link, a paper/artifact/registration
+or replication/readable-seed change, and a seed-linked content or access
+change, respectively.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains fully integrated by standing reconciliation ancestors, stable patch
+IDs, and four byte-identical final artifacts. Direct side-tip ancestry remains
+intentionally false under the equivalent-patch strategy. Nothing accepted is
+deferred, superseded, blocked, or known unintegrated.
+
+On the exact two-document candidate over code commit `5d960fa…379e29`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 111 tests with 300
+assertions. Read-only health at `2026-09-02T13:29:03.635Z` remains bounded and
+truncated at 26 facts and 16 wake signals. Runtime `.state` is empty.
+
+Protected Git porcelain-v2/NUL fingerprints remain exact. The dirty source is
+still at `386b445c236e4609cd8870d22cc773cc4641fec8`, 882 records, and
+`c1940fbb013e307bac9e4efc2003345d99000792d45d7a14f3d103ee51eb7001`.
+The human overlay remains at
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and
+`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`.
+Every other peer remains clean at
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+No protected checkout changed.
+
+This is a checkpoint, not goal completion. After final documentation,
+integration-equivalence, and protected-fingerprint proof, commit this record.
+The next exploration begins with the next Xiaohongshu seed reconciliation; do
+not poll the just-observed unchanged session or begin the mixed-scope
+event-chain exploration.
 
 ## Supervision
 
