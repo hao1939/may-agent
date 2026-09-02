@@ -296,6 +296,8 @@ function safeSavedProfileSummary(value) {
  * Fingerprint only the supported semantic access boundary. Exact response byte
  * length and body hash remain separate provenance and cannot perturb this value.
  */
+export const XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION = 2;
+
 export function fingerprintXhsSavedProfileAccess(value) {
   const sha256 = /^[0-9a-f]{64}$/;
   const allowedKeys = new Set(["tab", "subTab"]);
@@ -323,7 +325,7 @@ export function fingerprintXhsSavedProfileAccess(value) {
   return createHash("sha256")
     .update(
       JSON.stringify([
-        "xhs-saved-profile-access/v2",
+        `xhs-saved-profile-access/v${XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION}`,
         value.targetEvidenceSha256,
         value.targetQueryKeys,
         summary.httpStatus,
@@ -440,6 +442,7 @@ export async function inspectXhsSavedProfileStatus(
           observed.attributableItemCount > 0,
         targetEvidenceSha256,
         targetQueryKeys: target.queryKeys,
+        accessFingerprintVersion: XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION,
         accessFingerprint,
         ...observed,
       };

@@ -73,6 +73,7 @@ describe("XHS saved-profile status inspection", () => {
       targetEvidenceSha256:
         "1d842861979e899b1aea8df8498d6f1a42c5906df2aab47693231d91e114a5bd",
       targetQueryKeys: ["tab"],
+      accessFingerprintVersion: 2,
       accessFingerprint:
         "9f942fcdd0fbb5a042ff914b8786c7f16569b0a21681ca9daf0c1ecffcab04a0",
       httpStatus: 200,
