@@ -368,8 +368,10 @@ function comparableXhsSavedProfileAccess(value) {
 }
 
 /**
- * Attribute an access-fingerprint change without returning any evidence value.
- * Exact byte-length and body drift remain separate provenance signals.
+ * Compare raw observations under the current semantic access contract without
+ * returning any evidence value. Persisted fingerprint values and versions are
+ * deliberately not treated as input identity. Exact byte-length and body drift
+ * remain separate provenance signals.
  */
 export function compareXhsSavedProfileAccess(previous, current) {
   const before = comparableXhsSavedProfileAccess(previous);

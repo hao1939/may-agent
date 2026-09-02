@@ -248,6 +248,44 @@ describe("XHS saved-profile status inspection", () => {
     expect(JSON.stringify(delta)).not.toContain("e860da46506d");
   });
 
+  it("reinterprets historical and versioned output under current semantics", () => {
+    const historicalV1 = {
+      targetEvidenceSha256:
+        "e860da46506d774eced62830a670ea284f5150429482f8003c706bc6b006906e",
+      targetQueryKeys: [],
+      accessFingerprint:
+        "8fb1998a0fc6d6502b96e599553e1f2bbe3e39a0ae1354f966e5138335aef26d",
+      httpStatus: 200,
+      contentType: "text/html; charset=utf-8",
+      finalLocation: "login",
+      byteLength: 46673,
+      bodySha256:
+        "ab9ad9559f87f15d6c4bf46d4b238e331a2571df6a78673cf32fc76c7cc0565b",
+      attributableItemCount: 0,
+      idFingerprint: EMPTY_SHA256,
+      loginWall: true,
+    };
+    const currentV2 = {
+      ...historicalV1,
+      accessFingerprintVersion: 2,
+      accessFingerprint:
+        "3dab1b6d4f615fb77d6fbf76e82c4015937a83f3b18fc85d6a93f931d08af420",
+      byteLength: 46672,
+      bodySha256:
+        "adfdebf83305d8c2b7c23a8ff2c9615fb6a741ea34848b0d8f976e69c95ad18d",
+    };
+
+    const delta = compareXhsSavedProfileAccess(historicalV1, currentV2);
+    expect(delta).toEqual({
+      equivalent: true,
+      changedAccessFields: [],
+      byteLengthChanged: true,
+      bodyChanged: true,
+    });
+    expect(JSON.stringify(delta)).not.toContain("accessFingerprint");
+    expect(JSON.stringify(delta)).not.toContain("Version");
+  });
+
   it("attributes every stable field and rejects unsafe evidence", () => {
     const baseline = {
       targetEvidenceSha256: "1".repeat(64),
