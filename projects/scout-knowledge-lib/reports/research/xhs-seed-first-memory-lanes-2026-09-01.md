@@ -5831,6 +5831,67 @@ commit this seed-only reconciliation before reconsidering any source lane or
 selecting the next exploration. Keep the mixed-scope event-chain exploration
 closed.
 
+## Cycle 54 post-seed selection — audit safe history-target provenance
+
+Seed ordering is exact: the Cycle 54 access reconciliation above was committed
+first as `cbc0d21d981f14f3eaf18d1d80bfde76ccb55025`. Only then were
+GitHub, arXiv, and Reddit reconsidered by relevance, expected value, freshness,
+and access. No public-source trigger fired, so no request was repeated merely
+for lane coverage.
+
+- **GitHub/local code is selected for one bounded provenance audit.** Public
+  GitHub remains highly relevant but has low marginal new-source value. Retained
+  heads remain invalidation client `4c0dabd…9c641`, server
+  `567b6a0…2225e`, MutMem `2b93af1…8d9e7`, and Mnemo `2994abf…2f20`;
+  last useful public GitHub evidence remains Cycle 40. Exact local
+  `0e4bbaee0e7ab804bd6bda60890dd2cdc82e4076` remains the latest repair.
+  The Cycle 54 seed pass adds a directly observed local boundary: preparing a
+  query against Chrome's live History database returned `SQLITE_BUSY`, while
+  read-only DevTools navigation history supplied the same saved profile target
+  from two entries without database or page mutation. Audit a pure selector
+  that admits only HTTPS Xiaohongshu profile paths and excludes login,
+  unrelated, deceptive, and query-leaking candidates before adding any browser
+  behavior. Revisit public GitHub on a revision, artifact,
+  independent/deployment, or seed-linked trigger.
+- **arXiv is retained and deferred.** It remains highly relevant and current
+  but has low marginal value without an attributable seed or source trigger.
+  Exact HTTP-200 evidence through `2026-09-02T11:47:43.870Z` retains
+  `2608.30177v1`, `2608.25553v3`, `2609.00243v1`, `2609.01235v1`, and
+  deduplicated `2606.12290v1`. MemGauge `2608.30177v1` still wins the
+  post-reconciliation rubric at 15/15; `2608.25553v3` remains the 14/15
+  marginal-allocation result. Revisit on a paper, artifact, registration,
+  replication, or newly readable seed-body trigger.
+- **Reddit is deferred without quota work.** It remains medium relevance and
+  low incremental value. Last useful evidence remains RSS HTTP 200 at
+  `2026-09-01T10:43:38Z`, stable post `t3_1v8a3sh`, and six comments; JSON
+  remains last observed HTTP 403. Revisit on seed-linked reproducible evidence,
+  a thread/content delta, or an access change.
+
+The selected next exploration is a goal-owned inspection of current DevTools
+boundaries and a pure credential-safe history-target selector fixture. It will
+retain only a credential-free origin/path or fingerprint in evidence, reject
+query-bearing candidates before output, and make no page navigation or account
+request. Any browser integration requires a separately reproduced supported
+gap and review. The prohibited mixed-scope event-chain exploration remains
+closed.
+
+The only accepted Scout range considered remains
+`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`.
+It remains fully integrated by the standing ancestors, exact stable patch IDs,
+and four byte-identical final artifacts. Direct side-tip ancestry remains
+intentionally false. Nothing accepted is deferred, superseded, blocked, or
+known unintegrated.
+
+On the exact two-document candidate over seed commit `cbc0d21…b55025`,
+Prettier, whitespace, and all 21 relative links pass. The full Scout gate again
+passes syntax bundling, TypeScript, source formatting, and 105 tests with 284
+assertions. Read-only health at `2026-09-02T13:07:06.521Z` remains bounded and
+truncated at 26 facts and 16 wake signals. Runtime `.state` is empty, and the
+protected fingerprints remain exactly those recorded in the seed checkpoint.
+
+This is a lane-selection checkpoint, not goal completion. Validate and commit
+the selection before beginning the bounded local audit.
+
 ## Supervision
 
 - Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
