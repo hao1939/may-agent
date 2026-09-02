@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–69 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f, 3aaba3f61478ba2ee8493fbb668139ba0b1c8599, and 6a22b251079a751819ca5a927ebd04eea3589447."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus Cycle 67–69 deterministic control analysis of synthetic schedules at exact local commits e8ce4879dfe649377051801927aa145df514640f, 3aaba3f61478ba2ee8493fbb668139ba0b1c8599, and 6a22b25107c1e77b79b4b55e6a0057ce7ee9b424."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -278,7 +278,7 @@ surface this heterogeneity without making provider calls.
 
 ## Cycle 69 frozen model/run block resampling
 
-Exact local commit `6a22b251079a751819ca5a927ebd04eea3589447`
+Exact local commit `6a22b25107c1e77b79b4b55e6a0057ce7ee9b424`
 implements the next deterministic gate. Its schema fixes 1,024 resamples,
 2.5% and 97.5% empirical quantiles, equal weights for the named model set, and
 SHA-256 seed

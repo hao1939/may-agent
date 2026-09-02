@@ -70,7 +70,7 @@ zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. The post-seed local trigger check at
 `2026-09-02T18:25:02.557Z–18:25:02.574Z` found every accepted ref unchanged
 and fully reconciled. No public request was made. Instead, exact local commit
-`6a22b251079a751819ca5a927ebd04eea3589447` completed the highest-value
+`6a22b25107c1e77b79b4b55e6a0057ce7ee9b424` completed the highest-value
 accessible work by resampling complete model/seed runs under a frozen rule.
 Opposed models keep `+1/-1` intervals even when the equal-model interval is
 `[0,0]`; opposed runs within one model instead widen its interval to `[-1,+1]`.

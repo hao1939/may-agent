@@ -1369,7 +1369,7 @@ calls remain unauthorized. Confidence is high for the tested accounting
 behavior and low for transfer beyond it.
 
 Cycle 69 adds deterministic model/run block resampling at exact local commit
-`6a22b251079a751819ca5a927ebd04eea3589447`. The frozen fixture samples
+`6a22b25107c1e77b79b4b55e6a0057ce7ee9b424`. The frozen fixture samples
 complete model/seed blocks within each named model, keeps equal model weights,
 and reports model intervals before aggregation. Opposed deterministic models
 retain `+1` and `-1` intervals while their aggregate interval collapses to
