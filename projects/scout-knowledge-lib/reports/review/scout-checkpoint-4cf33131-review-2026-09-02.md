@@ -85,6 +85,28 @@ Integrated results are standing commits `24e0f91f6e1e1e7b9fb4794a0a6c0a11051b42d
 - Stable patch IDs matched each reviewer source commit to its standing
   cherry-pick exactly.
 
+## Integration-tip follow-up
+
+The standing owner integrated this review as
+`a464a0e5dab1c5566e6e62c395bafb06f8be83ad` and validated clean tip
+`4c4953b5c0d928513fc08e5d3e5e147ca7b8b48f`. Exact patch IDs match, and the
+owner preserved the pending outcome boundary for `RV-001`.
+
+That integration also exposed `RV-003`, a medium-severity retrieval finding.
+Commits `afdc558274356a1390bf2abcb2ed3c80bf8cfeb3` and
+`4c4953b5c0d928513fc08e5d3e5e147ca7b8b48f` added 78 lines to the producer
+report, repeating review findings, commit mappings, and validation already held
+in the independent artifacts. The user impact is the same signal-density loss
+as the original no-change checkpoint, now caused by review recursion.
+
+**Disposition: revise.** The prepared candidate replaces the wrappers with one
+compact ledger while retaining exact reviewer/standing commit mappings,
+current-tip validation, the concurrent dirty-source limitation, the pending
+`RV-001` outcome check, and all result statuses. It should be integrated as-is
+without another narrative integration wrapper. This is a documentation-only,
+reversible compaction; it changes no source fact, evaluator, authority, or
+behavioral claim.
+
 ## Supervision
 
 - Goal: Continuously provide independent, evidence-backed review and process refinement for Scout Knowledge Library: review each new material Scout checkpoint and perform bounded periodic audits, determine whether its research and workflow changes improve correctness, usefulness, reuse, and cost under appropriate comparisons, identify regressions, contamination, duplication, unsupported claims, and missed high-value leads, and produce validated review findings or integration-ready refinements until the human explicitly stops or replaces this goal.

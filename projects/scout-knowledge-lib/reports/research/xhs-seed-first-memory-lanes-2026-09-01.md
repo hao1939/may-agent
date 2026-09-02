@@ -7591,91 +7591,33 @@ beside all four exact hashes above. The reviewer independently matched all four
 heads, including MutMem after the arXiv record resolved it to
 `wallidsaydi-creator/HOM-AIMOS`.
 
-## Cycle 65 independent-review integration checkpoint
+## Cycle 65 independent-review integration
 
-What was wrong was retrieval cost without decision value: Cycle 65 repeated
-four unchanged GitHub-head reads and a rate read only 44 minutes after Cycle
-63, and its standalone evidence named roles such as MutMem without stable
-repository identities. For the next worker, short elapsed time no longer
-causes public requests, and every retained GitHub head is directly attributable
-to its owner/repository.
+Independent review accepted the Cycle 65 facts but found that a sub-hour
+unchanged-head refresh added cost without decision value and that four exact
+heads lacked stable repository identities. Standing correction
+`4cf33131a7f474feb099e692cc36459973cbd6a3` now requires a change-bearing signal
+or a compact audit after at least 24 hours and names every repository beside its
+hash. The cadence benefit remains unmeasured until the first eligible
+no-change opportunity actually defers without public requests or another
+narrative checkpoint.
 
-The final accepted reviewer range is
-`577986efc1095aa4ceab403d911cc544161a58e5..ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`.
-It contains review commits `7959ccea48c2b5f7f40289cb211cbf38245502ad`
-then `ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`, integrated in that order as
-standing commits `24e0f91f6e1e1e7b9fb4794a0a6c0a11051b42d6` and
-`18ab0bc8afc6e884361482cd5d9ab0a4b258b996`. Their stable patch IDs match
-pairwise: `01928e429241ffc7584db20acda9eaceea26cf7a` and
-`74a08ce5c3c107af4374a279f97338771af591fa`. Standing correction commit
-`4cf33131a7f474feb099e692cc36459973cbd6a3` accepts and resolves both findings.
-The independent review artifacts remain intact; the producer checkpoint,
-topic map, and compact review cursor hold the standing-owner correction.
+Reviewer commits `7959ccea48c2b5f7f40289cb211cbf38245502ad`,
+`ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`, and
+`5c59b3c9025150fdb157ad3ebe301986fb10f96f` are patch-equivalent to standing
+commits `24e0f91f6e1e1e7b9fb4794a0a6c0a11051b42d6`,
+`18ab0bc8afc6e884361482cd5d9ab0a4b258b996`, and
+`a464a0e5dab1c5566e6e62c395bafb06f8be83ad`. Exact-tip validation passed 115
+tests and 330 assertions plus syntax, TypeScript, formatting, whitespace, 22
+links, health 26/16, and empty runtime state.
 
-On exact correction commit `4cf33131a7f474feb099e692cc36459973cbd6a3`,
-the full Scout gate passed syntax bundling, TypeScript, source formatting, 115
-tests, and 330 assertions. Whitespace passed; all 22 relative links across the
-producer, topic-map, and two review artifacts resolved; read-only health at
-`2026-09-02T15:49:17.580Z` remained the known bounded and truncated 26 facts
-and 16 wake signals; runtime `.state` was empty. A supplemental whole-document
-Markdown-Prettier probe is not a repository gate and flagged the independently
-authored review artifact plus the pre-existing large topic-map table; no
-formatter rewrite was applied, while the repository's governing format check
-passed.
-
-The accepted self-evolution range
-`8c5d8747a6b4be8d65703792911360a9082d8b51..df80a1daa26e353bd33fcf2e9d24860917b695de`
-remains integrated by the previously proved standing ancestors, equal patch
-IDs, and four byte-identical final artifacts. The review branch is clean at
-`ffd5e2af029cc9726f5e5577d8e68e1e4b4f4355`; no accepted Scout result is
-deferred, superseded, blocked, or known unintegrated.
-
-The protected-state audit found concurrent external drift and does not hide it.
-The dirty source remained at HEAD
-`386b445c236e4609cd8870d22cc773cc4641fec8`, but changed from Cycle 65's 882
-records / `c1940fbb…eb7001` to 883 records /
-`21f94bd60ff7fea09b41367682f00997839294c853fd1a7f448fb7beff6615d8`.
-The newest paths were unrelated Herdr Supervisor source and tests modified at
-`2026-09-02T15:41:42.655Z–15:45:31.060Z`, plus the separately owned reviewer
-worktree path. This worker ran only read-only Git inspection in `/app`; exact
-preservation against the earlier dirty fingerprint cannot be claimed across
-that external activity. The human overlay remained three records at
-`a52b97aa336f000a719c919567dad6f7fa107a8101a1f15b940f4a6a25394a15`, and
-every inspected peer worktree remained clean at
-`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
-The final bounded rerun at `2026-09-02T15:52:15Z` found continued external
-drift at the same source HEAD: 884 records and
-`9f104fea1fa9470def150a604ebf49a95a90ba38bf074882d4ea3bd6bcc709d2`.
-The added record was the newly created, separately owned clean review worktree
-`g-8c5b597e-cycle65-resolution-review` at correction commit `4cf33131…bd6a3`;
-it was inspected read-only and not treated as an accepted result. This bounded
-evidence proves every goal-external worktree inspected was left clean, while
-also proving the enclosing dirty source fingerprint was not stationary enough
-for an equality claim.
-
-Seed continuity remains exact Cycle 65 commit `8b546b8…b36ae2`: added and
-changed seeds are unknown, removals are `[]`, and all 132 durable identities
-remain unavailable. No new seed observation was triggered by this review, so
-no source call was manufactured. GitHub is deferred until a change-bearing
-signal or a compact audit at least 24 hours after the last pass; arXiv retains
-`2608.30177v1` at 15/15 and `2608.25553v3` at 14/15; Reddit remains
-RSS-readable/JSON-403 and deferred without quota work. The next exploration is
-the next observational Xiaohongshu reconciliation when a new seed observation
-trigger occurs, before reconsidering all three lanes. Keep the mixed-scope
-event-chain exploration closed.
-
-The follow-up independent review range
-`4cf33131a7f474feb099e692cc36459973cbd6a3..5c59b3c9025150fdb157ad3ebe301986fb10f96f`
-is also integrated. Reviewer commit `5c59b3c9025150fdb157ad3ebe301986fb10f96f`
-is patch-equivalent to standing commit
-`a464a0e5dab1c5566e6e62c395bafb06f8be83ad` at stable patch ID
-`c545e8540fcc70fb2b8e80978829319d444d6dd0`. It accepts `RV-002` as resolved
-and accepts the `RV-001` policy as a reversible, lower-cost structural repair.
-It does not turn that repair into a measured productivity claim: the first
-eligible no-change opportunity must actually defer without public requests or
-another narrative checkpoint. No result is rejected, superseded, blocked, or
-known unintegrated, and no synthetic source request is made to force that
-future observation.
+The dirty source stayed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`
+while concurrent external work changed its final observed status to 884 records
+at `9f104fea…09d2`; no equality to the earlier fingerprint is claimed. The
+human overlay remained unchanged; inspected peer worktrees remained clean. No
+source call was manufactured for this integration. `RV-002` is resolved;
+`RV-001` outcome validation is pending; no result is rejected, superseded, or
+blocked.
 
 ## Supervision
 
