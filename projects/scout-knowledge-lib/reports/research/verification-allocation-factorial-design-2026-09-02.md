@@ -898,6 +898,53 @@ The next ranked question is to generalize the count bound to a frozen
 heterogeneous six-model marginal vector and measure how one or two weaker
 models change the 80% guarantee before any execution proposal.
 
+## Cycle 87 asymmetric-boundary correction
+
+Seed reconciliation `405c60e145205ff2a71b283f108ea02d48b03bc1` preceded this
+correction. Exact local source commit
+`39dfb2d76b6b59b88271096770d83678c1a3c50c` replaces the Cycle 82
+all-symmetric practical-null fixture with three retained zero-effect controls
+plus a genuinely asymmetric positive practical-boundary null with trinomial
+probabilities `[0.2,0.5,0.3]` and expected effect `+0.10`. Comparison
+specification SHA-256 is now
+`465a3c1041b4dce920f323df04e50276aeac0e1c7f804ed1dbd356d751de1542`.
+The schema freezes the 1% false-direction limit, requires at least one
+asymmetric practical null, rejects a process outside the practical-null band,
+and rejects duplicate IDs both within a class and across the null/alternative
+classes.
+
+The correction preserves every previously reported zero-effect probability.
+For the directional estimand, balanced/dense/sparse false-direction
+probabilities remain `0.04493475270663312`, `0.05044215663997886`, and
+`0.04267998231399742`; for practical exceedance they remain
+`0.0008153019889196652`, `0.0032209898687990566`, and
+`0.000024067259773916887`. Strong correct-direction power remains
+`0.9845896004887843` directional versus `0.8045178323414782` practical, and
+moderate power remains `0.5344140683113935` versus
+`0.11132478415415377`.
+
+The asymmetric boundary changes the conclusion. A `+0.10` process is a
+positive process for the zero-threshold directional estimand, so its positive
+decision probability `0.289256693611456` is not a false direction; only the
+negative probability `0.00027161058571514634` is, and it passes 1%. For the
+practical-exceedance estimand the same process is on the null boundary, so its
+positive and negative decisions (`0.028051868524189363` and
+`0.0000007753540473255935`) are unsupported practical-direction calls. Their
+sum `0.028052643878236687` fails 1%.
+
+This qualifies rather than reverses the retained directional-versus-practical
+finding. The 95% directional shortcut still fails the three zero-effect
+controls, and its stronger interval remains necessary there. Practical
+exceedance no longer has a supported blanket claim that every declared null
+passes: it passes the three zero-effect controls but fails this exact boundary
+control. Confidence is high for the exhaustive discrete probabilities and
+their estimand-specific labels, but low for other asymmetric nulls, continuous
+effects, boundary conventions, dependence, real models, and provider
+behavior. The next bounded investigation remains the already seed-linked
+heterogeneous 4-of-6 marginal sensitivity analysis; it must retain this
+corrected estimand boundary as contradictory evidence rather than treating a
+single rule as uniformly safer.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
