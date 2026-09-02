@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; and pinned Mnemo duplex plus live-HTTP reproductions prove why authenticated principal and organization scope must reach every request operation, including resource discovery, exact reads, provenance, trajectory and integrity diagnostics, and forgetting by ID, criteria, principal, or session. REST/gRPC trajectory filters are separately documented as operator narrowing, not tenant authorization. Isolated fixes and real-binary transport regressions pass package, formatting, migration, and lint validation, but are not deployed proof."
 triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
 last_updated: "2026-09-02"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full TeX source of arXiv 2604.16548v2; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, plus transport regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
@@ -840,6 +840,33 @@ because it selected a crate cache unreadable by `uid=1000(hao)`; the existing
 goal-owned cache completed the same lint in 5m11s. This is local migration and
 behavior evidence only: it has not been reviewed upstream, deployed, or run
 against production data.
+
+### REST and gRPC expose an operator filter, not tenant identity
+
+Cycle 27 separated the MCP capability model from Mnemo's other transports.
+REST and gRPC can require one deployment-wide bearer token, but that token
+admits the request without identifying a principal or organization. Treating
+their caller-selected organization as authenticated tenant scope would
+therefore claim authority the credential does not carry.
+
+The mixed-organization fixture ran on exact local base
+`a6649e56abd8da17bec5b9c339707eb02e04ddbb`. With one Alpha and one Beta event
+for the same agent, the historical unfiltered REST response reported two. An
+explicit Alpha request also reported two because the schema had no organization
+field and the handler used the unscoped listing; the regression failed at
+`rest_test.rs:541`. These are two views of one local counterexample, not
+independent confirmations.
+
+Commit `24d27c375318b30f70ebc5521f75f9641e2b60b2` adds an optional `org_id`
+operator filter to both REST and gRPC. Omitting it still returns two, preserving
+aggregate compatibility; requesting Alpha returns one on each transport. The
+same deployment token can still request any organization, so the change
+provides query narrowing, not tenant authorization. Focused REST and gRPC
+regressions pass, as do strict all-target Clippy, 298 core tests with one
+intentional network test ignored, 105 MCP tests, 17 REST tests, two gRPC tests
+with two documentation examples intentionally ignored, and 85 HTTP-enabled
+server tests. Formatting and whitespace checks pass. The result remains local,
+unreviewed upstream, and undeployed.
 
 ## Why it matters
 
