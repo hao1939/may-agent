@@ -377,6 +377,66 @@ export type PercentileEstimandComparisonAnalysis = {
   errors: string[];
 };
 
+export type DirectionalQuantileCalibrationSpec = {
+  schema: "scout.verification-allocation-directional-quantile-calibration/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  calibrationMethod: "exact-trinomial-enumeration";
+  effectSupport: [-1, 0, 1];
+  directionalDecisionDelta: 0;
+  runBlockCount: number;
+  candidateLowerQuantiles: number[];
+  selectionPolicy: "first-passing-all-nulls";
+  maximumFalseDirectionalProbability: number;
+  nullProcesses: PercentileNullCalibrationSpec["processes"];
+};
+
+export type DirectionalQuantileCalibrationAnalysis = {
+  ok: boolean;
+  calibrationSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  runBlockCount: number;
+  candidates: Array<{
+    lowerQuantile: number;
+    upperQuantile: number;
+    nullReport: PercentileEstimandComparisonAnalysis["estimands"][number]["nullReport"];
+    passesAllNulls: boolean;
+  }>;
+  selectedLowerQuantile: number | null;
+  selectedUpperQuantile: number | null;
+  scopeLimit: string;
+  errors: string[];
+};
+
+export type DirectionalQuantilePowerSpec = {
+  schema: "scout.verification-allocation-directional-quantile-power/v1";
+  evidenceClass: "synthetic-analysis-fixture";
+  calibrationMethod: "exact-trinomial-enumeration";
+  effectSupport: [-1, 0, 1];
+  directionalDecisionDelta: 0;
+  calibrationSpecSha256: string;
+  selectedLowerQuantile: number;
+  selectedUpperQuantile: number;
+  runBlockCount: number;
+  minimumCorrectDirectionalPower: number;
+  maximumWrongDirectionalProbability: number;
+  alternativeProcesses: PercentileAlternativeCalibrationSpec["processes"];
+};
+
+export type DirectionalQuantilePowerAnalysis = {
+  ok: boolean;
+  powerSpecSha256: string;
+  calibrationSpecSha256: string;
+  calibrationMethod: "exact-trinomial-enumeration" | "";
+  monteCarloStandardError: 0 | null;
+  runBlockCount: number;
+  selectedLowerQuantile: number | null;
+  selectedUpperQuantile: number | null;
+  report: PercentileAlternativeCalibrationAnalysis["report"];
+  scopeLimit: string;
+  errors: string[];
+};
+
 export type FinitePercentileComparisonAnalysis = {
   ok: boolean;
   decisionAuthority: "exact-trinomial-oracle" | "";
@@ -1195,6 +1255,53 @@ export function buildToyPercentileEstimandComparisonSpec(): PercentileEstimandCo
     maximumWrongDirectionalProbability:
       alternativeCalibration.maximumWrongDirectionalProbability,
     nullProcesses: nullCalibration.processes,
+    alternativeProcesses: alternativeCalibration.processes,
+  };
+}
+
+export function buildToyDirectionalQuantileCalibrationSpec(): DirectionalQuantileCalibrationSpec {
+  const nullCalibration = buildToyPercentileNullCalibrationSpec();
+  return {
+    schema: "scout.verification-allocation-directional-quantile-calibration/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    calibrationMethod: "exact-trinomial-enumeration",
+    effectSupport: [-1, 0, 1],
+    directionalDecisionDelta: 0,
+    runBlockCount: 105,
+    candidateLowerQuantiles: [0.025, 0.01, 0.005, 0.0025],
+    selectionPolicy: "first-passing-all-nulls",
+    maximumFalseDirectionalProbability: 0.01,
+    nullProcesses: nullCalibration.processes,
+  };
+}
+
+export function buildToyDirectionalQuantilePowerSpec(
+  calibration: DirectionalQuantileCalibrationAnalysis,
+): DirectionalQuantilePowerSpec {
+  if (
+    !calibration.ok ||
+    calibration.selectedLowerQuantile === null ||
+    calibration.selectedUpperQuantile === null
+  ) {
+    throw new Error(
+      "directional quantile calibration did not select an interval",
+    );
+  }
+  const alternativeCalibration = buildToyPercentileAlternativeCalibrationSpec();
+  return {
+    schema: "scout.verification-allocation-directional-quantile-power/v1",
+    evidenceClass: "synthetic-analysis-fixture",
+    calibrationMethod: "exact-trinomial-enumeration",
+    effectSupport: [-1, 0, 1],
+    directionalDecisionDelta: 0,
+    calibrationSpecSha256: calibration.calibrationSpecSha256,
+    selectedLowerQuantile: calibration.selectedLowerQuantile,
+    selectedUpperQuantile: calibration.selectedUpperQuantile,
+    runBlockCount: calibration.runBlockCount,
+    minimumCorrectDirectionalPower:
+      alternativeCalibration.minimumCorrectDirectionalPower,
+    maximumWrongDirectionalProbability:
+      alternativeCalibration.maximumWrongDirectionalProbability,
     alternativeProcesses: alternativeCalibration.processes,
   };
 }
@@ -2670,6 +2777,317 @@ export function comparePercentileEstimands(
     estimands,
     scopeLimit:
       "Exact only for the two frozen estimands, symmetric trinomial nulls, mirror-paired alternatives, and one run count; the directional claim does not inherit the practical claim's null-risk result, and dependence, continuous effects, provider behavior, and real models remain uncalibrated.",
+    errors: [],
+  };
+}
+
+function invalidDirectionalQuantileCalibrationAnalysis(
+  errors: string[],
+): DirectionalQuantileCalibrationAnalysis {
+  return {
+    ok: false,
+    calibrationSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    runBlockCount: 0,
+    candidates: [],
+    selectedLowerQuantile: null,
+    selectedUpperQuantile: null,
+    scopeLimit: "",
+    errors,
+  };
+}
+
+function parseDirectionalQuantileCalibrationSpec(
+  candidate: unknown,
+): DirectionalQuantileCalibrationSpec | null {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    return null;
+  const spec = candidate as Record<string, unknown>;
+  if (
+    Object.keys(spec).sort().join(",") !==
+      "calibrationMethod,candidateLowerQuantiles,directionalDecisionDelta,effectSupport,evidenceClass,maximumFalseDirectionalProbability,nullProcesses,runBlockCount,schema,selectionPolicy" ||
+    spec.schema !==
+      "scout.verification-allocation-directional-quantile-calibration/v1" ||
+    spec.evidenceClass !== "synthetic-analysis-fixture" ||
+    spec.calibrationMethod !== "exact-trinomial-enumeration" ||
+    JSON.stringify(spec.effectSupport) !== "[-1,0,1]" ||
+    spec.directionalDecisionDelta !== 0 ||
+    spec.selectionPolicy !== "first-passing-all-nulls" ||
+    !Number.isInteger(spec.runBlockCount) ||
+    (spec.runBlockCount as number) < 2 ||
+    (spec.runBlockCount as number) > 256 ||
+    typeof spec.maximumFalseDirectionalProbability !== "number" ||
+    !Number.isFinite(spec.maximumFalseDirectionalProbability) ||
+    spec.maximumFalseDirectionalProbability <= 0 ||
+    spec.maximumFalseDirectionalProbability >= 0.5 ||
+    !Array.isArray(spec.candidateLowerQuantiles) ||
+    spec.candidateLowerQuantiles.length === 0
+  ) {
+    return null;
+  }
+  const quantiles = spec.candidateLowerQuantiles as unknown[];
+  if (
+    quantiles.some(
+      (quantile) =>
+        typeof quantile !== "number" ||
+        !Number.isFinite(quantile) ||
+        quantile <= 0 ||
+        quantile >= 0.5,
+    ) ||
+    new Set(quantiles).size !== quantiles.length ||
+    quantiles.some(
+      (quantile, index) =>
+        index > 0 && (quantile as number) >= (quantiles[index - 1] as number),
+    )
+  ) {
+    return null;
+  }
+  const nullSpec = parsePercentileNullCalibrationSpec({
+    schema: "scout.verification-allocation-null-calibration/v1",
+    evidenceClass: spec.evidenceClass,
+    calibrationMethod: spec.calibrationMethod,
+    effectSupport: spec.effectSupport,
+    practicalDelta: Number.EPSILON,
+    lowerQuantile: quantiles[0],
+    upperQuantile: 1 - (quantiles[0] as number),
+    falseDirectionalTolerance: spec.maximumFalseDirectionalProbability,
+    candidateMinimumRunBlocks: spec.runBlockCount,
+    verificationMaximumRunBlocks: spec.runBlockCount,
+    reportRunBlockCounts: [spec.runBlockCount],
+    processes: spec.nullProcesses,
+  });
+  return nullSpec
+    ? (spec as unknown as DirectionalQuantileCalibrationSpec)
+    : null;
+}
+
+function exactDirectionalRates(
+  runBlockCount: number,
+  lowerQuantile: number,
+  processes: Array<{
+    id: string;
+    probabilities: [number, number, number];
+  }>,
+): Map<string, Record<PracticalEffectDecision, number>> {
+  const rates = new Map(
+    processes.map((process) => [
+      process.id,
+      { positive: 0, negative: 0, negligible: 0, inconclusive: 0 },
+    ]),
+  );
+  const logFactorials = [0];
+  for (let count = 1; count <= runBlockCount; count += 1) {
+    logFactorials[count] = logFactorials[count - 1]! + Math.log(count);
+  }
+  for (
+    let negativeCount = 0;
+    negativeCount <= runBlockCount;
+    negativeCount += 1
+  ) {
+    for (
+      let zeroCount = 0;
+      zeroCount <= runBlockCount - negativeCount;
+      zeroCount += 1
+    ) {
+      const positiveCount = runBlockCount - negativeCount - zeroCount;
+      const decision = exactTrinomialPercentileDecision(
+        runBlockCount,
+        negativeCount,
+        zeroCount,
+        positiveCount,
+        lowerQuantile,
+        1 - lowerQuantile,
+        0,
+      );
+      for (const process of processes) {
+        rates.get(process.id)![decision] += exactMultinomialProbability(
+          runBlockCount,
+          negativeCount,
+          zeroCount,
+          positiveCount,
+          process.probabilities,
+          logFactorials,
+        );
+      }
+    }
+  }
+  return rates;
+}
+
+/** Select a directional interval using null processes only. */
+export function calibrateDirectionalQuantiles(
+  candidate: unknown,
+): DirectionalQuantileCalibrationAnalysis {
+  const spec = parseDirectionalQuantileCalibrationSpec(candidate);
+  if (!spec) {
+    return invalidDirectionalQuantileCalibrationAnalysis([
+      "directional quantile calibration specification is invalid",
+    ]);
+  }
+  const candidates = spec.candidateLowerQuantiles.map((lowerQuantile) => {
+    const rates = exactDirectionalRates(
+      spec.runBlockCount,
+      lowerQuantile,
+      spec.nullProcesses,
+    );
+    const nullReport = spec.nullProcesses.map((process) => {
+      const rate = rates.get(process.id)!;
+      const falseDirectionalProbability = rate.positive + rate.negative;
+      return {
+        processId: process.id,
+        falsePositiveDirectionProbability: rate.positive,
+        falseNegativeDirectionProbability: rate.negative,
+        falseDirectionalProbability,
+        passesWrongDirectionTolerance:
+          falseDirectionalProbability <=
+          spec.maximumFalseDirectionalProbability,
+      };
+    });
+    return {
+      lowerQuantile,
+      upperQuantile: 1 - lowerQuantile,
+      nullReport,
+      passesAllNulls: nullReport.every(
+        (entry) => entry.passesWrongDirectionTolerance,
+      ),
+    };
+  });
+  const selected = candidates.find((entry) => entry.passesAllNulls) ?? null;
+  return {
+    ok: selected !== null,
+    calibrationSpecSha256: createHash("sha256")
+      .update(JSON.stringify(spec))
+      .digest("hex"),
+    calibrationMethod: spec.calibrationMethod,
+    monteCarloStandardError: 0,
+    runBlockCount: spec.runBlockCount,
+    candidates,
+    selectedLowerQuantile: selected?.lowerQuantile ?? null,
+    selectedUpperQuantile: selected?.upperQuantile ?? null,
+    scopeLimit:
+      "Exact only for the frozen candidate grid, three symmetric trinomial nulls, and 105 run blocks; selection uses no alternative outcomes, and continuous effects, other grids, dependence, finite resampling, provider behavior, and real models remain uncalibrated.",
+    errors: selected ? [] : ["no candidate interval passes every null process"],
+  };
+}
+
+function invalidDirectionalQuantilePowerAnalysis(
+  errors: string[],
+): DirectionalQuantilePowerAnalysis {
+  return {
+    ok: false,
+    powerSpecSha256: "",
+    calibrationSpecSha256: "",
+    calibrationMethod: "",
+    monteCarloStandardError: null,
+    runBlockCount: 0,
+    selectedLowerQuantile: null,
+    selectedUpperQuantile: null,
+    report: [],
+    scopeLimit: "",
+    errors,
+  };
+}
+
+/** Measure power only after reproducing and binding the null-only selection. */
+export function measureCalibratedDirectionalPower(
+  calibrationCandidate: unknown,
+  powerCandidate: unknown,
+): DirectionalQuantilePowerAnalysis {
+  const calibration = calibrateDirectionalQuantiles(calibrationCandidate);
+  if (!calibration.ok) {
+    return invalidDirectionalQuantilePowerAnalysis([
+      "directional null calibration is not valid",
+    ]);
+  }
+  if (
+    !powerCandidate ||
+    typeof powerCandidate !== "object" ||
+    Array.isArray(powerCandidate)
+  ) {
+    return invalidDirectionalQuantilePowerAnalysis([
+      "directional quantile power specification is invalid",
+    ]);
+  }
+  const power = powerCandidate as Record<string, unknown>;
+  const alternativeSpec = parsePercentileAlternativeCalibrationSpec({
+    schema: "scout.verification-allocation-alternative-calibration/v1",
+    evidenceClass: power.evidenceClass,
+    calibrationMethod: power.calibrationMethod,
+    effectSupport: power.effectSupport,
+    practicalDelta: Number.EPSILON,
+    lowerQuantile: power.selectedLowerQuantile,
+    upperQuantile: power.selectedUpperQuantile,
+    runBlockCount: power.runBlockCount,
+    minimumCorrectDirectionalPower: power.minimumCorrectDirectionalPower,
+    maximumWrongDirectionalProbability:
+      power.maximumWrongDirectionalProbability,
+    processes: power.alternativeProcesses,
+  });
+  const calibrationSpec =
+    calibrationCandidate as DirectionalQuantileCalibrationSpec;
+  if (
+    Object.keys(power).sort().join(",") !==
+      "alternativeProcesses,calibrationMethod,calibrationSpecSha256,directionalDecisionDelta,effectSupport,evidenceClass,maximumWrongDirectionalProbability,minimumCorrectDirectionalPower,runBlockCount,schema,selectedLowerQuantile,selectedUpperQuantile" ||
+    power.schema !==
+      "scout.verification-allocation-directional-quantile-power/v1" ||
+    power.directionalDecisionDelta !== 0 ||
+    power.calibrationSpecSha256 !== calibration.calibrationSpecSha256 ||
+    power.runBlockCount !== calibration.runBlockCount ||
+    power.selectedLowerQuantile !== calibration.selectedLowerQuantile ||
+    power.selectedUpperQuantile !== calibration.selectedUpperQuantile ||
+    !alternativeSpec ||
+    alternativeSpec.processes.some((process) =>
+      calibrationSpec.nullProcesses.some(
+        (nullProcess) => nullProcess.id === process.id,
+      ),
+    )
+  ) {
+    return invalidDirectionalQuantilePowerAnalysis([
+      "directional quantile power specification is invalid or not bound to the selected null calibration",
+    ]);
+  }
+  const rates = exactDirectionalRates(
+    alternativeSpec.runBlockCount,
+    alternativeSpec.lowerQuantile,
+    alternativeSpec.processes,
+  );
+  const report = alternativeSpec.processes.map((process) => {
+    const rate = rates.get(process.id)!;
+    const correctDirectionalProbability = rate[process.expectedDirection];
+    const wrongDirectionalProbability =
+      rate[process.expectedDirection === "positive" ? "negative" : "positive"];
+    return {
+      processId: process.id,
+      pairId: process.pairId,
+      expectedDirection: process.expectedDirection,
+      expectedEffect: process.probabilities[2] - process.probabilities[0],
+      correctDirectionalProbability,
+      wrongDirectionalProbability,
+      negligibleProbability: rate.negligible,
+      inconclusiveProbability: rate.inconclusive,
+      passesPowerTarget:
+        correctDirectionalProbability >=
+        alternativeSpec.minimumCorrectDirectionalPower,
+      passesWrongDirectionTolerance:
+        wrongDirectionalProbability <=
+        alternativeSpec.maximumWrongDirectionalProbability,
+    };
+  });
+  return {
+    ok: true,
+    powerSpecSha256: createHash("sha256")
+      .update(JSON.stringify(powerCandidate))
+      .digest("hex"),
+    calibrationSpecSha256: calibration.calibrationSpecSha256,
+    calibrationMethod: alternativeSpec.calibrationMethod,
+    monteCarloStandardError: 0,
+    runBlockCount: alternativeSpec.runBlockCount,
+    selectedLowerQuantile: alternativeSpec.lowerQuantile,
+    selectedUpperQuantile: alternativeSpec.upperQuantile,
+    report,
+    scopeLimit:
+      "Exact only for the null-selected interval, frozen mirror-paired trinomial alternatives, and 105 run blocks; the candidate grid and synthetic effects may not transfer to continuous effects, dependence, provider behavior, or real models.",
     errors: [],
   };
 }

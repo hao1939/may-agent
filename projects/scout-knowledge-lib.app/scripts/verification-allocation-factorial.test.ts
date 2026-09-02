@@ -3,6 +3,8 @@ import {
   analyzeFactorialOutcomes,
   analyzeFactorialResultBundle,
   bootstrapFactorialModelRunBlocks,
+  buildToyDirectionalQuantileCalibrationSpec,
+  buildToyDirectionalQuantilePowerSpec,
   buildToyPercentileEstimandComparisonSpec,
   buildToyPercentileUnanimousPowerSpec,
   buildToyPercentileAlternativeCalibrationSpec,
@@ -15,9 +17,11 @@ import {
   compareFinitePercentileNullProcesses,
   decideFactorialPracticalEffects,
   calibratePercentileAlternativeProcesses,
+  calibrateDirectionalQuantiles,
   calibratePercentileNullProcesses,
   calibratePercentileUnanimousPower,
   comparePercentileEstimands,
+  measureCalibratedDirectionalPower,
   searchPercentileAlternativePower,
   scheduleSha256,
   scoreAllocationAnswer,
@@ -1049,6 +1053,87 @@ describe("verification-allocation factorial fixture", () => {
       ]);
     }
   });
+
+  it("selects a stricter directional interval from nulls before measuring power", () => {
+    const calibrationSpec = buildToyDirectionalQuantileCalibrationSpec();
+    const calibration = calibrateDirectionalQuantiles(calibrationSpec);
+
+    expect(calibration.ok).toBe(true);
+    expect(calibration.calibrationSpecSha256).toBe(
+      "1d8633f0591d9e4a1cd7c2fdc919a9546a26edf27a9761ab3ce113ab815b2ba8",
+    );
+    expect(calibration.monteCarloStandardError).toBe(0);
+    expect(calibration.candidates.map((entry) => entry.passesAllNulls)).toEqual(
+      [false, false, false, true],
+    );
+    expect(calibration.selectedLowerQuantile).toBe(0.0025);
+    expect(calibration.selectedUpperQuantile).toBe(0.9975);
+    const selected = calibration.candidates[3]!;
+    expect(
+      selected.nullReport.map((entry) => entry.falseDirectionalProbability),
+    ).toEqual([
+      expect.closeTo(0.004746432583487716, 14),
+      expect.closeTo(0.006016081515250353, 14),
+      expect.closeTo(0.004673936662618542, 14),
+    ]);
+
+    const power = measureCalibratedDirectionalPower(
+      calibrationSpec,
+      buildToyDirectionalQuantilePowerSpec(calibration),
+    );
+    const process = (processId: string) =>
+      power.report.find((entry) => entry.processId === processId)!;
+    expect(power.ok).toBe(true);
+    expect(power.powerSpecSha256).toBe(
+      "b5715c37201d532faf4067286232fe390e959b98b76651958b3a0cb3a693bef9",
+    );
+    expect(power.calibrationSpecSha256).toBe(calibration.calibrationSpecSha256);
+    expect(
+      process("strong-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.9066218357309971, 14);
+    expect(
+      process("moderate-positive").correctDirectionalProbability,
+    ).toBeCloseTo(0.2298628645622084, 14);
+    expect(process("strong-positive").passesPowerTarget).toBe(true);
+    expect(process("moderate-positive").passesPowerTarget).toBe(false);
+    expect(
+      power.report.every((entry) => entry.passesWrongDirectionTolerance),
+    ).toBe(true);
+  }, 30_000);
+
+  it("rejects unfrozen quantile selection, unbound power, and cross-class IDs", () => {
+    const calibrationSpec = buildToyDirectionalQuantileCalibrationSpec();
+    expect(
+      calibrateDirectionalQuantiles({
+        ...calibrationSpec,
+        candidateLowerQuantiles: [0.01, 0.025],
+      }).errors,
+    ).toEqual(["directional quantile calibration specification is invalid"]);
+
+    const calibration = calibrateDirectionalQuantiles(calibrationSpec);
+    const powerSpec = buildToyDirectionalQuantilePowerSpec(calibration);
+    expect(
+      measureCalibratedDirectionalPower(calibrationSpec, {
+        ...powerSpec,
+        selectedLowerQuantile: 0.005,
+      }).errors,
+    ).toEqual([
+      "directional quantile power specification is invalid or not bound to the selected null calibration",
+    ]);
+    expect(
+      measureCalibratedDirectionalPower(calibrationSpec, {
+        ...powerSpec,
+        alternativeProcesses: powerSpec.alternativeProcesses.map(
+          (process, index) =>
+            index === 0
+              ? { ...process, id: calibrationSpec.nullProcesses[0]!.id }
+              : process,
+        ),
+      }).errors,
+    ).toEqual([
+      "directional quantile power specification is invalid or not bound to the selected null calibration",
+    ]);
+  }, 30_000);
 
   it("enumerates every finite 64-block composition against the exact oracle", () => {
     const analysis = compareFinitePercentileNullProcesses(
