@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 59: saved seeds remain unavailable, the login shell alternates by one byte under unchanged semantic access, and the accepted range and source-lane continuity remain proven."
+summary: "Seed-first Scout continuity through Cycle 60: saved seeds remain unavailable, the v2 semantic access fingerprint stays stable across exact byte/body drift, and the accepted range and source-lane continuity remain proven."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-02"
-latest_seed_basis: "Cycle 59 observational reconciliation through 2026-09-02T13:59:46.182Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 59 at 2026-09-02T13:59:46.182Z; exact GitHub head freshness through 2026-09-02T13:54:03.030Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 60 observational reconciliation through 2026-09-02T14:07:53.735Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 60 at 2026-09-02T14:07:53.735Z; exact GitHub head freshness through 2026-09-02T13:54:03.030Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -6894,6 +6894,49 @@ next cycle with a fresh Xiaohongshu reconciliation before any source-lane
 work. The next permitted exploration is whether a fresh supported live status
 emits the v2 equivalence while preserving exact changing response provenance.
 Keep the proposed mixed-scope event-chain exploration closed.
+
+## Cycle 60 seed-first start — live v2 equivalence preserves byte provenance
+
+Cycle 60 began only after the clean Cycle 59 checkpoint at
+`37c190e62a3c7a9730eb6ebc433a0986537d4f86`. No GitHub, arXiv, Reddit,
+provider, implementation, or mixed-scope event-chain work preceded this
+observation.
+
+At `2026-09-02T14:07:52.716Z`, direct worker reads to ports 9222 and 9333
+failed with curl exit 7 and HTTP 000. The initiating worker was UID 1000
+(`hao`). Passwordless `sudo nsenter` reached root-owned Chrome PID 2136's
+DevTools listener as effective UID 0 in that process's network namespace. This
+is browser/process authority, not proof of a Xiaohongshu account principal.
+
+From `2026-09-02T14:07:52.772Z` through `14:07:53.735Z`, the supported
+read-only commands ran without navigation. Public `status` remained
+`ready:true` with 30 notes and no login wall. `saved-status` remained
+`ready:false` with target fingerprint
+`e860da46506d774eced62830a670ea284f5150429482f8003c706bc6b006906e`, no
+query keys, HTTP 200 `text/html; charset=utf-8`, final class `login`, zero
+attributable items, the empty ID fingerprint, and login state true. The shell
+returned from 46,673 to 46,672 bytes with exact body SHA-256
+`adfdebf83305d8c2b7c23a8ff2c9615fb6a741ea34848b0d8f976e69c95ad18d`.
+The v2 access fingerprint remained
+`3dab1b6d4f615fb77d6fbf76e82c4015937a83f3b18fc85d6a93f931d08af420`,
+confirming semantic access equivalence while preserving exact changed byte
+provenance.
+
+The saved inventory exposed no attributable post, so no representative saved
+post could be read. Added IDs and title/author changes remain unknown;
+observed removals are `[]`; all 132 durable seeds remain unavailable rather
+than removed. Cycle 20 remains the last comparable authenticated snapshot. No
+Xiaohongshu account or content state was mutated.
+
+The only accepted Scout range remains fully reconciled through equal patch
+IDs, three standing ancestors, and four byte-identical artifacts. Nothing
+accepted is deferred, superseded, blocked, or known unintegrated. Cycle 20's
+two exact pre-fix UUIDs and authoritative three-of-three reflection result
+remain retained.
+
+This is the required start of Cycle 60, not goal completion. Validate and
+commit this seed reconciliation before reconsidering GitHub, arXiv, or Reddit.
+Keep the mixed-scope event-chain exploration closed.
 
 ## Supervision
 
