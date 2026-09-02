@@ -686,31 +686,46 @@ describe("verification-allocation factorial fixture", () => {
       { length: 64 },
       (_, index) => `boundary-run-${String(index).padStart(2, "0")}`,
     );
-    const seedIndexes = new Map(
-      seedIds.map((seedId, index) => [seedId, index]),
-    );
     const schedule = buildSyntheticFactorialSchedule(
       ["calibration-model"],
       seedIds,
     );
-    const bundleFor = (negativeRunCount: number) => ({
-      schema: "scout.verification-allocation-results/v1",
-      evidenceClass: "synthetic-analysis-fixture",
-      scheduleSha256: scheduleSha256(schedule),
-      outcomes: schedule.episodes.map((episode) => {
-        const inverse = seedIndexes.get(episode.seedId)! < negativeRunCount;
-        const current = episode.factors.targetStatus === "current";
-        const selectsTarget = inverse ? !current : current;
-        return {
-          episodeId: episode.id,
-          answer: {
-            selected_memory_id: selectsTarget
-              ? episode.targetMemoryId
-              : episode.decoyMemoryId,
-          },
-        };
-      }),
-    });
+    const bundleFor = (
+      negativeRunCount: number,
+      placement: "front" | "back" | "spread",
+    ) => {
+      const inverseRuns = new Set(
+        placement === "front"
+          ? seedIds.slice(0, negativeRunCount)
+          : placement === "back"
+            ? seedIds.slice(seedIds.length - negativeRunCount)
+            : Array.from(
+                { length: negativeRunCount },
+                (_, index) =>
+                  seedIds[
+                    Math.floor((index * seedIds.length) / negativeRunCount)
+                  ]!,
+              ),
+      );
+      return {
+        schema: "scout.verification-allocation-results/v1",
+        evidenceClass: "synthetic-analysis-fixture",
+        scheduleSha256: scheduleSha256(schedule),
+        outcomes: schedule.episodes.map((episode) => {
+          const inverse = inverseRuns.has(episode.seedId);
+          const current = episode.factors.targetStatus === "current";
+          const selectsTarget = inverse ? !current : current;
+          return {
+            episodeId: episode.id,
+            answer: {
+              selected_memory_id: selectsTarget
+                ? episode.targetMemoryId
+                : episode.decoyMemoryId,
+            },
+          };
+        }),
+      };
+    };
 
     for (const expected of [
       {
@@ -734,31 +749,33 @@ describe("verification-allocation factorial fixture", () => {
         decision: "negative",
       },
     ] as const) {
-      const bundle = bundleFor(expected.negativeRunCount);
-      const bootstrap = bootstrapFactorialModelRunBlocks(
-        schedule,
-        bundle,
-        buildToyModelRunBlockBootstrapSpec(),
-      );
-      const decision = decideFactorialPracticalEffects(
-        schedule,
-        bundle,
-        buildToyModelRunBlockBootstrapSpec(),
-        buildToyPracticalEffectDecisionSpec(),
-      );
+      for (const placement of ["front", "back", "spread"] as const) {
+        const bundle = bundleFor(expected.negativeRunCount, placement);
+        const bootstrap = bootstrapFactorialModelRunBlocks(
+          schedule,
+          bundle,
+          buildToyModelRunBlockBootstrapSpec(),
+        );
+        const decision = decideFactorialPracticalEffects(
+          schedule,
+          bundle,
+          buildToyModelRunBlockBootstrapSpec(),
+          buildToyPracticalEffectDecisionSpec(),
+        );
 
-      expect(bootstrap.ok).toBe(true);
-      expect(
-        bootstrap.models[0]!.strata.map((stratum) => [
-          stratum.pointEstimate,
-          stratum.lower,
-          stratum.upper,
-        ]),
-      ).toEqual(Array.from({ length: 4 }, () => expected.interval));
-      expect(decision.ok).toBe(true);
-      expect(decision.strata.map((stratum) => stratum.decision)).toEqual(
-        Array.from({ length: 4 }, () => expected.decision),
-      );
+        expect(bootstrap.ok).toBe(true);
+        expect(
+          bootstrap.models[0]!.strata.map((stratum) => [
+            stratum.pointEstimate,
+            stratum.lower,
+            stratum.upper,
+          ]),
+        ).toEqual(Array.from({ length: 4 }, () => expected.interval));
+        expect(decision.ok).toBe(true);
+        expect(decision.strata.map((stratum) => stratum.decision)).toEqual(
+          Array.from({ length: 4 }, () => expected.decision),
+        );
+      }
     }
   }, 30_000);
 });

@@ -1019,22 +1019,30 @@ export function bootstrapFactorialModelRunBlocks(
     schedule.episodes.map((episode) => [episode.id, episode]),
   );
   const blockEffects = schedule.models.map((modelId) => {
-    const blocks = schedule.seeds.map((seedId) => {
-      const blockSchedule: FactorialSchedule = {
-        ...schedule,
-        models: [modelId],
-        seeds: [seedId],
-        episodes: schedule.episodes.filter(
-          (episode) => episode.modelId === modelId && episode.seedId === seedId,
-        ),
-      };
-      const blockOutcomes = bundle.outcomes.filter((outcome) => {
-        const episode = episodeById.get(outcome.episodeId);
-        return episode?.modelId === modelId && episode.seedId === seedId;
+    const blocks = schedule.seeds
+      .map((seedId) => {
+        const blockSchedule: FactorialSchedule = {
+          ...schedule,
+          models: [modelId],
+          seeds: [seedId],
+          episodes: schedule.episodes.filter(
+            (episode) =>
+              episode.modelId === modelId && episode.seedId === seedId,
+          ),
+        };
+        const blockOutcomes = bundle.outcomes.filter((outcome) => {
+          const episode = episodeById.get(outcome.episodeId);
+          return episode?.modelId === modelId && episode.seedId === seedId;
+        });
+        const analysis = analyzeFactorialOutcomes(blockSchedule, blockOutcomes);
+        return analysis.strata.map((stratum) => stratum.deltaStatus);
+      })
+      .sort((left, right) => {
+        for (let index = 0; index < left.length; index += 1) {
+          if (left[index] !== right[index]) return left[index]! - right[index]!;
+        }
+        return 0;
       });
-      const analysis = analyzeFactorialOutcomes(blockSchedule, blockOutcomes);
-      return analysis.strata.map((stratum) => stratum.deltaStatus);
-    });
     return { modelId, blocks };
   });
 
