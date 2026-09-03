@@ -2527,6 +2527,26 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 136 duplicate decision-record keys
+
+Seed commit `d89e658b7951618ff4db4fbfb935172da911fdad` preceded a matched
+descriptor-safe record control. The record duplicated `decisionOwner` with the
+same value and the manifest coherently bound its new byte digest. Before repair
+the binding returned `ok:true` and `local-content-match-unverified`; the
+isolated run reported seven passes, one failure, and 28 assertions.
+
+Exact repair `ed8b58f8a4b9f0cfb1da55d5449a55dfb97ec83f` scans every object
+scope after the byte/hash match and before content matching. Top-level owner and
+nested policy duplicates fail with
+`local decision record contains duplicate JSON object keys`; repeated names in
+different object scopes remain valid. The focused gate passes eight tests and
+29 assertions plus TypeScript, formatting, and whitespace.
+
+The structural scan preserves both current minified and pretty-printed record
+formats. This proves local ambiguity denial, not authorship, authority,
+independence, drift, or provider behavior. The next control checks the
+descriptor-safe frontier snapshot parser.
+
 ## Cycle 135 canonical freeze-manifest bytes
 
 Seed commit `1549eead9395e00f6cc297e17dd4dcc1b3641ec8` preceded a matched

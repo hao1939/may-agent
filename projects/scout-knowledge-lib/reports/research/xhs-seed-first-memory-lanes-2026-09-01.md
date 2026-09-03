@@ -7752,6 +7752,22 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 136 checkpoint — duplicate decision keys no longer disappear
+
+Seed commit `d89e658b7951618ff4db4fbfb935172da911fdad` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. A byte-matched
+decision record duplicated the same owner key and still returned `ok:true` plus
+`local-content-match-unverified` before repair.
+
+Exact local `ed8b58f8a4b9f0cfb1da55d5449a55dfb97ec83f` rejects duplicate
+keys at every decision-record object scope while preserving both current
+minified and pretty-printed formats. The focused gate passes eight tests and 29
+assertions plus TypeScript, formatting, and whitespace. GitHub/local code won
+the rubric; GitHub, arXiv, and Reddit made zero public requests and retain their
+recorded evidence and triggers. The next ranked control applies the same
+question to the descriptor-safe frontier snapshot.
+
 ## Cycle 135 checkpoint — duplicate manifest keys no longer disappear
 
 Seed commit `1549eead9395e00f6cc297e17dd4dcc1b3641ec8` records unchanged
