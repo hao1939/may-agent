@@ -2805,6 +2805,25 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 203 copied model-resolution identity
+
+Seed commit `c6f3cf77c3` preceded exact local test `366ef996ad`. A separately
+declared regular file copies the exact 160-byte model-resolution object at
+SHA-256 `87914189…36708b`; source and copy have distinct inodes.
+
+Pointing the one model declaration first to the source and then to the copy
+keeps both freezes valid at seven inventoried artifacts and one model. Both
+produce exact model scope `freeze-model-scope-sha256:ac29ae22…7c5bf`, retain
+the same local-unverified evidence labels, and deny provider authority. The
+extra path is inventory, not a second identity or independent observation.
+
+This supports content-addressed aliases and contradicts both path-counted
+evidence and a global duplicate-digest rejection. It does not establish a
+second model, independent authority, authorship, or real resolution. The
+focused bundle gate passes 17 tests and 91 assertions plus TypeScript,
+formatting, and whitespace. The next control points a distinct second model at
+the copy and requires declaration-mismatch denial.
+
 ## Cycle 202 within-role resolution-object reuse
 
 Seed commit `3ad68e1706` preceded exact test `61dd65f4d8`. A coherent
