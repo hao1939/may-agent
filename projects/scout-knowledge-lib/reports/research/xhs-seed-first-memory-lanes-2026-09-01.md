@@ -9352,6 +9352,21 @@ and no recorded trigger had fired. Added/changed seeds remain unknown,
 removals are `[]`, and all 132 remain unavailable at the same login-class
 boundary. No browser or public request preceded the unavailable-entry test.
 
+## Cycle 236 checkpoint — 27 false clicks become explicit unavailable state
+
+Seed commit `1256e182df` preceded the reversible test. The first conversion and
+the 26-entry mechanical follow-through preserve title, intended target, and
+summary exactly for all 27 August 21–24 entries, remove the false clickable
+target, and retain the exact-target-or-owner-supersession revisit trigger.
+Automated comparison with the pre-change index passes 27/27 rows.
+
+The 1,539-document audit now counts 1,741 local prose links, 43 unresolved
+occurrences across eight documents, and zero absolute links (`70→43`). No
+source claim, body, or owner decision was inferred. GitHub, arXiv, and Reddit
+made zero requests. Next, search accepted history and operations records for
+an exact replacement or supersession of the two missing top-level reports;
+only then test their category-specific unavailable form.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old

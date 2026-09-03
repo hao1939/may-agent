@@ -3849,6 +3849,22 @@ collection, schedule, source, or accepted-result trigger had fired. Added and
 changed seeds remain unknown, removals `[]`, and all 132 remain unavailable;
 no browser or public request ran. The reversible unavailable-entry test wins.
 
+### Cycle 236 checkpoint — unavailable evidence no longer looks clickable
+
+Seed commit `1256e182df` preceded the representation test. One August entry
+first proved five invariants against the pre-change index: exact title, intended
+path, and summary survived; the false Markdown target disappeared; and the
+accepted-target-or-owner-supersession trigger remained explicit. The identical
+mechanical form then passed all five checks for all 27 August 21–24 entries.
+
+The project-wide audit moves from 1,768 links / 70 unresolved to 1,741 / 43,
+still across eight documents with zero absolute links. This removes 27 known-
+false clicks without deleting navigation intent or inventing replacements.
+It supports plain unavailable state and contradicts both guessed redirects and
+silent deletion. Confidence is high for byte-preserved fields and accepted-tree
+absence, low for the unavailable bodies. Next, audit the two missing operations
+reports for category-specific supersession evidence before applying this form.
+
 ## Cycle 235 seed-first start — current receipt remains sufficient
 
 At `2026-09-03T16:39:38.442Z`, Cycle 233's exact observation was 21 minutes
