@@ -322,21 +322,24 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 148 supersedes the older table snapshot below. Starting tip
-`7bb7e538ec7e8eda00a069dc7e2331ed29aef6e9` and seed commit
-`18da6c376f1d462739d919d3581dec6fa1575dd3` anchor the unchanged login-class
+Cycle 149 supersedes the older table snapshot below. Starting tip
+`74dcde6e0b6b786052d4c2be7619ab81bafaf45c` and seed commit
+`c811d47c48f953f648592af2020afbb85f351f23` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
-preserves local evidence labels and policy scope across all five same-byte
-aliases through descriptor-safe directory reads, with provider authority false.
-Accepted-result containment and protected-checkout preservation are rechecked
-on the resulting exact tip.
+first preserved local evidence labels and policy scope across all five same-
+byte aliases through descriptor-safe directory reads. Exact local
+`b5b7d70…34a8d2` then carried those aliases through frontier selection: the
+same decision selected equal 172, while provider authority stayed false and
+the executable-name alias remained a rejecting control. Accepted-result
+containment and protected-checkout preservation are rechecked on the resulting
+exact tip.
 
-| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                              | Decision and revisit trigger                                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 148; public trigger-deferred.** Descriptor-safe same-byte alias semantics were executable in a real temporary bundle directory.                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `b9131ef…4824a3` preserves evidence labels and scope after five filesystem renames. | Zero public requests. Next exercise end-to-end frontier selection from the fully aliased bundle. Revisit public GitHub on a recorded trigger.       |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 148.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                               | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 148 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                   |
+| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 149; public trigger-deferred.** The fully aliased evidence bundle now reaches the unchanged frontier decision.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `b5b7d70…34a8d2` preserves evidence labels, scope, and equal-172 selection after five filesystem renames. | Zero public requests. Next test locator independence for the snapshot and decision-record files. Revisit public GitHub on a recorded trigger.       |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 149.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                     | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body. |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 149 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                   |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3624,6 +3627,32 @@ The ranked matched control now tests a distinct parser ambiguity: a same-value
 duplicate top-level JSON key can disappear during `JSON.parse` before exact
 object-key validation. Public GitHub, arXiv, and Reddit remain trigger-deferred
 until reconsidered after that control.
+
+### Cycle 149 checkpoint — aliased evidence preserves frontier selection
+
+Seed commit `c811d47c48f953f648592af2020afbb85f351f23` preceded one matched
+selection control. It renamed the model-resolution, seed-policy, schedule,
+checksum-manifest, and timestamp-proof files, updated only their inventory and
+pointer names, and retained exact bytes, SHA-256 values, relationships,
+decision policy, frontier, and executable `bundle.zip` identity.
+
+Exact local `b5b7d70373d85e11b868b419898ebdb3be34a8d2` proves the
+descriptor-safe freeze still verifies, registration and proof retain their
+local-unverified labels, both policy-scope references equal baseline, and the
+unchanged decision still selects 1,032 blocks with equal 172 sampling.
+Provider authority remains false. The existing same-byte executable-name alias
+still rejects the old decision, which contradicts any broader inference that
+all filesystem names are interchangeable. No production change is justified.
+
+The focused direct-freeze, descriptor-safe bundle, and frontier-selection gate
+passes 49 tests and 235 assertions plus TypeScript, formatting, and whitespace.
+GitHub/local code won the rubric; GitHub, arXiv, and Reddit made zero public
+requests and retain their exact evidence and triggers above. Confidence is
+high for this local synthetic comparison and low for external producers,
+timestamp authenticity, authorship, authority, independent evidence, or real
+execution. The next ranked control tests whether same-byte frontier-snapshot
+and decision-record locator aliases also preserve their local evidence labels
+and selection while byte mutations continue to fail closed.
 
 ### Cycle 148 checkpoint — descriptor-safe aliases preserve content identity
 

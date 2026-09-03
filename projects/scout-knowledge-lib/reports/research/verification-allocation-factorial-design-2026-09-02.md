@@ -2368,10 +2368,10 @@ locally retained copies previously shown byte-identical. From
 
 The Experiment C proof chain has two distinct local targets:
 
-| Target | Target bytes / SHA-256 | Proof bytes / SHA-256 | Direct byte observation |
-| ------ | --------------------- | -------------------- | ----------------------- |
-| `preregistration/MANIFEST.sha256` | 12,987 / `cb6e7c8d6b897a1afb605a52d4fc49a5067d41540f5089286e56060c0dab6225` | 945 / `5d0097b0c1324a441ba74ead2c0ac5b70a70cf44543d4feec7c86d4e5a45a4fe` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
-| `preregistration/DEV_REGISTRATION.sha256` | 86 / `c9893d8da0f7fcc07d549e97b2cac57bb69a5410528ce14ea6c4403304b55dba` | 595 / `e171588711ae1c7e152d02bcc52312b7d4e93776e90b5f3035b09521cabad568` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+| Target                                    | Target bytes / SHA-256                                                      | Proof bytes / SHA-256                                                    | Direct byte observation                                                                                    |
+| ----------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `preregistration/MANIFEST.sha256`         | 12,987 / `cb6e7c8d6b897a1afb605a52d4fc49a5067d41540f5089286e56060c0dab6225` | 945 / `5d0097b0c1324a441ba74ead2c0ac5b70a70cf44543d4feec7c86d4e5a45a4fe` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+| `preregistration/DEV_REGISTRATION.sha256` | 86 / `c9893d8da0f7fcc07d549e97b2cac57bb69a5410528ce14ea6c4403304b55dba`     | 595 / `e171588711ae1c7e152d02bcc52312b7d4e93776e90b5f3035b09521cabad568` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
 
 The 86-byte development target contains the SHA-256 and filename of the
 5,696-byte `DEV_REGISTRATION.md`; that Markdown member reproduces SHA-256
@@ -2526,6 +2526,31 @@ prompt quality, proof validity, model behavior, or provider authority.
 
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
+
+## Cycle 149 aliased-bundle frontier selection
+
+Seed commit `c811d47c48f953f648592af2020afbb85f351f23` preceded a complete
+local selection control. The fixture renamed model-resolution, seed-policy,
+schedule, checksum-manifest, and timestamp-proof files and updated only their
+manifest inventory and pointers. Exact bytes, digests, relationships, policy,
+frontier, and executable `bundle.zip` name stayed fixed.
+
+Exact regression `b5b7d70373d85e11b868b419898ebdb3be34a8d2` records the existing
+contract: descriptor-safe freeze verification succeeds, registration remains
+`local-byte-match-unverified`, proof remains
+`local-byte-presence-unverified`, both policy-scope references match baseline,
+and the unchanged policy still selects 1,032 blocks at equal 172. Provider
+authority remains false. The retained executable-name alias rejects the old
+decision, so alias tolerance is limited to content-addressed evidence rather
+than every path.
+
+The focused direct-freeze, descriptor-safe bundle, and frontier-selection gate
+passes 49 tests and 235 assertions plus TypeScript, source formatting, and
+whitespace. No runtime change is justified. This is high-confidence local
+synthetic evidence, not external producer compatibility, proof authenticity,
+authorship, authority, independence, or execution evidence. The next matched
+control tests same-byte locator aliases for the frontier snapshot and local
+decision record while retaining their byte-mutation denials.
 
 ## Cycle 148 descriptor-safe bundle alias semantics
 

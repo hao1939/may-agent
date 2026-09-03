@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 149 checkpoint — aliased evidence reaches the same decision
+
+Seed commit `c811d47c48f953f648592af2020afbb85f351f23` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+control. Five non-executable evidence files were renamed with bytes, digests,
+relations, decision policy, frontier, and executable `bundle.zip` fixed.
+
+Exact local `b5b7d70373d85e11b868b419898ebdb3be34a8d2` proves descriptor-safe
+freeze verification retains its registration/proof labels and policy scope,
+then selects the same equal-172 point at 1,032 blocks. Provider authority stays
+false, while the existing executable-name alias remains a rejecting matched
+control. No production change was required. The focused gate passes 49 tests
+and 235 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named repository heads, paper versions, RSS/JSON
+boundary, and revisit triggers. Confidence is high for the local synthetic
+comparison and low for external producer compatibility, timestamp
+authenticity, authorship, authority, independent evidence, or real execution.
+The next ranked control tests locator independence for the same-byte frontier
+snapshot and decision record while retaining byte-mutation denials.
+
 ## Cycle 148 checkpoint — descriptor-safe aliases preserve content identity
 
 Seed commit `18da6c376f1d462739d919d3581dec6fa1575dd3` records unchanged
