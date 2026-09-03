@@ -22,7 +22,7 @@ topic. Prefer in-place updates and contradiction notes over duplicate files.
 ## Library Operations
 
 - [Xiaohongshu human-collection seed ledger](./xhs-seed-ledger.md) — living seed reconciliation state; distinguishes confirmed collection membership from search/feed and retained local evidence.
-- [Xiaohongshu living topic map](./xhs-topic-map.md) — active clusters, value rubric, supporting sources, confidence, contradictions, blocks, and next explorations.
+- [Xiaohongshu living topic map](./xhs-topic-map.md) — ranked unresolved questions across evidence source lanes, active clusters, value rubric, supporting sources, confidence, contradictions, blocks, and next explorations.
 - [obsidian-second-brain Patterns](./obsidian-second-brain-patterns.md)
 - ~~[Scout Research Ideas](./temp-ideas.md)~~ → archived: ideas covered by existing notes
 

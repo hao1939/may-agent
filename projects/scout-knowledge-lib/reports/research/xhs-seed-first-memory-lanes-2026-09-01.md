@@ -9360,6 +9360,40 @@ public requests: added/changed collected identities remain unknown, observed
 removals are `[]`, and all 132 durable IDs remain unavailable. Commit this
 reconciliation before inspecting any frozen navigation failure.
 
+## Cycle 270 checkpoint — one exact summary repair, no scorer tuning
+
+Seed commit `175176ddeec3c2d813edbb72c26c8395238be0de`
+preceded the audit. Exact INDEX blob
+`149cbc7ddb62d06792c85c2a6e31a4416391ae2d` and frozen v1/v2 fixture blobs
+`a2d6002059844cb09d1aaede83c82baf9d3a1960` /
+`174c12d0c9d14b2365936157b3c384b5a1b78537` reproduced all four v1
+failures. They remain heterogeneous: an underspecified source-lane query, a
+title-weighted caller-memory query, a genuine three-view coordination tie, and
+a generic-token negative ambiguity. Prior matched controls and perturbations
+already reject one threshold, rarity rule, or title-weight repair.
+
+The topic-map entry itself omitted one true retrieval distinction: this file
+ranks unresolved questions across source lanes. Its one-line summary now says
+so while retaining active clusters, value rubric, supporting sources,
+confidence, contradictions, blocks, and next explorations. No note body, title,
+path, detailed evidence, scorer, fixture, or gate threshold changed.
+
+The pre-write in-memory control changed only
+`ranked-source-lane-questions`; every other v1 result and all eight v2 results
+were identical. The applied candidate moves v1 10/14→11/14 and keeps v2 8/8.
+The topic-map result matches eight of nine terms, scores `51.965746`, and leads
+the unchanged autonomy report by `36.415769`. Focused validation passes 7 tests
+/ 27 assertions plus all 65 durable links. The gain is exact local retrieval
+evidence, not a human/model outcome or proof of generalization, so `RV-004`
+remains high/open.
+
+GitHub/local evidence won without a public request. arXiv retains
+`2608.30177v1` / `2608.25553v3`; Reddit retains `t3_1v8a3sh` at RSS HTTP 200 /
+JSON HTTP 403. Accepted projection and review equivalents remain contained;
+unaccepted `d041c41b54` remains excluded. Next, begin seed-first and audit
+whether the short human landing page should link directly to the exhaustive
+index and living topic map without copying either large artifact.
+
 ## Cycle 269 seed-first start — bounded receipt reuse
 
 Exact Cycle 268 result `4cbea0b98f92fe4d3788ae153dc1df1a45dd2020`

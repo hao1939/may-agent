@@ -3857,6 +3857,44 @@ browser or public requests: added/changed collected identities remain unknown,
 observed removals are `[]`, and all 132 durable IDs remain unavailable. Begin
 the frozen navigation-failure audit only after this seed commit.
 
+## Cycle 270 checkpoint — the topic map now names its retrieval purpose
+
+Seed commit `175176ddeec3c2d813edbb72c26c8395238be0de`
+preceded the audit. Against exact INDEX blob
+`149cbc7ddb62d06792c85c2a6e31a4416391ae2d` and frozen v1/v2 fixture blobs
+`a2d6002059844cb09d1aaede83c82baf9d3a1960` /
+`174c12d0c9d14b2365936157b3c384b5a1b78537`, v1 retained four different
+failures: a broad source-lane result, a title-weighted memory result, a genuine
+three-view coordination tie, and a generic-token negative ambiguity. Cycle
+244's matched controls and Cycles 251–254's rarity/title perturbations already
+show that one scorer or threshold change cannot safely repair them.
+
+The one actionable identity gap was the topic-map INDEX summary: it described
+active clusters and next explorations but did not say that the file ranks
+unresolved questions across source lanes. One line now states that existing
+purpose while retaining every prior distinction, including active clusters,
+the value rubric, supporting sources, confidence, contradictions, blocks, and
+next explorations. No detailed note, source, title, path, scorer, fixture, or
+minimum gate changed.
+
+In a matched in-memory control, that one summary change moved only
+`ranked-source-lane-questions` to the intended map; every other v1 outcome and
+all eight v2 outcomes stayed exact. The applied candidate passes v1 at 11/14
+instead of 10/14 and v2 at 8/8. The repaired query matches eight of nine terms,
+scores `51.965746`, and leads the unchanged autonomy report by `36.415769`.
+Focused evaluator validation passes 7 tests / 27 assertions and all 65 durable
+links. This is a truthful retrieval-metadata improvement on one frozen local
+case, not human/model outcome evidence or general semantic-retrieval proof.
+
+GitHub/local evidence won with zero public requests. arXiv retains
+`2608.30177v1` / `2608.25553v3`; Reddit retains `t3_1v8a3sh` at RSS HTTP 200 /
+JSON HTTP 403. Accepted projection/review mappings remain contained and
+unaccepted `d041c41b54` remains excluded. Confidence is high for exact local
+outcomes and preservation, and low for external use; `RV-004` remains open.
+Next, begin seed-first and audit the short human landing page: determine whether
+direct, stable links to the exhaustive index and living topic map improve
+navigation without duplicating either large artifact.
+
 ## Cycle 269 seed-first start — bounded receipt reuse
 
 Exact Cycle 268 result `4cbea0b98f92fe4d3788ae153dc1df1a45dd2020`
