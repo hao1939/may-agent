@@ -641,14 +641,14 @@ source_basis: "Exact standing history and diffs from 094996202c7849865e861cb5255
   `6aa75130c2`, `b2a2461d2a`, or `fdf6e8de25`, revert its paired report before
   or with the implementation so the durable behavior claim does not outlive
   the code.
-- Current reviewer source is standing
-  `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6`. Integrate the directly
-  following result from `codex/g-8c5b597e-cycle257-review`; it advances the
-  cursor through Cycle 274 and corrects RV-018/RV-019 in both durable reports.
-  It changes no executable code, scorer, fixture, link target, or access state.
-  Rollback is one ordinary revert of the reviewer result. The result is pending
-  until standing contains its exact or patch-equivalent change and current-tip
-  validation passes.
+- Reviewer source `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6` has direct-child
+  result `9afdf7bd8fa552d5ff09764de43157bfdf3a3232`, integrated as standing
+  `1698454717`. Both share stable patch ID
+  `64f030c8da5c867aac45a0db53dc747409f0e4fd`. This advances the cursor
+  through Cycle 274 and resolves RV-018/RV-019 in both durable reports without
+  changing executable code, scorer, fixture, link target, or access state.
+  Rollback is one ordinary revert of standing `1698454717` after reverting any
+  dependent producer status record.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree

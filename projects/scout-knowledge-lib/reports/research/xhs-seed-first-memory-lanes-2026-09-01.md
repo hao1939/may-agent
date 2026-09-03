@@ -9382,6 +9382,40 @@ HEAD `386b445c…1fec8`, 907 records / `80dc6582…e380`; its Scout scope remain
 296 / `c4485b46…c375`. Reconcile the finite reviewer delta before any public
 lane or further RV-004 work.
 
+## Cycle 275 checkpoint — exact review corrections and a mutable history bound
+
+Reviewer source `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6` has direct-child
+result `9afdf7bd8fa552d5ff09764de43157bfdf3a3232`, integrated after the
+seed record as standing `1698454717`. Reviewer and standing changes share
+stable patch ID `64f030c8da5c867aac45a0db53dc747409f0e4fd`; both seed and
+reviewer sides are retained without conflict.
+
+`RV-018` corrects event `6143903`'s raw payload SHA-256 from the erroneous
+`bc0f3acc…ce83a1` to independently reproduced
+`bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`.
+The second digest remains exact. `RV-019` narrows Cycle 270's preservation
+claim: the other 13 v1 selections and pass/fail results stay unchanged, while
+corpus-level inverse document frequency mechanically changes scores or rank
+diagnostics for three passing cases. The adaptive 10/14→11/14 gain remains
+local evidence, not protected promotion or user-outcome evidence.
+
+A bounded query-only follow-up under UID 1000 at
+`2026-09-03T20:46:03.268Z–20:46:33.338Z` found 15,995 `events` rows, 368
+fewer than the reviewer's `20:40:53Z` snapshot, while retaining the same maximum
+ID `6317660` and timestamp `2026-08-31T15:24:13.597Z`. `scout.explore` fell
+60→56; six health ticks, two health observations, zero exact
+`project.knowledge.maintained` events, and two payload mentions remain. This is
+direct mutable-retention evidence; the deletion mechanism and exact removed
+rows are unknown, and no later outcome can be inferred.
+
+Current-candidate validation passes syntax, TypeScript, formatting, Cycle 237
+projection, 69 scoped links, navigation v1 at 11/14 and v2 at 8/8, and 296
+tests / 1,483 assertions. `RV-018` and `RV-019` are resolved with exact
+provenance; `RV-004` remains high/open. GitHub, arXiv, Reddit, and XHS made zero
+public requests. The next high-value evidence is a new retained maintenance
+outcome or accepted review; otherwise perform the exact observational XHS pass
+at the six-hour boundary `2026-09-03T22:57:11.030Z`.
+
 ## Cycle 274 checkpoint — one aligned project entry point
 
 Seed commit `cf086863ab0e62202a1f8de7ae124e1234d9cd13`
