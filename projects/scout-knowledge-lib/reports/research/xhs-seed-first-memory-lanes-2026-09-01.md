@@ -9375,6 +9375,13 @@ criteria. Their checks pass 2/2 and the broad debt falls `43→41` without a
 source claim. Next, decide the structural-health alias from accepted ownership
 evidence rather than byte equality alone.
 
+The structural follow-up found byte-identical accepted aliases
+`2026-06-19-*` and `2026-07-22-*` at blob `a2cc05a3…47963c`; both embed an
+August 21 heading and neither has canonical ownership evidence. Its unavailable
+row preserves every original field and requires an exact target or owner alias
+decision. The broad audit is now 1,738 links / 40 unresolved. Next, adjudicate
+XHS Scan #51/#52 from their contradictory temporal metadata.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old

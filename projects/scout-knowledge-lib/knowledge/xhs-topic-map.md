@@ -3874,6 +3874,13 @@ or the orphaned-workflow closure plus bounded HTTP contract. The broad boundary
 is now 1,739 links / 41 unresolved. Next, resolve the structural-health alias:
 byte equality is known, but canonical ownership is not.
 
+The structural audit confirms accepted June 19 and July 22 aliases share exact
+blob `a2cc05a3…47963c`, while both embed an August 21 heading and neither is
+owner-declared canonical. The index now preserves the missing June 29 path in
+unavailable form and requires that declaration before linking an alias. Exact
+title/path/summary checks pass; the broad boundary becomes 1,738 / 40. Next,
+resolve XHS Scan #51/#52 temporal contradictions before choosing an alias.
+
 ## Cycle 235 seed-first start — current receipt remains sufficient
 
 At `2026-09-03T16:39:38.442Z`, Cycle 233's exact observation was 21 minutes
