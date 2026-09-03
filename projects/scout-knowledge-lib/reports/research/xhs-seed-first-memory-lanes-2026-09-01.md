@@ -9345,6 +9345,35 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 246 checkpoint — perturbations reject margin-only abstention
+
+Seed-first commit `5619e1aed5` came before the audit. Every evaluator-visible
+content token was removed once from each frozen query without changing labels,
+fixtures, index bytes, or scoring. All 172 variants from the 18 correct baseline
+cases preserve the expected destination or miss. Only two of the 30 variants
+from v1's four failures recover an expected result; both remove a Read-Write
+term from the caller-bound query.
+
+The Cycle 245 margin boundary does not survive these matched perturbations. Two
+correct enforcement variants fall below 25%, at `0.162126` and `0.230229`.
+One still-wrong caller-bound variant rises above it to `0.253745`. A
+false-positive negative-control variant has no runner-up, so any top-two margin
+rule would treat it as maximally separated. A 25% policy would therefore create
+false abstentions and still allow wrong selections. No scoring change was made;
+v1 remains 10/14 and v2 8/8.
+
+Confidence is high for the 202 exact deterministic variants and low for
+human/model behavior. No GitHub, arXiv, or Reddit public request ran, and all
+lane evidence and triggers remain unchanged. The next ranked change reports
+runner-up identity plus absolute and relative gaps as diagnostics, without
+changing a navigation decision or turning a retrospective threshold into a
+gate.
+
+Focused validation passes whitespace, all 62 durable links, v1's 10/14 floor,
+and v2 at 8/8 on the unchanged 754-entry index. The immediately preceding
+exact-content full gate remains 292 tests with 1,455 assertions; only the topic
+map and this report changed in Cycle 246.
+
 ## Cycle 245 checkpoint — the observed margin boundary is retrospective
 
 Seed-first commit `17f79df077` preceded this audit. The two uniquely wrong v1
