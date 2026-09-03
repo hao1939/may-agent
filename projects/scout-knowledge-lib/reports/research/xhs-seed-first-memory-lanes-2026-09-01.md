@@ -7752,6 +7752,21 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 137 checkpoint — duplicate snapshot keys no longer disappear
+
+Seed commit `554935a4522f29724c96d54e904eef9c16ec1258` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. An exact-byte-
+matched frontier snapshot duplicated false provider authority and still
+verified `ok:true` before repair.
+
+Exact local `a1021aa2590bc06884c41992a3e9325b21d4e673` shares one JSON
+object-scope duplicate rule across snapshot and decision inputs. The two paths
+pass 12 focused tests and 35 assertions plus TypeScript, formatting, and
+whitespace. GitHub/local code won the rubric; GitHub, arXiv, and Reddit made
+zero public requests and retain their recorded evidence and triggers. The next
+ranked control applies the question to inline CLI policy/evidence JSON.
+
 ## Cycle 136 checkpoint — duplicate decision keys no longer disappear
 
 Seed commit `d89e658b7951618ff4db4fbfb935172da911fdad` records unchanged

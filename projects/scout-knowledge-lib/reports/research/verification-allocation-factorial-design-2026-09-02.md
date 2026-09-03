@@ -2527,6 +2527,25 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 137 duplicate frontier-snapshot keys
+
+Seed commit `554935a4522f29724c96d54e904eef9c16ec1258` preceded a matched
+descriptor-safe snapshot control. The snapshot duplicated the same false
+provider-authority key and the caller supplied its exact outer byte digest.
+Before repair it verified `ok:true`; the isolated run reported three passes,
+one failure, and six assertions.
+
+Exact repair `a1021aa2590bc06884c41992a3e9325b21d4e673` shares the Cycle 136
+object-scope scanner between decision records and snapshots. The duplicate now
+fails with `frontier snapshot contains duplicate JSON object keys`; the two
+paths pass 12 focused tests and 35 assertions plus TypeScript, formatting, and
+whitespace.
+
+Whitespace remains compatible and repeated names in distinct object scopes
+remain valid. This proves local ambiguity denial, not authorship, generator
+identity, policy authority, drift, or provider behavior. The next control
+checks the inline CLI policy and evidence JSON inputs.
+
 ## Cycle 136 duplicate decision-record keys
 
 Seed commit `d89e658b7951618ff4db4fbfb935172da911fdad` preceded a matched
