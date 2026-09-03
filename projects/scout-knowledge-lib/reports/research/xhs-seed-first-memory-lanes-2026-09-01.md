@@ -9345,6 +9345,26 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 261 seed-first start — accepted cursor trigger
+
+Exact Cycle 260 documentation tip `1b090a4f4c` passes syntax, TypeScript,
+formatting, Cycle 237 projection, 64 durable links, v1 at 10/14, v2 at 8/8,
+and 295 tests / 1,474 assertions. The broad 1,540-document / 1,700-link audit
+has zero errors; read-only health at `2026-09-03T19:10:46.084Z` is 30 facts,
+16 wake signals, and `truncated:true`; runtime state and the owned worktree are
+empty/clean. Protected HEAD and its 386-record full and 296-record Scout-scope
+porcelain-v2 fingerprints exactly reproduce the pre-cycle baselines.
+
+At `2026-09-03T19:12:23.750Z`, Cycle 237's exact receipt was one hundred
+thirty-five minutes old. XHS access, public source revisions, unaccepted
+lineage, and source-lane triggers were unchanged. Added/changed identities
+remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable
+at the same login-class boundary; no browser or public request ran. Accepted
+ref `codex/g-8c5b597e-cycle257-review` advanced from integrated
+`e2f6e08a4f894871644ef0fc86aa89198c94472e` to
+`72ed9c48e981644accee665994ae102fc0ca62fc`. Reconcile only that finite cursor
+delta before testing whether the scalar output total masks one missing source.
+
 ## Cycle 260 seed-first start — follow-up review trigger
 
 At `2026-09-03T19:01:34.334Z`, Cycle 237's exact receipt was one hundred
