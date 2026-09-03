@@ -9392,6 +9392,25 @@ The next ranked usability question is whether the 67 failures in
 navigation, or a mixture; classify that ownership before repairing or gating
 any entry.
 
+Exact reviewed Cycle 226 material tip
+`02a6e1f503c0f1126a234afb8bea845b9b4bb33c` retains Scout app tree
+`ae458633a063095f1cd4063491ce7e7217da1f38`. The full current-revision gate
+passes syntax, TypeScript, source formatting, the Cycle 226 seed projection,
+47 durable relative links, 286 tests, and 1,440 assertions. Whitespace passes;
+read-only health at `2026-09-03T15:14:34.395Z` remains 26 facts and 16 wake
+signals with `truncated:true`; root and app runtime state are empty, and the
+standing worktree is clean.
+
+All nine canonical accepted result commits remain ancestors. Unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` has accepted predecessor
+`a25c0fe21568ff5bc680a7a971bf59d343c10810`, is not an ancestor, and remains
+deferred with any later unaccepted peer commits; only ref and commit-parent
+metadata were inspected. Protected `/app` retains HEAD `386b445c…1fec8` while
+its porcelain-v2 status moved externally from 886 records / `07483e82…d420`
+to 887 / `63b17ec1…958f`. The protected Scout scope remains exactly three
+records / `2760fb23…052`. This worker wrote or tested neither protected source
+nor a peer worktree.
+
 ## Cycle 225 seed-first reconciliation — one-byte response change
 
 The exact bounded observation, reconciliation, authority boundary, and byte
