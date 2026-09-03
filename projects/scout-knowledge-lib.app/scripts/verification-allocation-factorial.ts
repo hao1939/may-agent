@@ -764,6 +764,11 @@ export function scheduleSha256(schedule: FactorialSchedule): string {
   return createHash("sha256").update(JSON.stringify(schedule)).digest("hex");
 }
 
+function hasOnlyKeys(value: object, allowed: readonly string[]): boolean {
+  const allowedKeys = new Set(allowed);
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
 function promptObject(episode: FactorialEpisode): Record<string, unknown> {
   try {
     const value = JSON.parse(episode.prompt) as unknown;
@@ -815,6 +820,19 @@ export function verifyFactorialSchedule(
   const digest = scheduleSha256(schedule);
   const expectedEpisodeCount =
     schedule.models.length * schedule.seeds.length * 32;
+  if (
+    !hasOnlyKeys(schedule, [
+      "schema",
+      "evidenceClass",
+      "providerCallsAuthorized",
+      "models",
+      "seeds",
+      "episodes",
+      "results",
+    ])
+  ) {
+    errors.push("schedule contains unsupported fields");
+  }
   if (schedule.schema !== "scout.verification-allocation-schedule/v1") {
     errors.push("schedule schema changed");
   }
@@ -857,6 +875,31 @@ export function verifyFactorialSchedule(
   );
   const balance = new Map<string, Set<string>>();
   for (const episode of schedule.episodes) {
+    if (
+      !hasOnlyKeys(episode, [
+        "id",
+        "modelId",
+        "seedId",
+        "factors",
+        "targetMemoryId",
+        "decoyMemoryId",
+        "candidates",
+        "prompt",
+      ])
+    ) {
+      errors.push(`${episode.id}: episode contains unsupported fields`);
+    }
+    if (
+      !hasOnlyKeys(episode.factors, [
+        "plan",
+        "temptation",
+        "targetStatus",
+        "targetIdentity",
+        "presentationOrder",
+      ])
+    ) {
+      errors.push(`${episode.id}: factors contain unsupported fields`);
+    }
     if (seen.has(episode.id))
       errors.push(`${episode.id}: duplicate episode id`);
     seen.add(episode.id);
@@ -894,7 +937,12 @@ export function verifyFactorialSchedule(
     ) {
       errors.push(`${episode.id}: target/decoy mapping is inconsistent`);
     }
-    for (const candidate of episode.candidates) {
+    for (const [index, candidate] of episode.candidates.entries()) {
+      if (!hasOnlyKeys(candidate, ["memoryId", "path", "revision", "body"])) {
+        errors.push(
+          `${episode.id}: candidates[${index}] contains unsupported fields`,
+        );
+      }
       bodies.get(candidate.memoryId)?.add(candidate.body);
     }
     errors.push(...lineageErrors(episode));

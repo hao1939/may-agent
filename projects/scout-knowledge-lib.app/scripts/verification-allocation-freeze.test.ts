@@ -3,7 +3,10 @@ import {
   freezeArtifactSha256,
   verifyExecutionFreezeManifest,
 } from "./verification-allocation-freeze";
-import { buildToyFactorialSchedule } from "./verification-allocation-factorial";
+import {
+  buildToyFactorialSchedule,
+  renderFactorialPrompt,
+} from "./verification-allocation-factorial";
 
 function validFixture() {
   const schedule = buildToyFactorialSchedule();
@@ -170,6 +173,45 @@ describe("verification-allocation execution freeze", () => {
     expect(result.errors).toContain("seed policy contains unsupported fields");
     expect(result.errors).toContain(
       "schedule metadata contains unsupported fields",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
+  it("rejects unknown fields throughout the byte-bound schedule", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    Object.assign(schedule, { sourceAuthority: "caller" });
+    Object.assign(episode, { episodeAuthority: "caller" });
+    Object.assign(episode.factors, { selectionAuthority: "caller" });
+    Object.assign(episode.candidates[0], { memoryAuthority: "caller" });
+    episode.prompt = renderFactorialPrompt(episode);
+
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "schedule factorial verification failed: schedule contains unsupported fields",
+    );
+    expect(result.errors).toContain(
+      `schedule factorial verification failed: ${episode.id}: episode contains unsupported fields`,
+    );
+    expect(result.errors).toContain(
+      `schedule factorial verification failed: ${episode.id}: factors contain unsupported fields`,
+    );
+    expect(result.errors).toContain(
+      `schedule factorial verification failed: ${episode.id}: candidates[0] contains unsupported fields`,
     );
     expect(result.externalRegistrationEvidenceStatus).toBe("");
     expect(result.timestampProofEvidenceStatus).toBe(
