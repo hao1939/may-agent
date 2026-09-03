@@ -9411,6 +9411,45 @@ remain unknown, observed removals are `[]`, and all 132 durable IDs remain
 unavailable. The post-seed ranking selects the exact 40-line Cycle 222
 rollback-ledger mirror for a bounded retention audit before any source call.
 
+## Cycle 282 checkpoint — keep rollback decisions compact and lineage exact
+
+Seed commit `2e46b646a464604510ab176487ee9ea621d085b6` preceded every
+post-seed operation. The selected map section was 58 lines / 4,592 bytes at
+SHA-256 `b03e5547…5e70a0`; its detailed counterpart here retains 62 lines /
+5,022 bytes at SHA-256
+`3fc5b503ebe7a3f4275374545c046aaa097b22a901f47e72b8989038ee203772`.
+The two shared one exact 40-line span containing the complete nine-row
+seed/test/result table plus common continuity and validation evidence.
+
+Exact material `04b8bf5c1cba7453921b06feaa45d9c5e480cd19` replaces only the
+map section with a 22-line / 1,257-byte summary at SHA-256
+`8470ed84…7a4f5a6`, reducing the map by 36 net lines / 3,335 bytes. The map
+still preserves the four decision classes—complete-versus-partial rollback,
+model/seed ordering, canonical evidence bytes, and presentational manifest
+order—plus the exact Cycle 222 tip and accepted/unaccepted boundary. This
+report remains the authoritative per-cycle commit, test, validation,
+fingerprint, and rollback record.
+
+The exact material revision passes syntax, TypeScript, formatting, Cycle 237
+projection, 67 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and
+296 tests / 1,483 assertions. The broad audit passes 1,540 tracked Markdown
+documents / 1,703 local prose links with zero errors. Read-only health at
+`2026-09-03T22:01:07.966Z` returns 30 facts, 16 wakes, and
+`truncated:true`. Accepted reviewer `6c806ade5a` remains contained and
+unaccepted `d041c41b54` remains excluded.
+
+Protected `/app` remains externally observed at HEAD `386b445c…41fec8`, 386
+records / `00bcc281…15c5ed4`; its Scout scope remains 296 records /
+`a430d0c9…322f7e`. This worker did not write or test it. GitHub, arXiv, and
+Reddit made zero requests and retain their exact recorded heads, versions,
+RSS/JSON boundary, and change-bearing triggers.
+
+This is measured static retrieval compaction, not observed model use, token
+savings, provider evidence, or a changed user decision; `RV-004` remains
+high/open. The next ranked accessible audit is the remaining 36-line exact
+Cycle 274/278 selection-and-compaction mirror. Preserve distinct decision
+context on each side and remove only the repetition.
+
 ## Cycle 281 checkpoint — duplicate link history now has one detailed home
 
 The permitted bounded seed step remains exact Cycle 280 seed commit

@@ -3899,6 +3899,24 @@ added/changed identities remain unknown, observed removals are `[]`, and all
 exact 40-line Cycle 222 rollback-ledger mirror identified by Cycle 281; commit
 this ordering record before deciding whether both full copies are necessary.
 
+## Cycle 282 checkpoint — rollback decisions stay here, lineage stays detailed
+
+Seed commit `2e46b646a464604510ab176487ee9ea621d085b6` preceded the audit.
+The map's 58-line / 4,592-byte Cycle 222 section and the detailed report shared
+one exact 40-line lineage/validation span. Exact material
+`04b8bf5c1cba7453921b06feaa45d9c5e480cd19` replaces the map copy with a
+22-line / 1,257-byte decision summary, a net reduction of 36 lines / 3,335
+bytes. The authoritative report block remains 62 lines / 5,022 bytes at
+SHA-256 `3fc5b503…203772`, retaining every commit, count, fingerprint, and
+rollback boundary.
+
+The material tip passes the full 296-test / 1,483-assertion gate, 67 scoped
+links, both navigation fixtures, and the 1,540-document / 1,703-link broad
+check. This is static retrieval evidence only; `RV-004` remains high/open.
+The next ranked accessible audit is the remaining 36-line Cycle 274/278
+selection-and-compaction mirror: preserve whichever side supplies distinct
+decision context, and remove only exact repetition.
+
 ## Cycle 281 checkpoint — link history has one detailed home
 
 Cycle 280 seed commit `f5f425d8be450661e4789bfaa94ee56032458efe`
