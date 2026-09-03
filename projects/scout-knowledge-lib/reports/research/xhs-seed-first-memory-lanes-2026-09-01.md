@@ -9506,6 +9506,26 @@ than observed use, token savings, later behavior, or user outcome, so RV-004
 remains high/open. The next ranked adjacent mirror is the exact 16-line Cycle
 273 seed block.
 
+## Cycle 286 seed-first start — exact Cycle 285 result retained
+
+Cycle 286 began from clean Cycle 285 result
+`47574d326c9752b3852343afb5b628b54bd0d82c`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 70 scoped links, both
+navigation fixtures, and all 296 tests / 1,483 assertions. The broad audit
+passed 1,540 tracked Markdown documents / 1,706 local prose links. Read-only
+health at `2026-09-03T22:26:47.708Z` returned 30 facts, 16 wakes, and
+`truncated:true`; the tree was clean, reviewer `48adada0af` was contained, and
+unaccepted `d041c41b54` remained excluded. Protected `/app` retained HEAD
+`386b445c…41fec8`, 386 records / `00bcc281…15c5ed4`, and its 296-record Scout
+scope retained `a430d0c9…322f7e`.
+
+At `2026-09-03T22:27:08.570Z`, Cycle 237's exact XHS receipt through
+`2026-09-03T16:57:11.030Z` was about 330 minutes old, still inside the
+six-hour cadence. No browser, GitHub, arXiv, or Reddit request ran.
+Added/changed identities remain unknown, observed removals are `[]`, and all
+132 durable IDs remain unavailable. Commit this ordering record before the
+accepted-ref check and ranked exact 16-line Cycle 273 mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

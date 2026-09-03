@@ -3926,6 +3926,18 @@ RV-004 stays high/open because this is static retrieval evidence only. The next
 measured adjacent mirror is Cycle 273's exact 16-line seed block; retain its
 ranking context and keep complete evidence in one authoritative location.
 
+## Cycle 286 seed-first start — validated local continuity
+
+Cycle 286 began from clean Cycle 285 result
+`47574d326c9752b3852343afb5b628b54bd0d82c`. At
+`2026-09-03T22:27:08.570Z`, Cycle 237's exact receipt through
+`2026-09-03T16:57:11.030Z` was about 330 minutes old, inside the six-hour
+cadence. No browser or public-source request ran: added/changed identities
+remain unknown, removals are `[]`, and all 132 IDs remain unavailable. Cycle
+285 passed 296 tests / 1,483 assertions, 70 scoped links, 1,540 documents /
+1,706 broad links, and read-only health at 30 facts / 16 wakes. Commit this
+seed record before checking accepted refs and the ranked Cycle 273 mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
