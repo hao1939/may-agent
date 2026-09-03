@@ -1227,6 +1227,11 @@ export function analyzeFactorialResultBundle(
   ) {
     return invalidBundleAnalysis(["result outcome envelope is invalid"]);
   }
+  if (bundle.outcomes.length !== schedule.episodes.length) {
+    return invalidBundleAnalysis([
+      `result outcome count must match supplied schedule: expected ${schedule.episodes.length}, found ${bundle.outcomes.length}`,
+    ]);
+  }
   if (hasExcessiveValueNesting(bundle)) {
     return invalidBundleAnalysis([
       "result bundle exceeds the supported JSON nesting limit",

@@ -366,6 +366,29 @@ describe("verification-allocation factorial fixture", () => {
     expect(result.bundleSha256).toBe("");
   });
 
+  it("rejects a shallow outcome flood before pooled analysis", () => {
+    const schedule = buildToyFactorialSchedule();
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: toyPolicyOutcomes("authority", schedule),
+    };
+    expect(analyzeFactorialResultBundle(schedule, bundle).ok).toBe(true);
+
+    bundle.outcomes = Array.from({ length: 50_000 }, () =>
+      structuredClone(bundle.outcomes[0]!),
+    );
+    const result = analyzeFactorialResultBundle(schedule, bundle);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      "result outcome count must match supplied schedule: expected 64, found 50000",
+    ]);
+    expect(result.pooled).toBeNull();
+    expect(result.bundleSha256).toBe("");
+  });
+
   it("resamples complete run blocks and keeps opposing model effects visible", () => {
     const schedule = buildSyntheticFactorialSchedule(
       ["authority-model", "inverse-model"],
