@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through Cycle 283 result 9d17987de772f0728d9f3193d45ba43759745af1: RV-022's nonexistent Cycle 282 provenance IDs are corrected by exact integrated result 48adada0af, Cycle 283 compacts duplicate history with linked detail retained, and RV-004 remains high/open."
-triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022"]
+summary: "Independent Scout review cursor through Cycle 284 result f97bebdec5a59cfb48abd24f49c87accc2ce67d4: RV-022/RV-023 are integrated exactly and Cycle 284 safely replaces a byte-identical Cycle 271 seed mirror with linked detail; RV-004 remains high/open."
+triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022", "RV-023"]
 last_updated: "2026-09-04"
-source_basis: "Exact standing history and integrated direct-line reviewer range through Cycle 283 result 9d17987de772f0728d9f3193d45ba43759745af1 and reviewer result 48adada0af7244fcfbb36701a2191d1456aca617; reproduced commit objects, stable patch equivalence for RV-022, exact compaction bytes, scoped and broad links, protected fingerprints, final diff, and rollback boundaries. Earlier cursor evidence remains retained below."
+source_basis: "Exact standing history through reviewer integration 48adada0af7244fcfbb36701a2191d1456aca617 and Cycle 284 seed/material/result f044bc76ca2550d2cf58ad564aeb244f9364e91d..f97bebdec5a59cfb48abd24f49c87accc2ce67d4; independently reproduced reviewer patch IDs, heading-bounded and leading-separator-inclusive block bytes/hashes/line counts, commit objects, retained anchor, scoped and broad links, frozen navigation, identical app tree, health, exact final diff, and rollback boundaries. Earlier cursor evidence remains retained below."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `9d17987de772f0728d9f3193d45ba43759745af1`
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -58,9 +58,12 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
   `7c8abbb30e8d38c56f9d2630196eabe591df4c51` (Cycle 282 result),
   `3d99bfd6bd2e82ec6257b2c2763492c059754f54` (Cycle 283 seed),
   `05000e2bab8d1ea6f0d8b094de384132df4e9f8d` (Cycle 283 material), and
-  `9d17987de772f0728d9f3193d45ba43759745af1` (Cycle 283 result).
-- Review date: `2026-09-04T06:14:38+08:00`
-- Overall disposition: **accept after RV-021 and RV-022, with limits**.
+  `9d17987de772f0728d9f3193d45ba43759745af1` (Cycle 283 result),
+  `f044bc76ca2550d2cf58ad564aeb244f9364e91d` (Cycle 284 seed),
+  `032b1fa093af84bc1edc9dbff1059eb61ba57b0d` (Cycle 284 material), and
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4` (Cycle 284 result).
+- Review date: `2026-09-04T06:26:15+08:00`
+- Overall disposition: **accept with limits; RV-022/RV-023 resolved on standing**.
   Cycles 265-268 correctly reject transition, event, packet, and metric
   expansions that lack comparable history or a consumer. Cycle 269 confirms
   that the accessible protected store ends before any retained knowledge
@@ -92,12 +95,18 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
   rollback record, but overstates the whole-map reduction by one line in both
   reports; RV-021 corrects 334 to 333. RV-004 remains high/open.
   Cycles 282 and 283 remove two more duplicated map blocks while retaining
-  detailed provenance. RV-022 corrects Cycle 282's nonexistent full commit
-  IDs. These remain static retrieval improvements without protected outcome,
-  measured savings, later reuse, or changed user decision.
+  detailed provenance. Standing RV-022/RV-023 correct their nonexistent IDs
+  and stale integration status. Cycle 284 removes a fifth duplicate block;
+  all remain static retrieval improvements without protected outcome, measured
+  savings, later reuse, or changed user decision.
 
 ## Exact scope and ordering
 
+- Standing range
+  `48adada0af7244fcfbb36701a2191d1456aca617..f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
+  is Cycle 284 seed `f044bc76ca`, material `032b1fa093`, and result
+  `f97bebdec5`, three changed documents, and +133/-29. It is documentation-only;
+  no executable, fixture, account, protected-state, or authority change occurs.
 - The latest reviewed standing range
   `f40b09a2dab7b05b232b75f43e2a144f7fc17aa3..12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9`
   contains one direct-child documentation result, two changed files, and 60
@@ -754,42 +763,71 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
   296-record Scout-scope hashes. Neither observation identifies cause or
   supplies outcome evidence.
 
+### Cycles 282–284: compact retained provenance
+
+- Cycle 282 seed/material/result are `2e46b646a40506ba530eed35d6b8573d23280e81`,
+  `04b8bf5c1c9f2866dd2c819ec108ea95b4b43a89`, and
+  `7c8abbb30e8d38c56f9d2630196eabe591df4c51`. Its 58-line / 4,592-byte map
+  block becomes 22 lines / 1,257 bytes while the 62-line / 5,022-byte detail
+  remains linked. Standing reviewer `1f611b69aa` corrects the result's two
+  nonexistent commit IDs under resolved RV-022.
+- Cycle 283 seed/material/result are `3d99bfd6bd2e82ec6257b2c2763492c059754f54`,
+  `05000e2bab8d1ea6f0d8b094de384132df4e9f8d`, and
+  `9d17987de772f0728d9f3193d45ba43759745af1`. Its 46-line / 2,647-byte map
+  block becomes 21 lines / 1,221 bytes; the 54-line / 3,129-byte detail retains
+  37 matched sequence lines at ratio 0.74. Standing reviewer `48adada0af`
+  corrects both nonexistent identities and stale integration status under
+  resolved RV-023.
+- Cycle 284 seed/material/result are `f044bc76ca2550d2cf58ad564aeb244f9364e91d`,
+  `032b1fa093af84bc1edc9dbff1059eb61ba57b0d`, and
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`. The heading-bounded old map and
+  retained detailed sections are byte-identical at 23 lines / 1,324 bytes /
+  SHA-256 `c9cc23bb…cc340a`; the replacement is 10 lines / 579 bytes /
+  `f1002b9e…7985a8`. The producer's equally reproducible convention includes
+  the leading separator newline, yielding 24 / 1,325 / `b0419c41…596a50` and
+  11 / 580 / `74f3359f…2033629`. Both prove the same exact 13-line / 745-byte
+  reduction. Seed `19e38ce7f7` resolves fully and the detail link preserves
+  validation, unavailable-seed uncertainty, drift attribution, and rollback.
+- These compactions reduce static retrieval and duplication risk only. They do
+  not supply matched-budget behavior, protected promotion, measured token
+  savings, deployed use, later reuse, or a changed user decision.
+
 ### Current-revision validation
 
 - Current reviewer candidate based on exact standing source
-  `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9` passes syntax, TypeScript,
-  formatting, Cycle 237 projection, all 66 scoped
-  links, v1 at 11/14, v2 at 8/8, and the full 296-test / 1,483-assertion suite
-  with zero failures. The broad audit covers 1,540 tracked project Markdown
-  documents and 1,702 local prose links with zero unresolved or absolute
-  links. Read-only health at `2026-09-03T21:58:50Z` reports 30 facts, 16 wake
-  signals, and `truncated:true`. The newly reviewed range and reviewer delta
-  pass `git diff --check`.
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4` has app tree
+  `a732ffdb7f5799cc3d1750c17fd8cd2394fb3eeb`, exact to the candidate that
+  passed syntax, TypeScript, formatting, projection, both navigation fixtures,
+  and 296 tests / 1,483 assertions with zero failures. Current
+  document-sensitive checks pass 69 scoped links, v1 at 11/14, v2 at 8/8,
+  and 1,540 tracked Markdown documents / 1,705 local prose links with zero
+  errors. Read-only health reports 30 facts, 16 wake signals, and
+  `truncated:true`; the exact range and reviewer delta pass `git diff --check`.
 
 ## Canonical rubric
 
 | Dimension | Disposition |
 | --- | --- |
-| Lead completeness and disposition | **Accept after RV-021, with limits.** Every Cycle 265-281 seed/result pair and reviewer integration is ordered; rejected telemetry routes, three remaining v1 failures, broad landing-page labels, retained-history limits, compactions, and the current no-outcome recheck all have concrete dispositions. |
-| Provenance and claim/source separation | **Accept after RV-018/RV-019/RV-020/RV-021.** Reused receipts, query-only protected evidence, mutable retention, static structure, adaptive frozen-case evidence, exact compaction inputs, linked detail, evaluator requests, and absent real-use outcomes remain distinct; the first three findings are resolved on standing and RV-021 is corrected in this reviewer range. |
-| Novelty and decision value | **Accept narrowly.** One INDEX summary gap is repaired, two landing layers become link-addressable, large default reads become conditional, unsupported observability paths are rejected, false historical/global-exhaustion implications are narrowed, two duplicate blocks are reduced, and Cycle 280 confirms the missing outcome still cannot be recovered locally. |
+| Lead completeness and disposition | **Accept after RV-021/RV-022/RV-023, with limits.** Every Cycle 265-284 seed/result pair and reviewer integration is ordered; rejected telemetry routes, three remaining v1 failures, broad landing-page labels, retained-history limits, five compactions, and the current no-outcome recheck all have concrete dispositions. |
+| Provenance and claim/source separation | **Accept after RV-018 through RV-023.** Reused receipts, query-only protected evidence, mutable retention, static structure, adaptive frozen-case evidence, exact compaction inputs, linked detail, evaluator requests, and absent real-use outcomes remain distinct; all six findings are resolved exactly on standing. |
+| Novelty and decision value | **Accept narrowly.** One INDEX summary gap is repaired, two landing layers become link-addressable, large default reads become conditional, unsupported observability paths are rejected, false historical/global-exhaustion implications are narrowed, five duplicate blocks are reduced, and Cycle 280 confirms the missing outcome still cannot be recovered locally. |
 | Related-work comparison | **Defer.** No fresh external evidence or replication is claimed; existing papers remain contextual controls. |
-| Contradictions and uncertainty | **Accept after RV-021, with limits.** The reports deny deployed savings and user behavior; earlier findings remove numerical overclaims, Cycles 276 and 280 limit zero events to the retained window, and Cycle 281 treats protected-status drift as unattributed and transient. |
-| Duplication and contamination | **Revise under RV-004.** Cycle 278 removes 59 of 109 exactly duplicated lines and `f40b09a2da` removes another 333 map lines while retaining linked detail, but Cycle 280's 120 mirrored lines and producer-authored adaptive fixtures remain. |
-| Usability and retrieval value | **Accept narrowly.** The project/knowledge route is coherent, one observed v1 case improves without selection/pass regression elsewhere, and compact map ledgers point to retained detail. Current scoped links are 66 after Cycle 281 adds its detailed-checkpoint pointer. No later reuse is observed. |
+| Contradictions and uncertainty | **Accept after RV-021/RV-022/RV-023, with limits.** The reports deny deployed savings and user behavior; findings remove numerical and provenance overclaims, Cycles 276 and 280 limit zero events to the retained window, and Cycle 281 treats protected-status drift as unattributed and transient. |
+| Duplication and contamination | **Revise under RV-004.** Cycles 278 and 281-284 remove 59, 333, 36, 25, and 13 duplicate map lines while retaining linked detail, but Cycle 280's 120 mirrored lines and producer-authored adaptive fixtures remain. |
+| Usability and retrieval value | **Accept narrowly.** The project/knowledge route is coherent, one observed v1 case improves without selection/pass regression elsewhere, and compact map ledgers point to retained detail. Current scoped links are 69. No later reuse is observed. |
 | Access boundaries | **Accept.** Public lanes make zero requests, protected SQLite access is query-only under UID 1000, and no external or protected mutation occurs; the failed first query named a nonexistent column but was read-only and is disclosed. |
-| Validation quality | **Accept after RV-020/RV-021, with limits.** Full current gates, 66 scoped links, 1,702 broad links, exact compaction bytes/hashes, 307-line overlap, retained headings, protected inventory and payload hashes, and checkout fingerprints reproduce. Selection consumed a known failure and no protected promotion or deployed-use result exists. |
-| Cost and productivity | **Revise under RV-004.** The latest compaction removes 333 lines / 17,885 bytes at zero source-request cost and corrects a false global-exhaustion implication. Cycle 280's 120 mirrored lines remain, and no measured token saving, protected outcome, later decision, or user impact exists. |
-| Rollback and integration safety | **Accept.** Revert result `12efeb6cd9` before material `f40b09a2da` to remove Cycle 281 and restore the duplicated map block. Reverse-order reverts remove Cycles 279-280. RV-021 is a two-line documentation correction and one ordinary reviewer revert. No schema, runtime, evaluator, database, account, or protected checkout changed. |
+| Validation quality | **Accept after RV-020 through RV-023, with limits.** Full current gates, 69 scoped links, 1,705 broad links, exact compaction bytes/hashes, retained headings, protected inventory and payload hashes, and checkout fingerprints reproduce. Selection consumed a known failure and no protected promotion or deployed-use result exists. |
+| Cost and productivity | **Revise under RV-004.** Five compactions remove 59, 333, 36, 25, and 13 lines at zero source-request cost while preserving linked detail. Cycle 280's 120 mirrored lines remain, and no measured token saving, protected outcome, later decision, or user impact exists. |
+| Rollback and integration safety | **Accept.** Reverse-order ordinary reverts of each result before its material commit restore Cycles 281-284's duplicated map blocks; reverse-order reverts remove Cycles 278-280. RV-021/RV-022/RV-023 are documentation-only corrections and ordinary reviewer reverts. No schema, runtime, evaluator, database, account, or protected checkout changed. |
 
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
 | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 source cadence | Work through Cycle 281 defers unchanged public lanes at zero request cost while bounded local work closes historical/telemetry dead ends, improves static navigation, narrows retained-history claims, and removes two duplicate map blocks. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; current local productivity evidence confirms that safe work can advance concrete decisions without quota activity. |
+| `RV-001` | Medium | Cycle 65 source cadence | Work through Cycle 284 defers unchanged public lanes at zero request cost while bounded local work closes historical/telemetry dead ends, improves static navigation, narrows retained-history claims, and removes five duplicate map blocks. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; current local productivity evidence confirms that safe work can advance concrete decisions without quota activity. |
 | `RV-002` | Low | Cycle 65 GitHub provenance | Exact repository identities remain integrated. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction remains on standing. | **Resolved.** |
-| `RV-004` | High | `37430cf4..12efeb6c`, especially remaining duplicate logs, adaptive verifier work, and unobserved prompt behavior | 650 commits, 75 files, +35,767/-546 lines through Cycle 281 yield ten observed navigation-status gains, zero scoped/broad link failures, rejected speculative designs, a bounded static route, 59-line and 333-line duplicate reductions, and a current negative outcome recheck. Cycle 280's 120 mirrored lines remain while independently reproduced protected history still ends August 31 with no required join. The latest retrieval gain was selected against a known producer-authored fixture failure. There is still no protected evaluator, query-to-selection join, retained later decision, deployed route observation, measured token saving, current provider result, authority-bearing promotion, or changed user decision. | **Revise; high/open.** Treat 11/14, the static route, compactions, retained operational events, and rejected designs as useful local evidence only. Require fresh protected navigation or later-decision evidence before broader promotion; do not count prompt structure, link count, line reduction, negative rechecks, or retention mechanics as user outcome. |
+| `RV-004` | High | `37430cf4..f97bebde`, especially remaining duplicate logs, adaptive verifier work, and unobserved prompt behavior | 665 commits, 75 files, +36,108/-546 lines through Cycle 284 yield ten observed navigation-status gains, zero scoped/broad link failures, rejected speculative designs, a bounded static route, five duplicate reductions of 59/333/36/25/13 lines, and a current negative outcome recheck. Cycle 280's 120 mirrored lines remain while independently reproduced protected history still ends August 31 with no required join. The retrieval gain was selected against a known producer-authored fixture failure. There is still no protected evaluator, query-to-selection join, retained later decision, deployed route observation, measured token saving, current provider result, authority-bearing promotion, or changed user decision. | **Revise; high/open.** Treat 11/14, the static route, compactions, retained operational events, and rejected designs as useful local evidence only. Require fresh protected navigation or later-decision evidence before broader promotion; do not count prompt structure, link count, line reduction, negative rechecks, or retention mechanics as user outcome. |
 | `RV-005` | Medium | Seed projection | Exact Cycle 237 projection remains current and passes. | **Resolved.** |
 | `RV-006` | Medium | `package.json` through `6045108077` | Standing previously reported v2 8/8 while gating only v1. | **Resolved.** Standing `98926518f0` has stable patch ID `816b747af0` with reviewer `4f6de66f7b`; current-tip validation runs both fixtures. |
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
@@ -808,9 +846,24 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
 | `RV-020` | Low | Cycle 278 result `29d3d8b8cc`, compact Cycle 276 topic-map summary | The new detail link increases the current scoped check from 69 to 70 and the broad check from 1,705 to 1,706. Both links pass, so the stale totals misstate validation scope without changing retrieval behavior or compaction safety. | **Resolved on standing.** Exact reviewer `6c806ade5a` records 70 scoped and 1,706 broad links; current checks reproduce both totals with zero errors. |
 | `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries said material `f40b09a2da` dropped the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved on standing.** Reviewer `c3400f8c77` is standing `15e30e50ea` at stable patch ID `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`; both summaries now say 333. |
 | `RV-022` | Low | Cycle 282 result `7c8abbb30e`, topic map and detailed lane report | Both summaries published nonexistent full seed and material commit IDs, preventing exact provenance replay without changing the compaction. | **Resolved on standing.** Reviewer `1f611b69aa` corrects all four occurrences and has stable patch ID `a9802f0c97d01134674240b452cc3ae33e50db03`, equal to earlier reviewer `827c13d0a4`. |
+| `RV-023` | Low | Cycle 283 result `9d17987de7`, topic map, detailed lane report, and review cursor | Both summaries published nonexistent full seed and material IDs, and their integration note stopped at reviewer `641bc7088b`, omitting its later RV-022 branch state. Exact replay and pending-work status were therefore wrong, without changing the compaction. | **Resolved on standing.** Reviewer `48adada0af` corrects both identities, distinguishes the superseded replay from later RV-022 work, and updates the durable cursor; RV-022 is now integrated exactly as its parent `1f611b69aa`. |
 
 ## Reviewer source/result and integration status
 
+- Current reviewer source `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
+  has one pending direct-child cursor reconciliation on this reviewer branch.
+  It advances review through Cycle 284, records RV-022/RV-023 as resolved
+  exactly on standing, and leaves RV-004 high/open. This is the only current
+  integration candidate; earlier cursor-only branches are superseded. It does
+  not alter producer reports, executable code, fixtures, protected state, or
+  access authority. Integrate the exact direct-child range and roll it back
+  with one ordinary revert if the standing owner rejects the checkpoint.
+- Standing reviewer `1f611b69aa67b1007ff1a72a815b52fc1ca20604`
+  resolves RV-022 at stable patch ID
+  `a9802f0c97d01134674240b452cc3ae33e50db03`. Its direct child
+  `48adada0af7244fcfbb36701a2191d1456aca617` resolves RV-023 and updates
+  integration status. Both corrections are already exact on standing; neither
+  is pending integration.
 - Reviewer source `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9` has three-commit
   result range ending at `c3400f8c77729a5d76a51bdc2262a620874d1a68`.
   Standing integrated it after Cycle 282 as `45bdc0868c`, `16d602b7d8`, and
@@ -850,7 +903,10 @@ source_basis: "Exact standing history and integrated direct-line reviewer range 
   296-test / 1,483-assertion gate, 70 scoped links, and the 1,540-document /
   1,706-link broad audit; read-only health remains 30 facts / 16 wakes.
   Rollback is one ordinary revert of `6c806ade5a` after reverting this newer
-  standing status record.
+  standing status record. Direct child
+  `5b13addd1d44b6a2ba76eb8680b3a9957428c90a` is that separate status commit,
+  not patch equivalence for the reviewer result: its stable patch ID is
+  `9e1260f301f81ae12b9adb6fa8ed50ee6117512f`.
 - Reviewer source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
   result `af409f4ef3c4d3c1e3eaf0754ed9d3cd1b8db0c9`, integrated exactly on
   standing by fast-forward. Its stable patch ID is
@@ -946,7 +1002,7 @@ outcome that records the route used and a later decision; deployed/current
 evidence for the bounded prompt or source-state fields; misuse of the adaptive
 v1 gain as protected promotion evidence; or another concrete RV-004 outcome.
 If no material trigger arrives, the next periodic audit is no earlier than
-`2026-09-04T21:58:50Z`. Do not poll unchanged state.
+`2026-09-05T06:26:15+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
