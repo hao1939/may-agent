@@ -9345,6 +9345,29 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 265 seed-first start — accepted review trigger
+
+Exact Cycle 264 result `1de833cead` passes syntax, TypeScript, formatting,
+projection, all 65 durable links, navigation v1 at 10/14 and v2 at 8/8, the
+full 296-test / 1,479-assertion gate, and the 1,540-document / 1,701-link broad
+audit. Read-only health at `2026-09-03T19:42:28.180Z` is bounded at 30 facts /
+16 wakes; runtime and standing status are clean.
+
+At `2026-09-03T19:42:27.960Z`, the exact Cycle 237 receipt was one hundred
+sixty-five minutes old and no XHS or public-lane trigger had changed. The
+bounded pass therefore reused that provenance without a browser request:
+added/changed identities remain unknown, removals are `[]`, and all 132 durable
+seeds remain unavailable at the same login-class boundary. GitHub, arXiv,
+Reddit, and XHS made zero public requests and retain their last useful evidence,
+access boundaries, and revisit triggers.
+
+Accepted reviewer `f6a7a65928` was integrated patch-identically as standing
+`cf1984200c` at patch ID `e197ce54f2`. The protected Scout fingerprint remains
+`a430d0c9…4322f7e`; wider `/app` drift remains externally observed at
+`000cff67…b610a3`. Next, test whether two retained notes can classify a
+comparable lane loss without converting unknown state into failure or emitting
+duplicate alerts.
+
 ## Cycle 264 seed-first start — accepted review trigger
 
 Exact Cycle 263 tip `e82b841a82` passes the full 296-test / 1,479-assertion

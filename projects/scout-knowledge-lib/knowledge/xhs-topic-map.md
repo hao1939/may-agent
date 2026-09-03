@@ -3842,6 +3842,28 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 265 seed-first start — accepted review trigger
+
+Exact Cycle 264 result `1de833cead` passes syntax, TypeScript, formatting,
+Cycle 237 projection, 65 durable links, navigation v1 at 10/14 and v2 at 8/8,
+the full 296-test / 1,479-assertion gate, and the 1,540-document / 1,701-link
+broad audit. Read-only health at `2026-09-03T19:42:28.180Z` remains bounded at
+30 facts / 16 wakes; runtime and standing status are clean.
+
+At `2026-09-03T19:42:27.960Z`, Cycle 237's exact receipt was one hundred
+sixty-five minutes old. No XHS access, collected-set, or public-lane trigger
+changed, so the bounded reconciliation reused that exact provenance instead of
+repeating a browser request. Added/changed identities remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable at the same
+login-class boundary. GitHub, arXiv, Reddit, and XHS made zero public requests.
+
+Accepted reviewer ref advanced from `7deb84c782` to `f6a7a65928` and was
+integrated patch-identically as standing `cf1984200c` at patch ID
+`e197ce54f2`. The protected Scout-scope fingerprint remains
+`a430d0c9…4322f7e`; wider `/app` drift remains externally observed at
+`000cff67…b610a3`. Reconcile this finite cursor delta before testing the ranked
+two-snapshot transition-classifier question.
+
 ## Cycle 264 seed-first start — accepted review trigger
 
 Exact Cycle 263 tip `e82b841a82` passes the full 296-test / 1,479-assertion

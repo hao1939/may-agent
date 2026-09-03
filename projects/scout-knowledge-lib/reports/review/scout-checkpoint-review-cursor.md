@@ -573,13 +573,12 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `910c932b12573ba5ac8be736b47f601ba30910e5`. Its Cycle 262 evidence is
   accepted, while its report-correction and current-source statements are
   superseded by this cursor under RV-016.
-- Current reviewer source is standing `094996202c7849865e861cb5255c33922cbbb31e`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 262-264 dispositions,
-  records the standing resolution of RV-015/RV-016 and disposition RV-017, and
-  advances this cursor. Rollback is one ordinary revert.
-  It is not landed until standing contains its exact or patch-equivalent change
-  and current-tip validation passes. If the standing owner rejects any of
+- Reviewer `f6a7a6592806fe54ee400c742d6dc2c3251cd248`, based on standing
+  `094996202c7849865e861cb5255c33922cbbb31e`, is integrated as standing
+  `cf1984200c8e33ed30612c320163d6d70c3daa75`. Both share stable patch ID
+  `e197ce54f2208647f334ce4a97880199de2dfc25`. This lands the Cycle 262-264
+  dispositions, standing resolution of RV-015/RV-016, and disposition RV-017.
+  Rollback is one ordinary revert. If the standing owner rejects any of
   `6aa75130c2`, `b2a2461d2a`, or `fdf6e8de25`, revert its paired report before
   or with the implementation so the durable behavior claim does not outlive
   the code.
