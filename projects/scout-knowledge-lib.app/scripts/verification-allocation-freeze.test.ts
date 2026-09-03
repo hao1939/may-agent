@@ -892,6 +892,44 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("keeps an unreferenced sidecar outside protocol and registration identity", () => {
+    const fixture = validFixture();
+    const baseline = verifyExecutionFreezeManifest(
+      fixture.manifest,
+      fixture.artifactContents,
+    );
+    const contents = fixture.artifactContents as Record<string, string>;
+    contents["candidate-registry.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-candidate-registry/v1",
+      candidates: [],
+    });
+    fixture.manifest.artifacts.push({
+      name: "candidate-registry.json",
+      sha256: freezeArtifactSha256(contents["candidate-registry.json"]),
+    });
+
+    const declared = verifyExecutionFreezeManifest(fixture.manifest, contents);
+    contents["candidate-registry.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-candidate-registry/v1",
+      candidates: ["changed-but-still-unreferenced"],
+    });
+    fixture.manifest.artifacts.find(
+      (artifact) => artifact.name === "candidate-registry.json",
+    )!.sha256 = freezeArtifactSha256(contents["candidate-registry.json"]);
+    const changed = verifyExecutionFreezeManifest(fixture.manifest, contents);
+
+    for (const result of [declared, changed]) {
+      expect(result).toMatchObject({
+        ok: true,
+        errors: [],
+        artifactCount: 7,
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        providerCallsAuthorized: false,
+      });
+      expect(result.policyScope).toEqual(baseline.policyScope);
+    }
+  });
+
   it("keeps policy scope content-addressed across same-byte evidence and schedule aliases", () => {
     for (const kind of ["model", "seed", "schedule"] as const) {
       const fixture = validFixture();
