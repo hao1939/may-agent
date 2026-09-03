@@ -3974,6 +3974,18 @@ question is whether a compact content-addressed diagnostic reference can bind
 the exact failed manifest without echoing untrusted model identifiers or
 promoting an invalid bundle to policy authority.
 
+Exact reviewed Cycle 216 tip
+`3bb0771758b4d0269b392d1032377ecc58f61a5f` passes syntax, TypeScript,
+source formatting, 276 tests, 1,424 assertions, whitespace, and all 31 relative
+links. Read-only health at `2026-09-03T14:12:24.933Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+canonical accepted ancestors, both accepted patch pairs, and 4/4 accepted
+artifacts. `d041c41b54` remains unaccepted and outside lineage.
+
+Protected `/app` and the human overlay reproduce HEAD
+`386b445c…1fec8` / 886 / `996480ad…752a3` and
+`fd4c68ec…1514663` / three / `ad8d222c…e74780`; neither was written or tested.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

@@ -8222,6 +8222,18 @@ triggers. The accepted-lineage boundary is unchanged. The next ranked local
 question is whether a compact content reference can bind the failed manifest
 without echoing untrusted model IDs or creating policy authority.
 
+Exact reviewed tip `3bb0771758b4d0269b392d1032377ecc58f61a5f`
+passes syntax, TypeScript, source formatting, 276 tests, 1,424 assertions,
+whitespace, 31 relative links, read-only health 26/16 at
+`2026-09-03T14:12:24.933Z`, and empty root/app runtime state. The worktree is
+clean with 9/9 canonical accepted ancestors, both accepted patch-equivalence
+pairs, and 4/4 accepted artifact blobs. `d041c41b54` remains unaccepted and is
+not contained.
+
+Protected `/app` remains `386b445c…1fec8`, 886 records,
+`996480ad…752a3`; the human overlay remains `fd4c68ec…1514663`, three records,
+`ad8d222c…e74780`. Neither protected checkout was written or tested.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
