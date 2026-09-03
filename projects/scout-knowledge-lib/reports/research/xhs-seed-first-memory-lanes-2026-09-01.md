@@ -7860,6 +7860,24 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 200 checkpoint — deduplicated bytes are not independent evidence
+
+Seed commit `cb0d876578` records unchanged semantic XHS access and byte length,
+30 public Explore notes, zero attributable saved items, unknown additions/
+changes, no observed removals, and all 132 seeds unavailable. Body-hash drift
+is response provenance. No XHS state changed.
+
+Exact local `3e0ea3d818` compares a same-inode hard-linked proof alias with a
+copied same-byte alias. Both verify as seven artifacts with identical scope and
+evidence labels; provider authority remains false. Focused validation passes
+61 tests and 336 assertions plus TypeScript, formatting, and whitespace. This
+supports byte deduplication but not an independent-evidence count.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. V1
+remains unchanged. The next ranked control reuses one digest across model-
+resolution and seed-policy roles to verify their semantic schema boundaries.
+
 ## Cycle 199 checkpoint — restricted paths are the smaller conditional v2
 
 Seed commit `30cba41d32` records unchanged semantic XHS access and byte length,

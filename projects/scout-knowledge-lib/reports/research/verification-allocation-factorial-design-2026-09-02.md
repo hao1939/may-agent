@@ -2805,6 +2805,21 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 200 hard-link and duplicate-digest semantics
+
+Seed commit `cb0d876578` preceded exact test `3e0ea3d818`. A hard-linked proof
+alias and a copied same-byte alias both produce valid seven-artifact bundles,
+identical policy scope and evidence labels, and false provider authority. Stat
+evidence confirms only the hard-linked pair shares an inode.
+
+V1 therefore treats name as declaration identity, SHA-256 as content identity,
+and inode as irrelevant storage detail. A future object store may deduplicate
+bytes, but must not count different logical IDs as independent evidence. No
+digest- or inode-uniqueness rejection is justified. Focused validation passes
+61 tests and 336 assertions plus TypeScript, formatting, and whitespace. The
+remaining gap is incompatible digest reuse across semantically checked roles;
+that is the next control.
+
 ## Cycle 199 restricted paths versus digest-object storage
 
 Seed commit `30cba41d32` preceded a read-only design audit. A candidate v2 rule
