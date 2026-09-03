@@ -2,6 +2,7 @@ export type IdentityRobustFrontierCliInput = {
   policyCandidate: unknown;
   evidenceManifestCandidate: unknown;
   evidenceRoot: string;
+  freezeBundleRoot: string;
 };
 
 export function parseIdentityRobustFrontierCliInput(
@@ -9,13 +10,14 @@ export function parseIdentityRobustFrontierCliInput(
 ): IdentityRobustFrontierCliInput | null {
   if (args.length === 0) return null;
   if (
-    args.length !== 6 ||
+    args.length !== 8 ||
     args[0] !== "--policy-json" ||
     args[2] !== "--evidence-manifest-json" ||
-    args[4] !== "--evidence-root"
+    args[4] !== "--evidence-root" ||
+    args[6] !== "--freeze-bundle-root"
   ) {
     throw new Error(
-      "optional usage: --policy-json '<single JSON policy object>' --evidence-manifest-json '<single JSON manifest object>' --evidence-root '<explicit absolute directory>'",
+      "optional usage: --policy-json '<single JSON policy object>' --evidence-manifest-json '<single JSON manifest object>' --evidence-root '<explicit absolute directory>' --freeze-bundle-root '<explicit absolute directory>'",
     );
   }
   let policyCandidate: unknown;
@@ -32,5 +34,6 @@ export function parseIdentityRobustFrontierCliInput(
     policyCandidate,
     evidenceManifestCandidate,
     evidenceRoot: args[5]!,
+    freezeBundleRoot: args[7]!,
   };
 }

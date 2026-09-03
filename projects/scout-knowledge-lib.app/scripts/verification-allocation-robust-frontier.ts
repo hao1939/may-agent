@@ -6,10 +6,8 @@ import {
   measureCalibratedDirectionalPower,
 } from "./verification-allocation-factorial";
 import { parseIdentityRobustFrontierCliInput } from "./verification-allocation-frontier-cli";
-import {
-  selectIdentityRobustFrontierPoint,
-  selectIdentityRobustFrontierPointFromLocalRecord,
-} from "./verification-allocation-frontier-policy";
+import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
+import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
 
 type Row = {
   runBlockCount: number;
@@ -254,14 +252,18 @@ const maximumNull = rows.reduce((worst, row) =>
 );
 const localTotals = new Set([1_029, 1_030, 1_031, 1_032]);
 const cliInput = parseIdentityRobustFrontierCliInput(process.argv.slice(2));
-const selection = cliInput
-  ? await selectIdentityRobustFrontierPointFromLocalRecord(
+const frozenSelection = cliInput
+  ? await selectIdentityRobustFrontierPointFromFreezeBundle(
       frontier,
       cliInput.policyCandidate,
       cliInput.evidenceManifestCandidate,
       cliInput.evidenceRoot,
+      cliInput.freezeBundleRoot,
     )
-  : selectIdentityRobustFrontierPoint(frontier, null, null);
+  : null;
+const selection =
+  frozenSelection?.selection ??
+  selectIdentityRobustFrontierPoint(frontier, null, null);
 process.stdout.write(
   `${JSON.stringify(
     {
@@ -280,6 +282,7 @@ process.stdout.write(
       frontierFirst: frontier.slice(0, 12),
       frontierLast: frontier.slice(-12),
       final: frontier.at(-1),
+      freezeVerification: frozenSelection?.freezeVerification ?? null,
       selection,
     },
     null,

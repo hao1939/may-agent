@@ -12,11 +12,14 @@ describe("identity-robust frontier CLI input", () => {
         '{"manifest":true}',
         "--evidence-root",
         "/goal-owned/evidence",
+        "--freeze-bundle-root",
+        "/goal-owned/freeze",
       ]),
     ).toEqual({
       policyCandidate: { policy: true },
       evidenceManifestCandidate: { manifest: true },
       evidenceRoot: "/goal-owned/evidence",
+      freezeBundleRoot: "/goal-owned/freeze",
     });
   });
 
@@ -30,6 +33,8 @@ describe("identity-robust frontier CLI input", () => {
         "{}",
         "--evidence-root",
         "/tmp/evidence",
+        "--freeze-bundle-root",
+        "/tmp/freeze",
       ],
     ]) {
       expect(() => parseIdentityRobustFrontierCliInput(args)).toThrow(
@@ -44,6 +49,8 @@ describe("identity-robust frontier CLI input", () => {
         "{}",
         "--evidence-root",
         "/tmp/evidence",
+        "--freeze-bundle-root",
+        "/tmp/freeze",
       ]),
     ).toThrow("must contain valid JSON");
   });
