@@ -3,11 +3,27 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   navigate,
+  navigationFixtureName,
   parseNavigationEntries,
   tokenize,
 } from "./scout-navigation-outcomes";
 
 describe("Scout navigation outcome evaluation", () => {
+  it("selects only versioned held-out fixtures", () => {
+    expect(navigationFixtureName(undefined)).toBe(
+      "scout-navigation-heldout-v1.json",
+    );
+    expect(navigationFixtureName("scout-navigation-heldout-v2.json")).toBe(
+      "scout-navigation-heldout-v2.json",
+    );
+    expect(() => navigationFixtureName("../private.json")).toThrow(
+      "--fixture must name a versioned scout-navigation-heldout-vN.json fixture",
+    );
+    expect(() => navigationFixtureName("")).toThrow(
+      "--fixture must name a versioned scout-navigation-heldout-vN.json fixture",
+    );
+  });
+
   it("classifies linked and explicitly unavailable entries while ignoring archives", () => {
     const entries = parseNavigationEntries(
       [

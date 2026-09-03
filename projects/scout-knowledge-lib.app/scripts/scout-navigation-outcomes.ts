@@ -33,6 +33,19 @@ type NavigationFixture = {
   cases: NavigationCase[];
 };
 
+const defaultFixtureName = "scout-navigation-heldout-v1.json";
+const fixtureNamePattern = /^scout-navigation-heldout-v\d+\.json$/u;
+
+export function navigationFixtureName(value: string | undefined): string {
+  const name = value ?? defaultFixtureName;
+  if (!fixtureNamePattern.test(name)) {
+    throw new Error(
+      "--fixture must name a versioned scout-navigation-heldout-vN.json fixture",
+    );
+  }
+  return name;
+}
+
 type RankedEntry = NavigationEntry & {
   matched: string[];
   coverage: number;
@@ -279,11 +292,15 @@ if (import.meta.main) {
   ) {
     throw new Error("--minimum-passed must be a non-negative integer");
   }
+  const fixtureIndex = process.argv.indexOf("--fixture");
+  if (fixtureIndex >= 0 && process.argv[fixtureIndex + 1] === undefined) {
+    throw new Error("--fixture requires a fixture name");
+  }
+  const fixtureName = navigationFixtureName(
+    fixtureIndex >= 0 ? process.argv[fixtureIndex + 1] : undefined,
+  );
   const fixture = JSON.parse(
-    readFileSync(
-      resolve(import.meta.dir, "fixtures/scout-navigation-heldout-v1.json"),
-      "utf8",
-    ),
+    readFileSync(resolve(import.meta.dir, "fixtures", fixtureName), "utf8"),
   ) as NavigationFixture;
   if (fixture.schema !== "scout.navigation-heldout/v1") {
     throw new Error("unsupported navigation fixture schema");
@@ -304,6 +321,7 @@ if (import.meta.main) {
       {
         schema: "scout.navigation-outcomes/v1",
         fixture: {
+          name: fixtureName,
           frozen_at: fixture.frozen_at,
           frozen_against_tip: fixture.frozen_against_tip,
           source_basis: fixture.source_basis,
