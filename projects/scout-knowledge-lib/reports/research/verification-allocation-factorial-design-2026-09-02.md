@@ -2235,7 +2235,7 @@ from executable policy scope.
 
 ## Cycle 123 timestamp-proof separation
 
-Seed commit `75507eabef7a6cc1c1219d39e18a0fc002760b36` preceded this
+Seed commit `75507eabeff67dc47c1c4f01095184bf1a05be5f` preceded this
 control. XHS semantic access remained unchanged; the saved login shell changed
 by two bytes and body hash but exposed no attributable item. All 132 durable
 seeds remained unavailable, and no public lane request was made.

@@ -3308,7 +3308,7 @@ timestamp-proof control locally.
 
 ### Cycle 123 checkpoint — timestamp-proof bytes do not define policy scope
 
-Seed commit `75507eabef7a6cc1c1219d39e18a0fc002760b36` preceded the
+Seed commit `75507eabeff67dc47c1c4f01095184bf1a05be5f` preceded the
 control. Exact test-only commit
 `5df12fad1c66c2dddea5b7cd3d2ee1fd28f494a5` changed only
 `MANIFEST.sha256.ots` bytes and the matching local artifact digest. Bundle
