@@ -3742,6 +3742,30 @@ representative saved-post read or account mutation occurred. GitHub, arXiv,
 and Reddit made zero public requests and retain their evidence and triggers.
 The ranked seed-policy key-order control proceeds locally.
 
+### Cycle 212 checkpoint — seed-policy bytes set protocol scope
+
+Seed commit `0c9fcbd14a` preceded exact test-only commit `4a6c83abb1`.
+The original and reordered 188-byte seed-policy records parse equally, but hash
+to `ea062908…e0495` and `b1177782…03fc3`. Their exact protocol scopes are
+`bdee2f38…e6ee8` and `f2d5446c…286d91`; model scope is unchanged, both verify
+without provider authority, and restoring the original bytes reproduces the
+complete original result.
+
+This is high-confidence local evidence for a role-specific byte boundary:
+model evidence bytes determine model scope, while seed-policy evidence bytes
+determine protocol scope. Parsed equality does not normalize either role. A
+future explicit registry needs deterministic, versioned canonical bytes and an
+exact rollback path, not a second semantic authority layered beside v1. No
+current owner, deposit/update contract, consumer, or provider evidence
+justifies migration.
+
+Focused validation passes 25 tests and 142 assertions plus TypeScript,
+formatting, and whitespace. GitHub/local code won; public GitHub, arXiv, and
+Reddit made zero requests and retain their last useful evidence and triggers.
+The next ranked control reorders only top-level freeze-manifest keys, testing
+whether the uncontent-addressed container is presentation-only while declared
+evidence remains byte-bound.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

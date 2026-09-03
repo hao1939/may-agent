@@ -7984,6 +7984,31 @@ and Reddit each made zero public requests and retain their last evidence,
 access boundaries, and revisit triggers. The ranked local control now applies
 the same matched key-order audit to seed-policy evidence.
 
+## Cycle 212 checkpoint — seed-policy bytes, not parsed equality, set scope
+
+Seed commit `0c9fcbd14a` preceded exact test-only commit `4a6c83abb1`. The
+original and reordered 188-byte seed-policy records parse to equal objects but
+hash to `ea062908…e0495` and `b1177782…03fc3`. Exact protocol scope changes
+from `bdee2f38…e6ee8` to `f2d5446c…286d91`; model scope is unchanged, both
+variants verify with false provider authority, and restoring the original
+bytes reproduces the complete original result.
+
+The focused bundle gate passes 25 tests and 142 assertions plus TypeScript,
+formatting, and whitespace. This supports role-specific content identity:
+Cycles 211–212 show model evidence bytes set model scope and seed-policy bytes
+set protocol scope. A future explicit registry needs deterministic versioned
+bytes and exact rollback rather than duplicate authority. No production change
+is justified without an owner, deposit/update authority, consumer need, or
+provider evidence.
+
+GitHub/local code won. GitHub retains the local regressions and last four named
+public heads; arXiv retains MemGauge `2608.30177v1` and allocation study
+`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All public
+lanes made zero requests and retain their change-bearing revisit triggers. The
+unaccepted `d041c41b54` range remains outside standing lineage. The next ranked
+control reorders only top-level freeze-manifest keys to test whether container
+presentation is outside the declared evidence byte identities.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

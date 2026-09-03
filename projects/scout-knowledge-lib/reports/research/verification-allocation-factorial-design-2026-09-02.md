@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 212 seed-policy bytes control protocol scope
+
+Seed commit `0c9fcbd14a` preceded exact test-only commit `4a6c83abb1`. Two
+188-byte seed-policy records parse to equal objects while differing only in
+object-key order. The original hashes to `ea062908…e0495` and protocol scope
+`bdee2f38…e6ee8`; the reordered record hashes to `b1177782…03fc3` and protocol
+scope `f2d5446c…286d91`.
+
+Both bundles verify with unchanged model scope and false provider authority.
+Restoring the original record and digest reproduces the complete original
+verification result. The focused gate passes 25 tests and 142 assertions plus
+TypeScript, formatting, and whitespace.
+
+Together with Cycle 211, this proves role-specific content addressing: model
+evidence bytes set model scope and seed-policy bytes set protocol scope. Parsed
+object equality normalizes neither. A future explicit registry must define and
+version deterministic bytes plus exact rollback; current v1 should not change
+without owner, deposit/update authority, consumer need, or provider evidence.
+The next control reorders only top-level freeze-manifest keys to distinguish
+container presentation from declared evidence identity.
+
 ## Cycle 211 model evidence bytes control model scope
 
 Seed commit `27948c969b` preceded exact test-only commit `d157824111`. Two
