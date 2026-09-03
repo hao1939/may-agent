@@ -9902,6 +9902,19 @@ runtime, and protected/overlay fingerprints. No source or account request ran.
 This reduces duplicate retrieval text without resolving RV-004, which remains
 high/open. Rescan the remaining exact mirrors next.
 
+## Cycle 300 checkpoint — reviewer transition retained once
+
+Seed-first `76a13490dd` preceded the audit. Material `dc805d51db` replaces the
+exact 13-line / 808-byte Cycle 264 seed/review block (`ea652e7d…77a5`) with a
+4-line / 367-byte pointer (`6baa817d…6336`), removing 9 lines / 441 bytes while
+leaving this authoritative block unchanged.
+
+The map keeps the aggregate-versus-lane decision and integrated patch identity;
+this report retains exact validation, receipt uncertainty, zero requests, and
+the accepted-ref transition. No source or account changed. This is retrieval
+maintenance, not an observed outcome, so RV-004 remains high/open. The next
+ranked exact mirror is Cycle 223's 11-line / 766-byte projection boundary.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
