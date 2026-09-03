@@ -2805,6 +2805,24 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 205 strict-v1 per-model resolution records
+
+Seed commit `15dc4d3da4` preceded exact test `dcbf6f99bf`. Two distinct
+canonical resolution objects name the two declared models in a coherent
+128-episode schedule. Their hashes are `87914189…36708b` and
+`8c2ddbde…e083fe`.
+
+Strict v1 returns `ok:true`, seven artifacts, two models, 128 episodes, model
+scope `freeze-model-scope-sha256:583177de…353459`, the same local-unverified
+evidence labels, and provider authority false. A new registry is therefore not
+required merely to express several explicit identities; the per-model record
+design already works.
+
+The focused bundle gate passes 19 tests and 97 assertions plus TypeScript,
+formatting, and whitespace. Remaining registry value depends on a real owner,
+deposit/update contract, or consumer need. The next control pins exact rollback
+from the two-record expansion to the original one-record result.
+
 ## Cycle 204 copied cross-model resolution denial
 
 Seed commit `e362380035` preceded exact test `ba9505219b`. A coherent
