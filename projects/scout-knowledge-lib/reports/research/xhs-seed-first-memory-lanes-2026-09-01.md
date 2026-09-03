@@ -9357,6 +9357,36 @@ read before this record was durable. No conclusion or mutation resulted. This
 commit corrects the ordering; rerun the real-consumer design audit only after
 this seed state is persisted.
 
+## Cycle 256 checkpoint — use the real event boundary, not a synthetic gate
+
+Seed commit `57b0f39767` corrected the ordering before the audit was rerun. The
+planner prompt requires Scout to read `INDEX.md`, calls the real Scout agent,
+then emits `project.knowledge.maintained` with the returned summary, state,
+proposed actions, and evidence. That event is the smallest existing
+post-consumer boundary. It still cannot prove navigation success: evidence is
+an untyped string list, proposed action outputs cover only proposed child work,
+direct edits and no-ops may have no target, and neither field binds a query,
+index revision, selected target, or later decision.
+
+Running the evaluator inside the planner would only measure the synthetic
+scorer again. Encoding a receipt inside evidence would be ambiguous and
+agent-authored. Extending the shared task-result schema would broaden scope
+before any retained event proves demand. The smallest credible path is
+therefore evidence-first: recover existing accepted maintenance-event payloads
+read-only and measure whether stable output paths already support a later-use
+join. Only if they do should an app-local, versioned optional receipt bind the
+host-owned task/execution identity and index revision to an agent-reported
+query/selected target; it must remain self-report, not independent success.
+
+No implementation is justified yet. Confidence is high for current workflow
+and schema limits, medium that the existing event is the lowest-cost join
+surface, and low that historical payloads retain enough target detail.
+GitHub/local evidence won; GitHub, arXiv, and Reddit made zero public requests
+and retain their exact topic-map evidence and triggers. The next ranked
+investigation is a read-only search for accepted
+`project.knowledge.maintained` payloads and stable output paths before any
+telemetry proposal.
+
 ## Cycle 255 seed-first start — current receipt reused
 
 At `2026-09-03T18:31:11.283Z`, Cycle 237's exact observational receipt was
