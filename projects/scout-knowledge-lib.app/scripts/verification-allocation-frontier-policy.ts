@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   bindIdentityRobustPolicyEvidence,
+  bindIdentityRobustPolicyEvidenceFromLocalManifest,
   bindIdentityRobustPolicyEvidenceFromLocalRecord,
 } from "./verification-allocation-policy-provenance";
 
@@ -36,6 +37,14 @@ export type IdentityRobustLocalFrontierSelection =
     decisionRecordByteLength: number;
     decisionRecordEvidenceStatus: "local-byte-match-unverified" | "";
     decisionRecordContentStatus: "local-content-match-unverified" | "";
+  };
+
+export type IdentityRobustLocalManifestFrontierSelection =
+  IdentityRobustLocalFrontierSelection & {
+    manifestArtifactSha256: string;
+    manifestArtifactByteLength: number;
+    manifestArtifactEvidenceStatus: "local-byte-match-unverified" | "";
+    manifestArtifactContentStatus: "local-content-match-unverified" | "";
   };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -277,5 +286,114 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
     decisionRecordEvidenceStatus: localBinding.decisionRecordEvidenceStatus,
     decisionRecordContentStatus: localBinding.decisionRecordContentStatus,
     scopeLimit: localBinding.scopeLimit,
+  };
+}
+
+export async function selectIdentityRobustFrontierPointFromLocalManifest(
+  frontierCandidate: unknown,
+  policyCandidate: unknown,
+  evidenceRoot: string,
+  manifestArtifact: string,
+  manifestArtifactSha256: string,
+  verifiedPolicyScopeCandidate: unknown = null,
+): Promise<IdentityRobustLocalManifestFrontierSelection> {
+  const emptyLocal = {
+    evidenceManifestSha256: "",
+    policyEvidenceStatus: "" as const,
+    selected: null,
+    decisionRecordSha256: "",
+    decisionRecordByteLength: 0,
+    decisionRecordEvidenceStatus: "" as const,
+    decisionRecordContentStatus: "" as const,
+    manifestArtifactSha256: "",
+    manifestArtifactByteLength: 0,
+    manifestArtifactEvidenceStatus: "" as const,
+    manifestArtifactContentStatus: "" as const,
+  };
+  const scopeLimit =
+    "Selection requires descriptor-safe byte and content matches for a local manifest and its local decision record. Those integrity checks do not authenticate the owner, timestamp, revision, references, real drift, marginal estimates, dependence, provider behavior, or operating cost.";
+  if (!isIdentityRobustFrontier(frontierCandidate)) {
+    return {
+      ok: false,
+      policySha256: "",
+      ...emptyLocal,
+      errors: ["identity-robust frontier is invalid"],
+      scopeLimit,
+    };
+  }
+  const policy = parsePolicy(policyCandidate);
+  if (!policy) {
+    return {
+      ok: false,
+      policySha256: "",
+      ...emptyLocal,
+      errors: [
+        "exactly one explicit frontier policy with evidence is required",
+      ],
+      scopeLimit,
+    };
+  }
+  const policySha256 = hashIdentityRobustFrontierPolicy(policy);
+  const binding = await bindIdentityRobustPolicyEvidenceFromLocalManifest(
+    policySha256,
+    policy.evidenceReference,
+    policy,
+    evidenceRoot,
+    manifestArtifact,
+    manifestArtifactSha256,
+    verifiedPolicyScopeCandidate,
+  );
+  if (!binding.ok) {
+    return {
+      ok: false,
+      policySha256,
+      evidenceManifestSha256: binding.manifestSha256,
+      policyEvidenceStatus: "",
+      selected: null,
+      errors: binding.errors,
+      decisionRecordSha256: binding.decisionRecordSha256,
+      decisionRecordByteLength: binding.decisionRecordByteLength,
+      decisionRecordEvidenceStatus: binding.decisionRecordEvidenceStatus,
+      decisionRecordContentStatus: binding.decisionRecordContentStatus,
+      manifestArtifactSha256: binding.manifestArtifactSha256,
+      manifestArtifactByteLength: binding.manifestArtifactByteLength,
+      manifestArtifactEvidenceStatus: binding.manifestArtifactEvidenceStatus,
+      manifestArtifactContentStatus: binding.manifestArtifactContentStatus,
+      scopeLimit: binding.scopeLimit,
+    };
+  }
+
+  let selected: IdentityRobustFrontierPoint | undefined;
+  if (policy.selectionBasis === "minimum-uniform-drift-reserve") {
+    selected = frontierCandidate.find(
+      (point) => point.uniformDriftBuffer >= policy.minimumUniformDriftReserve!,
+    );
+  } else {
+    for (let index = frontierCandidate.length - 1; index >= 0; index -= 1) {
+      const point = frontierCandidate[index]!;
+      if (point.episodeCount <= policy.maximumEpisodeCount!) {
+        selected = point;
+        break;
+      }
+    }
+  }
+  return {
+    ok: Boolean(selected),
+    policySha256,
+    evidenceManifestSha256: binding.manifestSha256,
+    policyEvidenceStatus: binding.evidenceStatus,
+    selected: selected ?? null,
+    errors: selected
+      ? []
+      : ["no frontier point satisfies the explicit operating policy"],
+    decisionRecordSha256: binding.decisionRecordSha256,
+    decisionRecordByteLength: binding.decisionRecordByteLength,
+    decisionRecordEvidenceStatus: binding.decisionRecordEvidenceStatus,
+    decisionRecordContentStatus: binding.decisionRecordContentStatus,
+    manifestArtifactSha256: binding.manifestArtifactSha256,
+    manifestArtifactByteLength: binding.manifestArtifactByteLength,
+    manifestArtifactEvidenceStatus: binding.manifestArtifactEvidenceStatus,
+    manifestArtifactContentStatus: binding.manifestArtifactContentStatus,
+    scopeLimit: binding.scopeLimit,
   };
 }

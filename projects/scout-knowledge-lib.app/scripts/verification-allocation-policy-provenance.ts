@@ -55,6 +55,14 @@ export type IdentityRobustLocalPolicyEvidenceBinding =
     decisionRecordContentStatus: "local-content-match-unverified" | "";
   };
 
+export type IdentityRobustLocalManifestPolicyEvidenceBinding =
+  IdentityRobustLocalPolicyEvidenceBinding & {
+    manifestArtifactSha256: string;
+    manifestArtifactByteLength: number;
+    manifestArtifactEvidenceStatus: "local-byte-match-unverified" | "";
+    manifestArtifactContentStatus: "local-content-match-unverified" | "";
+  };
+
 function record(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -449,5 +457,104 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     decisionRecordContentStatus: "local-content-match-unverified",
     scopeLimit:
       "The manifest, one descriptor-safe local byte read, the record's content, and caller-supplied verified-freeze scope identifiers agree. This proves local consistency for those inputs; this function does not reverify the freeze bundle, and no authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+  };
+}
+
+export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
+  expectedPolicySha256: string,
+  expectedEvidenceReference: string,
+  expectedPolicyCandidate: unknown,
+  evidenceRoot: string,
+  manifestArtifact: string,
+  manifestArtifactSha256: string,
+  verifiedPolicyScopeCandidate: unknown = null,
+): Promise<IdentityRobustLocalManifestPolicyEvidenceBinding> {
+  const localManifest = await readDescriptorSafeLocalEvidence(
+    evidenceRoot,
+    manifestArtifact,
+    manifestArtifactSha256,
+  );
+  const emptyRecord = {
+    decisionRecordSha256: "",
+    decisionRecordByteLength: 0,
+    decisionRecordEvidenceStatus: "" as const,
+    decisionRecordContentStatus: "" as const,
+  };
+  if (!localManifest.ok) {
+    return {
+      ok: false,
+      manifestSha256: "",
+      evidenceStatus: "",
+      errors: localManifest.errors,
+      scopeLimit: localManifest.scopeLimit,
+      ...emptyRecord,
+      manifestArtifactSha256: localManifest.sha256,
+      manifestArtifactByteLength: localManifest.byteLength,
+      manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
+      manifestArtifactContentStatus: "",
+    };
+  }
+
+  let manifestCandidate: unknown;
+  let manifestText: string;
+  try {
+    manifestText = new TextDecoder("utf-8", { fatal: true }).decode(
+      localManifest.bytes!,
+    );
+    manifestCandidate = JSON.parse(manifestText);
+  } catch {
+    return {
+      ok: false,
+      manifestSha256: "",
+      evidenceStatus: "",
+      errors: [
+        "local policy provenance manifest must contain valid UTF-8 JSON",
+      ],
+      scopeLimit:
+        "The local manifest bytes match their declared hash but do not form a valid policy provenance manifest. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+      ...emptyRecord,
+      manifestArtifactSha256: localManifest.sha256,
+      manifestArtifactByteLength: localManifest.byteLength,
+      manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
+      manifestArtifactContentStatus: "",
+    };
+  }
+  if (hasDuplicateJsonObjectKeys(manifestText)) {
+    return {
+      ok: false,
+      manifestSha256: "",
+      evidenceStatus: "",
+      errors: [
+        "local policy provenance manifest contains duplicate JSON object keys",
+      ],
+      scopeLimit:
+        "The local manifest bytes match their declared hash but contain ambiguous duplicate object keys. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+      ...emptyRecord,
+      manifestArtifactSha256: localManifest.sha256,
+      manifestArtifactByteLength: localManifest.byteLength,
+      manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
+      manifestArtifactContentStatus: "",
+    };
+  }
+
+  const binding = await bindIdentityRobustPolicyEvidenceFromLocalRecord(
+    expectedPolicySha256,
+    expectedEvidenceReference,
+    expectedPolicyCandidate,
+    manifestCandidate,
+    evidenceRoot,
+    verifiedPolicyScopeCandidate,
+  );
+  return {
+    ...binding,
+    manifestArtifactSha256: localManifest.sha256,
+    manifestArtifactByteLength: localManifest.byteLength,
+    manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
+    manifestArtifactContentStatus: binding.manifestSha256
+      ? "local-content-match-unverified"
+      : "",
+    scopeLimit: binding.ok
+      ? "One descriptor-safe manifest read, its strict content, its canonical identity, one descriptor-safe decision-record read, and the caller-supplied verified-freeze scope identifiers agree. This proves local consistency for those inputs; no authorship, authority, independence, timestamp validity, or substantive correctness is established."
+      : binding.scopeLimit,
   };
 }

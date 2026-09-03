@@ -6,6 +6,7 @@ import { join } from "node:path";
 import {
   hashIdentityRobustFrontierPolicy,
   selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalManifest,
   selectIdentityRobustFrontierPointFromLocalRecord,
   type IdentityRobustFrontierPoint,
   type IdentityRobustFrontierPolicy,
@@ -390,5 +391,127 @@ describe("identity-robust allocation frontier policy", () => {
       baseline.decisionRecordSha256,
     );
     expect(await readdir(root)).toEqual(["decisions"]);
+  });
+
+  it("selects only through a descriptor-safe byte-bound local manifest", async () => {
+    const policy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "minimum-uniform-drift-reserve",
+      minimumUniformDriftReserve: 0.0006,
+      evidenceReference: "decision-record:fixture-local-manifest",
+    };
+    const fixture = manifest(policy);
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-manifest-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    await mkdir(join(root, "policies"));
+    await writeFile(
+      join(root, "decisions", "policy.json"),
+      fixture.decisionRecord,
+    );
+    const manifestText = `${JSON.stringify(fixture.value)}\n`;
+    const manifestSha256 = createHash("sha256")
+      .update(manifestText)
+      .digest("hex");
+    await writeFile(join(root, "policies", "manifest.json"), manifestText);
+
+    const selected = await selectIdentityRobustFrontierPointFromLocalManifest(
+      frontier,
+      policy,
+      root,
+      "policies/manifest.json",
+      manifestSha256,
+      fixture.policyScope,
+    );
+    expect(selected).toMatchObject({
+      ok: true,
+      policyEvidenceStatus: "caller-supplied-unverified",
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      manifestArtifactSha256: manifestSha256,
+      manifestArtifactByteLength: Buffer.byteLength(manifestText),
+      manifestArtifactEvidenceStatus: "local-byte-match-unverified",
+      manifestArtifactContentStatus: "local-content-match-unverified",
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "local-content-match-unverified",
+      errors: [],
+    });
+    expect(selected.policySha256).toBe(
+      "128eb203f8c45dacd4e2ccccb3f7bf09fdda207fd2a5bf7ebf18adf05c782ecb",
+    );
+    expect(selected.evidenceManifestSha256).toBe(
+      "159d1e3465479a43fd68a7ed2b34604ef52c12afc59ce8e88693c453b4a11e1b",
+    );
+    expect(manifestSha256).toBe(
+      "87060af8aeab2ef262e56802cfc63f877a6122ce2d4d763cf04413d76cdef2e6",
+    );
+
+    const missing = await selectIdentityRobustFrontierPointFromLocalManifest(
+      frontier,
+      policy,
+      root,
+      "policies/missing.json",
+      manifestSha256,
+      fixture.policyScope,
+    );
+    expect(missing).toMatchObject({
+      ok: false,
+      selected: null,
+      manifestArtifactEvidenceStatus: "",
+      decisionRecordEvidenceStatus: "",
+    });
+    expect(
+      missing.errors[0]?.startsWith(
+        "local evidence is not readable without following links:",
+      ),
+    ).toBe(true);
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalManifest(
+        frontier,
+        policy,
+        root,
+        "policies/manifest.json",
+        "0".repeat(64),
+        fixture.policyScope,
+      ),
+    ).toMatchObject({
+      ok: false,
+      selected: null,
+      errors: ["local evidence bytes do not match the declared SHA-256"],
+      manifestArtifactEvidenceStatus: "",
+      decisionRecordEvidenceStatus: "",
+    });
+
+    const duplicateManifest = manifestText.replace(
+      '"schema":',
+      '"schema":"scout.verification-allocation-policy-evidence/v2","schema":',
+    );
+    const duplicateSha256 = createHash("sha256")
+      .update(duplicateManifest)
+      .digest("hex");
+    await writeFile(
+      join(root, "policies", "duplicate.json"),
+      duplicateManifest,
+    );
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalManifest(
+        frontier,
+        policy,
+        root,
+        "policies/duplicate.json",
+        duplicateSha256,
+        fixture.policyScope,
+      ),
+    ).toMatchObject({
+      ok: false,
+      selected: null,
+      errors: [
+        "local policy provenance manifest contains duplicate JSON object keys",
+      ],
+      manifestArtifactSha256: duplicateSha256,
+      manifestArtifactEvidenceStatus: "local-byte-match-unverified",
+      manifestArtifactContentStatus: "",
+      decisionRecordEvidenceStatus: "",
+    });
   });
 });
