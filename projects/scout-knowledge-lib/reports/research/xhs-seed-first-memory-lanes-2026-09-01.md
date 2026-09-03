@@ -7752,6 +7752,20 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 138 checkpoint — duplicate inline keys no longer disappear
+
+Seed commit `9df76458e0d7a176e033a2a0bf81d78199dca2b1` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. An inline
+policy repeated the same key and still returned the collapsed parsed object.
+
+Exact local `593d3ffb0b40a3ce2dbd2cd5e9bad67640f99d1a` rejects duplicates
+in both inline policy and evidence JSON; snapshot mode inherits the same parser.
+The focused gate passes five tests and nine assertions plus TypeScript,
+formatting, and whitespace. GitHub/local code won the rubric; GitHub, arXiv,
+and Reddit made zero public requests and retain their recorded evidence and
+triggers. The next ranked control tests escaped-equivalent key spellings.
+
 ## Cycle 137 checkpoint — duplicate snapshot keys no longer disappear
 
 Seed commit `554935a4522f29724c96d54e904eef9c16ec1258` records unchanged

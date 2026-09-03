@@ -2527,6 +2527,22 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 138 duplicate inline CLI keys
+
+Seed commit `9df76458e0d7a176e033a2a0bf81d78199dca2b1` preceded matched
+policy and evidence CLI controls. Before repair, a policy argument repeating the
+same `policy:true` key returned the same parsed object; the isolated run
+reported four passes, one failure, and eight assertions.
+
+Exact repair `593d3ffb0b40a3ce2dbd2cd5e9bad67640f99d1a` applies the shared
+object-scope scanner after syntax parsing and before either inline candidate is
+returned. Both arguments now throw the stable duplicate-key error, and snapshot
+mode inherits the same parser. The focused gate passes five tests and nine
+assertions plus TypeScript, formatting, and whitespace.
+
+This proves local CLI ambiguity denial, not authority or provenance. The next
+control checks escaped-equivalent key spellings against the scanner.
+
 ## Cycle 137 duplicate frontier-snapshot keys
 
 Seed commit `554935a4522f29724c96d54e904eef9c16ec1258` preceded a matched
