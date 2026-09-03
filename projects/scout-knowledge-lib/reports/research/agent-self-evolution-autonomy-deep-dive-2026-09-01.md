@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 906 observed Xiaohongshu cards with primary papers, repositories, and prior Scout work; records all 966 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
+summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 906 observed Xiaohongshu cards with primary papers, repositories, and prior Scout work; records all 969 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
 triggers: ["self-evolution deep dive", "autonomy evidence report", "agent evolution lead ledger", "XHS collection resolution", "skill and harness evolution evidence"]
 last_updated: "2026-09-01"
 source_basis: "Goal-owned lead ledgers, 29 locally extracted full-text papers, pinned repository inspections, existing Scout notes, and bounded standard-library or no-credential code checks. External performance results are attributed, not presented as Scout reproductions."
@@ -30,11 +30,11 @@ claim of recursive autonomy.
 ## Research frontier and lead accounting
 
 The [unified lead ledger](./agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 966 unique rows:
+contains 969 unique rows:
 
 - 906 Xiaohongshu collection cards with stable IDs;
-- 35 paper, survey, primary-metadata, or benchmark records;
-- 17 code-bearing, code-metadata, or paper-plus-code records where implementation evidence changes
+- 36 paper, survey, primary-metadata, or benchmark records;
+- 19 code-bearing, code-metadata, or paper-plus-code records where implementation evidence changes
   the judgment; and
 - 8 existing Scout notes and reports, each reconciled rather than silently reused.
 
@@ -129,6 +129,10 @@ from the narrative.
 | [world-proxy survey `2608.02713`](https://arxiv.org/abs/2608.02713) | full survey | prediction, execution, memory, skill, and verification proxies can be mapped separately | taxonomy is not empirical validation; “world model” may stretch too far |
 | [AgentStream `2608.00155`](https://arxiv.org/abs/2608.00155) | paper and pinned code | experience transfer depends on model, method, order, and mixture | model campaigns not reproduced locally |
 | [Aspire `2608.31111`](https://arxiv.org/abs/2608.31111) | full paper tables/trajectories | broad-goal learners often complete updates without retained improvement | new result; one retained gain reused a fixed feedback slice |
+| [LoopX](https://github.com/huangruiteng/loopx/tree/ae4887d707e69c19e712c379c4a1ef98b159ae64) | pinned code, protocols, public metadata, deterministic smokes, KNN evaluator | typed evidence, authority, quota, and settlement can govern heterogeneous harnesses | young v0.x project; public checks prove plumbing, not autonomous improvement |
+| [Arbor `2606.11926`](https://arxiv.org/abs/2606.11926) | paper and pinned code | persistent Idea Tree, isolated executors, retry artifacts, and held-out promotion support metric-driven research | author-reported, expensive, fixed-evaluator tasks; LoopX adaptation not validated by Arbor results |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent/tree/562ee8ab76a703b7f524172cae0b1d52f9f94bd3) | pinned code and docs | integrated runtime now has durable Kanban, goal loops, memory, skills, claims, worktrees, retry, and review | Kanban is single-host; background learning prompt risks overlearning |
+| [OpenClaw](https://github.com/openclaw/openclaw/tree/8a718610bd26ffcffeb04e19641c80e6693731a1) | pinned code and docs | provenance-tiered memory and proposal/hash/rollback skill governance create stronger self-learning boundaries | design rationale is not outcome proof; autonomous Skill Workshop defaults to auto |
 
 The unified ledger holds additional baselines and implementation records,
 including AgentFlow, RLTF, SkillRL, Continual Experience Internalization,
@@ -206,6 +210,44 @@ causal evaluation should report prediction error, plan quality, action success,
 and mediation between them rather than using “learns a world model” as a single
 performance claim.
 
+### Cross-harness governance: LoopX versus Arbor, Hermes, and OpenClaw
+
+The focused [LoopX investigation](../../knowledge/findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md)
+resolves a new category boundary. LoopX is primarily a control plane above
+agent harnesses: it turns goals, todos, evidence, gates, authority, quotas,
+claims, and terminal settlement into durable shared state. Hermes Agent and
+OpenClaw are primarily integrated assistant runtimes that now also contain
+durable work and learning mechanisms.
+
+LoopX's auto-research workflow explicitly adapts Arbor. Arbor's coordinator
+owns a hypothesis tree and dispatches isolated executors; LoopX distributes
+role-specific frontiers over shared typed state without requiring a durable
+leader identity. The hypothesis–experiment–held-out loop is therefore inherited.
+The distinct LoopX claim is that revision fences, actor scope, evidence lineage,
+and idempotent settlement let heterogeneous harnesses collaborate safely.
+
+That distinction matters, but its outcome value is not yet established. Four
+deterministic LoopX research smokes and the released KNN baseline passed in a
+goal-owned worktree, proving state/evaluator plumbing. They did not run an
+autonomous multi-agent improvement campaign or compare the decentralized
+topology with Arbor under equal models and budgets.
+
+Hermes's current durable Kanban substantially narrows the task-queue novelty:
+it has claims, dependencies, OS-process workers, worktrees, retries, heartbeats,
+review, comments, and crash reclamation. OpenClaw separately supplies session
+goals, Task Flow, detached work, cron, standing orders, and strong provenance-
+aware memory. LoopX remains clearest when multiple runtimes need one typed
+evidence and authority contract. It is likely overhead when one runtime or an
+existing supervisor already owns canonical durable state.
+
+The self-learning comparison exposes two policy failures. Hermes's post-turn
+review pushes most sessions toward a skill mutation, risking overlearning and
+cost. OpenClaw's Skill Workshop has stronger abstention, hash binding, scanning,
+and rollback, but defaults autonomous mode to `auto`. For Scout, the safer
+combination is proposal-first learning, protected held-out admission, structural
+provenance/taint barriers, and explicit separation of learned content from
+authority to act.
+
 ## Novelty and value judgments
 
 The [canonical synthesis](../../knowledge/agent-self-evolution-and-autonomy.md)
@@ -227,6 +269,9 @@ readiness. The strongest judgments are:
    under shift, but does not imply goal autonomy or general self-evolution.
 6. **Aspire's negative result is unusually valuable.** It shows that choosing a
    useful proxy and terminal checkpoint is harder than completing an update.
+7. **LoopX's value is governance, not autonomous intelligence.** Typed evidence,
+   scoped authority, quotas, frontier projections, and idempotent settlement are
+   worth borrowing; duplicating an existing durable supervisor is not.
 
 ## Contradictions resolved
 
@@ -254,6 +299,20 @@ readiness. The strongest judgments are:
 
 All execution occurred in goal-owned scratch space, never the dirty source
 checkout or another worker's worktree.
+
+### LoopX auto-research
+
+Pinned source: `huangruiteng/loopx@ae4887d707e69c19e712c379c4a1ef98b159ae64`.
+
+Four deterministic examples passed: KNN preset materialization, KNN evidence
+normalization, decentralized role-frontier projection, and the minimal
+auto-research kernel. The materialized KNN evaluator then produced development
+`0.958163x` and held-out `1.030135x`, with exact-correctness checks passing.
+
+The first evaluator call failed because `eval.sh` assumes its materialized
+workspace is the current directory; the same command succeeded there. This
+proves the released state/evidence/evaluator path, not autonomous multi-agent
+improvement, comparative superiority to Arbor, or the public showcase claims.
 
 ### Harness-Bench
 
@@ -311,10 +370,11 @@ a comparative capability campaign prevent an efficacy claim.
   the application and workflows, passed TypeScript and Prettier checks, and ran
   78 tests with 0 failures and 226 assertions.
 - A standard-library TSV validator read all records at their declared widths:
-  906 unique XHS IDs across 9 columns and 966 unique unified lead IDs across 14
+  906 unique XHS IDs across 9 columns and 969 unique unified lead IDs across 14
   columns. Every unified row has a research question.
-- A scoped resolver found 0 missing relative links across the canonical note,
-  this report, and the four index entries added or updated for this work.
+- A scoped resolver checked 9 relative links across the canonical note, this
+  report, the LoopX finding, and its index target; 0 were missing. A broader
+  INDEX scan still exposes inherited missing links outside this goal's diff.
 - `git diff --check` exited 0.
 - `bun projects/scout-knowledge-lib.app/scripts/library-health-readonly.ts`
   completed and returned a bounded, truncated packet of 24 inherited facts:
@@ -333,7 +393,7 @@ a comparative capability campaign prevent an efficacy claim.
   required model weights, provider calls, benchmark services, and large GPU
   budgets; those are capability boundaries for reproduction, not blockers to
   source analysis.
-- The 966-row ledger is complete for the bounded encountered frontier, not for
+- The 969-row ledger is complete for the bounded encountered frontier, not for
   every paper that could exist. Each unresolved or deferred row includes the
   evidence that would reopen it.
 - Existing Scout notes were reused for task-order, SkillRise, memory governance,
@@ -349,6 +409,7 @@ validation is recorded above; the exact diff remains reviewable on the local
 goal branch.
 
 ## Supervision
+
 - Goal: Produce a lead-complete, evidence-backed Scout Knowledge Library deep investigation of agent self-evolution and autonomy: treat every potentially useful lead from the human's collections, existing Scout material, primary sources, repositories, citations, discussions, and discovered related work as a research thread; trace, challenge, and compare it; assess its novelty, value, credibility, tradeoffs, and limits; and synthesize careful, actionable conclusions without silently dropping leads or trusting claims at face value.
 - Goal ID: "g_8c56b7d5-efb2-4ad5-b029-3d4752910e83"
 - Worker: "goal-acc95da7db5accd83a5930497b6"

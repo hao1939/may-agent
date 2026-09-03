@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
+summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission; LoopX, Arbor, Hermes, and OpenClaw further show that durable governance, execution runtimes, optimization loops, and self-learning policy are distinct layers."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
 last_updated: "2026-09-01"
-source_basis: "A source-agnostic 966-row lead ledger: 906 observed cards from the human's Xiaohongshu collection, 52 primary paper, repository, benchmark, and survey records, and 8 existing Scout artifacts; full-text paper review; pinned repository inspection; existing Scout reconciliation; and bounded local code checks. Xiaohongshu bodies remained login-bound at this revision, so card titles are discovery metadata rather than technical evidence."
+source_basis: "A source-agnostic 969-row lead ledger: 906 observed cards from the human's Xiaohongshu collection, 55 primary paper, repository, benchmark, and survey records, and 8 existing Scout artifacts; full-text paper review; pinned repository inspection; existing Scout reconciliation; and bounded local code checks. Xiaohongshu bodies remained login-bound at this revision, so card titles are discovery metadata rather than technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -83,7 +83,7 @@ general agent can safely rewrite itself.
 | Evaluator evolution | `J` | meta-judgment or downstream reward | independent anchor catches judge drift | policy–judge collusion |
 | Meta-procedure evolution | proposer/search code in `W` | future candidate quality | transfer of improvement ability | fixed benchmark mistaken for open-endedness |
 
-## Six comparisons that matter in practice
+## Seven comparisons that matter in practice
 
 ### 1. Creation, admission, maintenance, and internalization are separate jobs
 
@@ -203,6 +203,29 @@ training, and co-evolution. Its breadth is also a risk: if every useful feedback
 source is called a world model, the term stops distinguishing prediction from
 memory, tools, and evaluators.
 
+### 7. Control planes, runtimes, and research optimizers are different layers
+
+[LoopX](./findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md)
+is a provider-neutral control plane above agent harnesses. It owns typed goals,
+evidence, gates, actor authority, quotas, claims, recovery, and idempotent
+settlement while another harness performs the model turn. Hermes Agent and
+OpenClaw are integrated assistant runtimes that also contain durable work,
+memory, and skill-learning mechanisms. Arbor is a metric-driven research
+optimizer centered on a coordinator-owned hypothesis tree.
+
+LoopX explicitly adapts Arbor's hypothesis–experiment–held-out loop. Its
+distinct idea is shared typed state and per-role frontier projection without a
+durable leader identity. Four deterministic smokes and its released KNN
+evaluator passed locally, establishing plumbing rather than autonomous research
+quality. Current Hermes Kanban and OpenClaw Task Flow also narrow the novelty of
+durable tasks; LoopX remains strongest when heterogeneous harnesses need one
+auditable evidence and authority contract.
+
+For an already supervised system, copy mechanisms rather than platforms:
+evidence revisions, retry artifacts, protected promotion, policy/authority
+separation, provenance and taint classes, proposal-first skill mutations,
+rollback, and explicit no-op states. Do not add a second canonical supervisor.
+
 ## What the strongest evidence says
 
 ### Bounded skill learning works, but transfer is conditional
@@ -275,6 +298,7 @@ Use four independent scores rather than rewarding a new name:
 | generated/co-evolving evaluators | 4/4 | 4/4 | 1/4 | 1/4 | important frontier, unsafe as sole admission gate |
 | world-model adaptation | 3/4 | 3/4 | 3/4 | 2/4 | strong for planning under shift, not general autonomy |
 | broad-goal autonomous learning | 4/4 | 4/4 | 2/4 | 1/4 | valuable negative result; current reliability is poor |
+| typed cross-harness governance | 4/4 | 4/4 | 3/4 | 2/4 | strong LoopX design; comparative outcome and maturity evidence still missing |
 
 ## A practical governed evolution loop
 
@@ -320,11 +344,14 @@ Practical rules:
 6. **Broad-goal proxy audit:** require an autonomous learner to nominate its
    objective before seeing protected results, then compare terminal selection
    with an immutable base and engineered reference.
+7. **Control-topology comparison:** run Arbor and LoopX on one fixed problem
+   with identical models, budgets, and evaluators; measure useful novelty,
+   duplicate work, recovery, coordination cost, and held-out outcome.
 
 ## Evidence and provenance
 
 The source-agnostic [lead ledger](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 966 records with access, provenance, research question, value, novelty,
+contains 969 records with access, provenance, research question, value, novelty,
 credibility, related work, disposition, and stopping condition. The companion [Xiaohongshu
 resolution ledger](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv)
 preserves all 906 observed stable card IDs. The [evidence report](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md)
@@ -342,4 +369,8 @@ Key primary sources include [AgentGym2](https://arxiv.org/abs/2607.05174),
 [OPID](https://arxiv.org/abs/2606.26790), [AdaJEPA](https://arxiv.org/abs/2606.32026),
 [SkillCoach](https://arxiv.org/abs/2607.01874), [PL-HCL](https://arxiv.org/abs/2607.10534),
 [SEED](https://arxiv.org/abs/2607.14777), [Co-Harness](https://arxiv.org/abs/2607.22688),
-and the [world-proxy survey](https://arxiv.org/abs/2608.02713).
+the [world-proxy survey](https://arxiv.org/abs/2608.02713),
+[Arbor](https://arxiv.org/abs/2606.11926),
+[LoopX](https://github.com/huangruiteng/loopx/tree/ae4887d707e69c19e712c379c4a1ef98b159ae64),
+[Hermes Agent](https://github.com/NousResearch/hermes-agent/tree/562ee8ab76a703b7f524172cae0b1d52f9f94bd3),
+and [OpenClaw](https://github.com/openclaw/openclaw/tree/8a718610bd26ffcffeb04e19641c80e6693731a1).

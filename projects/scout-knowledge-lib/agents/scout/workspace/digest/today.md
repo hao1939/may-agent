@@ -608,6 +608,23 @@
 - **Connections**: Extends Read-Write Attention Inversion (adds third dimension — memory placement), Latent Horizon (#433), Memory Architecture Divergence (#393), Doomed from Start (#455).
 - File: `knowledge/findings/2026-07-08-arxiv-scan-470.md`
 
+## LoopX cross-harness investigation — 2026-09-03
+
+- **Finding:** LoopX's real contribution is not a new agent runtime or a new
+  autonomous-research loop. It is a typed governance plane for goals, evidence,
+  actor authority, quota, recovery, and idempotent settlement across existing
+  harnesses. Its auto-research flow explicitly adapts Arbor; current Hermes
+  Agent and OpenClaw already overlap on durable tasks, goals, memory, and skills.
+- **Direct check:** four deterministic LoopX auto-research smokes passed, and
+  the materialized KNN evaluator returned development `0.958163x` and held-out
+  `1.030135x` with exact correctness. This proves the released plumbing, not
+  autonomous multi-agent improvement.
+- **Scout action:** borrow typed evidence revisions, resumable retry artifacts,
+  held-out promotion, provenance/taint barriers, proposal-first skill learning,
+  and explicit no-op states. Do not duplicate Herdr with wholesale LoopX
+  adoption.
+- File: `knowledge/findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md`
+
 ---
 
 *This file resets when it exceeds ~1,000 lines. Dated archives live alongside it.*
