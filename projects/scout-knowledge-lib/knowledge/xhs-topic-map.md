@@ -5175,22 +5175,10 @@ human, or model evidence. Confidence is high for these deterministic counts and
 low for generalization. Next, seek an accessible actual-consumer or later-reuse
 trace before further scorer tuning.
 
-This documentation-only candidate passes 62 durable links, v1 at 10/14, v2
-at 8/8, and the broad 1,540-document / 1,698-link audit with zero errors. The
-unchanged code tree retains the exact Cycle 252 full gate of 294 tests and
-1,470 assertions.
-
-## Cycle 253 seed-first start — current receipt reused
-
-At `2026-09-03T18:21:52.704Z`, Cycle 237's exact receipt was eighty-five
-minutes old and Cycle 252 had just completed. Accepted body-evolution, review,
-and standing review-fix refs remained `df80a1daa2`, `9f0891cf97`,
-`98926518f0`, and `6045108077`; unaccepted self-evolution remained
-`d041c41b54`. No collection, source-revision, accepted-result, schedule, or
-access trigger had fired. Added/changed identities remain unknown, removals are
-`[]`, and all 132 seeds remain unavailable at the same login-class boundary.
-No browser or public-source request ran. The ranked local title-weight
-sensitivity audit follows.
+The [detailed Cycle 254 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-254-checkpoint--pass-stability-hides-uncertainty-regressions)
+retains its exact validation. The following Cycle 253 section there retains
+the 85-minute receipt age, accepted/unaccepted refs, zero-request boundary,
+seed uncertainty, and why title-weight sensitivity ranked first.
 
 ### Cycle 253 checkpoint — one retrospective interval repairs one error
 
