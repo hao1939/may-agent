@@ -9360,6 +9360,22 @@ added/changed identities remain unknown, removals are `[]`, and all 132 seeds
 remain unavailable. Reviewer and protected fingerprints are unchanged. Begin
 the local single-owner cadence/authority audit.
 
+## Cycle 268 checkpoint — keep the independent Host collector
+
+Host metric measurement and library health both declare six-hour cadence. The
+Host path stores the same-ID note independently but emits no successful sample
+event for Scout to consume. The workflow could read once and record directly,
+as it already does for preamble coverage, but that couples observation to the
+single-task queue and still lacks changed-state and recovery semantics.
+
+No ownership, event, metric, or history migration was made. Same-ID rollback is
+possible, but changing now has no consumer or outcome benefit. GitHub/local code
+won the rubric; no public lane ran. Confidence is high for cadence, authority,
+and rollback evidence, absent for deployment outcome. Next, stop expanding
+telemetry and make a bounded read-only check for newer protected
+`project.knowledge.maintained` evidence of later selection, reuse, or a changed
+human/model decision under RV-004.
+
 ## Cycle 267 seed-first start — local continuity
 
 Exact Cycle 266 result `890b611350` passes syntax, TypeScript, formatting,

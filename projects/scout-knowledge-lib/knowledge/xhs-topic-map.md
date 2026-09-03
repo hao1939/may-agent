@@ -3857,6 +3857,34 @@ Added/changed identities remain unknown, removals are `[]`, and all 132 durable
 seeds remain unavailable at the login-class boundary. Reviewer and protected
 fingerprints remain unchanged. Begin the single-owner cadence/authority audit.
 
+## Cycle 268 checkpoint — retain Host ownership and stop telemetry churn
+
+Both current mechanisms run at a declared six-hour cadence. Host source
+measurement owns the accepted-output read, stores one same-ID snapshot, and
+evaluates the aggregate independently of Scout task execution. It emits only a
+breach or recovery, not a successful-measurement event carrying the note; the
+Scout subscription therefore cannot consume ordinary lane state. Adding such
+an event would be a cross-cutting Host contract and could expose arbitrary
+metric notes beyond this project.
+
+The library-health workflow can record metrics directly—it already records
+preamble coverage—and could reuse one accepted-output sample for its packet.
+Keeping the existing metric ID would preserve history and an ordinary revert
+could restore the source command. But workflow ownership couples observation to
+the App's single-task queue, and the packet still lacks changed-state and
+recovery semantics. Moving ownership before those semantics or a real consumer
+exists would trade independent measurement for unproved behavior.
+
+Retain Host-owned aggregate-plus-note collection. Do not add a typed note event,
+move the state read, or migrate history now. Confidence is high for both
+six-hour definitions, direct-record capability, successful-measurement event
+absence, same-ID rollback, and queue coupling; low for future operational
+preference. No public request ran. Further observability design is now lower
+value than RV-004's missing retained outcome. The next ranked investigation is
+a bounded read-only check for any newer protected `project.knowledge.maintained`
+event that joins a Scout output to a later selection, reuse, or changed human/
+model decision; if absent, return to a non-telemetry library usability gap.
+
 ## Cycle 267 seed-first start — local continuity
 
 Exact Cycle 266 result `890b611350` passes syntax, TypeScript, formatting,
