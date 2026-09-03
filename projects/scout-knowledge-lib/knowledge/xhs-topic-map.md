@@ -4139,6 +4139,12 @@ This compaction does not create the missing outcome; RV-004 stays high/open.
 Next is Cycle 277's 20-line / 1,142-byte reviewer-integration mirror, preserving
 its patch provenance, resolved findings, and outcome limit.
 
+Exact Cycle 295 material `d5de20cf8f` passes the full 296-test /
+1,483-assertion gate, Cycle 292 projection, 76 scoped links, both navigation
+fixtures, 1,540 documents / 1,712 broad links, and health at 30 facts / 16
+wakes. Accepted `ff923ccde4` is contained and unaccepted `d041c41b54` excluded.
+Protected HEAD and both final status fingerprints match the Cycle 295 precheck.
+
 ## Cycle 295 seed-first start — current receipt reused
 
 Cycle 295 began from clean validated `268fbc4653`. The exact tip passed 296

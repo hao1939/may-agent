@@ -9942,6 +9942,16 @@ arXiv, and Reddit made zero requests and retain their evidence and triggers.
 Next, review Cycle 258's 19-line / 1,120-byte historical-target boundary
 without inventing its missing query or contemporaneous index.
 
+Exact material `d5de20cf8f24f7eeefb1539789cc0cc6479f5832` on
+`codex/g-c1b31972-scout-loop` passes syntax, TypeScript, formatting, Cycle 292
+projection, 76 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and
+all 296 tests / 1,483 assertions. The broad audit passes 1,540 documents /
+1,712 links; read-only health at `2026-09-03T23:16:13.110Z` returns 30 facts /
+16 wakes with `truncated:true`. Accepted `ff923ccde4` remains contained and
+unaccepted `d041c41b54` excluded. Protected `/app` remains HEAD
+`386b445c…41fec8`, 914 records / `5b4816ba…2f4`, with combined Scout scope 296
+/ `7e4d0937…26a8a`; those fingerprints match the Cycle 295 precheck.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
