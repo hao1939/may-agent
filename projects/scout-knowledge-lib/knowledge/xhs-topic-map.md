@@ -3851,6 +3851,25 @@ browser or public request. Added/changed identities remain unknown, removals
 are `[]`, and all 132 seeds remain unavailable at the same login-class saved
 boundary. The bounded August-concept subsumption sample now wins the rubric.
 
+### Cycle 235 checkpoint — conceptual overlap is not source equivalence
+
+Seed commit `e661047b5c` preceded a five-entry sample covering every August 24
+index item. The intended durability, memory-confidence, safety-guarantee,
+portable-verdict, and filesystem-projection paths each have zero accepted path
+history; each exact title occurs only in `knowledge/INDEX.md`. Their retained
+summaries name HN or GitHub as a source class but contain no stable source ID,
+repository, revision, or URL. Accepted canonical notes contain broad thematic
+overlap, but no evidence binds that overlap to the indexed source claims.
+
+Result: 0/5 redirects. All five links remain visibly unresolved rather than
+being turned into navigation-only substitutions. This supports the replacement
+criterion recorded in Cycle 234 and contradicts source-free keyword matching.
+Confidence is high for accepted-tree absence and low for unaccepted contents.
+No peer body or public source was read. The next ranked question is whether a
+plain unavailable-entry form can retain title, intended path, summary, and
+replacement trigger while avoiding a false clickable target; test one reversible
+representation before applying it to the other 22 August entries.
+
 ## Cycle 234 seed-first start — fresh receipt reused without quota work
 
 At `2026-09-03T16:24:52.342Z`, the exact [Cycle 233 receipt](./xhs-seed-ledger.md)

@@ -9354,6 +9354,17 @@ had fired. Added/changed identities therefore remain unknown, removals are
 boundary. No browser, saved-post, GitHub, arXiv, or Reddit request preceded
 selection. The bounded August-concept subsumption sample wins the rubric.
 
+## Cycle 235 checkpoint — no source-backed canonical substitute in the sample
+
+Seed commit `e661047b5c` preceded the five-entry August 24 sample. Every target
+has zero accepted path history and every exact title appears only in the index.
+The one-line summaries provide source classes but no stable source identity,
+so thematic matches in canonical notes cannot prove claim/source equivalence.
+No redirect was made (0/5), no unaccepted body was read, and no public request
+occurred. The links remain explicit debt. Next, test one reversible plain-text
+unavailable-entry representation that preserves the intended target and exact
+replacement trigger without offering a known-false click.
+
 ## Cycle 234 seed-first reconciliation — current receipt, zero new requests
 
 At `2026-09-03T16:24:52.342Z`, Cycle 233's exact observational receipt was six
