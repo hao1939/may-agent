@@ -9859,6 +9859,22 @@ compaction, not measured use or outcome proof, so RV-004 remains high/open.
 Next, rescan the remaining map/report mirrors and pursue the largest bounded
 decision duplicate without removing unique provenance or uncertainty.
 
+## Cycle 297 checkpoint — historical proof remains, default copy does not
+
+Seed-first `1d291206d2` preceded the exact-run scan. It ranked an 18-line /
+1,095-byte map/report match (`207688dc…2285`) spanning Cycle 253 validation and
+Cycle 252 seed continuity. Material `d66cb7f686` replaces that map copy with a
+4-line / 379-byte pointer (`8583be65…3600`), removing 14 lines / 716 bytes while
+leaving the exact report block unchanged.
+
+The map still preserves Cycle 253's title-weight crossover decision and links
+its validation; this report retains Cycle 252's receipt age, accepted and
+unaccepted refs, zero-request boundary, seed uncertainty, and ranking rationale.
+No scorer, fixture, source, account, or lane changed, and all public lanes made
+zero requests. This is static retrieval reduction, not RV-004 outcome evidence;
+RV-004 remains high/open. The next scan candidate is Cycle 254's 17-line /
+922-byte pass-stability proof mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
