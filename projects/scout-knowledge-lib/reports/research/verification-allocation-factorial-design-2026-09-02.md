@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 100, including policy-provenance binding 6eab5e9bd76022e0b65aa26d43019e49a8348644."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 101, including descriptor-safe decision-record byte binding 882bee03a86d34c1d58b03bc8c1457ebd230a88f."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1447,6 +1447,50 @@ failure controls, selection, and hashes; low for real policies and provider
 transfer. The next ranked question is to byte-bind the referenced decision
 record itself through the existing descriptor-safe local evidence path, while
 continuing to distinguish integrity from authority and independent validation.
+
+## Cycle 101 decision-record byte binding
+
+Seed reconciliation `bd8463ccc7410bb2b78f8c197d0a7c905021573c`
+preceded this work. The saved profile shell retained its semantic access class,
+login wall, and zero attributable items; only its response length and body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. A local-only check at
+`2026-09-03T01:00:40.647Z` found the six accepted source commits present and
+their standing equivalents contained in the current branch. GitHub, arXiv, and
+Reddit made zero public requests.
+
+Exact local `882bee03a86d34c1d58b03bc8c1457ebd230a88f` closes the gap
+between a manifest claim and the bytes it names. The frontier CLI now requires
+one explicit absolute evidence root with the policy and manifest. It pins that
+root and every nested directory with file descriptors, rejects traversal,
+relative or symbolic-link roots, linked directories and files, non-regular
+files, and byte mismatches, and reads and hashes the final file through the
+same descriptor. A mismatch clears the selected frontier point and fails
+closed. The shared primitive also replaces the duplicate no-follow reader in
+the existing execution-freeze bundle.
+
+The full 193-row control byte-bound the 1,022-byte local decision record at
+SHA-256 `346915ecdda9e8c2e946abdaa174d3e2da4ed1692657d90fdbbe76f39701e996`.
+Its 0.0006 reserve policy hash is
+`3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`;
+the expanded manifest hash is
+`23a5cba4130aa5df098e71e2dc4d759404db85e83d4fbc8320105cf42cd165ae`.
+Only after that byte match did the selector return equal 172 sampling at 1,032
+blocks and 33,024 episodes. Established row and result hashes remain
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`
+and `383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Focused validation passes 22 tests and 51 assertions, TypeScript, formatting,
+whitespace, and the exhaustive run.
+
+This proves one local file matched its declared hash for one descriptor-safe
+read. It does not prove authorship, authority, independence, timestamp
+validity, real drift, operating cost, provider behavior, or substantive
+correctness. The record content is not yet structurally cross-checked against
+the manifest fields it is meant to support. Confidence is high for the local
+integrity and failure controls and low for every external or substantive
+interpretation. The next ranked question is to require the record's embedded
+policy, owner, revision, time, and evidence status to match the manifest before
+selection, without promoting that consistency check into authentication.
 
 ## Go/no-go boundary
 
