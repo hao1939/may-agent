@@ -9421,6 +9421,63 @@ this reconciliation before the bounded accepted-ref and retained-outcome
 checks; if neither changed, keep all public lanes at zero requests until the
 scheduled XHS observation at `2026-09-03T22:57:11.030Z`.
 
+## Cycle 280 checkpoint — no retained outcome or accepted-ref advance
+
+Seed commit `f5f425d8be450661e4789bfaa94ee56032458efe` precedes every
+post-seed operation. The first query-only projection named nonexistent column
+`created_at` and returned `SQLiteError: no such column: created_at`; a
+read-only schema inspection identified canonical `event_type`, `data`, and
+`timestamp` columns. The corrected bounded read from
+`2026-09-03T21:39:21.255Z` through `21:39:21.297Z` ran under UID 1000 against
+`/app/.state/may.db` with SQLite `readonly:true`, `strict:true`, and
+`PRAGMA query_only=1`.
+
+The protected store retains 15,570 rows, 425 fewer than Cycle 276's 15,995,
+but still ends at event ID `6317660` / `2026-08-31T15:24:13.597Z`. It has zero
+rows after that ID, zero exact `project.knowledge.maintained` events, and the
+same two evaluator-request payload mentions. The contraction is consistent
+with the already documented pruning mechanism, but exact removed rows and
+causality remain unknown. Most importantly, it adds no lookup query, selected
+identity, route, later decision, or outcome. Do not change retention or Scout
+telemetry merely to preserve more records that lack that join; `RV-004`
+remains high/open.
+
+The reviewer ref check through `21:39:21.305Z` returns unchanged
+`6c806ade5accd5fca81ba1b6800b5c831dde852c`, already contained on standing.
+Unaccepted `d041c41b54` remains a non-ancestor. Permanent lanes were therefore
+reconsidered but made zero public requests:
+
+- **GitHub is retained and deferred.** Relevance remains high and incremental
+  value low without a revision. Last useful public evidence remains the exact
+  September 2 heads for `beining1008/cross-episode-memory-client`
+  (`4c0dabd6…9c641`), `arquicanedo/self-reflective-apis`
+  (`567b6a0e…2225e`), `wallidsaydi-creator/HOM-AIMOS`
+  (`2b93af11…8d9e7`), and `sattyamjjain/mnemo`
+  (`2994abf1…2f20`); exact local `ce249e6…46c12c` remains the last useful code
+  evidence. Revisit on a changed head, artifact, independent/deployment
+  result, or readable seed.
+- **arXiv is retained and deferred.** `2608.30177v1` remains the 15/15
+  memory-governance anchor and `2608.25553v3` the 14/15 allocation basis.
+  Revisit on a version, attributable artifact, replication, or readable seed;
+  another unchanged exact-ID request has no decision value.
+- **Reddit is retained and deferred without quota work.** Last useful evidence
+  remains RSS item `t3_1v8a3sh` with six comments and the JSON HTTP-403
+  boundary. Revisit on a seed-linked thread, post/comment delta, access change,
+  or a material claim requiring primary-source comparison.
+
+The exact candidate passes syntax, TypeScript, formatting, Cycle 237
+projection, navigation v1 at 11/14, navigation v2 at 8/8, 70 scoped links, and
+296 tests / 1,483 assertions. The broad audit passes 1,540 tracked Markdown
+documents / 1,706 links. Read-only health at `2026-09-03T21:42:11.486Z`
+returns 30 facts, 16 wakes, and `truncated:true`.
+
+The complete ranked queue now has concrete boundaries: no retained outcome,
+no accepted-review advance, no source-lane trigger, no scheduled XHS trigger
+before `2026-09-03T22:57:11.030Z`, and no consumer that would turn more local
+telemetry or narration into outcome evidence. The next exploration is exactly
+that scheduled observational XHS pass unless a retained route-to-decision
+outcome, accepted review, or recorded lane trigger arrives first.
+
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
 Reviewer source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` is the parent of

@@ -3904,6 +3904,31 @@ Reddit retain their recorded heads, versions, RSS/JSON boundary, and
 change-bearing triggers. Commit this seed record before checking accepted refs
 or the ranked retained-outcome boundary; do not make an early public request.
 
+## Cycle 280 checkpoint — retained history still ends before an outcome
+
+Seed commit `f5f425d8be450661e4789bfaa94ee56032458efe` preceded the ranked
+check. From `2026-09-03T21:39:21.255Z` through `21:39:21.305Z`, UID 1000
+opened `/app/.state/may.db` read-only with `PRAGMA query_only=1`. The store has
+15,570 retained rows, down 425 from Cycle 276's 15,995, but the maximum remains
+ID `6317660` at `2026-08-31T15:24:13.597Z`: there are zero later rows, zero
+exact `project.knowledge.maintained` events, and the same two payload mentions.
+This is direct mutable-retention evidence, not a later selection or outcome;
+`RV-004` remains high/open.
+
+The accepted reviewer ref remains exact integrated result `6c806ade5a` and is
+contained. GitHub is still high-relevance/low-incremental-value at the four
+named September 2 heads; arXiv retains `2608.30177v1` at 15/15 and
+`2608.25553v3` at 14/15; Reddit retains RSS item `t3_1v8a3sh` with six comments
+and the JSON-403 boundary. All three made zero requests because no revision,
+version, thread, access, seed-linked, deployment, or accepted-result trigger
+fired. Revisit on those exact changes, a retained route-to-decision outcome,
+or the scheduled XHS observation at `2026-09-03T22:57:11.030Z`; another local
+telemetry or narration change cannot supply the missing join.
+
+The exact candidate passes the full 296-test / 1,483-assertion gate, 70 scoped
+and 1,706 broad links, both navigation fixtures, and read-only health at 30
+facts / 16 wakes. Protected source and Scout-scope fingerprints remain exact.
+
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
 Standing source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` has direct-child
