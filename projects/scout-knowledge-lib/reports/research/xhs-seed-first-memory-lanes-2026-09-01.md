@@ -9360,6 +9360,35 @@ Classifying the 67 unresolved `knowledge/INDEX.md` links remains highest-ranked.
 Registry and all three public lanes retain their recorded change-bearing
 triggers without a request.
 
+## Cycle 227 checkpoint — the broken index is owner state, not generated output
+
+Seed commit `0812049dcc` preceded the read-only ownership audit. The index
+declares itself Scout's maintained entry point, the library README says to
+maintain it, and the layout contract calls it the exhaustive map. No index
+generator exists in the Scout app, library, or shared scripts.
+
+All 67 unresolved occurrences—65 findings and two reports—were introduced
+together by accepted standing commit `9a5c3f9393`, whose message and body label
+it a mechanical snapshot of existing owner content. That commit changed 296
+files and changed the index by +175/-68 lines. None of the 67 exact targets is
+present in the standing tree, protected checkout, protected HEAD, accepted
+predecessor `a25c0fe2`, unaccepted `d041c41b54`, or any path history reachable
+from local refs. Git therefore cannot restore their missing bodies.
+
+This supports treating the titles and summaries as residual owner evidence,
+not as a generated list safe to regenerate or delete. It contradicts both a
+whole-library fail-closed gate and automatic removal: the first would block on
+known debt, while the second would erase the only retained navigation intent.
+A 67-entry allowlist would merely encode that debt and permit no principled
+replacement. Confidence is high for local ownership and provenance, and low
+for whether the absent notes were intentionally omitted, lost before the
+snapshot, or superseded elsewhere. Only path/ref metadata—not peer content—was
+inspected. GitHub, arXiv, and Reddit made zero public requests.
+
+The next ranked question narrows to the two missing library-operations reports:
+search accepted local evidence for an authoritative replacement or explicit
+supersession before changing those high-level navigation entries.
+
 ## Cycle 226 seed-first reconciliation — one-byte response reversal
 
 The exact bounded observation, reconciliation, authority boundary, and byte
