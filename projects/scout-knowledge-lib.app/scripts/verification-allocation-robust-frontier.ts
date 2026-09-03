@@ -10,6 +10,7 @@ import {
   parseIdentityRobustSnapshotFrontierCliInput,
 } from "./verification-allocation-frontier-cli";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
+import { withIdentityRobustFrontierOutputSchema } from "./verification-allocation-frontier-output";
 import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
 import {
   createIdentityRobustFrontierSnapshot,
@@ -313,7 +314,7 @@ if (!snapshotVerification.ok) {
 }
 process.stdout.write(
   `${JSON.stringify(
-    {
+    withIdentityRobustFrontierOutputSchema({
       rowCount: rows.length,
       rowSha256,
       resultSha256,
@@ -332,7 +333,7 @@ process.stdout.write(
       frontierSnapshot,
       freezeVerification: frozenSelection?.freezeVerification ?? null,
       selection,
-    },
+    }),
     null,
     2,
   )}\n`,
