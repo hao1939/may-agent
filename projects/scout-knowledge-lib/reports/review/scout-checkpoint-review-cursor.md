@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing Cycle 250 implementation 3b0a2d2b6d33a367f0a107ab34383cfdf44736a0: status-only navigation gains and complete comparison tiers are accepted with limits; diagnostics now carry an explicit nested schema without changing decisions; RV-004 and control replay remain open; and two reviewer corrections await integration."
+summary: "Independent Scout review cursor through standing Cycle 250 implementation 3b0a2d2b6d33a367f0a107ab34383cfdf44736a0: status-only navigation gains and complete comparison tiers are accepted with limits; diagnostics now carry an explicit nested schema without changing decisions; the v2 gate and miss-count corrections are integrated; and RV-004 plus control replay remain open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "RV-004", "RV-006", "RV-007", "RV-008", "RV-009"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through 3b0a2d2b6d33a367f0a107ab34383cfdf44736a0; independently reproduced current and historical navigation outcomes, 202 token perturbations, score margins, comparison tiers and schema, fixture lineage, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
@@ -26,8 +26,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   Evidence remains producer-authored and does not justify a threshold or broad
   behavior claim. Cycle 249's comparison tiers and Cycle 250's nested schema
   safely resolve diagnostic-shape limitations without changing selection.
-  Reviewer fixes for the missing v2 gate and one incorrect miss-count statement
-  remain pending integration.
+  The missing v2 gate and incorrect miss-count statement are resolved on
+  standing with patch-equivalent reviewer changes and a passing full gate.
 
 ## Exact scope and ordering
 
@@ -190,8 +190,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction remains on standing. | **Resolved.** |
 | `RV-004` | High | `37430cf4..3b0a2d2b`, especially duplicated logs and verifier work | 561 commits, 66 files, +32,476/-515 lines, and 184 cycles now yield nine exact status gains, zero broken links, a rejected bad threshold, and versioned neutral diagnostics. There is still no protected evaluator, human/model outcome, later reuse measure, current provider result, authority-bearing policy, or changed user decision. | **Revise; open.** Credit retrieval progress and policy rejection; require protected or later-reuse evidence before broader promotion. |
 | `RV-005` | Medium | Seed projection | Exact Cycle 237 projection remains current and passes. | **Resolved.** |
-| `RV-006` | Medium | `package.json` at `3b0a2d2b6d` | Standing reports v2 8/8 but full `check` runs only v1, allowing silent v2 regression. | **Revise; locally fixed.** Reviewer `22d6fed15d` gates both fixtures; pending standing integration and current-tip validation. |
-| `RV-007` | Low | Cycle 245 result in topic map and lane report | Of 22 cases, only v2 reef is an actual miss; v1's expected miss is still an ambiguity. “Both true misses” overstates behavior. | **Revise; locally fixed.** Reviewer wording preserves the exact limitation; pending integration. |
+| `RV-006` | Medium | `package.json` at `3b0a2d2b6d` | Standing reported v2 8/8 while full `check` ran only v1, allowing silent v2 regression. | **Resolved.** Reviewer `22d6fed15d` / replay `4f6de66f7b` is standing `98926518f0`; both fixtures now run in the full gate. |
+| `RV-007` | Low | Cycle 245 result in topic map and lane report | Of 22 cases, only v2 reef is an actual miss; v1's expected miss is still an ambiguity. “Both true misses” overstated behavior. | **Resolved.** Reviewer `4087a81a8b` is standing `6045108077`; both durable statements now preserve the exact limitation. |
 | `RV-008` | Medium | Cycle 244 matched caller-control evidence | Exact full query input is absent, and the stated replacement does not uniquely reproduce the recorded scores. A future threshold could be tuned against unreplayable evidence. | **Revise; open.** Persist exact control queries and expected outputs before using them for selection or policy; do not infer the missing input. |
 | `RV-009` | Low | Cycle 247 singular `runner_up` diagnostic | Equal-score second-place identities can change representative while the comparison tier is unchanged. | **Resolved by standing.** Cycle 249 `499fbb85cc` reports the full score tier, and Cycle 250 `3b0a2d2b6d` versions its diagnostic shape; focused tests pass. |
 
@@ -205,13 +205,18 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   closed its stale integration status and remains an ancestor of this cursor.
 - Reviewer source:
   `3b0a2d2b6d33a367f0a107ab34383cfdf44736a0`.
-- Reviewer gate result:
-  `22d6fed15d807f69f90710abe31b130115e1384a`, a replay of earlier reviewer
-  `7d44062a44b28411886492dc93a9acf620502c69` on the current source.
-- Integrate `22d6fed15d807f69f90710abe31b130115e1384a` and the directly following
-  cursor/wording commit from `codex/g-8c5b597e-cycle250-review`. Rollback is an
-  ordinary revert of those two commits. Neither is landed until standing has
-  the exact or patch-equivalent changes and the current-tip full gate passes.
+- Reviewer gate result `22d6fed15d807f69f90710abe31b130115e1384a`
+  was replayed as `4f6de66f7bcbd89831b38f69642a5a75f0f35c2d` and integrated as standing
+  `98926518f0168894c3aebe07ce3277a4f5b6d9da`; all three share stable patch ID
+  `816b747af01e744d789efa6eb44df8720108d19d`.
+- Reviewer cursor/wording `4087a81a8b9437544caf398a87a44d5defa251b1`
+  was integrated as standing
+  `60451080772facb1fe1f5f10f279ea981ffcadd9`; both share stable patch ID
+  `fb5fe6f7b665e6b0823ac26b37ec42ddac2548fe`.
+- Exact standing integration tip `6045108077` passes syntax, TypeScript,
+  formatting, Cycle 237 projection, 62 durable links, v1 at 10/14, v2 at 8/8,
+  and 293 tests with 1,467 assertions. Rollback remains ordinary reverts of the
+  two standing integration commits.
 - Earlier accepted projection and review changes remain integrated as standing
   `d35632c2b1` and `8ab0a89cd0`; Cycle 231 cursor `86788ca48c` is reconciled as
   standing `e420498c47`. Reviewer `7628faf755`, `f3ddc3ab36`, `b4c98626c3`,
@@ -220,10 +225,9 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 ## Next trigger
 
-Review Cycle 250's result report only after a clean standing checkpoint exists.
-Also trigger on integration or rejection of RV-006/RV-007, an exact-input
-disposition for RV-008, a concrete RV-004 outcome, or any other material
-standing commit. If none arrives, the next periodic audit is no earlier than
+Review the clean Cycle 251 result checkpoint, an exact-input disposition for
+RV-008, a concrete RV-004 outcome, or any other material standing commit. If
+none arrives, the next periodic audit is no earlier than
 `2026-09-04T18:05:25Z`. Do not poll unchanged state. This standing reviewer
 goal remains active.
 
