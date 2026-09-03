@@ -74,6 +74,7 @@ describe("verification-allocation execution freeze", () => {
     const result = verifyExecutionFreezeManifest({}, {});
 
     expect(result.ok).toBe(false);
+    expect(result.policyScope).toBeNull();
     expect(result.providerCallsAuthorized).toBe(false);
     expect(result.errors).toContain("manifest schema changed");
     expect(result.errors).toContain("models must not be empty");
@@ -84,8 +85,9 @@ describe("verification-allocation execution freeze", () => {
 
   it("accepts a byte-bound offline fixture without authorizing provider calls", () => {
     const { manifest, artifactContents } = validFixture();
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
 
-    expect(verifyExecutionFreezeManifest(manifest, artifactContents)).toEqual({
+    expect(result).toMatchObject({
       ok: true,
       errors: [],
       artifactCount: 6,
@@ -94,6 +96,54 @@ describe("verification-allocation execution freeze", () => {
       episodeCount: 64,
       providerCallsAuthorized: false,
     });
+    expect(result.policyScope).toMatchObject({
+      schema: "scout.verification-allocation-freeze-policy-scope/v1",
+    });
+    expect(result.policyScope?.protocolReference).toMatch(
+      /^freeze-protocol-sha256:[0-9a-f]{64}$/,
+    );
+    expect(result.policyScope?.modelScopeReference).toMatch(
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
+    );
+  });
+
+  it("derives stable and factor-specific policy scope references", () => {
+    const { manifest, artifactContents } = validFixture();
+    const first = verifyExecutionFreezeManifest(manifest, artifactContents);
+    const repeated = verifyExecutionFreezeManifest(manifest, artifactContents);
+    expect(repeated.policyScope).toEqual(first.policyScope);
+
+    artifactContents["model-resolution.json"] = "changed model evidence";
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "model-resolution.json",
+    )!.sha256 = freezeArtifactSha256(artifactContents["model-resolution.json"]);
+    const changedModel = verifyExecutionFreezeManifest(
+      manifest,
+      artifactContents,
+    );
+    expect(changedModel.ok).toBe(true);
+    expect(changedModel.policyScope?.protocolReference).toBe(
+      first.policyScope?.protocolReference,
+    );
+    expect(changedModel.policyScope?.modelScopeReference).not.toBe(
+      first.policyScope?.modelScopeReference,
+    );
+
+    artifactContents["seed-policy.md"] = "changed seed policy evidence";
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "seed-policy.md",
+    )!.sha256 = freezeArtifactSha256(artifactContents["seed-policy.md"]);
+    const changedProtocol = verifyExecutionFreezeManifest(
+      manifest,
+      artifactContents,
+    );
+    expect(changedProtocol.ok).toBe(true);
+    expect(changedProtocol.policyScope?.protocolReference).not.toBe(
+      changedModel.policyScope?.protocolReference,
+    );
+    expect(changedProtocol.policyScope?.modelScopeReference).toBe(
+      changedModel.policyScope?.modelScopeReference,
+    );
   });
 
   it("rejects result-bearing or provider-authorized manifests", () => {

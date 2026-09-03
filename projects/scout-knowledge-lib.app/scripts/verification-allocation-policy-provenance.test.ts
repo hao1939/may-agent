@@ -23,9 +23,14 @@ const policyEvidenceApplicability = {
   schema: "scout.verification-allocation-policy-applicability/v1",
   evidenceKind: "uniform-marginal-drift-reserve",
   evidenceUnit: "probability-per-model",
-  protocolReference: "design:fixture-factorial-v1",
-  modelScopeReference: "model-set:fixture-six",
+  protocolReference: `freeze-protocol-sha256:${"a".repeat(64)}`,
+  modelScopeReference: `freeze-model-scope-sha256:${"b".repeat(64)}`,
   applicabilityStatus: "protocol-matched-unverified",
+} as const;
+const verifiedPolicyScope = {
+  schema: "scout.verification-allocation-freeze-policy-scope/v1",
+  protocolReference: policyEvidenceApplicability.protocolReference,
+  modelScopeReference: policyEvidenceApplicability.modelScopeReference,
 } as const;
 const decisionRecordObject = {
   schema: "scout.verification-allocation-policy-decision/v2",
@@ -71,6 +76,7 @@ describe("identity-robust policy provenance", () => {
       evidenceReference,
       policy,
       base,
+      verifiedPolicyScope,
     );
     expect(result).toMatchObject({
       ok: true,
@@ -93,6 +99,7 @@ describe("identity-robust policy provenance", () => {
           evidenceReference,
           policy,
           candidate,
+          verifiedPolicyScope,
         ),
       ).toMatchObject({
         ok: false,
@@ -113,6 +120,7 @@ describe("identity-robust policy provenance", () => {
           independentEvidenceStatus: "provided-unverified",
           independentEvidenceReference: "review:fixture",
         },
+        verifiedPolicyScope,
       ),
     ).toMatchObject({ ok: true, evidenceStatus: "caller-supplied-unverified" });
     expect(
@@ -124,6 +132,7 @@ describe("identity-robust policy provenance", () => {
           ...base,
           independentEvidenceStatus: "provided-unverified",
         },
+        verifiedPolicyScope,
       ),
     ).toMatchObject({ ok: false });
     expect(
@@ -135,6 +144,7 @@ describe("identity-robust policy provenance", () => {
           ...base,
           independentEvidenceReference: "review:contradicts-none-status",
         },
+        verifiedPolicyScope,
       ),
     ).toMatchObject({ ok: false });
   });
@@ -159,6 +169,13 @@ describe("identity-robust policy provenance", () => {
           evidenceUnit: "memory-ids",
         },
       },
+      {
+        ...base,
+        policyEvidenceApplicability: {
+          ...policyEvidenceApplicability,
+          protocolReference: "design:free-text-is-not-byte-bound",
+        },
+      },
     ]) {
       expect(
         bindIdentityRobustPolicyEvidence(
@@ -166,6 +183,7 @@ describe("identity-robust policy provenance", () => {
           evidenceReference,
           policy,
           candidate,
+          verifiedPolicyScope,
         ),
       ).toMatchObject({
         ok: false,
@@ -189,11 +207,30 @@ describe("identity-robust policy provenance", () => {
             applicabilityStatus: "not-established",
           },
         },
+        verifiedPolicyScope,
       ),
     ).toMatchObject({
       ok: false,
       errors: [
         "policy evidence applicability is not established for this protocol and model scope",
+      ],
+    });
+
+    expect(
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        base,
+        {
+          ...verifiedPolicyScope,
+          modelScopeReference: `freeze-model-scope-sha256:${"c".repeat(64)}`,
+        },
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: [
+        "a matching verified freeze policy scope is required for applicability",
       ],
     });
   });
@@ -211,6 +248,7 @@ describe("identity-robust policy provenance", () => {
         policy,
         base,
         root,
+        verifiedPolicyScope,
       ),
     ).toMatchObject({
       ok: true,
@@ -230,6 +268,7 @@ describe("identity-robust policy provenance", () => {
         policy,
         base,
         root,
+        verifiedPolicyScope,
       ),
     ).toMatchObject({
       ok: false,
@@ -284,6 +323,7 @@ describe("identity-robust policy provenance", () => {
           policy,
           contradictoryManifest,
           root,
+          verifiedPolicyScope,
         ),
       ).toMatchObject({
         ok: false,

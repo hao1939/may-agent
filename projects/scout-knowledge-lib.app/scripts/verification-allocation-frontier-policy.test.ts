@@ -48,16 +48,16 @@ function manifest(policy: IdentityRobustFrontierPolicy) {
           schema: "scout.verification-allocation-policy-applicability/v1",
           evidenceKind: "uniform-marginal-drift-reserve",
           evidenceUnit: "probability-per-model",
-          protocolReference: "design:fixture-factorial-v1",
-          modelScopeReference: "model-set:fixture-six",
+          protocolReference: `freeze-protocol-sha256:${"a".repeat(64)}`,
+          modelScopeReference: `freeze-model-scope-sha256:${"b".repeat(64)}`,
           applicabilityStatus: "protocol-matched-unverified",
         }
       : {
           schema: "scout.verification-allocation-policy-applicability/v1",
           evidenceKind: "complete-factorial-episode-ceiling",
           evidenceUnit: "complete-factorial-episodes",
-          protocolReference: "design:fixture-factorial-v1",
-          modelScopeReference: "model-set:fixture-six",
+          protocolReference: `freeze-protocol-sha256:${"a".repeat(64)}`,
+          modelScopeReference: `freeze-model-scope-sha256:${"b".repeat(64)}`,
           applicabilityStatus: "protocol-matched-unverified",
         };
   const decisionRecord = `${JSON.stringify({
@@ -74,6 +74,11 @@ function manifest(policy: IdentityRobustFrontierPolicy) {
   })}\n`;
   return {
     decisionRecord,
+    policyScope: {
+      schema: "scout.verification-allocation-freeze-policy-scope/v1",
+      protocolReference: policyEvidenceApplicability.protocolReference,
+      modelScopeReference: policyEvidenceApplicability.modelScopeReference,
+    },
     value: {
       schema: "scout.verification-allocation-policy-evidence/v2",
       evidenceClass: "caller-supplied-policy-provenance",
@@ -164,10 +169,12 @@ describe("identity-robust allocation frontier policy", () => {
       minimumUniformDriftReserve: 0.0006,
       evidenceReference: "decision-record:fixture-reserve",
     };
+    const fixture = manifest(policy);
     const result = selectIdentityRobustFrontierPoint(
       frontier,
       policy,
-      manifest(policy).value,
+      fixture.value,
+      fixture.policyScope,
     );
     expect(result).toMatchObject({
       ok: true,
@@ -187,11 +194,13 @@ describe("identity-robust allocation frontier policy", () => {
       maximumEpisodeCount: 33_024,
       evidenceReference: "decision-record:fixture-budget",
     };
+    const fixture = manifest(policy);
     expect(
       selectIdentityRobustFrontierPoint(
         frontier,
         policy,
-        manifest(policy).value,
+        fixture.value,
+        fixture.policyScope,
       ),
     ).toMatchObject({
       ok: true,
@@ -209,11 +218,13 @@ describe("identity-robust allocation frontier policy", () => {
       minimumUniformDriftReserve: 0.05,
       evidenceReference: "decision-record:fixture-unattainable",
     };
+    const fixture = manifest(policy);
     expect(
       selectIdentityRobustFrontierPoint(
         frontier,
         policy,
-        manifest(policy).value,
+        fixture.value,
+        fixture.policyScope,
       ),
     ).toMatchObject({
       ok: false,
@@ -246,6 +257,7 @@ describe("identity-robust allocation frontier policy", () => {
         policy,
         fixture.value,
         root,
+        fixture.policyScope,
       ),
     ).toMatchObject({
       ok: true,
@@ -264,6 +276,7 @@ describe("identity-robust allocation frontier policy", () => {
         policy,
         fixture.value,
         root,
+        fixture.policyScope,
       ),
     ).toMatchObject({
       ok: false,
@@ -292,6 +305,7 @@ describe("identity-robust allocation frontier policy", () => {
             .digest("hex"),
         },
         root,
+        fixture.policyScope,
       ),
     ).toMatchObject({
       ok: false,

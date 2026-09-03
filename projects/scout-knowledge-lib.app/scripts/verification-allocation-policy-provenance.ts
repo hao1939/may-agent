@@ -38,6 +38,12 @@ export type IdentityRobustPolicyEvidenceBinding = {
   scopeLimit: string;
 };
 
+export type IdentityRobustVerifiedPolicyScope = {
+  schema: "scout.verification-allocation-freeze-policy-scope/v1";
+  protocolReference: string;
+  modelScopeReference: string;
+};
+
 export type IdentityRobustLocalPolicyEvidenceBinding =
   IdentityRobustPolicyEvidenceBinding & {
     decisionRecordSha256: string;
@@ -106,6 +112,16 @@ function applicabilityMatches(
 ): candidate is IdentityRobustPolicyEvidenceApplicability {
   if (!record(candidate)) return false;
   const expected = expectedApplicability(expectedPolicyCandidate);
+  const establishedReferencesMatch =
+    candidate.applicabilityStatus !== "protocol-matched-unverified" ||
+    (typeof candidate.protocolReference === "string" &&
+      /^freeze-protocol-sha256:[0-9a-f]{64}$/.test(
+        candidate.protocolReference,
+      ) &&
+      typeof candidate.modelScopeReference === "string" &&
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/.test(
+        candidate.modelScopeReference,
+      ));
   return (
     Boolean(expected) &&
     JSON.stringify(Object.keys(candidate).sort()) ===
@@ -125,8 +141,26 @@ function applicabilityMatches(
     candidate.evidenceUnit === expected!.evidenceUnit &&
     nonempty(candidate.protocolReference) &&
     nonempty(candidate.modelScopeReference) &&
+    establishedReferencesMatch &&
     (candidate.applicabilityStatus === "protocol-matched-unverified" ||
       candidate.applicabilityStatus === "not-established")
+  );
+}
+
+function verifiedPolicyScopeMatches(
+  candidate: unknown,
+  applicability: IdentityRobustPolicyEvidenceApplicability,
+): candidate is IdentityRobustVerifiedPolicyScope {
+  return (
+    record(candidate) &&
+    JSON.stringify(Object.keys(candidate).sort()) ===
+      JSON.stringify(
+        ["schema", "protocolReference", "modelScopeReference"].sort(),
+      ) &&
+    candidate.schema ===
+      "scout.verification-allocation-freeze-policy-scope/v1" &&
+    candidate.protocolReference === applicability.protocolReference &&
+    candidate.modelScopeReference === applicability.modelScopeReference
   );
 }
 
@@ -179,9 +213,10 @@ export function bindIdentityRobustPolicyEvidence(
   expectedEvidenceReference: string,
   expectedPolicyCandidate: unknown,
   candidate: unknown,
+  verifiedPolicyScopeCandidate: unknown = null,
 ): IdentityRobustPolicyEvidenceBinding {
   const scopeLimit =
-    "The manifest binds caller-supplied provenance and applicability fields to an exact policy hash. Protocol and model-scope matching remain caller-supplied and unverified; this does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
+    "The manifest binds caller-supplied provenance and applicability fields to an exact policy hash and matching verified-freeze scope identifiers. The scope result remains caller-supplied to this function and is not reverified here; this does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
   const independentEvidenceStatus = record(candidate)
     ? candidate.independentEvidenceStatus
     : undefined;
@@ -250,6 +285,22 @@ export function bindIdentityRobustPolicyEvidence(
       scopeLimit,
     };
   }
+  if (
+    !verifiedPolicyScopeMatches(
+      verifiedPolicyScopeCandidate,
+      candidate.policyEvidenceApplicability,
+    )
+  ) {
+    return {
+      ok: false,
+      manifestSha256: "",
+      evidenceStatus: "",
+      errors: [
+        "a matching verified freeze policy scope is required for applicability",
+      ],
+      scopeLimit,
+    };
+  }
   return {
     ok: true,
     manifestSha256: createHash("sha256")
@@ -267,12 +318,14 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
   expectedPolicyCandidate: unknown,
   candidate: unknown,
   evidenceRoot: string,
+  verifiedPolicyScopeCandidate: unknown = null,
 ): Promise<IdentityRobustLocalPolicyEvidenceBinding> {
   const structural = bindIdentityRobustPolicyEvidence(
     expectedPolicySha256,
     expectedEvidenceReference,
     expectedPolicyCandidate,
     candidate,
+    verifiedPolicyScopeCandidate,
   );
   if (!structural.ok) {
     return {
@@ -349,6 +402,6 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
     decisionRecordContentStatus: "local-content-match-unverified",
     scopeLimit:
-      "The manifest, one descriptor-safe local byte read, and the record's policy, provenance, and declared applicability content agree. This proves local consistency for that read; protocol and model-scope matching remain caller-supplied and unverified, and no authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+      "The manifest, one descriptor-safe local byte read, the record's content, and caller-supplied verified-freeze scope identifiers agree. This proves local consistency for those inputs; this function does not reverify the freeze bundle, and no authorship, authority, independence, timestamp validity, or substantive correctness is established.",
   };
 }

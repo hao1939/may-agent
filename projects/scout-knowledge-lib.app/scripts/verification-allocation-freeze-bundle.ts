@@ -26,6 +26,7 @@ function failed(errors: string[]): FreezeVerificationResult {
     modelCount: 0,
     seedCount: 0,
     episodeCount: 0,
+    policyScope: null,
     providerCallsAuthorized: false,
   };
 }

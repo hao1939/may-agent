@@ -95,8 +95,9 @@ afterEach(async () => {
 describe("verification-allocation freeze bundle", () => {
   it("loads an explicit byte-bound directory without provider authority", async () => {
     const { root } = await fixture();
+    const result = await verifyExecutionFreezeBundle(root);
 
-    expect(await verifyExecutionFreezeBundle(root)).toEqual({
+    expect(result).toMatchObject({
       ok: true,
       errors: [],
       artifactCount: 6,
@@ -105,6 +106,12 @@ describe("verification-allocation freeze bundle", () => {
       episodeCount: 64,
       providerCallsAuthorized: false,
     });
+    expect(result.policyScope?.protocolReference).toMatch(
+      /^freeze-protocol-sha256:[0-9a-f]{64}$/,
+    );
+    expect(result.policyScope?.modelScopeReference).toMatch(
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
+    );
   });
 
   it("rejects an implicit relative root", async () => {
@@ -115,6 +122,7 @@ describe("verification-allocation freeze bundle", () => {
       modelCount: 0,
       seedCount: 0,
       episodeCount: 0,
+      policyScope: null,
       providerCallsAuthorized: false,
     });
   });

@@ -60,7 +60,14 @@ export type FreezeVerificationResult = {
   modelCount: number;
   seedCount: number;
   episodeCount: number;
+  policyScope: FreezePolicyScope | null;
   providerCallsAuthorized: false;
+};
+
+export type FreezePolicyScope = {
+  schema: "scout.verification-allocation-freeze-policy-scope/v1";
+  protocolReference: string;
+  modelScopeReference: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -93,6 +100,48 @@ function uniqueStrings(values: string[]): boolean {
 
 export function freezeArtifactSha256(value: ArtifactBytes): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function derivePolicyScope(
+  manifest: FreezeManifest,
+  artifacts: Map<string, FreezeArtifact>,
+  resolvedModelIds: string[],
+  seedIds: string[],
+  episodeCount: number,
+): FreezePolicyScope {
+  const protocolSha256 = freezeArtifactSha256(
+    JSON.stringify({
+      schema: "scout.verification-allocation-protocol-scope/v1",
+      scheduleSchema: manifest.schedule.schema,
+      cellsPerModelSeed: manifest.schedule.cellsPerModelSeed,
+      seedPolicyNamespace: manifest.seedPolicy.namespace,
+      seedPolicyAlgorithm: manifest.seedPolicy.algorithm,
+      seedPolicySha256: artifacts.get(manifest.seedPolicy.policyArtifact)!
+        .sha256,
+      seedIds,
+      episodeCount,
+      scheduleSha256: manifest.schedule.sha256,
+    }),
+  );
+  const modelScopeSha256 = freezeArtifactSha256(
+    JSON.stringify({
+      schema: "scout.verification-allocation-model-scope/v1",
+      models: manifest.models.map((model) => ({
+        requestedId: model.requestedId,
+        resolvedId: model.resolvedId,
+        resolutionKind: model.resolutionKind,
+        resolutionEvidenceSha256: artifacts.get(
+          model.resolutionEvidenceArtifact,
+        )!.sha256,
+      })),
+      resolvedModelIds,
+    }),
+  );
+  return {
+    schema: "scout.verification-allocation-freeze-policy-scope/v1",
+    protocolReference: `freeze-protocol-sha256:${protocolSha256}`,
+    modelScopeReference: `freeze-model-scope-sha256:${modelScopeSha256}`,
+  };
 }
 
 function parseManifest(
@@ -368,6 +417,7 @@ export function verifyExecutionFreezeManifest(
       modelCount: 0,
       seedCount: 0,
       episodeCount: 0,
+      policyScope: null,
       providerCallsAuthorized: false,
     };
   }
@@ -389,6 +439,16 @@ export function verifyExecutionFreezeManifest(
     modelCount: modelIds.length,
     seedCount: seedIds.length,
     episodeCount,
+    policyScope:
+      errors.length === 0
+        ? derivePolicyScope(
+            manifest,
+            artifacts,
+            modelIds,
+            seedIds,
+            episodeCount,
+          )
+        : null,
     providerCallsAuthorized: false,
   };
 }

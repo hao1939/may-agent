@@ -150,6 +150,7 @@ export function selectIdentityRobustFrontierPoint(
   frontierCandidate: unknown,
   policyCandidate: unknown,
   evidenceManifestCandidate: unknown = null,
+  verifiedPolicyScopeCandidate: unknown = null,
 ): IdentityRobustFrontierSelection {
   const scopeLimit =
     "Selection is conditional on a caller-supplied policy and provenance manifest whose fields are recorded but not independently verified. It does not authenticate the owner, timestamp, revision, references, real drift, marginal estimates, dependence, provider behavior, or operating cost.";
@@ -184,6 +185,7 @@ export function selectIdentityRobustFrontierPoint(
     policy.evidenceReference,
     policy,
     evidenceManifestCandidate,
+    verifiedPolicyScopeCandidate,
   );
   if (!evidenceBinding.ok) {
     return {
@@ -228,11 +230,13 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
   policyCandidate: unknown,
   evidenceManifestCandidate: unknown,
   evidenceRoot: string,
+  verifiedPolicyScopeCandidate: unknown = null,
 ): Promise<IdentityRobustLocalFrontierSelection> {
   const selection = selectIdentityRobustFrontierPoint(
     frontierCandidate,
     policyCandidate,
     evidenceManifestCandidate,
+    verifiedPolicyScopeCandidate,
   );
   if (!selection.ok) {
     return {
@@ -251,6 +255,7 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
     policy,
     evidenceManifestCandidate,
     evidenceRoot,
+    verifiedPolicyScopeCandidate,
   );
   if (!localBinding.ok) {
     return {
