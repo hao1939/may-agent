@@ -322,20 +322,20 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 107 supersedes the older table snapshot below. Exact seed commit
-`ebcbb0589913b6a4bad40d2fad592e35abbdb45d` records the unchanged login-class
+Cycle 108 supersedes the older table snapshot below. Exact seed commit
+`9e2491100e4197bc2cc527e8c02faab6d71da8be` records the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. The post-seed local containment check at
-`2026-09-03T01:53:24.485Z–01:53:24.571Z` found all nine standing reconciliation
+`2026-09-03T02:08:10.128Z–02:08:10.218Z` found all nine standing reconciliation
 commits contained and the four accepted self-evolution artifacts byte-equal to
-`df80a1da`. No public request was made. Local adapter and fixture evidence
-answered the ranked question while all public lanes remained deferred.
+`df80a1da`. No public request was made. The actual local executable answered
+the ranked process-boundary question while all public lanes remained deferred.
 
-| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                                        | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Decision and revisit trigger                                                                                                                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 107; public trigger-deferred.** The ranked verified-freeze composition gap was directly testable in the standing implementation.                                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local freeze adapter is `dcc15ee…411e76`; all accepted standing reconciliations remain contained. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
-| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 107.** The retained archive already established the unit/applicability boundary and no paper/version trigger fired.                                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, or real freeze bundle.                                                                                                                                                                     | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 107 without quota work.** The unchanged access class and local adapter result expose no seed-linked item, thread delta, access change, or community-specific claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
+| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                                           | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Decision and revisit trigger                                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 108; public trigger-deferred.** The ranked process-boundary question was directly testable in the standing executable.                                                                   | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact executable result at `9e24911…1da8be` has SHA-256 `2187ab2…6a613`; all accepted standing reconciliations remain contained. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
+| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 108.** The retained archive already established the unit/applicability boundary and no paper/version trigger fired.                                                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, or real freeze bundle.                                                                                                                                                                                              | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 108 without quota work.** The unchanged access class and local executable result expose no seed-linked item, thread delta, access change, or community-specific claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                         | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -2575,6 +2575,42 @@ overlay remained at HEAD `fd4c68ec…1514663`, three records, fingerprint
 record first, then pursue the ranked process-level CLI control. Public lanes
 remain subject to their recorded revision, artifact, replication,
 content/access, scheduled-audit, and readable-seed triggers.
+
+### Cycle 108 checkpoint — real executable denial is correct but expensive
+
+The ranked process question was attempted on exact seed tip
+`9e2491100e4197bc2cc527e8c02faab6d71da8be`, not inferred from the adapter
+test. From `2026-09-03T01:59:00.357Z` through `02:07:28.843Z`, the actual
+frontier executable regenerated the complete retained grid in 8m28.496s. Its
+11,363-byte output has SHA-256 `2187ab202f866cc839af2ab78a24f39f92e9d91cacdf6083007d797da3d6a613`.
+
+The process reproduced 193 exact rows at hash `6fac7f9…d38252`, 508 frontier
+points at result hash `383a699…b8fff`, the 1,029-block minimum, and the all-256
+endpoint. With no policy arguments it serialized `freezeVerification: null`,
+returned no selected point, and emitted exact error `exactly one explicit
+frontier policy with evidence is required`. This supports the real process's
+fail-closed boundary and contradicts any implicit default selection.
+
+It does not exercise a positive real freeze: none exists in the library. The
+synthetic adapter fixture already covers positive descriptor-safe composition,
+scope mismatch, invalid root, and provider denial, but launching the exhaustive
+process once per control would add roughly 8.5 minutes each. Adding a hidden
+test-only shortcut would weaken the production boundary. Confidence is high
+for exact deterministic regeneration and process denial; low for real freeze,
+provider, policy, cost, and drift transfer.
+
+GitHub/local code was selected. Public GitHub, arXiv, and Reddit made zero
+requests because no recorded trigger fired; their last useful evidence and
+access boundaries remain in the lane table. The local check at
+`2026-09-03T02:08:10.128Z–02:08:10.218Z` found all nine accepted standing
+reconciliations contained and all four self-evolution artifacts byte-equal to
+`df80a1da`.
+
+The next ranked investigation is a byte-bound reusable frontier snapshot that
+must reproduce the exact row/result hashes and all 508 points before selection.
+It should reject missing, stale, or tampered bytes and must not turn cached
+computation, local integrity, or a synthetic fixture into policy or provider
+authority.
 
 ## Cycle log
 

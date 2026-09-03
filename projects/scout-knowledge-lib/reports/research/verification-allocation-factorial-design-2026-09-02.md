@@ -1766,6 +1766,49 @@ serialized result preserves freeze verification, local-record evidence,
 selection denial, and zero provider authority rather than relying only on an
 in-process adapter test.
 
+## Cycle 108 executable-boundary audit
+
+Seed reconciliation `9e2491100e4197bc2cc527e8c02faab6d71da8be`
+preceded this audit. The saved target remained a 46,672-byte login shell with
+the same semantic access fingerprint and zero attributable items; only its body
+SHA changed. Added and changed IDs remain unknown, removals are `[]`, and all
+132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made zero
+public requests.
+
+The actual frontier executable ran on that exact tip from
+`2026-09-03T01:59:00.357Z` through `02:07:28.843Z`. It took 8m28.496s to
+regenerate the 193 exact rows and 508 nondominated points. Its 11,363-byte JSON
+has SHA-256 `2187ab202f866cc839af2ab78a24f39f92e9d91cacdf6083007d797da3d6a613`.
+The established row and result hashes reproduced as
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+
+The no-argument process returned `freezeVerification: null`, no selected point,
+and exact error `exactly one explicit frontier policy with evidence is
+required`. It also reproduced the 1,029-block robust minimum and all-256
+endpoint. This proves the real executable does not silently choose a frontier
+point when its policy inputs are absent.
+
+The process audit does not prove the positive path for a real freeze because no
+real freeze is retained. The synthetic in-process regression already proves
+valid descriptor-safe composition, invalid-root denial, scope-mismatch denial,
+and `providerCallsAuthorized: false`. Repeating the exhaustive executable for
+each synthetic control would cost about 8.5 minutes per case, while a hidden
+test bypass would weaken the same boundary under test. Confidence is high for
+deterministic process regeneration and fail-closed output, and low for real
+freeze availability, external registration, model resolution, operating
+policy, provider behavior, cost, and drift.
+
+The accepted-result check at
+`2026-09-03T02:08:10.128Z–02:08:10.218Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. No accepted result is known unintegrated.
+
+The next ranked investigation is a byte-bound reusable frontier snapshot that
+must reproduce the exact row/result hashes and all 508 points before selection.
+It should make positive process controls practical while rejecting missing,
+stale, or tampered bytes and must not confer policy or provider authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
