@@ -55,6 +55,61 @@ describe("identity-robust frontier CLI input", () => {
     });
   });
 
+  it("parses a descriptor-safe local manifest without parsing its bytes inline", () => {
+    const manifestInput = {
+      schema: "scout.verification-allocation-local-policy-manifest-input/v1",
+      manifestArtifact: "policies/manifest.json",
+      manifestSha256: "b".repeat(64),
+    };
+    expect(
+      parseIdentityRobustFrontierCliInput([
+        "--policy-json",
+        '{"policy":true}',
+        "--evidence-manifest-artifact",
+        manifestInput.manifestArtifact,
+        "--evidence-manifest-sha256",
+        manifestInput.manifestSha256,
+        "--evidence-root",
+        "/goal-owned/evidence",
+        "--freeze-bundle-root",
+        "/goal-owned/freeze",
+      ]),
+    ).toEqual({
+      policyCandidate: { policy: true },
+      evidenceManifestCandidate: manifestInput,
+      evidenceRoot: "/goal-owned/evidence",
+      freezeBundleRoot: "/goal-owned/freeze",
+    });
+    expect(
+      parseIdentityRobustSnapshotFrontierCliInput([
+        "--snapshot-root",
+        "/goal-owned/snapshots",
+        "--snapshot-artifact",
+        "frontier.json",
+        "--snapshot-sha256",
+        "a".repeat(64),
+        "--policy-json",
+        '{"policy":true}',
+        "--evidence-manifest-artifact",
+        manifestInput.manifestArtifact,
+        "--evidence-manifest-sha256",
+        manifestInput.manifestSha256,
+        "--evidence-root",
+        "/goal-owned/evidence",
+        "--freeze-bundle-root",
+        "/goal-owned/freeze",
+      ]),
+    ).toEqual({
+      snapshotRoot: "/goal-owned/snapshots",
+      snapshotArtifact: "frontier.json",
+      snapshotSha256: "a".repeat(64),
+      policyCandidate: { policy: true },
+      evidenceManifestCandidate: manifestInput,
+      evidenceRoot: "/goal-owned/evidence",
+      freezeBundleRoot: "/goal-owned/freeze",
+    });
+  });
+
   it("rejects partial, reordered, and malformed inputs", () => {
     for (const args of [
       ["--policy-json", "{}"],
@@ -114,5 +169,19 @@ describe("identity-robust frontier CLI input", () => {
         "frontier.json",
       ]),
     ).toThrow("snapshot usage");
+    expect(() =>
+      parseIdentityRobustFrontierCliInput([
+        "--policy-json",
+        '{"policy":true,"policy":true}',
+        "--evidence-manifest-artifact",
+        "policies/manifest.json",
+        "--evidence-manifest-sha256",
+        "a".repeat(64),
+        "--evidence-root",
+        "/tmp/evidence",
+        "--freeze-bundle-root",
+        "/tmp/freeze",
+      ]),
+    ).toThrow("policy argument must not contain duplicate JSON object keys");
   });
 });

@@ -21,6 +21,12 @@ export type IdentityRobustFrontierPolicy = {
   evidenceReference: string;
 };
 
+export type IdentityRobustLocalManifestInput = {
+  schema: "scout.verification-allocation-local-policy-manifest-input/v1";
+  manifestArtifact: string;
+  manifestSha256: string;
+};
+
 export type IdentityRobustFrontierSelection = {
   ok: boolean;
   policySha256: string;
@@ -49,6 +55,20 @@ export type IdentityRobustLocalManifestFrontierSelection =
 
 function record(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function isIdentityRobustLocalManifestInput(
+  candidate: unknown,
+): candidate is IdentityRobustLocalManifestInput {
+  return (
+    record(candidate) &&
+    JSON.stringify(Object.keys(candidate).sort()) ===
+      JSON.stringify(["schema", "manifestArtifact", "manifestSha256"].sort()) &&
+    candidate.schema ===
+      "scout.verification-allocation-local-policy-manifest-input/v1" &&
+    typeof candidate.manifestArtifact === "string" &&
+    typeof candidate.manifestSha256 === "string"
+  );
 }
 
 function parsePolicy(candidate: unknown): IdentityRobustFrontierPolicy | null {

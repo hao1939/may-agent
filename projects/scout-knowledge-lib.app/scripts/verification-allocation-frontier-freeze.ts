@@ -1,5 +1,7 @@
 import {
+  isIdentityRobustLocalManifestInput,
   selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalManifest,
   selectIdentityRobustFrontierPointFromLocalRecord,
   type IdentityRobustFrontierSelection,
   type IdentityRobustLocalFrontierSelection,
@@ -29,13 +31,22 @@ export async function selectIdentityRobustFrontierPointFromFreezeBundle(
     await verifyExecutionFreezeBundle(freezeBundleRoot);
   const selection =
     freezeVerification.ok && freezeVerification.policyScope
-      ? await selectIdentityRobustFrontierPointFromLocalRecord(
-          frontierCandidate,
-          policyCandidate,
-          evidenceManifestCandidate,
-          evidenceRoot,
-          freezeVerification.policyScope,
-        )
+      ? isIdentityRobustLocalManifestInput(evidenceManifestCandidate)
+        ? await selectIdentityRobustFrontierPointFromLocalManifest(
+            frontierCandidate,
+            policyCandidate,
+            evidenceRoot,
+            evidenceManifestCandidate.manifestArtifact,
+            evidenceManifestCandidate.manifestSha256,
+            freezeVerification.policyScope,
+          )
+        : await selectIdentityRobustFrontierPointFromLocalRecord(
+            frontierCandidate,
+            policyCandidate,
+            evidenceManifestCandidate,
+            evidenceRoot,
+            freezeVerification.policyScope,
+          )
       : selectIdentityRobustFrontierPoint(
           frontierCandidate,
           policyCandidate,

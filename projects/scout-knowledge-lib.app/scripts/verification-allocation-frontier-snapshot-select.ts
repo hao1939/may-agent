@@ -1,7 +1,9 @@
 import { type IdentityRobustFrozenFrontierSelection } from "./verification-allocation-frontier-freeze";
 import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
 import {
+  isIdentityRobustLocalManifestInput,
   selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalManifest,
   selectIdentityRobustFrontierPointFromLocalRecord,
 } from "./verification-allocation-frontier-policy";
 import {
@@ -85,13 +87,22 @@ export async function selectIdentityRobustFrontierPointFromSnapshot(
   });
   const selection =
     freezeVerification.ok && freezeVerification.policyScope
-      ? await selectIdentityRobustFrontierPointFromLocalRecord(
-          snapshotVerification.snapshot.frontier,
-          policyCandidate,
-          evidenceManifestCandidate,
-          evidenceRoot,
-          { ...freezeVerification.policyScope, frontierSnapshotReference },
-        )
+      ? isIdentityRobustLocalManifestInput(evidenceManifestCandidate)
+        ? await selectIdentityRobustFrontierPointFromLocalManifest(
+            snapshotVerification.snapshot.frontier,
+            policyCandidate,
+            evidenceRoot,
+            evidenceManifestCandidate.manifestArtifact,
+            evidenceManifestCandidate.manifestSha256,
+            { ...freezeVerification.policyScope, frontierSnapshotReference },
+          )
+        : await selectIdentityRobustFrontierPointFromLocalRecord(
+            snapshotVerification.snapshot.frontier,
+            policyCandidate,
+            evidenceManifestCandidate,
+            evidenceRoot,
+            { ...freezeVerification.policyScope, frontierSnapshotReference },
+          )
       : selectIdentityRobustFrontierPoint(
           snapshotVerification.snapshot.frontier,
           policyCandidate,

@@ -239,6 +239,36 @@ describe("identity-robust frontier freeze adapter", () => {
       policy.evidenceRoot,
       freeze.root,
     );
+    await mkdir(join(policy.evidenceRoot, "policies"));
+    const manifestBytes = `${JSON.stringify(policy.evidenceManifest)}\n`;
+    const manifestSha256 = createHash("sha256")
+      .update(manifestBytes)
+      .digest("hex");
+    await writeFile(
+      join(policy.evidenceRoot, "policies", "manifest.json"),
+      manifestBytes,
+    );
+    const localManifestResult =
+      await selectIdentityRobustFrontierPointFromSnapshot(
+        snapshotRoot,
+        "frontier.json",
+        createHash("sha256").update(snapshotBytes).digest("hex"),
+        {
+          rowSha256: snapshot.rowSha256,
+          resultSha256: snapshot.resultSha256,
+          frontierSha256: snapshot.frontierSha256,
+          frontierCount: snapshot.frontier.length,
+        },
+        policy.policy,
+        {
+          schema:
+            "scout.verification-allocation-local-policy-manifest-input/v1",
+          manifestArtifact: "policies/manifest.json",
+          manifestSha256,
+        },
+        policy.evidenceRoot,
+        freeze.root,
+      );
 
     expect(result).toMatchObject({
       snapshotVerification: {
@@ -251,6 +281,22 @@ describe("identity-robust frontier freeze adapter", () => {
         selection: {
           ok: true,
           selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+          decisionRecordEvidenceStatus: "local-byte-match-unverified",
+          decisionRecordContentStatus: "local-content-match-unverified",
+        },
+      },
+      providerCallsAuthorized: false,
+    });
+    expect(localManifestResult).toMatchObject({
+      snapshotVerification: { ok: true },
+      frozenSelection: {
+        freezeVerification: { ok: true },
+        selection: {
+          ok: true,
+          selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+          manifestArtifactSha256: manifestSha256,
+          manifestArtifactEvidenceStatus: "local-byte-match-unverified",
+          manifestArtifactContentStatus: "local-content-match-unverified",
           decisionRecordEvidenceStatus: "local-byte-match-unverified",
           decisionRecordContentStatus: "local-content-match-unverified",
         },
@@ -277,6 +323,13 @@ describe("identity-robust frontier freeze adapter", () => {
     expect(serializedSummary).toContain(freeze.policyScope.protocolReference);
     expect(serializedSummary).toContain(freeze.policyScope.modelScopeReference);
     expect(serializedSummary).not.toContain('"frontier":');
+    const localManifestSummary = JSON.stringify(
+      summarizeIdentityRobustSnapshotFrontierSelection(localManifestResult),
+    );
+    expect(localManifestSummary).toContain(manifestSha256);
+    expect(localManifestSummary).toContain(
+      localManifestResult.frozenSelection!.selection.evidenceManifestSha256,
+    );
 
     const substituteSnapshot = createIdentityRobustFrontierSnapshot(
       [

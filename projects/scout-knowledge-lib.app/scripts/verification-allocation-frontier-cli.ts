@@ -1,4 +1,5 @@
 import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import type { IdentityRobustLocalManifestInput } from "./verification-allocation-frontier-policy";
 
 export type IdentityRobustFrontierCliInput = {
   policyCandidate: unknown;
@@ -18,6 +19,37 @@ export function parseIdentityRobustFrontierCliInput(
   args: string[],
 ): IdentityRobustFrontierCliInput | null {
   if (args.length === 0) return null;
+  const localManifestMode =
+    args.length === 10 &&
+    args[0] === "--policy-json" &&
+    args[2] === "--evidence-manifest-artifact" &&
+    args[4] === "--evidence-manifest-sha256" &&
+    args[6] === "--evidence-root" &&
+    args[8] === "--freeze-bundle-root";
+  if (localManifestMode) {
+    let policyCandidate: unknown;
+    try {
+      policyCandidate = JSON.parse(args[1]!);
+    } catch {
+      throw new Error("policy argument must contain valid JSON");
+    }
+    if (hasDuplicateJsonObjectKeys(args[1]!)) {
+      throw new Error(
+        "policy argument must not contain duplicate JSON object keys",
+      );
+    }
+    const evidenceManifestCandidate: IdentityRobustLocalManifestInput = {
+      schema: "scout.verification-allocation-local-policy-manifest-input/v1",
+      manifestArtifact: args[3]!,
+      manifestSha256: args[5]!,
+    };
+    return {
+      policyCandidate,
+      evidenceManifestCandidate,
+      evidenceRoot: args[7]!,
+      freezeBundleRoot: args[9]!,
+    };
+  }
   if (
     args.length !== 8 ||
     args[0] !== "--policy-json" ||
@@ -59,13 +91,13 @@ export function parseIdentityRobustSnapshotFrontierCliInput(
   args: string[],
 ): IdentityRobustSnapshotFrontierCliInput {
   if (
-    args.length !== 14 ||
+    (args.length !== 14 && args.length !== 16) ||
     args[0] !== "--snapshot-root" ||
     args[2] !== "--snapshot-artifact" ||
     args[4] !== "--snapshot-sha256"
   ) {
     throw new Error(
-      "snapshot usage: snapshot --snapshot-root '<explicit absolute directory>' --snapshot-artifact '<canonical relative JSON path>' --snapshot-sha256 '<exact SHA-256>' --policy-json '<single JSON policy object>' --evidence-manifest-json '<single JSON manifest object>' --evidence-root '<explicit absolute directory>' --freeze-bundle-root '<explicit absolute directory>'",
+      "snapshot usage: snapshot --snapshot-root '<explicit absolute directory>' --snapshot-artifact '<canonical relative JSON path>' --snapshot-sha256 '<exact SHA-256>' followed by either inline or descriptor-safe local policy input",
     );
   }
   const policyInput = parseIdentityRobustFrontierCliInput(args.slice(6));
