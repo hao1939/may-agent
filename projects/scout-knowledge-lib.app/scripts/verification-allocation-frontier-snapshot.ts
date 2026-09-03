@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { readDescriptorSafeLocalEvidence } from "./descriptor-safe-local-evidence";
-import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  hasDuplicateJsonObjectKeys,
+  hasExcessiveJsonNesting,
+} from "./json-object-key-exactness";
 import {
   isIdentityRobustFrontier,
   type IdentityRobustFrontierPoint,
@@ -201,6 +204,18 @@ export async function loadIdentityRobustFrontierSnapshot(
     snapshotText = new TextDecoder("utf-8", { fatal: true }).decode(
       localEvidence.bytes!,
     );
+    if (hasExcessiveJsonNesting(snapshotText)) {
+      return {
+        ok: false,
+        snapshot: null,
+        errors: ["frontier snapshot exceeds the supported JSON nesting limit"],
+        providerCallsAuthorized: false,
+        snapshotByteSha256: localEvidence.sha256,
+        snapshotByteLength: localEvidence.byteLength,
+        snapshotEvidenceStatus: localEvidence.evidenceStatus,
+        scopeLimit,
+      };
+    }
     candidate = JSON.parse(snapshotText);
   } catch {
     return {

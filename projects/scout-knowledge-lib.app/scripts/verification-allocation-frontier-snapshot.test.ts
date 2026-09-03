@@ -105,6 +105,36 @@ describe("identity-robust frontier snapshot", () => {
     });
   });
 
+  it("rejects excessive nesting before scanning a byte-matched snapshot", async () => {
+    const bytes = '{"value":'.repeat(1_000) + "null" + "}".repeat(1_000);
+    const byteSha256 = createHash("sha256").update(bytes).digest("hex");
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-snapshot-"));
+    roots.push(root);
+    await writeFile(join(root, "frontier.json"), bytes);
+
+    expect(
+      await loadIdentityRobustFrontierSnapshot(
+        root,
+        "frontier.json",
+        byteSha256,
+        {
+          rowSha256: "a".repeat(64),
+          resultSha256: "b".repeat(64),
+          frontierSha256: "c".repeat(64),
+          frontierCount: 1,
+        },
+      ),
+    ).toMatchObject({
+      ok: false,
+      snapshot: null,
+      errors: ["frontier snapshot exceeds the supported JSON nesting limit"],
+      providerCallsAuthorized: false,
+      snapshotByteSha256: byteSha256,
+      snapshotByteLength: bytes.length,
+      snapshotEvidenceStatus: "local-byte-match-unverified",
+    });
+  });
+
   it("rejects a point mutation, a self-consistent wrong computation, and extra authority", () => {
     const snapshot = createIdentityRobustFrontierSnapshot(
       frontier,
