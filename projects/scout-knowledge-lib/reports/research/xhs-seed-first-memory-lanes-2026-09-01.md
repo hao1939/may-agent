@@ -9378,6 +9378,27 @@ review's explicit 111-line Cycle 275-276 mirror duplication now outranks an
 early provider reread: measure whether one detailed report plus a compact
 topic-map pointer preserves every useful distinction at lower retrieval cost.
 
+## Cycle 278 checkpoint — retain detail once, retrieve the decision here
+
+Before the change, the complete Cycle 275-276 block was byte-identical here
+and in the topic map: 109 lines with SHA-256
+`8e16c29264c94839f191b89b8b19e7b7bc59f469e6f8629d71db3700d7e90fc4`.
+This detailed copy remains byte-identical. The topic-map copy is now 50 lines:
+it retains the seed uncertainty and zero-request boundary, exact reviewer and
+standing identities, RV-018's full corrected digest, RV-019's numerical-drift
+qualification, retained counts/max event, maintenance source/process evidence,
+causality limit, validation, RV-004 status, and exact revisit trigger. The map
+therefore removes 59 repeated lines (54%) while every detailed statement and
+useful distinction remains available here or in the review cursor.
+
+No code, fixture, source result, account state, or protected checkout changed.
+This is measured static retrieval compaction, not observed model use, token
+savings, or outcome evidence; RV-004 remains high/open. GitHub, arXiv, and
+Reddit made zero requests and retain their recorded evidence and triggers. The
+next ranked operation is a newly retained outcome or accepted review;
+otherwise perform the scheduled seed-first XHS observation at
+`2026-09-03T22:57:11.030Z`.
+
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
 Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child

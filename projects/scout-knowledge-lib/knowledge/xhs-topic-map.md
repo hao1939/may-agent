@@ -3875,6 +3875,19 @@ review's explicit 111-line Cycle 275-276 mirror duplication now outranks an
 early provider reread: measure whether one detailed report plus a compact
 topic-map pointer preserves every useful distinction at lower retrieval cost.
 
+## Cycle 278 checkpoint — retain detail once, retrieve the decision here
+
+The Cycle 275-276 block was byte-identical across the topic map and detailed
+report: 109 lines, SHA-256 `8e16c292…e90fc4`. The detailed report remains
+unchanged; this map now retains a 50-line decision summary with the seed
+uncertainty, source/result identities, RV-018 digest, RV-019 qualification,
+retention counts, mechanism/causality boundary, validation, RV-004 status, and
+revisit trigger. This removes 59 repeated lines (54%) without discarding the
+full record. It improves static retrieval cost, not observed reuse or outcome
+evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
+review, otherwise perform the scheduled seed-first XHS observation at
+`2026-09-03T22:57:11.030Z`.
+
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
 Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
@@ -3894,111 +3907,52 @@ other accessible retrieval work before the six-hour XHS observation boundary.
 ## Cycle 276 seed-first start — retention-bound investigation
 
 Exact Cycle 275 result `5460811c376f99d8571af4616e7b79260a66ce51`
-has tree `0d91706de09d552e389f2e07f77b2b3904d556ba`, identical to its fully
-validated candidate. It passes syntax, TypeScript, formatting, Cycle 237
-projection, 69 scoped links, navigation v1 at 11/14 and v2 at 8/8, 296 tests /
-1,483 assertions, and the 1,540-document / 1,705-link broad audit. The standing
-tree is clean.
-
-At `2026-09-03T20:50:04.379Z`, the exact Cycle 237 XHS receipt was 232 minutes
-old, inside the six-hour cadence. No seed or semantic-access observation
-changed, so this bounded reconciliation made zero browser or public requests:
-added/changed identities remain unknown, observed removals are `[]`, and all
-132 durable IDs remain unavailable. Accepted review is integrated, protected
-fingerprints remain exact, and no source lane fired. Commit this seed record,
-then trace the newly observed 368-row protected-history contraction through
-repository-owned retention definitions without reading removed payloads.
+preceded this cycle. At `2026-09-03T20:50:04.379Z`, the 232-minute-old Cycle
+237 XHS receipt remained within cadence: added/changed identities stayed
+unknown, removals `[]`, all 132 IDs unavailable, and browser/public requests
+zero. The complete seed, validation, and protected-fingerprint evidence remains
+in the [detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md).
 
 ## Cycle 276 checkpoint — event absence is a retained-window fact
 
-The live database trigger observed at `2026-09-03T20:50:53.857Z` protects six
-reference classes from event deletion: open/orphan pairs, child traces, trace
-links, running/idle sessions, pending App admission plans, and unfinished inbox
-items. At `20:51:10.437Z`, all 15,995 retained rows had `ttl_ms = NULL`; 1,771
-were older than five days. A matched query at `20:51:59.964Z` found 116 rows
-currently eligible after applying all six protections.
-
-Protected local source supplies a consistent but non-authoritative mechanism:
-ignored `db/maintenance.ts` bytes at SHA-256 `be45928a…9bff4f` delete at most
-5,000 unprotected non-approval events older than five days, while ignored
-maintenance-mode bytes `470dc956…2939f` default to hourly passes. Live PID
-`2141` runs as UID 1000 with explicit interval `3600000`; deployed binary
-SHA-256 is `b4f95268…92450`. There is no accepted revision or build mapping
-between those ignored source bytes and the binary. `supervisorctl` is absent and
-stdout is a pipe, so no non-consuming maintenance receipt proves which exact
-rows the observed 368-row contraction removed. Bounded pruning is consistent
-with the evidence, not established causality.
-
-The accepted runtime contract says event counts are windowed and zero means
-“not seen in the retained window,” not “impossible.” Cycle 269's zero exact
-`project.knowledge.maintained` rows therefore cannot exclude an older pruned
-event. Current Scout emission carries summary, state, proposed actions, and
-evidence, but no lookup query, selected identity, later decision, or outcome
-join. Exempting that event type from generic pruning would retain more telemetry
-without creating RV-004 evidence, so make no Host or Scout code change.
-
-Cycle 275's full 296-test / 1,483-assertion gate remains the unchanged code
-baseline. Current documentation passes Cycle 237 projection, 69 scoped links,
-the 1,540-document / 1,705-link broad audit, and whitespace. Confidence is high
-for the live trigger, current counts, source bytes, process identity, and
-emission fields; low for exact deletion causality or any pruned outcome.
-`RV-004` remains high/open. The next evidence must be a newly retained outcome
-or accepted review; otherwise reconcile XHS at `2026-09-03T22:57:11.030Z`.
+The live trigger protects six reference classes. Of 15,995 retained null-TTL
+rows, 1,771 were older than five days and 116 matched every deletion criterion.
+Ignored maintenance and mode bytes `be45928a…9bff4f` / `470dc956…2939f`, plus
+UID-1000 PID 2141, interval `3600000`, and binary `b4f95268…92450`, are
+consistent with bounded pruning but lack a source/build mapping or deletion
+receipt. The observed 368-row contraction therefore does not prove causality.
+Zero `project.knowledge.maintained` rows means only absent from the retained
+window. Because its payload has no query, selected identity, later decision, or
+outcome join, longer retention would add telemetry without resolving RV-004;
+no code change is warranted. Validation remains 296 tests / 1,483 assertions,
+69 scoped links, 1,540 documents / 1,705 broad links, and clean projection,
+navigation, formatting, and whitespace. Confidence is high for the trigger,
+counts, source/process identities, and payload fields; low for deleted-row
+identity, causality, or a pruned outcome. RV-004 remains high/open.
 
 ## Cycle 275 seed-first start — accepted review trigger
 
 Exact Cycle 274 result `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6`
-passes syntax, TypeScript, formatting, Cycle 237 projection, 69 scoped links,
-navigation v1 at 11/14 and v2 at 8/8, and 296 tests / 1,483 assertions. Its
-tree `2c6430e7244973f4c7f34fa1db9ffb6046926fcc` matches the validated
-candidate and the standing worktree is clean.
-
-At `2026-09-03T20:44:48.550Z`, the exact Cycle 237 XHS receipt was 227 minutes
-old, inside the six-hour observation cadence. Semantic access and the collected
-surface have no new supported observation, so this bounded reconciliation made
-zero browser or public requests: added/changed identities remain unknown,
-observed removals are `[]`, and all 132 durable IDs remain unavailable. No
-collection membership or post-content inference follows from elapsed time.
-
-Independent reviewer ref advanced from `f6a7a65928` to direct-child result
-`9afdf7bd8fa552d5ff09764de43157bfdf3a3232`. Protected `/app` remains at
-HEAD `386b445c…1fec8`, 907 records / `80dc6582…e380`; its Scout scope remains
-296 / `c4485b46…c375`. Reconcile the finite reviewer delta before any public
-lane or further RV-004 work.
+preceded the `2026-09-03T20:44:48.550Z` reconciliation. The 227-minute-old
+Cycle 237 receipt kept added/changed unknown, removals `[]`, all 132 IDs
+unavailable, and browser/public requests zero. Reviewer head advanced to
+`9afdf7bd8fa`; protected fingerprints were recorded before integration.
 
 ## Cycle 275 checkpoint — exact review corrections and a mutable history bound
 
 Reviewer source `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6` has direct-child
-result `9afdf7bd8fa552d5ff09764de43157bfdf3a3232`, integrated after the
-seed record as standing `1698454717`. Reviewer and standing changes share
-stable patch ID `64f030c8da5c867aac45a0db53dc747409f0e4fd`; both seed and
-reviewer sides are retained without conflict.
-
-`RV-018` corrects event `6143903`'s raw payload SHA-256 from the erroneous
-`bc0f3acc…ce83a1` to independently reproduced
-`bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`.
-The second digest remains exact. `RV-019` narrows Cycle 270's preservation
-claim: the other 13 v1 selections and pass/fail results stay unchanged, while
-corpus-level inverse document frequency mechanically changes scores or rank
-diagnostics for three passing cases. The adaptive 10/14→11/14 gain remains
-local evidence, not protected promotion or user-outcome evidence.
-
-A bounded query-only follow-up under UID 1000 at
-`2026-09-03T20:46:03.268Z–20:46:33.338Z` found 15,995 `events` rows, 368
-fewer than the reviewer's `20:40:53Z` snapshot, while retaining the same maximum
-ID `6317660` and timestamp `2026-08-31T15:24:13.597Z`. `scout.explore` fell
-60→56; six health ticks, two health observations, zero exact
-`project.knowledge.maintained` events, and two payload mentions remain. This is
-direct mutable-retention evidence; the deletion mechanism and exact removed
-rows are unknown, and no later outcome can be inferred.
-
-Current-candidate validation passes syntax, TypeScript, formatting, Cycle 237
-projection, 69 scoped links, navigation v1 at 11/14 and v2 at 8/8, and 296
-tests / 1,483 assertions. `RV-018` and `RV-019` are resolved with exact
-provenance; `RV-004` remains high/open. GitHub, arXiv, Reddit, and XHS made zero
-public requests. The next high-value evidence is a new retained maintenance
-outcome or accepted review; otherwise perform the exact observational XHS pass
-at the six-hour boundary `2026-09-03T22:57:11.030Z`.
+result `9afdf7bd8fa552d5ff09764de43157bfdf3a3232`, integrated as standing
+`1698454717` at patch ID `64f030c8da5c867aac45a0db53dc747409f0e4fd`.
+RV-018's exact event-6143903 digest is
+`bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`;
+RV-019 keeps the other 13 selections and pass/fail results stable while
+qualifying score/rank drift in three cases. Query-only evidence at
+`20:46:03.268Z–20:46:33.338Z` found 15,995 events, down 368 with unchanged max
+ID/time `6317660` / `2026-08-31T15:24:13.597Z`; exact removed rows and any
+later outcome remain unknown. Both findings are resolved, while RV-004 remains
+high/open. Full detail and rollback context remain in the detailed lane report
+and independent review cursor; the next trigger is a retained outcome, accepted
+review, or the XHS boundary `2026-09-03T22:57:11.030Z`.
 
 ## Cycle 274 checkpoint — the project entry point now matches the bounded route
 
