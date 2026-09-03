@@ -409,6 +409,65 @@ describe("verification-allocation freeze bundle", () => {
     });
   });
 
+  it("accepts distinct matching resolution records for distinct models", async () => {
+    const { root, manifest } = await fixture();
+    const peerArtifact = "evidence/peer-model-resolution.json";
+    const peerEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed",
+    });
+    await writeFile(join(root, peerArtifact), peerEvidence);
+    manifest.artifacts.push({
+      name: peerArtifact,
+      sha256: freezeArtifactSha256(peerEvidence),
+    });
+    manifest.models.push({
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed" as const,
+      resolutionEvidenceArtifact: peerArtifact,
+    });
+
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        manifest.models.map((model) => model.resolvedId),
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 128;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: true,
+      errors: [],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      timestampProofEvidenceStatus: "local-byte-presence-unverified",
+      providerCallsAuthorized: false,
+    });
+    expect(result.policyScope?.modelScopeReference).toMatch(
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
+    );
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
