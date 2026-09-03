@@ -8233,6 +8233,18 @@ model evidence. The next ranked accessible maintenance question is whether the
 missing Cycle 206–214 ledger rows can be recovered exactly from immutable seed
 commits; preserve an explicit gap rather than infer unavailable bytes.
 
+Exact Cycle 221 material tip
+`a4d0585f446ccaf1a70ccc0fb4589458f4b1e148` passes whitespace and all 45
+relative links. Read-only health at `2026-09-03T14:44:10.454Z` remains 26 facts
+and 16 wake signals; root and app runtime state are empty. Its Scout app tree
+`b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4` is byte-identical to the Cycle
+220 tip that passed 278 tests and 1,429 assertions. The clean tip retains 9/9
+canonical accepted ancestors and excludes unaccepted `d041c41b54`.
+
+Protected source and overlay remain exactly
+`386b445c…1fec8` / 886 / `7b786753…7f932` and
+`fd4c68ec…1514663` / three / `a52b97aa…4a15`; neither was written or tested.
+
 ## Cycle 220 seed-first reconciliation — stable access, fresh byte receipt
 
 Cycle 220 began from clean `62aa9cf134`. Exactly one public status and one
