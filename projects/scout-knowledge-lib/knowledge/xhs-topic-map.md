@@ -2612,6 +2612,24 @@ It should reject missing, stale, or tampered bytes and must not turn cached
 computation, local integrity, or a synthetic fixture into policy or provider
 authority.
 
+## Cycle 109 seed-first start
+
+Cycle 109 began from clean exact tip
+`6cda02ec97b4b2247949fec1a0f5640a36e1bb48`. At
+`2026-09-03T02:11:48.385Z`, direct ports 9222 and 9333 again refused UID 1000
+with curl exit 7 and HTTP 000. Effective UID 0 reached root-owned Chrome PID
+2136's listener through its network namespace. The supported non-navigating
+observation completed at `02:11:49.325Z`: public Explore remained readable at
+30 notes; saved status remained HTTP 200, `login`, 46,672 bytes, semantic
+fingerprint `3dab1b6…8af420`, a login wall, and zero attributable items.
+
+Only the body SHA changed from `ac4b675…e9207` to `04a12e9…b47b76`. Added and
+changed IDs remain unknown, observed removals are `[]`, and all 132 durable
+seeds remain unavailable. No representative saved post was supported or read,
+and no XHS state changed. No snapshot implementation, source, provider, or
+accepted-result request preceded this reconciliation. Commit this exact seed
+record first, then pursue the ranked byte-bound frontier snapshot locally.
+
 ## Cycle log
 
 | Cycle                           | Seed reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Related discovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Deep dive                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Map decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Next                                                                                                                                                                                                                                                                                    |
