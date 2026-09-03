@@ -41,8 +41,8 @@ Multi-agent security has lacked a standardized toolkit. Each research project re
 
 ## Connections
 
-- Extends our [agent security defense architectures](/knowledge/agent-security-defense-architectures.md) notes with empirical benchmarking capability
-- Complements [agent evaluation research](/knowledge/agent-evaluation-research-beyond-outputs.md) — this is evaluation applied specifically to adversarial multi-agent scenarios
+- Extends our [agent security defense architectures](../agent-security-defense-architectures.md) notes with empirical benchmarking capability
+- Complements [agent evaluation research](../agent-evaluation-research-beyond-outputs.md) — this is evaluation applied specifically to adversarial multi-agent scenarios
 - The "guardian agent" defense pattern connects to the monitor/overseer patterns tracked in our governance notes
 - The topology-as-security-variable insight is novel compared to single-agent red-teaming frameworks
 

@@ -27,6 +27,6 @@ Key implications:
 
 ## Connections
 
-- [The Delegation Surface](/knowledge/the-delegation-surface.md) — new cost dimension
-- [The Oversight Inversion](/knowledge/the-oversight-inversion.md) — purchasing decisions harder to oversee than code
+- [The Delegation Surface](../the-delegation-surface.md) — new cost dimension
+- [The Oversight Inversion](../the-oversight-inversion.md) — purchasing decisions harder to oversee than code
 - Agent autonomy spectrum: code → web browsing → financial transactions → physical-world effects

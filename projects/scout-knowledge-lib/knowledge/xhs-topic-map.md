@@ -3856,6 +3856,30 @@ The 14 unambiguous root-relative repairs remain highest-ranked. Registry and
 all three public lanes retain their recorded change-bearing triggers without a
 request.
 
+### Cycle 229 checkpoint — root-relative links become portable
+
+Seed commit `d8a6dba988` preceded the exact path audit. Seventeen historical
+links began at `/knowledge/`, which only works under an assumed renderer root.
+Fourteen pointed unambiguously to existing same-directory or parent-directory
+files and now use document-relative paths. Accepted repair commit `289c533a2f`
+supplies exact June 26 replacements for the two deleted October-dated scan
+aliases. The remaining directory-only LoopX link now points to the current
+finding that explicitly records LoopX's 200+ hour run claim.
+
+Every changed target resolves. The broad 1,379-document audit now counts 1,758
+prose links, zero absolute local links, and 186 unresolved occurrences across
+18 documents, down from 203 across 24 documents before this batch. The
+remaining set is exactly 169 absent historical-target occurrences plus 17
+runtime/workspace paths; no root-relative ambiguity remains.
+
+This supports portable document-relative navigation and contradicts retaining
+renderer-root assumptions for known local files. Confidence is high for all 17
+mappings: 14 are direct file identity, two are named by the accepted duplicate-
+removal commit, and LoopX is an exact title/claim match in the retained XHS
+persistence finding. GitHub, arXiv, and Reddit made zero public requests. The
+next ranked audit is the 17 runtime/workspace links: determine whether each has
+a durable accepted replacement before removing a non-portable provenance path.
+
 ## Cycle 228 seed-first start
 
 The exact bounded observation, reconciliation, authority boundary, and byte
