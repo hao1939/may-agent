@@ -3842,6 +3842,17 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 242 seed-first start — current receipt reused
+
+At `2026-09-03T17:16:39.376Z`, Cycle 237's exact receipt was nineteen minutes
+old. The accepted Scout review refs and standing integration lineage had not
+advanced, no collection or source-revision trigger had fired, and the protected
+and peer fingerprints were inspected read-only. Added/changed identities remain
+unknown, removals are `[]`, and all 132 seeds remain unavailable at the same
+login-class boundary. No browser or public-source request ran. The fixed
+navigation-outcome set now wins because `RV-004` requires retained outcome
+evidence rather than more link repair or verifier micro-cycles.
+
 ## Cycle 241 seed-first start — current receipt reused
 
 At `2026-09-03T17:09:19.262Z`, Cycle 237's exact receipt was twelve minutes old

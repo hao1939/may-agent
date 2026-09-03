@@ -9345,6 +9345,17 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 242 seed-first reconciliation — current receipt reused
+
+At `2026-09-03T17:16:39.376Z`, Cycle 237's exact receipt was nineteen minutes
+old. The accepted Scout review refs and standing integration lineage had not
+advanced, and no collection, schedule, or source-revision trigger had fired.
+Added/changed identities remain unknown, removals are `[]`, and all 132 seeds
+remain unavailable at the same login-class boundary. Protected and peer state
+was inspected read-only; no browser or public GitHub, arXiv, or Reddit request
+ran. The fixed navigation-outcome set follows before any further link repair or
+verifier work.
+
 ## Cycle 241 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:09:19.262Z`, Cycle 237's exact receipt was twelve minutes old
