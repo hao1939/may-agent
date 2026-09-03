@@ -8326,6 +8326,22 @@ The next ranked accessible work compacts repeated Cycle 215–219 lane and
 validation prose while preserving exact seed/result commits, outcomes,
 uncertainty, access boundaries, and revisit triggers.
 
+Exact reviewed tip `2bedfa0f1acfcb1f514766265ba51da67f5b0c73`
+passes syntax, TypeScript, source formatting, 278 tests, 1,429 assertions,
+whitespace, and all 31 relative links. Read-only health at
+`2026-09-03T14:31:19.759Z` remains bounded at 26 facts and 16 wake signals;
+root and app runtime state are empty. The clean tip retains 9/9 canonical
+accepted ancestors, exact patch pairs `9a8b80e3…f626d` and
+`5b5b3937…d18eb9`, and 4/4 accepted artifact blobs. `d041c41b54` remains
+unaccepted and outside lineage.
+
+Protected HEADs and record counts remain `/app` at
+`386b445c…1fec8` / 886 and the human overlay at
+`fd4c68ec…1514663` / three. Their porcelain-v2 fingerprints changed from the
+Cycle 218 observations `996480ad…752a3` / `ad8d222c…e74780` to
+`7b786753…7f932` / `a52b97aa…4a15`. This is externally observed protected-
+checkout drift; this worker neither wrote nor tested either checkout.
+
 ## Cycle 218 seed-first reconciliation — stable unavailable semantics
 
 Cycle 218 began from clean `df3d27efbe`. Exactly one public status and one
