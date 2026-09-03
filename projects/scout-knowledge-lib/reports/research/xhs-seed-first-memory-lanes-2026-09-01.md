@@ -9355,6 +9355,32 @@ unavailable at the same login-class boundary. No browser or public-source
 request ran. The ranked local perturbation test of the apparent title-weight
 repair interval follows.
 
+## Cycle 254 checkpoint — pass stability hides uncertainty regressions
+
+Seed-first commit `cdb9892e13` preceded the same leave-one-token construction
+used in Cycle 246, now replayed at title weights 1, 1.5, 1.875, and production
+3. All 172 variants derived from the 18 production-passing cases remain correct
+at every tested weight. Weight 1 also repairs all 11 caller variants; weights
+1.5 and 1.875 repair 9 and 8, while production weight 3 repairs only 2.
+
+This apparent robustness is incomplete. Weight 1 converts the generic negative
+from a four-way ambiguity into one wrong available result and expands the
+coordination tie from three to eight. Lower weights continue to select the
+wrong source-lane family. Thus 19/22 and 183/202 are better exact pass counts,
+but they are not sufficient evidence of safer uncertainty or broader retrieval
+quality. The same producer-authored labels shaped both the interval and the
+perturbations. No scoring change is justified without later-use, independent,
+human, or model evidence. Confidence is high for these deterministic counts and
+low for generalization. GitHub/local evidence won; GitHub, arXiv, and Reddit
+made zero public requests and retain their lane evidence and triggers. Next,
+seek an accessible actual-consumer or later-reuse trace before further scorer
+tuning.
+
+This documentation-only candidate passes 62 durable links, v1 at 10/14, v2
+at 8/8, and the broad 1,540-document / 1,698-link audit with zero errors. The
+unchanged code tree retains the exact Cycle 252 full gate of 294 tests and
+1,470 assertions.
+
 ## Cycle 253 seed-first start — current receipt reused
 
 At `2026-09-03T18:21:52.704Z`, Cycle 237's exact receipt was eighty-five
