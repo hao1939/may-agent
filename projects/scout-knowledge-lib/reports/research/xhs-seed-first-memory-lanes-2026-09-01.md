@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 162 checkpoint — snapshot output identifies its own format
+
+Seed commit `404461bd2786aa00c70a733f621e06660f715e48` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+snapshot-output audit.
+
+Exact local `0440507e23f31fdf52b8d935fddcfa470ace6ce7` adds immutable
+top-level schema `scout.verification-allocation-snapshot-selection-output/v1`
+through the snapshot summary path. The focused helper/integration gate passes
+14 tests and 75 assertions plus TypeScript, focused formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests. GitHub retains its four named exact heads, arXiv retains MemGauge
+`2608.30177v1` and allocation study `2608.25553v3`, and Reddit remains last
+known RSS-readable/JSON-403; their recorded triggers are unchanged. Confidence
+is high for distinct current local serialization identity and low for
+computation authentication, authority, models, providers, or future formats.
+The next ranked control exercises the fast snapshot CLI end to end and verifies
+the envelope without changing nested evidence or provider denial.
+
 ## Cycle 161 checkpoint — direct output identifies its format
 
 Seed commit `8df9797ead3d53d27aff68a6d4fbbe0afe2c542a` records unchanged

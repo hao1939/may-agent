@@ -2544,6 +2544,25 @@ This versions current serialization only; it does not retroactively identify
 old outputs or authenticate their computation, policy, or provider. The next
 control audits the separate snapshot-selection output contract.
 
+## Cycle 162 versioned snapshot-selection serialization
+
+Seed commit `404461bd2786aa00c70a733f621e06660f715e48` preceded the
+snapshot-output audit. The summary already preserved nested snapshot,
+evidence, decision, selection, and provider-denial state, but its distinct
+outer format had no immutable identity.
+
+Exact local `0440507e23f31fdf52b8d935fddcfa470ace6ce7` applies schema
+`scout.verification-allocation-snapshot-selection-output/v1` through the
+snapshot summary function. A conflicting caller-like schema is overwritten,
+and both helper and integration assertions pin the distinct envelope. Fourteen
+focused tests pass with 75 assertions plus TypeScript, formatting, and
+whitespace.
+
+This versions current serialization only. It does not authenticate
+computation, policy, authority, models, providers, or future compatibility.
+The next control exercises the actual fast snapshot CLI end to end and checks
+that the schema appears without changing nested evidence or provider denial.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
