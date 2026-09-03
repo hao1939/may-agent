@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readDescriptorSafeLocalEvidence } from "./descriptor-safe-local-evidence";
+import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
 import {
   isIdentityRobustFrontier,
   type IdentityRobustFrontierPoint,
@@ -195,15 +196,29 @@ export async function loadIdentityRobustFrontierSnapshot(
     };
   }
   let candidate: unknown;
+  let snapshotText: string;
   try {
-    candidate = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(localEvidence.bytes!),
+    snapshotText = new TextDecoder("utf-8", { fatal: true }).decode(
+      localEvidence.bytes!,
     );
+    candidate = JSON.parse(snapshotText);
   } catch {
     return {
       ok: false,
       snapshot: null,
       errors: ["frontier snapshot must contain valid UTF-8 JSON"],
+      providerCallsAuthorized: false,
+      snapshotByteSha256: localEvidence.sha256,
+      snapshotByteLength: localEvidence.byteLength,
+      snapshotEvidenceStatus: localEvidence.evidenceStatus,
+      scopeLimit,
+    };
+  }
+  if (hasDuplicateJsonObjectKeys(snapshotText)) {
+    return {
+      ok: false,
+      snapshot: null,
+      errors: ["frontier snapshot contains duplicate JSON object keys"],
       providerCallsAuthorized: false,
       snapshotByteSha256: localEvidence.sha256,
       snapshotByteLength: localEvidence.byteLength,

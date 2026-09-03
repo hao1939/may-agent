@@ -68,6 +68,43 @@ describe("identity-robust frontier snapshot", () => {
     });
   });
 
+  it("rejects duplicate keys in a byte-matched frontier snapshot", async () => {
+    const snapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const bytes = `${JSON.stringify(snapshot).replace(
+      '"providerCallsAuthorized":false',
+      '"providerCallsAuthorized":false,"providerCallsAuthorized":false',
+    )}\n`;
+    const byteSha256 = createHash("sha256").update(bytes).digest("hex");
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-snapshot-"));
+    roots.push(root);
+    await writeFile(join(root, "frontier.json"), bytes);
+
+    expect(
+      await loadIdentityRobustFrontierSnapshot(
+        root,
+        "frontier.json",
+        byteSha256,
+        {
+          rowSha256: snapshot.rowSha256,
+          resultSha256: snapshot.resultSha256,
+          frontierSha256: snapshot.frontierSha256,
+          frontierCount: snapshot.frontier.length,
+        },
+      ),
+    ).toMatchObject({
+      ok: false,
+      snapshot: null,
+      errors: ["frontier snapshot contains duplicate JSON object keys"],
+      providerCallsAuthorized: false,
+      snapshotByteSha256: byteSha256,
+      snapshotEvidenceStatus: "local-byte-match-unverified",
+    });
+  });
+
   it("rejects a point mutation, a self-consistent wrong computation, and extra authority", () => {
     const snapshot = createIdentityRobustFrontierSnapshot(
       frontier,
