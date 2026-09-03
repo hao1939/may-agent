@@ -87,6 +87,26 @@ describe("identity-robust frontier CLI input", () => {
     ).toThrow("must contain valid JSON");
   });
 
+  it("rejects duplicate keys in either inline JSON argument", () => {
+    for (const [policyJson, evidenceJson] of [
+      ['{"policy":true,"policy":true}', '{"manifest":true}'],
+      ['{"policy":true}', '{"manifest":true,"manifest":true}'],
+    ]) {
+      expect(() =>
+        parseIdentityRobustFrontierCliInput([
+          "--policy-json",
+          policyJson!,
+          "--evidence-manifest-json",
+          evidenceJson!,
+          "--evidence-root",
+          "/tmp/evidence",
+          "--freeze-bundle-root",
+          "/tmp/freeze",
+        ]),
+      ).toThrow("must not contain duplicate JSON object keys");
+    }
+  });
+
   it("rejects partial or reordered snapshot-backed input", () => {
     expect(() =>
       parseIdentityRobustSnapshotFrontierCliInput([

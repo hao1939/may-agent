@@ -1,3 +1,5 @@
+import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+
 export type IdentityRobustFrontierCliInput = {
   policyCandidate: unknown;
   evidenceManifestCandidate: unknown;
@@ -35,6 +37,14 @@ export function parseIdentityRobustFrontierCliInput(
   } catch {
     throw new Error(
       "policy and evidence manifest arguments must contain valid JSON",
+    );
+  }
+  if (
+    hasDuplicateJsonObjectKeys(args[1]!) ||
+    hasDuplicateJsonObjectKeys(args[3]!)
+  ) {
+    throw new Error(
+      "policy and evidence manifest arguments must not contain duplicate JSON object keys",
     );
   }
   return {
