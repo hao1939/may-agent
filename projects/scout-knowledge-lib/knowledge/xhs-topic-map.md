@@ -4176,26 +4176,14 @@ calls the exhaustive INDEX the entry point. Determine whether one link to the
 new short knowledge landing page can align human and workflow navigation
 without duplicating content.
 
-## Cycle 272 seed-first start — local continuity
+## Cycle 272 seed-first transition — detail retained once
 
-Exact Cycle 271 result `827fb6ece543b268a902038c60d2e99cdb84b20d`
-has tree `242192201ae498f798460d3f0b083e8f9c9a5788`, identical to its
-fully validated candidate tree. It passes syntax, TypeScript, formatting,
-Cycle 237 projection, all 67 scoped durable links, navigation v1 at 11/14 and
-v2 at 8/8, and 296 tests / 1,479 assertions. The standing tree is clean.
-
-At `2026-09-03T20:14:27.401Z`, the exact Cycle 237 receipt was one hundred
-ninety-seven minutes old, inside the six-hour observation cadence. No seed,
-semantic-access, public-lane, or accepted-review trigger changed, so this
-bounded reconciliation reused it with zero browser or public requests.
-Added/changed collected identities remain unknown, observed removals are `[]`,
-and all 132 durable IDs remain unavailable.
-
-Protected fingerprints stayed exact across Cycle 271: `/app` remains 907
-records / `80dc6582…e380`, its Scout scope remains 296 /
-`c4485b46…c375`, `cycle248-review` remains at two records, the human overlay at
-three, and accepted reviewer head remains `f6a7a65928`. None was written or
-tested. Commit this seed record before the maintenance-prompt boundary audit.
+Exact result `827fb6ece5` preceded the bounded reconciliation retained in the
+[detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-272-seed-first-start--local-continuity).
+It reused the current receipt with zero browser or public requests:
+added/changed identities stayed unknown, removals were `[]`, and all 132 IDs
+remained unavailable. Protected and peer fingerprints stayed exact; none was
+written or tested. Seed `98dbd0a162` then preceded the prompt audit below.
 
 ## Cycle 272 checkpoint — bounded navigation replaces mandatory INDEX loading
 
