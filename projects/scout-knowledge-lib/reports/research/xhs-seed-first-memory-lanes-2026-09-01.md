@@ -9560,6 +9560,26 @@ two-line longest exact run, so a future seed-first audit must preserve mutable
 retention, causality, validation, and rollback distinctions rather than apply
 mechanical exact-block deletion.
 
+## Cycle 287 seed-first start — exact Cycle 286 result retained
+
+Cycle 287 began from clean Cycle 286 result
+`826114972c53747ac34fc854cfa192c25b2fa586`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 71 scoped links, both
+navigation fixtures, and all 296 tests / 1,483 assertions. The broad audit
+passed 1,540 tracked Markdown documents / 1,707 local prose links. Read-only
+health at `2026-09-03T22:32:10.669Z` returned 30 facts, 16 wakes, and
+`truncated:true`; the tree was clean, standing review `ff923ccde4` was
+contained, and unaccepted `d041c41b54` remained excluded. Protected `/app`
+retained HEAD `386b445c…41fec8`, 386 records / `00bcc281…15c5ed4`, and its
+296-record Scout scope retained `a430d0c9…322f7e`.
+
+At `2026-09-03T22:32:10.742Z`, Cycle 237's exact XHS receipt through
+`2026-09-03T16:57:11.030Z` was about 335 minutes old, still inside the
+six-hour cadence. No browser, GitHub, arXiv, or Reddit request ran;
+added/changed identities remain unknown, removals are `[]`, and all 132 IDs
+remain unavailable. Commit this ordering record before auditing Cycle 280's
+non-exact 41-line map / 79-line report semantic overlap.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

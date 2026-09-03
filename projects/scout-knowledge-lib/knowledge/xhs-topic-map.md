@@ -3956,6 +3956,17 @@ Cycle 280's 41-line map / 79-line report retained-outcome narration: it shares
 only eight individual lines and a two-line longest exact run, so preserve
 causal and rollback distinctions before any semantic compaction.
 
+## Cycle 287 seed-first start — validated local continuity
+
+Cycle 287 began from clean Cycle 286 result
+`826114972c53747ac34fc854cfa192c25b2fa586`. At
+`2026-09-03T22:32:10.742Z`, Cycle 237's receipt was about 335 minutes old,
+inside the six-hour cadence. No browser or public-source request ran:
+added/changed identities remain unknown, removals are `[]`, and all 132 IDs
+remain unavailable. Cycle 286 passed 296 tests / 1,483 assertions, 71 scoped
+links, 1,540 documents / 1,707 broad links, and read-only health at 30 facts /
+16 wakes. Commit this seed record before the Cycle 280 semantic-overlap audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
