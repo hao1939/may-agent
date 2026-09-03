@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through Cycle 262 seed e89312ece59ad91976c4a4b2e801d894b1d53b8b after the Cycle 261 result: the all-zero aggregate alert fix is sound, zero-inclusive per-source counts preserve a masked lane loss without claiming per-source health, the Cycle 259 reviewer cursor is integrated, the current review remains pending, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through Cycle 262 seed e89312ece59ad91976c4a4b2e801d894b1d53b8b after the Cycle 261 result: the all-zero aggregate alert fix is sound, zero-inclusive per-source counts preserve a masked lane loss without claiming per-source health, the Cycle 261 review is integrated, and RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "project.knowledge.maintained", "RV-004", "RV-008", "RV-010", "RV-011", "RV-012", "RV-013", "RV-014"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through e89312ece59ad91976c4a4b2e801d894b1d53b8b; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, protected-state attempt, receipt, metric, snapshot, alert, event, and current per-source counts, all ten historical receipt joins, six report-addition histories, the complete available-object commit window, collector and Host alert-path source, consumer absence, reviewer patch and blob identities, fixture lineage, current-revision gates, broad links, and health in the reviewer-owned worktree."
@@ -461,15 +461,13 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   patch ID `4768fdae542cf5a79ecafd1e5ef57eaea954365f` and exact cursor blob
   `f6348db246c7de8ca474eb85d214cf476eaa9e73`. Its integration status and
   Cycle 259 dispositions are superseded by this newer cursor.
-- Current reviewer source is standing `e89312ece59ad91976c4a4b2e801d894b1d53b8b`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 260-261 dispositions,
-  including RV-013 and RV-014, and advances this cursor. Rollback is one
-  ordinary revert.
-  It is not landed until standing contains its exact or patch-equivalent change
-  and current-tip validation passes. If the standing owner rejects either
-  source fix, revert its paired report before or with the implementation so the
-  durable behavior claim does not outlive the code.
+- Reviewer `5a7a9b077b335159214ab34f06e872a2786c6e3c` is integrated as
+  standing `c2142feff97309901429f0d68bfdc88ee4ea79ce`; both share stable
+  patch ID `b687b029818900b0d5f125f41b59ace837ee2d56`. It adds the Cycle
+  260-261 dispositions, including RV-013 and RV-014. Rollback is one ordinary
+  revert. If the standing owner rejects either source fix, revert its paired
+  report before or with the implementation so the durable behavior claim does
+  not outlive the code.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
