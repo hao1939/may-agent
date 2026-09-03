@@ -405,9 +405,20 @@ describe("identity-robust frontier freeze adapter", () => {
     expect(aliased.frozenSelection?.selection.policySha256).toBe(
       baseline.frozenSelection?.selection.policySha256,
     );
-    expect(aliased.frozenSelection?.selection.evidenceManifestSha256).not.toBe(
-      baseline.frozenSelection?.selection.evidenceManifestSha256,
-    );
+    const baselineManifestSha256 =
+      baseline.frozenSelection?.selection.evidenceManifestSha256;
+    const aliasedManifestSha256 =
+      aliased.frozenSelection?.selection.evidenceManifestSha256;
+    expect(aliasedManifestSha256).not.toBe(baselineManifestSha256);
+
+    const aliasedSummary =
+      summarizeIdentityRobustSnapshotFrontierSelection(aliased);
+    expect(
+      aliasedSummary.frozenSelection?.selection.evidenceManifestSha256,
+    ).toBe(aliasedManifestSha256);
+    const serializedSummary = JSON.stringify(aliasedSummary);
+    expect(serializedSummary).toContain(aliasedManifestSha256!);
+    expect(serializedSummary).not.toContain(baselineManifestSha256!);
   });
 
   it("rejects old decision evidence across an expected-snapshot version rollover", async () => {
