@@ -759,7 +759,7 @@ export function acceptedSourceOutputsMetricDefinition(appDir: string) {
     sourceCommand: `bun ${appDir}/scripts/accepted-source-outputs.ts`,
     measureInterval: 21_600_000,
     status: "active",
-    description: `Aggregate distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. The source-command note preserves zero-inclusive per-source output counts, but the scalar alerts only when every output disappears. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window, successive-run, per-source health, or content quality is claimed.`,
+    description: `Aggregate distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. The source-command note preserves zero-inclusive per-source output counts and distinguishes accepted output, converged without output, non-convergence, and unavailable task state; the scalar alerts only when every output disappears. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window, successive-run, per-source health, or content quality is claimed.`,
   } as const;
 }
 

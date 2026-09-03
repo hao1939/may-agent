@@ -124,6 +124,10 @@ describe("latest accepted Scout source output collector", () => {
       resources: {
         "explore-arxiv": resource("arxiv", [`${outputPrefix}arxiv.md`]),
         "explore-hn": resource("hn", [`${outputPrefix}hn.md`]),
+        "explore-xhs": {
+          spec: { workflow: "scout-explore", input: { source: "xhs" } },
+          status: { phase: "waiting", updatedAt: "2026-08-21T00:30:00.000Z" },
+        },
       },
     };
     const oneSourceLost = structuredClone(matched);
@@ -149,6 +153,13 @@ describe("latest accepted Scout source output collector", () => {
       xhs: 0,
       github: 0,
       reddit: 0,
+    });
+    expect(arxivLost.note.sourceStates).toEqual({
+      arxiv: "converged-without-output",
+      hn: "accepted-output",
+      xhs: "not-converged",
+      github: "resource-unavailable",
+      reddit: "resource-unavailable",
     });
   });
 

@@ -15,6 +15,11 @@ export const SCOUT_EXPLORATION_SOURCES = [
 ] as const;
 
 export type ScoutExplorationSource = (typeof SCOUT_EXPLORATION_SOURCES)[number];
+export type ScoutSourceOutputState =
+  | "accepted-output"
+  | "converged-without-output"
+  | "not-converged"
+  | "resource-unavailable";
 
 export type AcceptedSourceOutputReceipt = {
   id: string;
@@ -36,6 +41,7 @@ export type AcceptedSourceOutputSample = {
     completedAttemptCount: number;
     outputs: string[];
     sourceOutputCounts: Record<ScoutExplorationSource, number>;
+    sourceStates: Record<ScoutExplorationSource, ScoutSourceOutputState>;
     resources: AcceptedSourceOutputReceipt[];
   };
 };
@@ -132,6 +138,27 @@ export function collectAcceptedSourceOutputs(
       ).size,
     ]),
   ) as Record<ScoutExplorationSource, number>;
+  const sourceStates = Object.fromEntries(
+    SCOUT_EXPLORATION_SOURCES.map((source) => {
+      const sourceResources = Object.entries(resources)
+        .filter(
+          ([taskId, rawResource]) =>
+            sourceForTask(taskId, record(rawResource)) === source,
+        )
+        .map(([, rawResource]) => record(rawResource));
+      const state: ScoutSourceOutputState =
+        sourceOutputCounts[source] > 0
+          ? "accepted-output"
+          : sourceResources.length === 0
+            ? "resource-unavailable"
+            : sourceResources.some(
+                  (resource) => record(resource.status).phase === "converged",
+                )
+              ? "converged-without-output"
+              : "not-converged";
+      return [source, state];
+    }),
+  ) as Record<ScoutExplorationSource, ScoutSourceOutputState>;
   const completedAttemptCount = Object.values(record(root.attempts)).filter(
     (rawAttempt) => {
       const attempt = record(rawAttempt);
@@ -157,6 +184,7 @@ export function collectAcceptedSourceOutputs(
       completedAttemptCount,
       outputs,
       sourceOutputCounts,
+      sourceStates,
       resources: acceptedResources,
     },
   };
