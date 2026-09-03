@@ -319,6 +319,10 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 ## Reviewer source/result and integration status
 
+- Reviewer `95980b20571c6b6789848ef738fd175f26b27eee` is integrated as
+  standing `590a0b804a2b8f78d1d39edddd8a3167267b6b88`; both share stable
+  patch ID `27e5dcc8381420d6f1930738dd51539729199ac2` and exact cursor blob
+  `7456416b2ffa3cab62305c66f00a189294323c93`. RV-004 remains high/open.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
