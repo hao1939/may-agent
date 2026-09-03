@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   lstat,
+  link,
   mkdtemp,
   mkdir,
   readdir,
   rename,
   rm,
+  stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -239,6 +241,52 @@ describe("verification-allocation freeze bundle", () => {
       expect(result.artifactCount).toBe(7);
       expect(result.providerCallsAuthorized).toBe(false);
     }
+  });
+
+  it("treats hard-linked and copied same-byte artifacts as content aliases", async () => {
+    const buildAlias = async (hardLinked: boolean) => {
+      const { root, manifest } = await fixture();
+      const source = "MANIFEST.sha256.ots";
+      const alias = hardLinked ? "hard-link-proof.ots" : "copied-proof.ots";
+      const proofBytes = "fixture timestamp proof";
+      if (hardLinked) {
+        await link(join(root, source), join(root, alias));
+      } else {
+        await writeFile(join(root, alias), proofBytes);
+      }
+      manifest.artifacts.push({
+        name: alias,
+        sha256: freezeArtifactSha256(proofBytes),
+      });
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const [sourceStat, aliasStat] = await Promise.all([
+        stat(join(root, source)),
+        stat(join(root, alias)),
+      ]);
+      expect(sourceStat.ino === aliasStat.ino).toBe(hardLinked);
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result).toMatchObject({
+        ok: true,
+        errors: [],
+        artifactCount: 7,
+        providerCallsAuthorized: false,
+      });
+      return result;
+    };
+
+    const hardLinked = await buildAlias(true);
+    const copied = await buildAlias(false);
+    expect(hardLinked.policyScope).toEqual(copied.policyScope);
+    expect(hardLinked.externalRegistrationEvidenceStatus).toBe(
+      copied.externalRegistrationEvidenceStatus,
+    );
+    expect(hardLinked.timestampProofEvidenceStatus).toBe(
+      copied.timestampProofEvidenceStatus,
+    );
   });
 
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
