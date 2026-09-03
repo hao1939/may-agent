@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 141 checkpoint — escaped prompt keys remain raw-unregistered
+
+Seed commit `b9b0b92719fbc2bcf4d5c9d946dd7c1ec20e89f3` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+control. One prompt then changed only `authority` to JSON-equivalent
+`auth\u006frity`; the outer schedule was canonically reserialized and both
+digest bindings were recomputed.
+
+Exact local `02149b9e9281d6bdbe89d135dee506c024c0c9c7` rejects the prompt
+with its episode-scoped unregistered-difference error, clears registration
+evidence, keeps timestamp-proof presence explicitly unverified, and denies
+provider calls. The direct freeze gate passes 20 tests and 106 assertions plus
+TypeScript, formatting, and whitespace. No production change was required.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded exact heads, paper versions, RSS/JSON
+boundary, and revisit triggers. This proves raw exactness in the current local
+render contract, not prompt quality, proof validity, model behavior, provider
+authority, or external schedule compatibility. The next ranked investigation
+tests internal content agreement between byte-bound model-resolution evidence
+and the manifest fields that enter model scope.
+
 ## Cycle 140 checkpoint — embedded prompt duplicates remain unregistered
 
 Seed commit `d05c11930ce06b16bedc294e5011cc689b5f3eea` records unchanged

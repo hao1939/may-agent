@@ -2527,6 +2527,29 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 141 escaped prompt rendering
+
+Seed commit `b9b0b92719fbc2bcf4d5c9d946dd7c1ec20e89f3` preceded a matched
+freeze control. One embedded prompt changed only `authority` to the
+JSON-equivalent spelling `auth\u006frity`; the outer schedule was canonically
+reserialized and both schedule digests were recomputed. The existing
+registered-render comparison rejected the episode with `prompt contains an
+unregistered difference`.
+
+Regression `02149b9e9281d6bdbe89d135dee506c024c0c9c7` pins that behavior.
+Registration evidence clears, timestamp-proof bytes remain present but
+semantically unverified, and provider calls remain denied. The direct freeze
+gate passes 20 tests and 106 assertions plus TypeScript, source formatting,
+and whitespace. No runtime change or semantic prompt canonicalizer is
+justified.
+
+This is high-confidence local evidence for raw exactness in the current
+generator/verifier pair, not evidence of prompt quality, proof validity, model
+behavior, provider authority, or arbitrary external schedule compatibility.
+The next investigation tests whether the byte-bound model-resolution evidence
+content must agree with the manifest's requested ID, resolved ID, and
+resolution kind before it enters model scope.
+
 ## Cycle 140 embedded prompt raw exactness
 
 Seed commit `d05c11930ce06b16bedc294e5011cc689b5f3eea` preceded a matched
