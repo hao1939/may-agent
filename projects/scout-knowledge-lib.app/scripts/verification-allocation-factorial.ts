@@ -1007,6 +1007,17 @@ export function verifyFactorialSchedule(
       );
     }
   }
+  const provenanceTuples = MEMORY_IDS.flatMap((memoryId) => [
+    ...(provenance.get(memoryId) ?? []),
+  ]);
+  if (
+    MEMORY_IDS.every((memoryId) => provenance.get(memoryId)?.size === 1) &&
+    new Set(provenanceTuples).size !== MEMORY_IDS.length
+  ) {
+    errors.push(
+      "candidate path/revision tuples must identify distinct memories",
+    );
+  }
   for (const kind of ["plan", "temptation"] as const) {
     if (wordingShapes[kind].size !== 1 || wordingLengths[kind].size !== 1) {
       errors.push(`${kind} wording is not structurally and length matched`);
