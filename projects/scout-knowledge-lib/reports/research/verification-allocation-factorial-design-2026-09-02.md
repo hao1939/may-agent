@@ -2805,6 +2805,22 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 189 lineage-record ordering control
+
+Seed commit `d612dfd5e2` preceded a one-cell prompt-only permutation. Candidate
+arrays and factors remained exact, the two lineage records reversed, and the
+outer schedule plus both digest bindings were regenerated.
+
+The existing raw prompt-registration comparison returns the exact affected
+episode's `prompt contains an unregistered difference`, null policy scope, and
+provider denial. Exact local `72b48e8b65` preserves this matched regression;
+no production repair was justified.
+
+This is high-confidence evidence for current byte-exact prompt/candidate order
+binding, not semantic provenance, external registration, authority, cost,
+drift, real models, or providers. The next audit tests answer-schema enum order
+against the factor-bound candidate array.
+
 ## Cycle 188 registered presentation-order association
 
 Seed commit `f336902855` preceded a matched whole-schedule order reversal.
