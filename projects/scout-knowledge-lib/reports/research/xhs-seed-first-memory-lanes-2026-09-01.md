@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 223: the canonical seed ledger holds the latest exact receipt, the Cycle 206–214 compaction preserves incomplete seed provenance, and current-state projections match the ledger."
+summary: "Seed-first Scout continuity through Cycle 224: the canonical seed ledger holds the latest exact receipt, the Cycle 206–214 compaction preserves incomplete seed provenance, and current-state projections match the ledger."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 223 observational reconciliation through 2026-09-03T14:54:09.061Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 223 at 2026-09-03T14:54:09.061Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 224 observational reconciliation through 2026-09-03T14:59:11.279Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 224 at 2026-09-03T14:59:11.279Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -9344,6 +9344,20 @@ Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` records unchanged
 semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
+
+## Cycle 224 seed-first reconciliation — stable unavailable profile
+
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in
+[seed-ledger row 224](../../knowledge/xhs-seed-ledger.md). Semantic access is
+unchanged: 30 public notes, an unavailable saved-profile login wall with ten
+opaque links, unknown additions/changes, removals `[]`, and all 132 durable
+seeds unavailable. No representative post, account mutation, public-source
+request, or consistency-control work preceded this record.
+
+The current-projection consistency control is the highest-ranked accessible
+work. Registry and all three public lanes retain their recorded change-bearing
+triggers without a request.
 
 ## Cycle 223 seed-first reconciliation — stable unavailable profile
 
