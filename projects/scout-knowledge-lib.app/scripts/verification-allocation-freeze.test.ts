@@ -7,6 +7,7 @@ import { buildToyFactorialSchedule } from "./verification-allocation-factorial";
 
 function validFixture() {
   const schedule = buildToyFactorialSchedule();
+  const bundleBytes = "fixture bundle bytes";
   const artifactContents = {
     "schedule.json": JSON.stringify(schedule),
     "model-resolution.json": JSON.stringify({
@@ -15,8 +16,8 @@ function validFixture() {
       resolutionKind: "content-addressed",
     }),
     "seed-policy.md": "fixture seeds are enumerated once",
-    "bundle.zip": "fixture bundle bytes",
-    "MANIFEST.sha256": "fixture checksum manifest",
+    "bundle.zip": bundleBytes,
+    "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
     "MANIFEST.sha256.ots": "fixture timestamp proof",
   };
   const artifacts = Object.entries(artifactContents).map(([name, bytes]) => ({
@@ -111,6 +112,28 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("rejects opaque or contradictory external checksum manifests", () => {
+    for (const checksumBytes of [
+      "fixture checksum manifest",
+      `${"0".repeat(64)}  bundle.zip\n`,
+    ]) {
+      const { manifest, artifactContents } = validFixture();
+      artifactContents["MANIFEST.sha256"] = checksumBytes;
+      const checksumSha256 = freezeArtifactSha256(checksumBytes);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "MANIFEST.sha256",
+      )!.sha256 = checksumSha256;
+      manifest.externalRegistration.manifestSha256 = checksumSha256;
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain(
+        "external registration checksum manifest does not bind its artifact",
+      );
+      expect(result.externalRegistrationEvidenceStatus).toBe("");
+    }
+  });
+
   it("derives stable and factor-specific policy scope references", () => {
     const { manifest, artifactContents } = validFixture();
     const first = verifyExecutionFreezeManifest(manifest, artifactContents);
@@ -155,6 +178,14 @@ describe("verification-allocation execution freeze", () => {
       (artifact) => artifact.name === "bundle.zip",
     )!.sha256 = bundleSha256;
     manifest.externalRegistration.artifactSha256 = bundleSha256;
+    artifactContents["MANIFEST.sha256"] = `${bundleSha256}  bundle.zip\n`;
+    const manifestSha256 = freezeArtifactSha256(
+      artifactContents["MANIFEST.sha256"],
+    );
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "MANIFEST.sha256",
+    )!.sha256 = manifestSha256;
+    manifest.externalRegistration.manifestSha256 = manifestSha256;
     const changedBundle = verifyExecutionFreezeManifest(
       manifest,
       artifactContents,

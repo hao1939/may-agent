@@ -49,12 +49,13 @@ const frontier: IdentityRobustFrontierPoint[] = [
 async function freezeFixture() {
   const root = await mkdtemp(join(tmpdir(), "scout-frontier-freeze-"));
   temporaryRoots.push(root);
+  const bundleBytes = "fixture bundle bytes";
   const contents = {
     "schedule.json": JSON.stringify(buildToyFactorialSchedule()),
     "evidence/model-resolution.json": "fixture model resolution",
     "seed-policy.md": "fixture seeds are enumerated once",
-    "bundle.zip": "fixture bundle bytes",
-    "MANIFEST.sha256": "fixture checksum manifest",
+    "bundle.zip": bundleBytes,
+    "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
     "MANIFEST.sha256.ots": "fixture timestamp proof",
   };
   const hash = (name: keyof typeof contents) =>
@@ -489,7 +490,14 @@ describe("identity-robust frontier freeze adapter", () => {
       (artifact: { name: string }) => artifact.name === "bundle.zip",
     ).sha256 = substituteSha256;
     substituted.externalRegistration.artifactSha256 = substituteSha256;
+    const substituteManifest = `${substituteSha256}  bundle.zip\n`;
+    const substituteManifestSha256 = freezeArtifactSha256(substituteManifest);
+    substituted.artifacts.find(
+      (artifact: { name: string }) => artifact.name === "MANIFEST.sha256",
+    ).sha256 = substituteManifestSha256;
+    substituted.externalRegistration.manifestSha256 = substituteManifestSha256;
     await writeFile(join(freeze.root, "bundle.zip"), substituteBytes);
+    await writeFile(join(freeze.root, "MANIFEST.sha256"), substituteManifest);
     await writeFile(manifestPath, JSON.stringify(substituted));
 
     const result = await selectIdentityRobustFrontierPointFromSnapshot(

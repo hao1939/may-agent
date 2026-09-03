@@ -364,6 +364,7 @@ function validateSchedule(
 function validateExternalRegistration(
   manifest: FreezeManifest,
   artifacts: Map<string, FreezeArtifact>,
+  artifactContents: Record<string, ArtifactBytes>,
   errors: string[],
 ): void {
   const registration = manifest.externalRegistration;
@@ -396,6 +397,36 @@ function validateExternalRegistration(
     manifestArtifact.sha256 !== registration.manifestSha256
   ) {
     errors.push("external registration manifest is not byte-bound");
+  }
+  const checksumBytes = artifactContents[String(registration.manifestArtifact)];
+  if (checksumBytes !== undefined) {
+    let checksumText = "";
+    try {
+      checksumText =
+        typeof checksumBytes === "string"
+          ? checksumBytes
+          : new TextDecoder("utf-8", { fatal: true }).decode(checksumBytes);
+    } catch {
+      // The stable error below covers undecodable and structurally invalid
+      // checksum manifests without exposing arbitrary artifact contents.
+    }
+    const matchingChecksums = checksumText
+      .split("\n")
+      .map((line) => line.replace(/\r$/, ""))
+      .flatMap((line) => {
+        const match = line.match(/^([0-9a-f]{64}) [ *](.+)$/);
+        return match && match[2] === registration.artifactName
+          ? [match[1]]
+          : [];
+      });
+    if (
+      matchingChecksums.length !== 1 ||
+      matchingChecksums[0] !== registration.artifactSha256
+    ) {
+      errors.push(
+        "external registration checksum manifest does not bind its artifact",
+      );
+    }
   }
   if (!artifacts.has(String(registration.proofArtifact))) {
     errors.push("external registration proof artifact is missing");
@@ -438,7 +469,7 @@ export function verifyExecutionFreezeManifest(
     errors,
   );
   const errorCountBeforeRegistration = errors.length;
-  validateExternalRegistration(manifest, artifacts, errors);
+  validateExternalRegistration(manifest, artifacts, artifactContents, errors);
   return {
     ok: errors.length === 0,
     errors,

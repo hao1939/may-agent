@@ -21,12 +21,13 @@ async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "scout-freeze-bundle-"));
   temporaryRoots.push(root);
   const schedule = JSON.stringify(buildToyFactorialSchedule());
+  const bundleBytes = "fixture bundle bytes";
   const contents = {
     "schedule.json": schedule,
     "evidence/model-resolution.json": "fixture model resolution",
     "seed-policy.md": "fixture seeds are enumerated once",
-    "bundle.zip": "fixture bundle bytes",
-    "MANIFEST.sha256": "fixture checksum manifest",
+    "bundle.zip": bundleBytes,
+    "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
     "MANIFEST.sha256.ots": "fixture timestamp proof",
   };
   const hash = (name: keyof typeof contents) =>
