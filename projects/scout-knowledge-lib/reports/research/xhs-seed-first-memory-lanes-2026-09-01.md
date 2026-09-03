@@ -9927,6 +9927,21 @@ unavailable. Protected `/app` stays externally observed at HEAD
 remains 296 / `7e4d0937…26a8a`. Commit this ordering before the ranked Cycle
 277 reviewer-integration mirror.
 
+## Cycle 295 checkpoint — compact integrated-review proof
+
+Cycle 277 shared an exact 20-line / 1,142-byte map/report run at SHA-256
+`2d8543288d37bd569d993768c64a9e0819c4df95da69788423e2a0a38112575d`.
+This report remains the authoritative source/result, fast-forward, patch,
+validation, health, and rollback record.
+
+The map replacement retains the accepted retained-window/no-code disposition,
+resolved RV-018/RV-019 status, and RV-004's missing query-to-selection/later-
+decision/outcome limit. It drops only repeated proof and a stale instruction
+for the 111-line mirror work completed in later compaction cycles. GitHub,
+arXiv, and Reddit made zero requests and retain their evidence and triggers.
+Next, review Cycle 258's 19-line / 1,120-byte historical-target boundary
+without inventing its missing query or contemporaneous index.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

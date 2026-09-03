@@ -4149,6 +4149,16 @@ minutes old. No browser or public-source request ran; additions/changes remain
 unknown, removals are `[]`, and all 132 IDs remain unavailable. The ranked
 Cycle 277 reviewer-integration mirror follows.
 
+## Cycle 295 checkpoint — accepted review keeps one proof record
+
+Cycle 277's 20-line / 1,142-byte exact run had SHA-256
+`2d854328…12575d`. The detailed report retains source/result, fast-forward,
+patch, validation, health, and rollback proof. The map keeps RV-018/RV-019
+resolved, RV-004 high/open, and the missing outcome boundary while removing a
+stale instruction for mirror work later completed. No lane made a public
+request. Next is Cycle 258's 19-line / 1,120-byte historical-target boundary;
+its missing query/index evidence must remain explicit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -4266,19 +4276,12 @@ protected state changed; rollback is one ordinary reverse-order revert.
 
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
-Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
-reviewer result `af409f4ef3c4d3c1e3eaf0754ed9d3cd1b8db0c9`, integrated by
-fast-forward with no overlap resolution. The one-file cursor delta is 77
-insertions / 28 deletions and has stable patch ID
-`b313aa316dcf1a851f234886dd8f5d7a1e3e7835`. It accepts Cycle 276's
-retained-window qualification and no-code disposition. `RV-018` and `RV-019`
-remain resolved; `RV-004` remains high/open because no query-to-selection,
-later-decision, or outcome evidence appeared. The integrated candidate passes
-syntax, TypeScript, formatting, Cycle 237 projection, 69 scoped links,
-navigation v1 at 11/14 and v2 at 8/8, and 296 tests / 1,483 assertions;
-read-only health remains 30 facts / 16 wakes. The next seed-first cycle should
-rank the reviewer's explicit 111-line Cycle 275-276 mirror duplication against
-other accessible retrieval work before the six-hour XHS observation boundary.
+The [detailed Cycle 277 checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-277-checkpoint--cycle-276-review-lands-exactly)
+retains exact source/result, fast-forward, patch, validation, and health proof.
+It accepts Cycle 276's retained-window/no-code disposition and keeps RV-018 and
+RV-019 resolved. RV-004 stays high/open because no query-to-selection, later
+decision, or outcome evidence appeared. The formerly queued 111-line mirror
+was subsequently consolidated; it is not current next work.
 
 ## Cycle 276 seed-first start — retention-bound investigation
 
