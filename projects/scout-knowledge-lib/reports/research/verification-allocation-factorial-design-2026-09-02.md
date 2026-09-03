@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 102, including decision-record content cross-binding bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 102, including decision-record content cross-binding bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1534,6 +1534,58 @@ cost, provider transfer, and the target's substantive value. The next ranked
 question is to audit the retained primary archive for measured drift or cost
 evidence that could justify any reserve target or episode ceiling; absent such
 evidence, the selection must remain illustrative rather than operational.
+
+## Cycle 103 retained-archive drift and cost audit
+
+Seed reconciliation `5a6b0b2deeeca1c90f64258fbe6f85360bbd737f`
+preceded the conclusion. The saved target retained its profile-class semantic
+fingerprint, login wall, 102,929-byte length, and zero attributable items; only
+its body SHA-256 changed. Added and changed IDs remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable.
+
+Both retained copies of the `2608.25553v3` data/code ZIP are byte-identical at
+61,508,909 bytes and SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+The Experiment C completion manifest has SHA-256
+`ddacf2b6564b1d64c5d1fed275a3b8876100c81a85394ea471941851d7bd3f82`;
+all 5,400 listed episode members reproduce their declared hashes with zero
+mismatches.
+
+Those raw records do contain measured operating-volume evidence that the
+results report does not aggregate. Summing every `usage` entry yields
+15,072,675 input tokens, 7,110,497 output tokens, and 3,019,903 reported
+reasoning or thinking tokens across 10,500 completed generation calls. Every
+call has one usage record. The first and last call times are
+`2026-08-28T02:33:31.643Z` and `06:04:24.019Z`, reproducing the report's
+12,652-second wall-clock run and seven recovered transport retries.
+
+This supports using the archive as a historical sizing input, but contradicts
+treating episode count as operating cost. Every named model has the same 900
+episodes and 1,750 completed calls, yet per-model input volume spans 1,672,953
+to 3,935,347 tokens (2.352 times), output volume spans 545,032 to 2,454,367
+(4.503 times), and summed call duration spans 7,888,374 to 36,486,282 ms
+(4.625 times). The design projected about 14 million input and 7.4 million
+output tokens and four hours; the observed totals are 7.66% higher, 3.91%
+lower, and 12.14% shorter respectively. The repository explicitly supplies no
+prices.
+
+The archive does not supply a measured drift distribution or a reserve target.
+Its schedule-position diagnostic is not a repeated-time marginal-drift
+estimate; its one mention of model drift is an alternative explanation. In
+the analysis, `spend` is the number of memory IDs named, while `C3 cost` is a
+decision-outcome diagnostic, neither money nor resource consumption. The
+frontier's 96-episode difference is only 0.2907% of equal 172 sampling, but the
+archive's episodes use different one- or two-call prompts and therefore cannot
+price or time Scout's 32-cell factorial episodes without an explicit transfer
+assumption.
+
+Confidence is high for archive identity, manifest coverage, exact usage sums,
+and the absence of a registered drift estimate or price table; low for current
+provider transfer, monetary cost, throughput transfer, and any real drift
+shape. The illustrative 0.0006 record remains non-operational. The next ranked
+question is whether the policy evidence schema can distinguish retrieval-count
+budgets, measured but non-transferable usage, and a protocol-matched approved
+episode ceiling, failing closed when units or applicability are absent.
 
 ## Go/no-go boundary
 
