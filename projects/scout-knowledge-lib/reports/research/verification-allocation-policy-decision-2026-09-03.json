@@ -1,5 +1,5 @@
 {
-  "schema": "scout.verification-allocation-policy-decision/v1",
+  "schema": "scout.verification-allocation-policy-decision/v2",
   "decisionId": "cycle-101-byte-bound-synthetic-reserve",
   "decisionOwner": "Scout standing goal g_c1b31972-1674-47cb-96d8-c797d768010d",
   "decisionRevision": "cycle-101-local-byte-binding",
@@ -10,6 +10,14 @@
     "selectionBasis": "minimum-uniform-drift-reserve",
     "minimumUniformDriftReserve": 0.0006,
     "evidenceReference": "decision-record:cycle-101-byte-bound-synthetic-reserve"
+  },
+  "policyEvidenceApplicability": {
+    "schema": "scout.verification-allocation-policy-applicability/v1",
+    "evidenceKind": "uniform-marginal-drift-reserve",
+    "evidenceUnit": "probability-per-model",
+    "protocolReference": "report:verification-allocation-factorial-design-2026-09-02",
+    "modelScopeReference": "model-set:retained-six-model-identities",
+    "applicabilityStatus": "not-established"
   },
   "rationale": "Exercise the smallest frontier point whose frozen synthetic per-model uniform drift reserve is at least 0.0006.",
   "independentEvidenceStatus": "not-provided",

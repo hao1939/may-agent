@@ -42,13 +42,32 @@ const frontier: IdentityRobustFrontierPoint[] = [
 
 function manifest(policy: IdentityRobustFrontierPolicy) {
   const decisionId = policy.evidenceReference.replace(/^decision-record:/, "");
+  const policyEvidenceApplicability =
+    policy.selectionBasis === "minimum-uniform-drift-reserve"
+      ? {
+          schema: "scout.verification-allocation-policy-applicability/v1",
+          evidenceKind: "uniform-marginal-drift-reserve",
+          evidenceUnit: "probability-per-model",
+          protocolReference: "design:fixture-factorial-v1",
+          modelScopeReference: "model-set:fixture-six",
+          applicabilityStatus: "protocol-matched-unverified",
+        }
+      : {
+          schema: "scout.verification-allocation-policy-applicability/v1",
+          evidenceKind: "complete-factorial-episode-ceiling",
+          evidenceUnit: "complete-factorial-episodes",
+          protocolReference: "design:fixture-factorial-v1",
+          modelScopeReference: "model-set:fixture-six",
+          applicabilityStatus: "protocol-matched-unverified",
+        };
   const decisionRecord = `${JSON.stringify({
-    schema: "scout.verification-allocation-policy-decision/v1",
+    schema: "scout.verification-allocation-policy-decision/v2",
     decisionId,
     decisionOwner: "fixture-owner",
     decisionRevision: "decision-revision:fixture",
     observedAt: "2026-09-03T00:00:00.000Z",
     policy,
+    policyEvidenceApplicability,
     rationale: "Synthetic fixture.",
     independentEvidenceStatus: "not-provided",
     scopeLimit: "Local synthetic control only.",
@@ -56,7 +75,7 @@ function manifest(policy: IdentityRobustFrontierPolicy) {
   return {
     decisionRecord,
     value: {
-      schema: "scout.verification-allocation-policy-evidence/v1",
+      schema: "scout.verification-allocation-policy-evidence/v2",
       evidenceClass: "caller-supplied-policy-provenance",
       policySha256: hashIdentityRobustFrontierPolicy(policy),
       evidenceReference: policy.evidenceReference,
@@ -67,6 +86,7 @@ function manifest(policy: IdentityRobustFrontierPolicy) {
       decisionRecordSha256: createHash("sha256")
         .update(decisionRecord)
         .digest("hex"),
+      policyEvidenceApplicability,
       independentEvidenceStatus: "not-provided",
     },
   };

@@ -182,6 +182,7 @@ export function selectIdentityRobustFrontierPoint(
   const evidenceBinding = bindIdentityRobustPolicyEvidence(
     policySha256,
     policy.evidenceReference,
+    policy,
     evidenceManifestCandidate,
   );
   if (!evidenceBinding.ok) {

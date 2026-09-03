@@ -5,7 +5,7 @@ import {
 } from "./descriptor-safe-local-evidence";
 
 export type IdentityRobustPolicyEvidenceManifest = {
-  schema: "scout.verification-allocation-policy-evidence/v1";
+  schema: "scout.verification-allocation-policy-evidence/v2";
   evidenceClass: "caller-supplied-policy-provenance";
   policySha256: string;
   evidenceReference: string;
@@ -14,8 +14,20 @@ export type IdentityRobustPolicyEvidenceManifest = {
   observedAt: string;
   decisionRecordArtifact: string;
   decisionRecordSha256: string;
+  policyEvidenceApplicability: IdentityRobustPolicyEvidenceApplicability;
   independentEvidenceStatus: "not-provided" | "provided-unverified";
   independentEvidenceReference?: string;
+};
+
+export type IdentityRobustPolicyEvidenceApplicability = {
+  schema: "scout.verification-allocation-policy-applicability/v1";
+  evidenceKind:
+    | "uniform-marginal-drift-reserve"
+    | "complete-factorial-episode-ceiling";
+  evidenceUnit: "probability-per-model" | "complete-factorial-episodes";
+  protocolReference: string;
+  modelScopeReference: string;
+  applicabilityStatus: "protocol-matched-unverified" | "not-established";
 };
 
 export type IdentityRobustPolicyEvidenceBinding = {
@@ -66,6 +78,58 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function expectedApplicability(
+  policyCandidate: unknown,
+): Pick<
+  IdentityRobustPolicyEvidenceApplicability,
+  "evidenceKind" | "evidenceUnit"
+> | null {
+  if (!record(policyCandidate)) return null;
+  if (policyCandidate.selectionBasis === "minimum-uniform-drift-reserve") {
+    return {
+      evidenceKind: "uniform-marginal-drift-reserve",
+      evidenceUnit: "probability-per-model",
+    };
+  }
+  if (policyCandidate.selectionBasis === "maximum-episode-count") {
+    return {
+      evidenceKind: "complete-factorial-episode-ceiling",
+      evidenceUnit: "complete-factorial-episodes",
+    };
+  }
+  return null;
+}
+
+function applicabilityMatches(
+  candidate: unknown,
+  expectedPolicyCandidate: unknown,
+): candidate is IdentityRobustPolicyEvidenceApplicability {
+  if (!record(candidate)) return false;
+  const expected = expectedApplicability(expectedPolicyCandidate);
+  return (
+    Boolean(expected) &&
+    JSON.stringify(Object.keys(candidate).sort()) ===
+      JSON.stringify(
+        [
+          "schema",
+          "evidenceKind",
+          "evidenceUnit",
+          "protocolReference",
+          "modelScopeReference",
+          "applicabilityStatus",
+        ].sort(),
+      ) &&
+    candidate.schema ===
+      "scout.verification-allocation-policy-applicability/v1" &&
+    candidate.evidenceKind === expected!.evidenceKind &&
+    candidate.evidenceUnit === expected!.evidenceUnit &&
+    nonempty(candidate.protocolReference) &&
+    nonempty(candidate.modelScopeReference) &&
+    (candidate.applicabilityStatus === "protocol-matched-unverified" ||
+      candidate.applicabilityStatus === "not-established")
+  );
+}
+
 function decisionRecordMatches(
   candidate: unknown,
   expectedPolicyCandidate: unknown,
@@ -80,6 +144,7 @@ function decisionRecordMatches(
     "decisionRevision",
     "observedAt",
     "policy",
+    "policyEvidenceApplicability",
     "rationale",
     "independentEvidenceStatus",
     ...(independentEvidenceStatus === "provided-unverified"
@@ -90,7 +155,7 @@ function decisionRecordMatches(
   return (
     JSON.stringify(Object.keys(candidate).sort()) ===
       JSON.stringify(expectedKeys) &&
-    candidate.schema === "scout.verification-allocation-policy-decision/v1" &&
+    candidate.schema === "scout.verification-allocation-policy-decision/v2" &&
     nonempty(candidate.decisionId) &&
     manifest.evidenceReference === `decision-record:${candidate.decisionId}` &&
     candidate.decisionOwner === manifest.decisionOwner &&
@@ -98,6 +163,8 @@ function decisionRecordMatches(
     candidate.observedAt === manifest.observedAt &&
     canonicalJson(candidate.policy) ===
       canonicalJson(expectedPolicyCandidate) &&
+    canonicalJson(candidate.policyEvidenceApplicability) ===
+      canonicalJson(manifest.policyEvidenceApplicability) &&
     candidate.independentEvidenceStatus === independentEvidenceStatus &&
     (independentEvidenceStatus !== "provided-unverified" ||
       candidate.independentEvidenceReference ===
@@ -110,10 +177,11 @@ function decisionRecordMatches(
 export function bindIdentityRobustPolicyEvidence(
   expectedPolicySha256: string,
   expectedEvidenceReference: string,
+  expectedPolicyCandidate: unknown,
   candidate: unknown,
 ): IdentityRobustPolicyEvidenceBinding {
   const scopeLimit =
-    "The manifest binds caller-supplied provenance fields to an exact policy hash. It does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
+    "The manifest binds caller-supplied provenance and applicability fields to an exact policy hash. Protocol and model-scope matching remain caller-supplied and unverified; this does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
   const independentEvidenceStatus = record(candidate)
     ? candidate.independentEvidenceStatus
     : undefined;
@@ -127,6 +195,7 @@ export function bindIdentityRobustPolicyEvidence(
     "observedAt",
     "decisionRecordArtifact",
     "decisionRecordSha256",
+    "policyEvidenceApplicability",
     "independentEvidenceStatus",
     ...(independentEvidenceStatus === "provided-unverified"
       ? ["independentEvidenceReference"]
@@ -136,7 +205,7 @@ export function bindIdentityRobustPolicyEvidence(
     !record(candidate) ||
     JSON.stringify(Object.keys(candidate).sort()) !==
       JSON.stringify(expectedKeys) ||
-    candidate.schema !== "scout.verification-allocation-policy-evidence/v1" ||
+    candidate.schema !== "scout.verification-allocation-policy-evidence/v2" ||
     candidate.evidenceClass !== "caller-supplied-policy-provenance" ||
     !/^[0-9a-f]{64}$/.test(expectedPolicySha256) ||
     candidate.policySha256 !== expectedPolicySha256 ||
@@ -148,6 +217,10 @@ export function bindIdentityRobustPolicyEvidence(
     !isCanonicalRelativeEvidenceName(candidate.decisionRecordArtifact) ||
     typeof candidate.decisionRecordSha256 !== "string" ||
     !/^[0-9a-f]{64}$/.test(candidate.decisionRecordSha256) ||
+    !applicabilityMatches(
+      candidate.policyEvidenceApplicability,
+      expectedPolicyCandidate,
+    ) ||
     (independentEvidenceStatus !== "not-provided" &&
       independentEvidenceStatus !== "provided-unverified") ||
     (independentEvidenceStatus === "provided-unverified" &&
@@ -159,6 +232,20 @@ export function bindIdentityRobustPolicyEvidence(
       evidenceStatus: "",
       errors: [
         "an exact caller-supplied policy provenance manifest is required",
+      ],
+      scopeLimit,
+    };
+  }
+  if (
+    candidate.policyEvidenceApplicability.applicabilityStatus !==
+    "protocol-matched-unverified"
+  ) {
+    return {
+      ok: false,
+      manifestSha256: "",
+      evidenceStatus: "",
+      errors: [
+        "policy evidence applicability is not established for this protocol and model scope",
       ],
       scopeLimit,
     };
@@ -184,6 +271,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
   const structural = bindIdentityRobustPolicyEvidence(
     expectedPolicySha256,
     expectedEvidenceReference,
+    expectedPolicyCandidate,
     candidate,
   );
   if (!structural.ok) {
@@ -261,6 +349,6 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
     decisionRecordContentStatus: "local-content-match-unverified",
     scopeLimit:
-      "The manifest, one descriptor-safe local byte read, and the record's policy and provenance content agree. This proves local consistency for that read, not authorship, authority, independence, timestamp validity, or substantive correctness.",
+      "The manifest, one descriptor-safe local byte read, and the record's policy, provenance, and declared applicability content agree. This proves local consistency for that read; protocol and model-scope matching remain caller-supplied and unverified, and no authorship, authority, independence, timestamp validity, or substantive correctness is established.",
   };
 }

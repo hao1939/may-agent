@@ -19,13 +19,22 @@ const policy = {
 const policySha256 = createHash("sha256")
   .update(JSON.stringify(policy))
   .digest("hex");
+const policyEvidenceApplicability = {
+  schema: "scout.verification-allocation-policy-applicability/v1",
+  evidenceKind: "uniform-marginal-drift-reserve",
+  evidenceUnit: "probability-per-model",
+  protocolReference: "design:fixture-factorial-v1",
+  modelScopeReference: "model-set:fixture-six",
+  applicabilityStatus: "protocol-matched-unverified",
+} as const;
 const decisionRecordObject = {
-  schema: "scout.verification-allocation-policy-decision/v1",
+  schema: "scout.verification-allocation-policy-decision/v2",
   decisionId: "fixture",
   decisionOwner: "fixture-owner",
   decisionRevision: "decision-revision:fixture",
   observedAt: "2026-09-03T00:00:00.000Z",
   policy,
+  policyEvidenceApplicability,
   rationale: "Synthetic fixture.",
   independentEvidenceStatus: "not-provided",
   scopeLimit: "Local synthetic control only.",
@@ -35,7 +44,7 @@ const decisionRecordSha256 = createHash("sha256")
   .update(decisionRecord)
   .digest("hex");
 const base = {
-  schema: "scout.verification-allocation-policy-evidence/v1",
+  schema: "scout.verification-allocation-policy-evidence/v2",
   evidenceClass: "caller-supplied-policy-provenance",
   policySha256,
   evidenceReference,
@@ -44,6 +53,7 @@ const base = {
   observedAt: "2026-09-03T00:00:00.000Z",
   decisionRecordArtifact: "decisions/policy.json",
   decisionRecordSha256,
+  policyEvidenceApplicability,
   independentEvidenceStatus: "not-provided",
 };
 const roots: string[] = [];
@@ -59,6 +69,7 @@ describe("identity-robust policy provenance", () => {
     const result = bindIdentityRobustPolicyEvidence(
       policySha256,
       evidenceReference,
+      policy,
       base,
     );
     expect(result).toMatchObject({
@@ -80,6 +91,7 @@ describe("identity-robust policy provenance", () => {
         bindIdentityRobustPolicyEvidence(
           policySha256,
           evidenceReference,
+          policy,
           candidate,
         ),
       ).toMatchObject({
@@ -92,24 +104,98 @@ describe("identity-robust policy provenance", () => {
 
   it("records independent evidence only as provided and unverified", () => {
     expect(
-      bindIdentityRobustPolicyEvidence(policySha256, evidenceReference, {
-        ...base,
-        independentEvidenceStatus: "provided-unverified",
-        independentEvidenceReference: "review:fixture",
-      }),
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        {
+          ...base,
+          independentEvidenceStatus: "provided-unverified",
+          independentEvidenceReference: "review:fixture",
+        },
+      ),
     ).toMatchObject({ ok: true, evidenceStatus: "caller-supplied-unverified" });
     expect(
-      bindIdentityRobustPolicyEvidence(policySha256, evidenceReference, {
-        ...base,
-        independentEvidenceStatus: "provided-unverified",
-      }),
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        {
+          ...base,
+          independentEvidenceStatus: "provided-unverified",
+        },
+      ),
     ).toMatchObject({ ok: false });
     expect(
-      bindIdentityRobustPolicyEvidence(policySha256, evidenceReference, {
-        ...base,
-        independentEvidenceReference: "review:contradicts-none-status",
-      }),
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        {
+          ...base,
+          independentEvidenceReference: "review:contradicts-none-status",
+        },
+      ),
     ).toMatchObject({ ok: false });
+  });
+
+  it("rejects unitless, wrong-unit, and non-applicable policy evidence", () => {
+    const { policyEvidenceApplicability: _omitted, ...unitless } = base;
+    for (const candidate of [
+      unitless,
+      {
+        ...base,
+        policyEvidenceApplicability: {
+          ...policyEvidenceApplicability,
+          evidenceKind: "complete-factorial-episode-ceiling",
+          evidenceUnit: "complete-factorial-episodes",
+        },
+      },
+      {
+        ...base,
+        policyEvidenceApplicability: {
+          ...policyEvidenceApplicability,
+          evidenceKind: "retrieved-record-count",
+          evidenceUnit: "memory-ids",
+        },
+      },
+    ]) {
+      expect(
+        bindIdentityRobustPolicyEvidence(
+          policySha256,
+          evidenceReference,
+          policy,
+          candidate,
+        ),
+      ).toMatchObject({
+        ok: false,
+        manifestSha256: "",
+        evidenceStatus: "",
+        errors: [
+          "an exact caller-supplied policy provenance manifest is required",
+        ],
+      });
+    }
+
+    expect(
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        {
+          ...base,
+          policyEvidenceApplicability: {
+            ...policyEvidenceApplicability,
+            applicabilityStatus: "not-established",
+          },
+        },
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: [
+        "policy evidence applicability is not established for this protocol and model scope",
+      ],
+    });
   });
 
   it("binds one descriptor-safe local decision record without promoting authority", async () => {
@@ -169,6 +255,13 @@ describe("identity-robust policy provenance", () => {
       {
         ...decisionRecordObject,
         independentEvidenceStatus: "provided-unverified",
+      },
+      {
+        ...decisionRecordObject,
+        policyEvidenceApplicability: {
+          ...policyEvidenceApplicability,
+          protocolReference: "design:different",
+        },
       },
       { ...decisionRecordObject, unboundClaim: true },
     ]) {
