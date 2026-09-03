@@ -9746,6 +9746,24 @@ GitHub, arXiv, and Reddit made zero requests. This compaction does not close
 RV-004. The next exact-run scan ranks an 18-line / 1,222-byte Cycle 250 policy
 block, subject to a new seed-first context audit.
 
+## Cycle 291 seed-first start — exact Cycle 290 result retained
+
+Cycle 291 began from clean Cycle 290 result
+`d391befc30c68520f06ec28990076be9936b78dd`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 72 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The 1,540-document / 1,708-link broad audit and read-only health at
+30 facts / 16 wakes passed. Accepted `ff923ccde4` remains contained,
+unaccepted `d041c41b54` excluded, and protected 386/296-record status
+fingerprints remain `7c285c09…1ca01b` / `7e4d0937…26a8a`.
+
+At `2026-09-03T22:53:55.527Z`, the current receipt through
+`2026-09-03T16:57:11.030Z` was about 357 minutes old and still before the
+scheduled `2026-09-03T22:57:11.030Z` pass. No browser, GitHub, arXiv, or Reddit
+request ran; added/changed remain unknown, removals are `[]`, and all 132 IDs
+remain unavailable. Commit this ordering before auditing the ranked Cycle 250
+policy block.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

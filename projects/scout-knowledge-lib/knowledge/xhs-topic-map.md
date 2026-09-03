@@ -4046,6 +4046,14 @@ child receipts, absent maintained event, missing trigger/query/path join, and
 confidence. No lane ran and RV-004 remains high/open. Next is the 18-line /
 1,222-byte exact Cycle 250 policy block after seed-first context review.
 
+## Cycle 291 seed-first start — current receipt reused
+
+Cycle 291 began from clean validated `d391befc30`. At
+`2026-09-03T22:53:55.527Z`, the current receipt was about 357 minutes old,
+still before the six-hour boundary. No browser or public-source request ran;
+added/changed remain unknown, removals are `[]`, and all 132 IDs remain
+unavailable. Commit this ordering before the Cycle 250 policy-block audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
