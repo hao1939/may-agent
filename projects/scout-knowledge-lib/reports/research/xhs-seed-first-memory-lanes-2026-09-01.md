@@ -8272,6 +8272,17 @@ the living lane table. The accepted-lineage boundary is unchanged. The next
 ranked local question tests whether simultaneous mismatches preserve both model
 ordinals in a stable complete error list rather than masking one failure.
 
+Exact reviewed tip `669252b89d8ceefd73d7b7313090fa2713869a34`
+passes syntax, TypeScript, source formatting, 276 tests, 1,424 assertions,
+whitespace, 31 relative links, read-only health 26/16 at
+`2026-09-03T14:16:39.635Z`, and empty root/app runtime state. The clean tip
+retains 9/9 accepted ancestors, both accepted patch-equivalence pairs, and 4/4
+accepted artifacts. Unaccepted `d041c41b54` is not contained.
+
+Protected `/app` remains `386b445c…1fec8`, 886 records,
+`996480ad…752a3`; the human overlay remains `fd4c68ec…1514663`, three records,
+`ad8d222c…e74780`. Neither checkout was written or tested.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
