@@ -3967,6 +3967,27 @@ remain unavailable. Cycle 286 passed 296 tests / 1,483 assertions, 71 scoped
 links, 1,540 documents / 1,707 broad links, and read-only health at 30 facts /
 16 wakes. Commit this seed record before the Cycle 280 semantic-overlap audit.
 
+## Cycle 287 checkpoint — retained-outcome decision stays compact
+
+Seed `b6c46b3b412b11e60ab3d1323fe9beeb5017385e` preceded the audit.
+Cycle 280 occupied 41 map lines / 2,542 bytes at SHA-256
+`ec1604fe…090c7214d` and 79 detailed-report lines / 4,797 bytes at
+`2a355dea…f0b53cd`; only eight individual lines matched and the longest exact
+run was two lines. Material `e51a123cd94ed2236343d41d8ecebe55b76603de`
+therefore applies semantic, not mechanical, compaction: the map becomes 24
+lines / 1,573 bytes at `40b9413e…a1ac24c1f`, removing 17 lines / 969 bytes.
+
+The compact map keeps the seed/result ordering, receipt uncertainty,
+query-only authority, exact row contraction and terminal identity, absent
+query-to-outcome join, causality limit, reviewer containment, lane triggers,
+validation, and protected preservation. The full failed-query, schema, head,
+rollback, and timing evidence remains in the linked report. GitHub, arXiv, and
+Reddit made zero requests; RV-004 remains high/open. The next ranked exact
+mirror is the 21-line / 1,421-byte Cycle 256 consumer-boundary checkpoint body.
+The candidate passes the full 296-test / 1,483-assertion Scout gate, 72 scoped
+links, the 1,540-document / 1,708-link broad audit, and read-only health at 30
+facts / 16 wakes.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

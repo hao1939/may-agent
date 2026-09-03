@@ -9580,6 +9580,50 @@ added/changed identities remain unknown, removals are `[]`, and all 132 IDs
 remain unavailable. Commit this ordering record before auditing Cycle 280's
 non-exact 41-line map / 79-line report semantic overlap.
 
+## Cycle 287 checkpoint — one compact decision, one detailed outcome record
+
+What was wrong: Cycle 280's retained-outcome boundary occupied 41 map lines /
+2,542 bytes at SHA-256
+`ec1604fe74344e0f947bf5632d4d6c0a5c9c8972b72edd24739fd53090c7214d`
+and 79 detailed lines / 4,797 bytes here at
+`2a355dea6dbcbe999270c977633291a9c982c5cd627445d84f742fc4af0b53cd`.
+They were semantically overlapping but not byte duplicates: only eight map
+lines occurred in the report and the longest contiguous exact run was two.
+Seed `b6c46b3b412b11e60ab3d1323fe9beeb5017385e` therefore preceded a
+distinction-by-distinction audit rather than blind deletion.
+
+Material `e51a123cd94ed2236343d41d8ecebe55b76603de` replaces only the map
+section with a 24-line / 1,573-byte decision at SHA-256
+`40b9413eebdcf6321e0b22267ee6939fbbd8b5b9941a6b57c0ffa6da1ac24c1f`,
+removing 17 lines / 969 bytes. It preserves the integration and seed ordering,
+receipt time and unavailable membership, observational-only boundary,
+read-only UID/SQLite authority, exact 15,570-row count and 425-row contraction,
+terminal ID/time, zero later and maintained rows, two payload mentions,
+unknown removed identities and causality, absent query/route/selection/outcome
+join, reviewer containment, all three lane triggers, validation, protected
+fingerprints, and RV-004 limit. This report remains the authoritative failed
+query, corrected schema, full repository heads, timings, and rollback record.
+
+No source, claim, count, code, fixture, account, evaluator, or protected state
+changed. GitHub retains four exact heads, arXiv retains `2608.30177v1` and
+`2608.25553v3`, and Reddit retains RSS HTTP 200 for `t3_1v8a3sh` / six comments
+with JSON HTTP 403. All made zero requests and retain their existing revisit
+triggers. Static retrieval reduction is not measured use, savings, later
+behavior, or user outcome; RV-004 remains high/open.
+
+The next global exact-map/report scan finds two 21-line mirrors. The larger is
+the 1,421-byte Cycle 256 consumer-boundary checkpoint body beginning with seed
+`57b0f39767`; the other is 1,357 bytes. Cycle 256 wins the next-cycle tie by
+greater removable default-read bytes, subject to preserving its real-event
+boundary and no-implementation decision.
+
+The reviewed candidate passes syntax, TypeScript, formatting, Cycle 237
+projection, 72 scoped links, navigation v1 at 11/14, navigation v2 at 8/8,
+and all 296 tests / 1,483 assertions. The broad audit passes 1,540 tracked
+Markdown documents / 1,708 local prose links. Read-only health at
+`2026-09-03T22:35:07.355Z` remains bounded at 30 facts / 16 wakes with
+`truncated:true`.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
