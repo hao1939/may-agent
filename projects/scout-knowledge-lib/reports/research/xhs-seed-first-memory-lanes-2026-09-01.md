@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 165 checkpoint — consumers can verify provider denial
+
+Seed commit `23126e5fa656e0e9f066b5245660495ffbf87a4d` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the denial
+audit.
+
+Exact local `a264b31f455e5259f4223afdfb130a9ca583e4f8` separately checks
+the provider-denial fields required by direct and snapshot v1 outputs. Missing
+or true required values and any contradictory authority key fail; unrelated
+fields remain unchecked. The focused gate passes 18 tests and 93 assertions
+plus TypeScript, formatting, and whitespace. The actual 2,446-byte snapshot
+CLI output passed both schema identification and denial verification while
+retaining its policy/freeze failures.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+triggers. Confidence is high for current local denial and low for computation,
+policy, freshness, drift, models, or providers. The next ranked control matches
+the serialized computation identity tuple to one explicit expectation without
+promoting it to recomputation evidence.
+
 ## Cycle 164 checkpoint — consumers can identify only known schemas
 
 Seed commit `6633dd46b755012decdd336a33f95bf17c70d99b` records unchanged

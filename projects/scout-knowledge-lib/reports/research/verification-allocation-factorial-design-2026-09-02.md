@@ -2603,6 +2603,23 @@ This proves local format discrimination only. The next control separately
 validates the shared provider-denial invariant without authenticating other
 nested content.
 
+## Cycle 165 consumer-side provider denial
+
+Seed commit `23126e5fa656e0e9f066b5245660495ffbf87a4d` preceded matched
+direct and snapshot controls. Exact local
+`a264b31f455e5259f4223afdfb130a9ca583e4f8` requires every
+shape-specific provider-call field to be false and rejects a contradictory
+authority key anywhere in the recognized payload. It validates no other field.
+
+Eighteen focused tests pass with 93 assertions plus TypeScript, formatting, and
+whitespace. The actual retained-snapshot CLI emitted 2,446 bytes; the consumer
+identified snapshot v1 and returned provider denial true while the output kept
+its missing-freeze and explicit-policy failures.
+
+This proves current local denial serialization only. The next control matches
+the declared computation identity tuple and derived snapshot reference to an
+explicit expectation without calling that recomputation or authority.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
