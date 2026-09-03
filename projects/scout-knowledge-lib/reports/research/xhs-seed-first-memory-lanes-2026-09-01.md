@@ -9685,6 +9685,27 @@ request ran. Added/changed identities remain unknown, removals are `[]`, and
 all 132 durable IDs remain unavailable. Commit this ordering record before the
 ranked 21-line / 1,357-byte Cycle 252 mirror audit.
 
+## Cycle 289 checkpoint — numeric mechanism evidence keeps one detailed home
+
+What was wrong: 21 lines / 1,357 bytes of Cycle 252's score-attribution body
+were byte-identical in the map and this report at SHA-256
+`259d65871fdd7c91dd9f15b49cdf4e9b2ad969c37e329b5f14058092ddd21196`.
+Seed `e1120425fbc285594385f833c8c9a9c9c793280a` preceded the audit.
+
+This detailed copy remains unchanged. The 11-line / 835-byte map replacement
+removes 10 lines / 522 bytes while retaining the current-replay-not-history
+qualification, both exact coverage/title/summary decompositions, equal
+`6.528105` `caller` contribution, observed `7.063144` gap, 13/13 control with
+`53.852987` summary and `2` coverage, pair-specific threefold-title mechanism,
+producer-authored fixture, absent human/model retrieval, confidence, and next
+multiplier sweep. No evidence or useful distinction was discarded.
+
+GitHub, arXiv, and Reddit made zero requests and retain their evidence and
+revisit triggers. Static compaction is not outcome evidence; RV-004 remains
+high/open. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256
+seed/control transition, which requires a fresh seed-first audit before any
+change.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

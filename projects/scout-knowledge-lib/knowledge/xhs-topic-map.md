@@ -4017,6 +4017,16 @@ identities remain unknown, removals are `[]`, and all 132 IDs remain
 unavailable. Commit this ordering record before the ranked Cycle 252 mirror
 audit.
 
+## Cycle 289 checkpoint — score attribution retained once
+
+The Cycle 252 map/report pair shared 21 exact lines / 1,357 bytes at SHA-256
+`259d6587…ddd21196`. The report remains authoritative; the map now keeps both
+score decompositions, equal `caller` contribution, `7.063144` gap, 13/13
+control, narrow mechanism claim, and real-retrieval limit in 11 lines / 835
+bytes, removing 10 lines / 522 bytes. RV-004 remains high/open; no source lane
+ran. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256 seed/control
+transition, subject to seed-first review of its distinct ordering evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -5185,27 +5195,17 @@ It freezes the original caller-bound v1 query and the exact current control
 `bind agent memory write retrieval approval recall erasure temporary custody
 verified caller identity`, plus their first two ranked outputs, before any
 index or scorer change. The control reproduces Cycle 244's reported
-`66.713178` intended score and `32.745095` competing score, but its source basis
-explicitly treats that coincidence as current replay evidence rather than proof
-of the unstored historical input. A focused replay passes 7 tests and 26
-assertions.
-
-On the original query, the wrong Read-Write entry scores `44.894763`: coverage
-contributes `1.090909`, title matches contribute `30.054349`, and summary-only
-matches contribute `13.749506`. The intended governance finding scores
-`37.831620`: `1.454545` coverage, `10.860192` from title, and `25.516883` from
-summary. The rare `caller` match contributes the same `6.528105` summary score
-to both, so it cannot distinguish them. The wrong entry's title advantage
-outweighs the intended entry's broader coverage and summary evidence by the
-observed `7.063144` gap.
-
-In the exact lifecycle control, the intended entry's complete 13/13 match lifts
-its summary contribution to `53.852987` and coverage contribution to `2`,
-overcoming the competitor's remaining title advantage. This supports a narrow
-mechanism claim—shared rarity is neutral and the fixed threefold title weight
-dominates this original pair—not a general title-weight defect. The fixture is
-producer-authored, the historical query remains unknown, and neither human nor
-model retrieval is measured. Confidence is high for exact local replay and
+`66.713178` intended versus `32.745095` competing, but this is current replay,
+not proof of the unstored historical input; the focused replay passes 7 tests /
+26 assertions. On the original query, the wrong entry's coverage/title/summary
+parts are `1.090909` / `30.054349` / `13.749506`, versus the intended entry's
+`1.454545` / `10.860192` / `25.516883`. Equal `caller` contribution
+`6.528105` cannot distinguish them; the title advantage explains the observed
+`7.063144` gap. The 13/13 lifecycle control raises the intended summary to
+`53.852987` and coverage to `2`, overcoming that advantage. This supports only
+shared-rarity neutrality and threefold-title dominance for this pair. The
+producer-authored fixture cannot recover the historical query or measure human
+or model retrieval. Confidence is high for exact local replay and
 score arithmetic, low for generalization. Next, sweep title multipliers across
 both frozen sets to test whether reducing that preference repairs one error by
 creating regressions elsewhere.
