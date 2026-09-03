@@ -3608,6 +3608,15 @@ retain their triggers. The next ranked matched audit reverses seed order with
 its generated schedule, testing whether it is reversible protocol identity
 rather than inventory presentation.
 
+Exact reviewed Cycle 209 tip
+`35bc3a6895cb5e88df429fc5da8870c8c2bed1ae` passes syntax, TypeScript,
+source formatting, 269 tests, 1,374 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:31:49.203Z` remains 26 facts and 16
+wake signals; runtime state is empty. The clean tip retains 9/9 accepted
+ancestors and 4/4 accepted artifacts. Protected source and overlay reproduce
+their established fingerprints, and the unaccepted two-commit peer range
+remains outside standing lineage without content inspection.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
