@@ -4160,21 +4160,14 @@ used the bounded route and produced a retained decision. Until then, the exact
 next observational XHS trigger is the six-hour boundary after
 `2026-09-03T16:57:11.030Z`; do not manufacture another link or public request.
 
-## Cycle 273 seed-first start — local continuity
+## Cycle 273 seed-first transition — detail retained once
 
-Exact Cycle 272 result `e1b15a315818e2b1974be32407ba1d700c2d3ede`
-has tree `1efa9383fa24f8783d9d38ed6111804d9f0b4874`, identical to its
-fully validated candidate. It passes syntax, TypeScript, formatting, Cycle 237
-projection, 67 scoped links, navigation v1 at 11/14 and v2 at 8/8, and 296
-tests / 1,483 assertions. The standing tree is clean.
-
-At `2026-09-03T20:18:25.546Z`, the exact Cycle 237 receipt was two hundred one
-minutes old, inside the six-hour cadence. No seed, semantic-access, public-lane,
-or accepted-review trigger changed. The bounded reconciliation reused it with
-zero browser or public requests: added/changed collected identities remain
-unknown, observed removals are `[]`, and all 132 durable IDs remain
-unavailable. Commit this seed record before testing the eight landing-page
-topic labels against accepted INDEX identities.
+Exact result `e1b15a3158` preceded the bounded reconciliation retained in the
+[detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-273-seed-first-start--local-continuity).
+It reused the current receipt with zero browser or public requests:
+added/changed identities stayed unknown, removals were `[]`, and all 132 IDs
+remained unavailable. Seed `e271b9f299` then preceded the landing-page label
+audit below.
 
 ## Cycle 273 checkpoint — broad topic labels should not pretend to be canonical
 
