@@ -1,3 +1,26 @@
+export const MAX_EXACT_JSON_NESTING_DEPTH = 256;
+
+export function hasExcessiveJsonNesting(source: string): boolean {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (const character of source) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+    } else if (character === '"') {
+      inString = true;
+    } else if (character === "{" || character === "[") {
+      depth += 1;
+      if (depth > MAX_EXACT_JSON_NESTING_DEPTH) return true;
+    } else if (character === "}" || character === "]") {
+      depth -= 1;
+    }
+  }
+  return false;
+}
+
 /**
  * Find duplicate object keys in already syntax-validated JSON while allowing
  * insignificant whitespace and preserving repeated names in distinct scopes.

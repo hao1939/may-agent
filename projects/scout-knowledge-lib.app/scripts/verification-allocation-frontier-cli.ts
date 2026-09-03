@@ -1,5 +1,8 @@
 import { isAbsolute } from "node:path";
-import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  hasDuplicateJsonObjectKeys,
+  hasExcessiveJsonNesting,
+} from "./json-object-key-exactness";
 import { isCanonicalRelativeEvidenceName } from "./descriptor-safe-local-evidence";
 import type { IdentityRobustLocalManifestInput } from "./verification-allocation-frontier-policy";
 
@@ -31,6 +34,12 @@ function validateFilesystemRoots(
   requireExplicitAbsoluteRoot(freezeBundleRoot, "freeze bundle root");
 }
 
+function rejectExcessiveJsonNesting(source: string, label: string): void {
+  if (hasExcessiveJsonNesting(source)) {
+    throw new Error(`${label} exceeds the supported JSON nesting limit`);
+  }
+}
+
 export function parseIdentityRobustFrontierCliInput(
   args: string[],
 ): IdentityRobustFrontierCliInput | null {
@@ -43,6 +52,7 @@ export function parseIdentityRobustFrontierCliInput(
     args[6] === "--evidence-root" &&
     args[8] === "--freeze-bundle-root";
   if (localManifestMode) {
+    rejectExcessiveJsonNesting(args[1]!, "policy argument");
     let policyCandidate: unknown;
     try {
       policyCandidate = JSON.parse(args[1]!);
@@ -90,6 +100,8 @@ export function parseIdentityRobustFrontierCliInput(
   }
   let policyCandidate: unknown;
   let evidenceManifestCandidate: unknown;
+  rejectExcessiveJsonNesting(args[1]!, "policy argument");
+  rejectExcessiveJsonNesting(args[3]!, "evidence manifest argument");
   try {
     policyCandidate = JSON.parse(args[1]!);
     evidenceManifestCandidate = JSON.parse(args[3]!);

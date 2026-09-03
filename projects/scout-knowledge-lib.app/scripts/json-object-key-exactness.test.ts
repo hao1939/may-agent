@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  hasDuplicateJsonObjectKeys,
+  hasExcessiveJsonNesting,
+} from "./json-object-key-exactness";
 
 describe("JSON object-key exactness", () => {
   it("treats escaped and literal spellings of one key as duplicates", () => {
@@ -23,5 +26,21 @@ describe("JSON object-key exactness", () => {
         "items": [{ "schema": "first" }, { "schema": "second" }]
       }`),
     ).toBe(false);
+  });
+
+  it("bounds structure without counting quoted braces", () => {
+    expect(hasExcessiveJsonNesting(JSON.stringify("{".repeat(300)))).toBe(
+      false,
+    );
+    expect(
+      hasExcessiveJsonNesting(
+        '{"value":'.repeat(256) + "null" + "}".repeat(256),
+      ),
+    ).toBe(false);
+    expect(
+      hasExcessiveJsonNesting(
+        '{"value":'.repeat(257) + "null" + "}".repeat(257),
+      ),
+    ).toBe(true);
   });
 });

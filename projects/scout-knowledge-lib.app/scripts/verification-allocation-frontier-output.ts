@@ -1,4 +1,7 @@
-import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  hasDuplicateJsonObjectKeys,
+  hasExcessiveJsonNesting,
+} from "./json-object-key-exactness";
 import {
   identityRobustFrontierSnapshotReference,
   type IdentityRobustFrontierSnapshotExpectation,
@@ -25,29 +28,6 @@ type ParsedIdentityRobustOutput = {
   output: Record<string, unknown>;
 };
 
-const MAX_IDENTITY_ROBUST_OUTPUT_JSON_DEPTH = 256;
-
-function exceedsJsonNestingLimit(source: string): boolean {
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (const character of source) {
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === '"') inString = false;
-    } else if (character === '"') {
-      inString = true;
-    } else if (character === "{" || character === "[") {
-      depth += 1;
-      if (depth > MAX_IDENTITY_ROBUST_OUTPUT_JSON_DEPTH) return true;
-    } else if (character === "}" || character === "]") {
-      depth -= 1;
-    }
-  }
-  return false;
-}
-
 function record(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -55,7 +35,7 @@ function record(value: unknown): value is Record<string, unknown> {
 function parseIdentityRobustOutput(
   raw: string,
 ): ParsedIdentityRobustOutput | null {
-  if (exceedsJsonNestingLimit(raw)) return null;
+  if (hasExcessiveJsonNesting(raw)) return null;
   let candidate: unknown;
   try {
     candidate = JSON.parse(raw);

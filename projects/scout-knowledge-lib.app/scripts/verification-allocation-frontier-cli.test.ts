@@ -163,6 +163,34 @@ describe("identity-robust frontier CLI input", () => {
     }
   });
 
+  it("rejects excessive nesting before inline JSON scans", () => {
+    const deeplyNested = '{"value":'.repeat(1_000) + "null" + "}".repeat(1_000);
+    const args = [
+      "--policy-json",
+      deeplyNested,
+      "--evidence-manifest-json",
+      "{}",
+      "--evidence-root",
+      "/tmp/evidence",
+      "--freeze-bundle-root",
+      "/tmp/freeze",
+    ];
+    expect(() => parseIdentityRobustFrontierCliInput(args)).toThrow(
+      "policy argument exceeds the supported JSON nesting limit",
+    );
+    expect(() =>
+      parseIdentityRobustFrontierCliInput([
+        ...args.slice(0, 1),
+        "{}",
+        ...args.slice(2, 3),
+        deeplyNested,
+        ...args.slice(4),
+      ]),
+    ).toThrow(
+      "evidence manifest argument exceeds the supported JSON nesting limit",
+    );
+  });
+
   it("rejects partial or reordered snapshot-backed input", () => {
     expect(() =>
       parseIdentityRobustSnapshotFrontierCliInput([
