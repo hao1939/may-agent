@@ -9399,6 +9399,47 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 281 checkpoint — duplicate link history now has one detailed home
+
+The permitted bounded seed step remains exact Cycle 280 seed commit
+`f5f425d8be450661e4789bfaa94ee56032458efe`, observed at
+`2026-09-03T21:37:30.723Z` inside the six-hour cadence. This continuation made
+no early XHS, GitHub, arXiv, or Reddit request. It instead ranked accessible
+maintenance evidence and corrected Cycle 280's false whole-queue exhaustion
+claim: only the retained-outcome and provider-trigger slice was exhausted.
+
+The selected Cycles 224–230 map region was 362 lines / 20,513 bytes. Its
+authoritative detailed counterpart here remains 368 lines / 20,874 bytes at
+SHA-256 `5a8deb4ec733e4d4e3ea83c87dea8cef8ccec941c085fe85e9053f936d3a5505`;
+the two regions shared 307 exact lines, with sequence similarity 0.841096.
+Material commit `f40b09a2dab7b05b232b75f43e2a144f7fc17aa3`, based on clean source
+`f649899b0ef8e524cec59b1868814a604e285714`, replaces only the map copy with
+one 28-insertion compact ledger. The map drops 334 net lines and retains every
+cycle's seed/result identity, decision, link-debt progression, unaccepted-ref
+boundary, confidence, and then-deferred replacement criteria. Full narrative,
+validation, fingerprints, and rollback evidence remain unchanged here.
+
+The exact material revision passes syntax, TypeScript, formatting, Cycle 237
+projection, 65 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and
+the full 296-test / 1,483-assertion gate. The broad check passes 1,540 tracked
+Markdown documents / 1,701 local prose links with zero errors. Read-only health
+at `2026-09-03T21:53:43.286Z` returns 30 facts, 16 wakes, and
+`truncated:true`. Reviewer results `6c806ade5a` and `af409f4ef3` remain
+ancestors; unaccepted `d041c41b54` remains excluded.
+
+Protected `/app` retains HEAD `386b445c…41fec8` and 386 status records, while
+its read-only fingerprint changed externally from `7c285c09…1ca01b` to
+`00bcc281…15c5ed4`; its 296-record Scout scope similarly changed from
+`7e4d0937…c26a8a` to `a430d0c9…322f7e`. This worker neither wrote nor tested
+that checkout, and the available hashes do not identify the external cause.
+
+This is static retrieval evidence, not measured model reads, token savings,
+deployed behavior, or a changed user decision; `RV-004` remains high/open.
+The next ranked accessible audit is the remaining exact 40-line Cycle 222
+ledger mirror. Determine whether the rollback map needs full duplication or
+can retain one authoritative table plus one decision pointer without losing
+provenance, uncertainty, or rollback semantics.
+
 ## Cycle 280 seed-first start — retained-outcome trigger check
 
 Cycle 280 starts from clean producer integration checkpoint

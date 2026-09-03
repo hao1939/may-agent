@@ -3888,6 +3888,25 @@ evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
 review, otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 281 checkpoint — link history has one detailed home
+
+Cycle 280 seed commit `f5f425d8be450661e4789bfaa94ee56032458efe`
+remains the bounded seed reconciliation for this continuation; no early XHS or
+public-lane request ran. Ranking the accessible queue exposed a 362-line /
+20,513-byte Cycles 224–230 map arc whose detailed report counterpart retains
+368 lines / 20,874 bytes and shares 307 exact lines. Exact material
+`f40b09a2dab7b05b232b75f43e2a144f7fc17aa3` replaces the map copy with the
+compact ledger below while preserving the detailed report block at SHA-256
+`5a8deb4e…3a5505`.
+
+The map loses 334 net lines; this is measured static retrieval compaction, not
+token savings, later reuse, or user-outcome evidence. `RV-004` remains
+high/open. The [detailed checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-281-checkpoint--duplicate-link-history-now-has-one-detailed-home)
+records validation and the externally observed protected-checkout boundary.
+The next ranked accessible audit is the remaining exact 40-line Cycle 222
+ledger mirror: determine whether its rollback decisions need two full copies
+before changing either one.
+
 ## Cycle 280 seed-first start — retained-outcome trigger check
 
 Cycle 280 began from clean integration checkpoint
