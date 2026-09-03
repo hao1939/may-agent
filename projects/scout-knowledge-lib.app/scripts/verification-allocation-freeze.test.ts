@@ -704,6 +704,44 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("keeps policy scope content-addressed across same-byte evidence artifact aliases", () => {
+    for (const kind of ["model", "seed"] as const) {
+      const fixture = validFixture();
+      const baseline = verifyExecutionFreezeManifest(
+        fixture.manifest,
+        fixture.artifactContents,
+      );
+      const contents = fixture.artifactContents as Record<string, string>;
+      const original =
+        kind === "model" ? "model-resolution.json" : "seed-policy.json";
+      const alias =
+        kind === "model"
+          ? "aliased-model-resolution.json"
+          : "aliased-seed-policy.json";
+      contents[alias] = contents[original];
+      delete contents[original];
+      fixture.manifest.artifacts.find(
+        (artifact) => artifact.name === original,
+      )!.name = alias;
+      if (kind === "model") {
+        fixture.manifest.models[0].resolutionEvidenceArtifact = alias;
+      } else {
+        fixture.manifest.seedPolicy.policyArtifact = alias;
+      }
+
+      const aliased = verifyExecutionFreezeManifest(
+        fixture.manifest,
+        fixture.artifactContents,
+      );
+      expect(aliased, kind).toMatchObject({
+        ok: true,
+        errors: [],
+        providerCallsAuthorized: false,
+      });
+      expect(aliased.policyScope, kind).toEqual(baseline.policyScope);
+    }
+  });
+
   it("keeps locally unverified registration metadata outside policy applicability", () => {
     const { manifest, artifactContents } = validFixture();
     const first = verifyExecutionFreezeManifest(manifest, artifactContents);
