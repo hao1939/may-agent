@@ -3407,6 +3407,13 @@ requests and retain their current evidence and triggers above. The next ranked
 control coherently adds a distinct second model referencing the copied alias
 and requires the same declaration mismatch as the shared-object case.
 
+Exact reviewed material tip `c7fbb61ef9032fe2f6b4c2621bf074d7b2ca9af9`
+passes the full Scout gate at 264 tests and 1,346 assertions plus syntax,
+TypeScript, formatting, whitespace, 30 links, health 26/16, empty runtime
+state, 9/9 accepted ancestors, both accepted patch pairs, and 4/4 accepted
+artifacts. Protected source and overlay reproduce their exact Cycle 202
+fingerprints; the standing worktree is clean.
+
 ## Cycle 202 seed-first start
 
 Cycle 202 began only after exact Cycle 201 tip

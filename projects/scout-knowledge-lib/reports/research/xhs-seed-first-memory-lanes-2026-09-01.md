@@ -7896,6 +7896,15 @@ peer range remains deferred. The next ranked control gives a distinct second
 model the copied alias and requires the same declaration-mismatch denial as
 the one-object case.
 
+Exact reviewed material tip `c7fbb61ef9032fe2f6b4c2621bf074d7b2ca9af9`
+passes syntax, TypeScript, source formatting, 264 tests and 1,346 assertions,
+whitespace, 30 relative links, read-only health 26/16 at
+`2026-09-03T12:57:08.434Z`, and empty runtime state. The standing worktree is
+clean; 9/9 accepted standing commits, both accepted patch pairs, and 4/4
+accepted artifact blobs remain contained. Protected source and overlay remain
+exactly `386b445c…1fec8` / 886 / `7b786753…7f932` and
+`fd4c68ec…1514663` / 3 / `a52b97aa…4a15` without writes or tests.
+
 ## Cycle 202 checkpoint — one resolution object cannot register two models
 
 Seed commit `3ad68e1706` records exactly one public `status` and one
