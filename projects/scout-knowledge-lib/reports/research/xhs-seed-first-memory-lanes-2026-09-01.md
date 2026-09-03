@@ -9465,7 +9465,7 @@ SHA-256 `5a8deb4ec733e4d4e3ea83c87dea8cef8ccec941c085fe85e9053f936d3a5505`;
 the two regions shared 307 exact lines, with sequence similarity 0.841096.
 Material commit `f40b09a2dab7b05b232b75f43e2a144f7fc17aa3`, based on clean source
 `f649899b0ef8e524cec59b1868814a604e285714`, replaces only the map copy with
-one 28-insertion compact ledger. The map drops 334 net lines and retains every
+one 28-insertion compact ledger. The map drops 333 net lines and retains every
 cycle's seed/result identity, decision, link-debt progression, unaccepted-ref
 boundary, confidence, and then-deferred replacement criteria. Full narrative,
 validation, fingerprints, and rollback evidence remain unchanged here.

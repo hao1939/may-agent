@@ -3928,7 +3928,7 @@ public-lane request ran. Ranking the accessible queue exposed a 362-line /
 compact ledger below while preserving the detailed report block at SHA-256
 `5a8deb4e…3a5505`.
 
-The map loses 334 net lines; this is measured static retrieval compaction, not
+The map loses 333 net lines; this is measured static retrieval compaction, not
 token savings, later reuse, or user-outcome evidence. `RV-004` remains
 high/open. The [detailed checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-281-checkpoint--duplicate-link-history-now-has-one-detailed-home)
 records validation and the externally observed protected-checkout boundary.
