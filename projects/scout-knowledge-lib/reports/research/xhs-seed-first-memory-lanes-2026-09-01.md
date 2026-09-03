@@ -9399,6 +9399,23 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 284 seed-first start — accepted review integrated, cadence preserved
+
+Cycle 284 began from clean accepted-review tip
+`48adada0af7244fcfbb36701a2191d1456aca617`. At
+`2026-09-03T22:17:24.311Z`, Cycle 237's exact XHS observation through
+`2026-09-03T16:57:11.030Z` was about 320 minutes old, still inside the
+six-hour cadence and before the scheduled `2026-09-03T22:57:11.030Z` pass.
+No browser or public-source request ran. Added/changed identities remain
+unknown, observed removals are `[]`, and all 132 durable IDs remain
+unavailable. Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 records /
+`00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`;
+its combined Scout scope remains 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not write or test that checkout. Commit this bounded
+reconciliation before the next accepted-ref and ranked local audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

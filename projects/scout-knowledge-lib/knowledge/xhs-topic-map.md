@@ -3863,6 +3863,21 @@ additions/changes remained unknown, removals were `[]`, and all 132 durable
 IDs remained unavailable. Revisit the historical detail only for exact
 validation, rollback, or review provenance.
 
+## Cycle 284 seed-first start — current receipt reused after review integration
+
+Cycle 284 began from clean accepted-review tip
+`48adada0af7244fcfbb36701a2191d1456aca617`. At
+`2026-09-03T22:17:24.311Z`, Cycle 237's exact observation through
+`2026-09-03T16:57:11.030Z` was about 320 minutes old, still inside the
+six-hour cadence and before the scheduled `2026-09-03T22:57:11.030Z` pass.
+No browser, GitHub, arXiv, or Reddit request ran. Added/changed identities
+remain unknown, observed removals are `[]`, and all 132 durable IDs remain
+unavailable. Protected `/app` is externally unchanged at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 records /
+`00bcc281…15c5ed4`; its Scout scope remains 296 records /
+`a430d0c9…322f7e`. Commit this ordering evidence before ranking the next
+accessible local retrieval-cost item.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
