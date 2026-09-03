@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing Cycle 230: RV-001 and RV-005 are resolved, while RV-004 remains open for high-cost cycle/report growth without retained outcome evidence."
+summary: "Independent Scout review cursor through reviewed standing tip 8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d: Cycle 230's durable-link cleanup and projection correction are integrated, RV-005 is resolved, and RV-004 remains open."
 triggers: ["Scout independent review", "checkpoint review cursor", "Scout productivity regression", "seed ledger projection", "RV-001", "RV-004", "RV-005"]
 last_updated: "2026-09-03"
-source_basis: "Exact standing diffs and history through Cycle 230; current-revision validation in reviewer- and goal-owned worktrees; exact reviewer integration mappings; and the Cycle 67-229 independent review."
+source_basis: "Exact reviewer diffs and history through reviewed standing tip 8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d; pre-integration and reviewer-candidate validation; exact reviewer/standing blob and patch checks; standing validation through Cycle 231; and the Cycle 67-230 independent reviews."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -10,19 +10,26 @@ source_basis: "Exact standing diffs and history through Cycle 230; current-revis
 ## Current cursor
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
-- Last standing commit reviewed: `086ed02f757d55f35b80ba73f48cdc969b6dc6dc`
-- Review date: `2026-09-03T23:32:17+08:00`
+- Last standing commit reviewed: `8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d`
+- Review date: `2026-09-03T23:44:26+08:00`
 - Review artifact:
   [Cycle 67-229 review](./scout-checkpoint-7d9d6bbe-review-2026-09-03.md)
-- Overall disposition: **revise**. The local verifier and narrow link/projection
-  controls are technically sound, but the standing loop has not shown retained
-  behavioral or user value commensurate with its 163-cycle expansion.
+- Overall disposition: **revise**. Cycle 230's 14 durable KE mappings are sound,
+  and its projection correction is integrated and current-tip validated. The
+  loop still lacks retained behavioral or user value commensurate with the
+  reviewed 164-cycle expansion, so `RV-004` remains open.
 
 ## Exact evidence examined
 
-- Material diff
-  `37430cf4a6f56eda2c1fbff85acc25a52020a190..086ed02f757d55f35b80ba73f48cdc969b6dc6dc`:
-  504 commits, 43 changed files, 29,357 insertions, and 255 deletions.
+- New material diff
+  `086ed02f757d55f35b80ba73f48cdc969b6dc6dc..8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d`:
+  four commits, nine changed files, 336 insertions, and 143 deletions. It covers
+  the Cycle 230 seed receipt, durable-link replacement, projection integration,
+  and Cycles 67-229 review integration.
+- The producer range
+  `37430cf4a6f56eda2c1fbff85acc25a52020a190..14e16ca5b3202892926f78533dfe9b5542246650`
+  now contains 506 commits across 45 files, with 29,437 insertions and 265
+  deletions. Cycle 230 alone changes five files by +87/-17.
 - Every material family was inspected: Cycles 67-97 analysis/calibration;
   98-127 frontier/freeze/policy; 128-167 exact schemas, aliases, and output
   consumers; 168-181 depth/breadth guards; 182-215 identity, provenance,
@@ -34,10 +41,7 @@ source_basis: "Exact standing diffs and history through Cycle 230; current-revis
   protected outcome evidence, later reuse, or a changed user decision.
 - Cycle 220, 221, and 222 provenance compactions remove 68, 67, and 189 net
   lines respectively, but do not offset the range's document growth.
-- Current-revision validation passed syntax, TypeScript, formatting,
-  Cycle 229 projection, 53 durable links, 287 tests, and 1,444 assertions.
-  Whitespace also passed.
-- Cycle 229 exact access receipt ends at `2026-09-03T15:26:08.451Z`; semantic
+- Cycle 230 exact access receipt ends at `2026-09-03T15:31:46.388Z`; semantic
   access is unchanged, all 132 seeds remain unavailable rather than removed,
   and GitHub, arXiv, and Reddit made zero requests. Their current freshness is
   still bounded by the prior `2026-09-02` evidence.
@@ -50,19 +54,48 @@ source_basis: "Exact standing diffs and history through Cycle 230; current-revis
   inspected. The 67 bodies exist only in an unaccepted stash tree; the standing
   worker correctly avoided restoring them and repaired only one independently
   provable wrong-root link.
-- Cycle 229's 17 portable-link mappings were checked against their exact
-  targets and accepted ancestor `289c533a2f`; the broad unresolved count drops
-  from 203 to 186 without admitting unaccepted stash content.
+- Cycle 230 replaces 14 mutable daily-digest references in two findings with
+  existing project-owned `KE-053`, `KE-056`, `KE-059`, `KE-061`, and `KE-064`
+  files. All targets and relative paths resolve. Three runtime paths remain
+  explicitly deferred because no accepted durable replacement exists; the
+  broad unresolved count falls from 186 to 172 without admitting new content.
+- Exact Cycle 230 tip `14e16ca5b3` passed syntax, TypeScript, formatting, Cycle
+  230 projection, 55 durable links, 286 tests, 1,440 assertions, and whitespace.
+  Current integrated standing tip `8ab0a89cd0` then failed closed with four
+  errors: the ledger summary, source boundary, current-state cycle, and current
+  observation time still named Cycle 229 while row 230 was latest.
+- Reviewer result `24f53021c6c152bf4f081b1941977f3bdadbb83b`
+  advances only those three reader-facing ledger fields to the exact row 230
+  receipt. The candidate passes syntax, TypeScript, formatting, Cycle 230
+  projection, 55 durable links, 287 tests, 1,444 assertions, and whitespace.
+  Read-only health remains explicit at 26 facts, 16 wake signals, and
+  `truncated:true`.
+
+## Cycle 230 canonical rubric
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and disposition | **Accept.** The three paths without accepted replacements remain explicit rather than cosmetically redirected; no new source lead is claimed. |
+| Provenance and claim/source separation | **Accept.** Fourteen mappings point to exact project-owned KE files; the unchanged XHS access receipt remains observational. |
+| Novelty and decision value | **Accept as retrieval maintenance only.** It reduces unresolved citations but proves no Scout behavior or user outcome. |
+| Related-work comparison | **No change.** Cycle 230 adds no related-work claim or external comparison. |
+| Contradictions and uncertainty | **Accept.** The report distinguishes high confidence in the mappings from low confidence in the remaining replacements. |
+| Duplication and memory contamination | **Accept.** Mutable digest aliases are removed without copying or admitting content. |
+| Usability and retrieval value | **Accept.** Fourteen durable citations resolve directly; three unsupported citations remain visible. |
+| Access boundaries | **Accept.** One read-only XHS receipt and zero GitHub, arXiv, or Reddit requests are recorded. |
+| Validation quality | **Revise.** Cycle 230 passed before integration, but the integrated projection gate exposed stale canonical fields; the reviewer candidate closes that current-revision failure. |
+| Cost and productivity | **Revise under RV-004.** The narrow +87/-17 cleanup is useful, but it adds no retained outcome evidence to the 164-cycle range. |
+| Rollback and integration safety | **Accept candidate.** The correction is three metadata/current-state substitutions; rollback is one commit revert, with no source or authority change. |
 
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence | Disposition |
 | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 source cadence | Five public requests after 44 minutes and 65 report lines originally produced no decision. Cycles 67-229 consistently defer unchanged GitHub/arXiv/Reddit lanes at zero request cost. | **Resolved.** The narrow cadence outcome is proven; broader local cost is tracked as `RV-004`. |
+| `RV-001` | Medium | Cycle 65 source cadence | Five public requests after 44 minutes and 65 report lines originally produced no decision. Cycles 67-230 consistently defer unchanged GitHub/arXiv/Reddit lanes at zero request cost. | **Resolved.** The narrow cadence outcome is proven; broader local cost is tracked as `RV-004`. |
 | `RV-002` | Low | Cycle 65 GitHub provenance | All four repository identities and exact heads were made self-contained. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction removed the recursive integration wrapper and is present on standing. | **Resolved.** |
-| `RV-004` | High | `37430cf4..086ed02f`, especially the topic map, lane report, factorial report, and verifier scripts | 163 cycles and +29,357/-255 lines in about 23 hours, with no real provider result, current authority-bearing policy, held-out evaluation, reuse evidence, or changed user decision. | **Revise; open.** Stop verifier micro-cycles, consolidate the current contract and rollback map, correct the design report's stale Cycle 106 source basis, and require a current execution opportunity or protected outcome before more work in this family. |
-| `RV-005` | Medium | Cycle 224 projection gate and `xhs-seed-ledger.md` | The gate passed at Cycle 229 while the ledger still advertised Cycle 222. | **Resolved.** Verified reviewer object `b3c4fb8d3e9588db9a4119f5b0f5c1645a22762b` is integrated as standing commit `d35632c2b1f6c7dbeddfd151a795a9cfd14da023`; Cycle 230 ledger fields now project the latest exact row. |
+| `RV-004` | High | `37430cf4..14e16ca5`, especially the topic map, lane report, factorial report, and verifier scripts | 164 cycles and +29,437/-265 lines in about 23 hours, with no real provider result, current authority-bearing policy, held-out evaluation, reuse evidence, or changed user decision. | **Revise; open.** Stop verifier micro-cycles, consolidate the current contract and rollback map, correct the design report's stale Cycle 106 source basis, and require a current execution opportunity or protected outcome before more work in this family. |
+| `RV-005` | Medium | Projection gate and `xhs-seed-ledger.md` through Cycle 230 | The integrated gate correctly failed because row 230 became latest while the ledger's three reader-facing current fields remained at Cycle 229. | **Resolved.** Reviewer correction `24f53021c6c152bf4f081b1941977f3bdadbb83b` is ledger-blob-identical to standing `6a31989dc5423d4986d26b1762be37f61e7f6a1c`; Cycle 231 full validation projects the latest exact row. |
 
 ## Reviewer source/result and integration status
 
@@ -75,24 +108,31 @@ source_basis: "Exact standing diffs and history through Cycle 230; current-revis
 - Standing commit `7dd678a9887ffd49f7872eb01ea2138961b32a65` closes that stale
   integration status and is an ancestor of the current reviewed tip.
 - Earlier `RV-002`/`RV-003` reviewer corrections remain integrated. No prior
-  accepted reviewer result is rejected, superseded, blocked, or unintegrated.
-- Current reviewer refinement source is
-  `086ed02f757d55f35b80ba73f48cdc969b6dc6dc`; the locally verified projection
-  result `b3c4fb8d3e9588db9a4119f5b0f5c1645a22762b` is integrated as standing
-  commit `d35632c2b1f6c7dbeddfd151a795a9cfd14da023` at stable patch ID
-  `f5d7665abebb7c35579ade161154cc52103681a8`. The longer `b3c4fb8d3e161…`
-  identifier supplied in the handoff does not name a local object. Reviewer
-  cursor source `9f0891cf97fcbf9ced68b2a72495ce464926da7f` is integrated as standing commit
-  `8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d` at patch ID
-  `deac3b2799304a21aba0ecd2f524e922a7ffd516`.
-  Rollback is a normal revert of the corresponding standing commit.
+  accepted reviewer result is rejected, superseded, or blocked.
+- Standing `d35632c2b1f6c7dbeddfd151a795a9cfd14da023` integrates the projection
+  refinement: its script and test blobs exactly match reviewer result tree
+  `9f0891cf97fcbf9ced68b2a72495ce464926da7f`, and its ledger differs only by
+  the pre-existing Cycle 230 row. Standing `8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d`
+  exactly matches that reviewer tree's two review-artifact blobs.
+- The handoff's longer `b3c4fb8d3e161…` identifier does not name a local
+  object; verified reviewer object `b3c4fb8d3e9588db9a4119f5b0f5c1645a22762b`
+  and standing `d35632c2b1f6c7dbeddfd151a795a9cfd14da023` share stable patch ID
+  `f5d7665abebb7c35579ade161154cc52103681a8`.
+- Current correction source is standing `8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d`;
+  reviewer result `24f53021c6c152bf4f081b1941977f3bdadbb83b`
+  is integrated by exact ledger-blob equivalence at standing
+  `6a31989dc5423d4986d26b1762be37f61e7f6a1c`. Reviewer cursor
+  `1008ab1e240011475647042ad186034ac7d0eef9` is reconciled here without
+  retaining its now-stale pending status. Rollback is a normal revert of the
+  corresponding standing integration.
 
 ## Next trigger
 
 Review the next material standing checkpoint or concrete disposition of
 `RV-004`. If no such checkpoint
-arrives, the next bounded periodic audit is no earlier than 24 hours after this
-review. Do not poll unchanged state. This standing reviewer goal remains active.
+arrives, the next bounded periodic audit is no earlier than
+`2026-09-04T15:44:26Z`. Do not poll unchanged state. This standing reviewer
+goal remains active.
 
 ## Supervision
 
