@@ -2527,6 +2527,30 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 144 evidence-schema identity
+
+Seed commit `c9ca6ed0c94fb0f566843c91a279fc9d4831d07e` preceded two matched
+controls. Removing the schema or substituting a future `/v2` schema in
+otherwise matching model-resolution and seed-policy evidence left the pre-fix
+verifier at `ok:true`; the isolated expectation reported zero passes, two
+failures, and two assertions.
+
+Repair `2f2efcd3eb5b435ff5c6c43bfde09967b77df09a` requires exact schemas
+`scout.verification-allocation-model-resolution/v1` and
+`scout.verification-allocation-seed-policy/v1`. Missing and unknown schemas
+fail before model or protocol scope is returned. Direct, descriptor-safe
+bundle, and frontier paths pass 45 tests and 218 assertions plus TypeScript,
+source formatting, and whitespace.
+
+The schema fields change the bound evidence bytes and legitimately roll the
+fixture decision-record SHA-256 from `eb98a87…9e41` to `d8afac0…384a`.
+This is high-confidence local format-version enforcement, not provider
+authentication, authorship, policy authority, independence, freshness,
+migration compatibility, or proof of real execution. The next matched control
+tests same-byte evidence-artifact aliasing to decide whether artifact names
+belong in derived scope or whether content addressing is the intended
+contract.
+
 ## Cycle 143 seed-policy evidence agreement
 
 Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` preceded a matched

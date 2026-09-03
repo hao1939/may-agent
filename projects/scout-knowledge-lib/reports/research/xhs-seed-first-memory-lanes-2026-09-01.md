@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 144 checkpoint — evidence formats are explicitly versioned
+
+Seed commit `c9ca6ed0c94fb0f566843c91a279fc9d4831d07e` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+controls. Missing and future `/v2` schemas in otherwise matching
+model-resolution and seed-policy evidence both returned `ok:true` before
+repair.
+
+Exact local `2f2efcd3eb5b435ff5c6c43bfde09967b77df09a` requires separate
+explicit v1 schemas before either evidence object can enter derived scope.
+The focused gate passes 45 tests and 218 assertions plus TypeScript,
+formatting, and whitespace. Bound evidence bytes legitimately roll the exact
+decision-record SHA-256 from `eb98a87…9e41` to `d8afac0…384a`.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded exact repository heads, paper versions,
+RSS/JSON access boundary, and revisit triggers. This proves local schema
+enforcement for the tested formats, not authorship, authority, independence,
+freshness, future migration compatibility, or real execution. The next ranked
+control tests same-byte model and seed evidence artifact renaming against the
+derived scope contract.
+
 ## Cycle 143 checkpoint — seed evidence cannot contradict its declaration
 
 Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` records unchanged
