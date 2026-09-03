@@ -930,6 +930,56 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("does not infer sidecar registration from an unvalidated checksum line", () => {
+    const fixture = validFixture();
+    const baseline = verifyExecutionFreezeManifest(
+      fixture.manifest,
+      fixture.artifactContents,
+    );
+    const contents = fixture.artifactContents as Record<string, string>;
+    contents["candidate-registry.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-candidate-registry/v1",
+      candidates: [],
+    });
+    fixture.manifest.artifacts.push({
+      name: "candidate-registry.json",
+      sha256: freezeArtifactSha256(contents["candidate-registry.json"]),
+    });
+    contents["MANIFEST.sha256"] +=
+      `${freezeArtifactSha256(contents["candidate-registry.json"])}  ` +
+      "candidate-registry.json\n";
+    const checksumSha256 = freezeArtifactSha256(contents["MANIFEST.sha256"]);
+    fixture.manifest.artifacts.find(
+      (artifact) => artifact.name === "MANIFEST.sha256",
+    )!.sha256 = checksumSha256;
+    fixture.manifest.externalRegistration.manifestSha256 = checksumSha256;
+    fixture.manifest.externalRegistration.proofTargetSha256 = checksumSha256;
+
+    const matchingLine = verifyExecutionFreezeManifest(
+      fixture.manifest,
+      contents,
+    );
+    contents["candidate-registry.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-candidate-registry/v1",
+      candidates: ["changed-without-updating-the-checksum-line"],
+    });
+    fixture.manifest.artifacts.find(
+      (artifact) => artifact.name === "candidate-registry.json",
+    )!.sha256 = freezeArtifactSha256(contents["candidate-registry.json"]);
+    const staleLine = verifyExecutionFreezeManifest(fixture.manifest, contents);
+
+    for (const result of [matchingLine, staleLine]) {
+      expect(result).toMatchObject({
+        ok: true,
+        errors: [],
+        artifactCount: 7,
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        providerCallsAuthorized: false,
+      });
+      expect(result.policyScope).toEqual(baseline.policyScope);
+    }
+  });
+
   it("keeps policy scope content-addressed across same-byte evidence and schedule aliases", () => {
     for (const kind of ["model", "seed", "schedule"] as const) {
       const fixture = validFixture();
