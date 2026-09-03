@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 117 observational reconciliation through 2026-09-03T03:16:16.668Z; exact access evidence and uncertainty are in the Cycle 117 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 117 at 2026-09-03T03:16:16.668Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 117 read-only XHS boundary through 2026-09-03T03:16:16.668Z."
+latest_seed_basis: "Cycle 118 observational reconciliation through 2026-09-03T03:20:21.267Z; exact access evidence and uncertainty are in the Cycle 118 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 118 at 2026-09-03T03:20:21.267Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 118 read-only XHS boundary through 2026-09-03T03:20:21.267Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 117 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 118 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -3058,6 +3058,24 @@ honesty: reproduce whether an arbitrary unreachable HTTPS registration marked
 `verified` passes on locally matching bytes, then make the local/unverified
 boundary explicit if the current result can be mistaken for external
 authentication.
+
+## Cycle 118 seed-first start
+
+Cycle 118 began from clean exact tip
+`e397adfb418149822c658c28bb6e43679fe2fd69`. The established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace ran
+at `2026-09-03T03:20:20.344Z–03:20:21.267Z`; the direct worker-port refusal
+from Cycle 113 was not needlessly repeated. Public Explore remained readable at
+30 notes. Saved status remained HTTP 200, `login`, semantic fingerprint
+`3dab1b6…8af420`, a login wall, and zero attributable items.
+
+Byte length changed 46,673→46,672 and body SHA changed from
+`98bff49…9562a` to `2fa2d88…97654`. Added and changed IDs remain unknown,
+observed removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved post was supported or read, and no XHS state changed. No
+registration-evidence test, public source, provider, or accepted-result request
+preceded this reconciliation. Commit this seed record first, then reproduce the
+ranked local-versus-external registration boundary.
 
 ## Cycle log
 
