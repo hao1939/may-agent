@@ -4054,6 +4054,38 @@ representative saved-post read or account mutation occurred. GitHub, arXiv,
 and Reddit made zero public requests before this reconciliation. Commit it
 first, then run the ranked cross-layer diagnostic control locally.
 
+### Cycle 219 checkpoint — cross-layer failures remain independent
+
+Seed commit `13dc948146` preceded exact test-only commit `2e1c698872`. A
+two-model bundle changes the first model-resolution evidence to contradict its
+declaration and coherently reverses the schedule's model order. Verification
+returns both exact errors, in validation-layer order:
+
+1. `models[0] resolution evidence does not match declaration`
+2. `schedule model IDs do not match immutable resolutions`
+
+Repeating verification returns the identical pair. The invalid result retains
+seven artifacts, two models, two seeds, and 128 episodes, while policy scope is
+null and provider authority remains false. Focused validation passes 31 tests
+and 174 assertions plus TypeScript, formatting, and whitespace. This supports
+complete deterministic diagnostics across the tested declaration and schedule
+layers and contradicts cross-layer masking; it does not prove every possible
+failure combination, external consumer behavior, or provider execution. No
+production fix is warranted.
+
+GitHub/local code won without a public request. ArXiv retains MemGauge
+`2608.30177v1` and allocation study `2608.25553v3`; Reddit retains readable RSS
+for `t3_1v8a3sh` and its JSON-403 boundary. All public lanes made zero requests
+and retain their recorded change-bearing revisit triggers. Accepted lineage is
+unchanged; only canonical accepted finite results are integration candidates,
+while `d041c41b54` and its later unaccepted commits remain deferred without
+content or peer-worktree inspection.
+
+Further marginal diagnostic permutations now rank below library usability.
+The next accessible work is provenance-preserving compaction of Cycles 215–219:
+remove repeated lane and validation prose while retaining exact seed/result
+commits, outcomes, uncertainty, access boundaries, and revisit triggers.
+
 ## Cycle 218 seed-first start
 
 Cycle 218 began from clean `df3d27efbe`. One public status and one non-

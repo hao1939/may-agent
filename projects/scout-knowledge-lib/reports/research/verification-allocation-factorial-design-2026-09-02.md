@@ -2898,6 +2898,25 @@ production change is justified. The manifest remains necessary for model
 identity. The next distinct control combines one model-record mismatch with a
 schedule/model-order mismatch to test cross-layer error completeness.
 
+## Cycle 219 cross-layer diagnostic completeness
+
+Seed commit `13dc948146` preceded exact test-only commit `2e1c698872`. The
+two-model fixture combines one first-model resolution/declaration mismatch with
+a coherently reversed schedule model order. Verification returns the exact
+resolution mismatch followed by the exact immutable-resolution schedule
+mismatch, and a repeat returns the identical result.
+
+The invalid result retains seven artifacts, two models, two seeds, and 128
+episodes, returns null policy scope, and denies provider calls. The focused
+gate passes 31 tests and 174 assertions plus TypeScript, formatting, and
+whitespace. This supports independent deterministic validation at the tested
+layers; it does not establish completeness for every malformed bundle,
+external consumers, or provider execution. No production change is justified.
+
+The remaining registry question is now a retrieval-quality question rather
+than another marginal permutation. Compact Cycles 215–219 without losing exact
+commit, outcome, uncertainty, migration, rollback, or authority boundaries.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two

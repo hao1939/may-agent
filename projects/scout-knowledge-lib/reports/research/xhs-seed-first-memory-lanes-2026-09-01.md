@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 219: simultaneous model failures remain complete, and the next bounded seed pass precedes the cross-layer diagnostic control."
+summary: "Seed-first Scout continuity through Cycle 219: declaration and schedule failures remain independently visible, and provenance-preserving compaction now outranks marginal diagnostic permutations."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
 latest_seed_basis: "Cycle 219 observational reconciliation through 2026-09-03T14:23:11.431Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
@@ -8298,6 +8298,33 @@ seeds remain unavailable. No representative saved-post read or account
 mutation occurred. GitHub, arXiv, and Reddit made zero public requests before
 this record and retain their evidence and triggers. Commit this reconciliation
 first, then run the cross-layer diagnostic control locally.
+
+## Cycle 219 checkpoint — declaration and schedule errors both survive
+
+Seed commit `13dc948146` preceded exact test-only commit `2e1c698872`. One
+first-model resolution/declaration mismatch plus a coherently reversed schedule
+returns exactly `models[0] resolution evidence does not match declaration`
+followed by `schedule model IDs do not match immutable resolutions`. Repeating
+verification returns the identical pair.
+
+The invalid result retains seven artifacts, two models, two seeds, and 128
+episodes, with null policy scope and false provider authority. Focused
+validation passes 31 tests and 174 assertions plus TypeScript, formatting, and
+whitespace. This supports complete deterministic reporting for these two
+layers, while preserving uncertainty about other failure combinations,
+external consumers, and provider execution. No production fix is warranted.
+
+GitHub/local evidence won without a public request. ArXiv retains MemGauge
+`2608.30177v1` and allocation study `2608.25553v3`; Reddit retains readable RSS
+for `t3_1v8a3sh` and its JSON-403 boundary. All three public lanes made zero
+requests and retain their exact change-bearing triggers. Accepted lineage is
+unchanged. Only canonical accepted finite results remain integrable;
+`d041c41b54` and later unaccepted peer commits remain deferred without content
+inspection or peer-worktree access beyond recorded read-only provenance.
+
+The next ranked accessible work compacts repeated Cycle 215–219 lane and
+validation prose while preserving exact seed/result commits, outcomes,
+uncertainty, access boundaries, and revisit triggers.
 
 ## Cycle 218 seed-first reconciliation — stable unavailable semantics
 
