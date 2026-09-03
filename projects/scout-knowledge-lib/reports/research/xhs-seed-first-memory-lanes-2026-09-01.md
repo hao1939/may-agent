@@ -9345,6 +9345,37 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 249 checkpoint — diagnostics retain every equal-score comparison
+
+Seed-first commit `62ade1b58c` preceded implementation `499fbb85cc`. The
+singular runner-up remains for compatibility, while `second_score_tier` now
+lists every entry equal to the second score and `second_score_includes_top`
+states whether an exact top tie occupies that tier. Empty and unique comparison
+tiers remain explicit.
+
+Historical `086ed02f` now exposes two available `24.716029` comparison entries
+for the future-dated query: June 29 Identity and Tooling Credibility, and
+Protocol Identity, Robotics, and Memory. Current evidence exposes two at the
+same score: the protocol item is unavailable and Identity and Tooling
+Credibility uses its accepted July 22 path. The selected result, gap, fixture
+decisions, and Cycle 248 status-only conclusion do not change.
+
+The full current-content gate passes syntax, TypeScript, source formatting,
+Cycle 237 projection, 62 durable links, v1 10/14, and 293 tests with 1,465
+assertions; v2 passes 8/8. The broad audit remains 1,540 documents / 1,699 links
+/ zero errors. Read-only health at `2026-09-03T17:58:55.419Z` returns 29 facts,
+16 wake signals, and `truncated:true`; runtime is empty. Accepted `d35632c2b1`
+and `8ab0a89cd0` remain contained; unaccepted `d041c41b54` and `d9da99476e`
+remain non-ancestors.
+
+Protected `/app` changed externally from 895 records / `e3f4cec9…ffdc1` to 897
+/ `1d982135…4ea7a`, while HEAD `386b445c…1fec8` and its 296-record Scout scope
+`a430d0c9…4322f7e` remained exact. The overlay stayed `fd4c68ecd6`, three
+records, and `a52b97aa…394a15`; no protected or peer worktree was written or
+tested. No GitHub, arXiv, or Reddit request ran. The next ranked work adds an
+explicit diagnostics schema identity so this evidence cannot silently drift
+under the base outcome-v1 label.
+
 ## Cycle 248 checkpoint — seven gains are status-only at the selected result
 
 Seed-first commit `f7b4e000bb` preceded a matched v1 run against historical
