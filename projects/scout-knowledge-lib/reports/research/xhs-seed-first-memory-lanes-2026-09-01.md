@@ -9356,6 +9356,35 @@ boundary; no browser or public request ran. Reviewer ref
 `bce334a37bee99e21c55280726812430c9f39c40`. Inspect and reconcile that finite
 result before resuming the ranked read-only maintenance-event search.
 
+## Cycle 257 checkpoint — receipts preserve paths, attempts do not
+
+Seed commit `a026d02e31` preceded accepted-review reconciliation. Reviewer
+`bce334a37b` is standing `59acb457bd`; RV-012 now states the actual
+double-precision crossover `1.896047856`, and RV-011's digest-fence test blob
+remains exact. Compact status commit `ee1b9a58ab` records both as resolved.
+
+Read-only protected task state contains 24 completed `library-maintenance`
+attempts from `2026-08-19T08:54:44.486Z` through
+`2026-08-21T01:37:41.911Z`. All 24 retain summaries, but zero has a structured
+`output`, `result`, `evidence`, `outputs`, `receipt`, or `reconciliation`
+field; seven summaries merely contain path-like `INDEX`, `knowledge/`, or
+`.md` text. The same state retains 14 child receipts: 10 have nonempty,
+path-like evidence and responses, including exact canonical/report paths and
+verification outcomes. Neither task-state projection retains the emitted
+`project.knowledge.maintained` event itself.
+
+This is genuine later-outcome evidence, but only for child work. It does not
+bind the maintenance trigger or an evaluator query to the path Scout selected,
+and prose summaries cannot safely reconstruct that missing identity. Confidence
+is high for the protected-state counts and schema boundary, medium that one
+pre-evaluator trigger/receipt pair may yield a usable retrospective control,
+and low for general navigation effectiveness. GitHub/local evidence won;
+GitHub, arXiv, and Reddit made zero public requests and retain their exact
+topic-map evidence and triggers. No telemetry or scorer change is justified.
+Next, freeze one historical trigger→accepted-output pair and test whether its
+contemporaneous index revision can be reconstructed without inferring the
+missing query.
+
 ## Cycle 256 seed-first start — ordering corrected before selection
 
 At `2026-09-03T18:37:51.282Z`, Cycle 237's exact receipt was one hundred one
