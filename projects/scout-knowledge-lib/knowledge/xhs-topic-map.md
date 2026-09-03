@@ -3865,6 +3865,33 @@ the known human overlay retains three; all other peers inspected are clean.
 None was written or tested. Commit this seed record before auditing the short
 human landing page.
 
+## Cycle 271 checkpoint — the landing page now reaches both navigation layers
+
+Seed commit `19e38ce7f76b6ff5cffaa5fffc54064756dfe51e`
+preceded the audit. Exact baseline `knowledge/README.md` blob
+`575dd5aad760febdab908118553041e83d5d7d1d` was a concise 37-line landing
+page but contained zero Markdown links: it named `INDEX.md` only as inline code
+and did not expose the living topic map.
+
+The page now links the exhaustive INDEX for known-entry lookup and the living
+topic map for ranked unresolved questions and source-lane gaps. Candidate blob
+`526f3e551cb81f8564944dc7d96c0722bd7373c9` remains 37 lines / 207 words
+and adds no duplicated index or topic content. Both destinations are existing,
+accepted project-owned files. The durable-link gate now includes this landing
+page, moving its checked scope 65→67 links; focused link validation passes 4
+tests / 4 assertions, v1 navigation remains 11/14, and v2 remains 8/8.
+
+This is a direct human retrieval improvement and a prospective regression
+check, not observed human/model use. GitHub/local evidence won; GitHub, arXiv,
+and Reddit made zero public requests and retain their recorded evidence and
+change-bearing triggers. Accepted projection/review mappings remain contained,
+unaccepted `d041c41b54` remains excluded, and `RV-004` remains open.
+
+Next, begin seed-first and audit the actual maintenance prompt boundary: test
+whether its bounded start list makes the landing page and ranked topic-map path
+discoverable without forcing the agent to load either large artifact when the
+trigger already determines a smaller repair.
+
 ## Cycle 270 seed-first start — local continuity
 
 Exact Cycle 269 result `5e5766892f335c03bf39ffacd6c435b079a98051`

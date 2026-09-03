@@ -81,6 +81,7 @@ export function inspectRelativeLinks(
 if (import.meta.main) {
   const projectDir = resolve(import.meta.dir, "../../scout-knowledge-lib");
   const paths = [
+    resolve(projectDir, "knowledge/README.md"),
     resolve(projectDir, "knowledge/xhs-seed-ledger.md"),
     resolve(projectDir, "knowledge/xhs-topic-map.md"),
     resolve(

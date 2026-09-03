@@ -9368,6 +9368,32 @@ the known human overlay retains three; all other peers inspected are clean.
 None was written or tested. Commit this seed record before auditing the short
 human landing page.
 
+## Cycle 271 checkpoint — two stable links replace a dead-end landing page
+
+Seed commit `19e38ce7f76b6ff5cffaa5fffc54064756dfe51e`
+preceded the audit. Exact baseline `knowledge/README.md` blob
+`575dd5aad760febdab908118553041e83d5d7d1d` contained zero Markdown links:
+it named the exhaustive INDEX only as inline code and did not expose the living
+topic map.
+
+Candidate blob `526f3e551cb81f8564944dc7d96c0722bd7373c9` links both stable,
+project-owned destinations. It directs known-entry lookup to INDEX and ranked
+unresolved/source-lane work to the topic map, while remaining 37 lines / 207
+words and copying neither artifact. The existing durable-link gate now covers
+the landing page, so checked links move 65→67. Focused link tests pass 4/4;
+navigation stays v1 11/14 and v2 8/8.
+
+This is direct retrieval structure and prospective regression evidence, not
+observed human/model use; `RV-004` remains high/open. GitHub/local evidence won
+without a public request. arXiv retains `2608.30177v1` / `2608.25553v3`, and
+Reddit retains `t3_1v8a3sh` at RSS HTTP 200 / JSON HTTP 403. Accepted mappings
+remain contained and unaccepted `d041c41b54` remains excluded.
+
+Next, begin seed-first and inspect the real maintenance prompt. Determine
+whether its bounded start list makes the landing page and ranked topic-map path
+discoverable without forcing large-file reads when the trigger already names a
+smaller repair.
+
 ## Cycle 270 seed-first start — local continuity
 
 Exact Cycle 269 result `5e5766892f335c03bf39ffacd6c435b079a98051`
