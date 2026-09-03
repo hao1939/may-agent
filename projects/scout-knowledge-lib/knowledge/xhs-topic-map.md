@@ -323,16 +323,17 @@ This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
 Cycle 125 supersedes the older table snapshot below. Starting tip
-`869f7b6dbc7f693dd38e430093d7b8b00790aec8` anchors the unchanged login-class
+`869f7b6dbc7f693dd38e430093d7b8b00790aec8` and seed commit
+`8882edfb1167e4554a554beeb6466a439db50514` anchor the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Cycle 124's proof-presence disclosure
-is retained; registration-status gating is selected next. Accepted-result
-containment and protected-checkout preservation are rechecked on the resulting
-exact tip.
+unavailable. No public request was made. Exact local `c037763…6242c4` now
+withholds positive registration evidence whenever any freeze validation fails.
+Accepted-result containment and protected-checkout preservation are rechecked
+on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 125; public trigger-deferred.** Registration-status gating is directly testable in the standing implementation.                                                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `a358ee3…3cfe1c` proves arbitrary proof bytes are only presence-checked and exposes `local-byte-presence-unverified` separately.                 | Zero public requests. Test whether positive registration evidence survives an artifact mismatch. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 125; public trigger-deferred.** Registration-status gating was directly testable in the standing implementation.                                                       | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `c037763…6242c4` makes registration status empty across tampered, missing, and undeclared artifact failures.                                                   | Zero public requests. Next map the proof/registration/overall status truth table across proof-specific and unrelated integrity failures. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
 | **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 125.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 125 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
@@ -3257,6 +3258,31 @@ representative saved post was supported or read, and no XHS state changed.
 No status-gating control, public source, provider, or accepted-result request
 preceded this reconciliation. Commit this record first, then pursue the ranked
 registration-status gating question locally.
+
+### Cycle 125 checkpoint — invalid freezes cannot retain registration evidence
+
+Seed commit `8882edfb1167e4554a554beeb6466a439db50514` preceded the
+control. The matched invalid fixture kept registration metadata and its
+checksum relation unchanged while tampering `schedule.json`, omitting
+`seed-policy.md`, and adding `undeclared.txt`. Before repair, the verifier
+returned `ok: false` with all exact integrity errors but still advertised
+`externalRegistrationEvidenceStatus: local-byte-match-unverified`. The new
+expectation failed exactly one of 11 tests with that received value.
+
+Exact local `c0377631e478404018913bf346f2e2e3046242c4` gates the
+positive registration status on zero errors across the complete freeze rather
+than only the registration-specific phase. The invalid fixture now returns an
+empty registration status, while valid local fixtures retain their explicitly
+unverified label. Three focused suites pass 29 tests and 116 assertions;
+TypeScript, source formatting, and whitespace pass.
+
+Confidence is high for the reproduced contradiction, complete-error gate, and
+unchanged provider denial. It remains low for external registration,
+timestamp-proof validity, deposit identity, authorship, real execution, and
+providers. Public GitHub, arXiv, and Reddit made zero requests because no
+trigger fired. The next ranked investigation is a compact status truth table:
+separate overall validity, registration-local evidence, and proof-byte
+presence across proof-specific and unrelated integrity failures.
 
 ## Cycle 124 seed-first start
 

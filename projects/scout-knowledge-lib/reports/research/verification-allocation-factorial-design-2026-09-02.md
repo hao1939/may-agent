@@ -2288,6 +2288,30 @@ ranked control tests whether the registration status itself is correctly gated
 by earlier artifact integrity errors rather than only registration-specific
 checks.
 
+## Cycle 125 registration-status gating
+
+Seed commit `8882edfb1167e4554a554beeb6466a439db50514` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The matched invalid fixture preserved registration metadata and its coherent
+checksum relation while tampering `schedule.json`, omitting `seed-policy.md`,
+and adding `undeclared.txt`. Before repair, the verifier returned `ok: false`
+with the expected integrity errors but still emitted
+`externalRegistrationEvidenceStatus: local-byte-match-unverified`. The
+regression failed one of 11 tests on that exact received value.
+
+Exact local `c0377631e478404018913bf346f2e2e3046242c4` now emits the
+positive registration status only when the complete freeze has no errors. The
+invalid fixture returns an empty status; valid local fixtures retain the
+explicitly unverified status. Three focused suites pass 29 tests and 116
+assertions plus TypeScript, source formatting, and whitespace.
+
+This removes a contradictory positive label without authenticating external
+registration. The next ranked control maps overall validity, registration
+evidence, and proof-byte presence across proof-specific and unrelated
+integrity failures before any further schema decision.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
