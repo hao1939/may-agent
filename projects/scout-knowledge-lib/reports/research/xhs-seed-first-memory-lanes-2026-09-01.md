@@ -7752,6 +7752,23 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 135 checkpoint — duplicate manifest keys no longer disappear
+
+Seed commit `1549eead9395e00f6cc297e17dd4dcc1b3641ec8` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. An otherwise
+valid raw manifest containing the same false provider-authority key twice still
+returned `ok:true` before repair.
+
+Exact local `d87bc9eb7fccae2dabdd9f131de59a9c58a4538e` requires canonical
+raw manifest bytes before any parsed field is trusted. The three freeze paths
+pass 37 focused tests with 164 assertions plus TypeScript, formatting, and
+whitespace. GitHub/local code won the rubric; GitHub, arXiv, and Reddit made
+zero public requests and retain their recorded evidence and triggers. Alternate
+whitespace/key order is intentionally rejected, and compatibility evidence is
+limited to current generators and fixtures. The next ranked control applies
+the duplicate-key question to the descriptor-safe local decision record.
+
 ## Cycle 134 checkpoint — duplicate schedule keys no longer disappear
 
 Seed commit `0da74737b8c0fae83a6de79fec0c35c831807998` records unchanged

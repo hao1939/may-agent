@@ -2527,6 +2527,25 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 135 canonical freeze-manifest bytes
+
+Seed commit `1549eead9395e00f6cc297e17dd4dcc1b3641ec8` preceded a matched
+bundle control. An otherwise valid raw `freeze-manifest.json` duplicated
+`providerCallsAuthorized:false`. Before repair the bundle returned `ok:true`
+because `JSON.parse` collapsed the duplicate before schema validation; the
+isolated run reported eight passes, one failure, and 17 assertions.
+
+Exact repair `d87bc9eb7fccae2dabdd9f131de59a9c58a4538e` compares raw
+manifest bytes with their canonical parsed serialization before trusting the
+manifest. The control now fails with
+`freeze-manifest.json is not canonical verifiable JSON` and keeps provider
+calls denied. The three freeze paths pass 37 tests and 164 assertions plus
+TypeScript, formatting, and whitespace.
+
+This also rejects alternate whitespace and key order. Current generated
+fixtures are canonical, but no real freeze supplies broader compatibility
+evidence. The next control checks the descriptor-safe local decision record.
+
 ## Cycle 134 canonical schedule bytes
 
 Seed commit `0da74737b8c0fae83a6de79fec0c35c831807998` preceded a matched
