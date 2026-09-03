@@ -862,6 +862,7 @@ describe("verification-allocation execution freeze", () => {
   it("keeps checksum markers, controls, and Unicode spellings literal", () => {
     const composed = "caf\u00e9.zip";
     const decomposed = "cafe\u0301.zip";
+    const longName = "a".repeat(256);
     const cases = [
       {
         artifactName: "bundle.zip",
@@ -893,6 +894,37 @@ describe("verification-allocation execution freeze", () => {
         checksumName: decomposed,
         marker: " ",
         ok: false,
+      },
+      {
+        artifactName: "BUNDLE.ZIP",
+        checksumName: "BUNDLE.ZIP",
+        marker: " ",
+        ok: true,
+      },
+      {
+        artifactName: "bundle.zip",
+        checksumName: "BUNDLE.ZIP",
+        marker: " ",
+        ok: false,
+      },
+      { artifactName: "CON", checksumName: "CON", marker: " ", ok: true },
+      {
+        artifactName: "bundle.zip.",
+        checksumName: "bundle.zip.",
+        marker: " ",
+        ok: true,
+      },
+      {
+        artifactName: "bundle.zip.",
+        checksumName: "bundle.zip",
+        marker: " ",
+        ok: false,
+      },
+      {
+        artifactName: longName,
+        checksumName: longName,
+        marker: " ",
+        ok: true,
       },
     ];
 

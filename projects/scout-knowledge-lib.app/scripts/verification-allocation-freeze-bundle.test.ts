@@ -181,6 +181,11 @@ describe("verification-allocation freeze bundle", () => {
       "proof\nartifact.ots",
       "caf\u00e9.ots",
       "cafe\u0301.ots",
+      "PROOF.OTS",
+      "proof.ots",
+      "CON",
+      "proof.",
+      "a".repeat(255),
     ];
     let current = "MANIFEST.sha256.ots";
 
