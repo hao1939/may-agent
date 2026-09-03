@@ -9357,6 +9357,34 @@ access trigger had fired. Added/changed identities remain unknown, removals are
 No browser or public-source request ran. The ranked local title-weight
 sensitivity audit follows.
 
+## Cycle 253 checkpoint — one retrospective interval repairs one error
+
+Seed-first commit `171253ca8a` preceded an in-memory replay of all 22 frozen
+v1/v2 cases with only the title multiplier varied. Weights 1, 1.5, 1.75, and
+1.875 produce 19/22 passes: all 18 current passes remain and the caller-bound
+case is repaired. At 1.9, 2, 2.5, 3, and 4, the result is the current 18/22.
+The exact linear crossover between the caller's intended and wrong entries is
+`1.896047849`; below it the intended entry wins, at it the pair ties, and above
+it the Read-Write entry wins.
+
+No tested weight fixes the source-lane, coordination, or generic-negative
+failure. Lower weights also change which wrong source-lane and negative-control
+entry wins, and weight 1 expands the coordination tie from three to eight.
+Thus the sweep supports title weight as the local caller mechanism and finds no
+regression among these 18 passes, but it does not establish a generally better
+weight. The interval was selected after seeing producer-authored outcomes and
+has no human/model evidence. No production change is justified. Confidence is
+high for the exact deterministic sweep and low for generalization. GitHub/local
+evidence won; GitHub, arXiv, and Reddit made zero public requests and retain
+their exact lane-table evidence and revisit triggers. Next, replay the existing
+202 leave-one-token perturbations across the apparent repair interval to test
+whether its no-regression result is stable.
+
+This documentation-only candidate passes 62 durable links, the v1 10/14 and
+v2 8/8 gates, and the focused 7-test / 26-assertion replay. The unchanged code
+tree's full Cycle 252 gate remains 294 tests / 1,470 assertions; the broad
+1,540-document / 1,698-link audit has zero errors.
+
 ## Cycle 252 seed-first start — current receipt reused
 
 At `2026-09-03T18:15:42.544Z`, Cycle 237's exact receipt was seventy-nine
