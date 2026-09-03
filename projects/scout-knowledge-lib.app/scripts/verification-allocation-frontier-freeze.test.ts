@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -533,6 +540,104 @@ describe("identity-robust frontier freeze adapter", () => {
     expect(result.frozenSelection?.freezeVerification.policyScope).not.toEqual(
       freeze.policyScope,
     );
+  });
+
+  it("rejects old decision evidence across same-byte execution-artifact aliasing", async () => {
+    const freeze = await freezeFixture();
+    const snapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const expectedSnapshot = {
+      rowSha256: snapshot.rowSha256,
+      resultSha256: snapshot.resultSha256,
+      frontierSha256: snapshot.frontierSha256,
+      frontierCount: snapshot.frontier.length,
+    };
+    const policy = await policyFixture(
+      freeze.policyScope,
+      identityRobustFrontierSnapshotReference(expectedSnapshot),
+    );
+    const snapshotRoot = await mkdtemp(
+      join(tmpdir(), "scout-frontier-artifact-alias-"),
+    );
+    temporaryRoots.push(snapshotRoot);
+    const snapshotBytes = `${JSON.stringify(snapshot)}\n`;
+    const snapshotSha256 = createHash("sha256")
+      .update(snapshotBytes)
+      .digest("hex");
+    await writeFile(join(snapshotRoot, "frontier.json"), snapshotBytes);
+
+    const baseline = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    expect(baseline.frozenSelection?.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+    });
+
+    const manifestPath = join(freeze.root, "freeze-manifest.json");
+    const aliased = JSON.parse(await readFile(manifestPath, "utf8"));
+    const bundleArtifact = aliased.artifacts.find(
+      (artifact: { name: string }) => artifact.name === "bundle.zip",
+    );
+    const originalDigest = bundleArtifact.sha256;
+    bundleArtifact.name = "aliased-bundle.zip";
+    aliased.externalRegistration.artifactName = "aliased-bundle.zip";
+    const aliasedManifest = `${originalDigest}  aliased-bundle.zip\n`;
+    const aliasedManifestSha256 = freezeArtifactSha256(aliasedManifest);
+    aliased.artifacts.find(
+      (artifact: { name: string }) => artifact.name === "MANIFEST.sha256",
+    ).sha256 = aliasedManifestSha256;
+    aliased.externalRegistration.manifestSha256 = aliasedManifestSha256;
+    await rename(
+      join(freeze.root, "bundle.zip"),
+      join(freeze.root, "aliased-bundle.zip"),
+    );
+    await writeFile(join(freeze.root, "MANIFEST.sha256"), aliasedManifest);
+    await writeFile(manifestPath, JSON.stringify(aliased));
+
+    const result = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(result.snapshotVerification.ok).toBe(true);
+    expect(result.frozenSelection).toMatchObject({
+      freezeVerification: {
+        ok: true,
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        providerCallsAuthorized: false,
+      },
+      selection: {
+        ok: false,
+        selected: null,
+        errors: [
+          "a matching verified freeze and frontier snapshot policy scope is required for applicability",
+        ],
+      },
+    });
+    expect(
+      result.frozenSelection?.freezeVerification.policyScope?.protocolReference,
+    ).not.toBe(freeze.policyScope.protocolReference);
+    expect(
+      result.frozenSelection?.freezeVerification.policyScope
+        ?.modelScopeReference,
+    ).toBe(freeze.policyScope.modelScopeReference);
   });
 
   it("rejects snapshot-scoped policy through the direct freeze-only adapter", async () => {
