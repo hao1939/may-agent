@@ -7860,6 +7860,28 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 181 checkpoint — mismatched metadata breadth stops traversal
+
+Seed commit `7ef315207a` records unchanged login-class XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before the
+local metadata controls.
+
+Matched 5,000-entry model and seed arrays produced 80,066 and 40,066
+diagnostics after the correct declaration mismatch, taking 0.10 s process wall
+time and 107,264 KB peak RSS. Exact local `b64f8ec65f` returns after the existing
+mismatch when either parsed metadata array differs from its bound list. Both
+controls now return one error each in 0.06 s and 76,160 KB peak RSS; the full
+freeze/factorial gate passes 76 tests and 672 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the matched current-runtime improvement
+and low for general resource bounds, other runtimes, or broader provenance,
+authority, cost, drift, model, or provider claims. The next ranked audit tests
+oversized per-episode candidate lists inside a count-matched schedule.
+
 ## Cycle 180 checkpoint — declared schedule breadth stops traversal
 
 Seed commit `0c6a4feb22` records unchanged login-class XHS access, 30 readable

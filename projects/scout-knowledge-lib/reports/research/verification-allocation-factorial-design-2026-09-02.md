@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 181 bounded schedule-metadata breadth
+
+Seed commit `7ef315207a` preceded two matched schedule controls. The valid
+64-episode baseline passed. Replacing only its parsed model or seed list with
+5,000 unique strings and coherently rebinding both digests produced the correct
+declaration mismatch, then respectively 80,066 and 40,066 unnecessary
+diagnostics. The combined isolated test took 76.00 ms; its process took 0.10 s
+and reached 107,264 KB peak RSS.
+
+Exact local `b64f8ec65f` returns after the existing declaration error when
+parsed model or seed metadata differs from its bound list. Both controls now
+return one error each in 33.61 ms; process wall time is 0.06 s and peak RSS
+76,160 KB. Count-matched unknown-field and factor-isolation controls retain
+their detailed diagnostics. The full freeze/factorial gate passes 76 tests and
+672 assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth/resource ceiling, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests
+oversized per-episode candidate lists in a count-matched schedule.
+
 ## Cycle 180 bounded schedule-episode breadth
 
 Seed commit `0c6a4feb22` preceded a matched schedule control. The baseline
