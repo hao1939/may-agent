@@ -174,7 +174,7 @@ async function policyFixture(policyScope: {
 }
 
 describe("identity-robust frontier freeze adapter", () => {
-  it("selects from a byte-bound expected snapshot before freeze verification", async () => {
+  it("selects only the expected snapshot and rejects a re-hashed substitute before freeze verification", async () => {
     const freeze = await freezeFixture();
     const policy = await policyFixture(freeze.policyScope);
     const snapshot = createIdentityRobustFrontierSnapshot(
@@ -229,6 +229,41 @@ describe("identity-robust frontier freeze adapter", () => {
       providerCallsAuthorized: false,
     });
     expect(JSON.stringify(summary)).not.toContain('"frontier":');
+
+    const substituteSnapshot = createIdentityRobustFrontierSnapshot(
+      [
+        snapshot.frontier[0],
+        { ...snapshot.frontier[1], uniformDriftBuffer: 0.0007 },
+      ],
+      snapshot.rowSha256,
+      snapshot.resultSha256,
+    );
+    const substituteBytes = `${JSON.stringify(substituteSnapshot)}\n`;
+    await writeFile(join(snapshotRoot, "substitute.json"), substituteBytes);
+    const substituted = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "substitute.json",
+      createHash("sha256").update(substituteBytes).digest("hex"),
+      {
+        rowSha256: snapshot.rowSha256,
+        resultSha256: snapshot.resultSha256,
+        frontierSha256: snapshot.frontierSha256,
+        frontierCount: snapshot.frontier.length,
+      },
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    expect(substituted).toMatchObject({
+      snapshotVerification: {
+        ok: false,
+        errors: ["frontier snapshot does not match the expected computation"],
+        providerCallsAuthorized: false,
+      },
+      frozenSelection: null,
+      providerCallsAuthorized: false,
+    });
   });
 
   it("selects only after descriptor-safe freeze and local-record verification", async () => {
