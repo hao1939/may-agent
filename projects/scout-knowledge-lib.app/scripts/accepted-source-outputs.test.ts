@@ -108,6 +108,50 @@ describe("latest accepted Scout source output collector", () => {
     expect(sample.note.resources).toEqual([]);
   });
 
+  it("preserves one source loss even while the aggregate remains healthy", () => {
+    const resource = (
+      source: string,
+      evidence: string[],
+    ): Record<string, unknown> => ({
+      spec: { workflow: "scout-explore", input: { source } },
+      status: {
+        phase: "converged",
+        updatedAt: "2026-08-21T00:30:00.000Z",
+        evidence,
+      },
+    });
+    const matched = {
+      resources: {
+        "explore-arxiv": resource("arxiv", [`${outputPrefix}arxiv.md`]),
+        "explore-hn": resource("hn", [`${outputPrefix}hn.md`]),
+      },
+    };
+    const oneSourceLost = structuredClone(matched);
+    oneSourceLost.resources["explore-arxiv"] = resource("arxiv", [
+      "result:evidence-backed-no-op",
+    ]);
+
+    const bothPresent = collectAcceptedSourceOutputs(matched, { now });
+    const arxivLost = collectAcceptedSourceOutputs(oneSourceLost, { now });
+
+    expect(bothPresent.value).toBe(2);
+    expect(bothPresent.note.sourceOutputCounts).toEqual({
+      arxiv: 1,
+      hn: 1,
+      xhs: 0,
+      github: 0,
+      reddit: 0,
+    });
+    expect(arxivLost.value).toBe(1);
+    expect(arxivLost.note.sourceOutputCounts).toEqual({
+      arxiv: 0,
+      hn: 1,
+      xhs: 0,
+      github: 0,
+      reddit: 0,
+    });
+  });
+
   it("deduplicates duplicate output paths on the latest resource", () => {
     const output = `${outputPrefix}shared.md`;
     const sample = collectAcceptedSourceOutputs(

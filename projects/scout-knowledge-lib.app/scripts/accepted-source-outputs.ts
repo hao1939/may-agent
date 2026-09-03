@@ -6,6 +6,15 @@ export const RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID =
   "scout.accepted-source-outputs-24h";
 export const DEFAULT_SCOUT_TASK_STATE_PATH =
   "/app/projects/scout-knowledge-lib.app/.state/tasks/state.json";
+export const SCOUT_EXPLORATION_SOURCES = [
+  "arxiv",
+  "hn",
+  "xhs",
+  "github",
+  "reddit",
+] as const;
+
+export type ScoutExplorationSource = (typeof SCOUT_EXPLORATION_SOURCES)[number];
 
 export type AcceptedSourceOutputReceipt = {
   id: string;
@@ -26,6 +35,7 @@ export type AcceptedSourceOutputSample = {
     resourceCount: number;
     completedAttemptCount: number;
     outputs: string[];
+    sourceOutputCounts: Record<ScoutExplorationSource, number>;
     resources: AcceptedSourceOutputReceipt[];
   };
 };
@@ -52,7 +62,10 @@ function durableOutputs(value: unknown): string[] {
     .map((item) => item.slice(7));
 }
 
-function sourceForTask(taskId: string, resource: JsonRecord): string | null {
+function sourceForTask(
+  taskId: string,
+  resource: JsonRecord,
+): ScoutExplorationSource | null {
   const spec = record(resource.spec);
   if (spec.workflow !== "scout-explore") return null;
   const inputSource = record(spec.input).source;
@@ -62,8 +75,8 @@ function sourceForTask(taskId: string, resource: JsonRecord): string | null {
       : taskId.startsWith("explore-")
         ? taskId.slice("explore-".length)
         : "";
-  return ["arxiv", "hn", "xhs", "github", "reddit"].includes(source)
-    ? source
+  return SCOUT_EXPLORATION_SOURCES.includes(source as ScoutExplorationSource)
+    ? (source as ScoutExplorationSource)
     : null;
 }
 
@@ -109,6 +122,16 @@ export function collectAcceptedSourceOutputs(
   const outputs = [
     ...new Set(acceptedResources.flatMap((resource) => resource.outputs)),
   ].sort();
+  const sourceOutputCounts = Object.fromEntries(
+    SCOUT_EXPLORATION_SOURCES.map((source) => [
+      source,
+      new Set(
+        acceptedResources
+          .filter((resource) => resource.source === source)
+          .flatMap((resource) => resource.outputs),
+      ).size,
+    ]),
+  ) as Record<ScoutExplorationSource, number>;
   const completedAttemptCount = Object.values(record(root.attempts)).filter(
     (rawAttempt) => {
       const attempt = record(rawAttempt);
@@ -133,6 +156,7 @@ export function collectAcceptedSourceOutputs(
       resourceCount: acceptedResources.length,
       completedAttemptCount,
       outputs,
+      sourceOutputCounts,
       resources: acceptedResources,
     },
   };
