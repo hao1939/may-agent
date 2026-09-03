@@ -4110,7 +4110,9 @@ Seed commit `17f79df077` preceded the audit. Across the unchanged v1 and v2
 rankings, the two uniquely wrong selections have relative top-one/runner-up
 gaps `0.014277` and `0.157327`. Every correct selection with a runner-up is at
 least `0.345953`; three further correct selections have no runner-up. Exact ties
-remain zero-margin ambiguities and both true misses have no ranked entry.
+remain zero-margin ambiguities. V2's reef control is the one actual miss with
+no ranked entry; v1's expected miss remains the recorded generic-token
+ambiguity.
 
 A 25% relative-margin abstention would therefore preserve all 17 uniquely
 correct results and turn the two uniquely wrong results into ambiguity on these

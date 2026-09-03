@@ -9556,7 +9556,8 @@ rankings have relative top-one/runner-up gaps of `0.014277` for the topic-map
 query and `0.157327` for caller-bound memory. Across both frozen sets, every
 correct result that has a runner-up is separated by at least `0.345953`; three
 additional correct results have no runner-up. Exact ties remain zero-margin
-ambiguities and true misses have no ranking.
+ambiguities. V2's reef control is the one actual miss with no ranking; v1's
+expected miss remains the recorded generic-token ambiguity.
 
 On these exact 22 cases, a 25% relative margin would preserve all 17 uniquely
 correct selections and turn both uniquely wrong selections into explicit
