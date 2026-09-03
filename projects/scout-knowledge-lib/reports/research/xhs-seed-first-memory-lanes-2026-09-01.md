@@ -8061,6 +8061,16 @@ made zero requests and retain their change-bearing triggers. The unaccepted
 control reorders nested manifest-declaration keys while holding every artifact
 byte fixed.
 
+Exact reviewed tip `5f8f5d83ad87e19231f827e87faf6e2285711628`
+passes syntax, TypeScript, source formatting, 273 tests, 1,402 assertions,
+whitespace, 31 relative links, read-only health 26/16, and empty root/app
+runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
+both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
+and the human overlay reproduce `386b445c…1fec8` / 886 /
+`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
+neither was written or tested. The unaccepted range remains outside standing
+lineage without content inspection.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

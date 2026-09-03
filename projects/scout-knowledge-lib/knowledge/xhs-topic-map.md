@@ -3815,6 +3815,16 @@ ranked matched audit reorders keys inside nested manifest declarations while
 holding every declared artifact byte fixed, testing whether the presentation
 boundary is recursive across the container.
 
+Exact reviewed Cycle 213 tip
+`5f8f5d83ad87e19231f827e87faf6e2285711628` passes syntax, TypeScript,
+source formatting, 273 tests, 1,402 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:53:10.099Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
+Protected source and overlay reproduce `386b445c…1fec8` / 886 /
+`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
+neither was written or tested. The unaccepted peer remains outside lineage.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
