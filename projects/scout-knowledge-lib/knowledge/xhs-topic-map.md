@@ -4045,46 +4045,29 @@ The next ranked accessible audit is the remaining exact 40-line Cycle 222
 ledger mirror: determine whether its rollback decisions need two full copies
 before changing either one.
 
-## Cycle 280 seed-first start — retained-outcome trigger check
+## Cycle 280 compact boundary — retained history still ends before an outcome
 
-Cycle 280 began from clean integration checkpoint
-`5b13addd1d44b6a2ba76eb8680b3a9957428c90a`. At
-`2026-09-03T21:37:30.723Z`, Cycle 237's exact observation receipt was 280
-minutes old, inside the six-hour cadence and before the scheduled
-`2026-09-03T22:57:11.030Z` re-observation. This bounded reconciliation made
-zero browser or public requests: added/changed identities remain unknown,
-observed removals are `[]`, and all 132 durable IDs remain unavailable at the
-same login-class boundary. Protected `/app` remains externally observed at
-`386b445c…41fec8`, 386 records / `7c285c09…1ca01b`, with Scout scope 296 /
-`7e4d0937…c26a8a`; this worker did not write or test it. GitHub, arXiv, and
-Reddit retain their recorded heads, versions, RSS/JSON boundary, and
-change-bearing triggers. Commit this seed record before checking accepted refs
-or the ranked retained-outcome boundary; do not make an early public request.
+The [detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-280-seed-first-start--retained-outcome-trigger-check)
+retains the failed read-only query, corrected schema, exact source-lane heads,
+validation, fingerprints, and rollback. This map retains the decision:
 
-## Cycle 280 checkpoint — retained history still ends before an outcome
-
-Seed commit `f5f425d8be450661e4789bfaa94ee56032458efe` preceded the ranked
-check. From `2026-09-03T21:39:21.255Z` through `21:39:21.305Z`, UID 1000
-opened `/app/.state/may.db` read-only with `PRAGMA query_only=1`. The store has
-15,570 retained rows, down 425 from Cycle 276's 15,995, but the maximum remains
-ID `6317660` at `2026-08-31T15:24:13.597Z`: there are zero later rows, zero
-exact `project.knowledge.maintained` events, and the same two payload mentions.
-This is direct mutable-retention evidence, not a later selection or outcome;
-`RV-004` remains high/open.
-
-The accepted reviewer ref remains exact integrated result `6c806ade5a` and is
-contained. GitHub is still high-relevance/low-incremental-value at the four
-named September 2 heads; arXiv retains `2608.30177v1` at 15/15 and
-`2608.25553v3` at 14/15; Reddit retains RSS item `t3_1v8a3sh` with six comments
-and the JSON-403 boundary. All three made zero requests because no revision,
-version, thread, access, seed-linked, deployment, or accepted-result trigger
-fired. Revisit on those exact changes, a retained route-to-decision outcome,
-or the scheduled XHS observation at `2026-09-03T22:57:11.030Z`; another local
-telemetry or narration change cannot supply the missing join.
-
-The exact candidate passes the full 296-test / 1,483-assertion gate, 70 scoped
-and 1,706 broad links, both navigation fixtures, and read-only health at 30
-facts / 16 wakes. Protected source and Scout-scope fingerprints remain exact.
+- Integration checkpoint `5b13addd1d` preceded seed `f5f425d8be`. The
+  280-minute-old Cycle 237 receipt was reused at zero request cost;
+  additions/changes stayed unknown, removals were `[]`, and all 132 IDs stayed
+  unavailable. Protected drift remained externally observed and unwritten.
+- From `2026-09-03T21:39:21.255Z` through `21:39:21.305Z`, UID 1000 opened
+  `/app/.state/may.db` with `readonly:true` and `PRAGMA query_only=1`. It held
+  15,570 rows, down 425, but still ended at ID `6317660` /
+  `2026-08-31T15:24:13.597Z`: zero later rows, zero exact
+  `project.knowledge.maintained` events, and the same two payload mentions.
+- The contraction does not identify removed rows or causality and adds no
+  query, route, selected identity, later decision, or outcome. Reviewer
+  `6c806ade5a` remained contained. GitHub, arXiv, and Reddit made zero requests
+  and retained their revision-, version-, thread-, access-, and outcome-bearing
+  triggers. More unjoined telemetry cannot resolve `RV-004`.
+- Validation passed 296 tests / 1,483 assertions, 70 scoped / 1,706 broad
+  links, both navigation fixtures, and health at 30 facts / 16 wakes;
+  protected fingerprints remained exact.
 
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
