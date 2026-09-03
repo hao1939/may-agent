@@ -31,6 +31,22 @@ export type IdentityRobustFrontierSnapshotExpectation = {
   frontierCount: number;
 };
 
+export function identityRobustFrontierSnapshotReference(
+  snapshot: IdentityRobustFrontierSnapshotExpectation,
+): string {
+  return `frontier-snapshot-sha256:${createHash("sha256")
+    .update(
+      JSON.stringify([
+        "scout.verification-allocation-frontier-snapshot-identity/v1",
+        snapshot.rowSha256,
+        snapshot.resultSha256,
+        snapshot.frontierSha256,
+        snapshot.frontierCount,
+      ]),
+    )
+    .digest("hex")}`;
+}
+
 export const RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION: IdentityRobustFrontierSnapshotExpectation =
   Object.freeze({
     rowSha256:

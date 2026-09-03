@@ -12,7 +12,10 @@ import {
   selectIdentityRobustFrontierPointFromSnapshot,
   summarizeIdentityRobustSnapshotFrontierSelection,
 } from "./verification-allocation-frontier-snapshot-select";
-import { createIdentityRobustFrontierSnapshot } from "./verification-allocation-frontier-snapshot";
+import {
+  createIdentityRobustFrontierSnapshot,
+  identityRobustFrontierSnapshotReference,
+} from "./verification-allocation-frontier-snapshot";
 import {
   hashIdentityRobustFrontierPolicy,
   type IdentityRobustFrontierPoint,
@@ -115,10 +118,13 @@ async function freezeFixture() {
   return { root, policyScope: freezeVerification.policyScope! };
 }
 
-async function policyFixture(policyScope: {
-  protocolReference: string;
-  modelScopeReference: string;
-}) {
+async function policyFixture(
+  policyScope: {
+    protocolReference: string;
+    modelScopeReference: string;
+  },
+  frontierSnapshotReference?: string,
+) {
   const evidenceRoot = await mkdtemp(
     join(tmpdir(), "scout-frontier-evidence-"),
   );
@@ -137,6 +143,7 @@ async function policyFixture(policyScope: {
     evidenceUnit: "probability-per-model",
     protocolReference: policyScope.protocolReference,
     modelScopeReference: policyScope.modelScopeReference,
+    ...(frontierSnapshotReference ? { frontierSnapshotReference } : {}),
     applicabilityStatus: "protocol-matched-unverified",
   };
   const decisionRecord = `${JSON.stringify({
@@ -176,11 +183,19 @@ async function policyFixture(policyScope: {
 describe("identity-robust frontier freeze adapter", () => {
   it("selects only the expected snapshot and rejects a re-hashed substitute before freeze verification", async () => {
     const freeze = await freezeFixture();
-    const policy = await policyFixture(freeze.policyScope);
     const snapshot = createIdentityRobustFrontierSnapshot(
       frontier,
       "a".repeat(64),
       "b".repeat(64),
+    );
+    const policy = await policyFixture(
+      freeze.policyScope,
+      identityRobustFrontierSnapshotReference({
+        rowSha256: snapshot.rowSha256,
+        resultSha256: snapshot.resultSha256,
+        frontierSha256: snapshot.frontierSha256,
+        frontierCount: snapshot.frontier.length,
+      }),
     );
     const snapshotBytes = `${JSON.stringify(snapshot)}\n`;
     const snapshotRoot = await mkdtemp(
@@ -264,6 +279,91 @@ describe("identity-robust frontier freeze adapter", () => {
       frozenSelection: null,
       providerCallsAuthorized: false,
     });
+  });
+
+  it("rejects old decision evidence across an expected-snapshot version rollover", async () => {
+    const freeze = await freezeFixture();
+    const oldSnapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const newSnapshot = createIdentityRobustFrontierSnapshot(
+      [
+        oldSnapshot.frontier[0],
+        { ...oldSnapshot.frontier[1], uniformDriftBuffer: 0.0007 },
+      ],
+      oldSnapshot.rowSha256,
+      "c".repeat(64),
+    );
+    const policy = await policyFixture(
+      freeze.policyScope,
+      identityRobustFrontierSnapshotReference({
+        rowSha256: oldSnapshot.rowSha256,
+        resultSha256: oldSnapshot.resultSha256,
+        frontierSha256: oldSnapshot.frontierSha256,
+        frontierCount: oldSnapshot.frontier.length,
+      }),
+    );
+    const snapshotRoot = await mkdtemp(
+      join(tmpdir(), "scout-frontier-version-rollover-"),
+    );
+    temporaryRoots.push(snapshotRoot);
+    const oldBytes = `${JSON.stringify(oldSnapshot)}\n`;
+    const newBytes = `${JSON.stringify(newSnapshot)}\n`;
+    await writeFile(join(snapshotRoot, "old.json"), oldBytes);
+    await writeFile(join(snapshotRoot, "new.json"), newBytes);
+
+    const oldResult = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "old.json",
+      createHash("sha256").update(oldBytes).digest("hex"),
+      {
+        rowSha256: oldSnapshot.rowSha256,
+        resultSha256: oldSnapshot.resultSha256,
+        frontierSha256: oldSnapshot.frontierSha256,
+        frontierCount: oldSnapshot.frontier.length,
+      },
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    const newResult = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "new.json",
+      createHash("sha256").update(newBytes).digest("hex"),
+      {
+        rowSha256: newSnapshot.rowSha256,
+        resultSha256: newSnapshot.resultSha256,
+        frontierSha256: newSnapshot.frontierSha256,
+        frontierCount: newSnapshot.frontier.length,
+      },
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(oldResult.frozenSelection?.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+    });
+    expect(newResult).toMatchObject({
+      snapshotVerification: { ok: true },
+      frozenSelection: {
+        freezeVerification: { ok: true },
+        selection: {
+          ok: false,
+          selected: null,
+          errors: [
+            "a matching verified freeze and frontier snapshot policy scope is required for applicability",
+          ],
+        },
+      },
+      providerCallsAuthorized: false,
+    });
+    expect(newSnapshot.frontierSha256).not.toBe(oldSnapshot.frontierSha256);
   });
 
   it("selects only after descriptor-safe freeze and local-record verification", async () => {

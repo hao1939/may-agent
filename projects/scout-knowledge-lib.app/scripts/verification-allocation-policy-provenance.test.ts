@@ -86,6 +86,44 @@ describe("identity-robust policy provenance", () => {
     expect(result.manifestSha256).toHaveLength(64);
   });
 
+  it("binds an optional frontier snapshot identity and rejects a rollover mismatch", () => {
+    const frontierSnapshotReference = `frontier-snapshot-sha256:${"c".repeat(64)}`;
+    const snapshotApplicability = {
+      ...policyEvidenceApplicability,
+      frontierSnapshotReference,
+    };
+    const snapshotManifest = {
+      ...base,
+      policyEvidenceApplicability: snapshotApplicability,
+    };
+    expect(
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        snapshotManifest,
+        { ...verifiedPolicyScope, frontierSnapshotReference },
+      ),
+    ).toMatchObject({ ok: true });
+    expect(
+      bindIdentityRobustPolicyEvidence(
+        policySha256,
+        evidenceReference,
+        policy,
+        snapshotManifest,
+        {
+          ...verifiedPolicyScope,
+          frontierSnapshotReference: `frontier-snapshot-sha256:${"d".repeat(64)}`,
+        },
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: [
+        "a matching verified freeze and frontier snapshot policy scope is required for applicability",
+      ],
+    });
+  });
+
   it("rejects a different policy, reference, malformed clock, or extra field", () => {
     for (const candidate of [
       { ...base, policySha256: "b".repeat(64) },

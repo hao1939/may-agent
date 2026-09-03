@@ -27,6 +27,7 @@ export type IdentityRobustPolicyEvidenceApplicability = {
   evidenceUnit: "probability-per-model" | "complete-factorial-episodes";
   protocolReference: string;
   modelScopeReference: string;
+  frontierSnapshotReference?: string;
   applicabilityStatus: "protocol-matched-unverified" | "not-established";
 };
 
@@ -42,6 +43,7 @@ export type IdentityRobustVerifiedPolicyScope = {
   schema: "scout.verification-allocation-freeze-policy-scope/v1";
   protocolReference: string;
   modelScopeReference: string;
+  frontierSnapshotReference?: string;
 };
 
 export type IdentityRobustLocalPolicyEvidenceBinding =
@@ -112,6 +114,8 @@ function applicabilityMatches(
 ): candidate is IdentityRobustPolicyEvidenceApplicability {
   if (!record(candidate)) return false;
   const expected = expectedApplicability(expectedPolicyCandidate);
+  const hasFrontierSnapshotReference =
+    candidate.frontierSnapshotReference !== undefined;
   const establishedReferencesMatch =
     candidate.applicabilityStatus !== "protocol-matched-unverified" ||
     (typeof candidate.protocolReference === "string" &&
@@ -132,6 +136,9 @@ function applicabilityMatches(
           "evidenceUnit",
           "protocolReference",
           "modelScopeReference",
+          ...(hasFrontierSnapshotReference
+            ? ["frontierSnapshotReference"]
+            : []),
           "applicabilityStatus",
         ].sort(),
       ) &&
@@ -141,6 +148,11 @@ function applicabilityMatches(
     candidate.evidenceUnit === expected!.evidenceUnit &&
     nonempty(candidate.protocolReference) &&
     nonempty(candidate.modelScopeReference) &&
+    (!hasFrontierSnapshotReference ||
+      (typeof candidate.frontierSnapshotReference === "string" &&
+        /^frontier-snapshot-sha256:[0-9a-f]{64}$/.test(
+          candidate.frontierSnapshotReference,
+        ))) &&
     establishedReferencesMatch &&
     (candidate.applicabilityStatus === "protocol-matched-unverified" ||
       candidate.applicabilityStatus === "not-established")
@@ -151,16 +163,27 @@ function verifiedPolicyScopeMatches(
   candidate: unknown,
   applicability: IdentityRobustPolicyEvidenceApplicability,
 ): candidate is IdentityRobustVerifiedPolicyScope {
+  const hasFrontierSnapshotReference =
+    record(candidate) && candidate.frontierSnapshotReference !== undefined;
   return (
     record(candidate) &&
     JSON.stringify(Object.keys(candidate).sort()) ===
       JSON.stringify(
-        ["schema", "protocolReference", "modelScopeReference"].sort(),
+        [
+          "schema",
+          "protocolReference",
+          "modelScopeReference",
+          ...(hasFrontierSnapshotReference
+            ? ["frontierSnapshotReference"]
+            : []),
+        ].sort(),
       ) &&
     candidate.schema ===
       "scout.verification-allocation-freeze-policy-scope/v1" &&
     candidate.protocolReference === applicability.protocolReference &&
-    candidate.modelScopeReference === applicability.modelScopeReference
+    candidate.modelScopeReference === applicability.modelScopeReference &&
+    candidate.frontierSnapshotReference ===
+      applicability.frontierSnapshotReference
   );
 }
 
@@ -216,7 +239,7 @@ export function bindIdentityRobustPolicyEvidence(
   verifiedPolicyScopeCandidate: unknown = null,
 ): IdentityRobustPolicyEvidenceBinding {
   const scopeLimit =
-    "The manifest binds caller-supplied provenance and applicability fields to an exact policy hash and matching verified-freeze scope identifiers. The scope result remains caller-supplied to this function and is not reverified here; this does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
+    "The manifest binds caller-supplied provenance and applicability fields to an exact policy hash and matching verified-freeze scope identifiers, plus a verified frontier snapshot identity when supplied. The scope result remains caller-supplied to this function and is not reverified here; this does not authenticate the owner, timestamp, revision, reference, independent evidence, cost, drift estimate, or provider behavior.";
   const independentEvidenceStatus = record(candidate)
     ? candidate.independentEvidenceStatus
     : undefined;
@@ -291,12 +314,19 @@ export function bindIdentityRobustPolicyEvidence(
       candidate.policyEvidenceApplicability,
     )
   ) {
+    const snapshotScoped =
+      candidate.policyEvidenceApplicability.frontierSnapshotReference !==
+        undefined ||
+      (record(verifiedPolicyScopeCandidate) &&
+        verifiedPolicyScopeCandidate.frontierSnapshotReference !== undefined);
     return {
       ok: false,
       manifestSha256: "",
       evidenceStatus: "",
       errors: [
-        "a matching verified freeze policy scope is required for applicability",
+        snapshotScoped
+          ? "a matching verified freeze and frontier snapshot policy scope is required for applicability"
+          : "a matching verified freeze policy scope is required for applicability",
       ],
       scopeLimit,
     };

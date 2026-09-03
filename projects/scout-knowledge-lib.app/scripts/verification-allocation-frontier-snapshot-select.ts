@@ -3,6 +3,7 @@ import {
   type IdentityRobustFrozenFrontierSelection,
 } from "./verification-allocation-frontier-freeze";
 import {
+  identityRobustFrontierSnapshotReference,
   loadIdentityRobustFrontierSnapshot,
   type IdentityRobustFrontierSnapshotExpectation,
   type IdentityRobustLocalFrontierSnapshotVerification,
@@ -73,6 +74,12 @@ export async function selectIdentityRobustFrontierPointFromSnapshot(
       evidenceManifestCandidate,
       evidenceRoot,
       freezeBundleRoot,
+      identityRobustFrontierSnapshotReference({
+        rowSha256: snapshotVerification.snapshot.rowSha256,
+        resultSha256: snapshotVerification.snapshot.resultSha256,
+        frontierSha256: snapshotVerification.snapshot.frontierSha256,
+        frontierCount: snapshotVerification.snapshot.frontier.length,
+      }),
     );
   return {
     snapshotVerification,
