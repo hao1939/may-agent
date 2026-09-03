@@ -1336,6 +1336,37 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("rejects answer enum order that contradicts the registered candidates", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    const prompt = JSON.parse(episode.prompt);
+    prompt.answerSchema.properties.selected_memory_id.enum.reverse();
+    episode.prompt = JSON.stringify(prompt);
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect({
+      ok: result.ok,
+      errors: result.errors,
+      policyScope: result.policyScope,
+      providerCallsAuthorized: result.providerCallsAuthorized,
+    }).toEqual({
+      ok: false,
+      errors: [
+        `schedule factorial verification failed: ${episode.id}: prompt contains an unregistered difference`,
+      ],
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects the Cycle 47 source archive as a Scout execution freeze", () => {
     const { manifest, artifactContents } = validFixture();
     const sourceArchive = structuredClone(manifest);
