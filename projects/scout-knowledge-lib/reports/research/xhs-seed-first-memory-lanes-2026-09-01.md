@@ -9361,6 +9361,33 @@ unknown, observed removals are `[]`, and all 132 durable IDs remain
 unavailable. Commit this seed record before testing the eight landing-page
 topic labels against accepted INDEX identities.
 
+## Cycle 273 checkpoint — retain category labels without false canonical links
+
+Seed commit `e271b9f29917465979b880095cc18b4a8eafa3a1`
+preceded the audit. The eight landing-page labels were ranked against all 754
+accepted INDEX entries at blob
+`ac89a4d662966c87a54e8605deb04c539888dc85`. Protocol/interoperability and
+multi-agent coordination each had four co-top entries. Security/runtime,
+memory/context/state, and cross-source trends selected dated findings or
+triages rather than declared canonical topic notes.
+
+The remaining labels were not strong owner designations either. Architecture's
+top two scored `18.813041` / `16.536857`; evaluation selected Beyond Outputs at
+`16.598379` over two broader notes tied at `13.117179`; system lessons selected
+The Undying Project at `21.181480` over The Eternal Present at `20.555118`.
+Lexical rank does not confer canonical ownership.
+
+No eight-link expansion is made. The two navigation-layer links from Cycle 271
+let readers choose without concealing competing syntheses or promoting raw
+findings. This is high-confidence local rank/tie evidence and low-confidence
+human preference evidence. GitHub/local work won; public GitHub, arXiv, and
+Reddit made zero requests. Their evidence and triggers are unchanged, and
+`RV-004` remains high/open.
+
+Next, begin seed-first and audit the 1,022-byte project README. It still names
+the exhaustive INDEX as the entry point; test whether one link to the short
+knowledge landing page aligns human and workflow navigation without duplication.
+
 ## Cycle 272 seed-first start — local continuity
 
 Exact Cycle 271 result `827fb6ece543b268a902038c60d2e99cdb84b20d`

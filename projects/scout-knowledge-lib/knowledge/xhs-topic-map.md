@@ -3858,6 +3858,35 @@ unknown, observed removals are `[]`, and all 132 durable IDs remain
 unavailable. Commit this seed record before testing the eight landing-page
 topic labels against accepted INDEX identities.
 
+## Cycle 273 checkpoint — broad topic labels should not pretend to be canonical
+
+Seed commit `e271b9f29917465979b880095cc18b4a8eafa3a1`
+preceded the bounded audit. All eight landing-page labels were ranked against
+the 754 accepted INDEX entries at exact blob
+`ac89a4d662966c87a54e8605deb04c539888dc85`. Protocol/interoperability and
+multi-agent coordination each produced four-way top ties. The unique winners
+for security/runtime, memory/context/state, and cross-source trends were dated
+raw findings or triages rather than owner-designated canonical topic notes.
+
+Even the clearer labels expose close or competing syntheses: architecture's
+`Agent Runtime Hardening` scored `18.813041` while the state-architecture
+triage scored `16.536857`; evaluation's Beyond-Outputs note scored `16.598379`
+while two broader evaluation notes tied at `13.117179`; system lessons selected
+`The Undying Project` at `21.181480` over `The Eternal Present` at `20.555118`.
+These are deterministic lexical rankings, not canonical ownership evidence.
+
+Do not add eight direct links. The new landing-page routes to INDEX and the
+living map preserve choice without blessing a raw finding or hiding competing
+views. No library or scorer code changed. Confidence is high for exact current
+rank/tie evidence and low for human semantic preference. GitHub/local evidence
+won; all public lanes made zero requests and retain their recorded evidence and
+triggers. `RV-004` remains open.
+
+Next, begin seed-first and inspect the 1,022-byte project README, which still
+calls the exhaustive INDEX the entry point. Determine whether one link to the
+new short knowledge landing page can align human and workflow navigation
+without duplicating content.
+
 ## Cycle 272 seed-first start — local continuity
 
 Exact Cycle 271 result `827fb6ece543b268a902038c60d2e99cdb84b20d`
