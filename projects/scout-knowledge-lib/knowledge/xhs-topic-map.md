@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 169 supersedes the older table snapshot below. Starting tip
-`495dd38f9c6d5afc621d01b370c1f1391d2c6d2f` and seed commit
-`52bdd028a2` anchor the unchanged login-class
+Cycle 170 supersedes the older table snapshot below. Starting tip
+`3a5817e98797efa88acc92277ca161d6af71d2e7` and seed commit
+`300c496e39` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -390,12 +390,15 @@ The Cycle 169 matched control then showed unverified policy and selection
 claims can coexist with the three true verdicts. Exact local
 `931fab1…a7e044d` renames only the conjunction to `scopedChecksPass` and pins
 that those unrelated fields remain outside its contract.
+The actual retained-snapshot CLI then emitted 2,446 bytes at
+`e881ce4…f99a69` in 0.04 seconds. The renamed assessment passed all four
+reported fields while freeze and selection failures remained separate.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 169; public trigger-deferred.** The composite now names only its three scoped checks. Unrelated policy/selection claims are deliberately not validated, and only regeneration is recomputation evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `931fab1…a7e044d` is current; the pre-fix control returned all three true plus `allChecksPass:true` despite unverified policy/selection fields, while the fix exposes the same scope as `scopedChecksPass`. | Zero public requests. Next stream the actual fast retained-snapshot CLI output through the renamed assessment and verify exact process-level schema, denial, identity, and scoped conjunction. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 169.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 169 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 170; public trigger-deferred.** The actual fast snapshot process passed the renamed scoped assessment while retaining separate freeze/selection failures. This still does not validate policy or authority. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `931fab1…a7e044d` is current; retained snapshot `8bee607…edae76` produced assessment payload `e881ce4…f99a69` with every scoped verdict true. | Zero public requests. Next test a deeply nested recognized payload to determine whether recursive authority scanning throws instead of returning a bounded false verdict. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 170.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 170 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3324,6 +3327,30 @@ patch pairs, and 4/4 artifact equivalence. Protected `/app` retained HEAD
 records, and fingerprint `ad8d222c…e74780`. Neither checkout was written or
 tested. Commit this seed record first, then stream the goal-owned retained
 snapshot CLI output through the scoped consumer assessment.
+
+### Cycle 170 checkpoint — the fast snapshot process passes scoped assessment
+
+The goal-owned Cycle 109 snapshot remains exactly 116,578 bytes at SHA-256
+`8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`.
+The actual snapshot CLI loaded it in 0.04 seconds with producer exit 0 and
+emitted 2,446 bytes at SHA-256
+`e881ce48e19fbb1c2414e0c30f6ec7eca856fb3423205c2d3780354504f99a69`.
+
+The renamed assessment identified snapshot-selection v1, verified provider
+denial, matched the retained computation identity, and returned
+`scopedChecksPass:true`. The nested snapshot retained exact row
+`6fac7f99…d38252`, result `383a699f…c2b8fff`, frontier
+`067201a6…b4530ef`, 508 points, and reference `07bdf16b…791dc8c1`.
+No freeze manifest was present, explicit policy evidence was absent, selection
+was false, and provider authority remained false throughout.
+
+This is high-confidence local process interoperability and exact-byte reuse,
+not fresh frontier recomputation, policy approval, external provenance,
+authority, cost, drift, model behavior, or provider execution. No code change
+was justified. GitHub/local execution won; public GitHub, arXiv, and Reddit
+made zero requests under their unchanged triggers. The next ranked audit tests
+whether a deeply nested recognized payload can overflow the recursive
+provider-denial scan instead of returning a bounded false verdict.
 
 ## Cycle 169 seed-first start
 

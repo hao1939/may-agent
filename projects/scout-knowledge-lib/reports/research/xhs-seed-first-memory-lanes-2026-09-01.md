@@ -7752,6 +7752,26 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
+
+Seed commit `300c496e39` records unchanged semantic XHS access, zero
+attributable items, unknown additions/changes, no observed removals, and all
+132 durable seeds unavailable before the process control.
+
+The actual fast CLI loaded the goal-owned 116,578-byte retained snapshot at
+`8bee6076…edae76` in 0.04 seconds and emitted 2,446 bytes at
+`e881ce48…4f99a69`. The assessment identified snapshot-selection v1, verified
+provider denial, matched retained computation identity, and returned
+`scopedChecksPass:true`. Missing freeze and policy evidence remained explicit,
+selection stayed false, and provider authority stayed false.
+
+GitHub/local execution won the rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for process interoperability and retained
+local bytes, and low for fresh recomputation, policy, provenance, authority,
+cost, drift, models, or providers. The next ranked audit tests deeply nested
+input against the recursive denial scan.
+
 ## Cycle 169 checkpoint — the composite verdict is explicitly scoped
 
 Seed commit `52bdd028a2` records unchanged semantic XHS access, zero

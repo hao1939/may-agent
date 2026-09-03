@@ -2695,6 +2695,24 @@ does not validate policy, selection, whole-payload shape, recomputation,
 provenance, authority, cost, or model behavior. The next control applies the
 renamed assessment to the actual retained-snapshot CLI output.
 
+## Cycle 170 fast snapshot composite assessment
+
+Seed commit `300c496e39` preceded the process control. The actual CLI loaded the
+goal-owned 116,578-byte retained snapshot at exact SHA-256
+`8bee6076…edae76` in 0.04 seconds and emitted 2,446 bytes at
+`e881ce48…4f99a69`.
+
+The assessment identified snapshot-selection v1, verified provider denial,
+matched the retained row/result/frontier/count/reference tuple, and returned
+`scopedChecksPass:true`. The missing freeze manifest and explicit-policy
+failures remained separate, no point was selected, and provider authority was
+false at every reported layer.
+
+This proves fast current process composition around retained local bytes, not
+fresh recomputation, policy approval, external provenance, authority, cost,
+drift, model behavior, or provider execution. No code change was justified.
+The next control tests bounded behavior for a deeply nested recognized payload.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
