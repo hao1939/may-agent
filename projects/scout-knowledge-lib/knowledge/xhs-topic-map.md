@@ -4928,15 +4928,10 @@ evidence-backed no-op—before deciding whether separate lane alerts are safe.
 
 ## Cycle 260 seed-first start — follow-up review trigger
 
-At `2026-09-03T19:01:34.334Z`, Cycle 237's exact receipt was one hundred
-twenty-four minutes old. XHS access, public source revisions, unaccepted
-lineage, and source-lane triggers were unchanged. Added/changed identities
-remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable
-at the same login-class boundary; no browser or public request ran. Accepted
-ref `codex/g-8c5b597e-cycle257-review` advanced from integrated
-`95980b20571c6b6789848ef738fd175f26b27eee` to
-`e2f6e08a4f894871644ef0fc86aa89198c94472e`. Inspect and reconcile only its
-finite delta before beginning the accepted-source-output audit.
+The [detailed Cycle 260 start](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-260-seed-first-start--follow-up-review-trigger)
+retains the 124-minute receipt, seed uncertainty, and zero-request boundary.
+Accepted reviewer `95980b2057`→`e2f6e08a4f`; the checkpoint below retains its
+standing patch and accepted-source-output audit.
 
 ### Cycle 260 checkpoint — zero accepted outputs can now breach
 
@@ -5127,22 +5122,16 @@ repair interval follows.
 
 ### Cycle 254 checkpoint — pass stability hides uncertainty regressions
 
-Seed commit `cdb9892e13` preceded the same leave-one-token construction used in
-Cycle 246, now replayed at title weights 1, 1.5, 1.875, and production 3. All
-172 variants derived from the 18 production-passing cases remain correct at
-every tested weight. Weight 1 also repairs all 11 caller variants; weights 1.5
-and 1.875 repair 9 and 8, while production weight 3 repairs only 2.
-
-This apparent robustness is incomplete. Weight 1 converts the generic negative
-from a four-way ambiguity into one wrong available result and expands the
-coordination tie from three to eight. Lower weights continue to select the
-wrong source-lane family. Thus 19/22 and 183/202 are better exact pass counts,
-but they are not sufficient evidence of safer uncertainty or broader retrieval
-quality. The same producer-authored labels shaped both the interval and the
-perturbations. No scoring change is justified without later-use, independent,
-human, or model evidence. Confidence is high for these deterministic counts and
-low for generalization. Next, seek an accessible actual-consumer or later-reuse
-trace before further scorer tuning.
+Seed `cdb9892e13` preceded leave-one-token replay at title weights 1, 1.5,
+1.875, and 3. All 172 variants from 18 production-passing cases stay correct;
+the 11 caller variants improve to 11, 9, 8, and 2 passes respectively. But
+weight 1 turns the generic negative into one wrong result and expands the
+coordination tie from three to eight; lower weights still choose the wrong
+source-lane family. Therefore 19/22 and 183/202 do not prove safer uncertainty
+or broader retrieval. Producer labels shaped the interval and perturbations;
+no later-use, independent, human, or model evidence exists. Confidence is high
+for deterministic counts and low for transfer. Make no scorer change; seek a
+real consumer or later-use trace next.
 
 The [detailed Cycle 254 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-254-checkpoint--pass-stability-hides-uncertainty-regressions)
 retains its exact validation. The following Cycle 253 section there retains
@@ -5196,14 +5185,10 @@ its uncertainty rather than a second historical proof block.
 
 ## Cycle 251 seed-first start — current receipt reused
 
-At `2026-09-03T18:04:44.199Z`, Cycle 237's exact receipt was sixty-eight
-minutes old and Cycle 250 had just completed. Accepted body-evolution and review
-refs remained `df80a1daa2` and `9f0891cf97`; unaccepted self-evolution remained
-`d041c41b54`. No collection, source-revision, accepted-result, schedule, or
-access trigger had fired. Added/changed identities remain unknown, removals are
-`[]`, and all 132 seeds remain unavailable at the same login-class boundary.
-No browser or public-source request ran. The ranked local document-frequency
-specificity audit follows.
+The [detailed Cycle 251 start](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-251-seed-first-start--current-receipt-reused)
+retains the 68-minute receipt, exact accepted/unaccepted refs, seed uncertainty,
+and zero-request boundary. With no trigger change, document-frequency
+specificity ranked first and is evaluated below.
 
 ### Cycle 251 checkpoint — rarity flags some errors, not the caller error
 
