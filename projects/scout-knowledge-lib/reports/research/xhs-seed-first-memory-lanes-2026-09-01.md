@@ -9462,6 +9462,26 @@ for `t3_1v8a3sh` / six comments and JSON HTTP 403; revisit only on a seed-linked
 thread delta or access change. All three made zero requests. The next ranked
 accessible item is the adjacent exact 21-line Cycle 272 seed mirror.
 
+## Cycle 285 seed-first start — exact Cycle 284 result retained
+
+Cycle 285 began from clean Cycle 284 result
+`f97bebdec5a59cfb48abd24f49c87accc2ce67d4`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 69 scoped links, both
+navigation fixtures, and all 296 tests / 1,483 assertions. The broad audit
+passed 1,540 tracked Markdown documents / 1,705 local prose links. Read-only
+health at `2026-09-03T22:22:39.954Z` returned 30 facts, 16 wakes, and
+`truncated:true`; the standing tree was clean. Reviewer `48adada0af` was
+contained and unaccepted `d041c41b54` excluded. Protected `/app` retained
+fingerprints `00bcc281…15c5ed4` overall and `a430d0c9…322f7e` for its Scout
+scope.
+
+At `2026-09-03T22:22:52.055Z`, Cycle 237's exact XHS receipt through
+`2026-09-03T16:57:11.030Z` was about 326 minutes old, still inside the
+six-hour cadence. No browser, GitHub, arXiv, or Reddit request ran.
+Added/changed identities remain unknown, observed removals are `[]`, and all
+132 durable IDs remain unavailable. Commit this ordering record before the
+ranked exact 21-line Cycle 272 mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

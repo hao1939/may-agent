@@ -3898,6 +3898,17 @@ The next ranked accessible mirror is the adjacent 21-line Cycle 272 seed block;
 preserve its validation and protected-state distinctions while keeping full
 detail in one place.
 
+## Cycle 285 seed-first start — validated local continuity
+
+Cycle 285 began from clean Cycle 284 result
+`f97bebdec5a59cfb48abd24f49c87accc2ce67d4`. At
+`2026-09-03T22:22:52.055Z`, Cycle 237's receipt was about 326 minutes old,
+inside the six-hour cadence. No browser or public-source request ran:
+added/changed identities remain unknown, removals are `[]`, and all 132 IDs
+remain unavailable. Cycle 284 passed 296 tests / 1,483 assertions, 69 scoped
+links, 1,540 documents / 1,705 broad links, and read-only health at 30 facts /
+16 wakes. Commit this seed record before compacting the ranked Cycle 272 mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
