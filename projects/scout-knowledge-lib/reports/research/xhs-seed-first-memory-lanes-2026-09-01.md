@@ -7752,6 +7752,25 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 161 checkpoint — direct output identifies its format
+
+Seed commit `8df9797ead3d53d27aff68a6d4fbbe0afe2c542a` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+output-contract audit.
+
+Exact local `1889461ecf47ba9d1ca62e66bb37e78bdb5de06c` adds immutable
+top-level schema `scout.verification-allocation-robust-frontier-output/v1` to
+direct results. The focused output/process gate passes nine tests and 31
+assertions plus TypeScript, focused formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named evidence, access boundaries, and triggers.
+Confidence is high for current local serialization identity and low for old-
+artifact annotation, future compatibility, computation truth, authority,
+models, or providers. The next ranked control audits the separate snapshot-
+selection output schema.
+
 ## Cycle 160 checkpoint — valid direct identities remain exact
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` records unchanged

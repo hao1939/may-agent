@@ -2527,6 +2527,23 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 161 versioned direct-result serialization
+
+Seed commit `8df9797ead3d53d27aff68a6d4fbbe0afe2c542a` preceded the output
+contract audit. The valid Cycle 160 artifact bound its internal computation but
+had no top-level schema to distinguish format evolution from computational
+drift.
+
+Exact local `1889461ecf47ba9d1ca62e66bb37e78bdb5de06c` applies immutable
+schema `scout.verification-allocation-robust-frontier-output/v1` to direct
+results. A caller-like payload schema cannot override it. Nine focused output
+and process tests pass with 31 assertions plus TypeScript, formatting, and
+whitespace.
+
+This versions current serialization only; it does not retroactively identify
+old outputs or authenticate their computation, policy, or provider. The next
+control audits the separate snapshot-selection output contract.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

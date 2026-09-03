@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 160 supersedes the older table snapshot below. Starting tip
-`28402ebb4f5fcd8dd72b06eb27e8f9425b7cc498` and seed commit
-`6798efdab4b2484a4013c59615cb4c44f2faa6af` anchor the unchanged login-class
+Cycle 161 supersedes the older table snapshot below. Starting tip
+`0efbd5567daca68d7853b0a6bcc169fee63af30f` and seed commit
+`8df9797ead3d53d27aff68a6d4fbbe0afe2c542a` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -360,12 +360,14 @@ checkout preservation are rechecked on the resulting exact tip. Exact local
 `ae86874…80a616` moves the same direct-input parse ahead of exhaustive worker
 launch, so malformed input cannot spend the frontier computation first. The
 Cycle 160 direct positive control retains all three computation identities.
+Exact local `1889461…5de06c` adds an immutable top-level v1 identity to the
+direct result serialization without changing those internal identities.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 160; public trigger-deferred.** The valid direct process preserves the retained row/result/frontier identities after the parse relocation. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `ae86874…80a616` plus output SHA `201b455…7ad65` are current. | Zero public requests. Next test whether the direct output needs an explicit top-level schema/version so serialization changes cannot be mistaken for computation drift. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 160.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 160 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 161; public trigger-deferred.** Direct frontier output now names its top-level serialization contract separately from computation hashes. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `1889461…5de06c` is current. | Zero public requests. Next test whether the distinct snapshot-selection output also needs an explicit top-level schema/version. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 161.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 161 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3293,6 +3295,28 @@ HEADs, 882/3 records, and exact fingerprints `4325371…abf0f` and
 `ad8d222c…e74780`; neither checkout was written or tested. Commit this seed
 record first, then test whether direct output needs an explicit top-level schema
 to distinguish serialization evolution from computation drift.
+
+### Cycle 161 checkpoint — direct serialization has a versioned identity
+
+Source inspection of the exact Cycle 160 process showed bound row, result, and
+frontier identities but no top-level serialization identity. That omission
+left the 11,363-byte historical and 203,712-byte current output shapes
+distinguishable only by outer byte provenance and repository revision.
+
+Exact local `1889461ecf47ba9d1ca62e66bb37e78bdb5de06c` wraps direct
+output with immutable schema
+`scout.verification-allocation-robust-frontier-output/v1`. A payload attempting
+to supply another schema is overwritten by the local envelope. The focused
+output plus direct-process gate passes nine tests and 31 assertions plus
+TypeScript, focused formatting, and whitespace.
+
+This is high-confidence local serialization identity, not backward annotation
+of old outputs, compatibility across future versions, computation truth,
+policy authority, or provider behavior. Internal hashes remain the only
+computation identities. GitHub/local code won the rubric; all public lanes made
+zero requests and retain their evidence and triggers. The next ranked control
+asks whether the distinct snapshot-selection output also needs a top-level
+schema/version.
 
 ## Cycle 160 seed-first start
 
