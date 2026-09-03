@@ -7752,6 +7752,24 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 157 checkpoint — unsafe manifest input fails before loading
+
+Seed commit `59ff8ff7d163cc04059757c893884c156a128f67` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the fail-fast
+control. Exact local `62500911afedbba49c0c87ec0618d1140d85a71b`
+rejects traversal locators and malformed hashes at both direct and snapshot CLI
+parsing; programmatic descriptors share the gate and unsafe direct output keeps
+the locator empty.
+
+The focused gate passes 25 tests and 119 assertions plus TypeScript, formatting,
+and whitespace. GitHub/local code won the rubric. GitHub, arXiv, and Reddit
+made zero public requests and retain their named heads, paper versions,
+RSS/JSON boundary, and revisit triggers. Confidence is high for local failure
+ordering and low for authority, authorship, policy truth, external
+compatibility, or execution. The next ranked investigation applies the pre-read
+gate to every snapshot/evidence/freeze root and snapshot artifact/hash.
+
 ## Cycle 156 checkpoint — same bytes keep distinct manifest locators
 
 Seed commit `8444821fe0553a99425938dee10eef8099d7e175` records unchanged

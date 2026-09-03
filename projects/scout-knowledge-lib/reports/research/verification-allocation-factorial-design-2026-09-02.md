@@ -2527,6 +2527,24 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 157 fail-fast local manifest descriptors
+
+Seed commit `59ff8ff7d163cc04059757c893884c156a128f67` preceded matched
+descriptor controls. Exact local
+`62500911afedbba49c0c87ec0618d1140d85a71b` rejects traversal-shaped
+manifest locators and non-lowercase or wrong-length SHA-256 values during CLI
+parsing, before snapshot/freeze adapters can read anything. Programmatic
+descriptors require the same exact shape.
+
+The direct unsafe-path control returns no selection or evidence and keeps the
+manifest locator empty. The focused gate passes 25 tests and 119 assertions
+plus TypeScript, source formatting, and whitespace. This proves local fail-fast
+ordering and safe output, not authority, authorship, policy truth, external
+compatibility, or execution.
+
+The next ranked control applies the same pre-read boundary to all explicit
+snapshot, evidence, and freeze roots and to the snapshot artifact/hash.
+
 ## Cycle 156 manifest locator and same-byte aliases
 
 Seed commit `8444821fe0553a99425938dee10eef8099d7e175` preceded the matched
