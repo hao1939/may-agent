@@ -6,6 +6,11 @@ import {
 
 type ArtifactBytes = string | Uint8Array;
 
+const MODEL_RESOLUTION_EVIDENCE_SCHEMA =
+  "scout.verification-allocation-model-resolution/v1";
+const SEED_POLICY_EVIDENCE_SCHEMA =
+  "scout.verification-allocation-seed-policy/v1";
+
 type FreezeModel = {
   requestedId: string;
   resolvedId: string;
@@ -316,11 +321,19 @@ function validateModels(
       continue;
     }
     if (
-      !hasOnlyKeys(evidence, ["requestedId", "resolvedId", "resolutionKind"])
+      !hasOnlyKeys(evidence, [
+        "schema",
+        "requestedId",
+        "resolvedId",
+        "resolutionKind",
+      ])
     ) {
       errors.push(
         `models[${index}] resolution evidence contains unsupported fields`,
       );
+    }
+    if (evidence.schema !== MODEL_RESOLUTION_EVIDENCE_SCHEMA) {
+      errors.push(`models[${index}] resolution evidence schema changed`);
     }
     if (
       evidence.requestedId !== model.requestedId ||
@@ -386,8 +399,18 @@ function validateSeedPolicy(
       if (!evidence) {
         errors.push("seed policy evidence is not canonical verifiable JSON");
       } else {
-        if (!hasOnlyKeys(evidence, ["namespace", "algorithm", "seedIds"])) {
+        if (
+          !hasOnlyKeys(evidence, [
+            "schema",
+            "namespace",
+            "algorithm",
+            "seedIds",
+          ])
+        ) {
           errors.push("seed policy evidence contains unsupported fields");
+        }
+        if (evidence.schema !== SEED_POLICY_EVIDENCE_SCHEMA) {
+          errors.push("seed policy evidence schema changed");
         }
         const evidenceSeedIds = stringArray(evidence.seedIds) ?? [];
         if (

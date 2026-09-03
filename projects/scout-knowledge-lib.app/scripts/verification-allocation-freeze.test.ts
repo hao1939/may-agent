@@ -14,11 +14,13 @@ function validFixture() {
   const artifactContents = {
     "schedule.json": JSON.stringify(schedule),
     "model-resolution.json": JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
       requestedId: "fixture-model",
       resolvedId: "fixture-model-a",
       resolutionKind: "content-addressed",
     }),
     "seed-policy.json": JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],
@@ -188,6 +190,7 @@ describe("verification-allocation execution freeze", () => {
   it("rejects model-resolution evidence that contradicts its declaration", () => {
     const { manifest, artifactContents } = validFixture();
     artifactContents["model-resolution.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
       requestedId: "fixture-model",
       resolvedId: "fixture-model-b",
       resolutionKind: "content-addressed",
@@ -210,9 +213,33 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects unversioned model-resolution evidence", () => {
+    for (const schema of [
+      undefined,
+      "scout.verification-allocation-model-resolution/v2",
+    ]) {
+      const { manifest, artifactContents } = validFixture();
+      const evidence = JSON.parse(artifactContents["model-resolution.json"]);
+      if (schema === undefined) delete evidence.schema;
+      else evidence.schema = schema;
+      artifactContents["model-resolution.json"] = JSON.stringify(evidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "model-resolution.json",
+      )!.sha256 = freezeArtifactSha256(
+        artifactContents["model-resolution.json"],
+      );
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain(
+        "models[0] resolution evidence schema changed",
+      );
+    }
+  });
+
   it("rejects opaque, duplicate-key, or extended model-resolution evidence", () => {
     const matchingFields =
-      '"requestedId":"fixture-model","resolvedId":"fixture-model-a","resolutionKind":"content-addressed"';
+      '"schema":"scout.verification-allocation-model-resolution/v1","requestedId":"fixture-model","resolvedId":"fixture-model-a","resolutionKind":"content-addressed"';
     const cases = [
       {
         bytes: "fixture model resolution",
@@ -247,6 +274,7 @@ describe("verification-allocation execution freeze", () => {
   it("rejects seed-policy evidence that contradicts its declaration", () => {
     const { manifest, artifactContents } = validFixture();
     artifactContents["seed-policy.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
       seedIds: ["fixture-seed-00", "fixture-seed-02"],
@@ -269,9 +297,29 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects unversioned seed-policy evidence", () => {
+    for (const schema of [
+      undefined,
+      "scout.verification-allocation-seed-policy/v2",
+    ]) {
+      const { manifest, artifactContents } = validFixture();
+      const evidence = JSON.parse(artifactContents["seed-policy.json"]);
+      if (schema === undefined) delete evidence.schema;
+      else evidence.schema = schema;
+      artifactContents["seed-policy.json"] = JSON.stringify(evidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "seed-policy.json",
+      )!.sha256 = freezeArtifactSha256(artifactContents["seed-policy.json"]);
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain("seed policy evidence schema changed");
+    }
+  });
+
   it("rejects opaque, duplicate-key, or extended seed-policy evidence", () => {
     const matchingFields =
-      '"namespace":"scout.verification-allocation/v1","algorithm":"enumerated-fixture-v1","seedIds":["fixture-seed-00","fixture-seed-01"]';
+      '"schema":"scout.verification-allocation-seed-policy/v1","namespace":"scout.verification-allocation/v1","algorithm":"enumerated-fixture-v1","seedIds":["fixture-seed-00","fixture-seed-01"]';
     const cases = [
       {
         bytes: "fixture seeds are enumerated once",
@@ -585,6 +633,7 @@ describe("verification-allocation execution freeze", () => {
     expect(repeated.policyScope).toEqual(first.policyScope);
 
     artifactContents["model-resolution.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
       requestedId: "fixture-model",
       resolvedId: "fixture-model-a",
       resolutionKind: "dated-snapshot",
@@ -606,6 +655,7 @@ describe("verification-allocation execution freeze", () => {
     );
 
     artifactContents["seed-policy.json"] = JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v2",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],

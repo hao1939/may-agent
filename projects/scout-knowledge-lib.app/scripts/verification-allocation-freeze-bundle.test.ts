@@ -25,11 +25,13 @@ async function fixture() {
   const contents = {
     "schedule.json": schedule,
     "evidence/model-resolution.json": JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
       requestedId: "fixture-model",
       resolvedId: "fixture-model-a",
       resolutionKind: "content-addressed",
     }),
     "seed-policy.json": JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],

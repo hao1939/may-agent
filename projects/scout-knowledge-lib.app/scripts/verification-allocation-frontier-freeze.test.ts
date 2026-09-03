@@ -60,11 +60,13 @@ async function freezeFixture() {
   const contents = {
     "schedule.json": JSON.stringify(buildToyFactorialSchedule()),
     "evidence/model-resolution.json": JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
       requestedId: "fixture-model",
       resolvedId: "fixture-model-a",
       resolutionKind: "content-addressed",
     }),
     "seed-policy.json": JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],
@@ -496,7 +498,7 @@ describe("identity-robust frontier freeze adapter", () => {
       ok: true,
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
       decisionRecordSha256:
-        "eb98a87f5ee9f574724a85c7955ea897771f3378727606a986cd159a61a59e41",
+        "d8afac0be91cf4542a0d11d4baa987775978b76e8dd004557daeb682cf99384a",
     });
 
     const manifestPath = join(freeze.root, "freeze-manifest.json");
@@ -694,7 +696,7 @@ describe("identity-robust frontier freeze adapter", () => {
       ok: true,
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
       decisionRecordSha256:
-        "eb98a87f5ee9f574724a85c7955ea897771f3378727606a986cd159a61a59e41",
+        "d8afac0be91cf4542a0d11d4baa987775978b76e8dd004557daeb682cf99384a",
     });
 
     const manifestPath = join(freeze.root, "freeze-manifest.json");
@@ -736,7 +738,7 @@ describe("identity-robust frontier freeze adapter", () => {
         ok: true,
         selected: { runBlockCount: 1_032, episodeCount: 33_024 },
         decisionRecordSha256:
-          "eb98a87f5ee9f574724a85c7955ea897771f3378727606a986cd159a61a59e41",
+          "d8afac0be91cf4542a0d11d4baa987775978b76e8dd004557daeb682cf99384a",
       },
     });
   });
