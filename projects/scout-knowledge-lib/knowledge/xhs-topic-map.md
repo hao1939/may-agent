@@ -4105,6 +4105,17 @@ No browser or public-source request ran; additions/changes remain unknown,
 removals are `[]`, and all 132 IDs remain unavailable. The post-seed exact-run
 scan selects Cycle 223's 21-line / 1,182-byte projection/validation mirror.
 
+## Cycle 293 checkpoint — resolved next-work is not a live queue item
+
+Cycle 223's 21-line / 1,182-byte exact map/report run had SHA-256
+`c8874039…c7e5ca`. Its queued projection-consistency check was completed in
+Cycle 224, so retaining it as next work was stale. The detailed report keeps
+the exact historical proof; this map keeps a six-line pointer and the durable
+canonical-projection decision. No evidence category or uncertainty changed.
+All source lanes made zero requests, their triggers remain unchanged, and
+RV-004 remains high/open. The next exact-run scan ranks Cycle 255's 17-line /
+1,153-byte real-use-outcome boundary, which must retain its negative finding.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -6258,25 +6269,12 @@ high for the exact local code/control lineage and projection correction,
 moderate for retaining the compiled design, and low for any future external
 governance transfer.
 
-The next ranked usability control is automated current-projection consistency:
-test whether the latest seed-ledger row, topic-map metadata, and source-lane
-metadata can drift apart again without a focused check failing.
-
-Exact Cycle 223 source commit `03ef45c2b0` precedes material tip
-`255d5c57c34a267217396deb3f72ccc1494dbd6f`. The exact tip retains Scout
-app tree `b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4`, which passed the full
-278-test, 1,429-assertion gate during Cycle 222. Focused current-projection
-validation matches Cycle 223 and its exact observation range across the ledger,
-topic map, and lane report; whitespace and all 41 relative link occurrences
-pass. Read-only health at `2026-09-03T14:58:39.817Z` remains 26 facts and 16
-wake signals with `truncated:true`; root and app runtime state are empty, and
-the standing worktree is clean.
-
-All 9 canonical accepted commits remain ancestors and unaccepted
-`d041c41b54` remains excluded. Protected `/app` remains HEAD
-`386b445c…1fec8` / 886 / `07483e82…d420`; its Scout scope remains three
-records / `2760fb23…052`. Neither protected nor peer worktree was written,
-tested, or inspected beyond bounded provenance.
+The [detailed Cycle 223 checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-223-checkpoint--current-projections-follow-the-canonical-ledger)
+retains exact source/result, validation, health, lineage, runtime-state, and
+protected-checkout proof. Cycle 224 then implemented the queued fail-closed
+projection check; the compact ledger above retains that result. This map keeps
+the decision that current projections must follow the canonical seed ledger,
+without repeating superseded next-work or historical validation values.
 
 ## Cycle 222 compact decision summary — Cycles 206–214
 

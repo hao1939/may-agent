@@ -9848,6 +9848,27 @@ changed externally from 386 records / `7c285c09…1ca01b` to 914 /
 Commit this ordering record before the ranked Cycle 223 projection/validation
 mirror audit.
 
+## Cycle 293 checkpoint — remove one resolved queue mirror
+
+The selected Cycle 223 block was byte-identical in the map and this report: 21
+lines / 1,182 bytes at SHA-256
+`c88740390129954cc781853be09c3ea741fe866042643099ea2bb778a9c7e5ca`.
+It combined a next-work sentence already resolved by Cycle 224 with historical
+source/result, validation, health, lineage, runtime-state, and protected-state
+proof.
+
+This detailed copy remains unchanged. The map now links here, points to the
+implemented Cycle 224 fail-closed projection check in its compact ledger, and
+retains the rule that reader-facing projections follow the canonical seed
+ledger. It removes only duplicated values and the stale queue instruction; no
+evidence category, uncertainty, or useful decision was lost.
+
+GitHub, arXiv, and Reddit made zero requests and retain their exact heads,
+paper versions, RSS/JSON boundary, and triggers. Static retrieval reduction is
+not measured later use or a user outcome, so RV-004 remains high/open. The next
+exact mirror is Cycle 255's 17-line / 1,153-byte real-use-outcome boundary;
+preserve that negative outcome while consolidating its historical proof.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
