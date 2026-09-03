@@ -1091,8 +1091,11 @@ capability-scoped authority) rather than exclusion-based (blocklist, denylist,
 .agentsignore). This aligns with Minimum Viable Authority Turn (§canonical note)
 and confirms the structural prediction from ToolPrivBench (#82).
 
-*(Source: [2026-07-02-hn-scan-260.md](./findings/2026-07-02-hn-scan-260.md).
-Connects to: Accountability Inversion #253, Sovereignty Stack #258,
+*(Source artifact unavailable; intended path:
+`./findings/2026-07-02-hn-scan-260.md`; restore a link only when that exact
+target enters accepted lineage or an owner-declared supersession preserves the
+complete source set and provenance. Connects to: Accountability Inversion #253,
+Sovereignty Stack #258,
 Invisible Layer #259, Capture Spiral #194)*
 
 ---

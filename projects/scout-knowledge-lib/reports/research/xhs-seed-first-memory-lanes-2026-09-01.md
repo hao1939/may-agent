@@ -9353,6 +9353,24 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The three residual canonical-note scan citations follow.
 
+## Cycle 239 checkpoint — three aggregate citations retain honest debt
+
+Seed commit `b272ef6545` preceded the audit. The three canonical sections keep
+their complete HN IDs, observations, inferences, predictions, and connection
+labels. Other accepted findings corroborate individual events at different
+times but do not preserve the exact #253, #258, or #260 aggregate source set;
+they are not source-equivalent redirects.
+
+The absent paths are now explicit and non-clickable with exact-target-or-owner-
+supersession triggers. Across 1,540 documents, links fall 1,710→1,707 and
+unresolved occurrences 11→8 across five documents; absolute links stay zero.
+No substantive claim or distinction changed. Confidence is high for path
+absence and claim preservation, low for the unavailable aggregate bodies.
+GitHub, arXiv, and Reddit made zero public requests and retain their evidence
+and triggers. Next, test the three stable KE identifiers for exact accepted
+project-owned mappings before deferring duplicate #177 and mutable digest/coach
+references.
+
 ## Cycle 238 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:02:16.193Z`, Cycle 237's exact receipt was five minutes old

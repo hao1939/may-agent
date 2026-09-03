@@ -3850,6 +3850,25 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The three residual canonical-note scan citations now win.
 
+### Cycle 239 checkpoint — aggregate claims keep explicit source debt
+
+Seed commit `b272ef6545` preceded the audit. The three canonical sections retain
+their full HN identifiers, point/comment observations, structural inferences,
+predictions, and connection labels. Accepted findings corroborate individual
+events at different observation times, but none preserves the exact #253,
+#258, or #260 aggregate source set. That supports an explicit unavailable
+source boundary and contradicts redirecting a scan citation to partial evidence.
+
+The three absent paths are now non-clickable and carry the same exact-target-
+or-owner-supersession trigger. Across 1,540 documents, local prose links move
+1,710→1,707 and unresolved occurrences 11→8 across five documents; absolute
+links remain zero. No substantive claim or distinction changed. Confidence is
+high for path absence and claim preservation, low for the unavailable aggregate
+bodies. GitHub, arXiv, and Reddit made zero public requests and retain their
+recorded evidence and revisit triggers. Next, test whether the three remaining
+stable KE identifiers map exactly to accepted project-owned entries before
+deferring the duplicate #177 and mutable digest/coach references.
+
 ## Cycle 238 seed-first start — fresh Cycle 237 receipt reused
 
 At `2026-09-03T17:02:16.193Z`, Cycle 237's exact receipt was five minutes old
