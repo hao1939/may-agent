@@ -266,7 +266,7 @@ describe("identity-robust frontier output", () => {
       schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
       providerDenialVerified: true,
       computationIdentityMatched: true,
-      allChecksPass: true,
+      scopedChecksPass: true,
     });
     expect(
       assessIdentityRobustOutputForConsumption(
@@ -283,7 +283,7 @@ describe("identity-robust frontier output", () => {
       schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
       providerDenialVerified: false,
       computationIdentityMatched: true,
-      allChecksPass: false,
+      scopedChecksPass: false,
     });
     expect(
       assessIdentityRobustOutputForConsumption(
@@ -294,7 +294,7 @@ describe("identity-robust frontier output", () => {
       schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
       providerDenialVerified: true,
       computationIdentityMatched: false,
-      allChecksPass: false,
+      scopedChecksPass: false,
     });
   });
 
@@ -322,13 +322,41 @@ describe("identity-robust frontier output", () => {
       schema: IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA,
       providerDenialVerified: true,
       computationIdentityMatched: true,
-      allChecksPass: true,
+      scopedChecksPass: true,
     });
     expect(
       assessIdentityRobustOutputForConsumption(
         JSON.stringify({ ...output, providerCallsAuthorized: true }),
         expectedIdentity,
-      ).allChecksPass,
+      ).scopedChecksPass,
     ).toBe(false);
+  });
+
+  it("does not name unchecked payload claims as full acceptance", () => {
+    const raw = JSON.stringify({
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      rowSha256: expectedIdentity.rowSha256,
+      resultSha256: expectedIdentity.resultSha256,
+      frontierCount: expectedIdentity.frontierCount,
+      frontierSnapshot: {
+        rowSha256: expectedIdentity.rowSha256,
+        resultSha256: expectedIdentity.resultSha256,
+        frontierSha256: expectedIdentity.frontierSha256,
+        frontier: [{ unverified: 1 }, { unverified: 2 }],
+        providerCallsAuthorized: false,
+      },
+      freezeVerification: null,
+      policyApproved: true,
+      selection: { ok: true, selected: "unverified" },
+    });
+
+    expect(
+      assessIdentityRobustOutputForConsumption(raw, expectedIdentity),
+    ).toEqual({
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      providerDenialVerified: true,
+      computationIdentityMatched: true,
+      scopedChecksPass: true,
+    });
   });
 });

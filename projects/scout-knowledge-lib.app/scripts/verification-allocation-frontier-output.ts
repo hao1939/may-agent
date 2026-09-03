@@ -17,7 +17,7 @@ export type IdentityRobustOutputConsumptionAssessment = {
   schema: IdentityRobustOutputSchema | null;
   providerDenialVerified: boolean;
   computationIdentityMatched: boolean;
-  allChecksPass: boolean;
+  scopedChecksPass: boolean;
 };
 
 type ParsedIdentityRobustOutput = {
@@ -191,7 +191,7 @@ export function assessIdentityRobustOutputForConsumption(
     schema,
     providerDenialVerified,
     computationIdentityMatched,
-    allChecksPass:
+    scopedChecksPass:
       schema !== null && providerDenialVerified && computationIdentityMatched,
   };
 }
