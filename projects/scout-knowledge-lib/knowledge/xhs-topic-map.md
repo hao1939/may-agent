@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 116 observational reconciliation through 2026-09-03T03:10:42.049Z; exact access evidence and uncertainty are in the Cycle 116 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 116 at 2026-09-03T03:10:42.049Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 116 read-only XHS boundary through 2026-09-03T03:10:42.049Z."
+latest_seed_basis: "Cycle 117 observational reconciliation through 2026-09-03T03:16:16.668Z; exact access evidence and uncertainty are in the Cycle 117 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 117 at 2026-09-03T03:16:16.668Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 117 read-only XHS boundary through 2026-09-03T03:16:16.668Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 116 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 117 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -3018,6 +3018,24 @@ investigation is freeze-scope output auditability: determine whether the same
 compact success output explicitly identifies the verified protocol and model
 scope that the local decision matched, without reopening the freeze or decision
 record.
+
+## Cycle 117 seed-first start
+
+Cycle 117 began from clean exact tip
+`fff1089d09bdcba3ba598c4f151228a8272b1420`. The established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace ran
+at `2026-09-03T03:16:15.318Z–03:16:16.668Z`; the direct worker-port refusal
+from Cycle 113 was not needlessly repeated. Public Explore remained readable at
+30 notes. Saved status remained HTTP 200, `login`, semantic fingerprint
+`3dab1b6…8af420`, a login wall, and zero attributable items.
+
+Byte length changed 46,672→46,673 and body SHA changed from
+`58bc013…a40ec3` to `98bff49…9562a`. Added and changed IDs remain unknown,
+observed removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved post was supported or read, and no XHS state changed. No
+freeze-scope output check, public source, provider, or accepted-result request
+preceded this reconciliation. Commit this seed record first, then inspect the
+ranked scope-output claim locally.
 
 ## Cycle log
 
