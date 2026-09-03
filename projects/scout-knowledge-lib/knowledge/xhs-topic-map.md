@@ -3855,6 +3855,25 @@ and outcome-evidence regression. Public GitHub, arXiv, and Reddit requests stay
 deferred; the next bounded work classifies the 169 remaining absent historical
 targets without restoring unaccepted bytes or resuming verifier micro-cycles.
 
+### Cycle 231 checkpoint — accepted targets replace speculative aliases
+
+Against seed commit `c19307f923`, the same-scope broad audit moved from 1,763
+prose links / 172 unresolved to 1,763 / 130. Forty references now use the one
+accepted evolution-stall file, and two future-dated scan aliases now use the
+unique accepted HN #171/#174 files whose cited arXiv IDs match. No claim text
+or source distinction changed.
+
+The 130 residuals are classified, not guessed: 66 index targets exist only in
+non-accepted commit `d9da99476e`; 51 references have multiple differing
+accepted same-topic candidates; three still point to mutable digest/coach
+state; two name absent KE-1996/1997 entries; and eight have no safe accepted
+match. Digest links require an accepted immutable claim-equivalent finding or
+the named KE body; the coach link requires an accepted project-owned proposal
+or explicit index supersession. Confidence is high in counts and repaired
+identities, low in choosing among the 51 candidates. Next: compare the accepted
+harness/state/executable triage pairs and designate one canonical target with a
+rollback map before changing those links.
+
 ## Cycle 230 seed-first start
 
 The exact bounded observation, reconciliation, authority boundary, and byte

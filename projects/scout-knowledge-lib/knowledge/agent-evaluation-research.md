@@ -53,7 +53,7 @@ concentrates value.
   when uncertainty is high; skip when confidence is high. Connects to
   Bayesian Control for Coding Agents ([2606.24453], scan #161).
 - **Sources**: [2606.27226] BinEval; [2606.26978] To Run or Not to Run;
-  [HN Scan #171](./findings/2026-10-10-hn-scan-171.md). Added 2026-10-10.
+  [HN Scan #171](./findings/2026-06-26-hn-scan-171.md). Added 2026-10-10.
 
 ## §13 The Grounding Gap in Evaluation
 
@@ -86,7 +86,7 @@ at it through a verifiable, causal process. This extends BinEval (§12) from
 "decompose the judgment" to "decompose the reasoning chain."
 
 - **Sources**: [2606.26935]; [2606.27154]; [2606.27009];
-  [HN Scan #174](./findings/2026-10-12-hn-scan-174.md). Added 2026-10-12.
+  [HN Scan #174](./findings/2026-06-26-hn-scan-174.md). Added 2026-10-12.
 
 ## §14 The Composition Tax on Evaluation
 

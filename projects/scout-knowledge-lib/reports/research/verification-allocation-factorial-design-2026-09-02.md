@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 106, including policy-evidence unit/applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2 and verified-freeze scope composition 3bf5698900e7963ed81d45b2fa0427829603b77f."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus the deterministic synthetic controls, schema checks, identity bindings, and rollback/replay audits documented below through Cycle 219. These later controls remain local and outcome-unverified; they do not add provider, policy, cost, or behavioral authority."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler

@@ -9359,6 +9359,45 @@ classifies the 169 absent historical targets and retains only accepted,
 decision-useful replacement evidence. GitHub, arXiv, and Reddit keep their
 recorded change-bearing revisit triggers and made zero requests.
 
+## Cycle 231 checkpoint — 42 links recover accepted identities
+
+The exact pre-repair baseline at seed commit `c19307f923` and current candidate
+both inspect 1,539 Markdown documents and 1,763 prose links. Unresolved links
+fall from 172 to 130: 40 stale evolution-stall aliases now point to the sole
+accepted project-owned triage, and HN #171/#174 links now point to their unique
+accepted files after their cited arXiv IDs matched. Zero absolute local links
+remain, and no detailed claim text was removed or rewritten.
+
+The residual ledger preserves the important boundaries: 66 targets are only
+recoverable from unaccepted `d9da99476e`; 51 ambiguous links have differing
+accepted same-topic candidates; three mutable digest/coach links remain
+deferred; two absent KE links and eight unmatched references lack a safe
+accepted replacement. The two digest references may move only to the named KE
+body or an accepted immutable claim-equivalent finding; the coach reference
+requires an accepted project-owned proposal or explicit supersession by its
+index. `d9da99476e` and `d041c41b54` remain non-ancestors and were not read.
+
+This reduces broken retrieval without treating local cleanup as outcome
+evidence. `RV-004` remains open; its stale design-report source boundary now
+states that Cycles 107–219 are local and outcome-unverified. GitHub, arXiv, and
+Reddit made zero requests. Next, select a canonical accepted target among the
+harness/state/executable duplicate-title pairs and retain a reversible mapping.
+
+Current-candidate validation passes syntax, TypeScript, source formatting,
+Cycle 231 projection, 57 durable links, and all 287 tests / 1,444 assertions.
+The same-scope broad link audit records 130 unresolved links and zero absolute
+local links; whitespace passes, health remains capped at 26 facts and 16 wake
+signals with `truncated:true`, and runtime state is empty. All nine
+canonical accepted commits remain ancestors; `d041c41b54` and `d9da99476e`
+remain non-ancestors.
+
+The protected checkout retained HEAD `386b445c…1fec8` but was externally
+observed moving from 887 to 890 porcelain-v2 records and fingerprint
+`63b17ec1…958f`→`939a81cf…8253`; its Scout scope moved from 3 to 296 records and
+`2760fb23…052`→`c4485b46…375`. This worker neither wrote nor tested that
+checkout or a peer worktree. The isolated standing tree is the only changed
+execution space.
+
 ## Cycle 230 seed-first reconciliation — stable semantic boundary
 
 The exact bounded observation, reconciliation, authority boundary, and byte
