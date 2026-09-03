@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing Cycle 253 seed 171253ca8a5de303412311b048707959751001b9: Cycle 252 adds an exact current caller-control replay and valid score attribution without reconstructing the historical query; reviewer hardening makes that evidence fail closed; RV-008 is prospectively resolved, RV-010 and RV-011 await integration, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through standing Cycle 253 seed 171253ca8a5de303412311b048707959751001b9: Cycle 252 adds an exact current caller-control replay and valid score attribution without reconstructing the historical query; the quartile qualification and fail-closed reviewer fence are integrated; RV-008, RV-010, and RV-011 are resolved; and RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "RV-004", "RV-008", "RV-010", "RV-011"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through 171253ca8a5de303412311b048707959751001b9; independently reproduced current and historical navigation outcomes, 202 token perturbations, score margins and contribution decomposition, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, fixture lineage, reviewer patch identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
@@ -32,9 +32,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   convention. Cycle 252 now freezes an exact current caller control and
   reproduces the stated scores without claiming the missing historical query,
   resolving RV-008 prospectively. Its original test did not bind the fixture
-  identity, so the quartile qualification and a fail-closed digest assertion
-  remain pending reviewer integration. Cycle 253 is seed-only and claims no
-  result.
+  identity. The quartile qualification and fail-closed digest assertion are now
+  integrated. Cycle 253 is seed-only and claims no result.
 
 ## Exact scope and ordering
 
@@ -225,7 +224,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | Duplication and contamination | **Revise under RV-004.** No unaccepted bytes were admitted, but duplicated logs and same-producer fixtures limit independence. |
 | Usability and retrieval value | **Accept narrowly.** Broken links fall 130 to zero and exact status outcomes improve 9/22 without observed regression. |
 | Access boundaries | **Accept.** Reused receipts do not become collection evidence; no external mutation occurred. |
-| Validation quality | **Revise under RV-011.** Both outcome sets and the exact current control replay pass, but the control evidence needs the pending digest fence to fail closed. |
+| Validation quality | **Accept with limits.** Both outcome sets and the exact current control replay pass, and the integrated digest fence fails closed on changed control evidence. |
 | Cost and productivity | **Revise under RV-004.** Useful outcomes now exist but remain small and unprotected through completed Cycle 252. |
 | Rollback and integration safety | **Accept.** The quartile wording and one digest assertion are ordinary reverts; no scorer, fixture, authority, or external state changed. |
 
@@ -242,8 +241,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
 | `RV-008` | Medium | Cycle 244 evidence and Cycle 252 fixture `scout-navigation-diagnostic-controls-v1.json` | The historical Cycle 244 query remains absent, but Cycle 252 explicitly labels that limit and persists one exact current query plus both top ranks, matched tokens, coverage, and scores. Independent replay reproduces every value. | **Resolved prospectively.** The exact current control may support future diagnostics; it must not be represented as the historical query or protected promotion evidence. |
 | `RV-009` | Low | Cycle 247 singular `runner_up` diagnostic | Equal-score second-place identities can change representative while the comparison tier is unchanged. | **Resolved by standing.** Cycle 249 `499fbb85cc` reports the full score tier, and Cycle 250 `3b0a2d2b6d` versions its diagnostic shape; focused tests pass. |
-| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report names 41 without its convention. Readers cannot reproduce the exact summary from the prose alone. | **Revise; locally fixed.** Qualify the convention and alternatives; no scorer, fixture, or substantive conclusion changes. |
-| `RV-011` | Medium | Cycle 252 test `scout-navigation-outcomes.test.ts` at `90ee750c47` | The test asserts only the schema and loops over fixture cases. An empty `cases` array passes, and coordinated query/expected-rank edits can replace the allegedly frozen evidence without a distinct failure. | **Revise; locally fixed, pending integration.** Pin the exact fixture bytes at SHA-256 `0adba805…68e5c27` before replay. Any intentional fixture revision must update the digest under review. |
+| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report originally omitted its convention. | **Resolved.** Reviewer `4a012e5158` is standing `f13dd4215a` at stable patch ID `2a820ea31f`; both durable reports name the convention and alternatives. |
+| `RV-011` | Medium | Cycle 252 test `scout-navigation-outcomes.test.ts` at `90ee750c47` | The original test asserted only the schema and looped over fixture cases, so an empty or coordinated replacement could pass. | **Resolved.** Reviewer `aade007567` is standing `847286682b`; both changed-file blobs are exact matches, including the SHA-256 fixture fence `0adba805…68e5c27`. |
 
 ## Reviewer source/result and integration status
 
@@ -262,12 +261,13 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   are integrated; their older cursor is superseded here.
 - Current reviewer source is standing
   `171253ca8a5de303412311b048707959751001b9`. Reviewer replay
-  `4a012e5158d` carries the RV-010 quartile qualification, and the directly
-  following result on `codex/g-8c5b597e-cycle253-review` adds the RV-011 digest
-  fence and this cursor. Integrate that contiguous two-commit range in order.
-  Rollback is an ordinary reverse-order revert of those two reviewer commits.
-  Neither result is landed until standing contains its exact or
-  patch-equivalent changes and current-tip validation passes.
+  `4a012e5158c22a80484461dcc957000d32e99c40` is standing
+  `f13dd4215a533905bf50f05c7e7e3a3ec0df9359` at stable patch ID
+  `2a820ea31f9b54396983bc422207656b5dcb1b4b`. Direct reviewer result
+  `aade00756754752287b4cc1bf2d216fe5f4304da` is standing
+  `847286682b520cccc6b287d86daae41b0a27a88a`; its test and cursor blobs are
+  byte-identical to the reviewer result. Rollback is an ordinary reverse-order
+  revert of those two standing commits.
 - Earlier accepted projection and review changes remain integrated as standing
   `d35632c2b1` and `8ab0a89cd0`; Cycle 231 cursor `86788ca48c` is reconciled as
   standing `e420498c47`. Reviewer `7628faf755`, `f3ddc3ab36`, `b4c98626c3`,
@@ -278,11 +278,11 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 ## Next trigger
 
-Review the next material standing checkpoint. Also trigger on integration or
-rejection of RV-010/RV-011, misuse of the prospectively resolved RV-008 control,
-or a concrete RV-004 protected/later-reuse outcome. If none arrives, the next
-periodic audit is no earlier than `2026-09-04T18:24:46Z`. Do not poll unchanged
-state. This standing reviewer goal remains active.
+Review the next material standing checkpoint, misuse of the prospectively
+resolved RV-008 control, or a concrete RV-004 protected/later-reuse outcome. If
+none arrives, the next periodic audit is no earlier than
+`2026-09-04T18:24:46Z`. Do not poll unchanged state. This standing reviewer goal
+remains active.
 
 ## Supervision
 
