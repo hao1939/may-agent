@@ -3906,29 +3906,8 @@ is recursively presentational for one- and two-model fixtures. Confidence is
 high for strict-v1 local behavior and low for external registry ownership,
 migration authority, consumers, or providers. No schema change is justified.
 
-GitHub/local code won. GitHub, arXiv, and Reddit each made zero public requests
-and retain the evidence, access boundaries, and change-bearing triggers in the
-lane table. Only canonical accepted finite results are integration candidates.
-The unaccepted `d041c41b54` and its later commits remain outside standing
-lineage; no peer content was read, tested, edited, or imported beyond safe ref
-provenance. Re-rank away from further registry permutations. The next accessible
-question is whether current verification diagnostics preserve each model's
-explicit resolution identity when one record fails, rather than collapsing a
-multi-model failure into an untraceable bundle-level error.
-
-Exact reviewed Cycle 215 tip
-`32e2f3b822660ca2b62f72c086bc433be8100d96` passes syntax, TypeScript,
-source formatting, 275 tests, 1,414 assertions, whitespace, and all 31 relative
-links. Read-only health at `2026-09-03T14:06:52.242Z` remains bounded at 26
-facts and 16 wake signals; root and app runtime state are empty. The clean tip
-retains 9/9 canonical accepted ancestors, both accepted patch-equivalence
-pairs, and 4/4 accepted artifact blobs. `d041c41b54` and its unaccepted
-predecessor are not ancestors.
-
-Protected `/app` and the human overlay reproduce HEAD
-`386b445c…1fec8` / 886 records / `996480ad…752a3` and
-`fd4c68ec…1514663` / three records / `ad8d222c…e74780`. Both were inspected
-with optional Git locks disabled and neither was written or tested.
+Cycle continuity, source-lane disposition, accepted lineage, and focused gate
+are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 216 seed-first start
 
@@ -3967,24 +3946,8 @@ assertions plus TypeScript, formatting, and whitespace. No production change
 is justified without a consumer contract; echoing unvalidated caller IDs from
 an invalid manifest could itself be unsafe.
 
-GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
-retain their Cycle 215 evidence, access boundaries, and change-bearing revisit
-triggers. The accepted-lineage boundary is unchanged. The next ranked local
-question is whether a compact content-addressed diagnostic reference can bind
-the exact failed manifest without echoing untrusted model identifiers or
-promoting an invalid bundle to policy authority.
-
-Exact reviewed Cycle 216 tip
-`3bb0771758b4d0269b392d1032377ecc58f61a5f` passes syntax, TypeScript,
-source formatting, 276 tests, 1,424 assertions, whitespace, and all 31 relative
-links. Read-only health at `2026-09-03T14:12:24.933Z` remains 26 facts and 16
-wake signals; root and app runtime state are empty. The clean tip retains 9/9
-canonical accepted ancestors, both accepted patch pairs, and 4/4 accepted
-artifacts. `d041c41b54` remains unaccepted and outside lineage.
-
-Protected `/app` and the human overlay reproduce HEAD
-`386b445c…1fec8` / 886 / `996480ad…752a3` and
-`fd4c68ec…1514663` / three / `ad8d222c…e74780`; neither was written or tested.
+Cycle continuity, source-lane disposition, accepted lineage, and focused gate
+are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 217 seed-first start
 
@@ -4021,22 +3984,8 @@ that schema today. Confidence is high for the local byte-versus-result
 distinction and low for external receipt requirements. No implementation or
 new regression is warranted because the exact matched control already exists.
 
-GitHub, arXiv, and Reddit made zero public requests and retain their evidence
-and triggers. The next ranked accessible question is simultaneous failure
-ordering: test whether two mismatched model records produce a stable complete
-ordinal error list, or whether one failure masks the other.
-
-Exact reviewed Cycle 217 tip
-`669252b89d8ceefd73d7b7313090fa2713869a34` passes syntax, TypeScript,
-source formatting, 276 tests, 1,424 assertions, whitespace, and 31 relative
-links. Read-only health at `2026-09-03T14:16:39.635Z` remains 26 facts and 16
-wake signals; root and app runtime state are empty. The clean tip retains 9/9
-canonical accepted ancestors, both accepted patch pairs, and 4/4 accepted
-artifacts. Unaccepted `d041c41b54` remains outside lineage.
-
-Protected `/app` and the human overlay remain
-`386b445c…1fec8` / 886 / `996480ad…752a3` and
-`fd4c68ec…1514663` / three / `ad8d222c…e74780`; neither was written or tested.
+Cycle continuity, source-lane disposition, accepted lineage, and focused gate
+are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 220 seed-first start
 
@@ -4054,6 +4003,38 @@ unknown, removals are `[]`, and all 132 durable seeds remain unavailable. No
 representative saved-post read, account mutation, public source request, or
 peer-worktree content inspection occurred. Persist this reconciliation before
 the ranked provenance-preserving compaction.
+
+### Cycle 220 compact ledger — Cycles 215–219
+
+The detailed matched controls remain in the
+[factorial design report](../reports/research/verification-allocation-factorial-design-2026-09-02.md).
+This ledger is the retrieval surface for exact cycle lineage and conclusions:
+
+| Cycle | Seed | Test or synthesis | Material result | Focused / full gate | Decision |
+| --- | --- | --- | --- | --- | --- |
+| 215 | `c734610e9506553072e5b26aae85cf268cb51a6b` | `37256db1496b90890e684ad99553b146cb4148b1` | `32e2f3b822660ca2b62f72c086bc433be8100d96` | 28 / 159; 275 / 1,414 | Recursive manifest-key presentation transfers to two models; the local ordering audit closes. |
+| 216 | `8b3c8a050c32a1d0acd2c2a8780b011d58d119da` | `97986c1ec1e338e5c4fa9a0735ec11d9ecf57250` | `3bb0771758b4d0269b392d1032377ecc58f61a5f` | 29 / 169; 276 / 1,424 | Failure ordinals require the bound manifest for model identity; the result is not a registry. |
+| 217 | `9c1b51f9089cb32f73bc7d1ecb6be462f177efc1` | existing Cycle 215 matched control | `669252b89d8ceefd73d7b7313090fa2713869a34` | no duplicate test; 276 / 1,424 | Raw hashes identify presentation bytes, not semantic diagnostic identity. |
+| 218 | `b290d08b92c177b8723b084983e46dd5a95731fb` | `cb2e27fbaf949e59babcd353acf0086523032987` | `01f8615ecd9740bfe4bfc37da761b60841733214` | 30 / 172; 277 / 1,427 | Simultaneous model mismatches remain complete in stable manifest order. |
+| 219 | `13dc94814634f945fb745322b932faa7c9040d2d` | `2e1c698872c92b67da4bb53bd3af420448dfa83e` | `2bedfa0f1acfcb1f514766265ba51da67f5b0c73` | 31 / 174; 278 / 1,429 | Model-declaration and schedule-order failures both survive in layer order. |
+
+Where a cycle exercised invalid input, its result retained seven artifacts,
+two models, two seeds, 128 episodes, null policy scope, and false provider
+authority. Confidence is high
+for strict-v1 local behavior and low for external consumers, registry
+ownership, migration authority, or provider execution. GitHub/local evidence
+won each cycle; GitHub, arXiv, and Reddit made zero public requests and retain
+their recorded change-bearing triggers. MemGauge `2608.30177v1`, allocation
+study `2608.25553v3`, and Reddit RSS item `t3_1v8a3sh` remain the last useful
+public evidence.
+
+Only canonical accepted finite results remain integration candidates. The 9/9
+accepted standing ancestors, both accepted patch pairs, and 4/4 accepted
+artifacts remain the continuity boundary. `d041c41b54` and later unaccepted
+commits remain deferred without content inspection, testing, editing, or
+integration. The next ranked retrieval work compacts the repeated Cycle
+215–219 seed-observation prose only if exact times, byte provenance, and
+unavailable-seed uncertainty remain intact.
 
 ## Cycle 219 seed-first start
 
@@ -4153,23 +4134,8 @@ is high for strict-v1 local behavior and low for external consumers or provider
 execution. Focused validation passes 30 tests and 172 assertions plus
 TypeScript, formatting, and whitespace. No production fix is needed.
 
-GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
-retain their evidence, boundaries, and triggers; accepted lineage is unchanged.
-The next ranked local question is cross-layer diagnostic completeness: test
-whether a model-resolution mismatch and a schedule/model-order mismatch are
-both retained, without deriving policy scope or provider authority.
-
-Exact reviewed Cycle 218 tip
-`01f8615ecd9740bfe4bfc37da761b60841733214` passes syntax, TypeScript,
-source formatting, 277 tests, 1,427 assertions, whitespace, and 31 relative
-links. Read-only health at `2026-09-03T14:21:53.287Z` remains 26 facts and 16
-wake signals; root and app runtime state are empty. The clean tip retains 9/9
-accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
-Unaccepted `d041c41b54` remains outside lineage.
-
-Protected `/app` and the human overlay remain
-`386b445c…1fec8` / 886 / `996480ad…752a3` and
-`fd4c68ec…1514663` / three / `ad8d222c…e74780`; neither was written or tested.
+Cycle continuity, source-lane disposition, accepted lineage, and focused gate
+are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 204 seed-first start
 

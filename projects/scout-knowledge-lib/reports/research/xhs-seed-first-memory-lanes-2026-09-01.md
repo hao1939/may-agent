@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 220: declaration and schedule failures remain independently visible, and provenance-preserving compaction now outranks marginal diagnostic permutations."
+summary: "Seed-first Scout continuity through Cycle 220: one provenance ledger preserves the Cycle 215–219 decisions while removing repeated lane, lineage, validation, and protected-checkout prose."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
 latest_seed_basis: "Cycle 220 observational reconciliation through 2026-09-03T14:31:57.642Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
@@ -8155,29 +8155,8 @@ role-specific identity; artifact declaration order remains set-like. It does
 not support an external registry owner, migration/update authority, consumer,
 or provider claim, so no production schema change is justified.
 
-GitHub/local code won. GitHub retains the local regressions and last named
-heads; arXiv retains MemGauge `2608.30177v1` and allocation study
-`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All three
-public lanes made zero requests and retain their change-bearing triggers. Only
-canonical accepted finite results are eligible for integration. The unaccepted
-`d041c41b54` and later commits remain outside standing lineage without peer
-content inspection, testing, editing, or import. The next accessible question
-is multi-model diagnostic traceability when one explicit resolution record
-fails; more registry-order permutations are lower value.
-
-Exact reviewed tip `32e2f3b822660ca2b62f72c086bc433be8100d96`
-passes syntax, TypeScript, source formatting, 275 tests, 1,414 assertions,
-whitespace, all 31 relative links across the three current research documents
-and independent-review cursor, read-only health 26/16 at
-`2026-09-03T14:06:52.242Z`, and empty root/app runtime state. The worktree is
-clean with 9/9 canonical accepted ancestors, both accepted patch-equivalence
-pairs, and 4/4 accepted artifact blobs. Explicit ancestry checks keep
-unaccepted `d041c41b54` and its predecessor outside standing lineage.
-
-Protected `/app` remains at `386b445c…1fec8`, 886 status records, and
-`996480ad…752a3`; the human overlay remains at `fd4c68ec…1514663`, three
-records, and `ad8d222c…e74780`. Read-only inspection used optional Git locks
-disabled. Neither protected checkout was written or tested.
+Cycle continuity, lane disposition, accepted lineage, and focused validation
+are consolidated in the Cycle 220 checkpoint ledger.
 
 ## Cycle 216 seed-first reconciliation — stable unavailable profile
 
@@ -8214,25 +8193,8 @@ failure result is a self-contained model registry or diagnostic receipt. No
 production change is justified without a consumer contract, especially because
 invalid caller identifiers should not be reflected casually.
 
-GitHub/local code won. GitHub retains the exact local regression and prior
-named public heads; arXiv retains MemGauge `2608.30177v1` and allocation study
-`2608.25553v3`; Reddit retains RSS-readable `t3_1v8a3sh` and its JSON-403
-boundary. All public lanes made zero requests and retain their change-bearing
-triggers. The accepted-lineage boundary is unchanged. The next ranked local
-question is whether a compact content reference can bind the failed manifest
-without echoing untrusted model IDs or creating policy authority.
-
-Exact reviewed tip `3bb0771758b4d0269b392d1032377ecc58f61a5f`
-passes syntax, TypeScript, source formatting, 276 tests, 1,424 assertions,
-whitespace, 31 relative links, read-only health 26/16 at
-`2026-09-03T14:12:24.933Z`, and empty root/app runtime state. The worktree is
-clean with 9/9 canonical accepted ancestors, both accepted patch-equivalence
-pairs, and 4/4 accepted artifact blobs. `d041c41b54` remains unaccepted and is
-not contained.
-
-Protected `/app` remains `386b445c…1fec8`, 886 records,
-`996480ad…752a3`; the human overlay remains `fd4c68ec…1514663`, three records,
-`ad8d222c…e74780`. Neither protected checkout was written or tested.
+Cycle continuity, lane disposition, accepted lineage, and focused validation
+are consolidated in the Cycle 220 checkpoint ledger.
 
 ## Cycle 217 seed-first reconciliation — response bytes changed, access did not
 
@@ -8266,22 +8228,8 @@ an identified consumer, and migration/rollback authority. No implementation
 or duplicate test is justified. Confidence is high for this strict-v1 local
 deduction and low for external receipt needs.
 
-GitHub/local evidence won without a public request. ArXiv and Reddit also made
-zero requests and retain the exact evidence, access boundaries, and triggers in
-the living lane table. The accepted-lineage boundary is unchanged. The next
-ranked local question tests whether simultaneous mismatches preserve both model
-ordinals in a stable complete error list rather than masking one failure.
-
-Exact reviewed tip `669252b89d8ceefd73d7b7313090fa2713869a34`
-passes syntax, TypeScript, source formatting, 276 tests, 1,424 assertions,
-whitespace, 31 relative links, read-only health 26/16 at
-`2026-09-03T14:16:39.635Z`, and empty root/app runtime state. The clean tip
-retains 9/9 accepted ancestors, both accepted patch-equivalence pairs, and 4/4
-accepted artifacts. Unaccepted `d041c41b54` is not contained.
-
-Protected `/app` remains `386b445c…1fec8`, 886 records,
-`996480ad…752a3`; the human overlay remains `fd4c68ec…1514663`, three records,
-`ad8d222c…e74780`. Neither checkout was written or tested.
+Cycle continuity, lane disposition, accepted lineage, and focused validation
+are consolidated in the Cycle 220 checkpoint ledger.
 
 ## Cycle 220 seed-first reconciliation — stable access, fresh byte receipt
 
@@ -8298,6 +8246,39 @@ unknown, removals are `[]`, and all 132 durable seeds remain unavailable. No
 representative saved-post read, account mutation, public GitHub/arXiv/Reddit
 request, or peer-worktree content inspection occurred. Commit this ordering
 evidence first, then perform the ranked provenance-preserving compaction.
+
+## Cycle 220 checkpoint — compact provenance ledger for Cycles 215–219
+
+The detailed matched-control evidence remains in the
+[factorial design report](./verification-allocation-factorial-design-2026-09-02.md).
+This report now keeps one plain-language retrieval ledger instead of repeating
+the same lane, lineage, validation, and protected-checkout paragraphs:
+
+| Cycle | Seed | Test or synthesis | Material result | Focused / full tests/assertions | Conclusion |
+| --- | --- | --- | --- | --- | --- |
+| 215 | `c734610e9506553072e5b26aae85cf268cb51a6b` | `37256db1496b90890e684ad99553b146cb4148b1` | `32e2f3b822660ca2b62f72c086bc433be8100d96` | 28 / 159; 275 / 1,414 | Manifest object-key presentation transfers to two models. |
+| 216 | `8b3c8a050c32a1d0acd2c2a8780b011d58d119da` | `97986c1ec1e338e5c4fa9a0735ec11d9ecf57250` | `3bb0771758b4d0269b392d1032377ecc58f61a5f` | 29 / 169; 276 / 1,424 | Failure ordinals need the bound manifest for model identity. |
+| 217 | `9c1b51f9089cb32f73bc7d1ecb6be462f177efc1` | Cycle 215 matched control | `669252b89d8ceefd73d7b7313090fa2713869a34` | no duplicate test; 276 / 1,424 | Raw byte hashes are not semantic diagnostic identity. |
+| 218 | `b290d08b92c177b8723b084983e46dd5a95731fb` | `cb2e27fbaf949e59babcd353acf0086523032987` | `01f8615ecd9740bfe4bfc37da761b60841733214` | 30 / 172; 277 / 1,427 | Simultaneous model errors survive in manifest order. |
+| 219 | `13dc94814634f945fb745322b932faa7c9040d2d` | `2e1c698872c92b67da4bb53bd3af420448dfa83e` | `2bedfa0f1acfcb1f514766265ba51da67f5b0c73` | 31 / 174; 278 / 1,429 | Declaration and schedule errors both survive in layer order. |
+
+Where a cycle exercised invalid input, its result retained seven artifacts,
+two models, two seeds, 128 episodes, null policy scope, and false provider
+authority. Confidence is high
+for strict-v1 local behavior and low for external consumers, registry
+ownership, migration authority, or provider execution. GitHub/local evidence
+won throughout; GitHub, arXiv, and Reddit made zero public requests and retain
+their change-bearing triggers. Last useful public evidence remains MemGauge
+`2608.30177v1`, allocation study `2608.25553v3`, and Reddit RSS item
+`t3_1v8a3sh` with the JSON-403 boundary.
+
+Only canonical accepted finite results are integrable. The 9/9 accepted
+standing ancestors, both accepted patch pairs, and 4/4 accepted artifacts
+remain the continuity boundary. `d041c41b54` and later unaccepted commits stay
+deferred without content inspection, testing, editing, or integration. The
+next ranked retrieval work compacts the repeated Cycle 215–219 seed
+observations only if their exact times, byte provenance, and unavailable-seed
+uncertainty remain intact.
 
 ## Cycle 219 seed-first reconciliation — unchanged access, new body hash
 
@@ -8389,23 +8370,8 @@ whitespace. This resolves failure masking and ordering locally, while retaining
 Cycle 216's qualification that only the bound manifest maps ordinals to model
 identity. No production fix is warranted.
 
-GitHub/local evidence won without a public request. ArXiv retains MemGauge
-`2608.30177v1` and allocation study `2608.25553v3`; Reddit retains readable RSS
-for `t3_1v8a3sh` and its JSON-403 boundary. All public lanes made zero requests
-and retain their triggers. Accepted lineage is unchanged. The next ranked local
-question combines model-resolution and schedule/model-order mismatches to test
-cross-layer diagnostic completeness without policy or provider authority.
-
-Exact reviewed tip `01f8615ecd9740bfe4bfc37da761b60841733214`
-passes syntax, TypeScript, source formatting, 277 tests, 1,427 assertions,
-whitespace, 31 relative links, read-only health 26/16 at
-`2026-09-03T14:21:53.287Z`, and empty root/app runtime state. The clean tip
-retains 9/9 accepted ancestors, both accepted patch-equivalence pairs, and 4/4
-accepted artifacts. Unaccepted `d041c41b54` is not contained.
-
-Protected `/app` remains `386b445c…1fec8`, 886 records,
-`996480ad…752a3`; the human overlay remains `fd4c68ec…1514663`, three records,
-`ad8d222c…e74780`. Neither checkout was written or tested.
+Cycle continuity, lane disposition, accepted lineage, and focused validation
+are consolidated in the Cycle 220 checkpoint ledger.
 
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
