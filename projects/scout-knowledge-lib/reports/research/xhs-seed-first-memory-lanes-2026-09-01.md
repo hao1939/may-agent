@@ -7860,6 +7860,24 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 195 checkpoint — checksum target spelling is exact
+
+Seed commit `2501738d81` records unchanged semantic XHS access, 30 public
+Explore notes, zero attributable saved items, unknown additions/changes, no
+observed removals, and all 132 seeds unavailable. One-byte and body-hash drift
+are response provenance. No XHS state changed.
+
+Exact local `17c53dbfea` passes either ordering of one unrelated checksum line
+and the exact bundle target, while duplicate targets, escaped spelling, `./`,
+and trailing-space aliases fail. Focused validation passes 46 tests and 231
+assertions plus TypeScript, formatting, and whitespace. No production change
+is justified; a future v2 exact set should be generated in sorted literal-path
+order without changing v1.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact evidence and triggers. The next ranked control bounds
+portable path, Unicode/control-character, and binary-marker ambiguity.
+
 ## Cycle 194 checkpoint — prefer exact checksums if registry authority appears
 
 Seed commit `a7bb627aef` records unchanged semantic XHS access, 30 public

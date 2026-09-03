@@ -2805,6 +2805,21 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 195 checksum target exactness
+
+Seed commit `2501738d81` preceded exact test `17c53dbfea`. One unrelated
+checksum line may appear before or after the registered target. Duplicate
+target lines, coreutils-style escaped spelling, `./bundle.zip`, and a trailing
+space all fail the exact binding. Provider authority stays false. Focused
+validation passes 46 tests and 231 assertions plus TypeScript, formatting, and
+whitespace.
+
+This preserves v1 while selecting a conditional v2 rule: if an explicit
+registry becomes justified, generate one lexicographically sorted exact
+literal-path checksum set and reject noncanonical set bytes. Remaining design
+uncertainty is portable filename grammar, Unicode normalization, control
+characters, and the binary marker. No production change is made.
+
 ## Cycle 194 checksum-set versus archive-member closure
 
 Seed commit `a7bb627aef` preceded exact test `7683519e23`. A registry sidecar
