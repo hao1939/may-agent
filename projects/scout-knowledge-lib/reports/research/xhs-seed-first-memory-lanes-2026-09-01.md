@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 154 checkpoint — file-backed manifest integrity gates selection
+
+Seed commit `d2441c29e415426cf6f8d130bcf72c381eb8c4cd` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local path.
+Exact local `4ac2a82730d518544408a80a44955b092e7a8241` adds a separate
+descriptor-safe manifest selector while preserving the caller-supplied API.
+
+The valid fixture selects equal 172 at 1,032 blocks only after the 1,019-byte
+raw manifest (`87060af8…f2e6`), canonical manifest identity
+`159d1e34…1e1b`, and 1,069-byte decision record (`1e120323…af03`) agree.
+Missing, SHA-mismatched, and re-hashed duplicate-key manifests all return no
+selection before decision-record evidence. The focused gate passes 16 tests and
+59 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for the exact local controls and low for
+authorship, authority, policy truth, external compatibility, or real execution.
+The next ranked investigation tests a supported CLI/snapshot caller that
+serializes both raw artifact and canonical manifest identities without
+reverting to a caller object.
+
 ## Cycle 153 checkpoint — caller substitution stays explicitly unverified
 
 Seed commit `f073902e899ef46cf0375cdf98d6772a28a9f4cb` records unchanged

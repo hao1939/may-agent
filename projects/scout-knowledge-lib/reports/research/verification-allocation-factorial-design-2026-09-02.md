@@ -2527,6 +2527,32 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 154 descriptor-safe policy-manifest path
+
+Seed commit `d2441c29e415426cf6f8d130bcf72c381eb8c4cd` preceded the new
+separate file-backed selector. Exact local
+`4ac2a82730d518544408a80a44955b092e7a8241` reads a declared manifest
+artifact through pinned descriptors, verifies its raw hash, rejects duplicate
+JSON keys, applies the existing strict manifest/content checks, and only then
+reads and checks the decision record.
+
+The matched fixture selects equal 172 at 1,032 blocks with policy hash
+`128eb203f8c45dacd4e2ccccb3f7bf09fdda207fd2a5bf7ebf18adf05c782ecb`.
+Its 1,019-byte raw manifest hashes to `87060af8…f2e6`; canonical manifest
+content hashes to `159d1e34…1e1b`; its 1,069-byte decision record hashes to
+`1e120323…af03`. Missing, hash-mismatched, and re-hashed duplicate-key
+manifests return no selection and no decision-record evidence.
+
+The existing caller-supplied selector remains unchanged and explicitly
+unverified. The focused provenance/policy gate passes 16 tests and 59
+assertions plus TypeScript, source formatting, and whitespace. This is high-
+confidence local byte/content evidence and low-confidence evidence for
+authorship, authority, policy truth, external compatibility, or execution.
+
+The next ranked investigation is a supported CLI/snapshot input that carries
+raw artifact and canonical manifest identities through selection and
+serialization without silently replacing the existing caller-supplied mode.
+
 ## Cycle 153 caller-manifest persistence boundary
 
 Seed commit `f073902e899ef46cf0375cdf98d6772a28a9f4cb` preceded a coherent
