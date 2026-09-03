@@ -2549,6 +2549,33 @@ preserves freeze verification, local-record evidence, selection denial, and
 zero provider authority across the actual executable boundary rather than only
 the adapter call.
 
+## Cycle 108 seed-first start
+
+Cycle 108 began from clean exact tip
+`6f96800458d94031ae852003f3ab6e3bac6e8692`. Direct worker reads to ports
+9222 and 9333 failed as UID 1000 with curl exit 7 and HTTP 000 at
+`2026-09-03T01:57:45.534Z–01:57:45.550Z`. Effective UID 0 then reached
+root-owned Chrome PID 2136's listener through its network namespace. This is
+browser/process authority, not proof of a Xiaohongshu account principal.
+
+The supported non-navigating commands ran from `01:57:50.408Z` through
+`01:57:51.814Z`. Public Explore remained readable with 30 notes. Saved status
+reproduced HTTP 200, final class `login`, 46,672 bytes, semantic access
+fingerprint `3dab1b6…8af420`, a login wall, and zero attributable items. Only
+the exact body SHA changed from `6a8b86d…2ae8a` to `ac4b675…e9207`. Added and
+changed IDs remain unknown, observed removals are `[]`, and all 132 durable
+seeds remain unavailable rather than removed. No representative saved post was
+supported or read, and no XHS state changed.
+
+No executable-boundary fixture, source, provider, or accepted-result request
+preceded this reconciliation. Protected `/app` remained at HEAD
+`386b445c…1fec8`, 891 records, status fingerprint `51ea8b13…df78`; the human
+overlay remained at HEAD `fd4c68ec…1514663`, three records, fingerprint
+`f2bcf2a2…d20a`; independent peer worktrees remained clean. Commit this seed
+record first, then pursue the ranked process-level CLI control. Public lanes
+remain subject to their recorded revision, artifact, replication,
+content/access, scheduled-audit, and readable-seed triggers.
+
 ## Cycle log
 
 | Cycle                           | Seed reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Related discovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Deep dive                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Map decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Next                                                                                                                                                                                                                                                                                    |
