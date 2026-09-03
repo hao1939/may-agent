@@ -2508,6 +2508,25 @@ the nested JSON prompt shape: the current contract protects that shape by exact
 comparison with the frozen prompt generator. The next matched control tests
 that claim without adding a redundant parser unless the control passes open.
 
+## Cycle 133 embedded prompt exactness
+
+Seed commit `bf8a3037fecaac6a8f100511bccd4069e2690c8c` preceded the
+matched control. One valid prompt gained only `providerAuthority:true` inside
+its lineage object; the schedule and manifest digests were then updated
+coherently. The existing exact comparison against `renderFactorialPrompt`
+rejected the bytes with the episode-scoped `prompt contains an unregistered
+difference` error. Registration evidence cleared, local proof-byte presence
+remained explicitly unverified, and provider calls remained denied.
+
+Regression `fa29e5b995558bf85cd4ba9dc8e3bd2de4a10d62` pins that behavior.
+No runtime change or duplicate prompt schema is justified. The three freeze
+paths pass 35 tests and 156 assertions plus TypeScript, source formatting, and
+whitespace. This is high-confidence local generator exactness, not evidence of
+prompt quality, proof validity, model behavior, or provider authority.
+
+The next distinct parser question is whether same-value duplicate JSON keys
+can be accepted because `JSON.parse` collapses them before exact-key checks.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

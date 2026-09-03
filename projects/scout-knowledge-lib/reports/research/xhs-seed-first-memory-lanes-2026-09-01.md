@@ -7733,6 +7733,25 @@ each only on its recorded revision, artifact, replication, readable-seed,
 content, or access trigger. The next ranked control tests the embedded prompt's
 existing exact-generator denial before considering any additional schema.
 
+## Cycle 133 checkpoint — no duplicate prompt schema is needed
+
+Seed commit `bf8a3037fecaac6a8f100511bccd4069e2690c8c` records unchanged
+login-class XHS access, zero attributable items, unknown additions and changes,
+no removals, and all 132 seeds unavailable before the matched control. A nested
+`providerAuthority:true` field was added inside one prompt and both schedule
+bindings were coherently rehashed.
+
+The existing frozen-generator comparison rejected that prompt exactly.
+Regression `fa29e5b995558bf85cd4ba9dc8e3bd2de4a10d62` pins the denial;
+no runtime change or second prompt parser was added. The three freeze paths
+pass 35 focused tests with 156 assertions plus TypeScript, formatting, and
+whitespace.
+
+GitHub/local code won the post-seed rubric. Public GitHub, arXiv, and Reddit
+made zero requests and retain their named heads, paper versions, RSS/JSON
+boundary, and recorded triggers. The next ranked control tests same-value
+duplicate JSON keys before exact object-key validation.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
