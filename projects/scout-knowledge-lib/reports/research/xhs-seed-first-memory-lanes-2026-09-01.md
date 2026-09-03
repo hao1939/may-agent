@@ -9920,6 +9920,25 @@ registry-decision mirror (`e67f01c1…5522`) to 7 lines / 519 bytes
 tested dimensions, and revisit triggers. RV-004 remains high/open; next is
 Cycle 269's 11-line / 720-byte seed-continuity mirror.
 
+## Cycle 302 checkpoint — three proof mirrors, one bounded batch
+
+Seed-first `7680b671a2` preceded every audit; material `02b5e71151` changes
+only the living map. The three exact shared runs measured 34 lines / 2,107
+bytes; their replacements measure 13 / 1,186. The complete patch removes 28
+net map lines.
+
+| Boundary | Exact old run | Compact map | Distinction retained |
+| --- | --- | --- | --- |
+| Cycle 269 | 11 / 720, `c440449a…d5d9` | 5 / 421, `62fefa45…8ad9` | Pre-seed query excluded; post-seed rerun selected. |
+| Cycle 251 | 10 / 718, `86d28e35…5141` | 4 / 386, `11907b75…9b9a` | Rarity counterexample, confidence, and next attribution question. |
+| Cycle 220 | 13 / 669, `0eea7dc5…2fe6` | 4 / 379, `12f08f8e…a630` | Five-cycle ledger and accepted-only integration boundary. |
+
+This report retains every removed validation, lineage, runtime, and protected-
+state detail. No source or account request ran. Static retrieval reduction is
+not outcome evidence; RV-004 remains high/open. The next exact candidate is
+Cycle 253's 10-line / 655-byte decision mirror, which must keep its crossover,
+counterexamples, confidence, and no-change disposition.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
