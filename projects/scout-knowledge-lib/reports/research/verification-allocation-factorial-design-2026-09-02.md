@@ -2207,6 +2207,32 @@ real execution, drift, prices, model behavior, or provider readiness. The next
 ranked control changes the registered artifact name while preserving identical
 bytes and all other decision inputs to test executable entry-point identity.
 
+## Cycle 122 same-byte artifact aliasing
+
+Seed commit `eac393d7d8f7369474d05531e0d50952a92379e6` preceded this
+control. XHS semantic access remained unchanged; the saved login shell changed
+by two bytes and body hash but exposed no attributable item. All 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+The snapshot-bound control retained exact bundle SHA-256
+`fd01710b5ef211e073b7dda564f30925cca256e4ff9b7ea7bd2fd49e672ecdae`
+and changed only its registered filename from `bundle.zip` to
+`aliased-bundle.zip`, with a coherent checksum-manifest update. Schedule,
+models, seeds, frontier, snapshot, policy, and local decision evidence stayed
+fixed. Baseline selection returned equal 172. The alias still passed local
+snapshot/freeze checks, but protocol scope changed while model scope did not,
+so the old decision failed the combined-scope match. Provider authority stayed
+false.
+
+Exact test-only `1170e6698775771778409518445a044df30a7879` records the
+result. No production edit was needed because the Cycle 120 scope derivation
+already binds artifact name and digest. Focused validation passes 9 tests and
+44 assertions plus TypeScript, formatting, and whitespace. This proves a local
+entry-point identity distinction, not external registration, timestamp-proof
+validity, policy authority, real execution, drift, prices, model behavior, or
+provider readiness. The next ranked control isolates timestamp-proof bytes
+from executable policy scope.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
