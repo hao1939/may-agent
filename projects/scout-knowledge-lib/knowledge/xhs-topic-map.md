@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 104 observational reconciliation through 2026-09-03T01:23:41.573Z; exact access evidence and uncertainty are in the Cycle 104 continuity row."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 104 at 2026-09-03T01:23:41.573Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 104 read-only XHS boundary through 2026-09-03T01:23:41.573Z."
+latest_seed_basis: "Cycle 105 observational reconciliation through 2026-09-03T01:36:11.556Z; exact access evidence and uncertainty are in the Cycle 105 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 105 at 2026-09-03T01:36:11.556Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 105 read-only XHS boundary through 2026-09-03T01:36:11.556Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 104 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 105 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -2371,6 +2371,33 @@ audit remain the highest supported evidence in this execution environment.
   state remain unknown. Reddit JSON previously returned HTTP 403, while post
   RSS returns HTTP 200 with the post and six comments; that is attributable
   community evidence, not paper validation.
+
+## Cycle 105 seed-first start
+
+Cycle 105 began from clean exact tip
+`3edfa679f457077828989c2ed78def11e213238c`. Direct reads to ports 9222 and
+9333 failed as UID 1000 with curl exit 7 and HTTP 000 at
+`2026-09-03T01:35:35.676Z–01:35:35.696Z`. Effective UID 0 then reached
+root-owned Chrome PID 2136's listener through its network namespace. This is
+browser/process authority, not proof of a Xiaohongshu account principal.
+
+The supported observational commands ran without navigation from
+`01:35:55.374Z` through `01:36:11.556Z`. Public Explore remained readable with
+30 notes. Saved status reproduced HTTP 200, final class `login`, 46,672 bytes,
+semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
+attributable items. Only the exact body SHA changed from `e2db8b1…c0cc` to
+`31e1002…872a`. Added and changed IDs remain unknown, observed removals are
+`[]`, and all 132 durable seeds remain unavailable rather than removed. No
+representative saved post was supported or read, and no XHS state changed.
+
+No scope-artifact implementation, source, provider, or accepted-ref request
+preceded this reconciliation. The Cycle 104 proof found `/app` and the human
+overlay at unchanged HEADs and record counts while their status fingerprints
+changed externally; all other peer worktrees remained clean. Keep Cycle 20 as
+the last comparable authenticated snapshot. After this seed commit, pursue the
+ranked descriptor-safe protocol/model-scope artifact question; public lanes
+remain subject to their recorded revision, artifact, replication, content,
+access, and readable-seed triggers.
 
 ## Cycle log
 
