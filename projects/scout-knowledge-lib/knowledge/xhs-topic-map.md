@@ -4095,6 +4095,17 @@ zero requests and retain their evidence and triggers. RV-004 remains high/open.
 Next is Cycle 258's 19-line / 1,120-byte historical-target boundary; preserve
 its missing query and contemporaneous-index uncertainty.
 
+## Cycle 296 seed-first start — fresh receipt reused
+
+At `2026-09-03T23:23:44.850Z`, the Cycle 292 observation was 25 minutes old;
+no XHS cadence, access, seed, source-lane, or accepted-result trigger changed.
+This bounded reconciliation made zero browser or public requests: additions
+and changes remain unknown, observed removals are `[]`, and all 132 durable
+seeds remain unavailable. Exact `e9450d7b76` is clean, contains accepted
+`ff923ccde4`, excludes unaccepted `d041c41b54`, passes the 296-test / 1,483-
+assertion gate, 1,540-document / 1,714-link broad audit, and health at 30 facts
+/ 16 wakes. Re-ranking retains the adjacent Cycle 258 mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
