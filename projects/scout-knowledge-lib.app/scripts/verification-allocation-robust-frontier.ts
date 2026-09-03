@@ -16,7 +16,10 @@ import {
   RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION,
   verifyIdentityRobustFrontierSnapshot,
 } from "./verification-allocation-frontier-snapshot";
-import { selectIdentityRobustFrontierPointFromSnapshot } from "./verification-allocation-frontier-snapshot-select";
+import {
+  selectIdentityRobustFrontierPointFromSnapshot,
+  summarizeIdentityRobustSnapshotFrontierSelection,
+} from "./verification-allocation-frontier-snapshot-select";
 
 type Row = {
   runBlockCount: number;
@@ -99,7 +102,9 @@ if (process.argv[2] === "snapshot") {
     input.evidenceRoot,
     input.freezeBundleRoot,
   );
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.stdout.write(
+    `${JSON.stringify(summarizeIdentityRobustSnapshotFrontierSelection(result), null, 2)}\n`,
+  );
   process.exit(0);
 }
 

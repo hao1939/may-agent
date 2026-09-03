@@ -8,7 +8,10 @@ import {
   verifyExecutionFreezeManifest,
 } from "./verification-allocation-freeze";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
-import { selectIdentityRobustFrontierPointFromSnapshot } from "./verification-allocation-frontier-snapshot-select";
+import {
+  selectIdentityRobustFrontierPointFromSnapshot,
+  summarizeIdentityRobustSnapshotFrontierSelection,
+} from "./verification-allocation-frontier-snapshot-select";
 import { createIdentityRobustFrontierSnapshot } from "./verification-allocation-frontier-snapshot";
 import {
   hashIdentityRobustFrontierPolicy,
@@ -219,6 +222,13 @@ describe("identity-robust frontier freeze adapter", () => {
       },
       providerCallsAuthorized: false,
     });
+    const summary = summarizeIdentityRobustSnapshotFrontierSelection(result);
+    expect(summary.snapshotVerification.snapshot).toMatchObject({
+      frontierCount: 2,
+      frontierSha256: snapshot.frontierSha256,
+      providerCallsAuthorized: false,
+    });
+    expect(JSON.stringify(summary)).not.toContain('"frontier":');
   });
 
   it("selects only after descriptor-safe freeze and local-record verification", async () => {

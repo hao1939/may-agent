@@ -14,6 +14,30 @@ export type IdentityRobustSnapshotFrontierSelection = {
   providerCallsAuthorized: false;
 };
 
+export function summarizeIdentityRobustSnapshotFrontierSelection(
+  result: IdentityRobustSnapshotFrontierSelection,
+) {
+  const snapshot = result.snapshotVerification.snapshot;
+  return {
+    ...result,
+    snapshotVerification: {
+      ...result.snapshotVerification,
+      snapshot: snapshot
+        ? {
+            schema: snapshot.schema,
+            evidenceClass: snapshot.evidenceClass,
+            generatorReference: snapshot.generatorReference,
+            rowSha256: snapshot.rowSha256,
+            resultSha256: snapshot.resultSha256,
+            frontierSha256: snapshot.frontierSha256,
+            frontierCount: snapshot.frontier.length,
+            providerCallsAuthorized: snapshot.providerCallsAuthorized,
+          }
+        : null,
+    },
+  };
+}
+
 /**
  * Load one byte- and computation-bound frontier before composing it with the
  * existing freeze and local decision verification. No failure path grants
