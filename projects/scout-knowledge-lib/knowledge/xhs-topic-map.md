@@ -3565,6 +3565,15 @@ registry owner or migration. GitHub, arXiv, and Reddit made zero public
 requests. The next ranked matched control reverses only artifact-declaration
 order to distinguish non-semantic inventory presentation from model order.
 
+Exact reviewed Cycle 208 tip
+`d2f340d19d439c17c9cc034aae9ed85a7931ecec` passes syntax, TypeScript,
+source formatting, 268 tests, 1,373 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:26:49.983Z` remains 26 facts and 16
+wake signals; runtime state is empty. The clean tip retains 9/9 accepted
+ancestors and 4/4 accepted artifacts. Protected source and overlay reproduce
+their Cycle 206 fingerprints, and the unaccepted two-commit peer range remains
+outside the standing lineage without content inspection.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

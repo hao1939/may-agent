@@ -7894,6 +7894,13 @@ The unaccepted peer range ending at `d041c41b54` remains deferred without
 content inspection. The next ranked matched control reverses only artifact-
 declaration order, distinguishing inventory presentation from model order.
 
+Exact reviewed tip `d2f340d19d439c17c9cc034aae9ed85a7931ecec`
+passes syntax, TypeScript, source formatting, 268 tests, 1,373 assertions,
+whitespace, 31 relative links, read-only health 26/16, and empty runtime state.
+The clean tree retains 9/9 accepted ancestors and 4/4 accepted artifacts.
+Protected source and overlay reproduce the Cycle 206 fingerprints; neither was
+written or tested. The unaccepted peer range remains deferred.
+
 ## Cycle 207 seed-first reconciliation — unchanged shell, volatile bytes
 
 Cycle 207 began from clean `4e1fc2dde5`. One direct sanitized public status
