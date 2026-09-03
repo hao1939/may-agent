@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 233 observational reconciliation through 2026-09-03T16:18:34.267Z; exact access evidence and uncertainty are in seed-ledger row 233."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 233 at 2026-09-03T16:18:34.267Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 233 read-only XHS boundary through 2026-09-03T16:18:34.267Z."
+latest_seed_basis: "Cycle 237 observational reconciliation through 2026-09-03T16:57:11.030Z; exact access evidence and uncertainty are in seed-ledger row 237."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 237 at 2026-09-03T16:57:11.030Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 237 read-only XHS boundary through 2026-09-03T16:57:11.030Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 233 used the established direct localhost Chrome
+authenticated window. Cycle 237 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`). Public Explore
 remained readable with 30 notes, while supported `saved-status`
@@ -3841,6 +3841,26 @@ new regression is warranted because the exact matched control already exists.
 
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
+
+## Cycle 237 seed-first start — semantic boundary unchanged
+
+Cycle 237 began from clean checkpoint `469a205391`. The requested next
+material cycle made a bounded observation due before any new source-lane or
+index work. At `2026-09-03T16:57:09.534Z–16:57:11.030Z`, worker UID 1000
+(`hao`) used passwordless `sudo nsenter` as effective UID 0 in root-owned
+Chrome PID 2136's network namespace for exactly one public `status` and one
+non-navigating `saved-status`.
+
+Public Explore remained readable with 30 notes. Saved status remained HTTP
+200, `login`, 46,763 bytes, target evidence `e860da4…906e`, access fingerprint
+`3dab1b6…af420`, zero attributable items, empty-set fingerprint
+`e3b0c44…b855`, a login wall, and `ready:false`. Only body SHA changed
+`bad7377…8b461`→`a548dd2…dc6b`. Added/changed identities remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable rather than
+removed. No representative saved-post read was supported, no XHS state
+changed, and no GitHub, arXiv, Reddit, or HN request preceded this record.
+Process/network reachability is not account or collection authority. Commit
+this reconciliation before auditing missing HN Scan #151 by source-set identity.
 
 ## Cycle 236 seed-first start — unchanged receipt, representation test selected
 

@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 233: the canonical seed ledger holds the latest exact receipt, the Cycle 206–214 compaction preserves incomplete seed provenance, and current-state projections match the ledger."
+summary: "Seed-first Scout continuity through Cycle 237: the canonical seed ledger holds the latest exact receipt, the Cycle 206–214 compaction preserves incomplete seed provenance, and current-state projections match the ledger."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 233 observational reconciliation through 2026-09-03T16:18:34.267Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 233 at 2026-09-03T16:18:34.267Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 237 observational reconciliation through 2026-09-03T16:57:11.030Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 237 at 2026-09-03T16:57:11.030Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -9344,6 +9344,25 @@ Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` records unchanged
 semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
+
+## Cycle 237 seed-first reconciliation — fresh receipt, unchanged semantics
+
+Cycle 237 began from clean `469a205391`. The requested next material cycle
+made a bounded observation due before new index or source-lane work. At
+`2026-09-03T16:57:09.534Z–16:57:11.030Z`, worker UID 1000 (`hao`) used
+passwordless `sudo nsenter` as effective UID 0 in root-owned Chrome PID 2136's
+network namespace for exactly one public `status` and one non-navigating
+`saved-status`. This proves process/network reachability, not account authority.
+
+Explore remained readable with 30 notes. Saved status remained HTTP 200,
+`login`, 46,763 bytes, target evidence `e860da4…906e`, access fingerprint
+`3dab1b6…af420`, zero attributable items, empty-set fingerprint
+`e3b0c44…b855`, a login wall, and `ready:false`. Only body SHA changed
+`bad7377…8b461`→`a548dd2…dc6b`. Added/changed identities remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved-post read was supported, no XHS state changed, and no
+GitHub, arXiv, Reddit, or HN request preceded this record. Commit this exact
+reconciliation, then audit missing HN Scan #151 by embedded source-set identity.
 
 ## Cycle 236 seed-first reconciliation — unchanged receipt reused
 
