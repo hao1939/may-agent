@@ -2102,6 +2102,28 @@ authority, real drift, cost, models, or providers. The next ranked control is
 whether the freeze's `verified` registration label overstates a purely local
 byte-binding check for an arbitrary unreachable HTTPS target.
 
+## Cycle 118 registration-evidence qualification
+
+Seed commit `6ad703e586b6b3d73eeab977530796814ed3d616` preceded this
+control. XHS semantic access remained unchanged; the saved login shell returned
+to 46,672 bytes with a new body hash, exposed no attributable item, and left all
+132 seeds unavailable. No public lane request was made.
+
+The pre-fix fixture pointed at reserved, unreachable
+`https://example.invalid/scout-freeze/fixture`, declared registration status
+`verified`, and returned overall success from local structural and byte checks.
+No external URL, timestamp service, signature authority, model, or provider was
+contacted. Exact local `5e5281c55433e119b78368b0053594858671c5a5`
+adds result field `externalRegistrationEvidenceStatus`: successful local
+bindings are `local-byte-match-unverified`, while failed bundle paths expose an
+empty status. Provider authority remains false.
+
+Focused validation passes 22 tests and 79 assertions plus TypeScript,
+formatting, and whitespace. This corrects result semantics without promoting
+the declaration. The next ranked control is cross-registration substitution:
+hold protocol/model/snapshot/decision evidence fixed, change only registration
+identity, and see whether the same policy scope remains applicable.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
