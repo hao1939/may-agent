@@ -154,7 +154,7 @@ describe("verification-allocation freeze bundle", () => {
     );
   });
 
-  it("rejects an entry replaced by a symlink after directory inventory", async () => {
+  it("rejects an entry replaced by a symlink during directory inventory", async () => {
     const { root, manifest } = await fixture();
     const fillerNames = Array.from(
       { length: 1_500 },
@@ -192,9 +192,10 @@ describe("verification-allocation freeze bundle", () => {
     expect(result.ok).toBe(false);
     expect(
       result.errors.some((error) =>
-        error.includes(
+        [
+          `symbolic links are not allowed in a freeze bundle: ${target}`,
           `bundle entry could not be opened without following symbolic links: ${target}`,
-        ),
+        ].some((expected) => error.includes(expected)),
       ),
     ).toBe(true);
   });
