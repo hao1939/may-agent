@@ -6101,63 +6101,27 @@ All 9 canonical accepted commits remain ancestors and unaccepted
 records / `2760fb23…052`. Neither protected nor peer worktree was written,
 tested, or inspected beyond bounded provenance.
 
-## Cycle 222 seed-first start
+## Cycle 222 compact decision summary — Cycles 206–214
 
-Cycle 222 began from clean `842f96a6a6`. The exact bounded read-only
-observation and full byte receipt are retained in
-[seed-ledger row 222](./xhs-seed-ledger.md). Semantic access remained
-unchanged: added/changed identities are unknown, removals are `[]`, all 132
-durable seeds remain unavailable, and no public source request or account
-mutation preceded this record. Commit it before the Cycle 206–214 retrieval
-audit.
+The exact seed receipt remains in [seed-ledger row 222](./xhs-seed-ledger.md).
+The [detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-222-checkpoint--compact-cycle-206214-validation-lineage)
+retains the nine-row seed/test/result/validation table, protected-checkout
+fingerprints, and rollback boundaries; matched controls remain in the
+[factorial design report](../reports/research/verification-allocation-factorial-design-2026-09-02.md).
+This map retains the decision rules once:
 
-### Cycle 222 compact ledger — Cycles 206–214
+- Complete per-model rollback is reversible; every partial rollback fails
+  closed.
+- Coherent model and seed order set execution/protocol identity; artifact
+  declaration order does not.
+- Canonical model-resolution and seed-policy bytes set their respective scope.
+- Top-level and nested manifest key order are presentation-only.
 
-Seed observations stay in their original sections because some body receipts
-are abbreviated. The detailed matched controls remain in the
-[factorial design report](../reports/research/verification-allocation-factorial-design-2026-09-02.md);
-this table consolidates only exact code/result lineage and repeated validation:
-
-| Cycle | Seed | Test | Material result | Focused / full tests/assertions | Decision |
-| --- | --- | --- | --- | --- | --- |
-| 206 | `abd11a10d920862d7b2207a83e94e218111dc5fd` | `423f05d513c0ddb662dee52f989794ae13bbbb71` | `9ef67be0adca20748eceb15e1900b8dc09ff61c3` | 19 / 98; 266 / 1,353 | Complete per-model rollback is exactly reversible. |
-| 207 | `6c9327da5589d3f6f5f235c66fbdde278e6479ad` | `3a7e2a9228aa0f547abd24d7b0e28ad7c7c05448` | `df98b0821c1e010e626db9fe182762977c2b10e1` | 20 / 113; 267 / 1,368 | Every partial rollback fails closed. |
-| 208 | `7ab40b9f80d5171e0e26793cfde36965df832a80` | `582423d8ffe741879c183bb8f9e478d8efca30e8` | `d2f340d19d439c17c9cc034aae9ed85a7931ecec` | 21 / 118; 268 / 1,373 | Coherent model order is reversible execution identity. |
-| 209 | `e8514b7a0f589ca390988645792f58fafac01855` | `1ea329b4042aa91256ccaddb28f4cd9ec5c2d100` | `35bc3a6895cb5e88df429fc5da8870c8c2bed1ae` | 22 / 119; 269 / 1,374 | Artifact declaration order is presentation-only. |
-| 210 | `ed53da97d1651ec8b545197cae6a9e3373f73f07` | `5adf98250d6f0b011dbe35a5cdf44da4f995cc17` | `d15357835e0f27c210c777d98f300efcd1d911dc` | 23 / 124; 270 / 1,379 | Coherent seed order is reversible protocol identity. |
-| 211 | `27948c969b11a8a056bb0b6e5a0f2166fa824480` | `d157824111eb073f6a0338693b8f28f192d62161` | `4c972d826a6b58208c64b9894eb6dae5d2d717d1` | 24 / 133; 271 / 1,388 | Canonical model-evidence bytes set model scope. |
-| 212 | `0c9fcbd14ad5fa2576afced35fc3900e798512c2` | `4a6c83abb1a08c5df243a0ec61a386db6bd597d5` | `20d8560f39f8170bfea87c4e67cd35acc261387a` | 25 / 142; 272 / 1,397 | Canonical seed-policy bytes set protocol scope. |
-| 213 | `2603a53b297ce5c7df5e01783c6f9fde864612d2` | `76307212e1f996d58782714101e36cc8bfc285a7` | `5f8f5d83ad87e19231f827e87faf6e2285711628` | 26 / 147; 273 / 1,402 | Top-level manifest key order is presentation-only. |
-| 214 | `cfb5bd7e8bc647b6eea45f07eade33604a3dd55c` | `7945490bf55b5c4b6b894e10c91f64b878e36160` | `c211f7e896d7abe621276a441dbbab6407aa20aa` | 27 / 152; 274 / 1,407 | Nested manifest key order is also presentation-only. |
-
-Across these cycles GitHub/local code won, GitHub, arXiv, and Reddit made zero
-public requests, and the same change-bearing triggers remained in force. The
-9/9 accepted ancestors, both accepted patch pairs, 4/4 accepted artifacts, and
-explicit deferral of unaccepted `d041c41b54` are one shared continuity fact,
-not nine distinct findings.
-
-Exact reviewed Cycle 222 material tip
-`bb412b7119f766f54f3693b6d9b00a79f9090bae` passes syntax, TypeScript,
-source formatting, 278 tests, 1,429 assertions, whitespace, and all 39 relative
-link occurrences in the two affected documents. Its Scout app tree remains
-exactly `b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4`. Read-only health at
-`2026-09-03T14:53:07.885Z` returns 26 facts, 16 wake signals, and
-`truncated:true`; root and app runtime state are empty, and the standing
-worktree is clean.
-
-All 9 canonical accepted commits remain ancestors. Only canonical accepted
-finite results are integration candidates. Read-only commit metadata confirms
-unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` has parent
-`a25c0fe21568ff5bc680a7a971bf59d343c10810` and remains outside standing
-lineage; it and its later unaccepted commits were not read as content, tested,
-edited, or integrated.
-
-Protected `/app` retains HEAD `386b445c…1fec8` and 886 status records while
-its read-only porcelain-v2 fingerprint changed externally from the last
-recorded `7b786753…7f932` to `07483e82…d420`. The protected Scout scope
-retains three status records while its fingerprint changed from
-`a52b97aa…4a15` to `2760fb23…052`. These are external observations only; this
-worker wrote or tested neither protected checkout nor a peer worktree.
+Exact Cycle 222 material tip `bb412b7119f766f54f3693b6d9b00a79f9090bae`
+passed 278 tests / 1,429 assertions. GitHub, arXiv, and Reddit made zero
+requests; nine accepted ancestors remained contained and unaccepted
+`d041c41b54` remained excluded. These are local verifier/rollback findings,
+not provider, production, or user-outcome evidence.
 
 ## Cycle 221 seed-first start
 
