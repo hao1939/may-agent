@@ -2082,6 +2082,26 @@ not policy authority, snapshot freshness, real drift, cost, models, or
 providers. The next ranked control is whether the compact success output makes
 the matched protocol and model scope equally explicit.
 
+## Cycle 117 freeze-scope output contract
+
+Seed commit `27f0c6ce51fa9c9f9764730e741ef2682aced8c5` preceded this
+control. XHS semantic access remained unchanged; the login shell changed by one
+byte but exposed no attributable item, all 132 seeds remained unavailable, and
+no public lane request was made.
+
+The existing compact success object preserved the exact derived protocol and
+model-scope references under its verified freeze result. Exact test-only commit
+`8345ba5311f167cf2097ba36edf17121b0edeb43` locks both object and
+serialized-JSON visibility while retaining the no-frontier assertion. Focused
+validation passes 10 tests and 34 assertions plus TypeScript, formatting, and
+whitespace.
+
+No production field was added because the behavior was already supported. This
+proves local output structure, not external registration authenticity, policy
+authority, real drift, cost, models, or providers. The next ranked control is
+whether the freeze's `verified` registration label overstates a purely local
+byte-binding check for an arbitrary unreachable HTTPS target.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
