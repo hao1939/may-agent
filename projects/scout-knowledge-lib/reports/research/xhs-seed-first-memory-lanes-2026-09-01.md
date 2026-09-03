@@ -7674,6 +7674,24 @@ versioned output grammar, authenticated verifier identity, calendar result, or
 Bitcoin result. The next ranked investigation is to establish the primary
 output contract required before a positive byte-bound receipt could be safe.
 
+## Cycle 130 checkpoint — source block numbers are not a bound receipt
+
+The next gap was positive verification evidence. Seed commit
+`81568ada62d9894b828bf4ba1d1463ec63be16d4` records the unchanged semantic
+XHS boundary before any verifier-contract work. The retained source parser is
+exactly 2,922 bytes (`9050d58…c49795`); it runs an unversioned `ots`, ignores
+command failures, and regexes human-readable output. Its 1,143-byte status JSON
+(`0b75f2e…7b722`) records block numbers but not the verifier version, proof,
+target, upgraded proof, raw output, exit status, or their hashes. A source note
+also records that the regex previously missed one client output form.
+
+That is useful contradictory evidence: the JSON is a source summary, not a
+primary byte-bound receipt. Scout therefore does not add a positive timestamp
+status or parser. GitHub/local and arXiv evidence were inspected from retained
+bytes; Reddit remains at its RSS-readable/JSON-403 boundary. All public lanes
+made zero requests, account and provider state were untouched, and the next
+ranked local control is strict nested v1 field handling.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.

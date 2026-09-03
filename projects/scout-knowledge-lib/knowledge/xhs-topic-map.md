@@ -322,21 +322,21 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 129 supersedes the older table snapshot below. Starting tip
-`39c31ae49043b9badc24f7b444a2156aaca6f2bb` and seed commit
-`debf7ad7dbec3b246c53a2748476c152cbc7532c` anchor the unchanged login-class
+Cycle 130 supersedes the older table snapshot below. Starting tip
+`080f84484a4b486ec552a7112790627f19d70b00` and seed commit
+`81568ada62d9894b828bf4ba1d1463ec63be16d4` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Exact local `821a085…f391c` rejects
-unsupported timestamp-verification and provider-authority claims at both
-authority-bearing v1 schema boundaries while keeping proof-byte presence
-explicitly unverified. Accepted-result containment and protected-checkout
-preservation are rechecked on the resulting exact tip.
+unavailable. No public request was made. Retained local evidence has no
+primary, versioned verifier-output grammar: its source wrapper parses
+human-readable stdout without tool, proof, target, or output hashes. Positive
+verification remains unsupported. Accepted-result containment and
+protected-checkout preservation are rechecked on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 129; public trigger-deferred.** Caller-claim injection was directly testable in the standing freeze API.                                                            | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Pre-fix injected authority fields returned `ok:true`; exact local `821a085…f391c` rejects them at the manifest and external-registration boundaries.               | Zero public requests. Preserve unverified proof presence and provider denial. Next require a primary, versioned verifier-output grammar before adding any positive verification receipt. Revisit public GitHub on a revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 129.** The retained archive supplies exact proof controls but no independently runnable verifier.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. The 61,508,909-byte ZIP remains `41ca426…a63138`; Experiment C manifest/proof hashes remain `cb6e7c8…6225`/`5d0097b…a4fe`. The source runner checks only non-empty presence and this worker has no `ots` client.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep proof validity/anchoring unverified locally. Revisit public arXiv on a paper/artifact/registration revision, independent verification, or newly readable seed body.             |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 129 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                          |
+| **GitHub / local code** | **High relevance / high local value / inspected locally in Cycle 130; public trigger-deferred.** The retained source parser was sufficient to test whether a positive receipt contract exists.                                       | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. The retained 2,922-byte `ots_status.py` (`9050d58…c49795`) uses unpinned `ots info` stdout regexes and ignores exit status/stderr.                                        | Zero public requests. No positive receipt schema is justified. Next test whether strict v1 unknown-field denial should extend to every nested freeze object, using non-authority controls to avoid an overbroad compatibility break. Revisit public GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 130.** The retained archive supplies exact proof/source-parser controls but no primary verifier grammar.                         | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. The 1,143-byte source `OTS_STATUS.json` (`0b75f2e…7b722`) records block numbers but no tool version, proof hash, target hash, raw-output hash, or verifier identity; the parser had previously missed a client output form.                                                                                                                                                                                | Zero public requests. Retain both papers and keep proof validity/anchoring unverified locally. Revisit public arXiv on a paper/artifact/registration revision, independent verification, or newly readable seed body.             |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 130 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                          |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3275,6 +3275,35 @@ The ranked question is now whether an external-verifier result can be bound to
 the exact proof and target without trusting a caller-supplied authority label.
 Public GitHub, arXiv, and Reddit remain trigger-deferred until reconsidered
 after that local investigation.
+
+### Cycle 130 checkpoint — no primary positive-receipt grammar is retained
+
+Seed commit `81568ada62d9894b828bf4ba1d1463ec63be16d4` preceded the local
+audit. The only retained status adapter is the open-model extension's
+2,922-byte `scripts/ots_status.py`, SHA-256
+`9050d588bdd1c1cd56a0092461dbe25a1bea2dbb4712890d53a8ddc3dcc49795`.
+It discovers an unversioned `ots` executable, runs `upgrade` and `info`, ignores
+their exit status and stderr, and regexes human-readable stdout for two
+block-height forms and calendar URLs. A retained report says one form was added
+only after the earlier regex missed the client's output.
+
+The resulting 1,143-byte `OTS_STATUS.json`, SHA-256
+`0b75f2e66b0c69b7ee8cecdef7042c7f5d0854de80b4a38ccdb161fc8027b722`,
+records source-claimed block heights. It does not record the tool/version,
+proof hash, target hash, upgraded-copy hash, stdout bytes/hash, exit status,
+stderr, or verifier identity. The archive lock files contain no OpenTimestamps
+client dependency. Thus the JSON cannot bind its positive numbers to the exact
+proof and target inspected in Cycle 128.
+
+This contradicts treating that source summary as a primary verifier receipt.
+No code change or positive status is justified; Cycle 129's strict
+caller-claim denial and `local-byte-presence-unverified` remain correct.
+Confidence is high for the exact local parser/status bytes and missing fields,
+but low for the source-reported block semantics and independent chain
+validity. All public lanes made zero requests. The next ranked local control
+tests whether strict v1 unknown-field denial should extend to the nested
+artifact, model, seed-policy, and schedule objects without rejecting valid
+current fixtures.
 
 ### Cycle 129 checkpoint — unsupported authority claims fail closed
 

@@ -2431,6 +2431,36 @@ to exact proof bytes, target bytes, and output bytes without conflating
 cryptographic time evidence with deposit, author, provider, call, or spending
 authority.
 
+## Cycle 130 retained verifier-output contract audit
+
+Seed commit `81568ada62d9894b828bf4ba1d1463ec63be16d4` preceded this
+read-only audit. The retained source archive has one status adapter that goes
+beyond checking proof presence: open-model extension
+`scripts/ots_status.py`. The file is 2,922 bytes with SHA-256
+`9050d588bdd1c1cd56a0092461dbe25a1bea2dbb4712890d53a8ddc3dcc49795`.
+It discovers an unversioned `ots` path, applies `ots upgrade` to copied proof
+bytes, then runs `ots info`. It ignores both commands' exit status and stderr
+and extracts block heights and calendar URLs from human-readable stdout with
+regular expressions. Its own comment says a second block-height form was
+added after the first regex missed actual client output.
+
+The resulting 1,143-byte `OTS_STATUS.json` has SHA-256
+`0b75f2e66b0c69b7ee8cecdef7042c7f5d0854de80b4a38ccdb161fc8027b722`.
+It records source-claimed block numbers, proof paths, and clocks, but no client
+identity/version, input proof hash, target hash, upgraded-copy hash, raw stdout
+or digest, command exit status, stderr, or verifier identity. The archive's
+lock files contain no OpenTimestamps client dependency. This JSON is therefore
+a source-generated summary, not a primary, versioned, byte-bound verifier
+receipt.
+
+No safe positive receipt schema follows from the retained evidence. A future
+contract needs a primary stable output grammar, pinned verifier identity, exact
+proof/target/output bindings, explicit command success, and a separate account
+of what the cryptographic result does not authorize. Until then Scout retains
+only `local-byte-presence-unverified`; no production change is made in this
+cycle. The next local control asks whether Cycle 129's v1 unknown-field denial
+should extend to nested freeze objects without breaking valid current inputs.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
