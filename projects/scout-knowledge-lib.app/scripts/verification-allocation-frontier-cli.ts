@@ -1,4 +1,5 @@
 import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import { isCanonicalRelativeEvidenceName } from "./descriptor-safe-local-evidence";
 import type { IdentityRobustLocalManifestInput } from "./verification-allocation-frontier-policy";
 
 export type IdentityRobustFrontierCliInput = {
@@ -36,6 +37,16 @@ export function parseIdentityRobustFrontierCliInput(
     if (hasDuplicateJsonObjectKeys(args[1]!)) {
       throw new Error(
         "policy argument must not contain duplicate JSON object keys",
+      );
+    }
+    if (!isCanonicalRelativeEvidenceName(args[3]!)) {
+      throw new Error(
+        "evidence manifest artifact must be a canonical relative path",
+      );
+    }
+    if (!/^[0-9a-f]{64}$/.test(args[5]!)) {
+      throw new Error(
+        "evidence manifest SHA-256 must be 64 lowercase hex digits",
       );
     }
     const evidenceManifestCandidate: IdentityRobustLocalManifestInput = {

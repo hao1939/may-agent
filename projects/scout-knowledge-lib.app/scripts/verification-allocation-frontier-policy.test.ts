@@ -471,6 +471,23 @@ describe("identity-robust allocation frontier policy", () => {
         frontier,
         policy,
         root,
+        "../unsafe.json",
+        manifestSha256,
+        fixture.policyScope,
+      ),
+    ).toMatchObject({
+      ok: false,
+      selected: null,
+      errors: ["evidence artifact must be a canonical relative path"],
+      manifestArtifact: "",
+      manifestArtifactEvidenceStatus: "",
+      decisionRecordEvidenceStatus: "",
+    });
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalManifest(
+        frontier,
+        policy,
+        root,
         "policies/manifest.json",
         "0".repeat(64),
         fixture.policyScope,

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isCanonicalRelativeEvidenceName } from "./descriptor-safe-local-evidence";
 import {
   bindIdentityRobustPolicyEvidence,
   bindIdentityRobustPolicyEvidenceFromLocalManifest,
@@ -67,8 +68,9 @@ export function isIdentityRobustLocalManifestInput(
       JSON.stringify(["schema", "manifestArtifact", "manifestSha256"].sort()) &&
     candidate.schema ===
       "scout.verification-allocation-local-policy-manifest-input/v1" &&
-    typeof candidate.manifestArtifact === "string" &&
-    typeof candidate.manifestSha256 === "string"
+    isCanonicalRelativeEvidenceName(candidate.manifestArtifact) &&
+    typeof candidate.manifestSha256 === "string" &&
+    /^[0-9a-f]{64}$/.test(candidate.manifestSha256)
   );
 }
 

@@ -183,5 +183,35 @@ describe("identity-robust frontier CLI input", () => {
         "/tmp/freeze",
       ]),
     ).toThrow("policy argument must not contain duplicate JSON object keys");
+    for (const [artifact, sha256, message] of [
+      ["../manifest.json", "a".repeat(64), "canonical relative path"],
+      ["policies/manifest.json", "A".repeat(64), "lowercase hex digits"],
+      ["policies/manifest.json", "a".repeat(63), "lowercase hex digits"],
+    ]) {
+      const args = [
+        "--policy-json",
+        '{"policy":true}',
+        "--evidence-manifest-artifact",
+        artifact!,
+        "--evidence-manifest-sha256",
+        sha256!,
+        "--evidence-root",
+        "/tmp/evidence",
+        "--freeze-bundle-root",
+        "/tmp/freeze",
+      ];
+      expect(() => parseIdentityRobustFrontierCliInput(args)).toThrow(message!);
+      expect(() =>
+        parseIdentityRobustSnapshotFrontierCliInput([
+          "--snapshot-root",
+          "/tmp/snapshots",
+          "--snapshot-artifact",
+          "frontier.json",
+          "--snapshot-sha256",
+          "b".repeat(64),
+          ...args,
+        ]),
+      ).toThrow(message!);
+    }
   });
 });
