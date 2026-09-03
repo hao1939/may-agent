@@ -2805,6 +2805,18 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 208 model order is reversible execution identity
+
+Seed commit `7ab40b9f80` preceded exact test-only commit `582423d8ff`. A valid
+two-model bundle reverses both model declarations and generated schedule order.
+The reversed bundle validates but receives different model-scope and protocol
+references; reversing it back reproduces the complete original result exactly.
+
+The focused bundle gate passes 21 tests and 118 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes semantic execution order from a
+mere registry-list presentation while retaining provider denial. The next
+matched control permutes only artifact declarations.
+
 ## Cycle 207 partial rollback is fail-closed
 
 Seed commit `6c9327da55` preceded exact test-only commit `3a7e2a9228`. Three

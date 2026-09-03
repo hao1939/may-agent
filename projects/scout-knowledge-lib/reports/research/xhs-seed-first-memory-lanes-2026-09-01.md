@@ -7874,6 +7874,26 @@ unavailable. No representative saved-post read, XHS mutation, order-scope
 control, or public source request preceded this record. Public lanes remain
 trigger-deferred; the ranked model-order control proceeds locally.
 
+## Cycle 208 checkpoint — coherent model order changes frozen scope
+
+Seed commit `7ab40b9f80` preceded exact test-only commit `582423d8ff`. The
+matched control reverses the two model declarations and regenerates the
+schedule in the same order, then reverses both back. Both coherent orderings
+validate with false provider authority, but the reversed order has distinct
+model-scope and protocol references. Returning to the original order reproduces
+the complete original verification result exactly.
+
+Focused validation passes 21 tests and 118 assertions plus TypeScript,
+formatting, and whitespace. This supports model order as frozen execution
+identity rather than incidental registry presentation. It does not provide a
+registry owner, update authority, or migration need.
+
+GitHub/local code won again. Public GitHub, arXiv, and Reddit made zero
+requests and retain their exact local/public evidence and revisit triggers.
+The unaccepted peer range ending at `d041c41b54` remains deferred without
+content inspection. The next ranked matched control reverses only artifact-
+declaration order, distinguishing inventory presentation from model order.
+
 ## Cycle 207 seed-first reconciliation — unchanged shell, volatile bytes
 
 Cycle 207 began from clean `4e1fc2dde5`. One direct sanitized public status
