@@ -1007,6 +1007,15 @@ export function verifyFactorialSchedule(
       );
     }
   }
+  const bodyValues = MEMORY_IDS.flatMap((memoryId) => [
+    ...(bodies.get(memoryId) ?? []),
+  ]);
+  if (
+    MEMORY_IDS.every((memoryId) => bodies.get(memoryId)?.size === 1) &&
+    new Set(bodyValues).size !== MEMORY_IDS.length
+  ) {
+    errors.push("candidate bodies must identify distinct memories");
+  }
   const provenanceTuples = MEMORY_IDS.flatMap((memoryId) => [
     ...(provenance.get(memoryId) ?? []),
   ]);
