@@ -7860,6 +7860,30 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 185 checkpoint — candidate bodies are distinct across identities
+
+Seed commit `305b3cb2d1` records unchanged login-class XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before
+the local content control.
+
+A whole-schedule alias retained distinct memory IDs and path/revision tuples
+but reused one body for both, regenerating every prompt and both digest
+bindings. Before repair it returned `ok:true`, no errors, non-null local policy
+scope, and provider authority false. Exact local `679b528aad` requires stable
+bodies to be unique across memory identities. The control now returns one exact
+denial with null policy scope; the complete freeze/factorial gate passes 81
+tests and 684 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the byte-exact synthetic separation and
+low for semantic equivalence, substantive provenance, authorship, authority,
+cost, real models, or providers. The next ranked audit swaps the distinct
+bodies between otherwise stable IDs and provenance tuples to test their
+registered route association.
+
 ## Cycle 184 checkpoint — candidate provenance is distinct across identities
 
 Seed commit `5829666b5f` records unchanged login-class XHS access, 30 readable

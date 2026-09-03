@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 185 cross-identity candidate body separation
+
+Seed commit `305b3cb2d1` preceded a matched whole-schedule content alias. Every
+episode retained distinct candidate IDs and provenance tuples, but `memory-b`
+reused `memory-a`'s body; prompts and both schedule digests were coherently
+rebound. Before repair the freeze returned `ok:true`, no errors, provider
+authority false, model scope `ac29ae2…7c5bf`, and protocol scope
+`525ad23…9eef5`.
+
+Exact local `679b528aad` requires the two stable per-memory bodies to be
+distinct. The alias now returns one exact error, null policy scope, and provider
+authority false. The complete freeze/factorial gate passes 81 tests and 684
+assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for byte-exact content separation and
+contradictory evidence against treating distinct identity/provenance alone as
+a meaningful contrast. It does not detect semantic equivalence or prove the
+body-to-identity association, authorship, registration, policy authority, cost,
+real-model behavior, or provider execution. The next audit swaps the two
+distinct bodies between stable identities and provenance tuples.
+
 ## Cycle 184 cross-identity candidate provenance separation
 
 Seed commit `5829666b5f` preceded a matched whole-schedule alias. Every episode
