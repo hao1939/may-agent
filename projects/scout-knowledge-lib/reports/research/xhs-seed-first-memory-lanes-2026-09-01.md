@@ -9360,6 +9360,21 @@ login-class boundary; no browser or public request ran. Accepted review ref
 advanced from integrated `c187607b3f` to `5a7a9b077b`. Reconcile only its
 finite delta before auditing structured-note retention in the metric runtime.
 
+## Cycle 263 checkpoint — structured notes are durably retrievable
+
+Seed `f1eae318f3` preceded accepted review `5a7a9b077b`, exact standing
+integration `c2142feff9`, and status `7c5bd9019e`. Host revision
+`d90b45d4c6` serializes object notes, records them in `metric_snapshots.note`,
+and returns them through alert-context and reactor queries. Protected snapshot
+`2182070` independently stores the prior 1,036-byte JSON note at
+`2026-08-28T15:11:27.259Z`, aggregate three, sample size two, measured by the
+runtime source-command path.
+
+The row predates the new counts/states, so this proves generic retention rather
+than their deployment or consumption. No consumer interprets lane semantics.
+No code change or public request was warranted. Next, compare separate per-lane
+metrics against aggregate-plus-note, with explicit alert and rollback rules.
+
 ## Cycle 262 seed-first start — accepted review trigger
 
 Exact Cycle 261 tip `a116bb1e46` passes the complete 296-test / 1,478-assertion

@@ -3860,6 +3860,32 @@ login-class boundary; no browser or public request ran. Accepted review ref
 advanced from integrated `c187607b3f` to `5a7a9b077b`. Reconcile only its
 finite delta before auditing structured-note retention in the metric runtime.
 
+### Cycle 263 checkpoint — runtime retains notes but does not interpret lanes
+
+Seed `f1eae318f3` preceded accepted reviewer `5a7a9b077b`, integrated exactly
+as `c2142feff9` at patch ID
+`b687b029818900b0d5f125f41b59ace837ee2d56`; compact status `7c5bd9019e`
+records the landed review and keeps RV-004 high/open.
+
+Read-only host source at revision `d90b45d4c671f78725cecdcb5c89fad4d21c99c6`
+shows the complete retention path. `commandSample` JSON-serializes an object
+`note`; `measureSourceMetrics` passes it to `metrics.record`; the metric service
+inserts it into `metric_snapshots.note`; and both alert-context and reactor
+queries select the note back with value, sample size, time, and measurer.
+Protected snapshot `2182070` confirms the path in operation: at
+`2026-08-28T15:11:27.259Z`, `runtime:metric-source-command` durably stored the
+prior 1,036-byte structured resource note with aggregate three and sample size
+two.
+
+This proves generic note retention and retrieval, not deployment of
+`sourceOutputCounts` or `sourceStates`; the protected row predates those local
+fields. The runtime returns opaque note text and no current consumer interprets
+the lane keys or states. Confidence is high for storage/retrieval and low for
+future alert or owner response. No code change or public request was warranted.
+GitHub, arXiv, and Reddit retain their evidence and triggers. Next, compare
+separate per-lane metrics with aggregate-plus-note, including which state
+transitions should alert and how rollback avoids false access/quality claims.
+
 ## Cycle 262 seed-first start — accepted review trigger
 
 Exact Cycle 261 tip `a116bb1e46` passes syntax, TypeScript, formatting, Cycle
