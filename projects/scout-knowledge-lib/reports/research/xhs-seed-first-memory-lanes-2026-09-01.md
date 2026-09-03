@@ -9466,7 +9466,7 @@ rollback-ledger mirror for a bounded retention audit before any source call.
 
 ## Cycle 282 checkpoint — keep rollback decisions compact and lineage exact
 
-Seed commit `2e46b646a464604510ab176487ee9ea621d085b6` preceded every
+Seed commit `2e46b646a40506ba530eed35d6b8573d23280e81` preceded every
 post-seed operation. The selected map section was 58 lines / 4,592 bytes at
 SHA-256 `b03e5547…5e70a0`; its detailed counterpart here retains 62 lines /
 5,022 bytes at SHA-256
@@ -9474,7 +9474,7 @@ SHA-256 `b03e5547…5e70a0`; its detailed counterpart here retains 62 lines /
 The two shared one exact 40-line span containing the complete nine-row
 seed/test/result table plus common continuity and validation evidence.
 
-Exact material `04b8bf5c1cba7453921b06feaa45d9c5e480cd19` replaces only the
+Exact material `04b8bf5c1c9f2866dd2c819ec108ea95b4b43a89` replaces only the
 map section with a 22-line / 1,257-byte summary at SHA-256
 `8470ed84…7a4f5a6`, reducing the map by 36 net lines / 3,335 bytes. The map
 still preserves the four decision classes—complete-versus-partial rollback,

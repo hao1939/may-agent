@@ -3904,10 +3904,10 @@ this ordering record before deciding whether both full copies are necessary.
 
 ## Cycle 282 checkpoint — rollback decisions stay here, lineage stays detailed
 
-Seed commit `2e46b646a464604510ab176487ee9ea621d085b6` preceded the audit.
+Seed commit `2e46b646a40506ba530eed35d6b8573d23280e81` preceded the audit.
 The map's 58-line / 4,592-byte Cycle 222 section and the detailed report shared
 one exact 40-line lineage/validation span. Exact material
-`04b8bf5c1cba7453921b06feaa45d9c5e480cd19` replaces the map copy with a
+`04b8bf5c1c9f2866dd2c819ec108ea95b4b43a89` replaces the map copy with a
 22-line / 1,257-byte decision summary, a net reduction of 36 lines / 3,335
 bytes. The authoritative report block remains 62 lines / 5,022 bytes at
 SHA-256 `3fc5b503…203772`, retaining every commit, count, fingerprint, and
