@@ -2769,6 +2769,26 @@ computation, provenance authority, general JSON limits, cost, drift, model
 behavior, or provider execution. The next audit tests the separate local
 policy-provenance manifest and decision-record readers.
 
+## Cycle 174 bounded local policy-provenance nesting
+
+Seed commit `89cebb5f60` preceded two descriptor-backed ladders. At 25,000
+levels / 250,004 bytes, the manifest and decision-record readers returned their
+normal invalid-content verdicts. Each threw a stack `RangeError` at 50,000
+levels / 500,004 bytes and again at 100,000 levels / 1,000,004 bytes. Every
+file matched the caller-supplied SHA-256, isolating the post-read exact-key
+recursion.
+
+Exact local `1a123e083e` applies the shared iterative 256-level pre-scan to
+both readers. Matched 1,000-level regressions now return distinct stable errors
+while retaining each local digest, byte length, unverified evidence class, and
+empty content status. Twenty focused tests pass with 68 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves two bounded local failure modes and repairs, not substantive
+provenance, authorship, authority, general JSON limits, cost, drift, model
+behavior, or provider execution. The next audit tests the separate
+freeze-bundle canonical-manifest parser under the same ladder.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

@@ -7818,6 +7818,28 @@ broader resource, provenance-authority, cost, drift, model, or provider claims.
 The next ranked audit tests the separate local policy-provenance manifest and
 decision-record readers.
 
+## Cycle 174 checkpoint — local policy-provenance JSON now fails closed
+
+Seed commit `89cebb5f60` records unchanged semantic XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before
+the local reader controls.
+
+Byte-matched manifest and decision-record inputs returned normally at 25,000
+levels / 250,004 bytes but each threw a stack `RangeError` at 50,000 and
+100,000 levels. Exact local `1a123e083e` reuses the shared 256-level iterative
+pre-scan on both paths. Two 1,000-level regressions now return distinct stable
+errors while preserving digest, byte length, local-unverified evidence, and
+empty content status. Twenty focused tests pass with 68 assertions plus
+TypeScript, formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for both tested local boundaries and low for
+broader resource, provenance-authority, cost, drift, model, or provider claims.
+The next ranked audit tests whether the separate freeze-bundle canonical-
+manifest parser already catches the same depth failure without a new guard.
+
 ## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
 
 Seed commit `300c496e39` records unchanged semantic XHS access, zero
