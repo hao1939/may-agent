@@ -5,6 +5,8 @@ import {
   navigate,
   navigationFixtureName,
   parseNavigationEntries,
+  rankingDiagnostics,
+  rankNavigation,
   tokenize,
 } from "./scout-navigation-outcomes";
 
@@ -64,6 +66,40 @@ describe("Scout navigation outcome evaluation", () => {
     expect(navigate("coordination patterns", entries).kind).toBe("ambiguous");
     expect(navigate("quantum greenhouse gardening", entries)).toEqual({
       kind: "miss",
+    });
+  });
+
+  it("reports ranking evidence without changing the navigation decision", () => {
+    const entries = parseNavigationEntries(
+      [
+        "- [Memory governance](./governance.md) — verified caller identity write read",
+        "- [Memory notes](./notes.md) — write read",
+      ].join("\n"),
+    );
+    const query = "memory governance verified caller identity write read";
+    const before = navigate(query, entries);
+    const diagnostics = rankingDiagnostics(rankNavigation(query, entries));
+
+    expect(navigate(query, entries)).toEqual(before);
+    expect(diagnostics.ranked_count).toBe(2);
+    expect(diagnostics.top_tie_count).toBe(1);
+    expect(diagnostics.runner_up?.target).toBe("./notes.md");
+    expect(diagnostics.absolute_gap).toBeGreaterThan(0);
+    expect(diagnostics.relative_gap).toBeGreaterThan(0);
+
+    const tied = parseNavigationEntries(
+      [
+        "- [Coordination patterns](./a.md) — one",
+        "- [Coordination patterns](./b.md) — two",
+      ].join("\n"),
+    );
+    expect(
+      rankingDiagnostics(rankNavigation("coordination patterns", tied)),
+    ).toMatchObject({
+      ranked_count: 2,
+      top_tie_count: 2,
+      absolute_gap: 0,
+      relative_gap: 0,
     });
   });
 

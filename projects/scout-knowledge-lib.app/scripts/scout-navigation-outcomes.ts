@@ -52,6 +52,14 @@ type RankedEntry = NavigationEntry & {
   score: number;
 };
 
+export type NavigationRankingDiagnostics = {
+  ranked_count: number;
+  top_tie_count: number;
+  runner_up: Pick<RankedEntry, "kind" | "title" | "target" | "score"> | null;
+  absolute_gap: number | null;
+  relative_gap: number | null;
+};
+
 export type NavigationOutcome =
   | { kind: "available" | "unavailable"; entry: RankedEntry }
   | { kind: "ambiguous"; entries: RankedEntry[] }
@@ -206,6 +214,37 @@ export function navigate(
   return { kind: ranked[0].kind, entry: ranked[0] };
 }
 
+export function rankingDiagnostics(
+  ranked: RankedEntry[],
+): NavigationRankingDiagnostics {
+  const first = ranked[0];
+  const second = ranked[1];
+  if (!first || !second) {
+    return {
+      ranked_count: ranked.length,
+      top_tie_count: first ? 1 : 0,
+      runner_up: null,
+      absolute_gap: null,
+      relative_gap: null,
+    };
+  }
+  const absoluteGap = first.score - second.score;
+  return {
+    ranked_count: ranked.length,
+    top_tie_count: ranked.filter(
+      (entry) => Math.abs(entry.score - first.score) < 1e-9,
+    ).length,
+    runner_up: {
+      kind: second.kind,
+      title: second.title,
+      target: second.target,
+      score: Number(second.score.toFixed(6)),
+    },
+    absolute_gap: Number(absoluteGap.toFixed(6)),
+    relative_gap: Number((absoluteGap / first.score).toFixed(6)),
+  };
+}
+
 function matchesExpected(
   outcome: NavigationOutcome,
   expected: ExpectedOutcome,
@@ -307,11 +346,13 @@ if (import.meta.main) {
   }
   const entries = parseNavigationEntries(readIndex(reference));
   const cases = fixture.cases.map((testCase) => {
+    const ranked = rankNavigation(testCase.query, entries);
     const outcome = navigate(testCase.query, entries);
     return {
       id: testCase.id,
       expected: testCase.expected,
       outcome: conciseOutcome(outcome),
+      diagnostics: rankingDiagnostics(ranked),
       pass: matchesExpected(outcome, testCase.expected),
     };
   });
