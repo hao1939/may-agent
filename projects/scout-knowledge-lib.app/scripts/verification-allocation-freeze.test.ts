@@ -83,8 +83,11 @@ describe("verification-allocation execution freeze", () => {
     expect(result.errors).toContain("external registration is not verified");
   });
 
-  it("accepts a byte-bound offline fixture without authorizing provider calls", () => {
+  it("labels a byte-bound offline registration as locally matched without provider authority", () => {
     const { manifest, artifactContents } = validFixture();
+    expect(manifest.externalRegistration.url).toBe(
+      "https://example.invalid/scout-freeze/fixture",
+    );
     const result = verifyExecutionFreezeManifest(manifest, artifactContents);
 
     expect(result).toMatchObject({
@@ -94,6 +97,7 @@ describe("verification-allocation execution freeze", () => {
       modelCount: 1,
       seedCount: 2,
       episodeCount: 64,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
       providerCallsAuthorized: false,
     });
     expect(result.policyScope).toMatchObject({

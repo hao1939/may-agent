@@ -60,6 +60,7 @@ export type FreezeVerificationResult = {
   modelCount: number;
   seedCount: number;
   episodeCount: number;
+  externalRegistrationEvidenceStatus: "local-byte-match-unverified" | "";
   policyScope: FreezePolicyScope | null;
   providerCallsAuthorized: false;
 };
@@ -417,6 +418,7 @@ export function verifyExecutionFreezeManifest(
       modelCount: 0,
       seedCount: 0,
       episodeCount: 0,
+      externalRegistrationEvidenceStatus: "",
       policyScope: null,
       providerCallsAuthorized: false,
     };
@@ -431,6 +433,7 @@ export function verifyExecutionFreezeManifest(
     seedIds,
     errors,
   );
+  const errorCountBeforeRegistration = errors.length;
   validateExternalRegistration(manifest, artifacts, errors);
   return {
     ok: errors.length === 0,
@@ -439,6 +442,10 @@ export function verifyExecutionFreezeManifest(
     modelCount: modelIds.length,
     seedCount: seedIds.length,
     episodeCount,
+    externalRegistrationEvidenceStatus:
+      errors.length === errorCountBeforeRegistration
+        ? "local-byte-match-unverified"
+        : "",
     policyScope:
       errors.length === 0
         ? derivePolicyScope(
