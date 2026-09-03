@@ -3865,6 +3865,15 @@ silent deletion. Confidence is high for byte-preserved fields and accepted-tree
 absence, low for the unavailable bodies. Next, audit the two missing operations
 reports for category-specific supersession evidence before applying this form.
 
+That follow-up found zero accepted path history or exact-title matches. The
+future-date health audit, HN collision audit, and June arXiv inbox triage have
+different scopes and never declare supersession. Both report rows now preserve
+their exact title, intended path, and summary without a false click. Their
+separate triggers require either all 14 identity dispositions and provenance,
+or the orphaned-workflow closure plus bounded HTTP contract. The broad boundary
+is now 1,739 links / 41 unresolved. Next, resolve the structural-health alias:
+byte equality is known, but canonical ownership is not.
+
 ## Cycle 235 seed-first start — current receipt remains sufficient
 
 At `2026-09-03T16:39:38.442Z`, Cycle 233's exact observation was 21 minutes

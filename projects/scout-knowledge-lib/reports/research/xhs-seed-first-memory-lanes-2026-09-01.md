@@ -9367,6 +9367,14 @@ made zero requests. Next, search accepted history and operations records for
 an exact replacement or supersession of the two missing top-level reports;
 only then test their category-specific unavailable form.
 
+The report follow-up found no accepted path history or exact title outside the
+index. Existing health, collision, and arXiv-triage reports cover different
+objects and do not claim supersession. Both missing report rows now preserve
+title/path/summary in plain unavailable form, with category-specific replacement
+criteria. Their checks pass 2/2 and the broad debt falls `43→41` without a
+source claim. Next, decide the structural-health alias from accepted ownership
+evidence rather than byte equality alone.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old
