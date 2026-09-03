@@ -2484,6 +2484,30 @@ whitespace. This closes unknown-field ambiguity across the complete freeze
 manifest schema, but not across the independently parsed schedule JSON. The
 next local control tests exact top-level and episode object shapes there.
 
+## Cycle 132 byte-bound schedule exactness
+
+Seed commit `e7aca29cfee527435086d27b8cf7e4dae4686b6d` preceded the
+matched control. One valid schedule kept its declared values and regenerated
+prompt fixed while adding only `sourceAuthority`, `episodeAuthority`,
+`selectionAuthority`, and `memoryAuthority` at the schedule, episode, factor,
+and candidate levels. Its schedule bytes, digest, and manifest binding were
+updated coherently. Before repair the freeze verifier returned `ok: true`; the
+isolated expectation reported zero passes, one failure, and one assertion.
+
+Exact repair `28418b2d3d71db137c1e0ed453be7308e0d9353c` extends the
+existing allowlist rule to those four schedule shapes. The matched control now
+returns four stable schedule-verification errors, clears registration evidence,
+retains separately matched proof bytes as `local-byte-presence-unverified`, and
+keeps provider calls denied. Valid current schedules retain their prior result.
+
+The direct freeze, descriptor-safe bundle, and frontier-adapter gate passes 34
+tests and 151 assertions plus TypeScript, focused formatting, and whitespace.
+This closes the explicit schedule-object ambiguity. It does not authenticate
+proofs, providers, or real execution, and it does not yet independently test
+the nested JSON prompt shape: the current contract protects that shape by exact
+comparison with the frozen prompt generator. The next matched control tests
+that claim without adding a redundant parser unless the control passes open.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

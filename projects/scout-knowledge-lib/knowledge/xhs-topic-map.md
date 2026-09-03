@@ -322,21 +322,21 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 131 supersedes the older table snapshot below. Starting tip
-`f9fffcb036a844a000703bc15ecc3c706370c36d` and seed commit
-`af72a983468257fe20d89382705ede23dc2714de` anchor the unchanged login-class
+Cycle 132 supersedes the older table snapshot below. Starting tip
+`33543af085fbc8aa1df764ba5fa591fc2690883e` and seed commit
+`e7aca29cfee527435086d27b8cf7e4dae4686b6d` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Exact local `2b537f8…1597da` extends
-strict v1 unknown-field denial to artifacts, models, seed policy, and schedule
-metadata, completing every freeze-manifest object boundary. Accepted-result
+unavailable. No public request was made. Exact local `28418b2…84ceff` extends
+strict v1 unknown-field denial through the distinct byte-bound schedule,
+including its episode, factor, and candidate objects. Accepted-result
 containment and protected-checkout preservation are rechecked on the resulting
 exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 131; public trigger-deferred.** Nested v1 ambiguity was directly executable in the standing freeze API.                                                             | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Pre-fix nested additions returned `ok:true`; exact local `2b537f8…1597da` rejects unknown keys on every remaining manifest object type.                                                                      | Zero public requests. Next audit exact-key handling inside the byte-bound schedule JSON, which is a distinct schema consumed after the manifest. Revisit public GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 131.** The papers and retained archive remain contextual controls rather than nested Scout schema authority.                    | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                                  | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                      |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 131 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                          |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 132; public trigger-deferred.** The byte-bound schedule ambiguity was directly executable through the standing freeze API.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. A re-hashed schedule with four unknown authority-like fields returned `ok:true`; exact local `28418b2…84ceff` rejects all four. | Zero public requests. Next prove whether the embedded prompt's byte-for-byte generator check already rejects nested unknown fields without another schema. Revisit public GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 132.** The papers remain contextual controls rather than schedule-schema authority.                                    | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                        | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                           |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 132 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                             |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3265,6 +3265,33 @@ The ranked local control now audits exact-key handling inside the byte-bound
 schedule JSON, separately from the already strict freeze manifest. Public
 GitHub, arXiv, and Reddit remain trigger-deferred until reconsidered after that
 investigation.
+
+### Cycle 132 checkpoint — byte-bound schedules reject undeclared semantics
+
+Seed commit `e7aca29cfee527435086d27b8cf7e4dae4686b6d` preceded the matched
+control. The schedule retained its valid declared values and regenerated
+prompt, then added only `sourceAuthority` at top level, `episodeAuthority` to
+one episode, `selectionAuthority` to its factor object, and `memoryAuthority`
+to one candidate. After the schedule and manifest digests were coherently
+updated, the pre-fix verifier returned `ok: true`; the isolated expectation
+reported zero passes, one failure, and one assertion.
+
+Exact local `28418b2d3d71db137c1e0ed453be7308e0d9353c` applies the existing
+unknown-field rule to the schedule and all three nested object types. The same
+control now returns four stable, schedule-prefixed errors. Registration
+evidence clears, separately matched proof bytes remain
+`local-byte-presence-unverified`, and provider calls remain denied. Current
+valid fixtures keep their prior results.
+
+The direct freeze, descriptor-safe bundle, and frontier-adapter suites pass 34
+tests with 151 assertions plus TypeScript, focused formatting, and whitespace.
+Confidence is high for the four exact shapes and every current freeze consumer;
+it does not establish positive proof validity, provider authority, or prompt
+semantics beyond the frozen generator. GitHub/local code won the rubric.
+Public GitHub, arXiv, and Reddit made zero requests and retain their exact last
+useful evidence and triggers above. The next ranked matched control tests
+whether the embedded prompt's existing byte-for-byte generator comparison
+already rejects nested unknown fields without adding a redundant schema.
 
 ## Cycle 131 seed-first start
 

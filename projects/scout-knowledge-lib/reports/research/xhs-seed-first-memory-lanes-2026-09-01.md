@@ -7711,6 +7711,28 @@ proof controls; Reddit remains RSS-readable/JSON-403. Public requests remained
 zero. The next ranked investigation is exact-key handling inside the distinct
 byte-bound schedule JSON.
 
+## Cycle 132 checkpoint — schedule metadata cannot hide inside valid bytes
+
+The remaining ambiguity sat inside `schedule.json`, not the freeze manifest.
+Seed commit `e7aca29cfee527435086d27b8cf7e4dae4686b6d` records the
+unchanged XHS access class, zero attributable items, unknown additions and
+changes, no removals, and 132 unavailable seeds before the matched control.
+
+After coherently rehashing an otherwise valid schedule, undeclared fields on
+the schedule, one episode, its factors, and one candidate still produced
+`ok: true`. Exact local `28418b2d3d71db137c1e0ed453be7308e0d9353c`
+rejects all four while preserving the separate unverified proof-byte fact and
+provider denial. All three freeze paths pass 34 focused tests with 151
+assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. Public GitHub made zero requests
+and retains its four named exact heads; arXiv made zero requests and retains
+MemGauge `2608.30177v1` at 15/15 plus allocation study `2608.25553v3` at
+14/15; Reddit made zero requests and remains RSS-readable/JSON-403. Revisit
+each only on its recorded revision, artifact, replication, readable-seed,
+content, or access trigger. The next ranked control tests the embedded prompt's
+existing exact-generator denial before considering any additional schema.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
