@@ -4478,24 +4478,11 @@ navigation without duplicating either large artifact.
 
 ## Cycle 269 seed-first start — bounded receipt reuse
 
-Exact Cycle 268 result `4cbea0b98f92fe4d3788ae153dc1df1a45dd2020`
-passes syntax, TypeScript, formatting, Cycle 237 projection, all 65 durable
-links, navigation v1 at 10/14 and v2 at 8/8, and the full 296-test /
-1,479-assertion gate. The standing worktree is clean.
-
-At `2026-09-03T20:02:14.957Z`, the exact Cycle 237 receipt was one hundred
-eighty-five minutes old, inside the retained six-hour observation cadence.
-No seed, semantic access, public-lane, or accepted-review trigger was known to
-have changed, so this bounded pass reused the receipt with zero browser or
-public requests. Added and changed collected identities remain unknown,
-observed removals are `[]`, and all 132 durable IDs remain unavailable at the
-same login-class boundary. No collection membership or post-content inference
-is made from elapsed time.
-
-An exploratory protected-store query occurred before this seed record. Its
-values are not selected Cycle 269 evidence. Commit this reconciliation first,
-then repeat the same read-only query before deciding whether protected state
-contains any retained `project.knowledge.maintained` outcome.
+The [detailed Cycle 269 start](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-269-seed-first-start--bounded-receipt-reuse)
+retains exact validation, the 185-minute receipt, seed uncertainty, and zero-
+request boundary. One exploratory protected-store query preceded the durable
+seed record and was excluded; seed commit `d6d904d739` precedes the repeated
+read-only query and selected evidence below.
 
 ## Cycle 269 checkpoint — protected history retains no knowledge outcome
 
@@ -5258,17 +5245,10 @@ future queries or human/model retrieval. Next, decompose title and summary
 score contributions for the caller-bound wrong and intended entries to locate
 why the rare `caller` anchor still loses.
 
-The candidate tree passes syntax, TypeScript, formatting, Cycle 237 projection,
-62 durable links, v1 at 10/14, v2 at 8/8, and 293 tests with 1,467 assertions.
-The broad audit covers 1,540 tracked Markdown documents and 1,699 local prose
-links with zero errors. Read-only health at `2026-09-03T18:10:25.043Z`
-returns 29 facts, 16 wake signals, and `truncated:true`; runtime state is empty.
-Accepted `d35632c2b1` and `8ab0a89cd0` remain contained; unaccepted
-`d041c41b54` and `d9da99476e` remain non-ancestors. Protected `/app` changed
-externally from 898 records / `b100e23c…3bde4` to 899 /
-`bf41354e…9a864`; HEAD and its 296-record Scout scope
-`a430d0c9…4322f7e` stayed exact. The overlay stayed three records /
-`a52b97aa…394a15` at `fd4c68ecd6`.
+The [detailed Cycle 251 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-251-checkpoint--rarity-flags-some-errors-not-the-caller-error)
+retains exact validation, health, lineage, runtime, and protected/overlay
+fingerprints. This map keeps the rarity counterexample, confidence, and next
+score-attribution question rather than a second historical proof block.
 
 ## Cycle 250 seed-first start — current receipt reused
 
@@ -6305,18 +6285,10 @@ integration. The next ranked retrieval work compacts the repeated Cycle
 215–219 seed-observation prose only if exact times, byte provenance, and
 unavailable-seed uncertainty remain intact.
 
-Exact reviewed Cycle 220 material tip
-`2b33afc0e334d95798b31510a2ebc6022fe6d92c` passes syntax, TypeScript,
-source formatting, 278 tests, 1,429 assertions, whitespace, and all 33 relative
-links. Read-only health at `2026-09-03T14:39:15.871Z` remains bounded at 26
-facts and 16 wake signals; root and app runtime state are empty. The clean tip
-retains 9/9 canonical accepted ancestors and excludes unaccepted
-`d041c41b54`.
-
-Protected fingerprints reproduce the Cycle 219 post-drift observations:
-`/app` remains `386b445c…1fec8` / 886 / `7b786753…7f932`, and the human
-overlay remains `fd4c68ec…1514663` / three / `a52b97aa…4a15`. Neither was
-written or tested.
+The [detailed Cycle 220 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-220-checkpoint--compact-provenance-ledger-for-cycles-215219)
+retains exact validation, accepted lineage, runtime, and protected/overlay
+fingerprints. This map keeps the five-cycle decision ledger and accepted-only
+integration boundary without duplicating their historical proof.
 
 ## Cycle 219 seed-first start
 
