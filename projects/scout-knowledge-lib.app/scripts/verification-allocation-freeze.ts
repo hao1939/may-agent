@@ -514,6 +514,11 @@ function validateSchedule(
     ) {
       errors.push("schedule bytes do not match the declared offline schedule");
     }
+    if (parsedEpisodes.length !== schedule.episodeCount) {
+      return Number.isInteger(schedule.episodeCount)
+        ? schedule.episodeCount
+        : 0;
+    }
     const factorial = verifyFactorialSchedule(parsed as FactorialSchedule);
     if (!factorial.ok) {
       errors.push(

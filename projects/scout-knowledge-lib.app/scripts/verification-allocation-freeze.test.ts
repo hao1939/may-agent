@@ -417,6 +417,33 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("stops an oversized shallow schedule before factorial traversal", () => {
+    const { manifest, artifactContents } = validFixture();
+    expect(verifyExecutionFreezeManifest(manifest, artifactContents).ok).toBe(
+      true,
+    );
+
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    schedule.episodes = Array.from({ length: 5_000 }, () =>
+      structuredClone(schedule.episodes[0]),
+    );
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      "schedule bytes do not match the declared offline schedule",
+    ]);
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);
