@@ -3874,17 +3874,8 @@ neither was written or tested. The unaccepted peer remains outside lineage.
 
 ## Cycle 215 seed-first start
 
-Cycle 215 began from clean `1d48c4d71e`. One public status and one non-
-navigating saved status ran through localhost DevTools HTTP 200 from
-`2026-09-03T13:58:48.252Z` through `13:58:49.071Z`. Explore stayed at 30
-readable notes. Saved status retained the same unavailable semantic and
-identity fingerprints; byte length changed to 161,609 and body SHA to
-`716bb898…e26d84` as response provenance only.
-
-No item identity materialized: added/changed remain unknown, removals are `[]`,
-and all 132 durable seeds remain unavailable. No representative post read or
-account mutation occurred. GitHub, arXiv, and Reddit made zero public requests
-and retain their triggers. The two-model nested-order transfer proceeds locally.
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 215](./xhs-seed-ledger.md).
 
 ### Cycle 215 checkpoint — manifest presentation transfers to two models
 
@@ -3911,21 +3902,8 @@ are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 216 seed-first start
 
-Cycle 216 began from clean `54990d1353`. Worker UID 1000 (`hao`) used the
-established direct localhost Chrome DevTools connector for one public status
-and one non-navigating saved-profile status from
-`2026-09-03T14:07:49.615Z` through `14:07:50.802Z`. Explore remained readable
-at 30 notes. Saved status remained HTTP 200, `profile`, `ready:false`, and
-`loginWall:true`, with unchanged 161,609-byte length, access fingerprint
-`f6fb9a02…576ad`, and ten-link fingerprint `7934093c…3217`. Only body SHA
-changed from `716bb898…e26d84` to `5f1e1f37…02fbb3`.
-
-That body change is response provenance, not a collection delta. Added and
-changed identities remain unknown, removals are `[]`, and all 132 durable
-seeds remain unavailable. No representative saved-post read or account
-mutation occurred. GitHub, arXiv, and Reddit made zero public requests before
-this reconciliation. Commit this record first, then pursue the ranked multi-
-model diagnostic-traceability question locally.
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 216](./xhs-seed-ledger.md).
 
 ### Cycle 216 checkpoint — failed model identity stays manifest-bound
 
@@ -3951,19 +3929,8 @@ are consolidated in the Cycle 220 compact ledger.
 
 ## Cycle 217 seed-first start
 
-Cycle 217 began from clean `ecc9a75aec`. One public status and one non-
-navigating saved status ran through direct localhost Chrome DevTools from
-`2026-09-03T14:13:06.770Z` through `14:13:07.928Z`. Explore remained readable
-at 30 notes. Saved status remained HTTP 200, `profile`, `ready:false`, and
-`loginWall:true`, with unchanged access fingerprint `f6fb9a02…576ad` and
-ten-link fingerprint `7934093c…3217`. Byte length changed 161,609→161,608 and
-body SHA changed `5f1e1f37…02fbb3`→`950d699f…d0a6e0`.
-
-Those byte changes are response provenance only. Added/changed IDs remain
-unknown, removals are `[]`, and all 132 durable seeds remain unavailable. No
-representative saved-post read or account mutation occurred. GitHub, arXiv,
-and Reddit made zero public requests before this reconciliation. Commit it
-first, then test the ranked diagnostic-reference question locally.
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 217](./xhs-seed-ledger.md).
 
 ### Cycle 217 checkpoint — raw manifest hashes bind bytes, not failure meaning
 
@@ -4003,6 +3970,27 @@ unknown, removals are `[]`, and all 132 durable seeds remain unavailable. No
 representative post read, account mutation, public source request, or peer-
 worktree content inspection occurred. Persist this evidence before compacting
 the repeated Cycle 215–219 seed observations.
+
+### Cycle 221 checkpoint — seed evidence now has one canonical home
+
+The [seed ledger](./xhs-seed-ledger.md) now advances its current state through
+Cycle 221, corrects the stale Cycle 219 current-state length from 161,609 to
+161,608 bytes, and preserves full response hashes for Cycles 220–221. It also
+adds the missing Cycle 215 row with its exact immutable standing commit and the
+abbreviated body receipt that the original observation retained; no unrecorded
+hash suffix is invented.
+
+The Cycle 215–219 topic and lane sections now point to that ledger instead of
+repeating observation time, access, byte, reconciliation, and uncertainty
+prose. Their technical conclusions remain in place, and the Cycle 220 decision
+ledger still preserves exact seed/test/result commits and focused/full gates.
+GitHub, arXiv, and Reddit made zero public requests and retain their existing
+evidence and triggers.
+
+This is high-confidence retrieval and stale-state repair, not new source or
+model evidence. The next ranked accessible maintenance question is whether the
+missing Cycle 206–214 ledger rows can be recovered exactly from immutable seed
+commits; retain an explicit gap rather than reconstruct any unavailable bytes.
 
 ## Cycle 220 seed-first start
 
@@ -4068,19 +4056,8 @@ written or tested.
 
 ## Cycle 219 seed-first start
 
-Cycle 219 began from clean `65e38d701c`. One public status and one non-
-navigating saved status ran through direct localhost Chrome DevTools from
-`2026-09-03T14:23:10.445Z` through `14:23:11.431Z`. Explore remained readable
-at 30 notes. Saved status remained HTTP 200, `profile`, `ready:false`, and
-`loginWall:true`, with unchanged 161,608-byte length, access fingerprint
-`f6fb9a02…576ad`, and ten-link fingerprint `7934093c…3217`. Only body SHA
-changed from `8a10f43b…b9a23` to `75797269…a78a4`.
-
-The body change is response provenance only. Added/changed IDs remain unknown,
-removals are `[]`, and all 132 durable seeds remain unavailable. No
-representative saved-post read or account mutation occurred. GitHub, arXiv,
-and Reddit made zero public requests before this reconciliation. Commit it
-first, then run the ranked cross-layer diagnostic control locally.
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 219](./xhs-seed-ledger.md).
 
 ### Cycle 219 checkpoint — cross-layer failures remain independent
 
@@ -4132,19 +4109,8 @@ checkout drift; this worker neither wrote nor tested either checkout.
 
 ## Cycle 218 seed-first start
 
-Cycle 218 began from clean `df3d27efbe`. One public status and one non-
-navigating saved status ran through direct localhost Chrome DevTools from
-`2026-09-03T14:17:51.552Z` through `14:17:52.751Z`. Explore remained readable
-at 30 notes. Saved status remained HTTP 200, `profile`, `ready:false`, and
-`loginWall:true`, with unchanged 161,608-byte length, access fingerprint
-`f6fb9a02…576ad`, and ten-link fingerprint `7934093c…3217`. Only body SHA
-changed from `950d699f…d0a6e0` to `8a10f43b…b9a23`.
-
-The body change is response provenance only. Added/changed IDs remain unknown,
-removals are `[]`, and all 132 durable seeds remain unavailable. No
-representative saved-post read or account mutation occurred. GitHub, arXiv,
-and Reddit made zero public requests before this reconciliation. Commit it
-first, then run the ranked simultaneous-model-failure control locally.
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 218](./xhs-seed-ledger.md).
 
 ### Cycle 218 checkpoint — simultaneous model failures remain complete
 
