@@ -59,7 +59,11 @@ async function freezeFixture() {
   const bundleBytes = "fixture bundle bytes";
   const contents = {
     "schedule.json": JSON.stringify(buildToyFactorialSchedule()),
-    "evidence/model-resolution.json": "fixture model resolution",
+    "evidence/model-resolution.json": JSON.stringify({
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "content-addressed",
+    }),
     "seed-policy.md": "fixture seeds are enumerated once",
     "bundle.zip": bundleBytes,
     "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
@@ -488,7 +492,7 @@ describe("identity-robust frontier freeze adapter", () => {
       ok: true,
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
       decisionRecordSha256:
-        "e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8",
+        "68949165632e539ac6b15f590b9fcc9966dfe899a52c234f3574e88008e88b8e",
     });
 
     const manifestPath = join(freeze.root, "freeze-manifest.json");
@@ -686,7 +690,7 @@ describe("identity-robust frontier freeze adapter", () => {
       ok: true,
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
       decisionRecordSha256:
-        "e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8",
+        "68949165632e539ac6b15f590b9fcc9966dfe899a52c234f3574e88008e88b8e",
     });
 
     const manifestPath = join(freeze.root, "freeze-manifest.json");
@@ -728,7 +732,7 @@ describe("identity-robust frontier freeze adapter", () => {
         ok: true,
         selected: { runBlockCount: 1_032, episodeCount: 33_024 },
         decisionRecordSha256:
-          "e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8",
+          "68949165632e539ac6b15f590b9fcc9966dfe899a52c234f3574e88008e88b8e",
       },
     });
   });

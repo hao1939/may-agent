@@ -110,6 +110,16 @@ function uniqueStrings(values: string[]): boolean {
   return new Set(values).size === values.length;
 }
 
+function artifactText(value: ArtifactBytes): string | null {
+  try {
+    return typeof value === "string"
+      ? value
+      : new TextDecoder("utf-8", { fatal: true }).decode(value);
+  } catch {
+    return null;
+  }
+}
+
 export function freezeArtifactSha256(value: ArtifactBytes): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -242,6 +252,7 @@ function validateArtifacts(
 function validateModels(
   manifest: FreezeManifest,
   artifacts: Map<string, FreezeArtifact>,
+  artifactContents: Record<string, ArtifactBytes>,
   errors: string[],
 ): string[] {
   const models = Array.isArray(manifest.models) ? manifest.models : [];
@@ -280,6 +291,38 @@ function validateModels(
       !artifacts.has(model.resolutionEvidenceArtifact)
     ) {
       errors.push(`models[${index}] has no bound resolution evidence`);
+      continue;
+    }
+    const evidenceBytes = artifactContents[model.resolutionEvidenceArtifact];
+    if (evidenceBytes === undefined) continue;
+    const evidenceText = artifactText(evidenceBytes);
+    let evidence: unknown;
+    try {
+      evidence = evidenceText === null ? undefined : JSON.parse(evidenceText);
+    } catch {
+      evidence = undefined;
+    }
+    if (!isRecord(evidence) || evidenceText !== JSON.stringify(evidence)) {
+      errors.push(
+        `models[${index}] resolution evidence is not canonical verifiable JSON`,
+      );
+      continue;
+    }
+    if (
+      !hasOnlyKeys(evidence, ["requestedId", "resolvedId", "resolutionKind"])
+    ) {
+      errors.push(
+        `models[${index}] resolution evidence contains unsupported fields`,
+      );
+    }
+    if (
+      evidence.requestedId !== model.requestedId ||
+      evidence.resolvedId !== model.resolvedId ||
+      evidence.resolutionKind !== model.resolutionKind
+    ) {
+      errors.push(
+        `models[${index}] resolution evidence does not match declaration`,
+      );
     }
   }
   if (!uniqueStrings(requestedIds)) {
@@ -552,7 +595,12 @@ export function verifyExecutionFreezeManifest(
     };
   }
   const artifacts = validateArtifacts(manifest, artifactContents, errors);
-  const modelIds = validateModels(manifest, artifacts, errors);
+  const modelIds = validateModels(
+    manifest,
+    artifacts,
+    artifactContents,
+    errors,
+  );
   const seedIds = validateSeedPolicy(manifest, artifacts, errors);
   const episodeCount = validateSchedule(
     manifest,

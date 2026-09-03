@@ -24,7 +24,11 @@ async function fixture() {
   const bundleBytes = "fixture bundle bytes";
   const contents = {
     "schedule.json": schedule,
-    "evidence/model-resolution.json": "fixture model resolution",
+    "evidence/model-resolution.json": JSON.stringify({
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "content-addressed",
+    }),
     "seed-policy.md": "fixture seeds are enumerated once",
     "bundle.zip": bundleBytes,
     "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,

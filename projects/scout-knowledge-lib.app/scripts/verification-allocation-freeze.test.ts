@@ -181,6 +181,65 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects model-resolution evidence that contradicts its declaration", () => {
+    const { manifest, artifactContents } = validFixture();
+    artifactContents["model-resolution.json"] = JSON.stringify({
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed",
+    });
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "model-resolution.json",
+    )!.sha256 = freezeArtifactSha256(artifactContents["model-resolution.json"]);
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "models[0] resolution evidence does not match declaration",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
+  it("rejects opaque, duplicate-key, or extended model-resolution evidence", () => {
+    const matchingFields =
+      '"requestedId":"fixture-model","resolvedId":"fixture-model-a","resolutionKind":"content-addressed"';
+    const cases = [
+      {
+        bytes: "fixture model resolution",
+        error: "models[0] resolution evidence is not canonical verifiable JSON",
+      },
+      {
+        bytes: `{${matchingFields},"requestedId":"fixture-model"}`,
+        error: "models[0] resolution evidence is not canonical verifiable JSON",
+      },
+      {
+        bytes: `{${matchingFields},"providerAuthority":true}`,
+        error: "models[0] resolution evidence contains unsupported fields",
+      },
+    ];
+
+    for (const { bytes, error } of cases) {
+      const { manifest, artifactContents } = validFixture();
+      artifactContents["model-resolution.json"] = bytes;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "model-resolution.json",
+      )!.sha256 = freezeArtifactSha256(bytes);
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain(error);
+      expect(result.policyScope).toBeNull();
+      expect(result.providerCallsAuthorized).toBe(false);
+    }
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);
@@ -462,7 +521,12 @@ describe("verification-allocation execution freeze", () => {
     const repeated = verifyExecutionFreezeManifest(manifest, artifactContents);
     expect(repeated.policyScope).toEqual(first.policyScope);
 
-    artifactContents["model-resolution.json"] = "changed model evidence";
+    artifactContents["model-resolution.json"] = JSON.stringify({
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "dated-snapshot",
+    });
+    manifest.models[0].resolutionKind = "dated-snapshot";
     manifest.artifacts.find(
       (artifact) => artifact.name === "model-resolution.json",
     )!.sha256 = freezeArtifactSha256(artifactContents["model-resolution.json"]);
