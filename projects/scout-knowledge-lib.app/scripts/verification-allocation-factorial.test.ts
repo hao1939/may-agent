@@ -340,6 +340,32 @@ describe("verification-allocation factorial fixture", () => {
     ).toEqual(["result bundle is not JSON serializable"]);
   });
 
+  it("bounds deeply nested result answers before pooled analysis", () => {
+    const schedule = buildToyFactorialSchedule();
+    const bundle = {
+      schema: "scout.verification-allocation-results/v1",
+      evidenceClass: "synthetic-analysis-fixture",
+      scheduleSha256: scheduleSha256(schedule),
+      outcomes: toyPolicyOutcomes("authority", schedule),
+    };
+    expect(analyzeFactorialResultBundle(schedule, bundle).ok).toBe(true);
+
+    let nested: unknown = null;
+    for (let depth = 0; depth < 50_000; depth += 1) {
+      nested = { value: nested };
+    }
+    bundle.outcomes[0]!.answer = nested;
+
+    const result = analyzeFactorialResultBundle(schedule, bundle);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      "result bundle exceeds the supported JSON nesting limit",
+    ]);
+    expect(result.pooled).toBeNull();
+    expect(result.bundleSha256).toBe("");
+  });
+
   it("resamples complete run blocks and keeps opposing model effects visible", () => {
     const schedule = buildSyntheticFactorialSchedule(
       ["authority-model", "inverse-model"],

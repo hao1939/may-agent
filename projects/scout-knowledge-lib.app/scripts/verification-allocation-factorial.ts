@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
-import { hasExcessiveJsonNesting } from "./json-object-key-exactness";
+import {
+  hasExcessiveJsonNesting,
+  MAX_EXACT_JSON_NESTING_DEPTH,
+} from "./json-object-key-exactness";
 
 export type DirectionLevel = "decoy" | "target";
 export type TargetStatus = "current" | "superseded";
@@ -1163,6 +1166,32 @@ function invalidBundleAnalysis(errors: string[]): ModelBlockAnalysis {
   };
 }
 
+function hasExcessiveValueNesting(value: unknown): boolean {
+  const active = new WeakSet<object>();
+  const stack: Array<{
+    value: unknown;
+    parentDepth: number;
+    leaving: boolean;
+  }> = [{ value, parentDepth: 0, leaving: false }];
+  while (stack.length > 0) {
+    const frame = stack.pop()!;
+    if (!frame.value || typeof frame.value !== "object") continue;
+    if (frame.leaving) {
+      active.delete(frame.value);
+      continue;
+    }
+    if (active.has(frame.value)) continue;
+    const depth = frame.parentDepth + 1;
+    if (depth > MAX_EXACT_JSON_NESTING_DEPTH) return true;
+    active.add(frame.value);
+    stack.push({ ...frame, leaving: true });
+    for (const nested of Object.values(frame.value)) {
+      stack.push({ value: nested, parentDepth: depth, leaving: false });
+    }
+  }
+  return false;
+}
+
 /**
  * Bind synthetic outcomes to one exact schedule and preserve model-level
  * status contrasts before computing the equal-model mean. This remains a
@@ -1197,6 +1226,11 @@ export function analyzeFactorialResultBundle(
     )
   ) {
     return invalidBundleAnalysis(["result outcome envelope is invalid"]);
+  }
+  if (hasExcessiveValueNesting(bundle)) {
+    return invalidBundleAnalysis([
+      "result bundle exceeds the supported JSON nesting limit",
+    ]);
   }
 
   const expectedScheduleSha256 = scheduleSha256(schedule);
