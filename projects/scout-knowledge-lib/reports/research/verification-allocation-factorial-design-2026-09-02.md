@@ -2461,6 +2461,29 @@ only `local-byte-presence-unverified`; no production change is made in this
 cycle. The next local control asks whether Cycle 129's v1 unknown-field denial
 should extend to nested freeze objects without breaking valid current inputs.
 
+## Cycle 131 nested freeze-manifest exactness
+
+Seed commit `af72a983468257fe20d89382705ede23dc2714de` preceded the
+matched control. One valid manifest kept all values and bytes fixed while
+adding an undeclared `label` to an artifact, `modelAuthority` to a model,
+`randomnessAuthority` to seed policy, and `providerAuthority` to schedule
+metadata. Before repair the verifier returned `ok: true`, proving Cycle 129's
+top-level and external-registration exactness did not cover the four remaining
+nested object types.
+
+Exact repair `2b537f86648e16b52296ff6bbc1e54f9d51597da` reuses the v1
+allowlist helper for artifacts, models, seed policy, and schedule metadata. The
+control now returns all four stable unsupported-field errors. Registration
+evidence clears; local proof-byte presence remains separately and explicitly
+unverified; provider authority remains false. Current valid fixtures retain
+their prior results.
+
+The focused direct-freeze, descriptor-safe bundle, and frontier-adapter gate
+passes 33 tests and 143 assertions plus TypeScript, source formatting, and
+whitespace. This closes unknown-field ambiguity across the complete freeze
+manifest schema, but not across the independently parsed schedule JSON. The
+next local control tests exact top-level and episode object shapes there.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

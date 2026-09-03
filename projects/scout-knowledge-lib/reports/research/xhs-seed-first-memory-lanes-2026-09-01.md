@@ -7692,6 +7692,25 @@ bytes; Reddit remains at its RSS-readable/JSON-403 boundary. All public lanes
 made zero requests, account and provider state were untouched, and the next
 ranked local control is strict nested v1 field handling.
 
+## Cycle 131 checkpoint — nested freeze metadata now fails closed
+
+The incomplete boundary was inside an otherwise strict v1 freeze: artifact,
+model, seed-policy, and schedule objects still accepted extra metadata. Seed
+commit `af72a983468257fe20d89382705ede23dc2714de` records the unchanged XHS
+boundary before the matched control. Pre-fix, all four additions still returned
+`ok: true`.
+
+Exact local `2b537f86648e16b52296ff6bbc1e54f9d51597da` now rejects each
+unknown nested field. Registration evidence clears, locally matching proof
+bytes remain explicitly unverified, provider calls remain denied, and current
+valid fixtures keep passing. All three current freeze paths pass 33 focused
+tests and 143 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric; arXiv retains its two anchors and exact local
+proof controls; Reddit remains RSS-readable/JSON-403. Public requests remained
+zero. The next ranked investigation is exact-key handling inside the distinct
+byte-bound schedule JSON.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
