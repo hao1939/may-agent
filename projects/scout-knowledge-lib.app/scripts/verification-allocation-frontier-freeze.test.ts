@@ -109,6 +109,8 @@ async function freezeFixture() {
       manifestArtifact: "MANIFEST.sha256",
       manifestSha256: hash("MANIFEST.sha256"),
       proofArtifact: "MANIFEST.sha256.ots",
+      proofTargetArtifact: "MANIFEST.sha256",
+      proofTargetSha256: hash("MANIFEST.sha256"),
     },
   };
 
@@ -503,6 +505,8 @@ describe("identity-robust frontier freeze adapter", () => {
       (artifact: { name: string }) => artifact.name === "MANIFEST.sha256",
     ).sha256 = substituteManifestSha256;
     substituted.externalRegistration.manifestSha256 = substituteManifestSha256;
+    substituted.externalRegistration.proofTargetSha256 =
+      substituteManifestSha256;
     await writeFile(join(freeze.root, "bundle.zip"), substituteBytes);
     await writeFile(join(freeze.root, "MANIFEST.sha256"), substituteManifest);
     await writeFile(manifestPath, JSON.stringify(substituted));
@@ -598,6 +602,7 @@ describe("identity-robust frontier freeze adapter", () => {
       (artifact: { name: string }) => artifact.name === "MANIFEST.sha256",
     ).sha256 = aliasedManifestSha256;
     aliased.externalRegistration.manifestSha256 = aliasedManifestSha256;
+    aliased.externalRegistration.proofTargetSha256 = aliasedManifestSha256;
     await rename(
       join(freeze.root, "bundle.zip"),
       join(freeze.root, "aliased-bundle.zip"),

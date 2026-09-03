@@ -74,6 +74,8 @@ async function fixture() {
       manifestArtifact: "MANIFEST.sha256",
       manifestSha256: hash("MANIFEST.sha256"),
       proofArtifact: "MANIFEST.sha256.ots",
+      proofTargetArtifact: "MANIFEST.sha256",
+      proofTargetSha256: hash("MANIFEST.sha256"),
     },
   };
 

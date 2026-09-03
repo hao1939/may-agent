@@ -65,6 +65,8 @@ function validFixture() {
       manifestArtifact: "MANIFEST.sha256",
       manifestSha256: hash("MANIFEST.sha256"),
       proofArtifact: "MANIFEST.sha256.ots",
+      proofTargetArtifact: "MANIFEST.sha256",
+      proofTargetSha256: hash("MANIFEST.sha256"),
     },
   };
   return { manifest, artifactContents };
@@ -213,6 +215,22 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("requires the proof target to be the registered checksum manifest", () => {
+    const { manifest, artifactContents } = validFixture();
+    Object.assign(manifest.externalRegistration, {
+      proofTargetArtifact: "schedule.json",
+      proofTargetSha256: manifest.schedule.sha256,
+    });
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "external registration proof target does not bind its checksum manifest",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+  });
+
   it("rejects opaque or contradictory external checksum manifests", () => {
     for (const checksumBytes of [
       "fixture checksum manifest",
@@ -225,6 +243,7 @@ describe("verification-allocation execution freeze", () => {
         (artifact) => artifact.name === "MANIFEST.sha256",
       )!.sha256 = checksumSha256;
       manifest.externalRegistration.manifestSha256 = checksumSha256;
+      manifest.externalRegistration.proofTargetSha256 = checksumSha256;
 
       const result = verifyExecutionFreezeManifest(manifest, artifactContents);
       expect(result.ok).toBe(false);
@@ -287,6 +306,7 @@ describe("verification-allocation execution freeze", () => {
       (artifact) => artifact.name === "MANIFEST.sha256",
     )!.sha256 = manifestSha256;
     manifest.externalRegistration.manifestSha256 = manifestSha256;
+    manifest.externalRegistration.proofTargetSha256 = manifestSha256;
     const changedBundle = verifyExecutionFreezeManifest(
       manifest,
       artifactContents,

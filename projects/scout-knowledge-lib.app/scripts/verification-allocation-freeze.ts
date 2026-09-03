@@ -50,6 +50,8 @@ type FreezeManifest = {
     manifestArtifact: string;
     manifestSha256: string;
     proofArtifact: string;
+    proofTargetArtifact: string;
+    proofTargetSha256: string;
   };
 };
 
@@ -431,6 +433,16 @@ function validateExternalRegistration(
   }
   if (!artifacts.has(String(registration.proofArtifact))) {
     errors.push("external registration proof artifact is missing");
+  }
+  if (
+    !isString(registration.proofTargetArtifact) ||
+    !isSha256(registration.proofTargetSha256) ||
+    registration.proofTargetArtifact !== registration.manifestArtifact ||
+    registration.proofTargetSha256 !== registration.manifestSha256
+  ) {
+    errors.push(
+      "external registration proof target does not bind its checksum manifest",
+    );
   }
 }
 
