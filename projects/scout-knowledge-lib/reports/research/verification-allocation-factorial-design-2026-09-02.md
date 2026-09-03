@@ -1957,6 +1957,38 @@ the expected snapshot identity while holding the old policy evidence fixed. A
 schema change is justified only if that old evidence silently authorizes the
 new computation.
 
+## Cycle 112 version-rollover control
+
+Seed commit `38d308306a874eb8386c829f8d9fec8c3093a5b6` preceded this
+control. Semantic XHS access remained unchanged: public Explore exposed 30
+notes, while the saved target was an HTTP-200 login shell with zero attributable
+items. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. GitHub, arXiv, and Reddit made zero public
+requests.
+
+The matched pre-fix fixture held the freeze, policy, manifest, decision bytes,
+and evidence roots fixed while changing the accepted snapshot from identity
+`4176d7766cebc51d2848fa07d870d6727c0c59f5cdd81762d7f095a5a5488471`
+to `1b7734c1c00269e96cf21d1d1e3295f360c60623390d7b8948c7fa61c1110fe5`.
+The old evidence still selected equal 172 from the new snapshot with policy
+hash `fb19ef3…472f0a`, manifest hash `038df2d…8e60aa`, and decision hash
+`5a5acf9…0868cd`. Snapshot/freeze verification and selection were true;
+provider authority was false.
+
+Exact implementation `418fdb03b92c323058485458e800c489696f66f5` binds a
+derived row/result/frontier/count snapshot reference into policy applicability,
+the provenance manifest, and the descriptor-safe local decision record.
+Snapshot selection supplies the verified reference; a stale reference now
+fails closed before selection. A caller that does not use a snapshot remains
+compatible and cannot claim a snapshot reference it did not verify.
+
+Focused validation passes 12 tests and 48 assertions, TypeScript, formatting,
+and whitespace. The evidence is exact for this fixture but does not authenticate
+policy authority, freshness, real drift, cost, models, or providers. The next
+ranked control is process-level: use the retained snapshot with a newly bound
+decision record, then substitute a stale reference without regenerating the
+frontier.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
