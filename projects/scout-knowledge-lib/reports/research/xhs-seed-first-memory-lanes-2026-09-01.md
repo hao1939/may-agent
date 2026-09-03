@@ -7860,6 +7860,29 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 184 checkpoint — candidate provenance is distinct across identities
+
+Seed commit `5829666b5f` records unchanged login-class XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before
+the local identity control.
+
+A whole-schedule alias kept two memory IDs and bodies but reused one
+path/revision tuple for both, regenerating every prompt and both digest
+bindings. Before repair it returned `ok:true`, no errors, non-null local policy
+scope, and provider authority false. Exact local `71cdafa787` requires stable
+tuples to be unique across memory identities. The control now returns one exact
+denial with null policy scope; the complete freeze/factorial gate passes 80
+tests and 683 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the synthetic local identity repair and
+low for substantive provenance, authorship, authority, cost, real models, or
+providers. Distinct provenance does not yet prove distinct content; the next
+ranked audit tests cross-identity body aliasing.
+
 ## Cycle 183 checkpoint — candidate provenance is stable across cells
 
 Seed commit `206a3d37d6` records unchanged login-class XHS access, 30 readable

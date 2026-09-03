@@ -2805,6 +2805,26 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 184 cross-identity candidate provenance separation
+
+Seed commit `5829666b5f` preceded a matched whole-schedule alias. Every episode
+retained two candidate IDs and two bodies, but `memory-b` reused `memory-a`'s
+path/revision tuple; prompts and both schedule digests were coherently rebound.
+Before repair the freeze returned `ok:true`, no errors, provider authority
+false, model scope `ac29ae2…7c5bf`, and protocol scope `670b97a…02172`.
+
+Exact local `71cdafa787` requires the two stable per-memory tuples to be
+distinct. The alias now returns one exact error, null policy scope, and provider
+authority false. The complete freeze/factorial gate passes 80 tests and 683
+assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for provenance separation and
+contradictory evidence against treating per-identity stability alone as an
+identity guarantee. It does not authenticate either tuple or prove distinct
+content, authorship, registration, policy authority, cost, real-model behavior,
+or provider execution. The next audit tests whether two identities with
+distinct tuples can carry one shared body across every cell.
+
 ## Cycle 183 cross-cell candidate provenance binding
 
 Seed commit `206a3d37d6` preceded path-only and revision-only matched controls.
