@@ -2060,6 +2060,28 @@ fingerprints are unchanged.
 The next ranked control is process-level: exercise actual CLI serialization
 against a snapshot-bound fixture and preserve a stale-reference denial control.
 
+## Cycle 116 retained-snapshot CLI serialization
+
+Seed commit `feaff4a171f3c353070578650f2ca1545cb63924` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and no public lane request was made.
+
+The actual CLI loaded the retained 116,578-byte, 508-point snapshot. Its
+matching 3,229-byte JSON exposed exact reference
+`frontier-snapshot-sha256:07bdf16be7c4cf46bb04f726ebd80fef9451d301c722df467430a31d791dc8c1`,
+reported snapshot and freeze verification true, selected equal 172, omitted the
+frontier body, and denied provider calls. A 2,705-byte matched control changed
+only the decision/manifest reference to 64 zeroes; snapshot and freeze remained
+verified, selection returned false with null data and the exact scope-mismatch
+error, and provider calls remained denied. The bounded process ran from
+`2026-09-03T03:12:54.566Z` through `03:12:54.723Z`; its temporary synthetic
+freeze, evidence, and harness were removed.
+
+This supports actual serialized-output auditability and stale-reference denial,
+not policy authority, snapshot freshness, real drift, cost, models, or
+providers. The next ranked control is whether the compact success output makes
+the matched protocol and model scope equally explicit.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
