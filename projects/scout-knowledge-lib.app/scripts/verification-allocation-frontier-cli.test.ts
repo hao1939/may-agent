@@ -214,4 +214,87 @@ describe("identity-robust frontier CLI input", () => {
       ).toThrow(message!);
     }
   });
+
+  it("rejects every unsafe filesystem input before adapter dispatch", () => {
+    const inlineArgs = [
+      "--policy-json",
+      '{"policy":true}',
+      "--evidence-manifest-json",
+      '{"manifest":true}',
+      "--evidence-root",
+      "/goal-owned/evidence",
+      "--freeze-bundle-root",
+      "/goal-owned/freeze",
+    ];
+    for (const [index, value, message] of [
+      [
+        5,
+        "relative/evidence",
+        "evidence root must be an explicit absolute path",
+      ],
+      [
+        7,
+        "relative/freeze",
+        "freeze bundle root must be an explicit absolute path",
+      ],
+      [
+        5,
+        "/goal-owned/evidence\0alias",
+        "evidence root must be an explicit absolute path",
+      ],
+    ] as const) {
+      const args = [...inlineArgs];
+      args[index] = value;
+      expect(() => parseIdentityRobustFrontierCliInput(args)).toThrow(message);
+    }
+    expect(() =>
+      parseIdentityRobustFrontierCliInput([
+        "--policy-json",
+        '{"policy":true}',
+        "--evidence-manifest-artifact",
+        "policies/manifest.json",
+        "--evidence-manifest-sha256",
+        "b".repeat(64),
+        "--evidence-root",
+        "relative/evidence",
+        "--freeze-bundle-root",
+        "/goal-owned/freeze",
+      ]),
+    ).toThrow("evidence root must be an explicit absolute path");
+
+    const snapshotArgs = [
+      "--snapshot-root",
+      "/goal-owned/snapshots",
+      "--snapshot-artifact",
+      "frontier.json",
+      "--snapshot-sha256",
+      "a".repeat(64),
+      ...inlineArgs,
+    ];
+    for (const [index, value, message] of [
+      [
+        1,
+        "relative/snapshots",
+        "snapshot root must be an explicit absolute path",
+      ],
+      [
+        1,
+        "/goal-owned/snapshots\0alias",
+        "snapshot root must be an explicit absolute path",
+      ],
+      [
+        3,
+        "../frontier.json",
+        "snapshot artifact must be a canonical relative path",
+      ],
+      [5, "A".repeat(64), "snapshot SHA-256 must be 64 lowercase hex digits"],
+      [5, "a".repeat(63), "snapshot SHA-256 must be 64 lowercase hex digits"],
+    ] as const) {
+      const args = [...snapshotArgs];
+      args[index] = value;
+      expect(() => parseIdentityRobustSnapshotFrontierCliInput(args)).toThrow(
+        message,
+      );
+    }
+  });
 });
