@@ -3408,6 +3408,18 @@ patch pairs, and all four final accepted artifacts remain exact. The next
 ranked control reuses one resolution-evidence byte object across two distinct
 model declarations to test within-role identity binding.
 
+Exact checkpoint tip `3e866479aac05ba984f5b38f9630e3b578fde037`
+passes the full Scout gate at 261 tests and 1,336 assertions plus syntax,
+TypeScript, and source formatting. All 30 relative links resolve; read-only
+health is 26 facts and 16 wakes at its bounded cap; runtime state is empty;
+whitespace and the worktree are clean. Containment remains 9/9 accepted
+standing ancestors, both stable accepted patch pairs, and 4/4 final accepted
+artifacts. Protected `/app` remains externally observed at HEAD
+`386b445c…1fec8`, 886 records, `996480e…752a3`; the peer overlay remains HEAD
+`fd4c68e…1514663`, three records, `ad8d222…e74780`. Neither was written or
+tested. Only canonically accepted finite results are integration candidates;
+`d041c41b54` and its post-`8c5d8747a6` range remain explicitly deferred.
+
 ## Cycle 200 seed-first start
 
 Cycle 200 began only after clean exact Cycle 199 tip

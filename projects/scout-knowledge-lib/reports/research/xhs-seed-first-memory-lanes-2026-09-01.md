@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 65: the scheduled review reproduced unavailable saved seeds and unchanged GitHub heads, with no quota work or topic displacement."
+summary: "Seed-first Scout continuity through Cycle 201: bounded observational reconciliation preceded a cross-role digest-reuse control, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
-last_updated: "2026-09-02"
-latest_seed_basis: "Cycle 65 observational reconciliation through 2026-09-02T15:09:23.866Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 65 at 2026-09-02T15:09:23.866Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+last_updated: "2026-09-03"
+latest_seed_basis: "Cycle 201 observational reconciliation through 2026-09-03T12:20:39.546Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 201 at 2026-09-03T12:20:39.546Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only provenance inspection of later unaccepted self-evolution commits through d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -7885,6 +7885,29 @@ unintegrated discovery evidence; accepted follow-up `df80a1daa2`, all standing
 ancestors, both stable patch pairs, and four final artifacts remain exact. The
 next ranked control tests one resolution object against two distinct model
 declarations.
+
+The exact reviewed checkpoint on `codex/g-c1b31972-scout-loop` is
+`3e866479aac05ba984f5b38f9630e3b578fde037`, with seed commit
+`a8347e3640933ea5269067e765c66f0fc2cd7267`, regression commit
+`7bafcf46514bee3c965c294c29ccf39d09bfa415`, and documentation commits
+`06b6bea012cb4c2f1aeeed89d8213b720b0509b1` and `3e866479aa`. On that
+exact tip, the full Scout gate passed syntax, TypeScript, source formatting,
+261 tests, and 1,336 assertions. All 30 relative links resolved; read-only
+health returned 26 facts, 16 wake signals, and `truncated:true`; root and app
+runtime state were empty; whitespace and the worktree were clean.
+
+Containment passed for all nine accepted standing ancestors, stable patch IDs
+`9a8b80e36cb8b6effb3d651d3f22940ab46f626d` and
+`5b5b393747d74d9b8cb9b59f4dceedb460d18eb9`, and all four final accepted
+artifact blobs. Protected `/app` remained externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 886 status records, fingerprint
+`996480ead6428d628ef98691027fead21777a4c83a818f3d49ebfbbf358752a3`;
+the peer overlay remained HEAD `fd4c68ecd6fe2ce14afd93815b63f790c1514663`,
+three records, fingerprint
+`ad8d222c69b5a596d495dca1e72b885a384eb9c3f7aff7a9748d4a0df3e74780`.
+Neither checkout was written or tested. The independent review cursor remains
+correctly scoped to its last reviewer checkpoint; this producer report, rather
+than that reviewer-owned cursor, now carries Cycle 201.
 
 ## Cycle 200 checkpoint — deduplicated bytes are not independent evidence
 

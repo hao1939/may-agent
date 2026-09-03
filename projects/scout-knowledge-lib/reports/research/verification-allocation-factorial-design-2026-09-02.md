@@ -2823,6 +2823,12 @@ plus TypeScript, exact-file formatting, and whitespace. Transfer to a future
 object resolver and same-role multi-declaration reuse remain untested; the
 latter is the next control.
 
+Exact reviewed tip `3e866479aac05ba984f5b38f9630e3b578fde037`
+passes the full Scout gate at 261 tests and 1,336 assertions, all 30 affected
+relative links, read-only health 26/16 at the bounded cap, empty runtime state,
+clean whitespace and worktree, 9/9 accepted standing ancestors, both accepted
+patch pairs, and 4/4 final accepted artifacts.
+
 ## Cycle 200 hard-link and duplicate-digest semantics
 
 Seed commit `cb0d876578` preceded exact test `3e0ea3d818`. A hard-linked proof
