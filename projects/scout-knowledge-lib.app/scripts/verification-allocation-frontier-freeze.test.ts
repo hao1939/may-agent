@@ -250,7 +250,13 @@ describe("identity-robust frontier freeze adapter", () => {
       frontierSnapshotReference,
       providerCallsAuthorized: false,
     });
-    expect(JSON.stringify(summary)).not.toContain('"frontier":');
+    expect(summary.frozenSelection?.freezeVerification.policyScope).toEqual(
+      freeze.policyScope,
+    );
+    const serializedSummary = JSON.stringify(summary);
+    expect(serializedSummary).toContain(freeze.policyScope.protocolReference);
+    expect(serializedSummary).toContain(freeze.policyScope.modelScopeReference);
+    expect(serializedSummary).not.toContain('"frontier":');
 
     const substituteSnapshot = createIdentityRobustFrontierSnapshot(
       [
