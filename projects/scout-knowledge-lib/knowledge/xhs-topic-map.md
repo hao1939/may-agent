@@ -4002,6 +4002,30 @@ representative saved-post read or account mutation occurred. GitHub, arXiv,
 and Reddit made zero public requests before this reconciliation. Commit it
 first, then test the ranked diagnostic-reference question locally.
 
+### Cycle 217 checkpoint — raw manifest hashes bind bytes, not failure meaning
+
+Seed commit `9c1b51f908` preceded this local synthesis. Cycle 216 proves a
+failure result needs the bound manifest to map `models[n]` to an explicit model
+record. Cycle 215 already supplies the matched reference control: recursively
+equivalent two-model manifests hash to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`
+and `2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`
+while producing exactly equal verification results.
+
+A raw manifest SHA can therefore identify exact presentation bytes, but it
+cannot be the semantic identity of a diagnostic: it would split equivalent
+failures solely by object-key order. A semantic reference would require a new,
+versioned canonical projection, including rules for malformed or partly
+validated input. No consumer, migration owner, or safety contract justifies
+that schema today. Confidence is high for the local byte-versus-result
+distinction and low for external receipt requirements. No implementation or
+new regression is warranted because the exact matched control already exists.
+
+GitHub, arXiv, and Reddit made zero public requests and retain their evidence
+and triggers. The next ranked accessible question is simultaneous failure
+ordering: test whether two mismatched model records produce a stable complete
+ordinal error list, or whether one failure masks the other.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

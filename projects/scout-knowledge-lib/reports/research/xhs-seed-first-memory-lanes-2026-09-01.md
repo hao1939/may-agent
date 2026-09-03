@@ -8250,6 +8250,28 @@ occurred. GitHub, arXiv, and Reddit made zero public requests before this
 record and retain their evidence and triggers. Commit this reconciliation
 first, then test the diagnostic-reference question locally.
 
+## Cycle 217 checkpoint — exact-byte identity is not diagnostic identity
+
+Seed commit `9c1b51f908` preceded this synthesis. Cycle 216 proves an ordinal
+failure needs its bound manifest for model identity. The existing Cycle 215
+matched control already answers the proposed content-reference question:
+parsed-equal two-model manifests hash to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`
+and `2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`
+but return exactly equal verification results.
+
+A raw hash is exact byte provenance, not semantic diagnostic identity. A new
+reference would need versioned canonicalization for valid and invalid input,
+an identified consumer, and migration/rollback authority. No implementation
+or duplicate test is justified. Confidence is high for this strict-v1 local
+deduction and low for external receipt needs.
+
+GitHub/local evidence won without a public request. ArXiv and Reddit also made
+zero requests and retain the exact evidence, access boundaries, and triggers in
+the living lane table. The accepted-lineage boundary is unchanged. The next
+ranked local question tests whether simultaneous mismatches preserve both model
+ordinals in a stable complete error list rather than masking one failure.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

@@ -2863,6 +2863,24 @@ from an invalid manifest needs its own safety contract. The next control asks
 whether an opaque content reference can bind a failed manifest without
 granting it scope or echoing those identifiers.
 
+## Cycle 217 diagnostic-reference synthesis
+
+Seed commit `9c1b51f908` preceded this synthesis. Cycle 216 establishes that an
+ordinal failure result requires its bound manifest. Cycle 215 already provides
+the matched reference experiment: the parsed-equal two-model manifests hash to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`
+and `2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`
+but return exactly equal complete verification results.
+
+The raw SHA is therefore a byte receipt, not a semantic diagnostic reference.
+Adding it to results would preserve exact presentation provenance while
+splitting equivalent outcomes by object-key order. Avoid a new production
+field or redundant regression. A semantic reference needs a versioned
+canonical projection and explicit treatment of invalid input, plus an actual
+consumer and migration/rollback contract. The next distinct control is whether
+simultaneous first- and second-model mismatches both survive in stable ordinal
+error order.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two
