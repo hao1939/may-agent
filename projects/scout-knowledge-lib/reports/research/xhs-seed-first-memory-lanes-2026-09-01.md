@@ -9345,6 +9345,43 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 247 checkpoint — diagnostics expose uncertainty without deciding it
+
+Seed-first commit `4c697fdec8` preceded exact local implementation
+`ae9b5c3b46`. Each outcome now reports ranked count, top-tie count, runner-up
+kind/title/target/score, and absolute and relative top-two gaps. Missing
+runner-up evidence stays `null`; ties report zero. The strict decision function
+is unchanged and a regression calls it before and after diagnostics to prove the
+same result.
+
+V1 remains 10/14 and v2 remains 8/8. The two uniquely wrong v1 cases expose
+absolute/relative gaps `0.222801` / `0.014277` and `7.063144` / `0.157327`.
+The coordination and negative-control ambiguities expose tie counts three and
+four with zero gaps. This preserves the Cycle 245–246 evidence as diagnostics
+without installing the rejected margin-only policy. Confidence is high for
+deterministic local output and decision neutrality, low for human/model use.
+
+The full current-content gate passes syntax, TypeScript, source formatting,
+Cycle 237 projection, 62 durable links, and 293 tests with 1,462 assertions.
+V2 separately passes 8/8. The broad audit remains 1,540 Markdown documents,
+1,699 local prose links, and zero errors. Read-only health at
+`2026-09-03T17:52:17.539Z` returns 29 facts, 16 wake signals, and
+`truncated:true`; runtime state is empty. Accepted `d35632c2b1` and
+`8ab0a89cd0` remain contained; unaccepted `d041c41b54` and `d9da99476e`
+remain non-ancestors.
+
+Protected `/app` changed externally during validation from 894 records /
+`925801d5…e429c` to 895 / `e3f4cec9…ffdc1`, while HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` and its 296-record Scout scope
+`a430d0c9…4322f7e` stayed exact. The human overlay stayed
+`fd4c68ecd6`, three records, and `a52b97aa…394a15`. No protected or peer
+worktree was written or tested.
+
+No GitHub, arXiv, or Reddit public request ran; all retained evidence and
+triggers are unchanged. The next ranked audit compares pre-repair `086ed02f`
+and the current index with the new diagnostics to isolate availability-state
+truthfulness from any rank movement.
+
 ## Cycle 246 checkpoint — perturbations reject margin-only abstention
 
 Seed-first commit `5619e1aed5` came before the audit. Every evaluator-visible
