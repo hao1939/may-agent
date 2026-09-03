@@ -5076,15 +5076,10 @@ inferring the missing query.
 
 ## Cycle 256 seed-first start — ordering corrected before selection
 
-At `2026-09-03T18:37:51.282Z`, Cycle 237's exact receipt was one hundred one
-minutes old. No collection schedule, access, account-state, public-source, or
-accepted-result trigger had fired. Added/changed identities remain unknown,
-removals are `[]`, and all 132 durable seeds remain unavailable at the same
-login-class boundary; no browser or public request ran. The first bounded
-command combined this timestamp check with a preliminary local implementation
-read before this record was durable. No conclusion or mutation resulted. This
-commit corrects the ordering; rerun the real-consumer design audit only after
-this seed state is persisted.
+The [detailed Cycle 256 start](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-256-seed-first-start--ordering-corrected-before-selection)
+retains the 101-minute receipt, uncertainty, and zero-request boundary. A
+preliminary local read preceded the durable seed record but produced no
+conclusion or mutation; seed `57b0f39767` below precedes the corrected rerun.
 
 ### Cycle 256 checkpoint — use the real event boundary, not a synthetic gate
 
@@ -5102,15 +5097,10 @@ authority limits, confidence, and next investigation.
 
 ## Cycle 255 seed-first start — current receipt reused
 
-At `2026-09-03T18:31:11.283Z`, Cycle 237's exact observational receipt was
-ninety-four minutes old. No collection schedule, access, or account-state
-trigger had fired, so no browser or public-source request ran. Added/changed
-identities remain unknown, removals are `[]`, and all 132 durable seeds remain
-unavailable at the same login-class boundary. Reviewer ref
-`codex/g-8c5b597e-cycle253-review` did advance to accepted result
-`aade00756754752287b4cc1bf2d216fe5f4304da`; integrate its diagnostic-fixture
-fence before treating the current Scout result as fully landed, then seek an
-actual consumer or later-reuse trace for navigation outcomes.
+The [detailed Cycle 255 start](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-255-seed-first-start--current-receipt-reused)
+retains the 94-minute receipt, seed uncertainty, and zero-request boundary.
+Reviewer result `aade007567` advanced; the checkpoint below retains its landed
+diagnostic-fixture fence and the missing real-use outcome decision.
 
 ### Cycle 255 checkpoint — the scorer has no retained real-use outcome
 
@@ -5161,24 +5151,16 @@ seed uncertainty, and why title-weight sensitivity ranked first.
 
 ### Cycle 253 checkpoint — one retrospective interval repairs one error
 
-Seed commit `171253ca8a` preceded an in-memory replay of all 22 frozen v1/v2
-cases with only the title multiplier varied. Weights 1, 1.5, 1.75, and 1.875
-produce 19/22 passes: all 18 current passes remain and the caller-bound case is
-repaired. At 1.9, 2, 2.5, 3, and 4, the result is the current 18/22. The exact
-linear crossover between the caller's intended and wrong entries is
-`1.896047856`; below it the intended entry wins, at it the pair ties, and above
-it the Read-Write entry wins.
-
-No tested weight fixes the source-lane, coordination, or generic-negative
-failure. Lower weights also change which wrong source-lane and negative-control
-entry wins, and weight 1 expands the coordination tie from three to eight.
-Thus the sweep supports title weight as the local caller mechanism and finds no
-regression among these 18 passes, but it does not establish a generally better
-weight. The interval was selected after seeing producer-authored outcomes and
-has no human/model evidence. No production change is justified. Confidence is
-high for the exact deterministic sweep and low for generalization. Next, replay
-the existing 202 leave-one-token perturbations across the apparent repair
-interval to test whether its no-regression result is stable.
+Seed `171253ca8a` preceded the 22-case title-weight replay. Weights 1, 1.5,
+1.75, and 1.875 yield 19/22 while preserving all 18 current passes; weights
+1.9, 2, 2.5, 3, and 4 retain 18/22. At exact crossover `1.896047856`, intended
+and wrong caller entries tie; below it intended wins and above it Read-Write
+wins. No weight repairs source-lane, coordination, or generic-negative cases;
+lower weights change wrong winners and weight 1 expands the coordination tie
+from three to eight. This supports one local mechanism, not a general policy:
+the interval is post-hoc, producer-labelled, and lacks human/model evidence.
+Confidence is high for deterministic counts, low for transfer; make no scorer
+change and test the 202 perturbations next.
 
 The [detailed Cycle 253 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-253-checkpoint--one-retrospective-interval-repairs-one-error)
 retains its exact validation. The preceding Cycle 252 section there retains
