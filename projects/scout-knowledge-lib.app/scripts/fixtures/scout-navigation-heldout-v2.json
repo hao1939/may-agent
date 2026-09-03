@@ -1,0 +1,78 @@
+{
+  "schema": "scout.navigation-heldout/v1",
+  "frozen_at": "2026-09-03T17:30:34.913Z",
+  "frozen_against_tip": "b49e5a47258264f8386009aa307620973c07c723",
+  "source_basis": "A second set of paraphrased Scout navigation needs, disjoint from v1 and frozen before any evaluator or index change in Cycle 243. It tests five available entries, two explicit unavailable entries, and one absent-topic control.",
+  "cases": [
+    {
+      "id": "steering-compaction-safe-point",
+      "query": "accept live direction now but defer its effect until the in-flight context checkpoint ends safely",
+      "expected": {
+        "kind": "available",
+        "title": "Agent steering needs compaction safe points",
+        "target": "./findings/2026-08-28-agent-steering-needs-compaction-safe-points.md"
+      }
+    },
+    {
+      "id": "continuous-benchmark-anchors",
+      "query": "separate frozen progress anchors from a changing frontier cohort and connect evolving task lineage",
+      "expected": {
+        "kind": "available",
+        "title": "A continuous benchmark needs a fixed anchor cohort",
+        "target": "./findings/2026-08-28-continuous-benchmark-needs-fixed-anchors.md"
+      }
+    },
+    {
+      "id": "layered-design-system-evaluation",
+      "query": "use layered evaluation deltas to localize documentation reuse lint and production-path effects",
+      "expected": {
+        "kind": "available",
+        "title": "Separate knowledge-interface tests from assisted-production tests",
+        "target": "./findings/2026-08-26-design-system-agent-eval-layer-separation.md"
+      }
+    },
+    {
+      "id": "crash-recovery-outcome",
+      "query": "measure actual crash recovery instead of assigning framework durability from a synthetic runner",
+      "expected": {
+        "kind": "available",
+        "title": "Crash-resilience evals must measure recovery, not assign it",
+        "target": "./findings/2026-08-25-agent-crash-durability-benchmark.md"
+      }
+    },
+    {
+      "id": "incapable-database-diagnostics",
+      "query": "read-only database diagnostics with transaction limits query controls and typed evidence",
+      "expected": {
+        "kind": "available",
+        "title": "Make database diagnostics incapable before making them intelligent",
+        "target": "./findings/2026-08-25-read-only-database-tools-for-agents.md"
+      }
+    },
+    {
+      "id": "auditor-evidence-authority",
+      "query": "separate fresh context acceptance authority and read-only evidence authority for independent auditors",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Independent auditors need independent evidence authority",
+        "intended_target": "./findings/2026-08-22-auditor-evidence-authority-separation.md"
+      }
+    },
+    {
+      "id": "objective-procedure-traces",
+      "query": "preserve the intended objective separately from observed procedure loops repairs and detours in reusable traces",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Reusable traces need objective and procedure views",
+        "intended_target": "./findings/2026-08-22-objective-procedure-trace-reconciliation.md"
+      }
+    },
+    {
+      "id": "absent-reef-topic-control",
+      "query": "marine coral spawning forecasts for autonomous reef nurseries",
+      "expected": {
+        "kind": "miss"
+      }
+    }
+  ]
+}
