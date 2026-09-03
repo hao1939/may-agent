@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 158 checkpoint — CLI filesystem inputs fail before adapters
+
+Seed commit `2b66eaf9677148233b2d05426c5e5901c5ea1185` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+parser control. The pre-fix run passed six tests and 19 assertions, then failed
+because it returned relative evidence root `relative/evidence`.
+The downstream descriptor-safe adapters already rejected unsafe inputs, so the
+evidence supports an ordering defect rather than an authorization bypass.
+
+Exact local `d1ca8f511a32f1c93ffbc8659e110247620855d1` rejects relative or
+NUL-containing snapshot/evidence/freeze roots, traversal snapshot artifacts,
+and malformed snapshot hashes before adapter dispatch. The four related suites
+pass 33 tests and 126 assertions plus TypeScript, focused formatting, and
+whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for local parser ordering and low for path
+existence, authority, authorship, policy truth, external compatibility, or
+execution. The next ranked investigation tests direct-process parsing order
+against the expensive frontier regeneration.
+
 ## Cycle 157 checkpoint — unsafe manifest input fails before loading
 
 Seed commit `59ff8ff7d163cc04059757c893884c156a128f67` records unchanged

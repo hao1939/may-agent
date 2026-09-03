@@ -2527,6 +2527,27 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 158 fail-fast CLI filesystem inputs
+
+Seed commit `2b66eaf9677148233b2d05426c5e5901c5ea1185` preceded matched
+parser controls. Before repair, the focused parser run passed six tests and 19
+assertions, then returned relative evidence root `relative/evidence` to the
+adapter boundary instead of throwing.
+Existing descriptor-safe adapters still rejected unsafe inputs when reached;
+the defect was inconsistent fail-fast ordering, not a reproduced read bypass.
+
+Exact local `d1ca8f511a32f1c93ffbc8659e110247620855d1` requires explicit
+absolute snapshot, evidence, and freeze roots without NUL bytes, a canonical
+relative snapshot artifact, and exactly 64 lowercase hexadecimal snapshot
+SHA-256 digits. Both inline and descriptor-safe manifest modes share the root
+gate, and malformed input fails before adapter dispatch.
+
+The four related suites pass 33 tests and 126 assertions plus TypeScript,
+focused formatting, and whitespace. This proves local parser ordering and
+input shape, not path existence, artifact truth, authority, authorship,
+external compatibility, or execution. The next ranked control tests whether
+the direct process delays parsing until after expensive frontier regeneration.
+
 ## Cycle 157 fail-fast local manifest descriptors
 
 Seed commit `59ff8ff7d163cc04059757c893884c156a128f67` preceded matched

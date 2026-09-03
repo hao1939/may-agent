@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 157 supersedes the older table snapshot below. Starting tip
-`b1c9986834cc05fdb8d339d41f5d290ebfb15012` and seed commit
-`59ff8ff7d163cc04059757c893884c156a128f67` anchor the unchanged login-class
+Cycle 158 supersedes the older table snapshot below. Starting tip
+`cdc050149bcef3c7edc6791f2a9de08dac5af8b3` and seed commit
+`2b66eaf9677148233b2d05426c5e5901c5ea1185` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -352,14 +352,17 @@ the canonical relative locator; a same-byte alias keeps both identities and
 selection fixed while preserving its distinct locator. Exact local
 `6250091…5a71b` rejects traversal-shaped locators and malformed hashes in CLI
 parsing before snapshot/freeze loading; programmatic descriptors apply the same
-gate and unsafe direct failures retain no locator. Accepted-result containment
-and protected-checkout preservation are rechecked on the resulting exact tip.
+gate and unsafe direct failures retain no locator. Exact local
+`d1ca8f5…0855d1` now rejects relative or NUL-containing snapshot, evidence, and
+freeze roots, traversal snapshot artifacts, and malformed snapshot hashes in
+CLI parsing before adapter dispatch. Accepted-result containment and protected-
+checkout preservation are rechecked on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 157; public trigger-deferred.** Manifest descriptor failures now occur at CLI parsing and unsafe locators cannot enter a result. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `6250091…5a71b` is current. | Zero public requests. Next apply one consistent pre-read CLI validation boundary to snapshot, evidence, and freeze roots plus snapshot artifact/hash. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 157.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 157 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 158; public trigger-deferred.** All supported CLI filesystem inputs now fail shape validation before adapter dispatch. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `d1ca8f5…0855d1` is current. | Zero public requests. Next test whether malformed direct CLI inputs are parsed only after the expensive frontier regeneration, and move that boundary earlier only if reproduced. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 158.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 158 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3287,6 +3290,31 @@ HEADs, 882/3 records, and exact fingerprints `4325371…abf0f` and
 `ad8d222c…e74780`; neither checkout was written or tested. Commit this seed
 record first, then apply one consistent pre-read validation boundary to
 snapshot, evidence, and freeze roots plus snapshot artifact/hash inputs.
+
+### Cycle 158 checkpoint — filesystem arguments fail before adapter dispatch
+
+The matched pre-fix parser control passed six tests and 19 assertions, then
+failed because relative evidence root `relative/evidence` was returned as a
+supported CLI input instead of rejected. The same missing boundary covered the
+freeze root and the snapshot root, artifact, and outer hash.
+Downstream descriptor-safe loaders already rejected unsafe values, so this is
+fail-fast consistency and bounded work, not a demonstrated read bypass.
+
+Exact local `d1ca8f511a32f1c93ffbc8659e110247620855d1` applies one parser-
+side gate across both inline and file-backed policy modes. Relative or NUL-
+containing snapshot/evidence/freeze roots, traversal snapshot artifacts, and
+uppercase or short snapshot SHA-256 values now throw before an adapter can be
+called. The manifest artifact/hash checks from Cycle 157 remain unchanged.
+
+The four related parser, snapshot, freeze-selection, and bundle suites pass 33
+tests and 126 assertions plus TypeScript, focused formatting, and whitespace.
+This is high-confidence local input-ordering evidence, not filesystem
+existence, authority, authorship, policy truth, external compatibility, or
+execution proof. GitHub/local code won the rubric; GitHub, arXiv, and Reddit
+made zero public requests and retain their evidence and triggers above. The
+next ranked investigation tests whether malformed direct CLI inputs are parsed
+only after the expensive frontier regeneration and moves that boundary earlier
+only if the process-level ordering reproduces.
 
 ## Cycle 157 seed-first start
 
