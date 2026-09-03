@@ -2805,6 +2805,22 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 190 answer-enum ordering control
+
+Seed commit `990a047e6a` preceded a one-cell prompt-only permutation. Candidate
+arrays and factors remained exact, the answer enum reversed, and the outer
+schedule plus both digest bindings were regenerated.
+
+The existing raw prompt-registration comparison returns the exact affected
+episode's `prompt contains an unregistered difference`, null policy scope, and
+provider denial. Exact local `e04a50d5dd` preserves this matched regression;
+no production repair was justified.
+
+This is high-confidence evidence for current byte-exact answer/candidate order
+binding, not semantic quality, external registration, authority, cost, drift,
+real models, or providers. The next audit asks whether candidate registration
+itself has an explicit content-addressed protocol identity.
+
 ## Cycle 189 lineage-record ordering control
 
 Seed commit `d612dfd5e2` preceded a one-cell prompt-only permutation. Candidate

@@ -7860,6 +7860,27 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 190 checkpoint — answer enum order is already candidate-bound
+
+Seed commit `990a047e6a` records unchanged semantic XHS access and byte length,
+30 readable public Explore notes, zero attributable saved items, unknown
+additions and changes, no observed removals, and all 132 durable seeds
+unavailable before the answer-order control. Only the saved-shell body SHA
+changed.
+
+One prompt's answer enum reversed while candidates and factors remained exact;
+the outer schedule and digests were rebound. The existing raw prompt check
+returns the exact affected episode's unregistered-difference error, null policy
+scope, and provider denial. Exact local `e04a50d5dd` retains the regression, so
+no production fix was needed.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the byte-exact synthetic association and
+low for semantic quality, external registration, authority, cost, drift, real
+models, or providers. The next ranked audit asks whether candidate registration
+itself has an explicit content-addressed protocol identity.
+
 ## Cycle 189 checkpoint — lineage record order is already candidate-bound
 
 Seed commit `d612dfd5e2` records unchanged semantic XHS access and byte length,
