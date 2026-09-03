@@ -3878,6 +3878,26 @@ unavailable. Protected `/app` is externally unchanged at HEAD
 `a430d0c9…322f7e`. Commit this ordering evidence before ranking the next
 accessible local retrieval-cost item.
 
+## Cycle 284 checkpoint — Cycle 271 seed provenance has one detailed home
+
+Seed `f044bc76ca2550d2cf58ad564aeb244f9364e91d` preceded the audit.
+The map and detailed report contained one byte-identical 24-line / 1,325-byte
+Cycle 271 seed block at SHA-256 `b0419c41…96a50`. Material
+`032b1fa093af84bc1edc9dbff1059eb61ba57b0d` keeps the detailed copy exact and
+replaces only the map copy with an 11-line / 580-byte linked transition: 13
+net lines / 745 bytes removed. Result identity, unavailable-seed uncertainty,
+zero-request boundary, external drift attribution, and seed-before-audit
+ordering remain retrievable.
+
+Reviewer range `9d17987de7..48adada0af` is integrated exactly. Its RV-022
+correction `1f611b69aa` has the same stable patch ID `a9802f0c…e50db03` as
+earlier reviewer `827c13d0a4`; RV-022 is resolved and RV-004 remains
+high/open. GitHub, arXiv, and Reddit made zero requests and retain their
+recorded heads, paper versions, RSS/JSON boundary, and change-bearing triggers.
+The next ranked accessible mirror is the adjacent 21-line Cycle 272 seed block;
+preserve its validation and protected-state distinctions while keeping full
+detail in one place.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

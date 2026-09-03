@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through Cycle 281 result 12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9: reviewer 6c806ade5a is integrated exactly, current query-only history still ends before an outcome, and the Cycle 224–230 map block is compacted by 333 lines with linked detail retained; RV-021 corrects the producer's 334-line overcount while RV-004 remains high/open."
-triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021"]
+summary: "Independent Scout review cursor through Cycle 283 result 9d17987de772f0728d9f3193d45ba43759745af1: RV-022's nonexistent Cycle 282 provenance IDs are corrected by exact integrated result 48adada0af, Cycle 283 compacts duplicate history with linked detail retained, and RV-004 remains high/open."
+triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022"]
 last_updated: "2026-09-04"
-source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a144f7fc17aa3 through 12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9, reconciled with the immediately prior Cycle 279-280 and compaction reviews; independently reproduced removed/replacement and detailed block bytes, hashes, lines, sequence overlap, exact source/result identities, retained-detail headings and anchors, scoped and broad links, navigation outcomes, current full gates, protected-status volatility, exact final diff, and rollback boundaries in a reviewer-owned worktree. Earlier cursor evidence remains retained below."
+source_basis: "Exact standing history and integrated direct-line reviewer range through Cycle 283 result 9d17987de772f0728d9f3193d45ba43759745af1 and reviewer result 48adada0af7244fcfbb36701a2191d1456aca617; reproduced commit objects, stable patch equivalence for RV-022, exact compaction bytes, scoped and broad links, protected fingerprints, final diff, and rollback boundaries. Earlier cursor evidence remains retained below."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9`
+  `9d17987de772f0728d9f3193d45ba43759745af1`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -52,9 +52,15 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
   `5b13addd1d44b6a2ba76eb8680b3a9957428c90a` (Cycle 279),
   `f649899b0ef8e524cec59b1868814a604e285714` (Cycle 280),
   `f40b09a2dab7b05b232b75f43e2a144f7fc17aa3` (Cycle 281 material), and
-  `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9` (Cycle 281 result).
-- Review date: `2026-09-04T05:58:50+08:00`
-- Overall disposition: **accept after one reviewer correction, with limits**.
+  `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9` (Cycle 281 result),
+  `2e46b646a40506ba530eed35d6b8573d23280e81` (Cycle 282 seed),
+  `04b8bf5c1c9f2866dd2c819ec108ea95b4b43a89` (Cycle 282 material),
+  `7c8abbb30e8d38c56f9d2630196eabe591df4c51` (Cycle 282 result),
+  `3d99bfd6bd2e82ec6257b2c2763492c059754f54` (Cycle 283 seed),
+  `05000e2bab8d1ea6f0d8b094de384132df4e9f8d` (Cycle 283 material), and
+  `9d17987de772f0728d9f3193d45ba43759745af1` (Cycle 283 result).
+- Review date: `2026-09-04T06:14:38+08:00`
+- Overall disposition: **accept after RV-021 and RV-022, with limits**.
   Cycles 265-268 correctly reject transition, event, packet, and metric
   expansions that lack comparable history or a consumer. Cycle 269 confirms
   that the accessible protected store ends before any retained knowledge
@@ -85,6 +91,10 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
   281 result `12efeb6cd9` supplies the detailed overlap, validation, and
   rollback record, but overstates the whole-map reduction by one line in both
   reports; RV-021 corrects 334 to 333. RV-004 remains high/open.
+  Cycles 282 and 283 remove two more duplicated map blocks while retaining
+  detailed provenance. RV-022 corrects Cycle 282's nonexistent full commit
+  IDs. These remain static retrieval improvements without protected outcome,
+  measured savings, later reuse, or changed user decision.
 
 ## Exact scope and ordering
 
@@ -797,6 +807,7 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
 | `RV-019` | Low | Cycle 270 result `9a99396f67` in the topic map and lane report | Both reports said every other v1 outcome/result stayed exact. Selection and pass/fail stayed unchanged for the other 13 cases, but corpus-level inverse document frequency changed scores or rank diagnostics for three passing cases; one ranked count moves 67→68. The narrow 10/14→11/14 gain remains valid, but exact numerical preservation was overstated. | **Resolved on standing.** Reviewer `9afdf7bd8f` is integrated as patch-equivalent `1698454717`; both reports preserve the narrower claim outside protected-promotion evidence. |
 | `RV-020` | Low | Cycle 278 result `29d3d8b8cc`, compact Cycle 276 topic-map summary | The new detail link increases the current scoped check from 69 to 70 and the broad check from 1,705 to 1,706. Both links pass, so the stale totals misstate validation scope without changing retrieval behavior or compaction safety. | **Resolved on standing.** Exact reviewer `6c806ade5a` records 70 scoped and 1,706 broad links; current checks reproduce both totals with zero errors. |
 | `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries said material `f40b09a2da` dropped the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved on standing.** Reviewer `c3400f8c77` is standing `15e30e50ea` at stable patch ID `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`; both summaries now say 333. |
+| `RV-022` | Low | Cycle 282 result `7c8abbb30e`, topic map and detailed lane report | Both summaries published nonexistent full seed and material commit IDs, preventing exact provenance replay without changing the compaction. | **Resolved on standing.** Reviewer `1f611b69aa` corrects all four occurrences and has stable patch ID `a9802f0c97d01134674240b452cc3ae33e50db03`, equal to earlier reviewer `827c13d0a4`. |
 
 ## Reviewer source/result and integration status
 
@@ -812,7 +823,15 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
 - Cycle 282 reviewer commits `d4c75e9bc4`, `f3f1b77ec9`, and `641bc7088b`
   replay the same three changes as standing `45bdc0868c`, `16d602b7d8`, and
   `15e30e50ea`. The branch later advanced through `71ffb881c0` with RV-022;
-  current reviewer `1f611b69aa` carries that still-pending correction.
+  reviewer `1f611b69aa` carries the correction now integrated exactly on
+  standing. Its stable patch ID `a9802f0c97d01134674240b452cc3ae33e50db03`
+  equals earlier reviewer `827c13d0a4`.
+- Reviewer source `9d17987de772f0728d9f3193d45ba43759745af1`
+  has exact two-commit result range ending at
+  `48adada0af7244fcfbb36701a2191d1456aca617`, integrated by fast-forward.
+  It resolves RV-022, corrects Cycle 283 provenance/status, and leaves RV-004
+  high/open. Sibling material cursor `b22e95c77a` stops before the Cycle 283
+  result and is not layered over this newer direct-line review.
 - Earlier reviewer commits `18143fc61e` and `6dfcf7180c` are superseded by
   patch-equivalent standing `45bdc0868c` and `16d602b7d8`; no review finding
   or producer Cycle 282 content was dropped.

@@ -9416,6 +9416,52 @@ its combined Scout scope remains 296 records /
 This worker did not write or test that checkout. Commit this bounded
 reconciliation before the next accepted-ref and ranked local audit.
 
+## Cycle 284 checkpoint — duplicate seed provenance is no longer a default read
+
+What was wrong: the Cycle 271 reconciliation was copied byte-for-byte into the
+living map and this detailed report. Seed
+`f044bc76ca2550d2cf58ad564aeb244f9364e91d` preceded the audit. The exact
+shared block was 24 lines / 1,325 bytes with SHA-256
+`b0419c410d4b4a4ac2539fdf635eacacbbfbc134aa211f7f0fd35e935a596a50`.
+
+Material `032b1fa093af84bc1edc9dbff1059eb61ba57b0d` leaves this detailed
+copy unchanged and replaces the map copy with an 11-line / 580-byte transition
+at SHA-256 `74f3359f…2033629`. The map drops 13 net lines / 745 bytes while
+retaining exact Cycle 270 and Cycle 271 identities, unknown additions/changes,
+removals `[]`, all 132 unavailable IDs, zero public requests, external drift
+attribution, and a stable link back to the complete validation and fingerprint
+record. No source body, claim, executable, fixture, account, evaluator, or
+protected checkout changed.
+
+Exact reviewer source `9d17987de772f0728d9f3193d45ba43759745af1`
+fast-forwards through RV-022 correction `1f611b69aa67b1007ff1a72a815b52fc1ca20604`
+to result `48adada0af7244fcfbb36701a2191d1456aca617`. The correction's stable
+patch ID `a9802f0c97d01134674240b452cc3ae33e50db03` exactly matches earlier
+reviewer `827c13d0a479193a5465265cab61a7fbccd7e34e`; RV-022 is resolved.
+Sibling material-review cursor `b22e95c77a` stops at pre-result material
+`05000e2bab` and is not cherry-picked over the newer direct-line result; its
+RV-022 evidence is preserved by the exact patch-equivalent correction.
+RV-004 remains high/open because this is static retrieval reduction, not
+observed model use, measured token savings, retained later behavior, or a
+changed user decision.
+
+Focused current-material validation passes all 69 durable links and the broad
+1,540-document / 1,705-link audit with zero errors. The exact result-tip full
+gate, read-only health, clean status, accepted containment, and protected
+fingerprints follow this documentation commit and are reported from that exact
+revision. Rollback is an ordinary revert of the result record, then material
+`032b1fa093`, then seed `f044bc76ca`; reviewer rollback is a reverse-order
+revert of `48adada0af` and `1f611b69aa`.
+
+GitHub remains high-relevance but low incremental value at the four retained
+repository heads; revisit on a repository/artifact revision, accepted finite
+result, readable seed, or retained later-use evidence. arXiv retains
+`2608.30177v1` and `2608.25553v3`; revisit on a paper/registration revision or
+independent verification. Reddit remains low incremental value at RSS HTTP 200
+for `t3_1v8a3sh` / six comments and JSON HTTP 403; revisit only on a seed-linked
+thread delta or access change. All three made zero requests. The next ranked
+accessible item is the adjacent exact 21-line Cycle 272 seed mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
