@@ -9585,8 +9585,11 @@ confidence, contradictions, blocks, and next explorations. No note body, title,
 path, detailed evidence, scorer, fixture, or gate threshold changed.
 
 The pre-write in-memory control changed only
-`ranked-source-lane-questions`; every other v1 result and all eight v2 results
-were identical. The applied candidate moves v1 10/14→11/14 and keeps v2 8/8.
+`ranked-source-lane-questions` to a different selected identity; every other
+v1 selection and pass/fail result, plus all eight v2 results, stayed unchanged.
+Because the scorer uses corpus-level inverse document frequency, three other
+passing v1 cases had mechanically different scores or rank diagnostics. The
+applied candidate moves v1 10/14→11/14 and keeps v2 8/8.
 The topic-map result matches eight of nine terms, scores `51.965746`, and leads
 the unchanged autonomy report by `36.415769`. Focused validation passes 7 tests
 / 27 assertions plus all 65 durable links. The gain is exact local retrieval
@@ -9633,7 +9636,7 @@ The store contains 16,363 events through ID `6317660` at
 `project.knowledge.maintained` occurs zero times. Its exact string appears in
 only two payloads, both evaluator `project.owner.requested` records: ID
 `6143903` at `2026-08-26T08:02:58.398Z`, payload SHA-256
-`bc0f3acc70b1b8f5fae86c39ecd667b232f47e14a3d79b7c99a30308ce83a1`,
+`bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`,
 and ID `6151587` at `2026-08-26T10:03:37.578Z`, payload SHA-256
 `b90e719756a19ec744493db7345dd26eaff47e87983a1fad1bab3671a1726357`.
 They request an outcome; they do not record one.

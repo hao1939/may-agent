@@ -4088,10 +4088,13 @@ next explorations. No detailed note, source, title, path, scorer, fixture, or
 minimum gate changed.
 
 In a matched in-memory control, that one summary change moved only
-`ranked-source-lane-questions` to the intended map; every other v1 outcome and
-all eight v2 outcomes stayed exact. The applied candidate passes v1 at 11/14
-instead of 10/14 and v2 at 8/8. The repaired query matches eight of nine terms,
-scores `51.965746`, and leads the unchanged autonomy report by `36.415769`.
+`ranked-source-lane-questions` to a different selected identity; every other
+v1 selection and pass/fail result, plus all eight v2 results, stayed unchanged.
+Because the scorer uses corpus-level inverse document frequency, three other
+passing v1 cases had mechanically different scores or rank diagnostics. The
+applied candidate passes v1 at 11/14 instead of 10/14 and v2 at 8/8. The
+repaired query matches eight of nine terms, scores `51.965746`, and leads the
+unchanged autonomy report by `36.415769`.
 Focused evaluator validation passes 7 tests / 27 assertions and all 65 durable
 links. This is a truthful retrieval-metadata improvement on one frozen local
 case, not human/model outcome evidence or general semantic-retrieval proof.
@@ -4141,7 +4144,7 @@ The store contains 16,363 events through ID `6317660` at
 evaluator-owned `project.owner.requested` IDs `6143903` at
 `2026-08-26T08:02:58.398Z` and `6151587` at
 `2026-08-26T10:03:37.578Z`, with payload SHA-256
-`bc0f3acc70b1b8f5fae86c39ecd667b232f47e14a3d79b7c99a30308ce83a1`
+`bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`
 and `b90e719756a19ec744493db7345dd26eaff47e87983a1fad1bab3671a1726357`.
 Requests for an outcome are not outcome evidence.
 
