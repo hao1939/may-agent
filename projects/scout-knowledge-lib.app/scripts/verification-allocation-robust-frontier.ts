@@ -5,6 +5,7 @@ import {
   calibrateDirectionalQuantiles,
   measureCalibratedDirectionalPower,
 } from "./verification-allocation-factorial";
+import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
 
 type Row = {
   runBlockCount: number;
@@ -248,6 +249,19 @@ const maximumNull = rows.reduce((worst, row) =>
     : worst,
 );
 const localTotals = new Set([1_029, 1_030, 1_031, 1_032]);
+let policyCandidate: unknown = null;
+if (process.argv[2] !== undefined) {
+  if (process.argv[2] !== "--policy-json" || process.argv.length !== 4) {
+    throw new Error(
+      "optional usage: --policy-json '<single JSON policy object>'",
+    );
+  }
+  try {
+    policyCandidate = JSON.parse(process.argv[3]!);
+  } catch {
+    throw new Error("--policy-json must contain valid JSON");
+  }
+}
 process.stdout.write(
   `${JSON.stringify(
     {
@@ -266,6 +280,7 @@ process.stdout.write(
       frontierFirst: frontier.slice(0, 12),
       frontierLast: frontier.slice(-12),
       final: frontier.at(-1),
+      selection: selectIdentityRobustFrontierPoint(frontier, policyCandidate),
     },
     null,
     2,
