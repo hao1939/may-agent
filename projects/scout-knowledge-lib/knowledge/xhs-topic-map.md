@@ -3842,6 +3842,24 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 267 seed-first start — local continuity
+
+Exact Cycle 266 result `890b611350` passes syntax, TypeScript, formatting,
+Cycle 237 projection, 65 durable links, navigation v1 at 10/14 and v2 at 8/8,
+and the full 296-test / 1,479-assertion gate. The broad audit covers 1,540
+documents and 1,701 links with zero errors; read-only health at
+`2026-09-03T19:51:33.623Z` is bounded at 30 facts / 16 wakes. Runtime and
+standing status are clean.
+
+At `2026-09-03T19:51:33.409Z`, the exact Cycle 237 XHS receipt was one hundred
+seventy-four minutes old. No seed, access, public-lane, or accepted-review
+trigger changed, so the bounded pass reused that provenance and made zero
+public requests. Added/changed identities remain unknown, removals are `[]`,
+and all 132 durable seeds remain unavailable at the same login-class boundary.
+Reviewer `f6a7a65928` and protected fingerprints `000cff67…b610a3` /
+`a430d0c9…4322f7e` remain unchanged. Begin the ranked 64-packet history audit
+before any source-lane work.
+
 ## Cycle 266 seed-first start — local continuity
 
 Exact Cycle 265 result `6093b60cc0` passes syntax, TypeScript, formatting,
