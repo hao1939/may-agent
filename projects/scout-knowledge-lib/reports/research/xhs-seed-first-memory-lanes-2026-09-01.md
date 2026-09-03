@@ -9808,149 +9808,30 @@ unavailable. No representative saved-post read was supported, no XHS state
 changed, and no GitHub, arXiv, or Reddit request preceded this record. Commit
 this reconciliation before re-ranking the next accessible question.
 
-## Cycle 292 checkpoint — compact duplicated historical proof
+## Cycles 292–295 checkpoint — four ranked mirrors, one durable handoff
 
-The post-reconciliation ranking selected Cycle 221's validation/protected-state
-mirror. Its 20 map lines / 1,193 bytes had SHA-256
-`f1887178183475ea356df3e95cfcd8b6be771b2921284f9204f9ce1156a38b9a`.
-This detailed Cycle 221 report remains unchanged and authoritative.
+Each post-seed audit removed a default-read mirror while retaining its
+authoritative historical report:
 
-The map replacement keeps the incomplete Cycle 206–214 receipt limit, the
-prohibition on inventing hashes or deleting original seed sections, the
-local-only confidence boundary, and explicit pointers to exact validation,
-tree-equivalence, accepted-lineage, runtime-state, and protected-checkout
-proof. It removes repeated historical values from the default-read map without
-discarding a useful distinction.
+| Cycle | Seed / result | Exact old run | Decision retained |
+| --- | --- | --- | --- |
+| 292 | `06a80ca5d0` / `be7cc1092a` | Cycle 221, 20 lines / 1,193 bytes, `f1887178…a38b9a` | Incomplete Cycle 206–214 receipts cannot be reconstructed; keep their original seed sections. |
+| 293 | `c05e44af5f` / `32c16f5ca6` | Cycle 223, 21 / 1,182, `c8874039…c7e5ca` | Projections follow the canonical ledger; Cycle 224 already implemented the stale queued drift check. |
+| 294 | `4de7d900b8` / `268fbc4653` | Cycle 255, 17 / 1,153, `41556649…df75efc` | No evaluator query/rank→selected-file→later-decision join exists; frozen gates are not later-use outcomes. |
+| 295 | `8aec08e4c5` / `d5de20cf8f` | Cycle 277, 20 / 1,142, `2d854328…12575d` | RV-018/RV-019 stay resolved; the missing outcome keeps RV-004 high/open; later cycles already consolidated the stale queued mirror. |
 
-GitHub, arXiv, and Reddit made zero requests and retain their exact recorded
-heads, paper versions, RSS/JSON access boundary, and revisit triggers. No
-source, claim, code, fixture, account, accepted result, or protected state
-changed. This is static retrieval reduction, not measured use, savings, later
-behavior, or user outcome; RV-004 remains high/open.
-
-## Cycle 293 seed-first start — exact Cycle 292 result retained
-
-Cycle 293 began from clean Cycle 292 result
-`be7cc1092add3f47e7d900ccbb832b92832bd3f7`. Its exact-tip gate passed
-syntax, TypeScript, formatting, Cycle 292 projection, 73 scoped links,
-navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
-assertions. The broad audit passed 1,540 tracked Markdown documents / 1,709
-local prose links, and read-only health at `2026-09-03T23:04:44.730Z` returned
-30 facts / 16 wakes with `truncated:true`.
-
-At `2026-09-03T23:04:54.025Z`, the exact Cycle 292 receipt was under six
-minutes old. No browser, GitHub, arXiv, or Reddit request ran; added/changed
-identities remain unknown, removals are `[]`, and all 132 durable seeds remain
-unavailable. Protected `/app` retains HEAD `386b445c…41fec8`; its wider status
-changed externally from 386 records / `7c285c09…1ca01b` to 914 /
-`5b4816ba…2f4`, while the combined Scout scope remains 296 /
-`7e4d0937…26a8a`. This worker did not write or test the protected checkout.
-Commit this ordering record before the ranked Cycle 223 projection/validation
-mirror audit.
-
-## Cycle 293 checkpoint — remove one resolved queue mirror
-
-The selected Cycle 223 block was byte-identical in the map and this report: 21
-lines / 1,182 bytes at SHA-256
-`c88740390129954cc781853be09c3ea741fe866042643099ea2bb778a9c7e5ca`.
-It combined a next-work sentence already resolved by Cycle 224 with historical
-source/result, validation, health, lineage, runtime-state, and protected-state
-proof.
-
-This detailed copy remains unchanged. The map now links here, points to the
-implemented Cycle 224 fail-closed projection check in its compact ledger, and
-retains the rule that reader-facing projections follow the canonical seed
-ledger. It removes only duplicated values and the stale queue instruction; no
-evidence category, uncertainty, or useful decision was lost.
+Exact `d5de20cf8f24f7eeefb1539789cc0cc6479f5832` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 76 scoped links, navigation v1
+11/14, navigation v2 8/8, and 296 tests / 1,483 assertions. The broad audit
+passes 1,540 documents / 1,712 links; health returns 30 facts / 16 wakes.
+Accepted `ff923ccde4` is contained and unaccepted `d041c41b54` excluded.
+Protected `/app` remains HEAD `386b445c…41fec8`, 914 records /
+`5b4816ba…2f4`, with combined Scout scope 296 / `7e4d0937…26a8a`.
 
 GitHub, arXiv, and Reddit made zero requests and retain their exact heads,
-paper versions, RSS/JSON boundary, and triggers. Static retrieval reduction is
-not measured later use or a user outcome, so RV-004 remains high/open. The next
-exact mirror is Cycle 255's 17-line / 1,153-byte real-use-outcome boundary;
-preserve that negative outcome while consolidating its historical proof.
-
-## Cycle 294 seed-first start — exact Cycle 293 result retained
-
-Cycle 294 began from clean Cycle 293 result
-`32c16f5ca63b1c16952a2a27f46d4f025d9742ee`. Its exact-tip gate passed
-syntax, TypeScript, formatting, Cycle 292 projection, 74 scoped links,
-navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
-assertions. The broad audit passed 1,540 documents / 1,710 links; read-only
-health at `2026-09-03T23:08:44.081Z` returned 30 facts / 16 wakes with
-`truncated:true`.
-
-At `2026-09-03T23:08:43.878Z`, the Cycle 292 receipt was under ten minutes
-old. No browser, GitHub, arXiv, or Reddit request ran. Additions/changes remain
-unknown, removals are `[]`, and all 132 durable seeds remain unavailable. The
-protected wider checkout remains externally observed at HEAD
-`386b445c…41fec8`, 914 records / `5b4816ba…2f4`; its combined Scout scope is
-unchanged at 296 / `7e4d0937…26a8a`. Commit this ordering before compacting
-Cycle 255's negative real-use-outcome mirror.
-
-## Cycle 294 checkpoint — retain the outcome gap, remove its proof mirror
-
-The selected run was the first 17 lines / 1,153 bytes of Cycle 255's checkpoint,
-byte-identical in the map and this report at SHA-256
-`41556649bad666dab9b6611c4e6acea17d2ca10b95c28ce43a6e0c1d8df75efc`.
-This detailed copy remains unchanged and authoritative.
-
-The map replacement retains the decision-relevant negative evidence: Scout's
-planner reads the index, but no retained query/rank→selected-file→later-decision
-join exists, so the frozen gates and title-weight counterfactuals are not
-later-use outcomes. It also keeps the high local / low unrecorded-reasoning
-confidence split, no-scorer-change decision, and next reversible-capture
-question. Exact integration, fixture, source-reference, history, runtime, and
-protected-state proof remain linked here.
-
-GitHub, arXiv, and Reddit made zero requests and retain their exact last useful
-evidence and revisit triggers. This reduces default-read duplication without
-creating a protected outcome or resolving RV-004, which remains high/open. The
-next exact run is Cycle 277's 20-line / 1,142-byte reviewer-integration proof;
-retain its patch provenance, resolved RV-018/RV-019 status, and outcome limit.
-
-## Cycle 295 seed-first start — exact Cycle 294 result retained
-
-Cycle 295 began from clean Cycle 294 result
-`268fbc465304ea08cd30f4db563698604ac57719`. Its exact-tip gate passed
-syntax, TypeScript, formatting, Cycle 292 projection, 75 scoped links,
-navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
-assertions. The broad audit passed 1,540 documents / 1,711 links; read-only
-health at `2026-09-03T23:12:32.859Z` returned 30 facts / 16 wakes with
-`truncated:true`. Accepted `ff923ccde4` remains contained and unaccepted
-`d041c41b54` excluded.
-
-At `2026-09-03T23:12:32.647Z`, the Cycle 292 receipt was under fourteen
-minutes old. No browser, GitHub, arXiv, or Reddit request ran; additions and
-changes remain unknown, removals are `[]`, and all 132 durable IDs remain
-unavailable. Protected `/app` stays externally observed at HEAD
-`386b445c…41fec8`, 914 records / `5b4816ba…2f4`; its combined Scout scope
-remains 296 / `7e4d0937…26a8a`. Commit this ordering before the ranked Cycle
-277 reviewer-integration mirror.
-
-## Cycle 295 checkpoint — compact integrated-review proof
-
-Cycle 277 shared an exact 20-line / 1,142-byte map/report run at SHA-256
-`2d8543288d37bd569d993768c64a9e0819c4df95da69788423e2a0a38112575d`.
-This report remains the authoritative source/result, fast-forward, patch,
-validation, health, and rollback record.
-
-The map replacement retains the accepted retained-window/no-code disposition,
-resolved RV-018/RV-019 status, and RV-004's missing query-to-selection/later-
-decision/outcome limit. It drops only repeated proof and a stale instruction
-for the 111-line mirror work completed in later compaction cycles. GitHub,
-arXiv, and Reddit made zero requests and retain their evidence and triggers.
-Next, review Cycle 258's 19-line / 1,120-byte historical-target boundary
-without inventing its missing query or contemporaneous index.
-
-Exact material `d5de20cf8f24f7eeefb1539789cc0cc6479f5832` on
-`codex/g-c1b31972-scout-loop` passes syntax, TypeScript, formatting, Cycle 292
-projection, 76 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and
-all 296 tests / 1,483 assertions. The broad audit passes 1,540 documents /
-1,712 links; read-only health at `2026-09-03T23:16:13.110Z` returns 30 facts /
-16 wakes with `truncated:true`. Accepted `ff923ccde4` remains contained and
-unaccepted `d041c41b54` excluded. Protected `/app` remains HEAD
-`386b445c…41fec8`, 914 records / `5b4816ba…2f4`, with combined Scout scope 296
-/ `7e4d0937…26a8a`; those fingerprints match the Cycle 295 precheck.
+paper versions, RSS/JSON boundary, and triggers. Static compaction is not
+measured use or outcome evidence. Next, audit Cycle 258's 19-line / 1,120-byte
+historical-target mirror without inventing its missing query or index.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

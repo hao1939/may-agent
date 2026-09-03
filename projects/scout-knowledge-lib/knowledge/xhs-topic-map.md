@@ -4064,106 +4064,36 @@ frequency, caller counterexample, confidence, and the diagnostic-not-policy
 decision. No lane ran; RV-004 stays high/open. Next is Cycle 221's exact
 21-line / 1,194-byte validation/protected-state block after seed reconciliation.
 
-## Cycle 292 seed-first reconciliation — scheduled receipt, unchanged boundary
+## Cycles 292–295 — scheduled seed receipt and ranked retrieval work
 
-Cycle 292 began from clean `40bc4a7157`, whose exact-tip gate passed 296 tests
-/ 1,483 assertions plus syntax, TypeScript, formatting, Cycle 237 projection,
-72 scoped links, both navigation fixtures, broad links, and read-only health.
-After the six-hour cadence elapsed, worker UID 1000 (`hao`) used passwordless
-`sudo nsenter` as effective UID 0 in root-owned Chrome PID 2136's network
-namespace for one public status and one non-navigating saved status at
-`2026-09-03T22:59:02.203Z–22:59:03.253Z`.
+The exact read-only receipt is canonical in [seed-ledger row 292](./xhs-seed-ledger.md).
+At `2026-09-03T22:59:02.203Z–22:59:03.253Z`, UID 1000 (`hao`) used the
+effective-UID-0 connector into root-owned Chrome PID 2136's network namespace.
+Explore exposed 30 public notes; saved status remained HTTP 200, `login`,
+46,763 bytes, zero attributable items, and `ready:false`. Only body SHA changed
+`a548dd2…dc6b`→`3eae646…6e819`. Additions/changes remain unknown, removals are
+`[]`, all 132 durable seeds remain unavailable, and no representative read or
+account mutation was supported. Cycles 293–295 reused that fresh receipt at
+zero browser-request cost before each ranked local audit.
 
-Explore remained readable with 30 notes. Saved status retained HTTP 200,
-`login`, 46,763 bytes, target evidence `e860da4…906e`, access fingerprint
-`3dab1b6…af420`, zero attributable items, empty fingerprint `e3b0c44…b855`,
-and `ready:false`. Only body SHA changed `a548dd2…dc6b`→`3eae646…6e819`.
-Added/changed identities remain unknown, removals are `[]`, and all 132 seeds
-remain unavailable. No representative read was supported and no account or
-public-source mutation occurred. Re-rank the queue only from this persisted
-boundary.
+The [detailed checkpoint report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-292-seed-first-reconciliation--scheduled-pass-completed-first)
+retains exact source/result, validation, protected-state, and rollback proof.
+This map removes four historical proof mirrors while preserving their decisions:
 
-## Cycle 292 checkpoint — historical proof keeps one detailed home
+| Cycle | Exact old run | Decision retained |
+| --- | --- | --- |
+| 292 | Cycle 221, 20 lines / 1,193 bytes, `f1887178…a38b9a` | Incomplete Cycle 206–214 receipts cannot be reconstructed; keep their original seed sections. |
+| 293 | Cycle 223, 21 / 1,182, `c8874039…c7e5ca` | Projections follow the canonical ledger; Cycle 224 already implemented the queued drift check. |
+| 294 | Cycle 255, 17 / 1,153, `41556649…df75efc` | No evaluator query/rank→selected-file→later-decision join exists; frozen gates are not later-use outcomes. |
+| 295 | Cycle 277, 20 / 1,142, `2d854328…12575d` | RV-018/RV-019 stay resolved; no outcome evidence resolves RV-004; later cycles already compacted the queued mirror. |
 
-The highest-ranked exact mirror was Cycle 221's 20-line / 1,193-byte map block
-at SHA-256 `f1887178…a38b9a`. The linked detailed report remains authoritative.
-This map replaces that validation/protected-state copy with a six-line summary
-while retaining the incomplete-receipt limit, original-section preservation,
-local-only confidence, exact evidence categories, and no-source-evidence
-decision. GitHub, arXiv, and Reddit made zero requests and keep their last
-useful evidence and revisit triggers. Static compaction is not a retained
-outcome; RV-004 remains high/open.
-
-## Cycle 293 seed-first start — fresh Cycle 292 receipt reused
-
-Cycle 293 began from clean material tip `be7cc1092a`. Its exact-tip gate passed
-296 tests / 1,483 assertions, syntax, TypeScript, formatting, Cycle 292
-projection, 73 scoped links, navigation v1 at 11/14, navigation v2 at 8/8,
-1,540 documents / 1,709 broad links, and health at 30 facts / 16 wakes.
-At `2026-09-03T23:04:54.025Z`, the Cycle 292 receipt was under six minutes old.
-No browser or public-source request ran; additions/changes remain unknown,
-removals are `[]`, and all 132 IDs remain unavailable. The post-seed exact-run
-scan selects Cycle 223's 21-line / 1,182-byte projection/validation mirror.
-
-## Cycle 293 checkpoint — resolved next-work is not a live queue item
-
-Cycle 223's 21-line / 1,182-byte exact map/report run had SHA-256
-`c8874039…c7e5ca`. Its queued projection-consistency check was completed in
-Cycle 224, so retaining it as next work was stale. The detailed report keeps
-the exact historical proof; this map keeps a six-line pointer and the durable
-canonical-projection decision. No evidence category or uncertainty changed.
-All source lanes made zero requests, their triggers remain unchanged, and
-RV-004 remains high/open. The next exact-run scan ranks Cycle 255's 17-line /
-1,153-byte real-use-outcome boundary, which must retain its negative finding.
-
-## Cycle 294 seed-first start — current receipt reused
-
-Cycle 294 began from clean validated `32c16f5ca6`. The exact tip passed the
-full 296-test / 1,483-assertion gate, Cycle 292 projection, 74 scoped links,
-both navigation fixtures, 1,540 documents / 1,710 broad links, and health at
-30 facts / 16 wakes. At `2026-09-03T23:08:43.878Z`, the scheduled Cycle 292
-receipt was under ten minutes old. No browser or public-source request ran;
-added/changed remain unknown, removals are `[]`, and all 132 IDs remain
-unavailable. The post-seed ranking selects Cycle 255's negative real-use
-outcome mirror before any lower-value proof block.
-
-## Cycle 294 checkpoint — negative outcome remains visible once
-
-Cycle 255's leading 17 checkpoint lines were byte-identical across map and
-report: 1,153 bytes at SHA-256 `41556649…df75efc`. The detailed report remains
-authoritative. The map now keeps the missing query/rank→selection→later-decision
-join, its confidence boundary, no-change decision, and next investigation while
-linking the integration, fixture, source, history, runtime, and protected proof.
-All public lanes made zero requests and retain their evidence and triggers.
-This compaction does not create the missing outcome; RV-004 stays high/open.
-Next is Cycle 277's 20-line / 1,142-byte reviewer-integration mirror, preserving
-its patch provenance, resolved findings, and outcome limit.
-
-Exact Cycle 295 material `d5de20cf8f` passes the full 296-test /
-1,483-assertion gate, Cycle 292 projection, 76 scoped links, both navigation
-fixtures, 1,540 documents / 1,712 broad links, and health at 30 facts / 16
-wakes. Accepted `ff923ccde4` is contained and unaccepted `d041c41b54` excluded.
-Protected HEAD and both final status fingerprints match the Cycle 295 precheck.
-
-## Cycle 295 seed-first start — current receipt reused
-
-Cycle 295 began from clean validated `268fbc4653`. The exact tip passed 296
-tests / 1,483 assertions, Cycle 292 projection, 75 scoped links, both navigation
-fixtures, 1,540 documents / 1,711 broad links, and health at 30 facts / 16
-wakes. At `2026-09-03T23:12:32.647Z`, the Cycle 292 receipt was under fourteen
-minutes old. No browser or public-source request ran; additions/changes remain
-unknown, removals are `[]`, and all 132 IDs remain unavailable. The ranked
-Cycle 277 reviewer-integration mirror follows.
-
-## Cycle 295 checkpoint — accepted review keeps one proof record
-
-Cycle 277's 20-line / 1,142-byte exact run had SHA-256
-`2d854328…12575d`. The detailed report retains source/result, fast-forward,
-patch, validation, health, and rollback proof. The map keeps RV-018/RV-019
-resolved, RV-004 high/open, and the missing outcome boundary while removing a
-stale instruction for mirror work later completed. No lane made a public
-request. Next is Cycle 258's 19-line / 1,120-byte historical-target boundary;
-its missing query/index evidence must remain explicit.
+Exact material `d5de20cf8f` passed 296 tests / 1,483 assertions, Cycle 292
+projection, 76 scoped links, both navigation fixtures, 1,540 documents / 1,712
+broad links, and health at 30 facts / 16 wakes. Accepted `ff923ccde4` is
+contained and unaccepted `d041c41b54` excluded. GitHub, arXiv, and Reddit made
+zero requests and retain their evidence and triggers. RV-004 remains high/open.
+Next is Cycle 258's 19-line / 1,120-byte historical-target boundary; preserve
+its missing query and contemporaneous-index uncertainty.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
