@@ -1,22 +1,22 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 231 observational reconciliation through 2026-09-03T15:43:22.511Z; exact access evidence and uncertainty are in seed-ledger row 231."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 231 at 2026-09-03T15:43:22.511Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 231 read-only XHS boundary through 2026-09-03T15:43:22.511Z."
+last_updated: "2026-09-04"
+latest_seed_basis: "Cycle 232 observational reconciliation through 2026-09-03T16:04:19.601Z; exact access evidence and uncertainty are in seed-ledger row 232."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 232 at 2026-09-03T16:04:19.601Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 232 read-only XHS boundary through 2026-09-03T16:04:19.601Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 231 used the established direct localhost Chrome
-DevTools endpoint through the effective-UID-0 namespace connector from worker
-UID 1000 (`hao`). Public Explore remained readable with
-30 notes, while supported `saved-status` changed from Cycle 230's profile shell
-to a 46,763-byte login response with zero attributable items. This is a
-material access-shell change, not a comparable collection inventory. Added and
+authenticated window. Cycle 232 used the established direct localhost Chrome
+DevTools endpoint from root-owned Chrome's network namespace through the
+effective-UID-0 connector launched by worker UID 1000 (`hao`). Public Explore
+remained readable with 30 notes, while supported `saved-status`
+retained the 46,763-byte login response and zero attributable items. Only the
+body hash changed. This is not a comparable collection inventory. Added and
 changed sets remain unknown, proven removals are `[]`, and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
 available to read and no XHS state was changed.
@@ -3841,6 +3841,15 @@ new regression is warranted because the exact matched control already exists.
 
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
+
+## Cycle 232 seed-first start
+
+[Seed-ledger row 232](./xhs-seed-ledger.md) is the exact receipt. Semantic
+access, byte length, target evidence, and the empty identity set are unchanged;
+only response-body provenance moved. Added/changed identities remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. No XHS state
+or public-source lane was touched. The next ranked work remains the accepted
+harness/state/executable triage identity audit opened by Cycle 231.
 
 ## Cycle 231 seed-first start
 
