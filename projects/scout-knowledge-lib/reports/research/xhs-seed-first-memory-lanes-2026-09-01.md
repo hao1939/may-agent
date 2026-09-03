@@ -9833,6 +9833,32 @@ paper versions, RSS/JSON boundary, and triggers. Static compaction is not
 measured use or outcome evidence. Next, audit Cycle 258's 19-line / 1,120-byte
 historical-target mirror without inventing its missing query or index.
 
+## Cycle 296 checkpoint — one historical boundary, one detailed home
+
+The topic map repeated Cycle 258's detailed chronology, so default readers paid
+for proof already retained here. Seed-first commit `6f1025c281` preceded the
+audit; material `4a3956200f` replaces the 24-line / 1,430-byte map checkpoint
+(`ea451572…9fc4`) with 13 lines / 906 bytes (`6c9e1e8e…d9f1`), removing 11
+lines / 524 bytes. This report's 26-line / 1,564-byte authoritative block stays
+unchanged at `6732c74e…0420`.
+
+The compact map still names the real receipt time, task, target evidence,
+accepted-at interval, delayed Git commit, missing natural-language query,
+missing contemporaneous index, no-replay decision, confidence, and Cycle 259
+closure. Exact material passes syntax, TypeScript, formatting, projection, 79
+scoped links, navigation 11/14 and 8/8, and 296 tests / 1,483 assertions. The
+broad audit passes 1,540 documents / 1,715 links; read-only health returns 30
+facts / 16 wakes. Accepted `ff923ccde4` is contained and unaccepted
+`d041c41b54` excluded.
+
+Protected `/app` remains externally observed at HEAD `386b445c…41fec8`, 914
+records / `5b4816ba…2f4`, with Scout scope 296 / `7e4d0937…26a8a`; this worker
+did not write or test it. GitHub, arXiv, and Reddit made zero requests and keep
+their exact recorded evidence and revisit triggers. This is retrieval
+compaction, not measured use or outcome proof, so RV-004 remains high/open.
+Next, rescan the remaining map/report mirrors and pursue the largest bounded
+decision duplicate without removing unique provenance or uncertainty.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
