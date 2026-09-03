@@ -796,31 +796,28 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
 | `RV-018` | Low | Cycle 269 result `5e5766892f` in the topic map and lane report | Both reports gave `bc0f3acc…ce83a1` as the SHA-256 of event `6143903`'s raw retained payload. Query-only re-read under UID 1000 gives `bc0f3acc70b1b8eb69758d98f8d52d76434d285868bd309c2a113713b2683ea1`; the second event digest was exact. The wrong digest prevents byte-level replay but does not alter event type, count, freshness, or the no-outcome conclusion. | **Resolved on standing.** Reviewer `9afdf7bd8f` is integrated as patch-equivalent `1698454717`; both durable reports retain the independently reproduced digest. |
 | `RV-019` | Low | Cycle 270 result `9a99396f67` in the topic map and lane report | Both reports said every other v1 outcome/result stayed exact. Selection and pass/fail stayed unchanged for the other 13 cases, but corpus-level inverse document frequency changed scores or rank diagnostics for three passing cases; one ranked count moves 67→68. The narrow 10/14→11/14 gain remains valid, but exact numerical preservation was overstated. | **Resolved on standing.** Reviewer `9afdf7bd8f` is integrated as patch-equivalent `1698454717`; both reports preserve the narrower claim outside protected-promotion evidence. |
 | `RV-020` | Low | Cycle 278 result `29d3d8b8cc`, compact Cycle 276 topic-map summary | The new detail link increases the current scoped check from 69 to 70 and the broad check from 1,705 to 1,706. Both links pass, so the stale totals misstate validation scope without changing retrieval behavior or compaction safety. | **Resolved on standing.** Exact reviewer `6c806ade5a` records 70 scoped and 1,706 broad links; current checks reproduce both totals with zero errors. |
-| `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries say material `f40b09a2da` drops the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved in this reviewer range.** Both summaries now say 333. Integrate the two-line correction with the updated cursor; do not use the original 334 value in productivity totals. |
+| `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries said material `f40b09a2da` dropped the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved on standing.** Reviewer `c3400f8c77` is standing `15e30e50ea` at stable patch ID `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`; both summaries now say 333. |
 
 ## Reviewer source/result and integration status
 
-- Current reviewer source is standing
-  `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9`. Integrate the directly
-  following reviewer range from `codex/g-8c5b597e-cycle281-result-review`; it
-  carries patch-equivalent copies of the pending Cycle 280 and Cycle 281
-  material reviews, then corrects RV-021 and advances the cursor through the
-  Cycle 281 result. Rollback is an ordinary reverse-order revert of that
-  reviewer range. It remains pending until standing contains exact or
-  patch-equivalent changes and current-tip validation passes.
-- Reviewer source `f40b09a2dab7b05b232b75f43e2a144f7fc17aa3` has pending
-  reviewer commits `18143fc61e` and `6dfcf7180c` on the earlier Cycle 281 branch.
-  Current commits `6f9f7ef72b` and `8e24ed8351` reapply those changes after
-  standing advanced to the Cycle 281 result. Their stable patch IDs remain
-  `7c6b32ad71017913fd155ec50f85092e2817ddc4` and
-  `213b0749933d2c207bfe66cc15108a451ae6333e`; they are the first two commits
-  in the current integration-ready range.
+- Reviewer source `12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9` has three-commit
+  result range ending at `c3400f8c77729a5d76a51bdc2262a620874d1a68`.
+  Standing integrated it after Cycle 282 as `45bdc0868c`, `16d602b7d8`, and
+  `15e30e50ea`, with exact stable patch IDs
+  `7c6b32ad71017913fd155ec50f85092e2817ddc4`,
+  `213b0749933d2c207bfe66cc15108a451ae6333e`, and
+  `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`. The first two commits replay
+  the prior Cycle 280/281 reviews; the third resolves RV-021. Rollback is an
+  ordinary reverse-order revert of those three standing commits.
+- Earlier reviewer commits `18143fc61e` and `6dfcf7180c` are superseded by
+  patch-equivalent standing `45bdc0868c` and `16d602b7d8`; no review finding
+  or producer Cycle 282 content was dropped.
 - Reviewer source `f649899b0ef8e524cec59b1868814a604e285714` has direct-child
   result `0954d5c6e76bf33f582da959e650303b644c7311` on the earlier reviewer
   branch. Because standing advanced before integration, current reviewer
   commit `6f9f7ef72b` reapplies the same one-file change; both have stable patch ID
   `7c6b32ad71017913fd155ec50f85092e2817ddc4`. The patch advances the cursor
-  through Cycle 280 only and remains pending in the current range.
+  through Cycle 280 only and is integrated as standing `45bdc0868c`.
 - Reviewer source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` has direct-child
   result `6c806ade5accd5fca81ba1b6800b5c831dde852c`, integrated exactly on
   standing by fast-forward. Its stable patch ID is
