@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 119 observational reconciliation through 2026-09-03T03:26:31.388Z; exact access evidence and uncertainty are in the Cycle 119 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 119 at 2026-09-03T03:26:31.388Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 119 read-only XHS boundary through 2026-09-03T03:26:31.388Z."
+latest_seed_basis: "Cycle 120 observational reconciliation through 2026-09-03T03:34:02.126Z; exact access evidence and uncertainty are in the Cycle 120 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 120 at 2026-09-03T03:34:02.126Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 120 read-only XHS boundary through 2026-09-03T03:34:02.126Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 119 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 120 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -3140,6 +3140,27 @@ bundle substitution: change the registered bundle bytes and matching local
 digests while holding schedule, model, seed, snapshot, and decision evidence
 fixed. If the old decision still selects, determine whether executable bundle
 identity—not registration metadata—belongs in policy scope.
+
+## Cycle 120 seed-first start
+
+Cycle 120 began from clean exact tip
+`22ae7dcf98607c1ac57c0810c6f4382f88f08f34`. The bounded observation ran
+at `2026-09-03T03:33:45.461Z–03:34:02.126Z`. UID 1000 (`hao`) used
+passwordless `sudo nsenter` as effective UID 0 in root-owned Chrome PID 2136's
+network namespace. The first wrapper failed before any XHS operation because
+sudo's path could not resolve `bun`; retrying with the explicit Bun path used
+the same established connector successfully.
+
+Public Explore remained readable at 30 notes. Supported non-navigating
+`saved-status` remained HTTP 200, `login`, 46,672 bytes, semantic fingerprint
+`3dab1b6…8af420`, a login wall, and zero attributable items. Only the response
+body SHA changed from `497de9e…7de45` to `1303f22…3c500`.
+
+Added and changed IDs remain unknown, observed removals are `[]`, and all 132
+durable seeds remain unavailable. No representative saved post was supported
+or read, and no XHS state changed. No execution-bundle control, public source,
+provider, or accepted-result request preceded this reconciliation. Commit this
+seed record first, then run the ranked bundle-substitution control locally.
 
 ## Cycle log
 
