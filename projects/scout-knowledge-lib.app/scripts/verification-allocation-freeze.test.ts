@@ -750,6 +750,47 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("keeps local evidence labels across same-byte registration locator aliases", () => {
+    for (const kind of ["checksum", "proof"] as const) {
+      const fixture = validFixture();
+      const baseline = verifyExecutionFreezeManifest(
+        fixture.manifest,
+        fixture.artifactContents,
+      );
+      const contents = fixture.artifactContents as Record<string, string>;
+      const original =
+        kind === "checksum" ? "MANIFEST.sha256" : "MANIFEST.sha256.ots";
+      const alias =
+        kind === "checksum"
+          ? "aliased-MANIFEST.sha256"
+          : "aliased-MANIFEST.sha256.ots";
+      contents[alias] = contents[original];
+      delete contents[original];
+      fixture.manifest.artifacts.find(
+        (artifact) => artifact.name === original,
+      )!.name = alias;
+      if (kind === "checksum") {
+        fixture.manifest.externalRegistration.manifestArtifact = alias;
+        fixture.manifest.externalRegistration.proofTargetArtifact = alias;
+      } else {
+        fixture.manifest.externalRegistration.proofArtifact = alias;
+      }
+
+      const aliased = verifyExecutionFreezeManifest(
+        fixture.manifest,
+        fixture.artifactContents,
+      );
+      expect(aliased, kind).toMatchObject({
+        ok: true,
+        errors: [],
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        timestampProofEvidenceStatus: "local-byte-presence-unverified",
+        providerCallsAuthorized: false,
+      });
+      expect(aliased.policyScope, kind).toEqual(baseline.policyScope);
+    }
+  });
+
   it("keeps locally unverified registration metadata outside policy applicability", () => {
     const { manifest, artifactContents } = validFixture();
     const first = verifyExecutionFreezeManifest(manifest, artifactContents);
