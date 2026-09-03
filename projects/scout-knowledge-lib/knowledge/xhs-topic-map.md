@@ -4027,6 +4027,14 @@ bytes, removing 10 lines / 522 bytes. RV-004 remains high/open; no source lane
 ran. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256 seed/control
 transition, subject to seed-first review of its distinct ordering evidence.
 
+## Cycle 290 seed-first start — current receipt reused
+
+Cycle 290 began from clean validated `a5c62bf6ff`. At
+`2026-09-03T22:49:29.765Z`, the current receipt was about 352 minutes old and
+inside cadence. No browser or public-source request ran; added/changed remain
+unknown, removals are `[]`, and all 132 IDs remain unavailable. Persist this
+ordering before the ranked Cycle 256 seed/control transition audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

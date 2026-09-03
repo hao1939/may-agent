@@ -9706,6 +9706,25 @@ high/open. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256
 seed/control transition, which requires a fresh seed-first audit before any
 change.
 
+## Cycle 290 seed-first start — exact Cycle 289 result retained
+
+Cycle 290 began from clean Cycle 289 result
+`a5c62bf6ff2499965426b610489490fcc43078e6`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 72 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The 1,540-document / 1,708-link broad audit and read-only health at
+30 facts / 16 wakes also passed. Accepted `ff923ccde4` remains contained,
+unaccepted `d041c41b54` excluded, and the protected 386/296-record status
+fingerprints remained byte-stable at `7c285c09…1ca01b` /
+`7e4d0937…26a8a`.
+
+At `2026-09-03T22:49:29.765Z`, the receipt through
+`2026-09-03T16:57:11.030Z` was about 352 minutes old, still before the
+scheduled `2026-09-03T22:57:11.030Z` pass. No browser, GitHub, arXiv, or Reddit
+request ran. Added/changed identities remain unknown, removals are `[]`, and
+all 132 IDs remain unavailable. Commit this ordering before the ranked Cycle
+256 seed/control transition audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
