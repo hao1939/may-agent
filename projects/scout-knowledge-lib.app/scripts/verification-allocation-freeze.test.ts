@@ -444,6 +444,46 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("stops oversized model and seed metadata before factorial traversal", () => {
+    const observations = (["models", "seeds"] as const).map((field) => {
+      const { manifest, artifactContents } = validFixture();
+      expect(verifyExecutionFreezeManifest(manifest, artifactContents).ok).toBe(
+        true,
+      );
+
+      const schedule = JSON.parse(artifactContents["schedule.json"]);
+      schedule[field] = Array.from(
+        { length: 5_000 },
+        (_, index) => `${field}-${index}`,
+      );
+      artifactContents["schedule.json"] = JSON.stringify(schedule);
+      const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+      manifest.schedule.sha256 = digest;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "schedule.json",
+      )!.sha256 = digest;
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+      return {
+        field,
+        errorCount: result.errors.length,
+        firstError: result.errors[0],
+        policyScope: result.policyScope,
+        providerCallsAuthorized: result.providerCallsAuthorized,
+      };
+    });
+
+    expect(observations).toEqual(
+      (["models", "seeds"] as const).map((field) => ({
+        field,
+        errorCount: 1,
+        firstError: "schedule bytes do not match the declared offline schedule",
+        policyScope: null,
+        providerCallsAuthorized: false,
+      })),
+    );
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);

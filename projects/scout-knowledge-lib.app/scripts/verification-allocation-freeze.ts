@@ -503,18 +503,24 @@ function validateSchedule(
     const parsedEpisodes = Array.isArray(parsed.episodes)
       ? parsed.episodes
       : [];
+    const modelIdsMatch = sameStrings(parsedModels, scheduledModels);
+    const seedIdsMatch = sameStrings(parsedSeeds, scheduledSeeds);
     if (
       parsed.schema !== schedule.schema ||
       parsed.providerCallsAuthorized !== false ||
       !Array.isArray(parsed.results) ||
       parsed.results.length !== 0 ||
-      !sameStrings(parsedModels, scheduledModels) ||
-      !sameStrings(parsedSeeds, scheduledSeeds) ||
+      !modelIdsMatch ||
+      !seedIdsMatch ||
       parsedEpisodes.length !== schedule.episodeCount
     ) {
       errors.push("schedule bytes do not match the declared offline schedule");
     }
-    if (parsedEpisodes.length !== schedule.episodeCount) {
+    if (
+      !modelIdsMatch ||
+      !seedIdsMatch ||
+      parsedEpisodes.length !== schedule.episodeCount
+    ) {
       return Number.isInteger(schedule.episodeCount)
         ? schedule.episodeCount
         : 0;
