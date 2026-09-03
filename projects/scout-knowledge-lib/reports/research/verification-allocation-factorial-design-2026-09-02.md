@@ -1715,6 +1715,57 @@ to let the CLI accept one explicit freeze-bundle root, descriptor-safely verify
 it, and pass only the derived scope into policy selection, while preserving the
 provider-call denial and keeping the non-applicable retained record closed.
 
+## Cycle 107 explicit freeze-bundle selection boundary
+
+Seed reconciliation `ebcbb0589913b6a4bad40d2fad592e35abbdb45d`
+preceded this work. The saved target retained its login-class semantic
+fingerprint, login wall, 46,672-byte length, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, observed removals
+are `[]`, and all 132 durable seeds remain unavailable. GitHub, arXiv, and
+Reddit made zero public requests.
+
+Exact local `dcc15ee0f138e14e717c754b98b35a9881411e76` makes the
+actual frontier entry point derive scope instead of accepting it from its
+caller. A policy-bearing invocation now requires an explicit freeze-bundle root
+in addition to the policy JSON, provenance manifest JSON, and evidence root.
+The adapter verifies the freeze through the existing pinned no-follow
+descriptor path and passes only a successful derived protocol/model scope to
+the local-record selector. Failed freeze verification cannot reach the
+positive policy path, and no branch authorizes provider calls.
+
+The positive regression combines the canonical one-model/two-seed toy freeze
+with a byte- and content-matching decision record. It returns freeze status
+`ok`, `providerCallsAuthorized: false`, both derived scope hashes, both local
+evidence-match statuses, and the equal-172 point at 1,032 blocks and 33,024
+episodes. A relative freeze root returns exact error `bundle root must be an
+explicit absolute path` with no selection. A separately valid policy/record
+whose model-scope hash differs from the verified freeze returns exact error `a
+matching verified freeze policy scope is required for applicability` with no
+selection. Focused validation passes 18 tests and 45 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves descriptor-safe local composition for one synthetic fixture. It
+does not authenticate the freeze's external registration, model resolution,
+owner, revision, timestamp, independent evidence, real drift, cost, or provider
+behavior. No real execution freeze is retained, and the illustrative 0.0006
+decision record remains `not-established`; this change does not promote it.
+Confidence is high for the local success and denial controls and low for every
+real operating-policy claim.
+
+The local accepted-result check at
+`2026-09-03T01:53:24.485Z–01:53:24.571Z` found all nine standing reconciliation
+commits contained and the four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Public GitHub retains its four exact named heads, arXiv retains
+MemGauge `2608.30177v1` at 15/15 and the allocation study `2608.25553v3` at
+14/15, and Reddit remains last known RSS-readable/JSON-403; none had a revision,
+artifact, replication, content, access, or readable-seed trigger.
+
+The next ranked investigation is a process-level CLI control using an explicit
+goal-owned freeze and decision fixture. It should confirm that the executable's
+serialized result preserves freeze verification, local-record evidence,
+selection denial, and zero provider authority rather than relying only on an
+in-process adapter test.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
