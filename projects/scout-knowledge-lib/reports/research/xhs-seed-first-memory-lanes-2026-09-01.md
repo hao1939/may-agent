@@ -8299,6 +8299,28 @@ mutation occurred. GitHub, arXiv, and Reddit made zero public requests before
 this record and retain their evidence and triggers. Commit this reconciliation
 first, then run the simultaneous-model-failure control locally.
 
+## Cycle 218 checkpoint — no model failure masks another
+
+Seed commit `b290d08b92` preceded exact test-only commit `cb2e27fbaf`. The
+two-model fixture substitutes the second resolution record first, producing
+only the exact `models[1]` mismatch. Substituting the first record next produces
+both exact mismatch errors in stable manifest order, `models[0]` then
+`models[1]`, rather than mutation order. Repeated verification is exactly equal.
+
+The invalid result retains seven artifacts, two models, two seeds, and 128
+episodes, with null policy scope and false provider authority. Focused
+validation passes 30 tests and 172 assertions plus TypeScript, formatting, and
+whitespace. This resolves failure masking and ordering locally, while retaining
+Cycle 216's qualification that only the bound manifest maps ordinals to model
+identity. No production fix is warranted.
+
+GitHub/local evidence won without a public request. ArXiv retains MemGauge
+`2608.30177v1` and allocation study `2608.25553v3`; Reddit retains readable RSS
+for `t3_1v8a3sh` and its JSON-403 boundary. All public lanes made zero requests
+and retain their triggers. Accepted lineage is unchanged. The next ranked local
+question combines model-resolution and schedule/model-order mismatches to test
+cross-layer diagnostic completeness without policy or provider authority.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

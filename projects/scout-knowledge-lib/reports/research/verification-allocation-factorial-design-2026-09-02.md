@@ -2881,6 +2881,23 @@ consumer and migration/rollback contract. The next distinct control is whether
 simultaneous first- and second-model mismatches both survive in stable ordinal
 error order.
 
+## Cycle 218 simultaneous model failures
+
+Seed commit `b290d08b92` preceded exact test-only commit `cb2e27fbaf`. The
+two-model control substitutes the second model-resolution record first and
+observes only `models[1] resolution evidence does not match declaration`.
+After substituting the first record, the verifier returns both exact errors in
+manifest order, `models[0]` then `models[1]`, although mutation order was the
+reverse. A repeated verification is exactly equal.
+
+The result retains seven artifacts, two models, two seeds, and 128 episodes,
+returns no policy scope, and denies provider calls. The focused gate passes 30
+tests and 172 assertions plus TypeScript, formatting, and whitespace. Failures
+do not mask each other and ordering is deterministic at this boundary, so no
+production change is justified. The manifest remains necessary for model
+identity. The next distinct control combines one model-record mismatch with a
+schedule/model-order mismatch to test cross-layer error completeness.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two

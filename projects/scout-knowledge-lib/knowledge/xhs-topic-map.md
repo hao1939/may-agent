@@ -4054,6 +4054,30 @@ representative saved-post read or account mutation occurred. GitHub, arXiv,
 and Reddit made zero public requests before this reconciliation. Commit it
 first, then run the ranked simultaneous-model-failure control locally.
 
+### Cycle 218 checkpoint — simultaneous model failures remain complete
+
+Seed commit `b290d08b92` preceded exact test-only commit `cb2e27fbaf`. In the
+two-model fixture, the second resolution record is substituted first and
+returns only the exact `models[1]` declaration-mismatch error. Substituting the
+first record afterward returns both exact errors in manifest order,
+`models[0]` then `models[1]`, despite the opposite mutation order. Repeating
+verification returns the complete same result.
+
+The invalid result retains seven artifacts, two models, two seeds, and 128
+episodes while returning no policy scope and denying provider calls. This
+supports deterministic, complete ordinal diagnostics and contradicts the
+failure-masking concern. It does not make the result self-contained: Cycle 216
+still requires the bound manifest to map ordinals to model identity. Confidence
+is high for strict-v1 local behavior and low for external consumers or provider
+execution. Focused validation passes 30 tests and 172 assertions plus
+TypeScript, formatting, and whitespace. No production fix is needed.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their evidence, boundaries, and triggers; accepted lineage is unchanged.
+The next ranked local question is cross-layer diagnostic completeness: test
+whether a model-resolution mismatch and a schedule/model-order mismatch are
+both retained, without deriving policy scope or provider authority.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
