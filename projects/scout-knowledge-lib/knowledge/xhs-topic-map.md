@@ -2,9 +2,9 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 191 observational reconciliation through 2026-09-03T11:26:15.361Z; exact access evidence and uncertainty are in the Cycle 191 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 191 at 2026-09-03T11:26:15.361Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 191 read-only XHS boundary through 2026-09-03T11:26:15.361Z."
+latest_seed_basis: "Cycle 192 observational reconciliation through 2026-09-03T11:32:37.764Z; exact access evidence and uncertainty are in the Cycle 192 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 192 at 2026-09-03T11:32:37.764Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 192 read-only XHS boundary through 2026-09-03T11:32:37.764Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -3340,6 +3340,39 @@ same-byte artifact aliasing: change the registered artifact name while keeping
 its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
+
+## Cycle 192 seed-first start
+
+Cycle 192 began only after exact Cycle 191 tip
+`b5b47e245084d8b9d3afd058b3382ec6353471df` passed the full Scout gate:
+252 tests and 1,212 assertions, 30 relative links, read-only health at 26 facts
+and 16 wake signals at the observer's bounded cap, empty runtime state, 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifact
+blobs. The standing worktree was clean.
+
+From `2026-09-03T11:32:29.577Z` through `11:32:37.764Z`, the first
+effective-UID-0 namespace attempt failed before observation because `sudo` did
+not resolve `bun`. This was local runtime-path wiring, not an XHS result. The
+same read-only connector retried with explicit `/home/hao/.bun/bin/bun` in
+root-owned Chrome PID 2136's network namespace. Public Explore remained
+readable at 30 notes. The non-navigating saved target returned HTTP 200,
+`login`, 46,763 bytes, semantic fingerprint `3dab1b6d…8af420`, a login wall,
+and zero attributable items.
+
+Semantic access is unchanged. Byte length changed 46,764→46,763 and body SHA
+changed `0dd0fe2…da161`→`c34d448…3d906`; both are response provenance,
+not seed-content evidence. Added and changed IDs remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved-post read was supported, no XHS state changed, and no
+candidate-registry or public-source request preceded this reconciliation.
+
+Protected `/app` retained HEAD `386b445c…1fec8` but externally changed from
+the prior 883-record fingerprint to 386 short-status records and
+`7c285c09…ca01b`; no cause or worker ownership is inferred. The human overlay
+retained HEAD `fd4c68ec…1514663`, three records, and
+`ad8d222c…e74780`. Neither protected checkout was written or tested. Commit
+this reconciliation first, then compare explicit candidate-registry identity
+alternatives against the current compiled fail-closed boundary.
 
 ## Cycle 191 seed-first start
 
