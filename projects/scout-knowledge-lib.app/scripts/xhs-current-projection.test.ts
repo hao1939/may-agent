@@ -9,6 +9,15 @@ function fixture(cycle = 224): {
   const observedThrough = "2026-09-03T14:59:11.279Z";
   return {
     ledger:
+      "<ai_context>\n" +
+      `summary: "Living reconciliation ledger through Cycle ${cycle}."\n` +
+      `source_basis: "Goal-owned observations through ${observedThrough}."\n` +
+      "</ai_context>\n\n" +
+      "## Current reconciliation state\n\n" +
+      "| Field | State |\n" +
+      "| --- | --- |\n" +
+      `| Observation time | Cycle ${cycle} bounded access pass \`2026-09-03T14:59:10.069Z–14:59:11.279Z\` |\n\n` +
+      "## Compact reconciliations\n\n" +
       "| Cycle | Standing tip | Supported observation | Exact reconciliation |\n" +
       "| --- | --- | --- | --- |\n" +
       `| ${cycle} | \`tip\` | \`2026-09-03T14:59:10.069Z–14:59:11.279Z\`; read-only | unchanged |\n` +
@@ -54,11 +63,40 @@ describe("XHS current-state projection", () => {
     expect(result.errors).toContain("topic lead does not project Cycle 224");
   });
 
+  it("reports stale canonical-ledger projections independently", () => {
+    const inputs = fixture();
+    inputs.ledger = inputs.ledger
+      .replace(
+        "Living reconciliation ledger through Cycle 224",
+        "Living reconciliation ledger through Cycle 223",
+      )
+      .replace(
+        "Goal-owned observations through 2026-09-03T14:59:11.279Z",
+        "Goal-owned observations through 2026-09-03T14:54:09.061Z",
+      )
+      .replace(
+        "Cycle 224 bounded access pass",
+        "Cycle 222 bounded access pass",
+      );
+
+    const result = inspectXhsCurrentProjection(inputs);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      'ledger summary does not include "Cycle 224"',
+    );
+    expect(result.errors).toContain(
+      'ledger source_basis does not include "through 2026-09-03T14:59:11.279Z"',
+    );
+    expect(result.errors).toContain(
+      'ledger current state does not include "Cycle 224 bounded access pass"',
+    );
+  });
+
   it("fails closed when the latest row lacks an exact observation range", () => {
     const inputs = fixture();
     inputs.ledger = inputs.ledger.replace(
-      "2026-09-03T14:59:10.069Z–14:59:11.279Z",
-      "unknown time",
+      "| 224 | `tip` | `2026-09-03T14:59:10.069Z–14:59:11.279Z`; read-only | unchanged |",
+      "| 224 | `tip` | unknown time; read-only | unchanged |",
     );
 
     expect(inspectXhsCurrentProjection(inputs)).toEqual({
@@ -71,9 +109,13 @@ describe("XHS current-state projection", () => {
 
   it("preserves an exact observation that crosses UTC midnight", () => {
     const inputs = fixture();
-    inputs.ledger = inputs.ledger.replace(
+    inputs.ledger = inputs.ledger.replaceAll(
       "2026-09-03T14:59:10.069Z–14:59:11.279Z",
       "2026-09-03T23:59:59.900Z–00:00:00.100Z",
+    );
+    inputs.ledger = inputs.ledger.replaceAll(
+      "2026-09-03T14:59:11.279Z",
+      "2026-09-04T00:00:00.100Z",
     );
     inputs.topicMap = inputs.topicMap.replaceAll(
       "2026-09-03T14:59:11.279Z",

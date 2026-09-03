@@ -56,6 +56,11 @@ export function inspectXhsCurrentProjection(
 
   const { cycle, observedThrough } = latest;
   const errors: string[] = [];
+  const ledgerSummary = contextValue(inputs.ledger, "summary");
+  const ledgerSources = contextValue(inputs.ledger, "source_basis");
+  const ledgerCurrentState = inputs.ledger.match(
+    /^## Current reconciliation state\s*$([\s\S]*?)(?=^## |(?![\s\S]))/mu,
+  )?.[1];
   const topicBasis = contextValue(inputs.topicMap, "latest_seed_basis");
   const topicObservation = contextValue(
     inputs.topicMap,
@@ -82,6 +87,14 @@ export function inspectXhsCurrentProjection(
     }
   };
 
+  requireValue("ledger summary", ledgerSummary, [`Cycle ${cycle}`]);
+  requireValue("ledger source_basis", ledgerSources, [
+    `through ${observedThrough}`,
+  ]);
+  requireValue("ledger current state", ledgerCurrentState ?? null, [
+    `Cycle ${cycle} bounded access pass`,
+    observedThrough.slice(11),
+  ]);
   requireValue("topic latest_seed_basis", topicBasis, [
     `Cycle ${cycle} observational reconciliation through ${observedThrough}`,
     `seed-ledger row ${cycle}`,
