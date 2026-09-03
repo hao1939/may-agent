@@ -322,20 +322,20 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 138 supersedes the older table snapshot below. Starting tip
-`afb04b3414afaae568d13783c241e3ab5483e086` and seed commit
-`9df76458e0d7a176e033a2a0bf81d78199dca2b1` anchor the unchanged login-class
+Cycle 139 supersedes the older table snapshot below. Starting tip
+`5cb838eebdb6fc224734f3f6565b40efef2c611c` and seed commit
+`4ad1e158ad485ebe96580a520da7e8d96bde2179` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Exact local `593d3ff…0f99d1a` rejects
-duplicate object keys before either inline CLI JSON input is accepted.
+unavailable. No public request was made. Exact local `b0e515f…ce0f11a` proves
+escaped and literal spellings collide while distinct object scopes remain valid.
 Accepted-result containment and protected-checkout preservation are rechecked
 on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 138; public trigger-deferred.** Duplicate-key ambiguity was directly executable at the inline policy/evidence CLI boundary.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Pre-fix, duplicated inline policy returned the same parsed object; exact local `593d3ff…0f99d1a` rejects duplicates in both arguments. | Zero public requests. Next test escaped-equivalent duplicate key spellings against the shared scanner. Revisit public GitHub on a recorded trigger.                                             |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 138.** The papers remain contextual controls rather than JSON parser authority.                                              | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                        | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                           |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 138 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                             |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 139; public trigger-deferred.** Semantic rather than textual duplicate-key identity was directly executable in the shared local scanner.                              | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `b0e515f…ce0f11a` rejects literal/escaped owner and nested policy duplicates while accepting repeated `schema` across distinct scopes. | Zero public requests. Next test duplicate keys inside the embedded prompt string against the registered-render comparison. Revisit public GitHub on a recorded trigger.                             |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 139.** The papers remain contextual controls rather than JSON parser authority.                                              | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                        | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                           |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 139 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                             |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3371,6 +3371,26 @@ The ranked matched control now tests a distinct parser ambiguity: a same-value
 duplicate top-level JSON key can disappear during `JSON.parse` before exact
 object-key validation. Public GitHub, arXiv, and Reddit remain trigger-deferred
 until reconsidered after that control.
+
+### Cycle 139 checkpoint — escaped spellings cannot bypass semantic key identity
+
+Seed commit `4ad1e158ad485ebe96580a520da7e8d96bde2179` preceded the
+matched scanner controls. Literal `decisionOwner` plus escaped
+`decision\u004fwner`, and nested `policy` plus `poli\u0063y`, both return a
+duplicate. A matched document repeats `schema` across an outer object, nested
+object, and separate array elements and remains nonduplicate.
+
+Exact local `b0e515fd0e99a7a9127e042e5b349eb94ce0f11a` preserves those
+controls. Two focused tests pass with three assertions plus TypeScript,
+formatting, and whitespace. No production change was required because the
+shared scanner decodes each key string before scope-local comparison.
+
+GitHub/local code won the rubric; all public lanes made zero requests and
+retain their evidence and triggers above. This supports semantic key identity
+for valid JSON; it does not prove authority, provenance, or arbitrary malformed
+input handling beyond the preceding `JSON.parse` gate. The next ranked control
+tests duplicate keys inside the separately parsed embedded prompt string,
+where the registered-render comparison should remain the authority.
 
 ### Cycle 138 checkpoint — inline JSON no longer collapses duplicate keys
 

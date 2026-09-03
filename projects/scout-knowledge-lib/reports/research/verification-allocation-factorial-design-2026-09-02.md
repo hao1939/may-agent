@@ -2527,6 +2527,19 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 139 escaped-equivalent key identity
+
+Seed commit `4ad1e158ad485ebe96580a520da7e8d96bde2179` preceded matched
+scanner controls. Literal `decisionOwner` plus escaped
+`decision\u004fwner`, and nested `policy` plus `poli\u0063y`, are duplicates.
+Repeated `schema` names in distinct object and array scopes remain valid.
+
+Exact regression `b0e515fd0e99a7a9127e042e5b349eb94ce0f11a` passes two tests
+and three assertions plus TypeScript, formatting, and whitespace. No production
+change was required because key strings are decoded before scope-local
+comparison. This proves behavior for valid JSON after syntax parsing, not
+authority or provenance. The next control checks the embedded prompt string.
+
 ## Cycle 138 duplicate inline CLI keys
 
 Seed commit `9df76458e0d7a176e033a2a0bf81d78199dca2b1` preceded matched

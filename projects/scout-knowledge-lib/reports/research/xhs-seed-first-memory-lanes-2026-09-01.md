@@ -7752,6 +7752,20 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 139 checkpoint — escaped duplicate keys remain duplicates
+
+Seed commit `4ad1e158ad485ebe96580a520da7e8d96bde2179` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. Literal and
+escaped spellings of the same owner or nested policy key are both detected;
+repeated names in distinct object scopes remain valid.
+
+Exact local `b0e515fd0e99a7a9127e042e5b349eb94ce0f11a` passes two focused
+tests and three assertions plus TypeScript, formatting, and whitespace. No
+production change was needed. GitHub/local code won the rubric; GitHub, arXiv,
+and Reddit made zero public requests and retain their recorded evidence and
+triggers. The next ranked control tests the embedded prompt's raw exactness.
+
 ## Cycle 138 checkpoint — duplicate inline keys no longer disappear
 
 Seed commit `9df76458e0d7a176e033a2a0bf81d78199dca2b1` records unchanged
