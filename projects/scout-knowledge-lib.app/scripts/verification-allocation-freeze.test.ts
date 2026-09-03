@@ -859,6 +859,77 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("keeps checksum markers, controls, and Unicode spellings literal", () => {
+    const composed = "caf\u00e9.zip";
+    const decomposed = "cafe\u0301.zip";
+    const cases = [
+      {
+        artifactName: "bundle.zip",
+        checksumName: "bundle.zip",
+        marker: "*",
+        ok: true,
+      },
+      {
+        artifactName: "bundle\tv1.zip",
+        checksumName: "bundle\tv1.zip",
+        marker: " ",
+        ok: true,
+      },
+      {
+        artifactName: "bundle\nv1.zip",
+        checksumName: "bundle\nv1.zip",
+        marker: " ",
+        ok: false,
+      },
+      { artifactName: composed, checksumName: composed, marker: " ", ok: true },
+      {
+        artifactName: decomposed,
+        checksumName: decomposed,
+        marker: " ",
+        ok: true,
+      },
+      {
+        artifactName: composed,
+        checksumName: decomposed,
+        marker: " ",
+        ok: false,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const { manifest, artifactContents } = validFixture();
+      const bundleBytes = artifactContents["bundle.zip"];
+      delete (artifactContents as Record<string, string>)["bundle.zip"];
+      (artifactContents as Record<string, string>)[testCase.artifactName] =
+        bundleBytes;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "bundle.zip",
+      )!.name = testCase.artifactName;
+      manifest.externalRegistration.artifactName = testCase.artifactName;
+
+      const checksumBytes = `${freezeArtifactSha256(bundleBytes)} ${testCase.marker}${testCase.checksumName}\n`;
+      artifactContents["MANIFEST.sha256"] = checksumBytes;
+      const checksumSha256 = freezeArtifactSha256(checksumBytes);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "MANIFEST.sha256",
+      )!.sha256 = checksumSha256;
+      manifest.externalRegistration.manifestSha256 = checksumSha256;
+      manifest.externalRegistration.proofTargetSha256 = checksumSha256;
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+      expect(result.ok, JSON.stringify(testCase)).toBe(testCase.ok);
+      expect(result.providerCallsAuthorized).toBe(false);
+      if (testCase.ok) {
+        expect(result.errors).toEqual([]);
+      } else {
+        expect(result.errors).toContain(
+          "external registration checksum manifest does not bind its artifact",
+        );
+      }
+    }
+  });
+
   it("derives stable and factor-specific policy scope references", () => {
     const { manifest, artifactContents } = validFixture();
     const first = verifyExecutionFreezeManifest(manifest, artifactContents);

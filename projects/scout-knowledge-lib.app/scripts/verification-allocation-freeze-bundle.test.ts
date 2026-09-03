@@ -174,6 +174,34 @@ describe("verification-allocation freeze bundle", () => {
     expect(aliased.policyScope).toEqual(baseline.policyScope);
   });
 
+  it("keeps descriptor-safe control and Unicode aliases literal", async () => {
+    const { root, manifest } = await fixture();
+    const aliases = [
+      "proof\tartifact.ots",
+      "proof\nartifact.ots",
+      "caf\u00e9.ots",
+      "cafe\u0301.ots",
+    ];
+    let current = "MANIFEST.sha256.ots";
+
+    for (const alias of aliases) {
+      await rename(join(root, current), join(root, alias));
+      manifest.artifacts.find((artifact) => artifact.name === current)!.name =
+        alias;
+      manifest.externalRegistration.proofArtifact = alias;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok, JSON.stringify(alias)).toBe(true);
+      expect(result.errors).toEqual([]);
+      expect(result.providerCallsAuthorized).toBe(false);
+      current = alias;
+    }
+  });
+
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
     const { root, manifest } = await fixture();
     const rawManifest = JSON.stringify(manifest).replace(
@@ -216,6 +244,21 @@ describe("verification-allocation freeze bundle", () => {
     expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
       "artifact name is not a canonical relative path: ../schedule.json",
     );
+  });
+
+  it("rejects NUL and backslash artifact names before reading them", async () => {
+    for (const name of ["schedule\0.json", "evidence\\schedule.json"]) {
+      const { root, manifest } = await fixture();
+      manifest.artifacts[0]!.name = name;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
+        `artifact name is not a canonical relative path: ${name}`,
+      );
+    }
   });
 
   it("rejects symlinks even when their target is readable", async () => {
