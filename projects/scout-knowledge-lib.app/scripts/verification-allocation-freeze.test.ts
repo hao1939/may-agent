@@ -1367,6 +1367,42 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("rejects a coherent candidate registry substitution", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    for (const episode of schedule.episodes) {
+      for (const candidate of episode.candidates) {
+        candidate.path += "-v2";
+        candidate.revision += "-v2";
+        candidate.body += " v2";
+      }
+      episode.prompt = renderFactorialPrompt(episode);
+    }
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect({
+      ok: result.ok,
+      errors: result.errors,
+      policyScope: result.policyScope,
+      providerCallsAuthorized: result.providerCallsAuthorized,
+    }).toEqual({
+      ok: false,
+      errors: [
+        "schedule factorial verification failed: candidate bodies do not match their registered memories",
+        "schedule factorial verification failed: candidate path/revision tuples do not match their registered memories",
+      ],
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects the Cycle 47 source archive as a Scout execution freeze", () => {
     const { manifest, artifactContents } = validFixture();
     const sourceArchive = structuredClone(manifest);
