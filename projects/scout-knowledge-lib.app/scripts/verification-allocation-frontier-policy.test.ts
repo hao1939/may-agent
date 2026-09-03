@@ -11,10 +11,6 @@ import {
   type IdentityRobustFrontierPolicy,
 } from "./verification-allocation-frontier-policy";
 
-const decisionRecord = '{"decision":"synthetic fixture"}\n';
-const decisionRecordSha256 = createHash("sha256")
-  .update(decisionRecord)
-  .digest("hex");
 const roots: string[] = [];
 
 afterEach(async () => {
@@ -45,17 +41,34 @@ const frontier: IdentityRobustFrontierPoint[] = [
 ];
 
 function manifest(policy: IdentityRobustFrontierPolicy) {
-  return {
-    schema: "scout.verification-allocation-policy-evidence/v1",
-    evidenceClass: "caller-supplied-policy-provenance",
-    policySha256: hashIdentityRobustFrontierPolicy(policy),
-    evidenceReference: policy.evidenceReference,
+  const decisionId = policy.evidenceReference.replace(/^decision-record:/, "");
+  const decisionRecord = `${JSON.stringify({
+    schema: "scout.verification-allocation-policy-decision/v1",
+    decisionId,
     decisionOwner: "fixture-owner",
     decisionRevision: "decision-revision:fixture",
     observedAt: "2026-09-03T00:00:00.000Z",
-    decisionRecordArtifact: "decisions/policy.json",
-    decisionRecordSha256,
+    policy,
+    rationale: "Synthetic fixture.",
     independentEvidenceStatus: "not-provided",
+    scopeLimit: "Local synthetic control only.",
+  })}\n`;
+  return {
+    decisionRecord,
+    value: {
+      schema: "scout.verification-allocation-policy-evidence/v1",
+      evidenceClass: "caller-supplied-policy-provenance",
+      policySha256: hashIdentityRobustFrontierPolicy(policy),
+      evidenceReference: policy.evidenceReference,
+      decisionOwner: "fixture-owner",
+      decisionRevision: "decision-revision:fixture",
+      observedAt: "2026-09-03T00:00:00.000Z",
+      decisionRecordArtifact: "decisions/policy.json",
+      decisionRecordSha256: createHash("sha256")
+        .update(decisionRecord)
+        .digest("hex"),
+      independentEvidenceStatus: "not-provided",
+    },
   };
 }
 
@@ -134,7 +147,7 @@ describe("identity-robust allocation frontier policy", () => {
     const result = selectIdentityRobustFrontierPoint(
       frontier,
       policy,
-      manifest(policy),
+      manifest(policy).value,
     );
     expect(result).toMatchObject({
       ok: true,
@@ -155,7 +168,11 @@ describe("identity-robust allocation frontier policy", () => {
       evidenceReference: "decision-record:fixture-budget",
     };
     expect(
-      selectIdentityRobustFrontierPoint(frontier, policy, manifest(policy)),
+      selectIdentityRobustFrontierPoint(
+        frontier,
+        policy,
+        manifest(policy).value,
+      ),
     ).toMatchObject({
       ok: true,
       policyEvidenceStatus: "caller-supplied-unverified",
@@ -173,7 +190,11 @@ describe("identity-robust allocation frontier policy", () => {
       evidenceReference: "decision-record:fixture-unattainable",
     };
     expect(
-      selectIdentityRobustFrontierPoint(frontier, policy, manifest(policy)),
+      selectIdentityRobustFrontierPoint(
+        frontier,
+        policy,
+        manifest(policy).value,
+      ),
     ).toMatchObject({
       ok: false,
       policyEvidenceStatus: "caller-supplied-unverified",
@@ -183,10 +204,6 @@ describe("identity-robust allocation frontier policy", () => {
   });
 
   it("fails the actual selection closed unless the local decision record matches", async () => {
-    const root = await mkdtemp(join(tmpdir(), "scout-frontier-policy-"));
-    roots.push(root);
-    await mkdir(join(root, "decisions"));
-    await writeFile(join(root, "decisions", "policy.json"), decisionRecord);
     const policy: IdentityRobustFrontierPolicy = {
       schema: "scout.verification-allocation-frontier-policy/v1",
       evidenceClass: "caller-supplied-operating-policy",
@@ -194,20 +211,29 @@ describe("identity-robust allocation frontier policy", () => {
       minimumUniformDriftReserve: 0.0006,
       evidenceReference: "decision-record:fixture-local",
     };
+    const fixture = manifest(policy);
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-policy-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    await writeFile(
+      join(root, "decisions", "policy.json"),
+      fixture.decisionRecord,
+    );
 
     expect(
       await selectIdentityRobustFrontierPointFromLocalRecord(
         frontier,
         policy,
-        manifest(policy),
+        fixture.value,
         root,
       ),
     ).toMatchObject({
       ok: true,
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
-      decisionRecordSha256,
-      decisionRecordByteLength: Buffer.byteLength(decisionRecord),
+      decisionRecordSha256: fixture.value.decisionRecordSha256,
+      decisionRecordByteLength: Buffer.byteLength(fixture.decisionRecord),
       decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "local-content-match-unverified",
       errors: [],
     });
 
@@ -216,7 +242,7 @@ describe("identity-robust allocation frontier policy", () => {
       await selectIdentityRobustFrontierPointFromLocalRecord(
         frontier,
         policy,
-        manifest(policy),
+        fixture.value,
         root,
       ),
     ).toMatchObject({
@@ -225,6 +251,36 @@ describe("identity-robust allocation frontier policy", () => {
       decisionRecordSha256: "",
       decisionRecordEvidenceStatus: "",
       errors: ["local evidence bytes do not match the declared SHA-256"],
+    });
+
+    const contradictoryRecord = `${JSON.stringify({
+      ...JSON.parse(fixture.decisionRecord),
+      decisionRevision: "decision-revision:different",
+    })}\n`;
+    await writeFile(
+      join(root, "decisions", "policy.json"),
+      contradictoryRecord,
+    );
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalRecord(
+        frontier,
+        policy,
+        {
+          ...fixture.value,
+          decisionRecordSha256: createHash("sha256")
+            .update(contradictoryRecord)
+            .digest("hex"),
+        },
+        root,
+      ),
+    ).toMatchObject({
+      ok: false,
+      selected: null,
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "",
+      errors: [
+        "local decision record does not match the provenance manifest and policy",
+      ],
     });
   });
 });

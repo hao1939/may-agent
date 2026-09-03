@@ -31,6 +31,7 @@ export type IdentityRobustLocalPolicyEvidenceBinding =
     decisionRecordSha256: string;
     decisionRecordByteLength: number;
     decisionRecordEvidenceStatus: "local-byte-match-unverified" | "";
+    decisionRecordContentStatus: "local-content-match-unverified" | "";
   };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -50,6 +51,60 @@ function exactUtcTimestamp(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
+  if (record(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function decisionRecordMatches(
+  candidate: unknown,
+  expectedPolicyCandidate: unknown,
+  manifest: IdentityRobustPolicyEvidenceManifest,
+): boolean {
+  if (!record(candidate)) return false;
+  const independentEvidenceStatus = manifest.independentEvidenceStatus;
+  const expectedKeys = [
+    "schema",
+    "decisionId",
+    "decisionOwner",
+    "decisionRevision",
+    "observedAt",
+    "policy",
+    "rationale",
+    "independentEvidenceStatus",
+    ...(independentEvidenceStatus === "provided-unverified"
+      ? ["independentEvidenceReference"]
+      : []),
+    "scopeLimit",
+  ].sort();
+  return (
+    JSON.stringify(Object.keys(candidate).sort()) ===
+      JSON.stringify(expectedKeys) &&
+    candidate.schema === "scout.verification-allocation-policy-decision/v1" &&
+    nonempty(candidate.decisionId) &&
+    manifest.evidenceReference === `decision-record:${candidate.decisionId}` &&
+    candidate.decisionOwner === manifest.decisionOwner &&
+    candidate.decisionRevision === manifest.decisionRevision &&
+    candidate.observedAt === manifest.observedAt &&
+    canonicalJson(candidate.policy) ===
+      canonicalJson(expectedPolicyCandidate) &&
+    candidate.independentEvidenceStatus === independentEvidenceStatus &&
+    (independentEvidenceStatus !== "provided-unverified" ||
+      candidate.independentEvidenceReference ===
+        manifest.independentEvidenceReference) &&
+    nonempty(candidate.rationale) &&
+    nonempty(candidate.scopeLimit)
+  );
 }
 
 export function bindIdentityRobustPolicyEvidence(
@@ -122,6 +177,7 @@ export function bindIdentityRobustPolicyEvidence(
 export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
   expectedPolicySha256: string,
   expectedEvidenceReference: string,
+  expectedPolicyCandidate: unknown,
   candidate: unknown,
   evidenceRoot: string,
 ): Promise<IdentityRobustLocalPolicyEvidenceBinding> {
@@ -136,6 +192,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
       decisionRecordSha256: "",
       decisionRecordByteLength: 0,
       decisionRecordEvidenceStatus: "",
+      decisionRecordContentStatus: "",
     };
   }
   const manifest = candidate as IdentityRobustPolicyEvidenceManifest;
@@ -144,14 +201,66 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     manifest.decisionRecordArtifact,
     manifest.decisionRecordSha256,
   );
+  if (!localEvidence.ok) {
+    return {
+      ...structural,
+      ok: false,
+      errors: localEvidence.errors,
+      decisionRecordSha256: localEvidence.sha256,
+      decisionRecordByteLength: localEvidence.byteLength,
+      decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+      decisionRecordContentStatus: "",
+      scopeLimit: localEvidence.scopeLimit,
+    };
+  }
+  let decisionRecordCandidate: unknown;
+  try {
+    decisionRecordCandidate = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(localEvidence.bytes!),
+    );
+  } catch {
+    return {
+      ...structural,
+      ok: false,
+      errors: ["local decision record must contain valid UTF-8 JSON"],
+      decisionRecordSha256: localEvidence.sha256,
+      decisionRecordByteLength: localEvidence.byteLength,
+      decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+      decisionRecordContentStatus: "",
+      scopeLimit:
+        "The local bytes match their declared hash but do not form a valid decision record. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+    };
+  }
+  if (
+    !decisionRecordMatches(
+      decisionRecordCandidate,
+      expectedPolicyCandidate,
+      manifest,
+    )
+  ) {
+    return {
+      ...structural,
+      ok: false,
+      errors: [
+        "local decision record does not match the provenance manifest and policy",
+      ],
+      decisionRecordSha256: localEvidence.sha256,
+      decisionRecordByteLength: localEvidence.byteLength,
+      decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+      decisionRecordContentStatus: "",
+      scopeLimit:
+        "The local bytes match their declared hash but their content does not match the expected policy and manifest. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+    };
+  }
   return {
     ...structural,
-    ok: localEvidence.ok,
-    errors: localEvidence.errors,
+    ok: true,
+    errors: [],
     decisionRecordSha256: localEvidence.sha256,
     decisionRecordByteLength: localEvidence.byteLength,
     decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+    decisionRecordContentStatus: "local-content-match-unverified",
     scopeLimit:
-      "The manifest and one descriptor-safe local byte read are bound to the exact policy. This proves local integrity for that read, not authorship, authority, independence, timestamp validity, or substantive correctness.",
+      "The manifest, one descriptor-safe local byte read, and the record's policy and provenance content agree. This proves local consistency for that read, not authorship, authority, independence, timestamp validity, or substantive correctness.",
   };
 }

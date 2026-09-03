@@ -35,6 +35,7 @@ export type IdentityRobustLocalFrontierSelection =
     decisionRecordSha256: string;
     decisionRecordByteLength: number;
     decisionRecordEvidenceStatus: "local-byte-match-unverified" | "";
+    decisionRecordContentStatus: "local-content-match-unverified" | "";
   };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -238,6 +239,7 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
       decisionRecordSha256: "",
       decisionRecordByteLength: 0,
       decisionRecordEvidenceStatus: "",
+      decisionRecordContentStatus: "",
     };
   }
 
@@ -245,6 +247,7 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
   const localBinding = await bindIdentityRobustPolicyEvidenceFromLocalRecord(
     selection.policySha256,
     policy.evidenceReference,
+    policy,
     evidenceManifestCandidate,
     evidenceRoot,
   );
@@ -254,9 +257,10 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
       ok: false,
       selected: null,
       errors: localBinding.errors,
-      decisionRecordSha256: "",
-      decisionRecordByteLength: 0,
-      decisionRecordEvidenceStatus: "",
+      decisionRecordSha256: localBinding.decisionRecordSha256,
+      decisionRecordByteLength: localBinding.decisionRecordByteLength,
+      decisionRecordEvidenceStatus: localBinding.decisionRecordEvidenceStatus,
+      decisionRecordContentStatus: localBinding.decisionRecordContentStatus,
       scopeLimit: localBinding.scopeLimit,
     };
   }
@@ -265,6 +269,7 @@ export async function selectIdentityRobustFrontierPointFromLocalRecord(
     decisionRecordSha256: localBinding.decisionRecordSha256,
     decisionRecordByteLength: localBinding.decisionRecordByteLength,
     decisionRecordEvidenceStatus: localBinding.decisionRecordEvidenceStatus,
+    decisionRecordContentStatus: localBinding.decisionRecordContentStatus,
     scopeLimit: localBinding.scopeLimit,
   };
 }
