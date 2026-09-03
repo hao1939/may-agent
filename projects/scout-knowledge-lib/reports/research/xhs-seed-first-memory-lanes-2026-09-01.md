@@ -9411,6 +9411,47 @@ observed removals are `[]`, and all 132 durable IDs remain unavailable. The
 post-seed ranking selects the remaining exact 36-line Cycle 274/278 mirror;
 commit this ordering evidence before its retention audit.
 
+## Cycle 283 checkpoint — one transition record, one detailed record
+
+Seed commit `3d99bfd6bd059ef3cf2379762516894367e64394` preceded every
+post-seed operation. The selected map block was 46 lines / 2,647 bytes at
+SHA-256 `7fb95003…ec7eb`; this authoritative detailed block remains 54 lines /
+3,129 bytes at SHA-256
+`fd5d2970264fc14428a19e90d7e4af907f89e83e744b2fd527d1641a83cea8fb`.
+They shared 37 lines with sequence similarity 0.74.
+
+Exact material `05000e2babf01b08cd082406a4007413ce5fd08e` replaces only the
+map block with a 21-line / 1,221-byte transition summary at SHA-256
+`1825fb93…9fec3ec`, a net reduction of 25 lines / 1,426 bytes. The map retains
+Cycle 274 and 278 source/result identities, the 109→50-line decision, exact
+detail hash, seed uncertainty, zero-request boundary, and RV-004 limit. This
+report retains the full observation, validation, protected-state, review, and
+rollback evidence.
+
+The accepted Cycle 281 reviewer range ending at `c3400f8c77` is integrated as
+standing `45bdc0868c`, `16d602b7d8`, and `15e30e50ea`, with stable patch IDs
+`7c6b32ad…2e2817ddc4`, `213b0749…1ae6333e`, and
+`dc58f6b4…23c38427e`. The later Cycle 282 reviewer branch ending at
+`641bc7088b` replays those same three patch IDs exactly, so it adds no new
+finding or integration candidate. RV-021 is resolved on standing; RV-004
+remains high/open.
+
+The exact material tip passes syntax, TypeScript, formatting, Cycle 237
+projection, 68 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and
+296 tests / 1,483 assertions. The broad audit passes 1,540 tracked Markdown
+documents / 1,704 local prose links. Read-only health at
+`2026-09-03T22:11:40.465Z` returns 30 facts, 16 wakes, and `truncated:true`.
+Protected `/app` remains HEAD `386b445c…41fec8`, 386 records /
+`00bcc281…15c5ed4`; its Scout scope remains 296 records /
+`a430d0c9…322f7e`. This worker did not write or test it.
+
+GitHub, arXiv, and Reddit made zero requests and retain their exact recorded
+heads, versions, RSS/JSON boundary, and change-bearing triggers. This is
+static retrieval evidence, not observed use, token savings, provider evidence,
+or a changed user decision. The next ranked accessible audit is the adjacent
+Cycle 271–272 landing-page/prompt narration, whose exact 24-line shared block
+is now the largest remaining map/report mirror.
+
 ## Cycle 282 seed-first start — current receipt reused
 
 Cycle 282 began from clean validated tip
