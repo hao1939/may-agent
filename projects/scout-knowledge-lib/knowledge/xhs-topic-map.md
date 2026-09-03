@@ -3998,6 +3998,16 @@ remain unknown, removals are `[]`, and all 132 durable IDs remain unavailable.
 Commit this bounded ordering record before auditing the ranked Cycle 256
 consumer-boundary mirror.
 
+## Cycle 288 checkpoint — real-event boundary retained once
+
+The Cycle 256 map and report shared an exact 21-line / 1,421-byte body at
+SHA-256 `f075e5d4…c2134b4`. The report remains authoritative; the map now keeps
+the real maintained-event boundary, absent query/index/target/outcome join,
+self-report authority limit, no-implementation decision, and evidence-first
+revisit trigger in 11 lines / 749 bytes, removing 10 lines / 672 bytes. No
+source lane ran; RV-004 remains high/open. Next, audit the other 21-line /
+1,357-byte exact mirror after a bounded seed reconciliation.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -5028,31 +5038,17 @@ this seed state is persisted.
 
 ### Cycle 256 checkpoint — use the real event boundary, not a synthetic gate
 
-Seed commit `57b0f39767` corrected the ordering before the audit was rerun. The
-planner prompt requires Scout to read `INDEX.md`, calls the real Scout agent,
-then emits `project.knowledge.maintained` with the returned summary, state,
-proposed actions, and evidence. That event is the smallest existing
-post-consumer boundary. It still cannot prove navigation success: evidence is
-an untyped string list, proposed action outputs cover only proposed child work,
-direct edits and no-ops may have no target, and neither field binds a query,
-index revision, selected target, or later decision.
+Seed `57b0f39767` preceded the rerun. The real planner reads `INDEX.md`, calls
+Scout, then emits `project.knowledge.maintained`; this is the lowest existing
+post-consumer boundary. Its summary, state, proposed actions, and untyped
+evidence still bind neither query nor index revision, selected target, or later
+decision, and direct edits or no-ops can lack a target. A synthetic evaluator,
+agent-authored receipt, or shared-schema expansion would not close that gap.
 
-Running the evaluator inside the planner would only measure the synthetic
-scorer again. Encoding a receipt inside evidence would be ambiguous and
-agent-authored. Extending the shared task-result schema would broaden scope
-before any retained event proves demand. The smallest credible path is
-therefore evidence-first: recover existing accepted maintenance-event payloads
-read-only and measure whether stable output paths already support a later-use
-join. Only if they do should an app-local, versioned optional receipt bind the
-host-owned task/execution identity and index revision to an agent-reported
-query/selected target; it must remain self-report, not independent success.
-
-No implementation is justified yet. Confidence is high for current workflow
-and schema limits, medium that the existing event is the lowest-cost join
-surface, and low that historical payloads retain enough target detail. The
-next ranked investigation is a read-only search for accepted
-`project.knowledge.maintained` payloads and stable output paths before any
-telemetry proposal.
+No implementation is justified. Recover accepted event payloads and stable
+output paths first; only a demonstrated join warrants an app-local optional
+self-report receipt. The detailed report retains the complete alternatives,
+authority limits, confidence, and next investigation.
 
 ## Cycle 255 seed-first start — current receipt reused
 

@@ -9642,6 +9642,29 @@ unknown, observed removals are `[]`, and all 132 durable IDs remain
 unavailable. Commit this ordering record before the ranked Cycle 256
 consumer-boundary mirror audit.
 
+## Cycle 288 checkpoint — preserve the real decision, remove its mirror
+
+What was wrong: the first 21 body lines of Cycle 256's consumer-boundary
+checkpoint were byte-identical in the map and this report: 1,421 bytes at
+SHA-256 `f075e5d423e4f2ef5751615e91118777df3304890d021e1cc9fccfe21c2134b4`.
+Seed `1fa4e23de302ca7365231af0559dfd98d71c62d8` preceded the audit.
+
+The detailed checkpoint here remains unchanged and authoritative. The map
+replacement is 11 lines / 749 bytes, removing 10 lines / 672 bytes. It keeps
+the real planner's `project.knowledge.maintained` event as the lowest existing
+post-consumer boundary; the missing query, index-revision, target, and later
+decision join; the direct-edit/no-op target limit; the distinction between an
+agent self-report and independent success; the evidence-first revisit trigger;
+and the conclusion that no evaluator, receipt, shared-schema, or telemetry
+implementation is justified without retained demand.
+
+No source, claim, code, fixture, account, evaluator, accepted result, or
+protected state changed. GitHub, arXiv, and Reddit made zero requests and
+retain their exact evidence and triggers. This is static default-read
+compaction, not measured retrieval use or RV-004 outcome evidence; RV-004
+remains high/open. The next ranked exact mirror is the remaining 21-line /
+1,357-byte pair, subject to a fresh bounded seed reconciliation.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
