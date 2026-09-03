@@ -84,6 +84,10 @@ describe("Scout navigation outcome evaluation", () => {
     expect(diagnostics.ranked_count).toBe(2);
     expect(diagnostics.top_tie_count).toBe(1);
     expect(diagnostics.runner_up?.target).toBe("./notes.md");
+    expect(diagnostics.second_score_tier.map((entry) => entry.target)).toEqual([
+      "./notes.md",
+    ]);
+    expect(diagnostics.second_score_includes_top).toBe(false);
     expect(diagnostics.absolute_gap).toBeGreaterThan(0);
     expect(diagnostics.relative_gap).toBeGreaterThan(0);
 
@@ -98,8 +102,31 @@ describe("Scout navigation outcome evaluation", () => {
     ).toMatchObject({
       ranked_count: 2,
       top_tie_count: 2,
+      second_score_tier: [
+        expect.objectContaining({ target: "./a.md" }),
+        expect.objectContaining({ target: "./b.md" }),
+      ],
+      second_score_includes_top: true,
       absolute_gap: 0,
       relative_gap: 0,
+    });
+
+    const tiedSecond = parseNavigationEntries(
+      [
+        "- [Alpha beta gamma](./top.md) — delta",
+        "- [Alpha beta](./second-a.md) — one",
+        "- [Alpha beta](./second-b.md) — two",
+      ].join("\n"),
+    );
+    expect(
+      rankingDiagnostics(rankNavigation("alpha beta gamma delta", tiedSecond)),
+    ).toMatchObject({
+      top_tie_count: 1,
+      second_score_tier: [
+        expect.objectContaining({ target: "./second-a.md" }),
+        expect.objectContaining({ target: "./second-b.md" }),
+      ],
+      second_score_includes_top: false,
     });
   });
 

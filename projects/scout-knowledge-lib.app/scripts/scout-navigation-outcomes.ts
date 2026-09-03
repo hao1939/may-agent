@@ -56,6 +56,10 @@ export type NavigationRankingDiagnostics = {
   ranked_count: number;
   top_tie_count: number;
   runner_up: Pick<RankedEntry, "kind" | "title" | "target" | "score"> | null;
+  second_score_tier: Array<
+    Pick<RankedEntry, "kind" | "title" | "target" | "score">
+  >;
+  second_score_includes_top: boolean;
   absolute_gap: number | null;
   relative_gap: number | null;
 };
@@ -224,22 +228,29 @@ export function rankingDiagnostics(
       ranked_count: ranked.length,
       top_tie_count: first ? 1 : 0,
       runner_up: null,
+      second_score_tier: [],
+      second_score_includes_top: false,
       absolute_gap: null,
       relative_gap: null,
     };
   }
   const absoluteGap = first.score - second.score;
+  const conciseIdentity = (entry: RankedEntry) => ({
+    kind: entry.kind,
+    title: entry.title,
+    target: entry.target,
+    score: Number(entry.score.toFixed(6)),
+  });
   return {
     ranked_count: ranked.length,
     top_tie_count: ranked.filter(
       (entry) => Math.abs(entry.score - first.score) < 1e-9,
     ).length,
-    runner_up: {
-      kind: second.kind,
-      title: second.title,
-      target: second.target,
-      score: Number(second.score.toFixed(6)),
-    },
+    runner_up: conciseIdentity(second),
+    second_score_tier: ranked
+      .filter((entry) => Math.abs(entry.score - second.score) < 1e-9)
+      .map(conciseIdentity),
+    second_score_includes_top: Math.abs(absoluteGap) < 1e-9,
     absolute_gap: Number(absoluteGap.toFixed(6)),
     relative_gap: Number((absoluteGap / first.score).toFixed(6)),
   };
