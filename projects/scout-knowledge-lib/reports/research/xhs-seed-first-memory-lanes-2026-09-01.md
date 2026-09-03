@@ -9364,6 +9364,22 @@ Reviewer `f6a7a65928` remains patch-equivalent to integrated standing
 `000cff67…b610a3` and `a430d0c9…4322f7e`. Begin the local idempotent project-
 event audit before reconsidering GitHub, arXiv, or Reddit.
 
+## Cycle 266 checkpoint — durable retries do not close the lane lifecycle
+
+Scout's task emission key and Host revision `d90b45d4c6` make identical retries
+durable and idempotent, reject same-key/different-payload conflicts, and fence
+stale attempts. The key intentionally includes task generation and wake
+identity, however, so the same semantic condition in a later cycle can emit
+again. No current schema, subscription, or consumer handles a source-output
+transition, and an observation-only event would not model recovery.
+
+No event or consumer was added. GitHub/local code won the rubric; GitHub,
+arXiv, Reddit, and XHS made zero public requests and retain their evidence and
+triggers. Confidence is high for retry behavior and the missing lifecycle,
+absent for deployment or outcome. Next, audit whether the existing 64-packet
+library-health history can compare versioned lane states and suppress unchanged
+conditions without duplicating the metric source read.
+
 ## Cycle 265 seed-first start — accepted review trigger
 
 Exact Cycle 264 result `1de833cead` passes syntax, TypeScript, formatting,

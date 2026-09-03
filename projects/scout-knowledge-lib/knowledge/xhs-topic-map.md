@@ -3863,6 +3863,36 @@ Reviewer head remains `f6a7a65928`, patch-equivalent to integrated standing
 and `a430d0c9…4322f7e` for Scout scope. Begin the ranked idempotent project-event
 audit from local Scout/Host evidence before reconsidering any public lane.
 
+## Cycle 266 checkpoint — retry identity is not condition identity
+
+Local Scout source `task-emission.ts` makes a maintain-task key from the exact
+wake identity and optionally a byte fingerprint of material data. Exact Host
+revision `d90b45d4c6` then scopes the durable idempotency key by App, task,
+generation, and local key; its transaction returns the original event for an
+identical retry and rejects the same key with different input. The task fence
+also rejects a new emission after the attempt becomes stale. These are strong
+retry and authority properties.
+
+They do not supply the lane-condition lifecycle needed here. A later task
+generation or wake deliberately receives a new identity, so a repeated
+semantic condition can emit again. `project.library_health.observed` can wake
+the owner only through its typed fact packet; no current schema, subscription,
+or consumer accepts source-output transitions. Adding an observation-only event
+would retain data without action, while routing it directly would bypass the
+packet's existing unchanged/review-due suppression and still lack an
+independent recovery state.
+
+The project-event path can carry a schema-versioned candidate fact, but cannot
+by itself replace metric or observer state. No new event or consumer is
+justified before the state becomes part of the existing library-health packet
+and two comparable observations exist. Confidence is high for retry
+idempotency, payload-conflict rejection, generation scope, and absent consumer;
+low for deployment and owner outcome. GitHub/local code won the rubric; all
+public lanes made zero requests and retain their boundaries and triggers. The
+next ranked question is whether the existing 64-packet library-health history
+can own versioned lane-state comparison, unchanged suppression, and recovery
+without duplicating the metric source read.
+
 ## Cycle 265 seed-first start — accepted review trigger
 
 Exact Cycle 264 result `1de833cead` passes syntax, TypeScript, formatting,
