@@ -260,10 +260,12 @@ describe("verification-allocation execution freeze", () => {
     };
     delete (evidence as Partial<typeof evidence>)["seed-policy.md"];
 
-    const errors = verifyExecutionFreezeManifest(manifest, evidence).errors;
+    const result = verifyExecutionFreezeManifest(manifest, evidence);
+    const errors = result.errors;
     expect(errors).toContain("artifact schedule.json digest mismatch");
     expect(errors).toContain("artifact seed-policy.md has no supplied bytes");
     expect(errors).toContain("undeclared artifact bytes: undeclared.txt");
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
     expect(errors).toContain(
       "schedule artifact digest does not match its binding",
     );

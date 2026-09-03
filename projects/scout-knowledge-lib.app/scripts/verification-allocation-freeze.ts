@@ -470,7 +470,6 @@ export function verifyExecutionFreezeManifest(
     seedIds,
     errors,
   );
-  const errorCountBeforeRegistration = errors.length;
   validateExternalRegistration(manifest, artifacts, artifactContents, errors);
   return {
     ok: errors.length === 0,
@@ -480,9 +479,7 @@ export function verifyExecutionFreezeManifest(
     seedCount: seedIds.length,
     episodeCount,
     externalRegistrationEvidenceStatus:
-      errors.length === errorCountBeforeRegistration
-        ? "local-byte-match-unverified"
-        : "",
+      errors.length === 0 ? "local-byte-match-unverified" : "",
     timestampProofEvidenceStatus: (() => {
       const proofName = String(manifest.externalRegistration?.proofArtifact);
       const proofArtifact = artifacts.get(proofName);
