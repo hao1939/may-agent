@@ -1128,6 +1128,68 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("rejects a v2-like registry extension and preserves exact v1 rollback", () => {
+    const fixture = validFixture();
+    const baseline = verifyExecutionFreezeManifest(
+      fixture.manifest,
+      fixture.artifactContents,
+    );
+    const contents = fixture.artifactContents as Record<string, string>;
+    const candidateRegistry = JSON.stringify({
+      schema: "scout.verification-allocation-candidate-registry/v2",
+      candidates: [
+        {
+          memoryId: "memory-a",
+          path: "archive://fixture/path-a",
+          revision: "revision-a-1",
+          body: "Rule: route north remains applicable.",
+        },
+        {
+          memoryId: "memory-b",
+          path: "archive://fixture/path-b",
+          revision: "revision-b-1",
+          body: "Rule: route south remains applicable.",
+        },
+      ],
+    });
+    contents["candidate-registry.json"] = candidateRegistry;
+    fixture.manifest.artifacts.push({
+      name: "candidate-registry.json",
+      sha256: freezeArtifactSha256(candidateRegistry),
+    });
+    const extendedManifest = fixture.manifest as typeof fixture.manifest & {
+      candidateRegistry?: {
+        artifact: string;
+        sha256: string;
+      };
+    };
+    extendedManifest.candidateRegistry = {
+      artifact: "candidate-registry.json",
+      sha256: freezeArtifactSha256(candidateRegistry),
+    };
+
+    expect(
+      verifyExecutionFreezeManifest(extendedManifest, contents),
+    ).toMatchObject({
+      ok: false,
+      errors: ["manifest contains unsupported fields"],
+      artifactCount: 7,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+
+    delete extendedManifest.candidateRegistry;
+    extendedManifest.artifacts = extendedManifest.artifacts.filter(
+      (artifact) => artifact.name !== "candidate-registry.json",
+    );
+    delete contents["candidate-registry.json"];
+    const rolledBack = verifyExecutionFreezeManifest(
+      extendedManifest,
+      contents,
+    );
+    expect(rolledBack).toEqual(baseline);
+  });
+
   it("keeps policy scope content-addressed across same-byte evidence and schedule aliases", () => {
     for (const kind of ["model", "seed", "schedule"] as const) {
       const fixture = validFixture();
