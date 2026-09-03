@@ -9743,7 +9743,7 @@ trigger/query-to-path join, confidence, and retrospective-control trigger.
 
 No source, account, code, fixture, accepted result, or protected state changed.
 GitHub, arXiv, and Reddit made zero requests. This compaction does not close
-RV-004. The next exact-run scan ranks an 18-line / 1,222-byte Cycle 250 policy
+RV-004. The next exact-run scan ranks an 18-line / 1,222-byte Cycle 251 rarity
 block, subject to a new seed-first context audit.
 
 ## Cycle 291 seed-first start — exact Cycle 290 result retained
@@ -9761,8 +9761,28 @@ At `2026-09-03T22:53:55.527Z`, the current receipt through
 `2026-09-03T16:57:11.030Z` was about 357 minutes old and still before the
 scheduled `2026-09-03T22:57:11.030Z` pass. No browser, GitHub, arXiv, or Reddit
 request ran; added/changed remain unknown, removals are `[]`, and all 132 IDs
-remain unavailable. Commit this ordering before auditing the ranked Cycle 250
-policy block.
+remain unavailable. Commit this ordering before auditing the ranked Cycle 251
+rarity block.
+
+## Cycle 291 checkpoint — preserve the rarity counterexample once
+
+Context review corrected the prior label: the exact block is Cycle 251's
+corpus-rarity diagnostic, not Cycle 250 policy. The shared 18-line / 1,222-byte
+run has SHA-256
+`b5d1857771d8be2030201d4cc8d32108c848d569b33e7c0679dcf06c2a864cb2`.
+Seed `0b11065a59df0f3e44d42e0631dfd64ad27cf08d` preceded the audit.
+
+The unchanged detailed report remains authoritative. The corresponding 17
+content lines / 1,221 bytes become 10 / 752 in the map, removing 7 lines / 469
+bytes while retaining all 147-token and 17-result counts, quartiles, per-result
+minima, reef miss, generic/source-lane/coordination frequencies, caller-token
+counterexample, confidence, next score-decomposition question, and the narrow
+conclusion that rarity is diagnostic rather than a sufficient frozen policy.
+
+No source, account, code, fixture, accepted result, or protected state changed;
+all public lanes made zero requests and RV-004 stays high/open. The next exact
+run is Cycle 221's 21-line / 1,194-byte validation/protected-state block, to be
+reviewed only after the next bounded seed reconciliation.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

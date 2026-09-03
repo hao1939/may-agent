@@ -4044,7 +4044,7 @@ replaces its 20 content lines / 1,306 bytes with 12 / 794, removing 8 lines /
 512 bytes while retaining reviewer/standing/status commits, 24 attempts, 14
 child receipts, absent maintained event, missing trigger/query/path join, and
 confidence. No lane ran and RV-004 remains high/open. Next is the 18-line /
-1,222-byte exact Cycle 250 policy block after seed-first context review.
+1,222-byte exact Cycle 251 rarity block after seed-first context review.
 
 ## Cycle 291 seed-first start — current receipt reused
 
@@ -4052,7 +4052,17 @@ Cycle 291 began from clean validated `d391befc30`. At
 `2026-09-03T22:53:55.527Z`, the current receipt was about 357 minutes old,
 still before the six-hour boundary. No browser or public-source request ran;
 added/changed remain unknown, removals are `[]`, and all 132 IDs remain
-unavailable. Commit this ordering before the Cycle 250 policy-block audit.
+unavailable. Commit this ordering before the Cycle 251 rarity-block audit.
+
+## Cycle 291 checkpoint — rarity stays diagnostic, not policy
+
+Context review corrects the ranked label: the exact 18-line / 1,222-byte run at
+SHA-256 `b5d18577…a864cb2` is Cycle 251 corpus-rarity evidence, not Cycle 250
+policy. Its 17 content lines / 1,221 bytes become 10 / 752 in the map, removing
+7 lines / 469 bytes while retaining quartiles, minima, every false-positive
+frequency, caller counterexample, confidence, and the diagnostic-not-policy
+decision. No lane ran; RV-004 stays high/open. Next is Cycle 221's exact
+21-line / 1,194-byte validation/protected-state block after seed reconciliation.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
@@ -5261,23 +5271,16 @@ matched by a selected result, document frequency is the number of entries whose
 title or summary contains that token. No fixture, index, scorer, or threshold
 changed.
 
-The 17 correct non-miss results across frozen v1 and v2 contribute 147 matched
-tokens. Their pooled lower-index quartiles are 4, 19, and 41; the upper
-quartile is 41.5 under linear interpolation and 42 under nearest rank. Every
-selected result has at least one token found in at most four entries; the 17
-per-result minima range from 1 to 4 with median 2. The correct reef negative is
-a miss and therefore has no selected token. By contrast, the generic negative
-false positive matches only `protocol` (53 entries) and `agent` (563), and the
-wrong source-lane result matches only `across` (80), `evidence` (68), and
-`source` (444). The too-broad coordination tie likewise bottoms out at 46.
-
-This separation is incomplete. The wrong caller-bound result matches
-`caller`, which occurs in only two entries, alongside `bind` 56, `memory` 199,
-`write` 46, `read` 40, and `operations` 53. A rare-anchor rule would therefore
-retain that wrong result along with all 17 correct non-miss results. Corpus
-rarity is useful diagnostic evidence for the generic negative and source-lane
-miss, but it is neither a sufficient error detector nor an independently
-frozen policy. Confidence is high for these exact local counts and low for
+The 17 correct non-miss results contribute 147 tokens with pooled lower-index
+quartiles 4/19/41 (upper quartile 41.5 linear or 42 nearest-rank). Each has a
+token occurring in at most four entries; minima span 1–4, median 2. The reef
+negative is a miss. Generic false-positive tokens occur in 53/563 entries;
+source-lane false-positive tokens in 80/68/444; the coordination tie bottoms at
+46. Yet the wrong caller result has rare `caller` (2) beside `bind` 56,
+`memory` 199, `write` 46, `read` 40, and `operations` 53. Rare-anchor filtering
+would retain it and all 17 correct results. Corpus rarity diagnoses the generic
+and source-lane errors but is neither sufficient nor a frozen policy.
+Confidence is high for these exact local counts and low for
 future queries or human/model retrieval. Next, decompose title and summary
 score contributions for the caller-bound wrong and intended entries to locate
 why the rare `caller` anchor still loses.
