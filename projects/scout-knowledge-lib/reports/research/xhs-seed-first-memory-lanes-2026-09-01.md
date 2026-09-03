@@ -9361,6 +9361,24 @@ identities remain unknown, observed removals are `[]`, and all 132 durable IDs
 remain unavailable. Commit this seed record before the project-README route
 audit.
 
+## Cycle 276 seed-first start — retention-bound investigation
+
+Exact Cycle 275 result `5460811c376f99d8571af4616e7b79260a66ce51`
+has tree `0d91706de09d552e389f2e07f77b2b3904d556ba`, identical to its fully
+validated candidate. It passes syntax, TypeScript, formatting, Cycle 237
+projection, 69 scoped links, navigation v1 at 11/14 and v2 at 8/8, 296 tests /
+1,483 assertions, and the 1,540-document / 1,705-link broad audit. The standing
+tree is clean.
+
+At `2026-09-03T20:50:04.379Z`, the exact Cycle 237 XHS receipt was 232 minutes
+old, inside the six-hour cadence. No seed or semantic-access observation
+changed, so this bounded reconciliation made zero browser or public requests:
+added/changed identities remain unknown, observed removals are `[]`, and all
+132 durable IDs remain unavailable. Accepted review is integrated, protected
+fingerprints remain exact, and no source lane fired. Commit this seed record,
+then trace the newly observed 368-row protected-history contraction through
+repository-owned retention definitions without reading removed payloads.
+
 ## Cycle 275 seed-first start — accepted review trigger
 
 Exact Cycle 274 result `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6`
