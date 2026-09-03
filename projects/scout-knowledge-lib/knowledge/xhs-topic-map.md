@@ -2391,6 +2391,39 @@ repeated after their curl-7/HTTP-000 Cycle 105 result five minutes earlier.
 This reconciliation preceded any composition-adapter, source, provider, or
 accepted-ref work. Pursue the verified-freeze composition adapter next.
 
+### Cycle 106 checkpoint — positive scope is derived, not free text
+
+Exact local `3bf5698900e7963ed81d45b2fa0427829603b77f` derives separate
+canonical protocol and model-scope SHA-256 identities from a successful freeze
+verification. Failed freezes return no scope. Protocol identity covers the
+schedule, 32-cell contract, seeds, policy artifact, and episode count; model
+identity covers requested/resolved IDs, resolution kind, and resolution-
+evidence hashes. Positive policy applicability rejects free-text scope and
+requires an exact matching verified-freeze scope object.
+
+Matched controls reproduce stable IDs, change only model scope for a model-
+evidence mutation, and change only protocol scope for a seed-policy mutation.
+The toy references are `5626601a…3c12a` and `6195842b…1df6c`. Focused
+validation passes 27 tests and 90 assertions plus TypeScript, formatting, and
+whitespace. This is local integrity and composition evidence, not provider or
+approval authority. The CLI does not yet derive the scope from a bundle root,
+so the retained 0.0006 record remains non-applicable and positive production
+selection remains fail-closed.
+
+All lanes were reconsidered after seed commit `902ecc2…049101`.
+GitHub/local code was selected; public GitHub made zero requests and retains
+the four named repository heads plus recorded triggers. ArXiv made zero
+requests and retains `2608.30177v1` at 15/15 plus `2608.25553v3` at 14/15.
+Reddit made zero requests and remains RSS-readable/JSON-403. Revisit each lane
+only on its recorded revision, artifact, replication, content/access, or
+readable-seed trigger. Five accepted reviewer refs were unchanged and nine
+standing reconciliation commits contained at
+`2026-09-03T01:46:01.155Z–01:46:01.227Z`.
+
+The next ranked investigation is an explicit CLI freeze-bundle root that is
+descriptor-safely verified before its derived scope enters policy selection.
+It must preserve provider-call denial and cannot turn local bytes into approval.
+
 ## Cycle 105 seed-first start
 
 Cycle 105 began from clean exact tip

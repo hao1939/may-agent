@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 105, including policy-evidence unit/applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2 and verified-freeze composition audit c48dc033c97f753ea094129e070748c4e4feadac."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 106, including policy-evidence unit/applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2 and verified-freeze scope composition 3bf5698900e7963ed81d45b2fa0427829603b77f."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1671,6 +1671,49 @@ approval. The next ranked investigation is a single composition adapter that
 derives canonical protocol and resolved-model-scope digests from one verified
 freeze bundle and requires those digests at the policy binder, without a
 second scope-authority format.
+
+## Cycle 106 verified-freeze scope composition
+
+Seed reconciliation `902ecc29796a36b85a36f1425dcb72ba65049101`
+preceded this work. The saved shell retained the login-class access fingerprint,
+46,672-byte length, login wall, and zero attributable items; only its body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable.
+
+Exact local `3bf5698900e7963ed81d45b2fa0427829603b77f` composes one
+verified freeze result into two canonical typed identities. The protocol hash
+binds schedule schema and SHA-256, cells per model/seed, seed namespace,
+algorithm, policy-artifact SHA-256, seed IDs, and episode count. The model-scope
+hash binds requested and resolved IDs, resolution kind, and each resolution-
+evidence SHA-256. Failed freeze validation returns no scope. Positive policy
+applicability now rejects free-text references and requires an exact matching
+`scout.verification-allocation-freeze-policy-scope/v1` object.
+
+The canonical one-model/two-seed toy freeze emits protocol reference
+`freeze-protocol-sha256:5626601a5b3e7b904341c813739f2b64c2303ad2136b532cac796b7e4793c12a`
+and model reference
+`freeze-model-scope-sha256:6195842bbfffe94e640963a13284bc1c0cd87889e2c0d79205fc88e53741df6c`.
+An exact repeat is identical. Changing only model-resolution evidence changes
+only model scope; changing only seed-policy evidence changes only protocol
+scope. A mismatched scope object fails closed. Focused validation passes 27
+tests and 90 assertions plus TypeScript, formatting, and whitespace.
+
+This removes free-text scope from the positive policy path without adding a
+second manifest format. It still does not authenticate a caller-supplied scope
+result or reverify a freeze bundle inside the policy binder. The current CLI
+does not accept a freeze-bundle root, so no production-shaped positive policy
+can silently bypass the gap; the retained 0.0006 record remains
+`not-established`. GitHub/local code was selected; public GitHub, arXiv, and
+Reddit made zero requests. The five accepted reviewer refs remained unchanged
+and nine standing reconciliation commits remained contained at
+`2026-09-03T01:46:01.155Z–01:46:01.227Z`.
+
+Confidence is high for canonical hashing, factor-specific matched controls,
+fail-closed composition, and local tests; low for real freeze availability,
+provider identity, approval, cost, and drift. The next ranked investigation is
+to let the CLI accept one explicit freeze-bundle root, descriptor-safely verify
+it, and pass only the derived scope into policy selection, while preserving the
+provider-call denial and keeping the non-applicable retained record closed.
 
 ## Go/no-go boundary
 
