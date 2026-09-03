@@ -2527,6 +2527,25 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 156 manifest locator and same-byte aliases
+
+Seed commit `8444821fe0553a99425938dee10eef8099d7e175` preceded the matched
+alias control. Exact local
+`7f14c127c943f7b4fedc0ee9d076c26afe7b7789` retains the validated
+canonical relative manifest locator beside the raw artifact hash and canonical
+content identity in file-backed selections and compact snapshot output.
+
+The same bytes at `policies/manifest.json` and
+`policies/manifest-alias.json` produce the same raw hash, canonical identity,
+and equal-172 selection at 1,032 blocks. Each compact result retains only its
+own locator. The focused gate passes 19 tests and 100 assertions plus
+TypeScript, source formatting, and whitespace.
+
+This proves local content equivalence with locator-level replay provenance; it
+does not prove authority, authorship, policy truth, external compatibility, or
+execution. The next ranked control rejects malformed locator/hash CLI input
+before snapshot/freeze loading and ensures an unsafe locator cannot serialize.
+
 ## Cycle 155 supported snapshot manifest input
 
 Seed commit `c20c41b8bd926dee36ebbff2e78d2573d60e126c` preceded the CLI and

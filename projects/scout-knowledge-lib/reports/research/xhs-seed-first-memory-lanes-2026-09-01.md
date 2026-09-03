@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 156 checkpoint — same bytes keep distinct manifest locators
+
+Seed commit `8444821fe0553a99425938dee10eef8099d7e175` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the alias
+control. Exact local `7f14c127c943f7b4fedc0ee9d076c26afe7b7789`
+adds the validated manifest locator to compact file-backed results.
+
+The same bytes at two canonical relative names keep identical raw/canonical
+manifest identities and the same equal-172 selection while each result retains
+only its own locator. The focused gate passes 19 tests and 100 assertions plus
+TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for the local alias/serialization control
+and low for authority, authorship, policy truth, external compatibility, or
+execution. The next ranked investigation rejects malformed local locator/hash
+inputs before snapshot/freeze loading and proves unsafe locators never appear in
+output.
+
 ## Cycle 155 checkpoint — file-backed manifests reach snapshot CLI output
 
 Seed commit `c20c41b8bd926dee36ebbff2e78d2573d60e126c` records unchanged
