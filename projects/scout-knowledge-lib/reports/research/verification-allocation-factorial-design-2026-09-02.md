@@ -2750,6 +2750,25 @@ resource limit, policy validity, provenance, authority, model behavior, cost,
 drift, or provider execution. The next audit checks the remaining local
 snapshot and policy-provenance readers that call the shared recursive scanner.
 
+## Cycle 173 bounded byte-matched snapshot nesting
+
+Seed commit `e1b1b1e9d6` preceded the descriptor-backed depth ladder. The
+frontier snapshot loader returned a normal invalid-snapshot verdict at 25,000
+levels / 250,004 bytes, then threw a stack `RangeError` at 50,000 levels /
+500,004 bytes and 100,000 levels / 1,000,004 bytes. Every file matched its
+caller-supplied SHA-256, isolating the post-read recursive exact-key scan.
+
+Exact local `7d8730c724` applies the shared iterative 256-level pre-scan before
+that recursion. A byte-matched 1,000-level fixture now returns a stable error
+with its exact digest, length, unverified local-evidence class, and provider
+denial intact. Eight focused tests pass with 13 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves one bounded descriptor-backed failure mode and repair, not snapshot
+computation, provenance authority, general JSON limits, cost, drift, model
+behavior, or provider execution. The next audit tests the separate local
+policy-provenance manifest and decision-record readers.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

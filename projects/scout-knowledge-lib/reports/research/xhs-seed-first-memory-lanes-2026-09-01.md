@@ -7796,6 +7796,28 @@ low for broader limits, policy, provenance, authority, cost, drift, models, or
 providers. The next ranked audit checks the remaining local snapshot and
 policy-provenance readers that use the same recursive scanner.
 
+## Cycle 173 checkpoint — byte-bound frontier snapshots now fail closed
+
+Seed commit `e1b1b1e9d6` records unchanged semantic XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before
+the local depth ladder.
+
+A byte-matched snapshot returned normally at 25,000 levels / 250,004 bytes but
+threw a stack `RangeError` at 50,000 levels / 500,004 bytes and again at
+100,000 levels / 1,000,004 bytes. Exact local `7d8730c724` reuses the shared
+256-level iterative pre-scan before recursive exact-key inspection; the
+1,000-level regression now returns a stable error while preserving digest,
+length, local-unverified evidence, and provider denial. Eight focused tests
+pass with 13 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for this tested local boundary and low for
+broader resource, provenance-authority, cost, drift, model, or provider claims.
+The next ranked audit tests the separate local policy-provenance manifest and
+decision-record readers.
+
 ## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
 
 Seed commit `300c496e39` records unchanged semantic XHS access, zero
