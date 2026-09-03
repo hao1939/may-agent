@@ -290,7 +290,7 @@ maximum-contagion configuration. The Mirage doesn't just fail to measure — it
 biases the thing it measures, creating a feedback loop where agents evolve
 toward satisfying the evaluator's prejudices rather than actual quality.
 
-*(Source: [arXiv Executable Turn Triage](./findings/2026-06-29-arxiv-executable-turn-triage.md))*
+*(Source: [arXiv Executable Turn Triage](./findings/2026-07-22-arxiv-executable-turn-triage.md))*
 
 ### HN Update: Passing the verifier is not the same as covering the issue (2026-08-11)
 

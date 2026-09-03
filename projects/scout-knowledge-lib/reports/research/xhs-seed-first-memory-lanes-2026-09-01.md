@@ -9353,6 +9353,64 @@ provenance changed; additions/changes remain unknown, removals are `[]`, and
 all 132 seeds remain unavailable. No representative saved-post read, account
 mutation, or GitHub/arXiv/Reddit request occurred before the ranked local audit.
 
+## Cycle 232 checkpoint — 54 triage links regain accepted destinations
+
+Seed commit `f185f622f0` preceded the link audit. The exact committed baseline
+contained 54 real Markdown destinations—not the earlier 51 estimate—for three
+absent aliases. They now map to the accepted July 22 harness, July 23 state,
+and July 22 executable triages. The harness and state pairs differ only in date
+metadata, and the selected entries make filename, heading, triage date, and
+`last_updated` internally consistent. The executable pair also differs only
+in dates; its selected July filename retains the accepted August 24 body date.
+
+The six-file diff changes destinations only. Both substantive copies of every
+finding remain; no claim, source, statistic, contradictory evidence, or
+historical triage/health literal was removed. Exact blob pairs are
+`b59744e…4a3c`→`20f7d08…da4f` (harness),
+`99a0ff0…72a0`→`5cf6e9c…e832` (state), and
+`92fbbda…a6a`→`85da61a…27c4` (executable).
+
+The broad audit holds at 1,539 tracked documents and 1,765 prose links while
+unresolved links fall 130→76, affected documents fall 14→9, and absolute local
+links remain zero. The corrected residual ledger is 66 references available
+only in unaccepted `d9da99476e`, three mutable digest/coach references, two
+absent KE-1996/1997 references, and five other references without a safe
+accepted match. The digest links still require the named accepted KE body or
+an immutable accepted claim-equivalent finding; the coach link still requires
+an accepted project-owned proposal or explicit index supersession.
+
+Public GitHub, arXiv, and Reddit made zero requests. Last useful evidence and
+access remain the four exact repository heads in the lane table, MemGauge
+`2608.30177v1` plus allocation study `2608.25553v3`, and Reddit item
+`t3_1v8a3sh` with RSS HTTP 200 / JSON HTTP 403. Their change-bearing triggers
+remain repository or artifact revision, paper or registration revision,
+independent verification, a newly readable seed body, a thread delta, or an
+access change.
+
+This is high-confidence retrieval repair, not source confirmation or retained
+outcome evidence; `RV-004` therefore remains open. The next ranked accessible
+audit starts seed-first and tests the five residual non-runtime identities for
+unique accepted replacements without reading or importing `d9da99476e`.
+
+The reviewed candidate passes syntax, TypeScript, source formatting, Cycle 232
+projection, 59 durable links, and 287 tests / 1,444 assertions. The broad link
+audit is 1,539 documents / 1,765 links / 76 unresolved / zero absolute;
+whitespace and runtime state are clean. Read-only health at
+`2026-09-03T16:16:29.687Z` is 29 facts, 16 wake signals, and `truncated:true`.
+
+Accepted projection source `b3c4fb8d3e` has stable patch ID
+`f5d7665a…81a8`, equal to contained standing commit `d35632c2b1`; reviewer
+`9f0891cf97` has stable patch ID `deac3b27…6b16`, equal to contained standing
+commit `8ab0a89cd0`. The later integrated review `e420498c47` and seed tip
+`f185f622f0` are also ancestors. Unaccepted `d041c41b54` and `d9da99476e`
+remain excluded.
+
+Protected `/app` remains externally observed at `386b445c…1fec8`, 893 status
+records, and fingerprint `98c1c258…76c9f0`; its combined Scout scope remains
+296 records at `a430d0c9…32d7e`. All peers are clean except the known
+three-record human overlay at `a52b97aa…94a15`. No protected or peer worktree
+was written or tested.
+
 ## Cycle 231 seed-first reconciliation — access shell changed
 
 The exact supported observation is retained once in
@@ -9377,9 +9435,9 @@ accepted files after their cited arXiv IDs matched. Zero absolute local links
 remain, and no detailed claim text was removed or rewritten.
 
 The residual ledger preserves the important boundaries: 66 targets are only
-recoverable from unaccepted `d9da99476e`; 51 ambiguous links have differing
+recoverable from unaccepted `d9da99476e`; 54 ambiguous links have differing
 accepted same-topic candidates; three mutable digest/coach links remain
-deferred; two absent KE links and eight unmatched references lack a safe
+deferred; two absent KE links and five unmatched references lack a safe
 accepted replacement. The two digest references may move only to the named KE
 body or an accepted immutable claim-equivalent finding; the coach reference
 requires an accepted project-owned proposal or explicit supersession by its

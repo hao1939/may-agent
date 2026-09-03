@@ -3851,6 +3851,62 @@ removals are `[]`, and all 132 durable seeds remain unavailable. No XHS state
 or public-source lane was touched. The next ranked work remains the accepted
 harness/state/executable triage identity audit opened by Cycle 231.
 
+### Cycle 232 checkpoint — accepted triage identities replace absent aliases
+
+Seed commit `f185f622f0` preceded this audit. The committed baseline contained
+54—not the previously estimated 51—real Markdown destinations for three
+aliases that never existed in accepted history. All 54 now resolve to accepted
+project-owned entries: harness to
+`2026-07-22-arxiv-harness-discipline-composition-triage.md`, state to
+`2026-07-23-arxiv-state-architecture-turn-triage.md`, and executable to
+`2026-07-22-arxiv-executable-turn-triage.md`.
+
+The mappings are provenance-led rather than title-only. Harness blobs
+`b59744e…4a3c` / `20f7d08…da4f` and state blobs `99a0ff0…72a0` /
+`5cf6e9c…e832` differ only in date metadata; the selected July files make
+filename, heading, triage date, and `last_updated` agree. Executable blobs
+`92fbbda…a6a` / `85da61a…27c4` also differ only in date metadata; the selected
+July file preserves the accepted August 24 body date. Both accepted copies of
+each finding remain, and historical literal-path evidence in triage and health
+reports is unchanged.
+
+Across the same 1,539 tracked Markdown documents, 1,765 prose links remain
+constant while unresolved occurrences fall 130→76 and affected documents
+fall 14→9; absolute local links remain zero. The residual classification is
+now exact: 66 occurrences resolve only in unaccepted `d9da99476e`, three
+mutable digest/coach destinations remain deferred, two occurrences name
+absent KE-1996/1997 bodies, and five other references lack a safe accepted
+match. This corrects Cycle 231's 51/8 estimate without importing unaccepted
+content or deleting detailed evidence.
+
+GitHub, arXiv, and Reddit made zero public requests. Their retained four
+repository heads, `2608.30177v1` / `2608.25553v3`, and RSS-readable/JSON-403
+evidence remain current until their recorded revision, artifact, independent
+evidence, seed-body, content-delta, or access-change triggers fire. Confidence
+is high for accepted lineage, local resolution, and preservation; it is low
+for the intended authority of the 76 residual destinations.
+
+The next ranked accessible question is whether the five non-runtime,
+non-KE-1996/1997 residual references have unique accepted replacements. Start
+the next cycle seed-first, then test those identities without reading or
+admitting the unaccepted `d9da99476e` bodies.
+
+The reviewed candidate passes syntax, TypeScript, source formatting, Cycle 232
+projection, 59 durable links, and all 287 tests / 1,444 assertions. The broad
+link result is 1,539 / 1,765 / 76 with zero absolute links; whitespace and
+runtime state are clean. Read-only health at `2026-09-03T16:16:29.687Z`
+returns 29 facts, 16 wakes, and `truncated:true`. Standing projection commit
+`d35632c2b1` is patch-equivalent to accepted `b3c4fb8d3e`; standing review
+commit `8ab0a89cd0` is patch-equivalent to reviewer `9f0891cf97`, and both are
+ancestors of this candidate. Unaccepted `d041c41b54` and `d9da99476e` remain
+non-ancestors.
+
+The protected checkout remains externally observed at HEAD
+`386b445c…1fec8`, 893 records, fingerprint `98c1c258…76c9f0`; combined Scout
+scope remains 296 records at `a430d0c9…32d7e`. Every peer is clean except the
+known three-record human overlay at `a52b97aa…94a15`. This worker wrote and
+tested only the goal-owned standing worktree.
+
 ## Cycle 231 seed-first start
 
 The canonical [seed-ledger row 231](./xhs-seed-ledger.md) records the exact
@@ -3873,13 +3929,13 @@ unique accepted HN #171/#174 files whose cited arXiv IDs match. No claim text
 or source distinction changed.
 
 The 130 residuals are classified, not guessed: 66 index targets exist only in
-non-accepted commit `d9da99476e`; 51 references have multiple differing
+non-accepted commit `d9da99476e`; 54 references have multiple differing
 accepted same-topic candidates; three still point to mutable digest/coach
-state; two name absent KE-1996/1997 entries; and eight have no safe accepted
+state; two name absent KE-1996/1997 entries; and five have no safe accepted
 match. Digest links require an accepted immutable claim-equivalent finding or
 the named KE body; the coach link requires an accepted project-owned proposal
 or explicit index supersession. Confidence is high in counts and repaired
-identities, low in choosing among the 51 candidates. Next: compare the accepted
+identities, low in choosing among the 54 candidates. Next: compare the accepted
 harness/state/executable triage pairs and designate one canonical target with a
 rollback map before changing those links.
 
