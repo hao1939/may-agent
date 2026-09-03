@@ -2805,6 +2805,19 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 210 seed order is reversible protocol identity
+
+Seed commit `ed53da97d1` preceded exact test-only commit `5adf98250d`. The
+valid one-model fixture reverses seed IDs in the declaration, canonical policy
+record, and generated schedule. The reversed bundle validates with a distinct
+protocol scope and unchanged model scope; reversing it back reproduces the
+complete original result exactly.
+
+The focused bundle gate passes 23 tests and 124 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes semantic seed order from set-
+like artifact inventory. The next audit tests model-resolution record key
+spelling against content-addressed model scope.
+
 ## Cycle 209 artifact declaration order is non-semantic
 
 Seed commit `e8514b7a0f` preceded exact test-only commit `1ea329b404`. The

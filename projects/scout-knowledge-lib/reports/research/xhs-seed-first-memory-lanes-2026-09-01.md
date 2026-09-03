@@ -7874,6 +7874,24 @@ unavailable. No representative saved-post read, account mutation, seed-order
 control, or public source request preceded this record. Public lanes remain
 deferred while the ranked local seed-order control proceeds.
 
+## Cycle 210 checkpoint — coherent seed order changes protocol scope
+
+Seed commit `ed53da97d1` preceded exact test-only commit `5adf98250d`. The
+matched one-model fixture reverses declared seed IDs, rewrites the matching
+canonical seed-policy record, and regenerates the schedule in the same order,
+then reverses all three back.
+
+Both orders validate with false provider authority. Reversal changes protocol
+scope but preserves model scope; returning to the original order reproduces
+the complete original verification object exactly. Focused validation passes
+23 tests and 124 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won. Public GitHub, arXiv, and Reddit made zero requests and
+retain their evidence and triggers. The unaccepted peer range ending at
+`d041c41b54` remains deferred. The next ranked matched audit reorders keys in a
+semantically matching model-resolution record and updates its digest, testing
+byte identity against parsed identity and model scope.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
