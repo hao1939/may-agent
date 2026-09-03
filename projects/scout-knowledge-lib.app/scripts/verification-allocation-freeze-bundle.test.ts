@@ -411,6 +411,7 @@ describe("verification-allocation freeze bundle", () => {
 
   it("accepts distinct matching resolution records for distinct models", async () => {
     const { root, manifest } = await fixture();
+    const baseline = await verifyExecutionFreezeBundle(root);
     const peerArtifact = "evidence/peer-model-resolution.json";
     const peerEvidence = JSON.stringify({
       schema: "scout.verification-allocation-model-resolution/v1",
@@ -466,6 +467,31 @@ describe("verification-allocation freeze bundle", () => {
     expect(result.policyScope?.modelScopeReference).toMatch(
       /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
     );
+
+    await rm(join(root, peerArtifact));
+    manifest.artifacts = manifest.artifacts.filter(
+      (artifact) => artifact.name !== peerArtifact,
+    );
+    manifest.models = manifest.models.filter(
+      (model) => model.resolvedId !== "fixture-model-b",
+    );
+    const rollbackSchedule = JSON.stringify(buildToyFactorialSchedule());
+    await writeFile(join(root, "schedule.json"), rollbackSchedule);
+    const rollbackScheduleSha256 = freezeArtifactSha256(rollbackSchedule);
+    manifest.schedule.sha256 = rollbackScheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 64;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = rollbackScheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(baseline);
   });
 
   it("rejects one hard-linked digest reused across semantic roles", async () => {
