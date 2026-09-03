@@ -2821,6 +2821,28 @@ declared evidence bytes remain role-specific identity. No external owner,
 authority, consumer, or provider result supports a schema change. The next
 control repeats this boundary on the two-model explicit-identity fixture.
 
+## Cycle 215 two-model manifest-order transfer
+
+Seed commit `c734610e95` preceded exact test-only commit `37256db149`. The
+existing two-model explicit-identity fixture remains valid with two retained
+models. Its ordered freeze manifest hashes to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`;
+recursively reversing all object keys changes only the presentation bytes and
+hash, to
+`2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`.
+The parsed objects and complete verification results are exactly equal, and
+restoration reproduces the original result.
+
+The focused gate passes 28 tests and 159 assertions plus TypeScript,
+formatting, and whitespace. This transfers Cycle 214's one-model result to the
+smallest current multi-model control. Together with Cycles 208–214 it supports
+ordered model/seed execution identity, role-specific evidence-byte identity,
+set-like artifact inventory, and recursively presentational manifest object
+keys. It does not supply external ownership, migration or update authority,
+consumer requirements, or provider behavior. The useful local candidate-
+registry ordering audit is closed; a schema migration remains trigger-bound to
+that missing external evidence.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two

@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 215: a compact unchanged-shell reconciliation precedes the ranked two-model nested manifest control."
+summary: "Seed-first Scout continuity through Cycle 215: the two-model transfer closes the useful local candidate-registry ordering audit after a compact unchanged-shell reconciliation."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
 latest_seed_basis: "Cycle 215 observational reconciliation through 2026-09-03T13:58:49.071Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
@@ -8136,6 +8136,34 @@ are `[]`, and all 132 durable seeds remain unavailable. No representative post
 read or account mutation occurred. GitHub, arXiv, and Reddit each made zero
 public requests and retain their evidence and triggers. The ranked two-model
 nested-manifest ordering control proceeds locally.
+
+## Cycle 215 checkpoint — two-model transfer closes the ordering audit
+
+Seed commit `c734610e95` preceded exact test-only commit `37256db149`. The
+ordered two-model freeze manifest hashes to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`;
+the recursively reordered but parsed-equal object hashes to
+`2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`.
+Both produce the exact same valid verification result with two models, and
+restoration is exact. The focused gate passes 28 tests and 159 assertions plus
+TypeScript, formatting, and whitespace.
+
+This supports recursive presentation semantics for freeze-manifest object keys
+across the current one- and two-model fixtures. Model and seed order remain
+execution identity; model-resolution and seed-policy artifact bytes remain
+role-specific identity; artifact declaration order remains set-like. It does
+not support an external registry owner, migration/update authority, consumer,
+or provider claim, so no production schema change is justified.
+
+GitHub/local code won. GitHub retains the local regressions and last named
+heads; arXiv retains MemGauge `2608.30177v1` and allocation study
+`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All three
+public lanes made zero requests and retain their change-bearing triggers. Only
+canonical accepted finite results are eligible for integration. The unaccepted
+`d041c41b54` and later commits remain outside standing lineage without peer
+content inspection, testing, editing, or import. The next accessible question
+is multi-model diagnostic traceability when one explicit resolution record
+fails; more registry-order permutations are lower value.
 
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
