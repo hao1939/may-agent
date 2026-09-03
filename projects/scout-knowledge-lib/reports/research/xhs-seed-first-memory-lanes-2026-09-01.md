@@ -9345,6 +9345,23 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 223 seed-first reconciliation — stable unavailable profile
+
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in
+[seed-ledger row 223](../../knowledge/xhs-seed-ledger.md). Public Explore
+remained readable with 30 notes. The non-navigating saved-profile read retained
+the same unavailable semantic fingerprint and opaque ten-link fingerprint;
+only response bytes changed. Added and changed identities remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved-post read, account mutation, public-source request, or
+registry work preceded this record.
+
+The post-seed rubric keeps the explicit candidate-registry-artifact
+alternatives, migration, and rollback audit highest. GitHub, arXiv, and Reddit
+retain their last useful evidence and change-bearing revisit triggers without
+a public request.
+
 ## Cycle 222 checkpoint — compact Cycle 206–214 validation lineage
 
 Seed observations stay in their original sections because some body receipts

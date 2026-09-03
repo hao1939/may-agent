@@ -3842,6 +3842,23 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 223 seed-first start
+
+The exact bounded observation, reconciliation, authority boundary, and byte
+receipt are retained once in [seed-ledger row 223](./xhs-seed-ledger.md).
+Public Explore remained readable with 30 notes. The non-navigating saved-profile
+read retained the same unavailable semantic fingerprint and opaque ten-link
+fingerprint; only response bytes changed. Added and changed identities remain
+unknown, removals are `[]`, and all 132 durable seeds remain unavailable.
+No representative saved-post read, account mutation, public-source request, or
+registry work preceded this record.
+
+With no seed identity or access-state change, the post-seed rubric retains the
+explicit candidate-registry-artifact alternatives, migration, and rollback
+audit as the highest-ranked accessible question. GitHub, arXiv, and Reddit
+retain their last useful evidence and change-bearing revisit triggers without
+a public request.
+
 ## Cycle 222 seed-first start
 
 Cycle 222 began from clean `842f96a6a6`. The exact bounded read-only
