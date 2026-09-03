@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 152 checkpoint — equivalent manifests now share one identity
+
+Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+control. Equivalent reordered manifest objects previously validated under two
+different hashes.
+
+Exact fix `25f4ae6a32c543b8cf3f875f6858623efcfc231e` switches manifest hashing
+to the already-validated canonical JSON form. Both orders now share exact hash
+`12f80669…ac639f`; decision-record binding, scope, evidence labels, and
+provider denial remain unchanged. This repairs content identity but does not
+persist or authenticate caller-supplied manifest bytes. The focused gate passes
+31 tests and 118 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for canonical local content identity and
+low for persistence, authorship, authority, external compatibility, or real
+execution. The next ranked control tests coherent manifest substitution before
+adding any descriptor-safe manifest artifact contract.
+
 ## Cycle 151 checkpoint — summaries retain the changed manifest hash
 
 Seed commit `2713353aeb748cb75efefc968397254fc9d639b6` records unchanged

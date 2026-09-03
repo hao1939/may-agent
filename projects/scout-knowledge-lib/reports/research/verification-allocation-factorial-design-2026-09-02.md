@@ -2527,6 +2527,28 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 152 canonical policy-manifest identity
+
+Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` preceded a matched
+object-order control. Before repair, equivalent policy evidence manifests with
+top-level and nested keys in different insertion orders both validated but
+hashed to `1a97e4d…147bb9c` and `6f3c0c1…7469b3`. The identifier was
+therefore neither an exact-byte hash nor stable content identity.
+
+Exact fix `25f4ae6a32c543b8cf3f875f6858623efcfc231e` hashes the existing
+canonical JSON representation after strict validation. Both orders now return
+`12f80669a1cff6fa7f5f45e98bea5a71eb9db36858decc7313e5d05178ac639f`.
+Field validation, local decision-record binding, scope matching, unverified
+status, and provider denial are unchanged.
+
+The focused provenance, frontier-policy, freeze-selection, and CLI gate passes
+31 tests and 118 assertions plus TypeScript, source formatting, and whitespace.
+Confidence is high for canonical in-memory content identity and low for
+persistence, authorship, authority, external producer compatibility, or real
+execution. This does not byte-bind a stored manifest. The next control tests a
+coherent caller-manifest substitution without any descriptor-safe manifest
+artifact before extending that interface.
+
 ## Cycle 151 compact-summary manifest identity
 
 Seed commit `2713353aeb748cb75efefc968397254fc9d639b6` preceded a matched

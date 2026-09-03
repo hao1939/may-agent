@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 151 supersedes the older table snapshot below. Starting tip
-`93a872d744faec2153db976927e38887d80d452b` and seed commit
-`2713353aeb748cb75efefc968397254fc9d639b6` anchor the unchanged login-class
+Cycle 152 supersedes the older table snapshot below. Starting tip
+`1ee9dcdf569bb9d5afb1db4d46ae2601fccb0713` and seed commit
+`bce3a3141448ec01b9e483c2f8985951a98ed202` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -336,14 +336,16 @@ the executable-name alias remained a rejecting control. Exact local
 through selection while preserving their local evidence labels. The record and
 policy hashes stay fixed, but the evidence-manifest hash changes with its
 locator pointer. Exact local `349ee07…dbd639` proves the compact JSON summary
-preserves only that changed manifest identity. Accepted-result containment and
-protected-checkout preservation are rechecked on the resulting exact tip.
+preserves only that changed manifest identity. Exact local
+`25f4ae6…fc231e` now makes manifest identity canonical across JSON object-key
+order. Accepted-result containment and protected-checkout preservation are
+rechecked on the resulting exact tip.
 
-| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Decision and revisit trigger                                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 151; public trigger-deferred.** Compact-summary manifest identity now has a matched serialization control.                                          | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `349ee07…dbd639` preserves the aliased manifest hash through the sole production summarizer. | Zero public requests. Next assess descriptor-safe persistence for the caller-supplied evidence manifest. Revisit GitHub on a recorded trigger.      |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 151.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                        | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 151 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                 | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                   |
+| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 152; public trigger-deferred.** Policy-manifest content identity now has a matched canonical-order regression.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `25f4ae6…fc231e` maps reordered equivalent manifests to one hash. | Zero public requests. Next add descriptor-safe manifest persistence if a matched substitution proves the need. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 152.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 152 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3709,6 +3711,33 @@ The ranked matched control now tests a distinct parser ambiguity: a same-value
 duplicate top-level JSON key can disappear during `JSON.parse` before exact
 object-key validation. Public GitHub, arXiv, and Reddit remain trigger-deferred
 until reconsidered after that control.
+
+### Cycle 152 checkpoint — policy-manifest identity is canonical
+
+Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` preceded one matched
+manifest-order control. Before the fix, two structurally equivalent manifests
+with reordered top-level and nested applicability keys both validated but
+received different SHA-256 identities, `1a97e4d…147bb9c` and
+`6f3c0c1…7469b3`. The hash therefore represented JavaScript insertion order,
+not exact bytes or canonical content.
+
+Exact fix `25f4ae6a32c543b8cf3f875f6858623efcfc231e` hashes the already-
+validated canonical JSON form. The matched fixture now returns
+`12f80669a1cff6fa7f5f45e98bea5a71eb9db36858decc7313e5d05178ac639f`
+for both orders. Exact field validation, decision-record binding, scope
+matching, local-unverified labels, and provider denial remain unchanged. This
+repairs content identity; it does not persist manifest bytes or promote caller
+authority.
+
+The focused policy-provenance, frontier-policy, freeze-selection, and CLI gate
+passes 31 tests and 118 assertions plus TypeScript, formatting, and whitespace.
+GitHub/local code won the rubric; GitHub, arXiv, and Reddit made zero public
+requests and retain their exact evidence and triggers above. Confidence is
+high for canonical object identity and low for durable persistence, authorship,
+authority, external producer compatibility, or real execution. The next
+ranked matched control tests whether a coherent caller-manifest substitution
+can select without any descriptor-safe manifest artifact; only a reproduced
+persistence gap justifies extending the interface.
 
 ### Cycle 151 checkpoint — compact summaries preserve manifest identity
 
