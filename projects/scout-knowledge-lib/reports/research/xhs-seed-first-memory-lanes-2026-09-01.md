@@ -9913,7 +9913,12 @@ The map keeps the aggregate-versus-lane decision and integrated patch identity;
 this report retains exact validation, receipt uncertainty, zero requests, and
 the accepted-ref transition. No source or account changed. This is retrieval
 maintenance, not an observed outcome, so RV-004 remains high/open. The next
-ranked exact mirror is Cycle 223's 11-line / 766-byte projection boundary.
+ranked exact mirror was Cycle 223's projection boundary. Cycle 301 seed
+`7c92a0e467` and material `1560120ad0` compress its exact 11-line / 766-byte
+registry-decision mirror (`e67f01c1…5522`) to 7 lines / 519 bytes
+(`0b632952…559e`) while retaining the artifact identity, rollback control,
+tested dimensions, and revisit triggers. RV-004 remains high/open; next is
+Cycle 269's 11-line / 720-byte seed-continuity mirror.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
