@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 202: bounded observational reconciliation preceded a within-role resolution-object control, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
+summary: "Seed-first Scout continuity through Cycle 202: bounded observational reconciliation preceded within-role identity and registry rollback controls, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
 latest_seed_basis: "Cycle 202 observational reconciliation through 2026-09-03T12:35:50.809Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
@@ -7901,6 +7901,28 @@ owner, deposit, or second revision exists, so no production schema change is
 justified. The next ranked accessible control asks whether copied same-byte
 model-resolution aliases remain one content identity without becoming
 independent evidence.
+
+Exact reviewed Cycle 202 tip `970aaec426f7b43a895eec2888d62757b06d2ac0`
+passes syntax, TypeScript, source formatting, 263 tests and 1,341 assertions,
+whitespace, and all 30 relative links across the four current continuity
+documents. Read-only health at `2026-09-03T12:48:11.351Z` remains bounded and
+truncated at 26 facts and 16 wake signals; root and application runtime state
+remain empty before and after it.
+
+Integration scope is deliberately narrower than ref freshness. The nine
+canonical accepted standing commits are ancestors, both accepted source
+patches retain stable IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all
+four final accepted artifacts remain blob-identical. In contrast, read-only
+provenance still resolves the peer ref to unaccepted `d041c41b54`, two commits
+after accepted predecessor `8c5d8747a6`; neither it nor its later unaccepted
+commits was read as content, tested, edited, or integrated. Only a canonical
+accepted finite result can reopen that boundary.
+
+Protected fingerprints also reproduce the Cycle 202 baselines exactly. The
+dirty source remains HEAD `386b445c…1fec8`, 886 records, and
+`7b786753…7f932`; the human overlay remains HEAD `fd4c68ec…1514663`, three
+records, and `a52b97aa…4a15`. Their drift is externally observed; this worker
+did not write or test either checkout. The standing worktree is clean.
 
 ## Cycle 201 checkpoint — cross-role bytes remain role-bound
 

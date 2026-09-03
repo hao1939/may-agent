@@ -2841,6 +2841,11 @@ not implement v2 or supply registry authority. The next control tests whether
 copied same-byte model-resolution aliases remain one content identity without
 becoming independent evidence.
 
+Exact reviewed Cycle 202 tip `970aaec426f7b43a895eec2888d62757b06d2ac0`
+passes the full Scout gate at 263 tests and 1,341 assertions. Structural,
+link, health, runtime-state, accepted-lineage, and protected-fingerprint checks
+also pass; unaccepted peer `d041c41b54` remains provenance-only and deferred.
+
 ## Cycle 201 cross-role digest reuse
 
 Seed commit `a8347e3640` preceded exact test `7bafcf4651`. In one bundle,

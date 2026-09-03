@@ -3444,6 +3444,17 @@ model-resolution aliases retain one content identity without being counted as
 independent evidence. A real registry migration remains trigger-bound to an
 identified owner/deposit, second revision, and consumer requirement.
 
+Exact reviewed tip `970aaec426f7b43a895eec2888d62757b06d2ac0`
+passes the full Scout gate at 263 tests and 1,341 assertions plus syntax,
+TypeScript, source formatting, whitespace, 30 relative links, read-only health
+26/16, and empty runtime state. All nine canonical accepted standing commits,
+both stable accepted patch IDs, and all four accepted artifact blobs remain
+contained. Peer `d041c41b54` and its post-accepted commits remain unaccepted
+and deferred after read-only provenance inspection; ref existence is not
+acceptance. Protected source and overlay fingerprints remain exactly
+`386b445c…1fec8` / 886 / `7b786753…7f932` and
+`fd4c68ec…1514663` / 3 / `a52b97aa…4a15` without writes or tests.
+
 ## Cycle 201 seed-first start
 
 Cycle 201 began only after clean exact Cycle 200 tip
