@@ -9386,6 +9386,22 @@ ranked accessible question is the 17 root-relative historical links: 14 have
 unambiguous current targets, while three require a separate missing-target or
 directory-link disposition.
 
+Exact reviewed Cycle 228 material tip
+`7d9d6bbea802dd46edf35441bc3b3ae69d627738` retains Scout app tree
+`ae458633a063095f1cd4063491ce7e7217da1f38`. The full current-revision gate
+passes syntax, TypeScript, source formatting, the Cycle 228 seed projection,
+51 durable links, 286 tests, and 1,440 assertions; whitespace passes and the
+broad offline audit completes at its declared 203-debt boundary. Read-only
+health at
+`2026-09-03T15:25:02.672Z` remains 26 facts and 16 wake signals with
+`truncated:true`; runtime state is empty and the standing tree is clean.
+
+Containment remains 9/9 canonical accepted result ancestors. Both unaccepted
+`d041c41b54` and stash snapshot `d9da99476e` remain non-ancestors. Protected
+`/app` retains HEAD `386b445c…1fec8`, 887 porcelain-v2 records, and
+`63b17ec1…958f`; its Scout scope remains three records / `2760fb23…052`.
+Neither protected source nor a peer worktree was written or tested.
+
 ## Cycle 227 seed-first reconciliation — stable semantic boundary
 
 The exact bounded observation, reconciliation, authority boundary, and byte
