@@ -9345,6 +9345,18 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 255 seed-first start — current receipt reused
+
+At `2026-09-03T18:31:11.283Z`, Cycle 237's exact observational receipt was
+ninety-four minutes old. No collection schedule, access, or account-state
+trigger had fired, so no browser or public-source request ran. Added/changed
+identities remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable at the same login-class boundary. Reviewer ref
+`codex/g-8c5b597e-cycle253-review` did advance to accepted result
+`aade00756754752287b4cc1bf2d216fe5f4304da`; integrate its diagnostic-fixture
+fence before treating the current Scout result as fully landed, then seek an
+actual consumer or later-reuse trace for navigation outcomes.
+
 ## Cycle 254 seed-first start — current receipt reused
 
 At `2026-09-03T18:24:18.878Z`, Cycle 237's exact receipt was eighty-seven
