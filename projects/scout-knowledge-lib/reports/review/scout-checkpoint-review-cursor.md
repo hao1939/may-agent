@@ -850,14 +850,14 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
 
 ## Reviewer source/result and integration status
 
-- Current reviewer source `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
-  has one pending direct-child cursor reconciliation on this reviewer branch.
-  It advances review through Cycle 284, records RV-022/RV-023 as resolved
-  exactly on standing, and leaves RV-004 high/open. This is the only current
-  integration candidate; earlier cursor-only branches are superseded. It does
-  not alter producer reports, executable code, fixtures, protected state, or
-  access authority. Integrate the exact direct-child range and roll it back
-  with one ordinary revert if the standing owner rejects the checkpoint.
+- Reviewer source `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
+  has direct-child result `ff09ef8d0cb7a0c08df663e1f8b1274d417b63d5`,
+  integrated as standing `ff923ccde428270db699aefe4c38c2a9a51e3314`.
+  Both share stable patch ID `570bf2b3747ef0cb3516ac52970f57d8e0a73943`.
+  The result advances review through Cycle 284, records RV-022/RV-023 as
+  resolved, and leaves RV-004 high/open. Earlier cursor-only branches are
+  superseded. Rollback is one ordinary revert of `ff923ccde4` after any newer
+  status record.
 - Standing reviewer `1f611b69aa67b1007ff1a72a815b52fc1ca20604`
   resolves RV-022 at stable patch ID
   `a9802f0c97d01134674240b452cc3ae33e50db03`. Its direct child
