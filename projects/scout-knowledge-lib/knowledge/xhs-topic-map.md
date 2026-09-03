@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 163 supersedes the older table snapshot below. Starting tip
-`7694aed26458df85fcf882479dbba7e832dd89b4` and seed commit
-`5ebe5b1cbc2cbe3f1adbf7778e6400a647f92efe` anchor the unchanged login-class
+Cycle 164 supersedes the older table snapshot below. Starting tip
+`3e7505ab0d8c2e1a7ecb0de53b6e13efdd0d896c` and seed commit
+`6633dd46b755012decdd336a33f95bf17c70d99b` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -369,12 +369,15 @@ The actual fast CLI then read the retained 116,578-byte snapshot at exact
 outer hash `8bee607…edae76`, reproduced all three computation identities and
 508-point count, emitted that schema, rejected an absent freeze manifest and
 empty policy, selected nothing, and kept provider authority false.
+Exact local `846b607…e4f8953` adds the first consumer-side boundary: it
+identifies only exact, unambiguous direct or snapshot v1 schemas and returns no
+nested value or authority judgment.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 163; public trigger-deferred.** The actual fast snapshot CLI now proves the new envelope is wired without weakening its nested denials. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local code remains `0440507…ace6ce7`; exact process evidence is anchored by seed `5ebe5b1…f92efe`. | Zero public requests. Next test whether any local consumer validates the schema before trusting nested fields; if none exists, define the smallest fail-closed parser boundary without inventing authority. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 163.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 163 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 164; public trigger-deferred.** A format consumer can now fail closed on malformed, ambiguous, missing, or future schema identity without treating schema recognition as nested validation. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `846b607…e4f8953` is current. | Zero public requests. Next separately validate the shared provider-denial invariant for each recognized v1 shape without treating the rest of the nested payload as authenticated. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 164.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 164 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3301,6 +3304,28 @@ patch pairs, and 4/4 artifact equivalence. Protected source and overlay retained
 HEADs, 882/3 records, and exact fingerprints `4325371…abf0f` and
 `ad8d222c…e74780`; neither checkout was written or tested. Commit this seed
 record first, then audit consumer-side snapshot-output schema validation.
+
+### Cycle 164 checkpoint — schema identity now has a consumer boundary
+
+Repository-wide source search found the two output schemas only in producers,
+tests, and documentation. No local consumer rejected malformed, missing,
+ambiguous, or future schema identities before interpreting an output.
+
+Exact local `846b607441d31ce0d10f270fb9f0c95cfe4f8953` adds
+`identifyIdentityRobustOutputSchema`. It parses one JSON object, rejects
+malformed JSON, null, arrays, missing and future schemas, and literal or
+escaped duplicate keys, then returns only one of the two exact v1 identities.
+It does not return the payload. A matched object carrying recognized snapshot
+schema plus `providerCallsAuthorized:true` still returns only the schema,
+proving recognition is not authority validation. The focused gate passes 16
+tests and 85 assertions plus TypeScript, formatting, and whitespace.
+
+Confidence is high for this narrow local identity boundary and deliberately
+low for every nested computation, evidence, policy, freshness, drift, model,
+or authority field. GitHub/local code won the rubric; all public lanes made
+zero requests and retain their evidence and triggers. Next begin seed-first,
+then separately test the provider-denial invariant for each recognized v1
+shape without treating the rest of either payload as authenticated.
 
 ## Cycle 163 seed-first start
 

@@ -2584,6 +2584,25 @@ generator identity, authority, policy, freshness, drift, models, or providers.
 The next control audits whether any consumer validates the output schema before
 using nested fields.
 
+## Cycle 164 consumer-side schema identity
+
+Seed commit `6633dd46b755012decdd336a33f95bf17c70d99b` preceded a
+repository-wide consumer audit. The two schemas appeared only in producers,
+tests, and documentation; no parser enforced either identity for a consumer.
+
+Exact local `846b607441d31ce0d10f270fb9f0c95cfe4f8953` adds one narrow
+identifier. It returns only the exact direct or snapshot v1 schema after
+rejecting malformed JSON, non-objects, missing/future schemas, and literal or
+escaped duplicate keys. It never returns nested payload fields. A recognized
+snapshot envelope carrying `providerCallsAuthorized:true` still yields only
+the schema identity, so recognition cannot be mistaken for authority
+validation. Sixteen focused tests pass with 85 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves local format discrimination only. The next control separately
+validates the shared provider-denial invariant without authenticating other
+nested content.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

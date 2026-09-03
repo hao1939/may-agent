@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 164 checkpoint — consumers can identify only known schemas
+
+Seed commit `6633dd46b755012decdd336a33f95bf17c70d99b` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the consumer
+audit.
+
+No local consumer previously checked either output schema. Exact local
+`846b607441d31ce0d10f270fb9f0c95cfe4f8953` adds a narrow identifier that
+returns only an exact direct or snapshot v1 schema. Malformed, non-object,
+missing, future, literal-duplicate, and escaped-duplicate inputs fail closed.
+It intentionally does not expose nested fields or authenticate authority. The
+focused gate passes 16 tests and 85 assertions plus TypeScript, formatting,
+and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named repository heads, paper versions, RSS/JSON
+boundary, and triggers. Confidence is high for format identity and low for all
+nested claims. The next ranked control separately validates provider denial in
+each recognized v1 shape without promoting other payload content.
+
 ## Cycle 163 checkpoint — the fast CLI preserves schema and denial
 
 Seed commit `5ebe5b1cbc2cbe3f1adbf7778e6400a647f92efe` records unchanged
