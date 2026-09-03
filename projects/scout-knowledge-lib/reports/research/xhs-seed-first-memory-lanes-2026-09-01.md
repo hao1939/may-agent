@@ -9356,6 +9356,42 @@ saved boundary. The effective-UID-0 network/process authority, absence of
 account authority, and uncertainty are unchanged. GitHub, arXiv, and Reddit
 also made zero requests. The 66 unaccepted-only references win the rubric.
 
+## Cycle 234 checkpoint — accepted claim identities, not scan-number guesses
+
+Seed commit `ef11d127b4` preceded the accepted-only comparison. The index now
+uses four existing project-owned findings: three collision-repair HN entries
+whose headings and claim clusters exactly match the absent aliases, and XHS
+Scan #56 whose number, June 17–20 source window, heading, and summary match.
+All four descend from accepted source `2495a51593`; their current blobs are
+`6c62e89…8e51b`, `7158247…2b77`, `c99de74…55498`, and
+`21c1065…a7709`. No factual claim was added.
+
+The remaining boundary is 62 unresolved occurrences: 59 in the index and the
+three dependent #253/#258/#260 citations. They stay unresolved until accepted
+evidence supplies exact source-set/claim identity or an owner declares
+supersession. In particular, overlapping scan numbers are not identities;
+XHS #51/#52 retain conflicting temporal metadata; structural-health has two
+byte-identical aliases without canonical ownership; four HN snapshot aliases
+lack exact story-set matches; the two operations reports remain absent; and the
+27 August concepts require stable source IDs plus matching claim scope. Only
+accepted files and history were inspected. Unaccepted `d9da99476e` remains
+provenance-only and non-integrable; its bodies were not read or imported.
+
+GitHub, arXiv, and Reddit made zero public requests and retain their last useful
+evidence and change-bearing revisit triggers. This repair should reduce the
+broad unresolved count by exactly four without erasing distinctions. The full
+candidate gate passes 287 tests / 1,444 assertions plus syntax, TypeScript,
+formatting, projection, 62 durable links, and whitespace. The broad audit is
+1,539 documents / 1,768 local prose links / 70 unresolved / zero absolute;
+read-only health is 29 facts / 16 wakes and runtime state is empty.
+
+Protected `/app` remains externally dirty at HEAD `386b445c…41fec8`, 893
+records, and `98c1c258…76c9f0`; its Scout scope remains 296 records and
+`a430d0c9…4322f7e`. The three-record overlay remains
+`a52b97aa…394a15`; all other peer worktrees are clean. The next ranked
+investigation samples the 27 August concepts against accepted canonical notes
+to test exact source-level subsumption before any redirect.
+
 ## Cycle 233 seed-first reconciliation — semantic boundary unchanged
 
 The exact receipt is retained once in

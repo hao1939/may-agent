@@ -3853,6 +3853,38 @@ seeds remain unavailable at the login-class saved boundary. Provenance and
 uncertainty are unchanged; public Explore evidence is not collection evidence.
 The 66 unaccepted-only index references now win the post-seed rubric.
 
+### Cycle 234 checkpoint — four accepted identities replace absent aliases
+
+Seed commit `ef11d127b4` preceded this accepted-only audit. Four index links now
+reach project-owned entries introduced by accepted `2495a51593`: the renamed HN
+cost/supply-chain, identity/tooling, and scientific-amplifier findings (blobs
+`6c62e89…8e51b`, `7158247…2b77`, and `c99de74…55498`) preserve the exact claim
+clusters named by their absent June 29 aliases; XHS Scan #56 (blob
+`21c1065…a7709`) matches scan identity, June 17–20 source window, heading, and
+summary. This is identity repair, not new source evidence.
+
+The audit deliberately leaves 62 occurrences unresolved: 59 index links plus
+three dependent Scan #253/#258/#260 citations. Replacement requires an
+accepted exact body or owner-declared supersession. The August concepts need
+matching stable source IDs and claim scope; Scan #151 and #253–#275 need
+embedded source-set identity rather than number alone; XHS #51/#52 need their
+conflicting dates resolved; the structural-health duplicates need a declared
+canonical alias; four residual HN snapshots need story-set correspondence; and
+the two operations reports need an accepted report or explicit supersession.
+No unaccepted body was read, restored, or treated as evidence. Confidence is
+high for the four matches and for the deferral boundaries, and intentionally
+absent for the unresolved contents. Public source lanes made zero requests.
+
+The broad audit confirms 1,539 documents, 1,768 local prose links, unresolved
+occurrences `74→70` across eight documents, and zero absolute links. The full
+candidate gate passes 287 tests / 1,444 assertions plus syntax, TypeScript,
+formatting, projection, 62 durable links, and whitespace. Read-only health is
+29 facts / 16 wakes with `truncated:true`; runtime state remains empty.
+
+The next ranked question is whether accepted canonical notes already subsume
+the 27 missing August 21–24 conceptual entries with exact source-level evidence;
+test a bounded sample before considering navigation-only replacements.
+
 ## Cycle 233 seed-first start
 
 [Seed-ledger row 233](./xhs-seed-ledger.md) records the bounded pass before any
