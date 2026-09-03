@@ -589,6 +589,20 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("keeps artifact declaration order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    manifest.artifacts.reverse();
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
