@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 122 observational reconciliation through 2026-09-03T03:47:45.779Z; exact access evidence and uncertainty are in the Cycle 122 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 122 at 2026-09-03T03:47:45.779Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 122 read-only XHS boundary through 2026-09-03T03:47:45.779Z."
+latest_seed_basis: "Cycle 123 observational reconciliation through 2026-09-03T03:52:22.666Z; exact access evidence and uncertainty are in the Cycle 123 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 123 at 2026-09-03T03:52:22.666Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 123 read-only XHS boundary through 2026-09-03T03:52:22.666Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 122 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 123 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -322,19 +322,21 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 122 supersedes the older table snapshot below. Exact seed commit
-`eac393d7d8f7369474d05531e0d50952a92379e6` records the unchanged login-class
-shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. The same-byte artifact-alias control
-answered the ranked question while all public lanes remained deferred.
+Cycle 123 supersedes the older table snapshot below. Its seed-first record
+starts from exact tip `39975952e7338cbaef803606a89c624c13d70cf4` and records
+the unchanged login-class shell, zero attributable items, no proven removals,
+and all 132 durable seeds unavailable. No public request was made. The
+same-byte artifact-alias control remains the last completed ranked question
+while all public lanes remain deferred; the timestamp-proof separation control
+is selected next.
 Accepted-result containment and protected-checkout preservation are rechecked
 on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 122; public trigger-deferred.** The ranked same-byte artifact-alias question was directly testable in the standing implementation.                                   | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact test contract is `1170e66…a7879`; same bytes under a different registered artifact name change protocol scope and deny the old decision. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
-| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 122.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 122 without quota work.** The unchanged access class and alias result expose no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 123; public trigger-deferred.** The ranked timestamp-proof separation question is directly testable in the standing implementation.                                  | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact last test contract is `1170e66…a7879`; same bytes under a different registered artifact name change protocol scope and deny the old decision. | Zero public requests. Test timestamp-proof separation locally. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                    |
+| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 123.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 123 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3237,6 +3239,25 @@ same-byte artifact aliasing: change the registered artifact name while keeping
 its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
+
+## Cycle 123 seed-first start
+
+Cycle 123 began from clean exact tip
+`39975952e7338cbaef803606a89c624c13d70cf4`. The established connector ran
+as effective UID 0 in root-owned Chrome PID 2136's network namespace at
+`2026-09-03T03:52:21.471Z–03:52:22.666Z`. Public Explore remained readable
+at 30 notes. Supported non-navigating `saved-status` remained HTTP 200,
+`login`, semantic fingerprint `3dab1b6…8af420`, a login wall, and zero
+attributable items.
+
+Byte length changed 46,674→46,672 and response body SHA changed
+`f0d959f…a6ef6`→`25c8506…a186c`; the semantic access fingerprint did not
+change. Added and changed IDs remain unknown, observed removals are `[]`, and
+all 132 durable seeds remain unavailable. No representative saved post was
+supported or read, and no XHS state changed. No timestamp-proof control,
+public source, provider, or accepted-result request preceded this
+reconciliation. Commit this seed record first, then run the ranked matched
+timestamp-proof control locally.
 
 ## Cycle 122 seed-first start
 
