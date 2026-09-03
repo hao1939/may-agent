@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { hasExcessiveJsonNesting } from "./json-object-key-exactness";
 
 export type DirectionLevel = "decoy" | "target";
 export type TargetStatus = "current" | "superseded";
@@ -770,6 +771,7 @@ function hasOnlyKeys(value: object, allowed: readonly string[]): boolean {
 }
 
 function promptObject(episode: FactorialEpisode): Record<string, unknown> {
+  if (hasExcessiveJsonNesting(episode.prompt)) return {};
   try {
     const value = JSON.parse(episode.prompt) as unknown;
     return value && typeof value === "object" && !Array.isArray(value)
@@ -916,6 +918,11 @@ export function verifyFactorialSchedule(
     }
     if (episode.prompt !== renderFactorialPrompt(episode)) {
       errors.push(`${episode.id}: prompt contains an unregistered difference`);
+    }
+    if (hasExcessiveJsonNesting(episode.prompt)) {
+      errors.push(
+        `${episode.id}: prompt exceeds the supported JSON nesting limit`,
+      );
     }
     const parsedPrompt = promptObject(episode);
     const registeredFactors = parsedPrompt.registeredFactors as

@@ -383,6 +383,40 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("bounds deeply nested JSON embedded in a quoted factorial prompt", () => {
+    const { manifest, artifactContents } = validFixture();
+    const baseline = verifyExecutionFreezeManifest(manifest, artifactContents);
+    expect(baseline.ok).toBe(true);
+    expect(baseline.providerCallsAuthorized).toBe(false);
+
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    const nested = '{"value":'.repeat(50_000) + "null" + "}".repeat(50_000);
+    episode.prompt =
+      '{"lineageManifest":{"authority":"fixture://scout/allocation-v1","attestation":"fixture-only","records":[{"path":' +
+      nested +
+      '},{"path":"fixture"}]}}';
+
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      `schedule factorial verification failed: ${episode.id}: prompt exceeds the supported JSON nesting limit`,
+    );
+    expect(result.errors).not.toContain(
+      "schedule artifact is not valid verifiable JSON",
+    );
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);
