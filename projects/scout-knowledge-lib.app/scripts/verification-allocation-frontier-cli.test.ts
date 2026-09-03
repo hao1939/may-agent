@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { join } from "node:path";
 import {
   parseIdentityRobustFrontierCliInput,
   parseIdentityRobustSnapshotFrontierCliInput,
@@ -296,5 +297,34 @@ describe("identity-robust frontier CLI input", () => {
         message,
       );
     }
+  });
+
+  it("rejects malformed direct process input before frontier workers start", async () => {
+    const child = Bun.spawn(
+      [
+        "timeout",
+        "--kill-after=1s",
+        "1s",
+        process.execPath,
+        join(import.meta.dir, "verification-allocation-robust-frontier.ts"),
+        "--policy-json",
+        "{}",
+        "--evidence-manifest-json",
+        "{}",
+        "--evidence-root",
+        "relative/evidence",
+        "--freeze-bundle-root",
+        "/goal-owned/freeze",
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exitCode).not.toBe(124);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("evidence root must be an explicit absolute path");
   });
 });

@@ -108,6 +108,8 @@ if (process.argv[2] === "snapshot") {
   process.exit(0);
 }
 
+const cliInput = parseIdentityRobustFrontierCliInput(process.argv.slice(2));
+
 const ranges = [
   [64, 256, 4],
   [65, 256, 4],
@@ -283,7 +285,6 @@ const maximumNull = rows.reduce((worst, row) =>
     : worst,
 );
 const localTotals = new Set([1_029, 1_030, 1_031, 1_032]);
-const cliInput = parseIdentityRobustFrontierCliInput(process.argv.slice(2));
 const frozenSelection = cliInput
   ? await selectIdentityRobustFrontierPointFromFreezeBundle(
       frontier,
