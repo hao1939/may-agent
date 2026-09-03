@@ -2,24 +2,24 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 222 observational reconciliation through 2026-09-03T14:46:18.292Z; exact access evidence and uncertainty are in seed-ledger row 222."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 222 at 2026-09-03T14:46:18.292Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 222 read-only XHS boundary through 2026-09-03T14:46:18.292Z."
+latest_seed_basis: "Cycle 223 observational reconciliation through 2026-09-03T14:54:09.061Z; exact access evidence and uncertainty are in seed-ledger row 223."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 223 at 2026-09-03T14:54:09.061Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 223 read-only XHS boundary through 2026-09-03T14:54:09.061Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 205 reached Chrome PID 2136's DevTools listener
-through its network namespace. Public Explore remained readable with 30 notes.
-Supported `saved-status` retained final class `login` at 46,765 bytes,
-semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
-attributable items. Public readiness and login-shell access are not a
-comparable collection inventory. Added and changed sets remain unknown, proven
-removals are `[]`, and all 132 durable seed IDs remain unavailable rather than
-removed. No representative saved post was available to read and no XHS state
-was changed.
+authenticated window. Cycle 223 used the established direct localhost Chrome
+DevTools connector as worker UID 1000 (`hao`). Public Explore remained readable
+with 30 notes. Supported `saved-status` retained final class `profile` at
+161,608 bytes, semantic access fingerprint `f6fb9a02…576ad`, an opaque
+ten-link fingerprint, and a login wall, so it remained `ready:false`. Public
+readiness and this unavailable profile shell are not a comparable collection
+inventory. Added and changed sets remain unknown, proven removals are `[]`, and
+all 132 durable seed IDs remain unavailable rather than removed. No
+representative saved post was available to read and no XHS state was changed.
 
 ## Revisable value rubric
 
@@ -3853,11 +3853,44 @@ unknown, removals are `[]`, and all 132 durable seeds remain unavailable.
 No representative saved-post read, account mutation, public-source request, or
 registry work preceded this record.
 
-With no seed identity or access-state change, the post-seed rubric retains the
-explicit candidate-registry-artifact alternatives, migration, and rollback
-audit as the highest-ranked accessible question. GitHub, arXiv, and Reddit
-retain their last useful evidence and change-bearing revisit triggers without
-a public request.
+With no seed identity or access-state change, the post-seed rubric keeps the
+explicit registry-artifact audit closed: its own owner, independent revision,
+consumer, provider, and accepted-result triggers did not fire. The highest-
+ranked accessible question is instead whether the living map's current-state
+projection still matches the canonical seed ledger and lane continuity.
+GitHub, arXiv, and Reddit retain their last useful evidence without a public
+request.
+
+### Cycle 223 checkpoint — current projections follow the canonical ledger
+
+The registry alternative was reconsidered, not repeated. Existing exact local
+evidence already compares compiled constants, an explicit canonical artifact,
+a digest-only field, and versioned verifier identity. The smallest artifact is
+341 canonical bytes at SHA-256 `87406223…fda1`; exact migration control
+`c2d36a4029` shows strict v1 rejects the v2-like extension while untouched v1
+rollback remains exact. Cycles 193–215 then test registration closure, path and
+alias semantics, model/seed ordering, canonical evidence bytes, and recursive
+manifest presentation. Together they support keeping one compiled authority
+until an owner, independent registry revision, consumer requirement, provider
+evidence, or accepted finite result fires the recorded trigger.
+
+Contradictory evidence is explicit: compiled identity remains code-coupled and
+cannot support independent registry governance. That limitation does not make
+duplicate authority safer. No trigger changed in Cycle 223, so reopening schema
+or migration work would add no decision evidence.
+
+The bounded current-state audit instead found the topic-map metadata still
+named Cycle 222 and its lead summary still described Cycle 205's `login`
+shell. The source-lane report also named Cycle 222 as current. These projections
+now point to canonical seed-ledger row 223 and the observed `profile` shell
+without promoting its ten opaque links to collection membership. Confidence is
+high for the exact local code/control lineage and projection correction,
+moderate for retaining the compiled design, and low for any future external
+governance transfer.
+
+The next ranked usability control is automated current-projection consistency:
+test whether the latest seed-ledger row, topic-map metadata, and source-lane
+metadata can drift apart again without a focused check failing.
 
 ## Cycle 222 seed-first start
 
