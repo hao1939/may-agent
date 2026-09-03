@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 155 checkpoint — file-backed manifests reach snapshot CLI output
+
+Seed commit `c20c41b8bd926dee36ebbff2e78d2573d60e126c` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the supported
+caller work. Exact local `991a38c4cd996e00bc8281b55e4ea95592b7ab88`
+extends the existing CLI with an explicit local manifest artifact/hash mode and
+leaves inline mode unchanged.
+
+The freeze/snapshot path selects equal 172 only after the file-backed manifest
+and record checks, and its compact output retains raw-artifact and canonical-
+content hashes. Partial syntax and duplicate policy keys fail closed. The
+focused gate passes 25 tests and 107 assertions plus TypeScript, formatting,
+and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for this exact local route and low for
+authorship, authority, policy truth, external compatibility, or real execution.
+The next ranked investigation preserves the manifest locator in compact output
+and tests same-byte alias semantics.
+
 ## Cycle 154 checkpoint — file-backed manifest integrity gates selection
 
 Seed commit `d2441c29e415426cf6f8d130bcf72c381eb8c4cd` records unchanged

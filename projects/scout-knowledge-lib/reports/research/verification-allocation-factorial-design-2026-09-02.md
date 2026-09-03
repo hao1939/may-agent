@@ -2527,6 +2527,27 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 155 supported snapshot manifest input
+
+Seed commit `c20c41b8bd926dee36ebbff2e78d2573d60e126c` preceded the CLI and
+adapter integration. Exact local
+`991a38c4cd996e00bc8281b55e4ea95592b7ab88` adds a versioned local-
+manifest input descriptor to the existing CLI grammar. Inline mode remains
+unchanged. File-backed mode names an explicit relative artifact and raw SHA;
+the freeze/snapshot adapters route it through the Cycle 154 manifest and
+decision-record checks.
+
+The matched snapshot control selects equal 172 at 1,032 blocks and the compact
+JSON includes both raw manifest-artifact and canonical manifest-content hashes.
+Partial/reordered input and duplicate policy keys fail closed. The focused gate
+passes 25 tests and 107 assertions plus TypeScript, source formatting, and
+whitespace. This proves one local supported route, not authority, authorship,
+policy truth, external compatibility, or execution.
+
+The compact result does not yet retain the canonical relative manifest locator.
+The next ranked control adds that replay provenance and tests whether a same-
+byte alias preserves content identity without erasing the locator distinction.
+
 ## Cycle 154 descriptor-safe policy-manifest path
 
 Seed commit `d2441c29e415426cf6f8d130bcf72c381eb8c4cd` preceded the new
