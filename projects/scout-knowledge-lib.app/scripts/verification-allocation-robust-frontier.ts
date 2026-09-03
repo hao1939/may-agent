@@ -5,7 +5,11 @@ import {
   calibrateDirectionalQuantiles,
   measureCalibratedDirectionalPower,
 } from "./verification-allocation-factorial";
-import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
+import { parseIdentityRobustFrontierCliInput } from "./verification-allocation-frontier-cli";
+import {
+  selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalRecord,
+} from "./verification-allocation-frontier-policy";
 
 type Row = {
   runBlockCount: number;
@@ -249,27 +253,15 @@ const maximumNull = rows.reduce((worst, row) =>
     : worst,
 );
 const localTotals = new Set([1_029, 1_030, 1_031, 1_032]);
-let policyCandidate: unknown = null;
-let evidenceManifestCandidate: unknown = null;
-if (process.argv[2] !== undefined) {
-  if (
-    process.argv[2] !== "--policy-json" ||
-    process.argv[4] !== "--evidence-manifest-json" ||
-    process.argv.length !== 6
-  ) {
-    throw new Error(
-      "optional usage: --policy-json '<single JSON policy object>' --evidence-manifest-json '<single JSON manifest object>'",
-    );
-  }
-  try {
-    policyCandidate = JSON.parse(process.argv[3]!);
-    evidenceManifestCandidate = JSON.parse(process.argv[5]!);
-  } catch {
-    throw new Error(
-      "policy and evidence manifest arguments must contain valid JSON",
-    );
-  }
-}
+const cliInput = parseIdentityRobustFrontierCliInput(process.argv.slice(2));
+const selection = cliInput
+  ? await selectIdentityRobustFrontierPointFromLocalRecord(
+      frontier,
+      cliInput.policyCandidate,
+      cliInput.evidenceManifestCandidate,
+      cliInput.evidenceRoot,
+    )
+  : selectIdentityRobustFrontierPoint(frontier, null, null);
 process.stdout.write(
   `${JSON.stringify(
     {
@@ -288,11 +280,7 @@ process.stdout.write(
       frontierFirst: frontier.slice(0, 12),
       frontierLast: frontier.slice(-12),
       final: frontier.at(-1),
-      selection: selectIdentityRobustFrontierPoint(
-        frontier,
-        policyCandidate,
-        evidenceManifestCandidate,
-      ),
+      selection,
     },
     null,
     2,

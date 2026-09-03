@@ -1,10 +1,27 @@
-import { describe, expect, it } from "bun:test";
+import { createHash } from "node:crypto";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   hashIdentityRobustFrontierPolicy,
   selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalRecord,
   type IdentityRobustFrontierPoint,
   type IdentityRobustFrontierPolicy,
 } from "./verification-allocation-frontier-policy";
+
+const decisionRecord = '{"decision":"synthetic fixture"}\n';
+const decisionRecordSha256 = createHash("sha256")
+  .update(decisionRecord)
+  .digest("hex");
+const roots: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(
+    roots.splice(0).map((root) => rm(root, { recursive: true })),
+  );
+});
 
 const frontier: IdentityRobustFrontierPoint[] = [
   {
@@ -36,6 +53,8 @@ function manifest(policy: IdentityRobustFrontierPolicy) {
     decisionOwner: "fixture-owner",
     decisionRevision: "decision-revision:fixture",
     observedAt: "2026-09-03T00:00:00.000Z",
+    decisionRecordArtifact: "decisions/policy.json",
+    decisionRecordSha256,
     independentEvidenceStatus: "not-provided",
   };
 }
@@ -160,6 +179,52 @@ describe("identity-robust allocation frontier policy", () => {
       policyEvidenceStatus: "caller-supplied-unverified",
       selected: null,
       errors: ["no frontier point satisfies the explicit operating policy"],
+    });
+  });
+
+  it("fails the actual selection closed unless the local decision record matches", async () => {
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-policy-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    await writeFile(join(root, "decisions", "policy.json"), decisionRecord);
+    const policy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "minimum-uniform-drift-reserve",
+      minimumUniformDriftReserve: 0.0006,
+      evidenceReference: "decision-record:fixture-local",
+    };
+
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalRecord(
+        frontier,
+        policy,
+        manifest(policy),
+        root,
+      ),
+    ).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      decisionRecordSha256,
+      decisionRecordByteLength: Buffer.byteLength(decisionRecord),
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      errors: [],
+    });
+
+    await writeFile(join(root, "decisions", "policy.json"), "tampered\n");
+    expect(
+      await selectIdentityRobustFrontierPointFromLocalRecord(
+        frontier,
+        policy,
+        manifest(policy),
+        root,
+      ),
+    ).toMatchObject({
+      ok: false,
+      selected: null,
+      decisionRecordSha256: "",
+      decisionRecordEvidenceStatus: "",
+      errors: ["local evidence bytes do not match the declared SHA-256"],
     });
   });
 });

@@ -8,6 +8,10 @@ import {
 } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 import {
+  descriptorPath,
+  readRegularChildNoFollow,
+} from "./descriptor-safe-local-evidence";
+import {
   type FreezeVerificationResult,
   verifyExecutionFreezeManifest,
 } from "./verification-allocation-freeze";
@@ -51,28 +55,6 @@ function declaredArtifactNames(manifest: unknown): unknown[] {
       ? (artifact as Record<string, unknown>).name
       : undefined,
   );
-}
-
-function descriptorPath(parent: FileHandle, name = ""): string {
-  const root = `/proc/self/fd/${parent.fd}`;
-  return name ? `${root}/${name}` : root;
-}
-
-async function readRegularChildNoFollow(
-  parent: FileHandle,
-  name: string,
-): Promise<Uint8Array> {
-  const handle = await open(
-    descriptorPath(parent, name),
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  );
-  try {
-    const status = await handle.stat();
-    if (!status.isFile()) throw new Error("entry is not a regular file");
-    return new Uint8Array(await handle.readFile());
-  } finally {
-    await handle.close();
-  }
 }
 
 async function collectFiles(

@@ -1,4 +1,8 @@
 import { createHash } from "node:crypto";
+import {
+  isCanonicalRelativeEvidenceName,
+  readDescriptorSafeLocalEvidence,
+} from "./descriptor-safe-local-evidence";
 
 export type IdentityRobustPolicyEvidenceManifest = {
   schema: "scout.verification-allocation-policy-evidence/v1";
@@ -8,6 +12,8 @@ export type IdentityRobustPolicyEvidenceManifest = {
   decisionOwner: string;
   decisionRevision: string;
   observedAt: string;
+  decisionRecordArtifact: string;
+  decisionRecordSha256: string;
   independentEvidenceStatus: "not-provided" | "provided-unverified";
   independentEvidenceReference?: string;
 };
@@ -19,6 +25,13 @@ export type IdentityRobustPolicyEvidenceBinding = {
   errors: string[];
   scopeLimit: string;
 };
+
+export type IdentityRobustLocalPolicyEvidenceBinding =
+  IdentityRobustPolicyEvidenceBinding & {
+    decisionRecordSha256: string;
+    decisionRecordByteLength: number;
+    decisionRecordEvidenceStatus: "local-byte-match-unverified" | "";
+  };
 
 function record(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -57,6 +70,8 @@ export function bindIdentityRobustPolicyEvidence(
     "decisionOwner",
     "decisionRevision",
     "observedAt",
+    "decisionRecordArtifact",
+    "decisionRecordSha256",
     "independentEvidenceStatus",
     ...(independentEvidenceStatus === "provided-unverified"
       ? ["independentEvidenceReference"]
@@ -75,6 +90,9 @@ export function bindIdentityRobustPolicyEvidence(
     !nonempty(candidate.decisionOwner) ||
     !nonempty(candidate.decisionRevision) ||
     !exactUtcTimestamp(candidate.observedAt) ||
+    !isCanonicalRelativeEvidenceName(candidate.decisionRecordArtifact) ||
+    typeof candidate.decisionRecordSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(candidate.decisionRecordSha256) ||
     (independentEvidenceStatus !== "not-provided" &&
       independentEvidenceStatus !== "provided-unverified") ||
     (independentEvidenceStatus === "provided-unverified" &&
@@ -98,5 +116,42 @@ export function bindIdentityRobustPolicyEvidence(
     evidenceStatus: "caller-supplied-unverified",
     errors: [],
     scopeLimit,
+  };
+}
+
+export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
+  expectedPolicySha256: string,
+  expectedEvidenceReference: string,
+  candidate: unknown,
+  evidenceRoot: string,
+): Promise<IdentityRobustLocalPolicyEvidenceBinding> {
+  const structural = bindIdentityRobustPolicyEvidence(
+    expectedPolicySha256,
+    expectedEvidenceReference,
+    candidate,
+  );
+  if (!structural.ok) {
+    return {
+      ...structural,
+      decisionRecordSha256: "",
+      decisionRecordByteLength: 0,
+      decisionRecordEvidenceStatus: "",
+    };
+  }
+  const manifest = candidate as IdentityRobustPolicyEvidenceManifest;
+  const localEvidence = await readDescriptorSafeLocalEvidence(
+    evidenceRoot,
+    manifest.decisionRecordArtifact,
+    manifest.decisionRecordSha256,
+  );
+  return {
+    ...structural,
+    ok: localEvidence.ok,
+    errors: localEvidence.errors,
+    decisionRecordSha256: localEvidence.sha256,
+    decisionRecordByteLength: localEvidence.byteLength,
+    decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+    scopeLimit:
+      "The manifest and one descriptor-safe local byte read are bound to the exact policy. This proves local integrity for that read, not authorship, authority, independence, timestamp validity, or substantive correctness.",
   };
 }

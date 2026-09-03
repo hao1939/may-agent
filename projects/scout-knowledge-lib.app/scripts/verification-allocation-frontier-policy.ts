@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
-import { bindIdentityRobustPolicyEvidence } from "./verification-allocation-policy-provenance";
+import {
+  bindIdentityRobustPolicyEvidence,
+  bindIdentityRobustPolicyEvidenceFromLocalRecord,
+} from "./verification-allocation-policy-provenance";
 
 export type IdentityRobustFrontierPoint = {
   runBlockCount: number;
@@ -26,6 +29,13 @@ export type IdentityRobustFrontierSelection = {
   errors: string[];
   scopeLimit: string;
 };
+
+export type IdentityRobustLocalFrontierSelection =
+  IdentityRobustFrontierSelection & {
+    decisionRecordSha256: string;
+    decisionRecordByteLength: number;
+    decisionRecordEvidenceStatus: "local-byte-match-unverified" | "";
+  };
 
 function record(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -208,5 +218,53 @@ export function selectIdentityRobustFrontierPoint(
       ? []
       : ["no frontier point satisfies the explicit operating policy"],
     scopeLimit,
+  };
+}
+
+export async function selectIdentityRobustFrontierPointFromLocalRecord(
+  frontierCandidate: unknown,
+  policyCandidate: unknown,
+  evidenceManifestCandidate: unknown,
+  evidenceRoot: string,
+): Promise<IdentityRobustLocalFrontierSelection> {
+  const selection = selectIdentityRobustFrontierPoint(
+    frontierCandidate,
+    policyCandidate,
+    evidenceManifestCandidate,
+  );
+  if (!selection.ok) {
+    return {
+      ...selection,
+      decisionRecordSha256: "",
+      decisionRecordByteLength: 0,
+      decisionRecordEvidenceStatus: "",
+    };
+  }
+
+  const policy = parsePolicy(policyCandidate)!;
+  const localBinding = await bindIdentityRobustPolicyEvidenceFromLocalRecord(
+    selection.policySha256,
+    policy.evidenceReference,
+    evidenceManifestCandidate,
+    evidenceRoot,
+  );
+  if (!localBinding.ok) {
+    return {
+      ...selection,
+      ok: false,
+      selected: null,
+      errors: localBinding.errors,
+      decisionRecordSha256: "",
+      decisionRecordByteLength: 0,
+      decisionRecordEvidenceStatus: "",
+      scopeLimit: localBinding.scopeLimit,
+    };
+  }
+  return {
+    ...selection,
+    decisionRecordSha256: localBinding.decisionRecordSha256,
+    decisionRecordByteLength: localBinding.decisionRecordByteLength,
+    decisionRecordEvidenceStatus: localBinding.decisionRecordEvidenceStatus,
+    scopeLimit: localBinding.scopeLimit,
   };
 }
