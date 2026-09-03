@@ -1,4 +1,5 @@
 import { type IdentityRobustFrozenFrontierSelection } from "./verification-allocation-frontier-freeze";
+import { withIdentityRobustSnapshotSelectionOutputSchema } from "./verification-allocation-frontier-output";
 import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
 import {
   isIdentityRobustLocalManifestInput,
@@ -23,7 +24,7 @@ export function summarizeIdentityRobustSnapshotFrontierSelection(
   result: IdentityRobustSnapshotFrontierSelection,
 ) {
   const snapshot = result.snapshotVerification.snapshot;
-  return {
+  return withIdentityRobustSnapshotSelectionOutputSchema({
     ...result,
     snapshotVerification: {
       ...result.snapshotVerification,
@@ -46,7 +47,7 @@ export function summarizeIdentityRobustSnapshotFrontierSelection(
           }
         : null,
     },
-  };
+  });
 }
 
 /**

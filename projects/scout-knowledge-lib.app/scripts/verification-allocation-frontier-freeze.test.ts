@@ -15,6 +15,7 @@ import {
   verifyExecutionFreezeManifest,
 } from "./verification-allocation-freeze";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
+import { IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA } from "./verification-allocation-frontier-output";
 import {
   selectIdentityRobustFrontierPointFromSnapshot,
   summarizeIdentityRobustSnapshotFrontierSelection,
@@ -341,6 +342,9 @@ describe("identity-robust frontier freeze adapter", () => {
       localManifestResult.frozenSelection?.selection.evidenceManifestSha256,
     );
     const summary = summarizeIdentityRobustSnapshotFrontierSelection(result);
+    expect(summary.schema).toBe(
+      IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA,
+    );
     const frontierSnapshotReference = identityRobustFrontierSnapshotReference({
       rowSha256: snapshot.rowSha256,
       resultSha256: snapshot.resultSha256,
