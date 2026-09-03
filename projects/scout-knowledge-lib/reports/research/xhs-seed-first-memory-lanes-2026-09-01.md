@@ -7860,6 +7860,25 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 198 checkpoint — simultaneous collision pairs remain exact locally
+
+Seed commit `ae11b42b23` records unchanged semantic XHS access and byte length,
+30 public Explore notes, zero attributable saved items, unknown additions/
+changes, no observed removals, and all 132 seeds unavailable. Body-hash drift
+is response provenance. No XHS state changed.
+
+Exact local `df65aaf56d` materializes case-fold, NFC/NFD, and trailing-dot
+pairs as distinct files in three matched seven-artifact bundles on this Linux
+host. All verify without error and keep provider authority false. Focused
+validation passes 60 tests and 329 assertions plus TypeScript, formatting, and
+whitespace. Behavior on a collapsing filesystem remains inferred, not tested.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. V1
+remains unchanged. The next ranked audit compares lowercase restricted paths
+with logical artifact IDs mapped to digest-derived storage paths, including
+migration and rollback cost.
+
 ## Cycle 197 checkpoint — local admissibility remains host-defined
 
 Seed commit `85ef9d491d` records unchanged semantic XHS access, 30 public

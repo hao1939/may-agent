@@ -2805,6 +2805,21 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 198 simultaneous path-collision pairs
+
+Seed commit `ae11b42b23` preceded exact test `df65aaf56d`. On this Linux host,
+case-fold, NFC/NFD, and trailing-dot pairs coexist as distinct declared proof
+artifacts in otherwise matched seven-artifact bundles. All verify without
+error and keep provider authority false.
+
+This proves host-local exactness, not extraction behavior on a collapsing
+filesystem. The expected missing/undeclared-file denial elsewhere remains an
+inference until run on another platform. No v1 change is justified. Focused
+validation passes 60 tests and 329 assertions plus TypeScript, formatting, and
+whitespace. The next audit compares lowercase restricted paths with logical
+artifact IDs mapped to digest-derived storage paths, including migration and
+rollback cost.
+
 ## Cycle 197 host path-admissibility boundary
 
 Seed commit `85ef9d491d` preceded exact test `84d3dce5e0`. This Linux directory
