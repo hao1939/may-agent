@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 101, including descriptor-safe decision-record byte binding 882bee03a86d34c1d58b03bc8c1457ebd230a88f."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 102, including decision-record content cross-binding bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1491,6 +1491,49 @@ integrity and failure controls and low for every external or substantive
 interpretation. The next ranked question is to require the record's embedded
 policy, owner, revision, time, and evidence status to match the manifest before
 selection, without promoting that consistency check into authentication.
+
+## Cycle 102 decision-record content binding
+
+Seed reconciliation `a5eccbdabb4c34a30e41b1f7ebd43181ff44e292`
+preceded this work. The public Explore view remained readable at 30 notes; the
+saved target retained the same profile-class semantic fingerprint, login wall,
+102,929-byte length, and zero attributable items. Only its body SHA-256
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. The local accepted-result check at
+`2026-09-03T01:09:51.531Z` found all six accepted source commits present and
+all standing equivalents contained. GitHub, arXiv, and Reddit made zero public
+requests.
+
+Exact local `bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d` prevents a
+hash-matched but contradictory record from selecting a point. After the
+descriptor-safe byte check, the binder parses strict UTF-8 JSON and requires
+the record's exact schema and field set, decision identity, owner, revision,
+UTC time, policy, independent-evidence state and optional reference to match
+the policy and manifest. It also requires nonempty rationale and scope-limit
+text. A mismatch preserves the useful fact that the bytes matched while
+clearing the content status and selected point.
+
+The regression rejects seven separately re-hashed contradictions: decision
+identity, owner, revision, time, reserve policy, evidence state, and an extra
+unbound claim. A selector-level control separately rejects a byte-matched
+revision contradiction. The unchanged 1,022-byte real control still matches
+record SHA-256 `346915ecdda9e8c2e946abdaa174d3e2da4ed1692657d90fdbbe76f39701e996`,
+policy SHA-256 `3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`,
+and manifest SHA-256
+`23a5cba4130aa5df098e71e2dc4d759404db85e83d4fbc8320105cf42cd165ae`.
+It returns both `local-byte-match-unverified` and
+`local-content-match-unverified` before selecting the retained equal-172
+point. Focused validation passes 10 tests and 32 assertions plus TypeScript,
+formatting, and whitespace.
+
+This establishes internal local consistency, not who authored or approved the
+record, whether its time or revision is externally genuine, or whether 0.0006
+is a defensible real drift reserve. Confidence is high for the declared local
+schema and mismatch controls and low for authority, independence, real drift,
+cost, provider transfer, and the target's substantive value. The next ranked
+question is to audit the retained primary archive for measured drift or cost
+evidence that could justify any reserve target or episode ceiling; absent such
+evidence, the selection must remain illustrative rather than operational.
 
 ## Go/no-go boundary
 
