@@ -3858,6 +3858,27 @@ identities remain unknown, observed removals are `[]`, and all 132 durable IDs
 remain unavailable. Commit this seed record before the project-README route
 audit.
 
+## Cycle 275 seed-first start — accepted review trigger
+
+Exact Cycle 274 result `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6`
+passes syntax, TypeScript, formatting, Cycle 237 projection, 69 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and 296 tests / 1,483 assertions. Its
+tree `2c6430e7244973f4c7f34fa1db9ffb6046926fcc` matches the validated
+candidate and the standing worktree is clean.
+
+At `2026-09-03T20:44:48.550Z`, the exact Cycle 237 XHS receipt was 227 minutes
+old, inside the six-hour observation cadence. Semantic access and the collected
+surface have no new supported observation, so this bounded reconciliation made
+zero browser or public requests: added/changed identities remain unknown,
+observed removals are `[]`, and all 132 durable IDs remain unavailable. No
+collection membership or post-content inference follows from elapsed time.
+
+Independent reviewer ref advanced from `f6a7a65928` to direct-child result
+`9afdf7bd8fa552d5ff09764de43157bfdf3a3232`. Protected `/app` remains at
+HEAD `386b445c…1fec8`, 907 records / `80dc6582…e380`; its Scout scope remains
+296 / `c4485b46…c375`. Reconcile the finite reviewer delta before any public
+lane or further RV-004 work.
+
 ## Cycle 274 checkpoint — the project entry point now matches the bounded route
 
 Seed commit `cf086863ab0e62202a1f8de7ae124e1234d9cd13`
