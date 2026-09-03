@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
+  acceptedSourceOutputsMetricDefinition,
   buildLibraryHealthPacket,
   execute,
   KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
@@ -60,6 +61,18 @@ function oversizedNote(projectDir: string, lines: number): void {
 }
 
 describe("Scout library-health observer", () => {
+  it("can alert when every latest accepted source output disappears", () => {
+    const definition = acceptedSourceOutputsMetricDefinition("/app/scout.app");
+
+    expect(definition).toMatchObject({
+      target: 1,
+      threshold: 1,
+      alertOp: "<",
+    });
+    expect(0 < definition.threshold).toBe(true);
+    expect(1 < definition.threshold).toBe(false);
+  });
+
   it("owns and records canonical knowledge preamble coverage", async () => {
     const paths = fixture();
     writeFileSync(
