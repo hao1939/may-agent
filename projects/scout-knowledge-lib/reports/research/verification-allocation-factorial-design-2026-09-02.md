@@ -1989,6 +1989,27 @@ ranked control is process-level: use the retained snapshot with a newly bound
 decision record, then substitute a stale reference without regenerating the
 frontier.
 
+## Cycle 113 retained-snapshot process control
+
+Seed commit `153dfd496168335538d6927c4ea6cb814e8d9f49` preceded this
+control. The saved XHS target remained a login shell with zero attributable
+items; no public source request was made.
+
+The actual CLI loaded the retained 116,578-byte snapshot at outer SHA
+`8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`
+and derived snapshot reference `frontier-snapshot-sha256:07bdf16be7c4cf46bb04f726ebd80fef9451d301c722df467430a31d791dc8c1`.
+A matching local decision selected `[172,172,172,172,172,172]` at 1,032
+blocks. Replacing only that reference with 64 zeroes left snapshot and freeze
+verification true but returned no selection. Provider authority was false in
+both outputs. The one process test passed six assertions in 107 ms and its
+temporary external-artifact harness was removed afterward.
+
+This verifies the retained fast path after the Cycle 112 schema change. It
+does not validate the synthetic freeze, decision authority, drift threshold,
+cost, models, or providers. The next ranked control is whether a direct
+freeze-only caller can inject a snapshot reference without having verified a
+snapshot; if so, the verified adapter must own scope construction.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
