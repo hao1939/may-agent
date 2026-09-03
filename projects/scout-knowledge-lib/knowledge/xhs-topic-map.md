@@ -2,18 +2,18 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 176 observational reconciliation through 2026-09-03T09:31:53.025Z; exact access evidence and uncertainty are in the Cycle 176 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 176 at 2026-09-03T09:31:53.025Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 176 read-only XHS boundary through 2026-09-03T09:31:53.025Z."
+latest_seed_basis: "Cycle 177 observational reconciliation through 2026-09-03T09:38:55.969Z; exact access evidence and uncertainty are in the Cycle 177 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 177 at 2026-09-03T09:38:55.969Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 177 read-only XHS boundary through 2026-09-03T09:38:55.969Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 176 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 177 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
-Supported `saved-status` retained final class `login` at 46,764 bytes,
+Supported `saved-status` retained final class `login` at 46,763 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
 attributable items. Public readiness and login-shell access are not a
 comparable collection inventory. Added and changed sets remain unknown, proven
@@ -3313,6 +3313,32 @@ same-byte artifact aliasing: change the registered artifact name while keeping
 its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
+
+## Cycle 177 seed-first start
+
+Cycle 177 began only after clean, fully validated Cycle 176 tip
+`d2eb24604a1b4ef557441148fc152419b2ed9f1d`. From
+`2026-09-03T09:38:54.863Z` through `09:38:55.969Z`, the established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace
+found public Explore readable at 30 notes and the saved target HTTP 200,
+`login`, 46,763 bytes, semantic fingerprint `3dab1b6d…8af420`, a login wall,
+and zero attributable items.
+
+Semantic access is unchanged. Byte length changed 46,764→46,763 and body SHA
+changed `7ab69c0…81095b`→`b342d58…70458`; this is response provenance, not
+seed-content evidence. Added and changed IDs remain unknown, observed removals
+are `[]`, and all 132 durable seeds remain unavailable. No representative
+saved-post read was supported, no XHS state changed, and no embedded-prompt or
+public-source request preceded this reconciliation.
+
+The exact Cycle 176 tip passed 236 tests and 1,169 assertions, 30 relative
+links, health 26/16, empty runtime state, 9/9 accepted ancestors, both accepted
+patch pairs, and 4/4 artifact equivalence. Protected `/app` retained HEAD
+`386b445c…1fec8`, 883 externally observed records, and fingerprint
+`ec8db4e…d325a1`; the human overlay retained HEAD `fd4c68e…1514663`, three
+records, and fingerprint `ad8d222c…e74780`. Neither checkout was written or
+tested. Commit this seed record first, then test deeply nested JSON embedded as
+a quoted factorial prompt inside an otherwise shallow schedule.
 
 ## Cycle 176 seed-first start
 
