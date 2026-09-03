@@ -2657,6 +2657,26 @@ control audits whether callers need one explicit all-of result for schema,
 provider denial, and computation identity rather than three independently
 callable booleans.
 
+## Cycle 168 composed consumer assessment
+
+Seed commit `7b8b07f674` preceded a repository-wide caller audit. The three
+consumer helpers had no composing caller: each was available independently,
+but no API result named whether all three scoped checks passed.
+
+Exact local `1a1ebb6409` adds one assessment retaining schema, provider-denial,
+and computation-identity verdicts plus their conjunction. Matched direct and
+snapshot v1 fixtures pass. A provider-authority mutation leaves schema and
+identity true but makes denial and the conjunction false; a wrong result hash
+leaves schema and denial true but makes identity and the conjunction false.
+Ten focused tests pass with 31 assertions plus TypeScript, formatting, and
+whitespace.
+
+The result closes check-omission at this API boundary. It is not whole-payload
+validation, recomputation, policy authority, external provenance, provider
+execution, cost, or model evidence. The next control adds an unrelated policy
+or selection claim to an otherwise passing payload and tests whether the
+conjunction's scope remains unambiguous.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

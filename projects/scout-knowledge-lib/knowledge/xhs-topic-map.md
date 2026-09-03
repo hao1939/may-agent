@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 167 supersedes the older table snapshot below. Starting tip
-`a2d5f760fb11031359a64c3a9df9a3a78fa52318` and seed commit
-`6aaff007aa` anchor the unchanged login-class
+Cycle 168 supersedes the older table snapshot below. Starting tip
+`5a0a51146bdbaba346bf391d7a6b5955f1fd56e3` and seed commit
+`7b8b07f674` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -382,12 +382,16 @@ One current direct v1 regeneration then completed in 561.69 seconds. Its
 203,783 bytes at SHA-256 `a371cb0…7bd9cb7` passed schema, provider-denial, and
 retained-computation-identity consumers together while retaining the explicit
 no-policy selection failure.
+Exact local `1a1ebb6…c0beff1` now composes those same three scoped verdicts
+into one assessment. Direct and snapshot controls pass only when every verdict
+passes; authority and identity mutations retain their separate diagnostics and
+make the conjunction false.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 167; public trigger-deferred.** The current direct v1 output passed all three separate consumers; none establishes authority and only the regeneration, not the identity matcher, is recomputation evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `88e3d86…40dace50` is current; direct output `a371cb0…7bd9cb7` passed schema, denial, and retained identity. | Zero public requests. Next audit whether callers need one explicit all-of consumer result so omitting one of the three checks cannot masquerade as full acceptance. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 167.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 167 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 168; public trigger-deferred.** One assessment now composes the three scoped checks without hiding individual failures. It still does not validate unrelated payload claims or establish authority, and only regeneration is recomputation evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `1a1ebb6…c0beff1` is current; direct and snapshot matched controls pass, while authority and identity mutations fail the conjunction. | Zero public requests. Next test whether unrelated policy/selection claims can coexist with `allChecksPass` and clarify or constrain the API only if that scoped result can be mistaken for whole-payload validation. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 168.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 168 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3317,6 +3321,35 @@ The human overlay retained HEAD `fd4c68e…1514663`, three records, and exact
 fingerprint `ad8d222c…e74780`. Neither protected checkout was written or tested
 by this worker. Commit this seed record first, then pursue the ranked all-of
 consumer-boundary audit using local evidence.
+
+### Cycle 168 checkpoint — consumers have one explicit all-of assessment
+
+The repository-wide post-seed audit found the three consumer helpers only in
+their implementation and tests; no caller composed them. A caller could use
+schema identity, provider denial, or computation identity independently, but
+there was no API result naming whether all three scoped checks passed.
+
+Exact local `1a1ebb6409` adds `assessIdentityRobustOutputForConsumption`.
+It returns the recognized schema, provider-denial verdict, computation-identity
+verdict, and their conjunction without suppressing a partial failure. Matched
+direct and snapshot v1 fixtures pass. A direct fixture with provider authority
+retains schema and identity matches but fails denial and the conjunction; a
+wrong top-level result hash retains schema and denial but fails identity and
+the conjunction. The focused gate passes 10 tests and 31 assertions plus
+TypeScript, formatting, and whitespace.
+
+This closes caller omission of one of the three named checks, not whole-payload
+validation. It does not inspect unrelated policy or selection claims, recompute
+the result, or establish provenance, authority, cost, drift, model behavior, or
+provider execution. Confidence is high for the matched local conjunction and
+its separate diagnostics, and low outside those scopes.
+
+GitHub/local code won the post-seed rubric. Public GitHub, arXiv, and Reddit
+made zero requests because no recorded trigger fired; retain their exact heads,
+paper versions, RSS/JSON boundary, and revisit triggers. The next ranked audit
+adds an unrelated policy/selection claim to an otherwise passing payload and
+tests whether `allChecksPass` is sufficiently scoped or could be mistaken for
+whole-payload acceptance.
 
 ## Cycle 167 seed-first start
 
