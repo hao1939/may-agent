@@ -3842,6 +3842,17 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 234 seed-first start — fresh receipt reused without quota work
+
+At `2026-09-03T16:24:52.342Z`, the exact [Cycle 233 receipt](./xhs-seed-ledger.md)
+was six minutes old and no collection-access, scheduled-review, source-revision,
+or accepted-result trigger had fired. Cycle 234 therefore reconciles before
+selection from that current evidence without another browser request: observed
+additions and changes remain unknown, removals are `[]`, and all 132 durable
+seeds remain unavailable at the login-class saved boundary. Provenance and
+uncertainty are unchanged; public Explore evidence is not collection evidence.
+The 66 unaccepted-only index references now win the post-seed rubric.
+
 ## Cycle 233 seed-first start
 
 [Seed-ledger row 233](./xhs-seed-ledger.md) records the bounded pass before any
