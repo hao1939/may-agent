@@ -2805,6 +2805,28 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 188 registered presentation-order association
+
+Seed commit `f336902855` preceded a matched whole-schedule order reversal.
+Every candidate retained its registered identity, body, path, and revision, but
+each actual array reversed against its unchanged `presentationOrder`; prompts
+and both schedule digests were coherently rebound. Before repair the freeze
+returned `ok:true`, no errors, provider authority false, model scope
+`ac29ae2…7c5bf`, and protocol scope `b97a14c…81f9`.
+
+Exact local `b83e8c8f2a` derives expected candidate order from target identity
+and the presentation factor. The reversal now returns one exact error, null
+policy scope, and provider authority false. The direct freeze suite passes 40
+tests and 202 assertions plus TypeScript, exact-file formatting, and
+whitespace; the complete gate is rerun at the final documentation tip.
+
+This is high-confidence local evidence for the byte-exact factor-to-order
+association and contradictory evidence against treating regenerated prompts
+and digests as sufficient. It does not authenticate registration, prompt
+semantics, policy authority, cost, drift, real models, or providers. The next
+audit permutes only prompt lineage-record order against exact candidates and
+factors.
+
 ## Cycle 187 registered candidate-provenance association
 
 Seed commit `9e186e90a3` preceded a matched whole-schedule provenance swap.

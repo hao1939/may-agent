@@ -7860,6 +7860,30 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 188 checkpoint — candidate order remains bound to presentation
+
+Seed commit `f336902855` records unchanged semantic XHS access and byte length,
+30 readable public Explore notes, zero attributable saved items, unknown
+additions and changes, no observed removals, and all 132 durable seeds
+unavailable before the local order-association control. Only the saved-shell
+body SHA changed.
+
+A whole-schedule reversal retained every registered candidate identity, body,
+path, and revision while contradicting the unchanged `presentationOrder`;
+every prompt and both digest bindings were regenerated. Before repair it
+returned `ok:true`, no errors, non-null local policy scope, and provider
+authority false. Exact local `b83e8c8f2a` binds actual order to the declared
+factor. The control now returns one exact denial with null policy scope; the
+direct freeze suite passes 40 tests and 202 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the byte-exact synthetic association and
+low for external registration, prompt semantics, authority, cost, drift, real
+models, or providers. The next ranked audit permutes only prompt lineage-record
+order against exact candidates and factors.
+
 ## Cycle 187 checkpoint — candidate provenance remains bound to identity
 
 Seed commit `9e186e90a3` records unchanged semantic XHS access, a one-byte
