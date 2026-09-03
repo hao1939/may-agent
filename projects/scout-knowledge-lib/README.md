@@ -16,7 +16,9 @@ workspace, not Scout heartbeat scratch.
 
 - Prefer updating an existing note over creating a duplicate.
 - Keep notes source-grounded and agent-readable.
-- Maintain `knowledge/INDEX.md` as the entry point.
+- Use the [short knowledge landing page](./knowledge/README.md) as the entry
+  point, and maintain the [exhaustive index](./knowledge/INDEX.md) for detailed
+  lookup.
 - Record contradictions, stale notes, and consolidation opportunities instead
   of silently accumulating more files.
 - Treat Scout heartbeat as one possible contributor, not the owner of the

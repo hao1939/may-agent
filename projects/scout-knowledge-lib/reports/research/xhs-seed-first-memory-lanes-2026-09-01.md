@@ -9361,6 +9361,32 @@ identities remain unknown, observed removals are `[]`, and all 132 durable IDs
 remain unavailable. Commit this seed record before the project-README route
 audit.
 
+## Cycle 274 checkpoint — one aligned project entry point
+
+Seed commit `cf086863ab0e62202a1f8de7ae124e1234d9cd13`
+preceded the audit. Exact baseline project-README blob
+`2d33388bd8c3538a39232b2f8be15c39e32d0807` contained zero Markdown links
+and named the exhaustive INDEX as the universal entry point.
+
+Candidate blob `34a7e2dc12ae969cc2f93e568c3a128b8e01e82d` links the short
+knowledge landing page as the entry point and reserves INDEX for detailed
+lookup. The page stays compact at 28 lines / 154 words and copies no index or
+topic content. Adding it to the durable-link gate moves checked scope 67→69;
+focused link tests pass 4/4, v1 stays 11/14, and v2 stays 8/8.
+
+The static route is now consistent from project README through the short
+landing page to conditional INDEX/topic-map use. This is not observed use or
+deployed savings, so `RV-004` remains high/open. GitHub/local evidence won;
+GitHub, arXiv, and Reddit made zero public requests, retain their evidence and
+triggers, accepted mappings remain contained, and unaccepted `d041c41b54`
+remains excluded.
+
+Next, prefer prospective outcome evidence over another navigation edit: when a
+new protected maintenance result or accepted review appears, test whether it
+used the bounded route and retained a decision. The next exact XHS observation
+trigger is six hours after `2026-09-03T16:57:11.030Z`; do not create quota work
+before then.
+
 ## Cycle 273 seed-first start — local continuity
 
 Exact Cycle 272 result `e1b15a315818e2b1974be32407ba1d700c2d3ede`

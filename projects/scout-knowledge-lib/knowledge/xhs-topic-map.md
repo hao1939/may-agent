@@ -3858,6 +3858,30 @@ identities remain unknown, observed removals are `[]`, and all 132 durable IDs
 remain unavailable. Commit this seed record before the project-README route
 audit.
 
+## Cycle 274 checkpoint — the project entry point now matches the bounded route
+
+Seed commit `cf086863ab0e62202a1f8de7ae124e1234d9cd13`
+preceded the audit. Exact baseline project-README blob
+`2d33388bd8c3538a39232b2f8be15c39e32d0807` contained zero Markdown links
+and called the exhaustive INDEX the entry point, contradicting Cycle 272's
+bounded workflow route.
+
+Candidate blob `34a7e2dc12ae969cc2f93e568c3a128b8e01e82d` now links the short
+knowledge landing page as the entry point and the exhaustive INDEX as detailed
+lookup. It remains 28 lines / 154 words and duplicates no library content. The
+durable-link gate now covers the project README too, moving checked scope
+67→69; focused link tests pass 4/4, v1 remains 11/14, and v2 remains 8/8.
+
+This closes the static three-layer route—project README → short knowledge
+landing page → conditional INDEX/topic map—without asserting user behavior or
+deployed savings. GitHub/local evidence won; no public lane ran, accepted
+mappings remain contained, unaccepted `d041c41b54` remains excluded, and
+`RV-004` remains open. The next highest-value evidence is prospective: after a
+new protected maintenance outcome or accepted review appears, test whether it
+used the bounded route and produced a retained decision. Until then, the exact
+next observational XHS trigger is the six-hour boundary after
+`2026-09-03T16:57:11.030Z`; do not manufacture another link or public request.
+
 ## Cycle 273 seed-first start — local continuity
 
 Exact Cycle 272 result `e1b15a315818e2b1974be32407ba1d700c2d3ede`
