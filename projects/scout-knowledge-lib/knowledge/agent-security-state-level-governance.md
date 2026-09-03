@@ -95,7 +95,7 @@ killing the whole thing" (chasil). Graduated governance (per-capability,
 per-user scoping) doesn't exist → binary all/nothing is the only available
 mechanism.
 
-*(Source: [2026-06-16-hn-scan-19.md](../findings/2026-06-16-hn-scan-19.md))*
+*(Source: [2026-06-16-hn-scan-19.md](./findings/2026-06-16-hn-scan-19.md))*
 
 ## Infrastructure Cost as Access Control (Market-Level)
 

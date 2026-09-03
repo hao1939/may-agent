@@ -9360,6 +9360,32 @@ The two missing library-operations reports remain highest-ranked. Registry and
 all three public lanes retain their recorded change-bearing triggers without a
 request.
 
+## Cycle 228 checkpoint — recoverable stash bytes remain unaccepted
+
+Seed commit `02abbbdb4f` preceded bounded tree-only provenance inspection.
+Parentless commit `d9da99476e` (`2026-08-25T06:10:59Z`) is an untracked-files
+snapshot reachable behind `refs/stash`; it contains every one of the 67 absent
+index targets. Their sorted 67-entry mode/blob/size/path manifest covers
+820,969 bytes and hashes to `a8958cfb…a9eba84`. The two operations entries map
+to exact blobs `4a865d44…1370f4` (7,740 bytes, future-dated scan repair) and
+`b2b3fd92…28b16f` (2,868 bytes, stuck-arXiv reconciliation).
+
+No body was read. The stash snapshot is neither a canonical accepted finite
+result nor standing lineage, so none of its files was restored, edited,
+tested, or integrated. This corrects Cycle 227's too-broad restoration claim
+while preserving its ownership finding: accepted commit `9a5c3f9393` retained
+the links but did not accept the target bytes. The smallest accessible repair
+instead fixes the one independently provable wrong-root link in
+`agent-security-state-level-governance.md`; its existing target now resolves.
+The full offline audit has 1,756 prose links and 203 unresolved occurrences.
+
+Confidence is high for exact tree identity, absence from accepted lineage, and
+the one relative-path repair; confidence is deliberately absent for the 67
+unread bodies. GitHub, arXiv, and Reddit made zero public requests. The next
+ranked accessible question is the 17 root-relative historical links: 14 have
+unambiguous current targets, while three require a separate missing-target or
+directory-link disposition.
+
 ## Cycle 227 seed-first reconciliation — stable semantic boundary
 
 The exact bounded observation, reconciliation, authority boundary, and byte
@@ -9387,8 +9413,11 @@ together by accepted standing commit `9a5c3f9393`, whose message and body label
 it a mechanical snapshot of existing owner content. That commit changed 296
 files and changed the index by +175/-68 lines. None of the 67 exact targets is
 present in the standing tree, protected checkout, protected HEAD, accepted
-predecessor `a25c0fe2`, unaccepted `d041c41b54`, or any path history reachable
-from local refs. Git therefore cannot restore their missing bodies.
+predecessor `a25c0fe2`, or unaccepted `d041c41b54`. The initial ordinary path-
+history query also returned no tracked history. Cycle 228 corrects that
+incomplete conclusion: all 67 exist in an unaccepted stash-side untracked-file
+tree, not in canonical accepted lineage. They are recoverable bytes, but not
+currently integrable evidence.
 
 This supports treating the titles and summaries as residual owner evidence,
 not as a generated list safe to regenerate or delete. It contradicts both a
