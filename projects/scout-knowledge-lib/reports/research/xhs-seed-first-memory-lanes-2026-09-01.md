@@ -9471,12 +9471,12 @@ projection, navigation v1 at 11/14, navigation v2 at 8/8, 70 scoped links, and
 documents / 1,706 links. Read-only health at `2026-09-03T21:42:11.486Z`
 returns 30 facts, 16 wakes, and `truncated:true`.
 
-The complete ranked queue now has concrete boundaries: no retained outcome,
-no accepted-review advance, no source-lane trigger, no scheduled XHS trigger
-before `2026-09-03T22:57:11.030Z`, and no consumer that would turn more local
-telemetry or narration into outcome evidence. The next exploration is exactly
-that scheduled observational XHS pass unless a retained route-to-decision
-outcome, accepted review, or recorded lane trigger arrives first.
+The retained-outcome and provider-trigger slice has concrete boundaries: no
+retained outcome, accepted-review advance, source-lane trigger, or scheduled
+XHS trigger before `2026-09-03T22:57:11.030Z`, and no consumer that would turn
+more local telemetry into outcome evidence. This does not exhaust the ranked
+queue: alternative synthesis, reproducibility, retrieval, deduplication, and
+library-maintenance work remain accessible without an early public request.
 
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
