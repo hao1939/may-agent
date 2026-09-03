@@ -2805,6 +2805,49 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 192 explicit candidate-registry design audit
+
+Seed commit `8ad547c390` preceded this audit. Exact current source provenance
+is `b83e8c8f2a` for the compiled candidates and schedule verifier,
+`b64f8ec65f` for freeze validation and protocol-scope derivation,
+`d87bc9eb7f` for descriptor-safe bundle loading, and `9c4c82c688` for the
+coherent registry-substitution regression.
+
+The current toy schedule has 64 episodes, 128 repeated candidate records,
+118,502 canonical bytes, and SHA-256 `cd137ac3…d468fd`. The matched Cycle 191
+substitution has 121,574 bytes and SHA-256 `9fecbf67…a283d3`, then fails the
+compiled body and provenance checks. Because protocol scope already contains
+the schedule SHA, an extra digest derived from the same candidate values adds
+no demonstrated integrity to this frozen path.
+
+A minimal canonical explicit registry would be 341 bytes at SHA-256
+`87406223c6af192aa1b5b93eebff9e558a224fc05b7669c8bfaaadb7235efda1`.
+It would improve inspectability only if it became the sole candidate authority.
+Adding it beside the constants would create duplicate authority; adding only
+its digest would preserve code coupling and hide the identities.
+
+The credible artifact design therefore needs all of the following together:
+
+1. a new freeze schema rather than silently widening strict v1;
+2. canonical, exact-key, depth-bounded registry parsing through the existing
+   descriptor-safe bundle reader;
+3. one registry artifact/digest in protocol scope and one parsed registry used
+   for both schedule construction and verification;
+4. preserved v1 verification plus regenerated v2 policy and decision scope;
+5. missing, duplicate, order, body, provenance, noncanonical, symlink,
+   substitution, stale-policy, migration, and rollback controls; and
+6. an identified authority and external-registration closure for the registry
+   bytes.
+
+No implementation is made. The present design already fails closed and no
+real second registry revision, independent owner, signature/deposit, or
+consumer requirement exists. A versioned verifier identity is cheaper but
+still code-coupled; a reproducible executable digest would require build and
+release evidence absent here. Confidence is high for the current code and
+hash observations, moderate for retaining the smaller design, and low for
+future governance transfer. The next audit tests whether local sidecar
+artifacts are transitively covered by the external registration relation.
+
 ## Cycle 191 compiled candidate-registry boundary
 
 Seed commit `81c8093c25` preceded a coherent replacement of every candidate

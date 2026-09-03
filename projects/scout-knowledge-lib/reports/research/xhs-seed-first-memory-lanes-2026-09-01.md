@@ -7860,6 +7860,45 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 192 checkpoint — keep the registry compiled until authority exists
+
+Cycle 191 exact tip `b5b47e2450` passed the complete current gate: 252 tests,
+1,212 assertions, 30 relative links, read-only health 26/16 at its bounded cap,
+empty runtime state, 9/9 accepted ancestors, both accepted patch pairs, and
+4/4 artifact equality. The worktree was clean. Protected `/app` kept HEAD
+`386b445c…1fec8` but externally changed to 386 status records and fingerprint
+`7c285c09…ca01b`; the overlay retained its three records and
+`ad8d222c…e74780`. Neither was written or tested.
+
+Seed commit `8ad547c390` records the next observational pass first. Public
+Explore stayed readable at 30 notes; the saved target stayed at the `login`
+class with zero attributable items. A one-byte and body-hash change is response
+provenance, not seed evidence. Added/changed remain unknown, removals are `[]`,
+and all 132 seeds remain unavailable. The first namespace attempt failed only
+because `sudo` lacked Bun on PATH; the explicit installed path completed the
+same read-only operation. No XHS state changed.
+
+The post-seed design audit found that a minimal canonical candidate registry
+would be 341 bytes at `87406223…efda1`, but current integrity does not need it:
+the 118,502-byte schedule already content-binds all 128 candidate occurrences,
+its hash is in protocol scope, and exact `9c4c82c688` proves a coherent
+replacement fails closed. A digest-only field is redundant. A real artifact
+would require a v2 freeze path, sole-authority loading, migration and rollback
+fixtures, new policy references, and an identified registry owner/deposit.
+Keeping constants plus an artifact would be unsafe duplicate authority.
+
+No schema change is made. GitHub/local code was selected; GitHub, arXiv, and
+Reddit made zero public requests. GitHub retains its four exact repository
+heads and the local regression, arXiv retains MemGauge `2608.30177v1` and the
+allocation study `2608.25553v3`, and Reddit remains RSS-readable/JSON-403 with
+no seed-linked delta. Revisit them only on their recorded revision, artifact,
+replication, readable-seed, content, or access triggers.
+
+The next ranked investigation tests external-registration closure: whether a
+locally declared sidecar is covered by the registered bundle/checksum relation
+or only by local freeze bytes. That result is required before an explicit
+registry artifact can claim durable external identity.
+
 ## Cycle 191 checkpoint — registry substitution is fail-closed but compiled
 
 Seed commit `81c8093c25` records unchanged semantic XHS access, 30 public

@@ -435,9 +435,9 @@ cannot inherit the compiled registry's policy scope.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 191; public trigger-deferred.** Candidate values are compiled registrations; accepted schedules and execution artifacts are content-addressed.      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `9c4c82c…3a5777` coherently changes every registered body/path/revision and rebinds prompts/digests. It returns separate body and provenance mismatch errors, null policy scope, and provider denial. No standalone registry artifact or hash exists. | Zero public requests. Next assess a minimal canonical candidate-registry artifact against the current fail-closed compiled boundary before changing the schema. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 191.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                                                                                                                                                     | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 191 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 192; public trigger-deferred.** Current integrity is fail-closed and content-bound, while explicit registry governance remains unproved.             | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `9c4c82c…3a5777` supplies the fail-closed substitution control. Audit base `8ad547c…934c` shows the compiled constants, exact schedule digest in protocol scope, canonical/descriptor-safe artifact reader, and strict v1 schema. A 341-byte candidate registry would hash to `8740622…fda1`, but no independent revision or authority establishes it as the canonical source. | Zero public requests. Keep the compiled design. Next test whether external registration closes over locally listed sidecar artifacts before proposing any registry artifact. Revisit public GitHub on a recorded revision/artifact trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 192.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines the local candidate registry's authority.                                                                                                                                                                                                                                                                                                                                                      | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 192 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3373,6 +3373,66 @@ retained HEAD `fd4c68ec…1514663`, three records, and
 `ad8d222c…e74780`. Neither protected checkout was written or tested. Commit
 this reconciliation first, then compare explicit candidate-registry identity
 alternatives against the current compiled fail-closed boundary.
+
+### Cycle 192 checkpoint — an explicit registry needs authority, not only a hash
+
+Seed commit `8ad547c390e3ed2efd9a8fa751eb934c62a5a18e` preceded this
+audit. At that revision, the two candidate records remain compiled constants
+in `verification-allocation-factorial.ts` at exact source revision
+`b83e8c8f2a9838d427e1af787da8e40d7ea528cb`. The verifier requires the one
+registered body and path/revision tuple for each memory. Its 64-episode toy
+schedule repeats 128 candidate records, occupies 118,502 canonical bytes, and
+hashes to `cd137ac3…d468fd`. The protocol scope includes that schedule hash.
+The Cycle 191 whole-registry replacement changes it to
+`9fecbf67…a283d3` before the compiled comparison rejects both body and
+provenance substitutions.
+
+The smallest explicit representation found in this audit is a canonical
+341-byte v1 candidate array at SHA-256 `87406223…efda1`. Four designs were
+compared:
+
+- **Current compiled constants:** one verifier authority, no loading or
+  migration path, and demonstrated fail-closed behavior. The limitation is
+  governance and inspection: controlled registry evolution requires a code
+  revision.
+- **Canonical registry artifact referenced by the freeze:** inspectable and
+  independently hashable, but safe use requires a new freeze schema, canonical
+  exact-key parsing, descriptor-safe loading, inclusion in protocol scope, and
+  making the parsed artifact the verifier's sole registry authority. Retaining
+  compiled constants alongside it would create two authorities. Existing v1
+  freezes must remain on the v1 verifier; v2 freezes, policies, and decision
+  records would need new scope references. Rollback is selecting the preserved
+  v1 path or reverting the v2 implementation, not editing registered bytes.
+- **Registry digest only in protocol scope:** smaller but adds no tested
+  integrity for this freeze because the existing schedule digest already
+  changes with every candidate body/path/revision substitution. It also hides
+  the identities a registry artifact is meant to expose while invalidating old
+  policy references.
+- **Versioned verifier/protocol identity:** the lightest explicit rollover
+  signal, but still code-coupled. A source revision is not a reproducible
+  executable identity, and a binary digest needs deterministic build and
+  release evidence that this fixture does not have.
+
+No schema change is justified. Direct support is strong for current local
+fail-closed integrity and exact byte/hash measurements; contradictory evidence
+is that no second legitimate registry revision, registry owner, signature,
+external deposit, or consumer need exists. Confidence is moderate for the
+no-change design decision and low for future multi-party governance.
+
+Evidence that could change the decision is: a real registry revision that must
+ship independently of verifier code; an identified authority and signing or
+deposit process; a v1→v2 compatibility fixture; denial tests for missing,
+duplicate, reordered, noncanonical, symlinked, and substituted registry bytes;
+proof that one source of authority drives both schedule construction and
+verification; old-policy denial; and a tested rollback that preserves the old
+registered freeze.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain the exact evidence and triggers in the lane table.
+The next ranked investigation is the prerequisite external-registration
+closure question: determine whether a locally declared sidecar artifact is
+actually covered by the registered bundle/checksum relation or merely by local
+freeze bytes.
 
 ## Cycle 191 seed-first start
 
