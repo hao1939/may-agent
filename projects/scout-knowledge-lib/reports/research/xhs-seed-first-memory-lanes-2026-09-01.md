@@ -9361,6 +9361,22 @@ seeds remain unavailable at the same login-class boundary. Reviewer
 `f6a7a65928` and protected fingerprints `000cff67…b610a3` /
 `a430d0c9…4322f7e` remain unchanged. Begin the local 64-packet history audit.
 
+## Cycle 267 checkpoint — packet suppression lacks transition semantics
+
+The observer retains 64 schema-v2 packets and suppresses repeated fact keys,
+but it does not compare fingerprints. A stable lane key changing from accepted
+output to converged-no-output would be marked unchanged inside the review
+interval; a fact that disappears emits no recovery. The packet builder also
+does not receive source-task state, so adding the collector there would
+duplicate the existing Host metric read at another cadence.
+
+No packet or metric code changed. GitHub/local code won the rubric; GitHub,
+arXiv, Reddit, and XHS made zero public requests and retain their boundaries and
+triggers. Confidence is high for the history and wake-logic limits, absent for
+deployment or outcome. Next, compare Host-owned collection plus a typed note
+consumer against workflow-owned collection plus direct metric recording,
+including cadence, authority, history migration, and rollback.
+
 ## Cycle 266 seed-first start — local continuity
 
 Exact Cycle 265 result `6093b60cc0` passes syntax, TypeScript, formatting,

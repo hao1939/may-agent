@@ -3860,6 +3860,34 @@ Reviewer `f6a7a65928` and protected fingerprints `000cff67…b610a3` /
 `a430d0c9…4322f7e` remain unchanged. Begin the ranked 64-packet history audit
 before any source-lane work.
 
+## Cycle 267 checkpoint — packet history cannot yet own lane recovery
+
+The library-health observer reads at most 64 schema-v2 packets and keys facts
+by kind plus subject. That history suppresses repeated current facts and
+supports numeric worsening and scheduled review. It does not compare fact
+fingerprints: within the review interval, a stable lane key changing from
+`accepted-output` to `converged-without-output` would be classified
+`unchanged`, because string worsening is implemented only for future dates.
+When a fact disappears, no current fact or wake decision is emitted, so the
+same mechanism cannot represent recovery.
+
+The packet builder also has no source-task state input; the aggregate metric's
+source command owns that read independently. Importing the collector into the
+packet builder would perform a second task-state read on a different cadence.
+Reading retained metric notes instead would require database authority the
+workflow does not have. Moving collection into the workflow would remove the
+independent Host cadence and change the accepted metric boundary.
+
+Therefore the 64-packet path cannot safely absorb lane transitions with a
+small additive fact. No code change is justified until one observation owner
+and cadence are selected and recovery becomes explicit. Confidence is high for
+history bounds, current wake logic, missing recovery, and duplicate-read risk;
+low for deployment priorities. No public request ran and all source lanes keep
+their evidence and triggers. The next ranked question is to compare the two
+single-owner migrations: Host metric collection followed by a typed note
+consumer, versus workflow collection followed by direct metric recording,
+including cadence, database authority, rollback, and retained history.
+
 ## Cycle 266 seed-first start — local continuity
 
 Exact Cycle 265 result `6093b60cc0` passes syntax, TypeScript, formatting,
