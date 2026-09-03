@@ -645,13 +645,15 @@ source_basis: "Exact standing history and diffs from e91bc6c0d6cd9c34c195dfdbf65
 
 ## Reviewer source/result and integration status
 
-- Current reviewer source is standing
-  `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370`. Integrate the directly
-  following result from `codex/g-8c5b597e-cycle257-review`; it advances the
-  cursor through Cycle 276 without changing executable code, runtime state,
-  evaluator behavior, or source access. Rollback is one ordinary revert of
-  that reviewer result. It remains pending until standing contains its exact or
-  patch-equivalent change and current-tip validation passes.
+- Reviewer source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
+  result `af409f4ef3c4d3c1e3eaf0754ed9d3cd1b8db0c9`, integrated exactly on
+  standing by fast-forward. Its stable patch ID is
+  `b313aa316dcf1a851f234886dd8f5d7a1e3e7835`; the one-file delta is 77
+  insertions and 28 deletions. It advances the cursor through Cycle 276
+  without changing executable code, runtime state, evaluator behavior, or
+  source access. Standing validation passes the full 296-test / 1,483-assertion
+  gate and read-only health remains 30 facts / 16 wakes. Rollback is one
+  ordinary revert of `af409f4ef3`.
 - Reviewer `95980b20571c6b6789848ef738fd175f26b27eee` is integrated as
   standing `590a0b804a2b8f78d1d39edddd8a3167267b6b88`; both share stable
   patch ID `27e5dcc8381420d6f1930738dd51539729199ac2` and exact cursor blob
