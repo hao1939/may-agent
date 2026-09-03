@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 150 checkpoint — locator aliases qualify identity
+
+Seed commit `65fb0d29f3ca2312182ad913eb039d944d875419` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+control. The snapshot and decision record were renamed with their exact bytes,
+computation, policy, applicability, freeze scope, and frontier fixed.
+
+Exact local `d19421881337352ebd2bd66400c411c19500323e` proves both aliases
+retain local evidence labels, record/policy hashes, provider denial, and the
+same equal-172 selection. The evidence-manifest hash changes with its pointer,
+so whole-result identity does not survive the alias even though decision
+semantics do. Existing mutation and rollover controls still reject. No
+production change was required. The focused gate passes 27 tests and 104
+assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named repository heads, paper versions, RSS/JSON
+boundary, and revisit triggers. Confidence is high for the local synthetic
+comparison and low for external producer compatibility, authorship, authority,
+independence, freshness, or real execution. The next ranked control tests
+whether replay or summary consumers preserve the distinct manifest identity.
+
 ## Cycle 149 checkpoint — aliased evidence reaches the same decision
 
 Seed commit `c811d47c48f953f648592af2020afbb85f351f23` records unchanged

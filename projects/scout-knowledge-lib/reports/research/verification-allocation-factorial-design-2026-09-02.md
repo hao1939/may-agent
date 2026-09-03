@@ -2527,6 +2527,31 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 150 local locator aliases preserve selection, not manifest identity
+
+Seed commit `65fb0d29f3ca2312182ad913eb039d944d875419` preceded one matched
+snapshot-bound selection control. The fixture renamed the exact-byte frontier
+snapshot and decision record, updated only their caller/manifest locators, and
+retained snapshot bytes and computation, record bytes, policy, applicability,
+freeze scope, and frontier.
+
+Exact regression `d19421881337352ebd2bd66400c411c19500323e` records the existing
+contract. Both descriptor-safe reads retain their local evidence labels;
+decision-record SHA-256 `d8afac0…384a`, policy SHA-256 `fb19ef3…472f0a`,
+provider denial, and equal-172 selection at 1,032 blocks remain fixed. The
+evidence-manifest SHA-256 changes `0f6d11f…e7dea1`→`0b78d31…cf216`
+because its locator pointer changed. Thus decision semantics are stable but
+whole-result identity is not. Existing byte/content and scope-rollover
+controls continue to fail closed.
+
+The focused snapshot, policy-provenance, descriptor-safe read, and selection
+gate passes 27 tests and 104 assertions plus TypeScript, source formatting,
+and whitespace. No runtime change is justified. This is high-confidence local
+synthetic evidence, not external producer compatibility, authorship,
+authority, independence, freshness, or execution evidence. The next matched
+control tests whether replay or compact summary consumers preserve the changed
+manifest identity instead of conflating semantically equal selections.
+
 ## Cycle 149 aliased-bundle frontier selection
 
 Seed commit `c811d47c48f953f648592af2020afbb85f351f23` preceded a complete
