@@ -9345,6 +9345,18 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 256 seed-first start — ordering corrected before selection
+
+At `2026-09-03T18:37:51.282Z`, Cycle 237's exact receipt was one hundred one
+minutes old. No collection schedule, access, account-state, public-source, or
+accepted-result trigger had fired. Added/changed identities remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable at the same
+login-class boundary; no browser or public request ran. The first bounded
+command combined this timestamp check with a preliminary local implementation
+read before this record was durable. No conclusion or mutation resulted. This
+commit corrects the ordering; rerun the real-consumer design audit only after
+this seed state is persisted.
+
 ## Cycle 255 seed-first start — current receipt reused
 
 At `2026-09-03T18:31:11.283Z`, Cycle 237's exact observational receipt was
