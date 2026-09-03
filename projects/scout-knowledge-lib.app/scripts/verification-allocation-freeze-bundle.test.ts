@@ -655,6 +655,62 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("binds canonical model-resolution key order into reversible model scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const resolutionArtifact = "evidence/model-resolution.json";
+    const artifact = manifest.artifacts.find(
+      (candidate) => candidate.name === resolutionArtifact,
+    )!;
+    const originalEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "content-addressed",
+    });
+    const reorderedEvidence = JSON.stringify({
+      requestedId: "fixture-model",
+      schema: "scout.verification-allocation-model-resolution/v1",
+      resolutionKind: "content-addressed",
+      resolvedId: "fixture-model-a",
+    });
+
+    expect(artifact.sha256).toBe(
+      "87914189362ed9119e7331c41bdad50fbb13adf9bf1c12e106b12868bf36708b",
+    );
+    expect(ordered.policyScope?.modelScopeReference).toBe(
+      "freeze-model-scope-sha256:ac29ae22b51124c1624904fbb6a8d44b426c585365ff084046a15fcb6847c5bf",
+    );
+    expect(JSON.parse(reorderedEvidence)).toEqual(JSON.parse(originalEvidence));
+    expect(freezeArtifactSha256(reorderedEvidence)).toBe(
+      "3e5e4a775903301ac47c08b198e0c0e3b87451e2d9025c5ca32aabf466962116",
+    );
+    await writeFile(join(root, resolutionArtifact), reorderedEvidence);
+    artifact.sha256 = freezeArtifactSha256(reorderedEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const reordered = await verifyExecutionFreezeBundle(root);
+    expect(reordered.ok).toBe(true);
+    expect(reordered.policyScope?.modelScopeReference).toBe(
+      "freeze-model-scope-sha256:0760afdd02d402ca3c94bcb96e46dfb63037207f84c0b1c391bd7de0d1480b31",
+    );
+    expect(reordered.policyScope?.protocolReference).toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reordered.providerCallsAuthorized).toBe(false);
+
+    await writeFile(join(root, resolutionArtifact), originalEvidence);
+    artifact.sha256 = freezeArtifactSha256(originalEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
