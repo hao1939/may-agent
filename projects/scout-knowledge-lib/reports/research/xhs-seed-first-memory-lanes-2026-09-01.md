@@ -7892,6 +7892,21 @@ retain their evidence and triggers. The unaccepted peer range ending at
 semantically matching model-resolution record and updates its digest, testing
 byte identity against parsed identity and model scope.
 
+Exact reviewed tip `d15357835e0f27c210c777d98f300efcd1d911dc`
+passes syntax, TypeScript, source formatting, 270 tests, 1,379 assertions,
+whitespace, 31 relative links, read-only health 26/16, and empty root/app
+runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
+both accepted patch pairs, and 4/4 accepted artifact blobs.
+
+Integration remains acceptance-gated: only canonical accepted finite results
+are candidates. Read-only provenance confirms `d041c41b54` ends a two-commit
+unaccepted range after `8c5d8747a6`, remains outside standing lineage, and was
+not read as content, tested, edited, or integrated. Protected `/app` retains
+HEAD `386b445c…1fec8` while its externally observed state changed to 886
+records and fingerprint `996480ad…752a3`; the human overlay retains HEAD
+`fd4c68ec…1514663`, three records, and fingerprint `ad8d222c…e74780`.
+Neither checkout was written or tested.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

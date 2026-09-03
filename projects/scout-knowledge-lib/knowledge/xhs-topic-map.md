@@ -3650,6 +3650,23 @@ requests. The next ranked audit reorders keys in a semantically matching model-
 resolution record and updates its digest, testing whether byte spelling or
 parsed identity controls model scope.
 
+Exact reviewed Cycle 210 tip
+`d15357835e0f27c210c777d98f300efcd1d911dc` passes syntax, TypeScript,
+source formatting, 270 tests, 1,379 assertions, whitespace, and all 31 relative
+links. Read-only health at `2026-09-03T13:37:38.839Z` remains bounded at 26
+facts and 16 wake signals; root and app runtime state are empty. The clean tip
+retains 9/9 canonical accepted ancestors, both accepted patch pairs, and 4/4
+accepted artifacts.
+
+Only canonical accepted finite results are integration candidates. Read-only
+provenance still resolves `d041c41b54` to a two-commit unaccepted range after
+accepted predecessor `8c5d8747a6`; it remains outside standing lineage and was
+not read as content, tested, edited, or integrated. Protected `/app` retains
+HEAD `386b445c…1fec8` but is now externally observed at 886 status records and
+fingerprint `996480ad…752a3`; the human overlay retains HEAD
+`fd4c68ec…1514663`, three records, and `ad8d222c…e74780`. This worker wrote
+or tested neither checkout.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
