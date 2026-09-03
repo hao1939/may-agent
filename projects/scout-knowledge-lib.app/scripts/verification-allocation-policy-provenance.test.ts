@@ -316,6 +316,46 @@ describe("identity-robust policy provenance", () => {
     });
   });
 
+  it("rejects duplicate keys throughout a byte-matched local decision record", async () => {
+    const root = await mkdtemp(join(tmpdir(), "scout-policy-duplicate-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    for (const duplicatedRecord of [
+      decisionRecord.replace(
+        '"decisionOwner":"fixture-owner"',
+        '"decisionOwner":"fixture-owner","decisionOwner":"fixture-owner"',
+      ),
+      decisionRecord.replace(
+        '"minimumUniformDriftReserve":0.0006',
+        '"minimumUniformDriftReserve":0.0006,"minimumUniformDriftReserve":0.0006',
+      ),
+    ]) {
+      await writeFile(join(root, "decisions", "policy.json"), duplicatedRecord);
+      const duplicatedManifest = {
+        ...base,
+        decisionRecordSha256: createHash("sha256")
+          .update(duplicatedRecord)
+          .digest("hex"),
+      };
+
+      expect(
+        await bindIdentityRobustPolicyEvidenceFromLocalRecord(
+          policySha256,
+          evidenceReference,
+          policy,
+          duplicatedManifest,
+          root,
+          verifiedPolicyScope,
+        ),
+      ).toMatchObject({
+        ok: false,
+        decisionRecordEvidenceStatus: "local-byte-match-unverified",
+        decisionRecordContentStatus: "",
+        errors: ["local decision record contains duplicate JSON object keys"],
+      });
+    }
+  });
+
   it("rejects byte-matched content that contradicts the manifest", async () => {
     const root = await mkdtemp(join(tmpdir(), "scout-policy-content-"));
     roots.push(root);

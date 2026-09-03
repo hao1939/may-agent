@@ -86,6 +86,85 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function hasDuplicateJsonObjectKeys(source: string): boolean {
+  let index = 0;
+  const whitespace = () => {
+    while (/\s/.test(source[index] ?? "")) index += 1;
+  };
+  const string = (): string => {
+    const start = index;
+    index += 1;
+    while (index < source.length) {
+      if (source[index] === "\\") {
+        index += 2;
+      } else if (source[index] === '"') {
+        index += 1;
+        return JSON.parse(source.slice(start, index)) as string;
+      } else {
+        index += 1;
+      }
+    }
+    throw new Error("unterminated JSON string");
+  };
+  const value = (): boolean => {
+    whitespace();
+    if (source[index] === "{") return object();
+    if (source[index] === "[") return array();
+    if (source[index] === '"') {
+      string();
+      return false;
+    }
+    while (index < source.length && !/[\s,\]}]/.test(source[index] ?? "")) {
+      index += 1;
+    }
+    return false;
+  };
+  const object = (): boolean => {
+    index += 1;
+    const keys = new Set<string>();
+    whitespace();
+    if (source[index] === "}") {
+      index += 1;
+      return false;
+    }
+    while (index < source.length) {
+      whitespace();
+      const key = string();
+      if (keys.has(key)) return true;
+      keys.add(key);
+      whitespace();
+      index += 1;
+      if (value()) return true;
+      whitespace();
+      if (source[index] === "}") {
+        index += 1;
+        return false;
+      }
+      index += 1;
+    }
+    return false;
+  };
+  const array = (): boolean => {
+    index += 1;
+    whitespace();
+    if (source[index] === "]") {
+      index += 1;
+      return false;
+    }
+    while (index < source.length) {
+      if (value()) return true;
+      whitespace();
+      if (source[index] === "]") {
+        index += 1;
+        return false;
+      }
+      index += 1;
+    }
+    return false;
+  };
+  return value();
+}
+
 function expectedApplicability(
   policyCandidate: unknown,
 ): Pick<
@@ -385,10 +464,12 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     };
   }
   let decisionRecordCandidate: unknown;
+  let decisionRecordText: string;
   try {
-    decisionRecordCandidate = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(localEvidence.bytes!),
+    decisionRecordText = new TextDecoder("utf-8", { fatal: true }).decode(
+      localEvidence.bytes!,
     );
+    decisionRecordCandidate = JSON.parse(decisionRecordText);
   } catch {
     return {
       ...structural,
@@ -400,6 +481,19 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
       decisionRecordContentStatus: "",
       scopeLimit:
         "The local bytes match their declared hash but do not form a valid decision record. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+    };
+  }
+  if (hasDuplicateJsonObjectKeys(decisionRecordText)) {
+    return {
+      ...structural,
+      ok: false,
+      errors: ["local decision record contains duplicate JSON object keys"],
+      decisionRecordSha256: localEvidence.sha256,
+      decisionRecordByteLength: localEvidence.byteLength,
+      decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+      decisionRecordContentStatus: "",
+      scopeLimit:
+        "The local bytes match their declared hash but contain ambiguous duplicate object keys. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
     };
   }
   if (
