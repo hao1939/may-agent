@@ -7840,6 +7840,26 @@ broader resource, provenance-authority, cost, drift, model, or provider claims.
 The next ranked audit tests whether the separate freeze-bundle canonical-
 manifest parser already catches the same depth failure without a new guard.
 
+## Cycle 175 checkpoint — freeze-manifest depth already fails closed
+
+Seed commit `d408a3f511` records unchanged semantic XHS access, a one-byte shell
+change, 30 readable public Explore notes, zero attributable saved items,
+unknown additions and changes, no observed removals, and all 132 durable seeds
+unavailable before the freeze-bundle control.
+
+The public verifier returned normal denials through 25,000 nesting levels. At
+50,000 and 100,000 levels its internal canonical serialization raised a stack
+`RangeError`, but the existing catch returned `valid:false` instead of leaking
+the exception; both high-depth paths took about 1.2 seconds. No code change was
+made because the supported fail-closed boundary already holds. The remaining
+uncertainty is performance and transfer to other runtimes, not a reproduced
+availability failure.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. The next ranked audit tests execution-freeze schedule and
+canonical artifact readers under matched depth controls.
+
 ## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
 
 Seed commit `300c496e39` records unchanged semantic XHS access, zero

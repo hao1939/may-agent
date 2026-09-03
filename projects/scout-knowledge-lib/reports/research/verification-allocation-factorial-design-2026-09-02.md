@@ -2789,6 +2789,22 @@ provenance, authorship, authority, general JSON limits, cost, drift, model
 behavior, or provider execution. The next audit tests the separate
 freeze-bundle canonical-manifest parser under the same ladder.
 
+## Cycle 175 freeze-manifest caught-depth control
+
+Seed commit `d408a3f511` preceded the separate freeze-bundle ladder. The public
+verifier returned normal invalid-manifest results from 100 through 25,000
+levels. At 50,000 and 100,000 levels, internal canonical serialization raised
+a stack `RangeError`, but the existing catch returned `valid:false` with a
+readable-JSON diagnostic instead of leaking the exception. The two high-depth
+paths took about 1.2 seconds each.
+
+No production change is justified by this matched control: unlike the prior
+shared-scanner callers, the supported public boundary already fails closed.
+This is high-confidence local evidence for the current Bun/runtime behavior,
+not a general resource ceiling, timing guarantee, policy or provenance claim,
+or provider result. The next audit tests execution-freeze schedule and
+canonical artifact readers under matched depth controls.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
