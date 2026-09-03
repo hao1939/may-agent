@@ -4094,6 +4094,17 @@ decision. GitHub, arXiv, and Reddit made zero requests and keep their last
 useful evidence and revisit triggers. Static compaction is not a retained
 outcome; RV-004 remains high/open.
 
+## Cycle 293 seed-first start — fresh Cycle 292 receipt reused
+
+Cycle 293 began from clean material tip `be7cc1092a`. Its exact-tip gate passed
+296 tests / 1,483 assertions, syntax, TypeScript, formatting, Cycle 292
+projection, 73 scoped links, navigation v1 at 11/14, navigation v2 at 8/8,
+1,540 documents / 1,709 broad links, and health at 30 facts / 16 wakes.
+At `2026-09-03T23:04:54.025Z`, the Cycle 292 receipt was under six minutes old.
+No browser or public-source request ran; additions/changes remain unknown,
+removals are `[]`, and all 132 IDs remain unavailable. The post-seed exact-run
+scan selects Cycle 223's 21-line / 1,182-byte projection/validation mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -9828,6 +9828,26 @@ source, claim, code, fixture, account, accepted result, or protected state
 changed. This is static retrieval reduction, not measured use, savings, later
 behavior, or user outcome; RV-004 remains high/open.
 
+## Cycle 293 seed-first start — exact Cycle 292 result retained
+
+Cycle 293 began from clean Cycle 292 result
+`be7cc1092add3f47e7d900ccbb832b92832bd3f7`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 292 projection, 73 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The broad audit passed 1,540 tracked Markdown documents / 1,709
+local prose links, and read-only health at `2026-09-03T23:04:44.730Z` returned
+30 facts / 16 wakes with `truncated:true`.
+
+At `2026-09-03T23:04:54.025Z`, the exact Cycle 292 receipt was under six
+minutes old. No browser, GitHub, arXiv, or Reddit request ran; added/changed
+identities remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable. Protected `/app` retains HEAD `386b445c…41fec8`; its wider status
+changed externally from 386 records / `7c285c09…1ca01b` to 914 /
+`5b4816ba…2f4`, while the combined Scout scope remains 296 /
+`7e4d0937…26a8a`. This worker did not write or test the protected checkout.
+Commit this ordering record before the ranked Cycle 223 projection/validation
+mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
