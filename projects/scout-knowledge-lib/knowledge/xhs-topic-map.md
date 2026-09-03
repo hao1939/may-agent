@@ -3852,6 +3852,46 @@ remain unavailable. No representative saved post was supported, no XHS state
 changed, and GitHub, arXiv, and Reddit made zero requests. The five residual
 non-runtime identities now win the post-seed rubric.
 
+### Cycle 233 checkpoint — two exact identities resolve; three stay deferred
+
+Seed commit `d125a2b4c6` preceded this five-occurrence audit. The few-shot index
+now links accepted `KE-065.md` (blob `aa764ce…3bbb`, source commit
+`f210de8dca`), whose heading and optimization-inversion evidence match the
+reference. The compilation gradient now links accepted arXiv Scan #288b (blob
+`b3a378d…d2a4`, source commit `617a487681`), whose scan number and all three
+cited IDs—`2607.11346`, `2607.11226`, and `2607.11698`—match exactly.
+
+The other three occurrences remain explicit debt. No accepted KE-1780 body or
+unique claim-equivalent entry exists. MemStrata `2606.26511` and MemClaw
+`2606.24535` appear across several accepted scans, but no accepted Scan #177 or
+single uniquely authoritative replacement exists for the two references.
+Replace these only when the named accepted body appears or an accepted index
+explicitly supersedes the identity; do not guess from topical overlap.
+
+The post-seed broad audit holds 1,539 documents and 1,767 prose links while
+unresolved occurrences fall 76→74; eight documents retain debt and absolute
+local links remain zero. Residuals are now 66 unaccepted-only references,
+three mutable digest/coach destinations, two KE-1996/1997 destinations, and
+the three deferred occurrences above. No claim text or source body changed.
+GitHub, arXiv, and Reddit made zero requests and retain the evidence and
+change-bearing triggers recorded in Cycle 232.
+
+Confidence is high for the two exact accepted mappings and high that no named
+accepted KE-1780/Scan-177 body exists; it is low on intended supersession for
+the three deferred occurrences. Next ranked work is the remaining 66-link
+unaccepted-only index boundary: test whether any claim has since gained a
+unique accepted project-owned synthesis without reading the unaccepted bodies.
+
+The current candidate passes syntax, TypeScript, source formatting, Cycle 233
+projection, 61 durable links, and all 287 tests / 1,444 assertions. Broad-link
+and whitespace results are exact above; runtime state is empty. Read-only
+health at `2026-09-03T16:23:29.545Z` returns 29 facts, 16 wakes, and
+`truncated:true`. Protected HEAD, 893-record fingerprint
+`98c1c258…76c9f0`, 296-record Scout fingerprint `a430d0c9…32d7e`, and the
+three-record overlay fingerprint `a52b97aa…94a15` all reproduce the pre-audit
+values. Accepted source commits and the Cycle 232 checkpoint remain ancestors;
+unaccepted `d041c41b54` and `d9da99476e` remain excluded.
+
 ## Cycle 232 seed-first start
 
 [Seed-ledger row 232](./xhs-seed-ledger.md) is the exact receipt. Semantic

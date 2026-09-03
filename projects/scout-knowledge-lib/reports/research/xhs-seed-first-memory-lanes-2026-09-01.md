@@ -9356,6 +9356,51 @@ unavailable. No representative saved-post read, account mutation, or public
 GitHub/arXiv/Reddit request occurred before selecting the five residual local
 identities for audit.
 
+## Cycle 233 checkpoint — exact KE-065 and Scan #288 links
+
+Seed commit `d125a2b4c6` preceded the bounded five-occurrence identity audit.
+Two destinations now have unique accepted matches. The few-shot index points
+to project-owned `shared/knowledge/entries/KE-065.md` at blob
+`aa764ce…3bbb`, introduced by accepted source commit `f210de8dca`; its heading
+and evidence match the “Comprehensive Findings” citation. The compilation
+gradient points to project-owned `2026-07-14-arxiv-scan-288b.md` at blob
+`b3a378d…d2a4`, introduced by accepted source commit `617a487681`; it is Scan
+#288 and contains all three exact cited papers.
+
+Three occurrences remain unresolved rather than receiving topical guesses.
+The KE-1780 citation has no accepted named body or unique immutable
+claim-equivalent entry. The two Scan #177 citations combine MemStrata
+`2606.26511` and MemClaw `2606.24535`; accepted files distribute those claims
+across several scans, with no accepted Scan #177 or explicit supersession.
+Their replacement criterion is an accepted named body or an accepted index
+that explicitly designates one canonical successor.
+
+The broad result moves 76→74 unresolved occurrences across the same 1,539
+documents and 1,767 local prose links; eight documents retain debt and zero
+absolute links remain. The residual ledger is 66 references available only in
+unaccepted `d9da99476e`, three mutable digest/coach destinations, two absent
+KE-1996/1997 destinations, and the three occurrences deferred above. No
+source body, claim, statistic, or contradiction changed.
+
+GitHub, arXiv, and Reddit made zero public requests. Their retained repository
+heads, exact paper versions, RSS/JSON boundary, and change-bearing revisit
+triggers remain as recorded in Cycle 232. Confidence is high for the two
+accepted mappings and current absence boundary, but low for the intended
+successor of KE-1780 or Scan #177. Next, begin seed-first and test the remaining
+66 unaccepted-only index references for newly available unique accepted
+syntheses without reading or admitting the unaccepted bodies.
+
+The current candidate passes syntax, TypeScript, source formatting, Cycle 233
+projection, 61 durable links, and 287 tests / 1,444 assertions. The broad-link
+and whitespace results are exact above, and runtime state is empty. Read-only
+health at `2026-09-03T16:23:29.545Z` is 29 facts, 16 wake signals, and
+`truncated:true`. Protected HEAD and fingerprints remain
+`386b445c…1fec8` / 893 / `98c1c258…76c9f0`, with combined Scout scope
+296 / `a430d0c9…32d7e`; the known three-record overlay remains
+`a52b97aa…94a15`, and all other peers remain clean. Accepted source commits
+and Cycle 232 tip `d43e0f3948` remain ancestors, while unaccepted
+`d041c41b54` and `d9da99476e` remain excluded.
+
 ## Cycle 232 seed-first reconciliation — semantic boundary unchanged
 
 The exact receipt is retained once in

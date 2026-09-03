@@ -49,5 +49,5 @@ function selectExamples(taskContent) {
 
 ## References
 
-- [KE-065: Comprehensive Findings](../entries/KE-065-fewshot-comprehensive-findings.md)
+- [KE-065: Comprehensive Findings](../../../shared/knowledge/entries/KE-065.md)
 - [Production Deployment Proposal](../../../coach/workspace/proposal-fewshot-production-deployment.md)
