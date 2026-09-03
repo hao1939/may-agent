@@ -952,6 +952,49 @@ describe("verification-allocation freeze bundle", () => {
     }
   });
 
+  it("reports every failed model in stable manifest order", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const substitute = async (index: 0 | 1) => {
+      const model = manifest.models[index];
+      const evidence = JSON.stringify({
+        schema: "scout.verification-allocation-model-resolution/v1",
+        requestedId: `${model.requestedId}-substitute`,
+        resolvedId: model.resolvedId,
+        resolutionKind: model.resolutionKind,
+      });
+      await writeFile(join(root, model.resolutionEvidenceArtifact), evidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === model.resolutionEvidenceArtifact,
+      )!.sha256 = freezeArtifactSha256(evidence);
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    await substitute(1);
+    expect((await verifyExecutionFreezeBundle(root)).errors).toEqual([
+      "models[1] resolution evidence does not match declaration",
+    ]);
+    await substitute(0);
+    const bothFailed = await verifyExecutionFreezeBundle(root);
+    expect(bothFailed).toMatchObject({
+      ok: false,
+      errors: [
+        "models[0] resolution evidence does not match declaration",
+        "models[1] resolution evidence does not match declaration",
+      ],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(bothFailed);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
