@@ -9345,6 +9345,32 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 250 checkpoint — ranking evidence has an explicit schema identity
+
+Seed-first commit `50f69fbb13` preceded implementation `3b0a2d2b6d`. Every
+empty or populated diagnostic now declares
+`scout.navigation-ranking-diagnostics/v1`; the enclosing payload remains
+`scout.navigation-outcomes/v1`. This freezes the evidence shape independently
+from the outcome contract, so a future change must declare a new diagnostic
+version rather than silently extending v1 again.
+
+Navigation decisions remain unchanged at v1 10/14 and v2 8/8. The full
+current-content gate passes syntax, TypeScript, source formatting, Cycle 237
+projection, 62 durable links, and 293 tests with 1,467 assertions. The broad
+audit remains 1,540 documents / 1,699 links / zero errors. Read-only health at
+`2026-09-03T18:03:21.043Z` returns 29 facts, 16 wake signals, and
+`truncated:true`; runtime is empty. Accepted `d35632c2b1` and `8ab0a89cd0`
+remain contained; unaccepted `d041c41b54` and `d9da99476e` remain
+non-ancestors.
+
+Protected `/app` changed externally from 897 records / `1d982135…4ea7a` to
+898 / `b100e23c…3bde4`, while HEAD `386b445c…1fec8` and its 296-record Scout
+scope `a430d0c9…4322f7e` stayed exact. The overlay stayed `fd4c68ecd6`, three
+records, and `a52b97aa…394a15`; no protected or peer worktree was written or
+tested. No GitHub, arXiv, or Reddit request ran. Next, test whether matched-token
+document frequency distinguishes the generic negative false positive from
+correct outcomes without promoting a retrospective statistic into policy.
+
 ## Cycle 249 checkpoint — diagnostics retain every equal-score comparison
 
 Seed-first commit `62ade1b58c` preceded implementation `499fbb85cc`. The
