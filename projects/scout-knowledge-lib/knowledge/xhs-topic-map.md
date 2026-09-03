@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 105 observational reconciliation through 2026-09-03T01:36:11.556Z; exact access evidence and uncertainty are in the Cycle 105 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 105 at 2026-09-03T01:36:11.556Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 105 read-only XHS boundary through 2026-09-03T01:36:11.556Z."
+latest_seed_basis: "Cycle 106 observational reconciliation through 2026-09-03T01:41:36.847Z; exact access evidence and uncertainty are in the Cycle 106 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 106 at 2026-09-03T01:41:36.847Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 106 read-only XHS boundary through 2026-09-03T01:41:36.847Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 105 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 106 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -2371,6 +2371,25 @@ audit remain the highest supported evidence in this execution environment.
   state remain unknown. Reddit JSON previously returned HTTP 403, while post
   RSS returns HTTP 200 with the post and six comments; that is attributable
   community evidence, not paper validation.
+
+## Cycle 106 seed-first start
+
+Cycle 106 began from clean exact tip
+`fc0f87ef0fb6c193e174cfeaf36852e105ac65ef`. From
+`2026-09-03T01:41:35.852Z` through `01:41:36.847Z`, the established connector
+ran as effective UID 0 in root-owned Chrome PID 2136's network namespace.
+Public Explore remained readable with 30 notes. Non-navigating saved status
+again returned HTTP 200, final class `login`, 46,672 bytes, semantic access
+fingerprint `3dab1b6d…8af420`, a login wall, and zero attributable items. Only
+the body SHA changed from `31e1002…872a` to `f99a032…2531d`.
+
+Added and changed IDs remain unknown, observed removals are `[]`, and all 132
+durable seeds remain unavailable rather than removed. No representative saved
+post was supported or read, and no XHS state changed. Browser/process authority
+still does not establish an account principal. Direct worker ports were not
+repeated after their curl-7/HTTP-000 Cycle 105 result five minutes earlier.
+This reconciliation preceded any composition-adapter, source, provider, or
+accepted-ref work. Pursue the verified-freeze composition adapter next.
 
 ## Cycle 105 seed-first start
 
