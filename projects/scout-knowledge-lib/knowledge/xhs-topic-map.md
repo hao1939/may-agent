@@ -3855,6 +3855,27 @@ preceded this record.
 The 17 runtime/workspace links remain highest-ranked. Registry and all three
 public lanes retain their recorded change-bearing triggers without a request.
 
+### Cycle 230 checkpoint — KE citations leave mutable runtime state
+
+Seed commit `5b92a26fc7` preceded the path-purpose audit. Fourteen of the 17
+runtime links were duplicate references to accepted project-owned KE-053,
+KE-056, KE-059, KE-061, and KE-064 entries. Both retained state-architecture
+triages now link those exact durable files rather than the mutable daily digest.
+
+The broad 1,379-document audit now counts 1,760 prose links and 172 unresolved
+occurrences, down from 186. Only three runtime paths remain: two “full
+analysis” links whose named KE-1996/1997 bodies are also absent from accepted
+lineage, and one missing coach deployment proposal. Pointing them at today's
+digest would make a durable citation depend on changing session state, so they
+remain unresolved rather than being cosmetically redirected.
+
+This supports direct stable-entry citations and contradicts using a digest as
+a generic target for named knowledge entries. Confidence is high for the 14
+exact KE mappings and low for replacements for the remaining three. GitHub,
+arXiv, and Reddit made zero public requests. The next ranked accessible audit
+classifies the remaining 169 absent historical-target occurrences by accepted
+replacement, unaccepted recoverable bytes, or genuinely absent provenance.
+
 ## Cycle 229 seed-first start
 
 The exact bounded observation, reconciliation, authority boundary, and byte
