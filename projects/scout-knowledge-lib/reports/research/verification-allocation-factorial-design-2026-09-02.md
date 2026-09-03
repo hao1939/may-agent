@@ -2805,6 +2805,23 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 197 host path-admissibility boundary
+
+Seed commit `85ef9d491d` preceded exact test `84d3dce5e0`. This Linux directory
+accepts sequential upper/lowercase aliases, `CON`, a trailing dot, and a
+255-byte component; `getconf` reports `NAME_MAX=255` and `PATH_MAX=4096`. The
+in-memory checksum verifier accepts a 256-byte exact target, while case and
+trailing-dot aliases fail. Provider authority stays false.
+
+V1 therefore has exact identity but host-defined admissibility. That is not a
+local fail-open defect and does not justify a production change without a real
+registry. A future v2 needs a named case/normalization/trimming collision
+domain, conservative component/total limits, a real deposit inventory,
+platform matrix, migration fixture, policy rollover, and rollback. Focused
+validation passes 59 tests and 317 assertions plus TypeScript, formatting, and
+whitespace. The next audit tests simultaneous case-fold, NFC/NFD, and
+trailing-dot collision pairs.
+
 ## Cycle 196 checksum path portability boundary
 
 Seed commit `a1ada76aa7` preceded exact test `3d4d4da2dc`. The local directory

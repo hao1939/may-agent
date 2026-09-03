@@ -7860,6 +7860,26 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 197 checkpoint — local admissibility remains host-defined
+
+Seed commit `85ef9d491d` records unchanged semantic XHS access, 30 public
+Explore notes, zero attributable saved items, unknown additions/changes, no
+observed removals, and all 132 seeds unavailable. One-byte and body-hash drift
+are response provenance. No XHS state changed.
+
+Exact local `84d3dce5e0` shows current Linux accepts sequential case variants,
+`CON`, a trailing dot, and a 255-byte component. The direct verifier accepts a
+256-byte exact name, but case/trailing-dot aliases fail; host bounds are
+`NAME_MAX=255` and `PATH_MAX=4096`. Focused validation passes 59 tests and 317
+assertions plus TypeScript, formatting, and whitespace. V1 remains exact and
+provider-denied, but its path-admissibility set is not portable.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. No
+production change is justified without a real registry and platform/collision
+inventory. The next ranked audit tests simultaneous case-fold, NFC/NFD, and
+trailing-dot collision pairs before choosing any v2 grammar.
+
 ## Cycle 196 checkpoint — literal names do not prove portability
 
 Seed commit `a1ada76aa7` records unchanged semantic XHS access, 30 public
