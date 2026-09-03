@@ -901,6 +901,9 @@ export function verifyFactorialSchedule(
   const bodies = new Map<TargetIdentity, Set<string>>(
     MEMORY_IDS.map((memoryId) => [memoryId, new Set<string>()]),
   );
+  const provenance = new Map<TargetIdentity, Set<string>>(
+    MEMORY_IDS.map((memoryId) => [memoryId, new Set<string>()]),
+  );
   const balance = new Map<string, Set<string>>();
   for (const episode of schedule.episodes) {
     if (
@@ -977,6 +980,9 @@ export function verifyFactorialSchedule(
         );
       }
       bodies.get(candidate.memoryId)?.add(candidate.body);
+      provenance
+        .get(candidate.memoryId)
+        ?.add(JSON.stringify([candidate.path, candidate.revision]));
     }
     errors.push(...lineageErrors(episode));
     const cellKey = [
@@ -994,6 +1000,11 @@ export function verifyFactorialSchedule(
   for (const memoryId of MEMORY_IDS) {
     if (bodies.get(memoryId)?.size !== 1) {
       errors.push(`${memoryId}: memory body changed across factor cells`);
+    }
+    if (provenance.get(memoryId)?.size !== 1) {
+      errors.push(
+        `${memoryId}: candidate path/revision changed across factor cells`,
+      );
     }
   }
   for (const kind of ["plan", "temptation"] as const) {
