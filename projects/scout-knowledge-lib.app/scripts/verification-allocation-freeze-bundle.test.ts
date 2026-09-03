@@ -767,6 +767,36 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("keeps top-level freeze-manifest key order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reorderedManifest = JSON.stringify({
+      externalRegistration: manifest.externalRegistration,
+      artifacts: manifest.artifacts,
+      schedule: manifest.schedule,
+      seedPolicy: manifest.seedPolicy,
+      models: manifest.models,
+      results: manifest.results,
+      providerCallsAuthorized: manifest.providerCallsAuthorized,
+      evidenceClass: manifest.evidenceClass,
+      schema: manifest.schema,
+    });
+
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "a951e9ec8bd546c4c436766604bc9891c068b93db04eb81447d5ed24a0878572",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "07bd1ee68034f9e5af0234b3acab8ea60e12c9e1b57edf19f696a4bada421174",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
