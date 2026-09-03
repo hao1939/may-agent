@@ -3857,6 +3857,47 @@ same login-class boundary; no browser or public request ran. Accepted review
 ref advanced from integrated `5a7a9b077b` to `7deb84c782`. Reconcile only that
 finite delta before comparing per-lane metrics with aggregate-plus-note.
 
+## Cycle 264 checkpoint — lane alerts need stateful comparison
+
+Seed `d543bf95c3` preceded reviewer `7deb84c782`, integrated patch-identically
+as `5c79f423a3` at patch ID `56f65ad4c6`. The accepted reviewer result confirms
+that the four source states are diagnostic task-resource state, not source or
+content quality, and that Host stores structured metric notes while deployment
+and consumption remain unproved.
+
+Local Scout source `fdf6e8de25` emits one aggregate scalar plus zero-inclusive
+counts and states for all five lanes. Host source
+`d90b45d4c671f78725cecdcb5c89fad4d21c99c6` defines and stores metrics by text
+ID, retains snapshots under that ID for 30 days, measures only active metrics,
+and evaluates thresholds against the scalar and same-ID scalar history. It
+serializes but does not interpret the note. Its batching recognises only
+`project-metrics` and `focus-metric-sample`; the current Scout command is not
+batchable.
+
+| Candidate | Decision-relevant behavior | Migration and rollback | Disposition |
+| --- | --- | --- | --- |
+| Five per-lane output-count gauges | A `<1` rule would call `not-converged`, `resource-unavailable`, and first-time evidence-backed no-op content failures. | Five new IDs start five disjoint histories and run the same state read five times per cadence. Retiring them preserves their snapshots; reactivating the aggregate restores its existing history. | Reject now. It increases work and false semantics. |
+| Five encoded-state gauges | Sentinels can suppress unknown states, but make unavailable lanes look numerically healthy and still cannot require a prior comparable accepted state. | Same five new histories; changing codes later makes scalar history semantically unstable. | Reject now. The dashboard value would be misleading. |
+| Current aggregate plus structured note | Aggregate `<1` still detects total disappearance. One source read retains exact counts, state reasons, output identities, and receipts. | No migration. Ordinary rollback remains the paired source/report revert; retained same-ID history stays comparable. | Retain. It is the smallest truthful current design. |
+
+The only content-output transition worth considering for a lane alert is a
+previous comparable `accepted-output` becoming a persistent
+`converged-without-output`. Initial no-output, `not-converged`, and
+`resource-unavailable` observations are not content failures; positive-count
+changes are provenance, not quality. Current canonical resources retain no
+prior durable-output payload and the generic metric evaluator cannot inspect
+two notes, so even the narrower transition is not implementable without a new
+stateful consumer. Supporting evidence is high-confidence local source and the
+20-test / 42-assertion matched gate. There is no deployment, alert outcome,
+owner response, content improvement, or RV-004 outcome evidence.
+
+GitHub/local code won the rubric. GitHub, arXiv, Reddit, and XHS made zero
+public requests; their retained heads, paper versions, RSS/JSON boundary,
+login-class XHS boundary, and revisit triggers remain unchanged. The next
+ranked question is whether a pure two-snapshot transition classifier can use
+retained notes to distinguish comparable accepted-output loss, recovery, and
+unknown state without creating lane metric identities or duplicate alerts.
+
 ## Cycle 263 seed-first start — accepted review trigger
 
 Exact Cycle 262 tip `d4b53fac6c` passes syntax, TypeScript, formatting, Cycle

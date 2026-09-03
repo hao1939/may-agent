@@ -501,15 +501,16 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   revert. If the standing owner rejects either source fix, revert its paired
   report before or with the implementation so the durable behavior claim does
   not outlive the code.
-- Current reviewer source is standing `d4b53fac6c8c85429548309debfbd46ffd752fbc`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 260-262 dispositions,
-  including RV-013 through RV-015, advances this cursor, and corrects the two
-  Cycle 262 reports' retention boundary. Rollback is one ordinary revert.
-  It is not landed until standing contains its exact or patch-equivalent change
-  and current-tip validation passes. If the standing owner rejects either
-  source fix, revert its paired report before or with the implementation so the
-  durable behavior claim does not outlive the code.
+- Reviewer `7deb84c7828b6bb7c7cabd3b5f956fe43d9938dc`, based on standing
+  `d4b53fac6c8c85429548309debfbd46ffd752fbc`, is integrated on standing as
+  `5c79f423a3429cafcf29d0e844aab2294164670f`. Both changes have stable patch
+  ID `56f65ad4c61cc7796f679fc598f9e73567d2d533`; the later standing parent also
+  contains the Cycle 263 seed, accepted-review integration/status, metric-note
+  retention result, and Cycle 264 seed. This lands RV-013 through RV-015 and
+  the narrower retention boundary. Rollback is one ordinary revert.
+  If the standing owner rejects either source fix, revert its paired report
+  before or with the implementation so the durable behavior claim does not
+  outlive the code.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree

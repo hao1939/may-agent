@@ -9360,6 +9360,36 @@ same login-class boundary; no browser or public request ran. Accepted review
 ref advanced from integrated `5a7a9b077b` to `7deb84c782`. Reconcile only that
 finite delta before comparing per-lane metrics with aggregate-plus-note.
 
+## Cycle 264 checkpoint — retain one truthful metric sample
+
+Seed `d543bf95c3` preceded accepted reviewer `7deb84c782`, integrated on
+standing as `5c79f423a3` with the same stable patch ID `56f65ad4c6`. The
+focused current-tree gate passes 20 tests and 42 assertions.
+
+Five ordinary lane gauges cannot express the decision we need. A zero-count
+threshold would mislabel non-convergence, unavailable task state, and a
+first-time evidence-backed no-op as content failures. Numeric state sentinels
+avoid some alerts only by making unavailable lanes look healthy. Host evaluates
+the scalar, not the structured note or a prior note, and the Scout command is
+not batchable; five definitions therefore create five new, disjoint histories
+and repeat the same state read five times each cadence.
+
+The current aggregate-plus-note remains smaller and more truthful: one sample
+alerts only when every accepted output disappears while retaining lane counts,
+state reasons, output identities, and receipts. A safe future lane alert would
+need a stateful consumer and a prior comparable `accepted-output` before a
+persistent `converged-without-output`; initial no-output, `not-converged`, and
+`resource-unavailable` are not content failures. The detailed evidence,
+migration and ordinary-revert analysis is consolidated in the Cycle 264 topic-
+map entry rather than duplicated here.
+
+GitHub/local code won the rubric. GitHub, arXiv, Reddit, and XHS made zero
+public requests and retain their exact evidence, access boundaries, and revisit
+triggers. Confidence is high for current scalar/note behavior and low for
+deployment, consumption, alert outcome, owner response, or content improvement;
+RV-004 remains open. Next, test a pure two-snapshot transition classifier before
+adding metric identities or alerts.
+
 ## Cycle 263 seed-first start — accepted review trigger
 
 Exact Cycle 262 tip `d4b53fac6c` passes the full 296-test / 1,479-assertion
