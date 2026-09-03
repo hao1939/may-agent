@@ -2527,6 +2527,26 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 146 schedule-artifact alias semantics
+
+Seed commit `2acc659740fd7dd79c1b92f39bb6670ee3faf32e` preceded one matched
+control. It changed only the schedule artifact's name and its manifest
+pointer/inventory entry while preserving exact schema-bearing bytes, SHA-256,
+episodes, declarations, evidence, execution bundle, and every other input.
+
+Exact regression `46e8518ae4e817cf4f95006d1734c4696172184f` records the existing
+contract: the alias verifies without errors, provider authority stays false,
+and both scope references remain equal to baseline. No runtime change is
+justified. Schedule semantics are content-addressed, while the executable
+entry-point name remains separately bound.
+
+The focused freeze gate passes 46 tests and 224 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local direct-verifier
+evidence, not external packaging compatibility, authorship, authority,
+independence, freshness, or real execution proof. The next matched controls
+apply the locator question to checksum-manifest and timestamp-proof artifacts
+without changing their exact bytes, digests, or target relations.
+
 ## Cycle 145 evidence-artifact alias semantics
 
 Seed commit `ed03bf20c3bcec377a4466d3b82bddac8098b74a` preceded matched model
