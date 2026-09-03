@@ -860,6 +860,40 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("keeps recursive manifest key order presentational for two models", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reverseRecordKeys = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(reverseRecordKeys);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(
+          Object.entries(value)
+            .reverse()
+            .map(([key, nested]) => [key, reverseRecordKeys(nested)]),
+        );
+      }
+      return value;
+    };
+    const reorderedManifest = JSON.stringify(reverseRecordKeys(manifest));
+
+    expect(ordered.ok).toBe(true);
+    expect(ordered.modelCount).toBe(2);
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
