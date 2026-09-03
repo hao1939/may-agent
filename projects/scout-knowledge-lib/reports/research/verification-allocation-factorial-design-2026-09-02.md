@@ -2356,6 +2356,51 @@ authenticate a timestamp. The next ranked investigation inspects retained
 proof bytes and the available local verifier/tool boundary before any parser
 or stronger evidence status is proposed.
 
+## Cycle 128 retained proof and verifier boundary
+
+Seed commit `259eedf1a3938fdc442283912609d30e918b0d45` preceded this
+read-only audit. The retained source is
+`/tmp/g-c1b31972-arxiv-2608.25553/paper2-data-and-code-v3.zip`, one of two
+locally retained copies previously shown byte-identical. From
+`2026-09-03T04:27:56.908Z–04:27:58.028Z`, the 61,508,909-byte ZIP passed
+`unzip -tqq` and reproduced published SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+
+The Experiment C proof chain has two distinct local targets:
+
+| Target | Target bytes / SHA-256 | Proof bytes / SHA-256 | Direct byte observation |
+| ------ | --------------------- | -------------------- | ----------------------- |
+| `preregistration/MANIFEST.sha256` | 12,987 / `cb6e7c8d6b897a1afb605a52d4fc49a5067d41540f5089286e56060c0dab6225` | 945 / `5d0097b0c1324a441ba74ead2c0ac5b70a70cf44543d4feec7c86d4e5a45a4fe` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+| `preregistration/DEV_REGISTRATION.sha256` | 86 / `c9893d8da0f7fcc07d549e97b2cac57bb69a5410528ce14ea6c4403304b55dba` | 595 / `e171588711ae1c7e152d02bcc52312b7d4e93776e90b5f3035b09521cabad568` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+
+The 86-byte development target contains the SHA-256 and filename of the
+5,696-byte `DEV_REGISTRATION.md`; that Markdown member reproduces SHA-256
+`3f24266a249956ce656e470952fec20087ecb3904f8e06db8906afd6189f589e`.
+This is a development-call registration and is not a proof of Scout's proposed
+schedule. The manifest proof concerns Experiment C's 103-entry source package,
+not a real Scout freeze.
+
+The current execution identity is UID 1000 (`hao`) in the goal-owned worktree.
+It has no `ots` or `opentimestamps` executable and no Python
+`opentimestamps`/`opentimestamps_client` module. An exact
+`ots info <retained-proof>` attempt fails locally with
+`/bin/bash: ots: command not found`. No tracked Scout file is an `.ots` proof
+and no Scout dependency supplies a verifier. The source freeze script requires
+an external `ots` client to stamp a manifest, while the source runner's runtime
+gate only checks that the named proof exists and is non-empty. Source
+`EXTERNAL_REGISTRATION.json` says `VERIFIED` and records an OSF download-back
+match; the source results report repeats that label. These are source claims,
+not an independent result produced by this worker.
+
+Magic bytes, an embedded matching digest, calendar strings, and a source label
+do not establish proof syntax, calendar receipt, Bitcoin inclusion, deposit
+authority, authorship, or temporal ordering. The existing Scout status
+`local-byte-presence-unverified` is therefore the strongest supported state and
+no production change is warranted. The next bounded question is whether a
+future external-verifier result can be byte- and target-bound without trusting
+a free-form caller status or conflating cryptographic time evidence with
+provider/deposit authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

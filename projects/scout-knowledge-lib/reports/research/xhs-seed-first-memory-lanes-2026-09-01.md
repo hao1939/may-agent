@@ -7619,9 +7619,37 @@ source call was manufactured for this integration. `RV-002` is resolved;
 `RV-001` outcome validation is pending; no result is rejected, superseded, or
 blocked.
 
+## Cycle 128 checkpoint — proof presence is not proof verification
+
+What was missing was direct evidence about the retained timestamp proof and
+this worker's ability to verify it. The seed-first boundary was committed at
+`259eedf1a3938fdc442283912609d30e918b0d45` before this audit. The live saved
+shell retained its login-class semantic fingerprint and zero attributable
+items; only its byte length and body hash changed. Added and changed seeds
+remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable.
+
+The retained 61,508,909-byte arXiv archive still matches
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+Experiment C's 12,987-byte manifest and 945-byte proof match exact hashes
+`cb6e7c8…6225` and `5d0097b…a4fe`; its 86-byte development target and
+595-byte proof match `c9893d8…b55dba` and `e171588…bad568`. Both proofs have
+the expected visible magic header, matching target-digest bytes, and calendar
+strings, but UID 1000 (`hao`) has no OpenTimestamps client or Python module;
+`ots info` fails with `command not found`. The source runner checks only proof
+presence, while the source registration and results files claim verification.
+Accordingly Scout keeps the local proof status explicitly unverified.
+
+GitHub/local evidence was selected because this boundary was answerable from
+retained code and bytes. ArXiv remains high-value through `2608.30177v1` and
+`2608.25553v3`; Reddit remains RSS-readable/JSON-403 with low incremental
+value. All three public lanes made zero requests and retain their prior content
+triggers. No source, account, or provider state was mutated. The next ranked
+investigation is whether a future external-verifier result can be bound to the
+exact proof and target without trusting a caller-supplied authority label.
+
 ## Supervision
 
-- Goal: Continuously operate Scout Knowledge Library as the human's seed-first, multi-source research loop: reconcile the human's collected Xiaohongshu posts, actively reconsider topic-led GitHub, arXiv, and Reddit exploration, deeply investigate the highest-value topic clusters, maintain a provenance-backed, deduplicated, validated knowledge library and living topic map, and ensure every accepted material Scout checkpoint is committed and reconciled into the standing goal's canonical local integration branch before moving on, until the human explicitly stops or replaces this goal.
+- Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"
 - Worker: "goal-a2acd0ab0579d04f3d163e5db9a"
 - Codex session: "01a05c5f-cb03-7760-9c42-893d669f7762"
