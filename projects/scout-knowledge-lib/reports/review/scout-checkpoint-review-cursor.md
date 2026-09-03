@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing Cycle 253 seed 171253ca8a5de303412311b048707959751001b9: Cycle 252 adds an exact current caller-control replay and valid score attribution without reconstructing the historical query; the quartile qualification and fail-closed reviewer fence are integrated; RV-008, RV-010, and RV-011 are resolved; and RV-004 remains high/open."
-triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "RV-004", "RV-008", "RV-010", "RV-011"]
+summary: "Independent Scout review cursor through standing reconciliation f8f3ee2dc3b388ce37e0d313ad329bb804d9add1 after Cycle 254: lower title weights repair the caller case but worsen uncertainty shape, so no scorer promotion is justified; RV-008 and RV-010 are resolved, RV-011 and RV-012 have scoped reviewer fixes pending, and RV-004 remains high/open."
+triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "RV-004", "RV-008", "RV-010", "RV-011", "RV-012"]
 last_updated: "2026-09-04"
-source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through 171253ca8a5de303412311b048707959751001b9; independently reproduced current and historical navigation outcomes, 202 token perturbations, score margins and contribution decomposition, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, fixture lineage, reviewer patch identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
+source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through f8f3ee2dc3b388ce37e0d313ad329bb804d9add1; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, fixture lineage, reviewer patch identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `171253ca8a5de303412311b048707959751001b9`
+  `f8f3ee2dc3b388ce37e0d313ad329bb804d9add1`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -21,25 +21,29 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `7a7e00ec032db76c6b4614615fd860e5f3fa78c5` (Cycle 248),
   `cb778bf0db69a577300006ac2eb69f643c545f4b` (Cycle 249),
   `4cfbec044b3a9761e3e7ccca4ad8f7df6a80cdb2` (Cycle 250),
-  `088a7f3c9a38ce855a7d52922af0ae8200c72448` (Cycle 251), and
-  `90ee750c47be0dfd5b42d5bd8d54724b68f9ffcc` (Cycle 252).
-- Review date: `2026-09-04T02:24:46+08:00`
+  `088a7f3c9a38ce855a7d52922af0ae8200c72448` (Cycle 251),
+  `90ee750c47be0dfd5b42d5bd8d54724b68f9ffcc` (Cycle 252),
+  `915ba81885774a29a7a151e556ed2a34c5763ba1` (Cycle 253), and
+  `52e5a2e045f3485d12e79a401a7c19123448ccef` (Cycle 254).
+- Review date: `2026-09-04T02:32:11+08:00`
 - Overall disposition: **revise**. Link state and exact lexical outcomes
   improve, and the post-hoc 25% margin observation is numerically correct.
   Evidence remains producer-authored and does not justify a threshold or broad
   behavior claim. Cycle 251's rarity analysis correctly rejects a universal
   rule and changes no scorer, but its upper quartile depends on an unstated
-  convention. Cycle 252 now freezes an exact current caller control and
-  reproduces the stated scores without claiming the missing historical query,
-  resolving RV-008 prospectively. Its original test did not bind the fixture
-  identity. The quartile qualification and fail-closed digest assertion are now
-  integrated. Cycle 253 is seed-only and claims no result.
+  convention, now corrected on standing. Cycle 252 freezes an exact current
+  caller control and reproduces the stated scores without claiming the missing
+  historical query,
+  resolving RV-008 prospectively. Cycles 253-254 then show that lower title
+  weights repair that case but worsen ambiguity and false-positive shape, so no
+  scorer change is endorsed. A fail-closed fixture digest and correction of the
+  overstated exact crossover remain pending reviewer integration.
 
 ## Exact scope and ordering
 
 - The reviewed standing range
-  `e420498c471fa6b5d6ee8632c89ef48cdc40f0ca..171253ca8a5de303412311b048707959751001b9`
-  contains 57 commits, 25 changed files, 3,287 insertions, and 270 deletions.
+  `e420498c471fa6b5d6ee8632c89ef48cdc40f0ca..f8f3ee2dc3b388ce37e0d313ad329bb804d9add1`
+  contains 62 commits, 25 changed files, 3,436 insertions, and 270 deletions.
 - Cycles 232-241 resolve or explicitly quarantine local-link debt. Cycle 242
   freezes v1 and adds the evaluator. Cycle 243 freezes v2 and adds selector
   support. Cycle 244 records matched failure probes; Cycle 245 records score
@@ -48,8 +52,9 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   Cycle 249 adds and records the complete equal-score comparison tier; Cycle
   250 versions and records the nested diagnostic shape; Cycle 251 records the
   limits of token rarity; standing then reconciles two integrated reviewer
-  fixes; Cycle 252 freezes and decomposes an exact current caller control; and
-  Cycle 253 starts a title-weight sensitivity audit without a result.
+  fixes; Cycle 252 freezes and decomposes an exact current caller control;
+  Cycle 253 sweeps title weights; and Cycle 254 stress-tests the apparent repair
+  across the existing perturbations before reconciling reviewer RV-010.
 - Result/seed ordering is exact: Cycle 243 result `f18c93e45e` precedes Cycle
   244 seed `18f4b78421`; Cycle 244 result `4ad017a2a7` precedes Cycle 245 seed
   `17f79df077`; later result/seed pairs remain linear through Cycle 249 seed
@@ -58,8 +63,10 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `4cfbec044b`; Cycle 251 seed `6a6964ebde` precedes result `088a7f3c9a`.
   Reviewer gate `98926518f0` and review integration `6045108077` follow that
   result linearly; reconciliation `2d5c31924a` precedes Cycle 252 seed
-  `d4a9208af8`, result `90ee750c47`, and Cycle 253 seed `171253ca8a` in that
-  exact order.
+  `d4a9208af8`, result `90ee750c47`, Cycle 253 seed `171253ca8a`, result
+  `915ba81885`, Cycle 254 seed `cdb9892e13`, and result `52e5a2e045` in that
+  exact order. Standing review integration `f13dd4215a` and reconciliation
+  `f8f3ee2dc3` follow the Cycle 254 result.
 
 ## Evidence examined
 
@@ -67,7 +74,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 - The prior cursor measured 1,539 tracked Markdown documents, 1,763 local
   prose links, 130 unresolved occurrences, and zero absolute local links. The
-  standing tip independently measures 1,540 documents, 1,699 local prose
+  standing tip independently measures 1,540 documents, 1,698 local prose
   links, zero unresolved occurrences, and zero absolute local links.
 - Exact accepted identities replace aliases. When provenance is ambiguous,
   mutable, or unaccepted-only, the diffs preserve title, intended path,
@@ -77,7 +84,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `2495a515933a24d4c28b2b917b39c62e7d9ea055` at its original
   `2026-06-25-hn-scan-151.md` path. It is a path restoration, not new source or
   freshness evidence.
-- Duplication remains material. Current health reports 29 facts, 16 wake
+- Duplication remains material. Current health reports 30 facts, 16 wake
   signals, `truncated:true`, a 9,487-plus-line topic map, and multiple oversized
   canonical notes. Zero broken links does not remove duplicated cycle narration
   or the large unsourced backlog.
@@ -198,16 +205,39 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   replay. Any evidence change must now make the reviewer gate fail and receive
   an explicit digest update.
 - Cycle 253 seed `171253ca8a` reuses the same receipt at zero request cost and
-  proposes a title-weight sensitivity audit. It changes no fixture, scorer,
-  index, threshold, access, or authority and claims no result.
+  precedes result `915ba81885`. Independent matched-budget replay over the same
+  22 cases reproduces 19/22 passes at weights 1, 1.5, 1.75, and 1.875, versus
+  18/22 at 1.9, 2, 2.5, 3, and 4. All 18 production passes remain passes, and
+  only the caller case improves. The other failures persist; weight 1 expands
+  the coordination tie from three to eight and turns the generic negative into
+  one wrong unique result.
+- The score lines are `14.840414735589231 + 10.01811621278467w` for the wrong
+  caller result and `26.971428144288367 + 3.620063880451954w` for the intended
+  result. Their actual double-precision crossing is
+  `1.8960478562194245`, not the reported `1.896047849`. At the reported value,
+  the intended result still leads by about `4.62e-8`, beyond the evaluator's
+  `1e-9` tie tolerance. RV-012 corrects both durable reports to `1.896047856`.
+- Cycle 254 seed `cdb9892e13` precedes result `52e5a2e045`. Independent replay
+  generates exactly 202 leave-one-visible-token variants: all 172 variants
+  from production-passing cases remain correct at weights 1, 1.5, 1.875, and
+  3; the 30 variants from failures recover 11/9/8/2 cases respectively, all in
+  the caller family. This confirms the producer's counts and its decision not
+  to promote a weight. The same producer authored the cases, chose the sweep,
+  and inspected the perturbations; this is observed-set regression evidence,
+  not frozen selection or protected promotion evidence.
+- No Cycle 253/254 commit changes the scorer, index, fixtures, threshold,
+  access, or authority. Rollback of their documentation is an ordinary revert.
+  Standing `f13dd4215a` shares stable patch ID `2a820ea31f` with reviewer
+  `4a012e5158` and integrates RV-010; reconciliation `f8f3ee2dc3` correctly
+  records that status but predates this current review.
 
 ### Current-revision validation
 
-- Exact standing source `171253ca8a5de303412311b048707959751001b9`
+- Exact standing source `f8f3ee2dc3b388ce37e0d313ad329bb804d9add1`
   contains the integrated two-fixture gate and the unfenced diagnostic-control
   replay. The final reviewer tree based on that source passes the full
-  `bun run check`: syntax, TypeScript,
-  formatting, Cycle 237 projection, 62 durable links, v1 at 10/14, v2 at 8/8,
+  `bun run check`: syntax, TypeScript, formatting, Cycle 237 projection, 62
+  durable links, v1 at 10/14, v2 at 8/8,
   294 tests, and 1,471 assertions. Its broad audit covers 1,540 tracked
   Markdown documents and 1,698 local prose links with zero unresolved or
   absolute links.
@@ -218,31 +248,32 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | --- | --- |
 | Lead completeness and disposition | **Accept with limits.** Link debt is explicit; four v1 failures remain; perturbations and comparison ties now have concrete dispositions. |
 | Provenance and claim/source separation | **Accept.** Accepted identities, unavailable targets, and observational access remain distinct. |
-| Novelty and decision value | **Accept narrowly.** Nine frozen cases gain honest unavailable status; perturbations reject a bad policy; diagnostics expose uncertainty without deciding it. |
+| Novelty and decision value | **Accept narrowly.** Nine frozen cases gain honest unavailable status; title-weight perturbations reject a tempting scorer change; diagnostics expose uncertainty without deciding it. |
 | Related-work comparison | **Defer.** Existing papers are contextual controls; no fresh replication is claimed. |
-| Contradictions and uncertainty | **Accept with limits.** RV-008 is prospectively resolved without reconstructing history; RV-010 explicitly names the quartile conventions. |
+| Contradictions and uncertainty | **Revise under RV-012.** RV-008 is prospectively resolved without reconstructing history and RV-010 is integrated, but the reported exact title-weight crossing needs a narrow correction. |
 | Duplication and contamination | **Revise under RV-004.** No unaccepted bytes were admitted, but duplicated logs and same-producer fixtures limit independence. |
 | Usability and retrieval value | **Accept narrowly.** Broken links fall 130 to zero and exact status outcomes improve 9/22 without observed regression. |
 | Access boundaries | **Accept.** Reused receipts do not become collection evidence; no external mutation occurred. |
-| Validation quality | **Accept with limits.** Both outcome sets and the exact current control replay pass, and the integrated digest fence fails closed on changed control evidence. |
-| Cost and productivity | **Revise under RV-004.** Useful outcomes now exist but remain small and unprotected through completed Cycle 252. |
-| Rollback and integration safety | **Accept.** The quartile wording and one digest assertion are ordinary reverts; no scorer, fixture, authority, or external state changed. |
+| Validation quality | **Revise under RV-011.** Both outcome sets, the current control, and 202 matched perturbations reproduce, but the control evidence needs the pending digest fence to fail closed. |
+| Cost and productivity | **Revise under RV-004.** Useful outcomes now include a rejected scorer change but remain unprotected through completed Cycle 254. |
+| Rollback and integration safety | **Accept.** The digest assertion and crossover wording are ordinary reverts; no scorer, fixture, authority, or external state changed. |
 
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
 | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 source cadence | Cycles 67-253 defer unchanged public lanes at zero request cost, while Cycle 252 uses a bounded local diagnostic and Cycle 253 makes no collection claim. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; local review remains productive. |
+| `RV-001` | Medium | Cycle 65 source cadence | Cycles 67-254 defer unchanged public lanes at zero request cost while using bounded local diagnostics. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; local review remains productive. |
 | `RV-002` | Low | Cycle 65 GitHub provenance | Exact repository identities remain integrated. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction remains on standing. | **Resolved.** |
-| `RV-004` | High | `37430cf4..171253ca`, especially duplicated logs and verifier work | 570 commits, 67 files, +32,981/-521 lines through completed Cycle 252 yield nine exact status gains, zero broken links, rejected bad thresholds, versioned diagnostics, and one replayable caller control. There is still no protected evaluator, human/model outcome, later reuse measure, current provider result, authority-bearing policy, or changed user decision. | **Revise; high/open.** Credit honest error localization and replayability; require protected or later-reuse evidence before broader promotion. Cycle 253's proposed sensitivity sweep can falsify a local policy but cannot alone resolve this productivity finding. |
+| `RV-004` | High | `37430cf4..f8f3ee2d`, especially duplicated logs and verifier work | 575 commits, 67 files, +33,130/-521 lines through completed Cycle 254 yield nine exact status gains, zero broken links, rejected thresholds/title weights, versioned diagnostics, and one replayable caller control. There is still no protected evaluator, human/model outcome, later reuse measure, current provider result, authority-bearing policy, or changed user decision. | **Revise; high/open.** Credit the falsified scorer change and replayability; require protected or later-reuse evidence before broader promotion. More producer-authored sensitivity sweeps cannot alone resolve this productivity finding. |
 | `RV-005` | Medium | Seed projection | Exact Cycle 237 projection remains current and passes. | **Resolved.** |
 | `RV-006` | Medium | `package.json` through `6045108077` | Standing previously reported v2 8/8 while gating only v1. | **Resolved.** Standing `98926518f0` has stable patch ID `816b747af0` with reviewer `4f6de66f7b`; current-tip validation runs both fixtures. |
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
 | `RV-008` | Medium | Cycle 244 evidence and Cycle 252 fixture `scout-navigation-diagnostic-controls-v1.json` | The historical Cycle 244 query remains absent, but Cycle 252 explicitly labels that limit and persists one exact current query plus both top ranks, matched tokens, coverage, and scores. Independent replay reproduces every value. | **Resolved prospectively.** The exact current control may support future diagnostics; it must not be represented as the historical query or protected promotion evidence. |
 | `RV-009` | Low | Cycle 247 singular `runner_up` diagnostic | Equal-score second-place identities can change representative while the comparison tier is unchanged. | **Resolved by standing.** Cycle 249 `499fbb85cc` reports the full score tier, and Cycle 250 `3b0a2d2b6d` versions its diagnostic shape; focused tests pass. |
-| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report originally omitted its convention. | **Resolved.** Reviewer `4a012e5158` is standing `f13dd4215a` at stable patch ID `2a820ea31f`; both durable reports name the convention and alternatives. |
-| `RV-011` | Medium | Cycle 252 test `scout-navigation-outcomes.test.ts` at `90ee750c47` | The original test asserted only the schema and looped over fixture cases, so an empty or coordinated replacement could pass. | **Resolved.** Reviewer `aade007567` is standing `847286682b`; both changed-file blobs are exact matches, including the SHA-256 fixture fence `0adba805…68e5c27`. |
+| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report named 41 without its convention. | **Resolved.** Reviewer `4a012e5158` is standing `f13dd4215a` at stable patch ID `2a820ea31f`; both durable reports now name the convention and alternatives. |
+| `RV-011` | Medium | Cycle 252 test `scout-navigation-outcomes.test.ts` at `90ee750c47` | The test asserts only the schema and loops over fixture cases. An empty `cases` array passes, and coordinated query/expected-rank edits can replace the allegedly frozen evidence without a distinct failure. | **Revise; locally fixed, pending integration.** Pin the exact fixture bytes at SHA-256 `0adba805…68e5c27` before replay. Any intentional fixture revision must update the digest under review. |
+| `RV-012` | Low | Cycle 253 result `915ba81885` in the topic map and lane report | The reports call `1.896047849` the exact caller crossing. Direct scorer decomposition gives `1.8960478562194245`; at the reported value the intended result leads by about `4.62e-8`, so it is not tied under the `1e-9` tolerance. | **Revise; locally fixed, pending integration.** State `1.896047856`; the diagnostic conclusion and production behavior do not change. |
 
 ## Reviewer source/result and integration status
 
@@ -259,15 +290,16 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `6e73cfce44b7eb97bdc3ba8f968e063131e670d0` share stable patch ID
   `fb5fe6f7b665e6b0823ac26b37ec42ddac2548fe`. Their gate and wording changes
   are integrated; their older cursor is superseded here.
+- Reviewer `4a012e5158c22a80484461dcc957000d32e99c40` is integrated as standing
+  `f13dd4215a533905bf50f05c7e7e3a3ec0df9359`; both share stable patch ID
+  `2a820ea31f9b54396983bc422207656b5dcb1b4b`. Reconciliation `f8f3ee2dc3`
+  correctly closes RV-010.
 - Current reviewer source is standing
-  `171253ca8a5de303412311b048707959751001b9`. Reviewer replay
-  `4a012e5158c22a80484461dcc957000d32e99c40` is standing
-  `f13dd4215a533905bf50f05c7e7e3a3ec0df9359` at stable patch ID
-  `2a820ea31f9b54396983bc422207656b5dcb1b4b`. Direct reviewer result
-  `aade00756754752287b4cc1bf2d216fe5f4304da` is standing
-  `847286682b520cccc6b287d86daae41b0a27a88a`; its test and cursor blobs are
-  byte-identical to the reviewer result. Rollback is an ordinary reverse-order
-  revert of those two standing commits.
+  `f8f3ee2dc3b388ce37e0d313ad329bb804d9add1`. Integrate the directly following
+  result from `codex/g-8c5b597e-cycle254-review`; it adds the RV-011 digest
+  fence, corrects RV-012 in both durable reports, and advances this cursor.
+  Rollback is one ordinary revert. It is not landed until standing contains its
+  exact or patch-equivalent changes and current-tip validation passes.
 - Earlier accepted projection and review changes remain integrated as standing
   `d35632c2b1` and `8ab0a89cd0`; Cycle 231 cursor `86788ca48c` is reconciled as
   standing `e420498c47`. Reviewer `7628faf755`, `f3ddc3ab36`, `b4c98626c3`,
@@ -278,11 +310,11 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 ## Next trigger
 
-Review the next material standing checkpoint, misuse of the prospectively
-resolved RV-008 control, or a concrete RV-004 protected/later-reuse outcome. If
-none arrives, the next periodic audit is no earlier than
-`2026-09-04T18:24:46Z`. Do not poll unchanged state. This standing reviewer goal
-remains active.
+Review the next material standing checkpoint. Also trigger on integration or
+rejection of RV-011/RV-012, misuse of the prospectively resolved RV-008
+control, or a concrete RV-004 protected/later-reuse outcome. If none arrives,
+the next periodic audit is no earlier than `2026-09-04T18:32:11Z`. Do not poll
+unchanged state. This standing reviewer goal remains active.
 
 ## Supervision
 

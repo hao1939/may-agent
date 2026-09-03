@@ -9489,7 +9489,7 @@ v1/v2 cases with only the title multiplier varied. Weights 1, 1.5, 1.75, and
 1.875 produce 19/22 passes: all 18 current passes remain and the caller-bound
 case is repaired. At 1.9, 2, 2.5, 3, and 4, the result is the current 18/22.
 The exact linear crossover between the caller's intended and wrong entries is
-`1.896047849`; below it the intended entry wins, at it the pair ties, and above
+`1.896047856`; below it the intended entry wins, at it the pair ties, and above
 it the Read-Write entry wins.
 
 No tested weight fixes the source-lane, coordination, or generic-negative
