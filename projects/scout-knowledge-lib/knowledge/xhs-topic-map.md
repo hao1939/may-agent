@@ -3856,6 +3856,32 @@ Offline relative-link validation remains highest-ranked. Registry and all
 three public lanes retain their recorded change-bearing triggers without a
 request.
 
+### Cycle 225 checkpoint — durable relative links join the Scout gate
+
+Seed commit `2c39539961` preceded exact local implementation
+`25e1ff822d0f6b6a903a391d61e8ff8d19a93bde`. The network-free checker reads
+the canonical ledger, topic map, and source-lane report, resolves each inline
+relative link from its containing document, and reports missing targets. It
+skips web, mail, and same-document anchors, decodes angle-wrapped local paths,
+and rejects absolute local paths rather than publishing machine-specific
+locators. It now runs inside the standard Scout `check` gate.
+
+Three focused tests preserve success, missing-target diagnostics, encoded
+paths, external/anchor deferral, and absolute-local rejection. The real
+documents pass all 45 relative links. The full gate passes both durable checks,
+syntax, TypeScript, source formatting, 285 tests, and 1,439 assertions.
+
+This removes the repeated manual link command from future checkpoints without
+making network requests. It intentionally checks inline links only and only
+the three continuity documents; reference-style Markdown and wider-library
+coverage remain unproved. Confidence is high for the tested path contract and
+low for Markdown forms outside it. GitHub, arXiv, and Reddit made zero public
+requests and retain their evidence and triggers.
+
+The next ranked usability question is whether either continuity document uses
+reference-style local links that need fail-closed coverage before the checker
+can safely expand to more of the library.
+
 ## Cycle 224 seed-first start
 
 The exact bounded observation, reconciliation, authority boundary, and byte
