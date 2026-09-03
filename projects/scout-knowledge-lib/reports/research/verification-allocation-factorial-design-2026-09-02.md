@@ -2805,6 +2805,26 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 176 bounded execution-freeze artifact latency
+
+Seed commit `496756883e` preceded matched schedule, model-resolution, and
+seed-policy artifact ladders. At 25,000 nesting levels the three paths returned
+`ok:false` in 10.051, 8.879, and 6.599 ms. At 50,000 levels they still returned
+denials, but recursive canonical serialization cost 1,200.766, 1,160.526, and
+1,184.279 ms.
+
+Exact local `b520c4dcfd` applies the shared iterative 256-level pre-scan to the
+common canonical-record reader and schedule parser. The identical 50,000-level
+controls now return in 4.933, 9.366, and 5.343 ms while preserving
+`ok:false`, null policy scope, provider denial, and the established evidence
+errors. Thirty-two focused tests pass with 178 assertions plus TypeScript,
+formatting, and whitespace.
+
+This is high-confidence local evidence for a matched latency reduction, not a
+general resource bound, substantive provenance, policy authority, cost, drift,
+model behavior, or provider execution. The next audit tests deeply nested JSON
+inside the quoted prompt of an otherwise shallow schedule.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
