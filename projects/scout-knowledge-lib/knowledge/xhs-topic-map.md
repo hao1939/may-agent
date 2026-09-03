@@ -6165,16 +6165,13 @@ request.
 
 ### Cycle 223 checkpoint — current projections follow the canonical ledger
 
-The registry alternative was reconsidered, not repeated. Existing exact local
-evidence already compares compiled constants, an explicit canonical artifact,
-a digest-only field, and versioned verifier identity. The smallest artifact is
-341 canonical bytes at SHA-256 `87406223…fda1`; exact migration control
-`c2d36a4029` shows strict v1 rejects the v2-like extension while untouched v1
-rollback remains exact. Cycles 193–215 then test registration closure, path and
-alias semantics, model/seed ordering, canonical evidence bytes, and recursive
-manifest presentation. Together they support keeping one compiled authority
-until an owner, independent registry revision, consumer requirement, provider
-evidence, or accepted finite result fires the recorded trigger.
+Exact local evidence compares compiled constants, an explicit artifact, a
+digest-only field, and verifier identity. The smallest artifact is 341 canonical
+bytes at `87406223…fda1`; migration control `c2d36a4029` proves strict v1 rejects
+the v2-like extension while v1 rollback stays exact. Cycles 193–215 cover
+registration closure, aliases, ordering, evidence bytes, and presentation.
+Keep one compiled authority until an owner, independent registry revision,
+consumer, provider, or accepted-result trigger fires.
 
 Contradictory evidence is explicit: compiled identity remains code-coupled and
 cannot support independent registry governance. That limitation does not make
