@@ -2677,6 +2677,24 @@ execution, cost, or model evidence. The next control adds an unrelated policy
 or selection claim to an otherwise passing payload and tests whether the
 conjunction's scope remains unambiguous.
 
+## Cycle 169 scoped composite naming
+
+Seed commit `52bdd028a2` preceded one matched direct-v1 control. Valid schema,
+retained identity, and provider denial coexisted with unverified
+`policyApproved:true` and a selected value. The pre-fix result returned all
+three verdicts true plus `allChecksPass:true`.
+
+Exact local `931fab16aa` renames only that conjunction to
+`scopedChecksPass` and pins the control. Unrelated policy and selection fields
+remain unchecked as designed; no strict whole-payload schema or authority rule
+is invented. Eleven focused tests pass with 32 assertions plus TypeScript,
+formatting, and whitespace.
+
+This clarifies the composite API without changing its evidence boundary. It
+does not validate policy, selection, whole-payload shape, recomputation,
+provenance, authority, cost, or model behavior. The next control applies the
+renamed assessment to the actual retained-snapshot CLI output.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 168 supersedes the older table snapshot below. Starting tip
-`5a0a51146bdbaba346bf391d7a6b5955f1fd56e3` and seed commit
-`7b8b07f674` anchor the unchanged login-class
+Cycle 169 supersedes the older table snapshot below. Starting tip
+`495dd38f9c6d5afc621d01b370c1f1391d2c6d2f` and seed commit
+`52bdd028a2` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -386,12 +386,16 @@ Exact local `1a1ebb6…c0beff1` now composes those same three scoped verdicts
 into one assessment. Direct and snapshot controls pass only when every verdict
 passes; authority and identity mutations retain their separate diagnostics and
 make the conjunction false.
+The Cycle 169 matched control then showed unverified policy and selection
+claims can coexist with the three true verdicts. Exact local
+`931fab1…a7e044d` renames only the conjunction to `scopedChecksPass` and pins
+that those unrelated fields remain outside its contract.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 168; public trigger-deferred.** One assessment now composes the three scoped checks without hiding individual failures. It still does not validate unrelated payload claims or establish authority, and only regeneration is recomputation evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `1a1ebb6…c0beff1` is current; direct and snapshot matched controls pass, while authority and identity mutations fail the conjunction. | Zero public requests. Next test whether unrelated policy/selection claims can coexist with `allChecksPass` and clarify or constrain the API only if that scoped result can be mistaken for whole-payload validation. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 168.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 168 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 169; public trigger-deferred.** The composite now names only its three scoped checks. Unrelated policy/selection claims are deliberately not validated, and only regeneration is recomputation evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `931fab1…a7e044d` is current; the pre-fix control returned all three true plus `allChecksPass:true` despite unverified policy/selection fields, while the fix exposes the same scope as `scopedChecksPass`. | Zero public requests. Next stream the actual fast retained-snapshot CLI output through the renamed assessment and verify exact process-level schema, denial, identity, and scoped conjunction. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 169.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 169 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3320,6 +3324,28 @@ patch pairs, and 4/4 artifact equivalence. Protected `/app` retained HEAD
 records, and fingerprint `ad8d222c…e74780`. Neither checkout was written or
 tested. Commit this seed record first, then pursue the ranked unrelated-claim
 control locally.
+
+### Cycle 169 checkpoint — the conjunction no longer reads as full validation
+
+The matched pre-fix direct-v1 control carried valid schema, retained identity,
+and provider denial alongside unverified `policyApproved:true` and a selected
+value. The exact assessment returned all three individual verdicts true and
+`allChecksPass:true`. The behavior was correctly scoped internally, but the
+field name could read as whole-payload acceptance.
+
+Exact local `931fab16aa` renames the conjunction to `scopedChecksPass` and
+adds the control as regression coverage. It deliberately does not reject the
+unrelated claims or broaden the three underlying validators. The fixed result
+keeps schema, denial, identity, and scoped conjunction true while making their
+limited meaning explicit. The focused gate passes 11 tests and 32 assertions
+plus TypeScript, formatting, and whitespace.
+
+This is high-confidence local evidence for API naming and scope preservation,
+not validation of policy, selection, whole-payload shape, recomputation,
+provenance, authority, cost, drift, models, or providers. Public GitHub, arXiv,
+and Reddit made zero requests because no recorded trigger fired. The next
+ranked control streams the actual fast retained-snapshot CLI output through the
+renamed assessment and checks its process-level verdicts.
 
 ## Cycle 168 seed-first start
 

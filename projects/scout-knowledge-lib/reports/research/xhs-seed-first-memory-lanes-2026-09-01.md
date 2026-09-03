@@ -7752,6 +7752,26 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 169 checkpoint — the composite verdict is explicitly scoped
+
+Seed commit `52bdd028a2` records unchanged semantic XHS access, zero
+attributable items, unknown additions/changes, no observed removals, and all
+132 durable seeds unavailable before the matched naming control.
+
+An otherwise passing direct-v1 payload also carried unverified policy approval
+and selection. Its exact pre-fix assessment returned all three individual
+verdicts true and `allChecksPass:true`. Exact local `931fab16aa` renames that
+field to `scopedChecksPass` and pins the behavior without pretending to validate
+unrelated fields. The focused gate passes 11 tests and 32 assertions plus
+TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+recorded triggers. Confidence is high for the local naming boundary and low
+for policy, selection, whole-payload validity, recomputation, provenance,
+authority, cost, drift, models, or providers. The next ranked control applies
+the renamed assessment to actual fast retained-snapshot CLI output.
+
 ## Cycle 168 checkpoint — consumer checks now compose explicitly
 
 Seed commit `7b8b07f674` records unchanged semantic XHS access, zero
