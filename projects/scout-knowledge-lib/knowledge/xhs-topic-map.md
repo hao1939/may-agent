@@ -3766,6 +3766,16 @@ The next ranked control reorders only top-level freeze-manifest keys, testing
 whether the uncontent-addressed container is presentation-only while declared
 evidence remains byte-bound.
 
+Exact reviewed Cycle 212 tip
+`20d8560f39f8170bfea87c4e67cd35acc261387a` passes syntax, TypeScript,
+source formatting, 272 tests, 1,397 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:48:51.166Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
+Protected source and overlay reproduce `386b445c…1fec8` / 886 /
+`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
+neither was written or tested. The unaccepted peer remains outside lineage.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
