@@ -3863,6 +3863,49 @@ values are not selected Cycle 269 evidence. Commit this reconciliation first,
 then repeat the same read-only query before deciding whether protected state
 contains any retained `project.knowledge.maintained` outcome.
 
+## Cycle 269 checkpoint — protected history retains no knowledge outcome
+
+Seed commit `d6d904d73968432e751ca369be18fb7cbe677ea7` precedes
+the selected check. At `2026-09-03T20:02:52.140Z–20:03:33.329Z`, worker UID
+1000 opened `/app/.state/may.db` from the goal-owned worktree with Bun SQLite
+`readonly:true`, `strict:true`, and `PRAGMA query_only=ON`; the pragma returned
+`1`. This is protected-store observation, not permission to write the source
+checkout or the database.
+
+The store contains 16,363 events through ID `6317660` at
+`2026-08-31T15:24:13.597Z`. It has zero events whose type is exactly
+`project.knowledge.maintained`. The exact string occurs in only two payloads:
+evaluator-owned `project.owner.requested` IDs `6143903` at
+`2026-08-26T08:02:58.398Z` and `6151587` at
+`2026-08-26T10:03:37.578Z`, with payload SHA-256
+`bc0f3acc70b1b8f5fae86c39ecd667b232f47e14a3d79b7c99a30308ce83a1`
+and `b90e719756a19ec744493db7345dd26eaff47e87983a1fad1bab3671a1726357`.
+Requests for an outcome are not outcome evidence.
+
+The same store retains 60 `scout.explore` events through ID `6317493`, six
+`project.library_health.tick` events through `6317249`, and two
+`project.library_health.observed` events through `6315633`. These prove older
+workflow activity, not later selection or reuse. Because the database ends on
+August 31, the absence cannot describe September behavior. Confidence is high
+for the read-only counts and freshness boundary, and absent for unretained or
+post-August-31 outcomes. `RV-004` remains high/open; do not add another metric,
+event, or transition design from this negative result.
+
+GitHub/local protected evidence won the rubric without a public request.
+arXiv retains `2608.30177v1` and `2608.25553v3`; Reddit retains item
+`t3_1v8a3sh` at RSS HTTP 200 / JSON HTTP 403. No version, repository, thread,
+seed-body, or access trigger fired, so all three public lanes made zero
+requests. Accepted projection `b3c4fb8d3e` remains patch-equivalent to
+contained standing `d35632c2b1` at stable patch ID `f5d7665a…81a8`, and
+reviewer `9f0891cf97` remains represented by contained standing
+`8ab0a89cd0`; unaccepted `d041c41b54` remains excluded.
+
+The next ranked investigation returns to library usability rather than
+telemetry: start seed-first, then inspect the four frozen v1 navigation
+failures and select the smallest project-owned content or index-identity gap
+that can be tested against both held-out sets without changing the scorer or
+calling a retrospective threshold an outcome.
+
 ## Cycle 268 seed-first start — local continuity
 
 Exact Cycle 267 result `ca3211afe9` passes the full 296-test /

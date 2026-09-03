@@ -9365,6 +9365,46 @@ selected Cycle 269 evidence. Commit this seed reconciliation first, then repeat
 the same read-only operation before deciding whether protected state contains
 any retained `project.knowledge.maintained` outcome.
 
+## Cycle 269 checkpoint — the accessible store ends before any retained outcome
+
+Seed commit `d6d904d73968432e751ca369be18fb7cbe677ea7` precedes
+the selected check. At `2026-09-03T20:02:52.140Z–20:03:33.329Z`, worker UID
+1000 opened `/app/.state/may.db` from the goal-owned worktree with Bun SQLite
+`readonly:true`, `strict:true`, and `PRAGMA query_only=ON`; the pragma returned
+`1`. No protected checkout or database write was attempted.
+
+The store contains 16,363 events through ID `6317660` at
+`2026-08-31T15:24:13.597Z`. Exact event type
+`project.knowledge.maintained` occurs zero times. Its exact string appears in
+only two payloads, both evaluator `project.owner.requested` records: ID
+`6143903` at `2026-08-26T08:02:58.398Z`, payload SHA-256
+`bc0f3acc70b1b8f5fae86c39ecd667b232f47e14a3d79b7c99a30308ce83a1`,
+and ID `6151587` at `2026-08-26T10:03:37.578Z`, payload SHA-256
+`b90e719756a19ec744493db7345dd26eaff47e87983a1fad1bab3671a1726357`.
+They request an outcome; they do not record one.
+
+Older operational activity remains: 60 `scout.explore` events through
+`6317493`, six `project.library_health.tick` events through `6317249`, and two
+`project.library_health.observed` events through `6315633`. Those counts do not
+join an output to later selection, reuse, or a changed human/model decision.
+The database freshness boundary is decisive: it contains nothing after August
+31, so it cannot prove current September outcomes. Confidence is high for the
+query-only inventory and low for any unretained or later behavior. `RV-004`
+remains high/open; another telemetry proposal is not justified.
+
+GitHub/local protected evidence won the rubric with zero public requests.
+arXiv retains `2608.30177v1` and `2608.25553v3`; Reddit retains
+`t3_1v8a3sh` at RSS HTTP 200 / JSON HTTP 403. No public-lane trigger fired.
+Accepted projection `b3c4fb8d3e` remains patch-equivalent to contained
+standing `d35632c2b1` at patch ID `f5d7665a…81a8`, reviewer `9f0891cf97`
+remains represented by contained standing `8ab0a89cd0`, and unaccepted
+`d041c41b54` remains excluded.
+
+Next, begin a new seed-first cycle and inspect the four frozen v1 navigation
+failures. Select the smallest project-owned content or index-identity gap that
+can be tested against both held-out sets without changing the scorer or
+mistaking a retrospective threshold for outcome evidence.
+
 ## Cycle 268 seed-first start — local continuity
 
 Exact Cycle 267 result `ca3211afe9` passes the full 296-test /
