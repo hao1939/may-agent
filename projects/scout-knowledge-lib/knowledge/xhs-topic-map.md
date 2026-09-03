@@ -3898,6 +3898,20 @@ ranked question is whether a pure two-snapshot transition classifier can use
 retained notes to distinguish comparable accepted-output loss, recovery, and
 unknown state without creating lane metric identities or duplicate alerts.
 
+Exact source `094996202c` passes syntax, TypeScript, formatting, Cycle 237
+projection, 65 durable links, v1 at 10/14, v2 at 8/8, and the full 296-test /
+1,479-assertion gate. The broad audit covers 1,540 tracked Markdown documents
+and 1,701 local prose links with zero errors. Read-only health at
+`2026-09-03T19:39:15.742Z` returns 30 facts and 16 wakes at its bounded cap;
+runtime state and the standing worktree are empty/clean. Reviewer and standing
+integration share patch ID `56f65ad4c6`.
+
+The protected Scout-scope status fingerprint remains exact at
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+The wider protected `/app` fingerprint changed from `00bcc281…c5c5ed4` to
+`000cff67…b610a3` amid externally observed non-Scout work; this worker neither
+attributes nor mutates that drift.
+
 ## Cycle 263 seed-first start — accepted review trigger
 
 Exact Cycle 262 tip `d4b53fac6c` passes syntax, TypeScript, formatting, Cycle

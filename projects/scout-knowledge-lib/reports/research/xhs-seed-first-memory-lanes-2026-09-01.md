@@ -9390,6 +9390,18 @@ deployment, consumption, alert outcome, owner response, or content improvement;
 RV-004 remains open. Next, test a pure two-snapshot transition classifier before
 adding metric identities or alerts.
 
+Exact source `094996202c` passes syntax, TypeScript, formatting, projection, 65
+durable links, navigation v1 at 10/14, v2 at 8/8, and 296 tests / 1,479
+assertions. The 1,540-document / 1,701-link broad audit has zero errors;
+read-only health at `2026-09-03T19:39:15.742Z` is 30 facts / 16 wakes and
+bounded. Runtime and the standing worktree are clean. Reviewer `7deb84c782` and
+standing integration `5c79f423a3` share patch ID `56f65ad4c6`.
+
+The protected Scout-scope fingerprint remains
+`a430d0c9…4322f7e`. The wider `/app` fingerprint changed from
+`00bcc281…c5c5ed4` to `000cff67…b610a3` in externally observed non-Scout work;
+no cause is attributed to this worker and no protected file was changed here.
+
 ## Cycle 263 seed-first start — accepted review trigger
 
 Exact Cycle 262 tip `d4b53fac6c` passes the full 296-test / 1,479-assertion
