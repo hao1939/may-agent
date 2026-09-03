@@ -7860,6 +7860,28 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 178 checkpoint — result-bundle object depth is bounded
+
+Seed commit `05f38abc42` records unchanged semantic XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before the
+local result-bundle control.
+
+A matched valid bundle passed; replacing one answer with a 50,000-level object
+returned only a generic serialization denial after 1,365.56 ms. Exact local
+`4c38637cf5` checks parsed object depth before pooled analysis while preserving
+the circular-object contract. The same control now returns the exact nesting
+denial in 7.96 ms in the complete factorial file, with null pooled analysis and
+no bundle digest. The focused gate passes 43 tests and 480 assertions plus
+TypeScript, formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the matched current-runtime improvement
+and low for general breadth/resource bounds, other runtimes, or broader
+provenance, authority, cost, drift, model, or provider claims. The next ranked
+audit tests a large shallow result flood against the exact schedule count.
+
 ## Cycle 177 checkpoint — embedded prompt latency is bounded
 
 Seed commit `03b197144b` records unchanged semantic XHS access, 30 readable

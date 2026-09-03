@@ -2805,6 +2805,25 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 178 bounded result-bundle object depth
+
+Seed commit `05f38abc42` preceded a matched result-bundle control. The baseline
+passed. Replacing only one answer with a 50,000-level object preserved the
+outer schema, evidence class, schedule digest, and outcome envelope.
+
+Before repair, the analyzer completed pooled work and then returned the generic
+serialization error after 1,365.56 ms. Exact local `4c38637cf5` performs an
+iterative 256-level object preflight before pooled analysis while retaining the
+existing circular-object serialization error. The deep control now returns the
+specific nesting denial in 7.96 ms in the full factorial file (10.72 ms first
+isolated), with null pooled analysis and no bundle digest. The focused gate
+passes 43 tests and 480 assertions plus TypeScript, formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth or resource bound, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests a
+large shallow outcome flood against the exact schedule count.
+
 ## Cycle 177 bounded embedded-prompt latency
 
 Seed commit `03b197144b` preceded a matched execution-freeze control. Its
