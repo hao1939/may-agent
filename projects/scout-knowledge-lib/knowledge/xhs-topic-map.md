@@ -323,15 +323,17 @@ This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
 Cycle 127 supersedes the older table snapshot below. Starting tip
-`36c8d7a9c28abec48fc00563ce38b70f1f6cb758` anchors the unchanged login-class
+`36c8d7a9c28abec48fc00563ce38b70f1f6cb758` and seed commit
+`d473e5a04f4da1bd9a535f92d15264d9f2355d09` anchor the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Cycle 126's five-case status matrix is
-retained; proof-target identity is selected next. Accepted-result containment
-and protected-checkout preservation are rechecked on the resulting exact tip.
+unavailable. No public request was made. Exact local `c190ba8…2afe9d6` now
+binds the declared proof target to the checksum manifest artifact and digest.
+Accepted-result containment and protected-checkout preservation are rechecked
+on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 127; public trigger-deferred.** Proof-target identity is directly testable in the standing implementation.                                                            | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact test `441064d…1a3a0c3` separates five valid, unrelated-error, mismatched, missing, and undeclared proof cases.                                                          | Zero public requests. Test whether the proof target is bound to `MANIFEST.sha256`. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 127; public trigger-deferred.** Proof-target identity was directly testable in the standing implementation.                                                              | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `c190ba8…2afe9d6` rejects a proof target naming `schedule.json` and requires the checksum manifest's exact identity.                                             | Zero public requests. Next inspect the retained proof bytes and local verifier/tool boundary before adding any parser. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
 | **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 127.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 127 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
@@ -3247,6 +3249,28 @@ attributable items. Only body SHA changed
 `c69a76a…bf7492`→`fd955cd…1f6f0`; additions/changes remain unknown,
 removals are `[]`, and all 132 durable seeds remain unavailable. No account
 state changed and no source/proof-target request preceded this record.
+
+### Cycle 127 checkpoint — proof intent now names the checksum manifest
+
+Seed commit `d473e5a04f4da1bd9a535f92d15264d9f2355d09` preceded the
+matched control. A locally valid freeze explicitly declared `schedule.json`
+and its digest as the proof target. Before repair it still returned `ok: true`;
+the new expectation produced 12 passes and one failure across 13 tests.
+
+Exact local `c190ba8e2af7c821c419c7b8717c6329c2afe9d6` adds required
+`proofTargetArtifact` and `proofTargetSha256` fields. Both must exactly match
+the registered checksum manifest artifact and digest. The contradictory
+schedule target now fails with
+`external registration proof target does not bind its checksum manifest` and
+no registration status. Three focused suites pass 31 tests and 129 assertions,
+plus TypeScript, source formatting, and whitespace.
+
+Confidence is high for declared target identity and low for proof syntax,
+cryptographic validity, external anchoring, deposit identity, authorship, or
+execution. Provider authority remains false. GitHub, arXiv, and Reddit made
+zero public requests. The next ranked investigation is to inspect the retained
+proof bytes and available local verification capability before adding any
+format parser or stronger evidence label.
 
 ## Cycle 126 seed-first start
 

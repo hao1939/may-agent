@@ -2333,6 +2333,29 @@ This proves local status composition, not proof validity or target identity.
 The next ranked control asks whether the schema identifies the checksum
 manifest as the proof target before any cryptographic verification is added.
 
+## Cycle 127 proof-target identity
+
+Seed commit `d473e5a04f4da1bd9a535f92d15264d9f2355d09` preceded the
+matched control. XHS semantic access and byte length remained unchanged, all
+132 durable seeds remained unavailable, and no public lane request was made.
+
+A locally valid freeze declared `schedule.json` and its digest as the detached
+proof target. Before repair, the verifier ignored those target fields and
+returned `ok: true`; the new expectation yielded 12 passing tests and one
+failure across the 13-test focused suite.
+
+Exact local `c190ba8e2af7c821c419c7b8717c6329c2afe9d6` adds required
+`proofTargetArtifact` and `proofTargetSha256` bindings. They must equal the
+registered checksum manifest artifact and digest. The schedule-target control
+now fails with a stable proof-target error and no registration status. Three
+focused suites pass 31 tests and 129 assertions plus TypeScript, formatting,
+and whitespace.
+
+This proves declared target identity only. It does not parse the proof or
+authenticate a timestamp. The next ranked investigation inspects retained
+proof bytes and the available local verifier/tool boundary before any parser
+or stronger evidence status is proposed.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
