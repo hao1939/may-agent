@@ -3842,6 +3842,22 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 273 seed-first start — local continuity
+
+Exact Cycle 272 result `e1b15a315818e2b1974be32407ba1d700c2d3ede`
+has tree `1efa9383fa24f8783d9d38ed6111804d9f0b4874`, identical to its
+fully validated candidate. It passes syntax, TypeScript, formatting, Cycle 237
+projection, 67 scoped links, navigation v1 at 11/14 and v2 at 8/8, and 296
+tests / 1,483 assertions. The standing tree is clean.
+
+At `2026-09-03T20:18:25.546Z`, the exact Cycle 237 receipt was two hundred one
+minutes old, inside the six-hour cadence. No seed, semantic-access, public-lane,
+or accepted-review trigger changed. The bounded reconciliation reused it with
+zero browser or public requests: added/changed collected identities remain
+unknown, observed removals are `[]`, and all 132 durable IDs remain
+unavailable. Commit this seed record before testing the eight landing-page
+topic labels against accepted INDEX identities.
+
 ## Cycle 272 seed-first start — local continuity
 
 Exact Cycle 271 result `827fb6ece543b268a902038c60d2e99cdb84b20d`
