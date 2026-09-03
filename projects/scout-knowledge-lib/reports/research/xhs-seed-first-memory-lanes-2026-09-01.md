@@ -7860,6 +7860,25 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 191 checkpoint — registry substitution is fail-closed but compiled
+
+Seed commit `81c8093c25` records unchanged semantic XHS access, 30 public
+Explore notes, zero attributable saved items, unknown additions/changes, no
+observed removals, and all 132 seeds unavailable. Saved-shell length changed
+46,763→46,764 and its body SHA changed; both are response provenance.
+
+A coherent replacement of every candidate body, path, and revision with
+rebound prompts/digests returns separate registration errors, null policy
+scope, and provider denial. Exact local `9c4c82c688` retains the regression.
+The current path content-addresses schedule and execution bytes but has no
+standalone candidate-registry artifact; registration remains compiled.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their evidence and triggers. Confidence is high for local
+fail-closed behavior and low for external registration or governance. The next
+ranked audit evaluates a minimal canonical registry artifact before any schema
+change.
+
 ## Cycle 190 checkpoint — answer enum order is already candidate-bound
 
 Seed commit `990a047e6a` records unchanged semantic XHS access and byte length,

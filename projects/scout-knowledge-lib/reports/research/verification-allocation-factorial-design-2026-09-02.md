@@ -2805,6 +2805,21 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 191 compiled candidate-registry boundary
+
+Seed commit `81c8093c25` preceded a coherent replacement of every candidate
+body, path, and revision, with prompts and schedule digests rebound. The freeze
+path has no standalone registry artifact; candidate truth is compiled, while
+the accepted schedule and execution artifact are content-addressed.
+
+The replacement returns separate body and provenance registration errors,
+null policy scope, and provider denial. Exact local `9c4c82c688` preserves the
+matched regression. This supports fail-closed compiled registration but leaves
+controlled registry evolution coupled to a verifier revision. It does not
+establish external registration or governance. The next audit evaluates the
+cost and integrity of a minimal canonical registry artifact before changing
+the schema.
+
 ## Cycle 190 answer-enum ordering control
 
 Seed commit `990a047e6a` preceded a one-cell prompt-only permutation. Candidate
