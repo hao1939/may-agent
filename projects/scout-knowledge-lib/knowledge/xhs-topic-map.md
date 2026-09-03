@@ -3842,6 +3842,24 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 262 seed-first start — accepted review trigger
+
+Exact Cycle 261 tip `a116bb1e46` passes syntax, TypeScript, formatting, Cycle
+237 projection, 65 durable links, v1 at 10/14, v2 at 8/8, and 296 tests /
+1,478 assertions. The broad audit covers 1,540 documents and 1,701 links with
+zero errors; read-only health at `2026-09-03T19:20:55.451Z` is 30 facts, 16
+wakes, and `truncated:true`; runtime state and the owned tree are empty/clean.
+Protected source, Scout scope, and the known overlay exactly reproduce their
+386 / 296 / 3 record fingerprints.
+
+At `2026-09-03T19:21:06.709Z`, Cycle 237's exact receipt was one hundred
+forty-four minutes old. XHS access, public source revisions, unaccepted
+lineage, and source-lane triggers were unchanged. Added/changed identities
+remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable
+at the same login-class boundary; no browser or public request ran. Accepted
+review ref advanced from integrated `72ed9c48e9` to `c187607b3f`. Reconcile its
+finite delta before classifying why each source-output count is zero.
+
 ## Cycle 261 seed-first start — accepted cursor trigger
 
 Exact Cycle 260 documentation tip `1b090a4f4c` passes the full Scout gate:
