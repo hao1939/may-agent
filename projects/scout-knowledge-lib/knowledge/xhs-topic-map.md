@@ -2,9 +2,9 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 202 observational reconciliation through 2026-09-03T12:35:50.809Z; exact access evidence and uncertainty are in the Cycle 202 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 202 at 2026-09-03T12:35:50.809Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 202 read-only XHS boundary through 2026-09-03T12:35:50.809Z."
+latest_seed_basis: "Cycle 203 observational reconciliation through 2026-09-03T12:50:10.427Z; exact access evidence and uncertainty are in the Cycle 203 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 203 at 2026-09-03T12:50:10.427Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 203 read-only XHS boundary through 2026-09-03T12:50:10.427Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -3352,6 +3352,37 @@ same-byte artifact aliasing: change the registered artifact name while keeping
 its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
+
+## Cycle 203 seed-first start
+
+Cycle 203 began only after reviewed Cycle 202 checkpoint
+`d7be9631226797c0eb3f419b993c10d05bbde69e` passed syntax, TypeScript,
+source formatting, 263 tests and 1,341 assertions, 30 relative links,
+read-only health 26/16, empty runtime state, 9/9 accepted ancestors, both
+accepted patch pairs, and 4/4 accepted artifact equivalence. The standing
+worktree was clean.
+
+From `2026-09-03T12:49:43.286Z` through `12:50:10.427Z`, the established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace
+ran one public `status` and two non-navigating `saved-status` reads. The second
+saved read was necessary because a stale local output projection discarded
+safe summary fields from the successful first response; it corrected local
+evidence capture without navigation or account mutation.
+
+Explore remained readable at 30 notes. Both saved responses were HTTP 200,
+`login`, 46,763 bytes, and a login wall. The corrected response retained
+semantic fingerprint `3dab1b6d…8af420` and zero attributable items. Body SHA
+changed from Cycle 202's `183a5d5…db418` to `343af73…274f` and then
+`24a7111…d31b` within the pass; this is volatile response provenance, not a
+seed delta. Added and changed identities remain unknown, observed removals are
+`[]`, and all 132 durable seeds remain unavailable rather than removed. No
+representative saved post was supported or read, and no XHS state changed.
+
+Protected source and overlay retain the exact Cycle 202 fingerprints
+`386b445c…1fec8` / 886 / `7b786753…7f932` and
+`fd4c68ec…1514663` / 3 / `a52b97aa…4a15`. Public GitHub, arXiv, and Reddit
+made zero requests before this record. Commit this reconciliation first, then
+rank and run the copied same-byte model-resolution alias control.
 
 ## Cycle 202 seed-first start
 
