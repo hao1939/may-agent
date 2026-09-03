@@ -688,12 +688,16 @@ source_basis: "Exact standing history and diffs from 2e7f6cb01084e8fc7c6a0b6cedd
 
 ## Reviewer source/result and integration status
 
-- Current reviewer source is standing
-  `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf`. Integrate the directly
-  following result from `codex/g-8c5b597e-cycle257-review`; it corrects RV-020
-  and advances the cursor through Cycle 278. Rollback is one ordinary revert
-  of that reviewer result. It remains pending until standing contains its exact
-  or patch-equivalent change and current-tip validation passes.
+- Reviewer source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` has direct-child
+  result `6c806ade5accd5fca81ba1b6800b5c831dde852c`, integrated exactly on
+  standing by fast-forward. Its stable patch ID is
+  `972dd2567a7690875c80de8ab3a1fb2b98e9f08e`; the two-file delta is 76
+  insertions and 27 deletions. It corrects RV-020, advances the cursor through
+  Cycle 278, and keeps RV-004 high/open. Standing validation passes the full
+  296-test / 1,483-assertion gate, 70 scoped links, and the 1,540-document /
+  1,706-link broad audit; read-only health remains 30 facts / 16 wakes.
+  Rollback is one ordinary revert of `6c806ade5a` after reverting this newer
+  standing status record.
 - Reviewer source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
   result `af409f4ef3c4d3c1e3eaf0754ed9d3cd1b8db0c9`, integrated exactly on
   standing by fast-forward. Its stable patch ID is

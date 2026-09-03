@@ -3888,6 +3888,19 @@ evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
 review, otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 279 checkpoint — Cycle 278 review lands exactly
+
+Standing source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` has direct-child
+reviewer result `6c806ade5accd5fca81ba1b6800b5c831dde852c`, integrated by
+fast-forward with no overlap resolution. The two-file 76-insertion /
+27-deletion patch has stable ID `972dd2567a7690875c80de8ab3a1fb2b98e9f08e`.
+It corrects the Cycle 278 link totals to 70 scoped and 1,706 broad, resolves
+`RV-020`, and leaves `RV-004` high/open. Exact standing-candidate validation passes
+296 tests / 1,483 assertions, syntax, TypeScript, formatting, Cycle 237
+projection, both navigation fixtures, 1,540 broad documents, and read-only
+health at 30 facts / 16 wakes. No source lane, account, executable code, or
+protected state changed; rollback is one ordinary reverse-order revert.
+
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
 Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child

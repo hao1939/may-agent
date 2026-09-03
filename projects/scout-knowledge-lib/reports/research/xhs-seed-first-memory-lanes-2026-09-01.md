@@ -9399,6 +9399,29 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 279 checkpoint — Cycle 278 review lands exactly
+
+Reviewer source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` is the parent of
+result `6c806ade5accd5fca81ba1b6800b5c831dde852c`; standing integrated the
+result itself by conflict-free fast-forward. Its two-file delta is 76
+insertions / 27 deletions with stable patch ID
+`972dd2567a7690875c80de8ab3a1fb2b98e9f08e`. The patch advances the review
+cursor, corrects Cycle 278's stale totals from 69 to 70 scoped links and from
+1,705 to 1,706 broad links, and closes low-severity `RV-020`. It changes no
+runtime, fixture, account state, access authority, evaluator, or protected
+checkout. `RV-018` and `RV-019` remain resolved; `RV-004` remains high/open
+because no query-to-selection join, retained later decision, deployed route,
+measured saving, or changed user outcome appeared.
+
+The exact standing candidate passes syntax, TypeScript, source formatting, Cycle 237
+projection, navigation v1 at 11/14, navigation v2 at 8/8, 70 scoped links,
+1,540 tracked project Markdown documents / 1,706 broad links, and 296 tests /
+1,483 assertions. Read-only health at `2026-09-03T21:37:09.700Z` returns 30
+facts, 16 wakes, and `truncated:true`. GitHub, arXiv, and Reddit made zero
+public requests; their retained evidence and change-bearing triggers remain
+current. Rollback is an ordinary reverse-order revert of this standing status
+record and `6c806ade5a`.
+
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
 Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
