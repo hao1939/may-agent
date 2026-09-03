@@ -9390,6 +9390,18 @@ file. Both rows pass exact field-preservation checks in unavailable form. The
 broad audit is now 1,736 links / 38 unresolved. Next, compare the four residual
 HN aliases by complete story-set identity rather than title keywords.
 
+The four-HN follow-up found zero accepted path history and no exact title
+outside the index. Nearby accepted scans preserve only partial or differently
+grouped story sets, so none is a source-equivalent replacement. All four rows
+now preserve title, intended path, full summary, and an exact-target-or-owner-
+supersession trigger without exposing a false click. Checks pass 4/4. The broad
+audit is now 1,732 local prose links / 34 unresolved occurrences across eight
+documents / zero absolute links (`38→34`). This reduces retrieval duplication
+without deleting distinctions or inventing provenance. Confidence is high for
+accepted-tree absence and field preservation, low for the unavailable bodies.
+Next, audit missing HN Scan #151 using embedded source-set identity rather than
+scan number alone.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old

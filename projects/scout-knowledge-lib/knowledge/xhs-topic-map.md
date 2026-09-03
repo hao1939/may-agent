@@ -3890,6 +3890,20 @@ in unavailable form with chronology-and-ownership triggers. The broad boundary
 is 1,736 links / 38 unresolved. Next, audit the four residual HN snapshot aliases
 against accepted story sets before choosing or deferring them.
 
+The HN follow-up also finds zero accepted path history and no exact title
+outside `knowledge/INDEX.md` for any of the four June 29 snapshots. Nearby
+accepted scans overlap individual topics, but split or combine different story
+sets; none preserves the complete indexed set and provenance. All four rows
+therefore retain their exact title, intended path, and full summary in plain
+unavailable form, with restoration gated on the exact accepted target or an
+owner-declared supersession preserving the whole story set. Field-preservation
+checks pass 4/4. The 1,539-document audit is now 1,732 local prose links / 34
+unresolved occurrences across eight documents / zero absolute links
+(`38→34`). This supports reversible representation repair and contradicts
+topic-keyword substitution; confidence is high for accepted-tree absence and
+field preservation, low for the unavailable bodies. Next, audit missing HN
+Scan #151 by embedded source-set identity, never scan number alone.
+
 ## Cycle 235 seed-first start — current receipt remains sufficient
 
 At `2026-09-03T16:39:38.442Z`, Cycle 233's exact observation was 21 minutes
