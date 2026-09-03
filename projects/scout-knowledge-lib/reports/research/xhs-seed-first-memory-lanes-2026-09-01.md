@@ -9413,14 +9413,14 @@ commit this ordering evidence before its retention audit.
 
 ## Cycle 283 checkpoint — one transition record, one detailed record
 
-Seed commit `3d99bfd6bd059ef3cf2379762516894367e64394` preceded every
+Seed commit `3d99bfd6bd2e82ec6257b2c2763492c059754f54` preceded every
 post-seed operation. The selected map block was 46 lines / 2,647 bytes at
 SHA-256 `7fb95003…ec7eb`; this authoritative detailed block remains 54 lines /
 3,129 bytes at SHA-256
 `fd5d2970264fc14428a19e90d7e4af907f89e83e744b2fd527d1641a83cea8fb`.
 They shared 37 lines with sequence similarity 0.74.
 
-Exact material `05000e2babf01b08cd082406a4007413ce5fd08e` replaces only the
+Exact material `05000e2bab8d1ea6f0d8b094de384132df4e9f8d` replaces only the
 map block with a 21-line / 1,221-byte transition summary at SHA-256
 `1825fb93…9fec3ec`, a net reduction of 25 lines / 1,426 bytes. The map retains
 Cycle 274 and 278 source/result identities, the 109→50-line decision, exact
@@ -9431,10 +9431,11 @@ rollback evidence.
 The accepted Cycle 281 reviewer range ending at `c3400f8c77` is integrated as
 standing `45bdc0868c`, `16d602b7d8`, and `15e30e50ea`, with stable patch IDs
 `7c6b32ad…2e2817ddc4`, `213b0749…1ae6333e`, and
-`dc58f6b4…23c38427e`. The later Cycle 282 reviewer branch ending at
-`641bc7088b` replays those same three patch IDs exactly, so it adds no new
-finding or integration candidate. RV-021 is resolved on standing; RV-004
-remains high/open.
+`dc58f6b4…23c38427e`. Cycle 282 reviewer `641bc7088b` replays those same
+three patch IDs exactly, so that commit adds no new integration candidate. The
+branch later advanced through `71ffb881c0` with RV-022; current reviewer
+`1f611b69aa` carries that still-pending correction. RV-021 is resolved on
+standing; RV-004 remains high/open.
 
 The exact material tip passes syntax, TypeScript, formatting, Cycle 237
 projection, 68 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and

@@ -809,10 +809,10 @@ source_basis: "Exact standing history and diff from f40b09a2dab7b05b232b75f43e2a
   `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`. The first two commits replay
   the prior Cycle 280/281 reviews; the third resolves RV-021. Rollback is an
   ordinary reverse-order revert of those three standing commits.
-- Cycle 282 reviewer branch `codex/g-8c5b597e-cycle282-review` replays the same
-  three changes as `d4c75e9bc4`, `f3f1b77ec9`, and `641bc7088b`; their stable
-  patch IDs exactly equal standing `45bdc0868c`, `16d602b7d8`, and
-  `15e30e50ea`. It adds no new finding or integration candidate.
+- Cycle 282 reviewer commits `d4c75e9bc4`, `f3f1b77ec9`, and `641bc7088b`
+  replay the same three changes as standing `45bdc0868c`, `16d602b7d8`, and
+  `15e30e50ea`. The branch later advanced through `71ffb881c0` with RV-022;
+  current reviewer `1f611b69aa` carries that still-pending correction.
 - Earlier reviewer commits `18143fc61e` and `6dfcf7180c` are superseded by
   patch-equivalent standing `45bdc0868c` and `16d602b7d8`; no review finding
   or producer Cycle 282 content was dropped.

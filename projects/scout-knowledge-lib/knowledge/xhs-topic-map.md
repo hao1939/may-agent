@@ -3876,16 +3876,18 @@ changing either copy.
 
 ## Cycle 283 checkpoint — retain the transition once
 
-Seed commit `3d99bfd6bd059ef3cf2379762516894367e64394` preceded the audit.
+Seed commit `3d99bfd6bd2e82ec6257b2c2763492c059754f54` preceded the audit.
 The selected map block was 46 lines / 2,647 bytes and shared 37 lines with the
 54-line / 3,129-byte detailed report block. Exact material
-`05000e2babf01b08cd082406a4007413ce5fd08e` replaces it with the 21-line /
+`05000e2bab8d1ea6f0d8b094de384132df4e9f8d` replaces it with the 21-line /
 1,221-byte transition above, removing 25 net lines / 1,426 bytes while keeping
 the detailed block unchanged at SHA-256 `fd5d2970…cea8fb`.
 
-The same cycle confirms reviewer `641bc7088b` adds no unintegrated result: its
-three patches are exact equivalents of standing `45bdc0868c`, `16d602b7d8`,
-and `15e30e50ea`; RV-021 is resolved and RV-004 remains high/open. The material
+Reviewer `641bc7088b` itself adds no unintegrated result: its three patches are
+exact equivalents of standing `45bdc0868c`, `16d602b7d8`, and `15e30e50ea`.
+The Cycle 282 reviewer branch later advanced through `71ffb881c0` with RV-022;
+current reviewer `1f611b69aa` carries that still-pending correction. RV-021 is
+resolved and RV-004 remains high/open. The material
 tip passes 296 tests / 1,483 assertions, 68 scoped links, both navigation
 fixtures, and the 1,540-document / 1,704-link broad audit. Next, audit the
 adjacent Cycle 271–272 landing-page/prompt narration, whose remaining exact
