@@ -447,9 +447,9 @@ integration-ready accepted result, and was not imported.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 258; public trigger-deferred.** One concrete pre-evaluator trigger→receipt pair has a stable accepted target but no contemporaneous committed index or natural-language query, so it cannot become a matched navigation outcome. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. The scans 241–261 child receipt completed at `2026-08-20T01:09:40.172Z` and names its report target; the first commit containing that report is `d9da99476e` at `2026-08-25T06:10:59Z`, with no INDEX commit in the attempt window. | Zero public requests. Revisit source code on a repository/artifact revision, provider result, accepted finite result, or newly readable seed. Next local work checks the other nine path-bearing receipts for any exact contemporaneous committed pair. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 258.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies new navigation-outcome evidence, registry ownership, or human/model retrieval evidence.                                                                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 258 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or navigation requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 259; public trigger-deferred.** The complete ten-receipt historical route has no exact query→selected target→contemporaneous committed INDEX triple, so it cannot become matched navigation-outcome evidence. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Seven remaining receipts join to real child-transition attempts and two are owner reviews, but protected state has no query-like field; six named targets first become commit-addressable together in later snapshot `d9da99476e`. | Zero public requests. Close the retrospective scorer-replay route. Revisit source code on a repository/artifact revision, provider result, accepted finite result, newly readable seed, or fresh protected later-use evidence. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 259.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies new navigation-outcome evidence, registry ownership, or human/model retrieval evidence.                                                                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 259 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or navigation requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3852,6 +3852,46 @@ the same login-class boundary; no browser or public request ran. Accepted ref
 `codex/g-8c5b597e-cycle257-review` advanced to
 `95980b20571c6b6789848ef738fd175f26b27eee`. Reconcile that finite result
 before inspecting the other nine path-bearing receipts.
+
+### Cycle 259 checkpoint — historical route has no complete evaluation triple
+
+Seed commit `a4da1117fd` preceded accepted reviewer integration. Reviewer
+`95980b2057` is standing `590a0b804a` at stable patch ID
+`27e5dcc8381420d6f1930738dd51539729199ac2`; compact standing commit
+`c799ca1528` records that exact mapping and keeps RV-004 high/open.
+
+Read-only inspection of protected Scout task state covers all 14 child
+receipts, all 108 attempts, and the complete set of ten path-bearing receipts.
+After excluding the scans 241–261 pair checked in Cycle 258, seven receipts
+join to exact child-transition maintenance attempts: future-dated findings at
+`12:27:16.471Z→12:27:23.478Z`, scans 158–213 at
+`18:27:59.523Z→18:29:57.938Z`, scans 214–244 at
+`22:28:48.065Z→22:37:53.253Z`, HN scans 56–149 at
+`00:46:10.595Z→01:01:35.069Z`, scans 151–275 at
+`06:14:55.060Z→06:15:35.319Z`, the legacy digest repair at
+`06:34:04.639Z→06:34:39.645Z`, and scans 152–157 at
+`00:27:59.120Z→00:28:25.638Z`. The other two path-bearing receipts,
+`input/appdep_478c5825eee3849bfd1248ef` and
+`input/appdep_dff5e66e844392d334b081bc`, are owner-review outcomes rather
+than child-transition navigation attempts.
+
+Every pair fails the frozen evidence requirement. A recursive schema check
+finds zero `query`, selected-target, or index-revision keys across receipts and
+attempts; trigger `target` names only task `library-maintenance`. Two child
+receipts name no unique report target. The six unique report paths named by
+the others are all additions in later snapshot `d9da99476e` at
+`2026-08-25T06:10:59Z`. An exhaustive check across all 42,185 available Git
+commit objects finds zero `knowledge/INDEX.md` change during the union window
+`2026-08-19T12:27:16Z–2026-08-21T00:29:28Z`. Thus no candidate has an exact
+natural-language query or a committed index reflecting its accepted target.
+
+No replay ran, no scorer or telemetry changed, and the retrospective route is
+closed. Confidence is high for retained schemas, pair times, named targets,
+and Git chronology; uncommitted historical index bytes and any unretained
+natural-language prompt remain unknowable. Next, inspect the existing
+accepted-source-output metric path for a real downstream decision that already
+consumes durable output identities; do not infer that such use validates the
+navigation scorer.
 
 ## Cycle 258 seed-first start — current receipt reused
 
