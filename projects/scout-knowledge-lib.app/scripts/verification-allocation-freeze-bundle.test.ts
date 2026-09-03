@@ -207,6 +207,40 @@ describe("verification-allocation freeze bundle", () => {
     }
   });
 
+  it("keeps simultaneous platform-colliding names distinct on this host", async () => {
+    const pairs = [
+      ["proof.ots", "PROOF.OTS"],
+      ["caf\u00e9.ots", "cafe\u0301.ots"],
+      ["proof", "proof."],
+    ] as const;
+
+    for (const [left, right] of pairs) {
+      const { root, manifest } = await fixture();
+      await rename(join(root, "MANIFEST.sha256.ots"), join(root, left));
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "MANIFEST.sha256.ots",
+      )!.name = left;
+      manifest.externalRegistration.proofArtifact = left;
+
+      const rightBytes = `distinct peer for ${right}`;
+      await writeFile(join(root, right), rightBytes);
+      manifest.artifacts.push({
+        name: right,
+        sha256: freezeArtifactSha256(rightBytes),
+      });
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok, JSON.stringify([left, right])).toBe(true);
+      expect(result.errors).toEqual([]);
+      expect(result.artifactCount).toBe(7);
+      expect(result.providerCallsAuthorized).toBe(false);
+    }
+  });
+
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
     const { root, manifest } = await fixture();
     const rawManifest = JSON.stringify(manifest).replace(
