@@ -8,6 +8,8 @@ import {
   verifyExecutionFreezeManifest,
 } from "./verification-allocation-freeze";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
+import { selectIdentityRobustFrontierPointFromSnapshot } from "./verification-allocation-frontier-snapshot-select";
+import { createIdentityRobustFrontierSnapshot } from "./verification-allocation-frontier-snapshot";
 import {
   hashIdentityRobustFrontierPolicy,
   type IdentityRobustFrontierPoint,
@@ -169,6 +171,56 @@ async function policyFixture(policyScope: {
 }
 
 describe("identity-robust frontier freeze adapter", () => {
+  it("selects from a byte-bound expected snapshot before freeze verification", async () => {
+    const freeze = await freezeFixture();
+    const policy = await policyFixture(freeze.policyScope);
+    const snapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const snapshotBytes = `${JSON.stringify(snapshot)}\n`;
+    const snapshotRoot = await mkdtemp(
+      join(tmpdir(), "scout-frontier-selection-snapshot-"),
+    );
+    temporaryRoots.push(snapshotRoot);
+    await writeFile(join(snapshotRoot, "frontier.json"), snapshotBytes);
+
+    const result = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      createHash("sha256").update(snapshotBytes).digest("hex"),
+      {
+        rowSha256: snapshot.rowSha256,
+        resultSha256: snapshot.resultSha256,
+        frontierSha256: snapshot.frontierSha256,
+        frontierCount: snapshot.frontier.length,
+      },
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(result).toMatchObject({
+      snapshotVerification: {
+        ok: true,
+        snapshotEvidenceStatus: "local-byte-match-unverified",
+        providerCallsAuthorized: false,
+      },
+      frozenSelection: {
+        freezeVerification: { ok: true, providerCallsAuthorized: false },
+        selection: {
+          ok: true,
+          selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+          decisionRecordEvidenceStatus: "local-byte-match-unverified",
+          decisionRecordContentStatus: "local-content-match-unverified",
+        },
+      },
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("selects only after descriptor-safe freeze and local-record verification", async () => {
     const freeze = await freezeFixture();
     const policy = await policyFixture(freeze.policyScope);

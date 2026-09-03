@@ -5,7 +5,10 @@ import {
   calibrateDirectionalQuantiles,
   measureCalibratedDirectionalPower,
 } from "./verification-allocation-factorial";
-import { parseIdentityRobustFrontierCliInput } from "./verification-allocation-frontier-cli";
+import {
+  parseIdentityRobustFrontierCliInput,
+  parseIdentityRobustSnapshotFrontierCliInput,
+} from "./verification-allocation-frontier-cli";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
 import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
 import {
@@ -13,6 +16,7 @@ import {
   RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION,
   verifyIdentityRobustFrontierSnapshot,
 } from "./verification-allocation-frontier-snapshot";
+import { selectIdentityRobustFrontierPointFromSnapshot } from "./verification-allocation-frontier-snapshot-select";
 
 type Row = {
   runBlockCount: number;
@@ -78,6 +82,24 @@ if (process.argv[2] === "worker") {
   const last = Number(process.argv[4]);
   const step = Number(process.argv[5] ?? 1);
   process.stdout.write(JSON.stringify(generateRows(first, last, step)));
+  process.exit(0);
+}
+
+if (process.argv[2] === "snapshot") {
+  const input = parseIdentityRobustSnapshotFrontierCliInput(
+    process.argv.slice(3),
+  );
+  const result = await selectIdentityRobustFrontierPointFromSnapshot(
+    input.snapshotRoot,
+    input.snapshotArtifact,
+    input.snapshotSha256,
+    RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION,
+    input.policyCandidate,
+    input.evidenceManifestCandidate,
+    input.evidenceRoot,
+    input.freezeBundleRoot,
+  );
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exit(0);
 }
 
