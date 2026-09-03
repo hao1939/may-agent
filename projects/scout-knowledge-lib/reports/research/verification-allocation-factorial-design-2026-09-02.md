@@ -2527,6 +2527,29 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 142 model-resolution evidence agreement
+
+Seed commit `1645ec9beee26396f7ebfe41d960c42489a92d09` preceded a matched
+control. A model-resolution artifact was coherently rehashed after changing
+only its resolved ID from declared `fixture-model-a` to
+`fixture-model-b`. The pre-fix verifier returned `ok:true`; the isolated
+expectation reported zero passes, one failure, and one assertion.
+
+Repair `d57428a3666b077be239fb0bbac5aaa0d09bc88c` requires the artifact
+to be canonical UTF-8 JSON containing exactly `requestedId`, `resolvedId`, and
+`resolutionKind`, with all three matching the manifest. Contradictory, opaque,
+duplicate-key, and extended evidence fails before model scope is returned.
+Direct, descriptor-safe bundle, and frontier paths pass 41 tests and 192
+assertions plus TypeScript, source formatting, and whitespace.
+
+The structured fixture changes its derived model scope and rolls the exact
+decision-record hash from `e720e0d…afe8` to `6894916…8b8e`; matched bundle and
+proof controls retain their decisions. This is high-confidence local internal
+consistency, not provider authentication, authorship, independence, freshness,
+or proof of a real model snapshot. The next investigation tests whether the
+bound seed-policy artifact content agrees with its declared namespace,
+algorithm, and seed IDs before protocol scope is derived.
+
 ## Cycle 141 escaped prompt rendering
 
 Seed commit `b9b0b92719fbc2bcf4d5c9d946dd7c1ec20e89f3` preceded a matched

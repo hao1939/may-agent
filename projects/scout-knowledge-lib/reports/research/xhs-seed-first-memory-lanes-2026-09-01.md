@@ -7752,6 +7752,31 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 142 checkpoint — model evidence cannot contradict its declaration
+
+Seed commit `1645ec9beee26396f7ebfe41d960c42489a92d09` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+control. A coherently rehashed model-evidence artifact then declared
+`fixture-model-b` while its manifest still declared `fixture-model-a`; the
+pre-fix verifier returned `ok:true`.
+
+Exact local `d57428a3666b077be239fb0bbac5aaa0d09bc88c` requires canonical
+structured evidence whose three model-resolution fields match the manifest.
+Contradictory, opaque, duplicate-key, and extended inputs fail closed across
+the direct, bundle, and frontier paths. The focused gate passes 41 tests and
+192 assertions plus TypeScript, formatting, and whitespace. The structured
+fixture legitimately rolls its derived decision-record hash to
+`6894916…8b8e`.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded exact heads, paper versions, RSS/JSON
+boundary, and revisit triggers. This proves local internal agreement, not
+model-provider authenticity, authorship, independence, freshness, or real
+execution. The next ranked investigation tests the same agreement boundary
+for the bound seed-policy artifact and declared namespace, algorithm, and seed
+IDs.
+
 ## Cycle 141 checkpoint — escaped prompt keys remain raw-unregistered
 
 Seed commit `b9b0b92719fbc2bcf4d5c9d946dd7c1ec20e89f3` records unchanged
