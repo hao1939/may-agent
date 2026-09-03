@@ -3842,6 +3842,17 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 258 seed-first start — current receipt reused
+
+At `2026-09-03T18:46:44.594Z`, Cycle 237's exact receipt was one hundred ten
+minutes old. XHS access, source revisions, accepted reviewer refs, unaccepted
+lineage, and all recorded triggers were unchanged. Added/changed identities
+remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable
+at the same login-class boundary; no browser or public request ran. The ranked
+local investigation freezes one pre-evaluator maintenance trigger→accepted
+child receipt only if its target and historical index revision are directly
+recoverable.
+
 ## Cycle 257 seed-first start — accepted-review trigger
 
 At `2026-09-03T18:39:16.265Z`, Cycle 237's exact receipt was one hundred two
