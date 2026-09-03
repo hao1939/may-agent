@@ -814,6 +814,51 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("treats checksum order as irrelevant but target spelling as exact", () => {
+    const { manifest: sourceManifest, artifactContents: sourceContents } =
+      validFixture();
+    const bundleLine = sourceContents["MANIFEST.sha256"];
+    const otherLine = `${"1".repeat(64)}  schedule.json\n`;
+    const cases = [
+      { checksumBytes: otherLine + bundleLine, ok: true },
+      { checksumBytes: bundleLine + otherLine, ok: true },
+      { checksumBytes: bundleLine + bundleLine, ok: false },
+      { checksumBytes: `\\${bundleLine}`, ok: false },
+      {
+        checksumBytes: bundleLine.replace("  bundle.zip", "  ./bundle.zip"),
+        ok: false,
+      },
+      {
+        checksumBytes: bundleLine.replace("bundle.zip", "bundle.zip "),
+        ok: false,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const manifest = structuredClone(sourceManifest);
+      const artifactContents = structuredClone(sourceContents);
+      artifactContents["MANIFEST.sha256"] = testCase.checksumBytes;
+      const checksumSha256 = freezeArtifactSha256(testCase.checksumBytes);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "MANIFEST.sha256",
+      )!.sha256 = checksumSha256;
+      manifest.externalRegistration.manifestSha256 = checksumSha256;
+      manifest.externalRegistration.proofTargetSha256 = checksumSha256;
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+      expect(result.ok).toBe(testCase.ok);
+      expect(result.providerCallsAuthorized).toBe(false);
+      if (testCase.ok) {
+        expect(result.errors).toEqual([]);
+      } else {
+        expect(result.errors).toContain(
+          "external registration checksum manifest does not bind its artifact",
+        );
+      }
+    }
+  });
+
   it("derives stable and factor-specific policy scope references", () => {
     const { manifest, artifactContents } = validFixture();
     const first = verifyExecutionFreezeManifest(manifest, artifactContents);
