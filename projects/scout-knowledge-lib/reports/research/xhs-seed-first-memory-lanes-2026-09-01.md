@@ -9385,6 +9385,21 @@ The next ranked usability question is whether either continuity document uses
 reference-style local links that need fail-closed coverage before the checker
 can safely expand to more of the library.
 
+Exact reviewed Cycle 225 material tip
+`78ac7df9f4478e68841acdb0af779bd5ed5131c2` retains Scout app tree
+`e18dd8e03599c0905927a0c20292b33dbff3c35c`, which passes the full
+285-test, 1,439-assertion gate with syntax, TypeScript, source formatting, the
+Cycle 225 current-projection check, and all 45 relative links. Read-only health
+at `2026-09-03T15:08:03.875Z` remains 26 facts and 16 wake signals with
+`truncated:true`; root and app runtime state are empty, and the standing
+worktree is clean.
+
+All 9 canonical accepted commits remain ancestors and unaccepted
+`d041c41b54` remains excluded. Protected `/app` remains HEAD
+`386b445c…1fec8` / 886 / `07483e82…d420`; its Scout scope remains three
+records / `2760fb23…052`. Neither protected nor peer worktree was written or
+tested.
+
 ## Cycle 224 seed-first reconciliation — stable unavailable profile
 
 The exact bounded observation, reconciliation, authority boundary, and byte
