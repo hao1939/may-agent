@@ -13,6 +13,13 @@ export type IdentityRobustOutputSchema =
   | typeof IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA
   | typeof IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA;
 
+export type IdentityRobustOutputConsumptionAssessment = {
+  schema: IdentityRobustOutputSchema | null;
+  providerDenialVerified: boolean;
+  computationIdentityMatched: boolean;
+  allChecksPass: boolean;
+};
+
 type ParsedIdentityRobustOutput = {
   schema: IdentityRobustOutputSchema;
   output: Record<string, unknown>;
@@ -166,6 +173,27 @@ export function matchesIdentityRobustOutputComputationIdentity(
     snapshot.frontierSnapshotReference ===
       identityRobustFrontierSnapshotReference(expected)
   );
+}
+
+/**
+ * Compose the three independently scoped consumer checks without promoting
+ * their conjunction to recomputation, policy, provenance, or authority.
+ */
+export function assessIdentityRobustOutputForConsumption(
+  raw: string,
+  expected: IdentityRobustFrontierSnapshotExpectation,
+): IdentityRobustOutputConsumptionAssessment {
+  const schema = identifyIdentityRobustOutputSchema(raw);
+  const providerDenialVerified = verifyIdentityRobustOutputProviderDenial(raw);
+  const computationIdentityMatched =
+    matchesIdentityRobustOutputComputationIdentity(raw, expected);
+  return {
+    schema,
+    providerDenialVerified,
+    computationIdentityMatched,
+    allChecksPass:
+      schema !== null && providerDenialVerified && computationIdentityMatched,
+  };
 }
 
 export function withIdentityRobustFrontierOutputSchema<

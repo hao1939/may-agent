@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
   IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA,
+  assessIdentityRobustOutputForConsumption,
   identifyIdentityRobustOutputSchema,
   matchesIdentityRobustOutputComputationIdentity,
   verifyIdentityRobustOutputProviderDenial,
@@ -237,6 +238,97 @@ describe("identity-robust frontier output", () => {
         ...expectedIdentity,
         frontierCount: 0,
       }),
+    ).toBe(false);
+  });
+
+  it("requires every direct-output consumer check for the all-of result", () => {
+    const output = {
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      rowSha256: expectedIdentity.rowSha256,
+      resultSha256: expectedIdentity.resultSha256,
+      frontierCount: expectedIdentity.frontierCount,
+      frontierSnapshot: {
+        rowSha256: expectedIdentity.rowSha256,
+        resultSha256: expectedIdentity.resultSha256,
+        frontierSha256: expectedIdentity.frontierSha256,
+        frontier: [{ unverified: 1 }, { unverified: 2 }],
+        providerCallsAuthorized: false,
+      },
+      freezeVerification: null,
+    };
+
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify(output),
+        expectedIdentity,
+      ),
+    ).toEqual({
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      providerDenialVerified: true,
+      computationIdentityMatched: true,
+      allChecksPass: true,
+    });
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify({
+          ...output,
+          frontierSnapshot: {
+            ...output.frontierSnapshot,
+            providerCallsAuthorized: true,
+          },
+        }),
+        expectedIdentity,
+      ),
+    ).toEqual({
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      providerDenialVerified: false,
+      computationIdentityMatched: true,
+      allChecksPass: false,
+    });
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify({ ...output, resultSha256: "d".repeat(64) }),
+        expectedIdentity,
+      ),
+    ).toEqual({
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      providerDenialVerified: true,
+      computationIdentityMatched: false,
+      allChecksPass: false,
+    });
+  });
+
+  it("composes the same all-of boundary for snapshot output", () => {
+    const output = {
+      schema: IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA,
+      providerCallsAuthorized: false,
+      snapshotVerification: {
+        providerCallsAuthorized: false,
+        snapshot: {
+          ...expectedIdentity,
+          frontierSnapshotReference:
+            identityRobustFrontierSnapshotReference(expectedIdentity),
+          providerCallsAuthorized: false,
+        },
+      },
+      frozenSelection: null,
+    };
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify(output),
+        expectedIdentity,
+      ),
+    ).toEqual({
+      schema: IDENTITY_ROBUST_SNAPSHOT_SELECTION_OUTPUT_SCHEMA,
+      providerDenialVerified: true,
+      computationIdentityMatched: true,
+      allChecksPass: true,
+    });
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify({ ...output, providerCallsAuthorized: true }),
+        expectedIdentity,
+      ).allChecksPass,
     ).toBe(false);
   });
 });
