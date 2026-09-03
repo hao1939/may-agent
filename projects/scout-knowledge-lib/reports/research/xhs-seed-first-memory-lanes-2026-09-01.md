@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 147 checkpoint — registration locators preserve exact-byte evidence
+
+Seed commit `b97ea2633ebce183ce4f8063e0a363ef952f6006` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+controls. Renaming checksum-manifest or timestamp-proof locators while
+preserving exact bytes and relations leaves local evidence labels and both
+scope references unchanged.
+
+Exact local `54a60db0de79e7dcf9bb10a43006774c9889d8d9` pins that behavior
+and keeps provider authority false. No production change was required. The
+focused freeze gate passes 47 tests and 228 assertions plus TypeScript,
+formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded evidence and triggers. This proves two
+direct local matched comparisons, not descriptor-safe bundle compatibility,
+timestamp authenticity, authorship, authority, or real execution. The next
+ranked control reproduces every content-addressed alias through the directory
+loader.
+
 ## Cycle 146 checkpoint — schedule aliases remain content-addressed
 
 Seed commit `2acc659740fd7dd79c1b92f39bb6670ee3faf32e` records unchanged
