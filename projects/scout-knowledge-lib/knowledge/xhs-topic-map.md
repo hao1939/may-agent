@@ -3892,6 +3892,22 @@ The next ranked usability control is automated current-projection consistency:
 test whether the latest seed-ledger row, topic-map metadata, and source-lane
 metadata can drift apart again without a focused check failing.
 
+Exact Cycle 223 source commit `03ef45c2b0` precedes material tip
+`255d5c57c34a267217396deb3f72ccc1494dbd6f`. The exact tip retains Scout
+app tree `b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4`, which passed the full
+278-test, 1,429-assertion gate during Cycle 222. Focused current-projection
+validation matches Cycle 223 and its exact observation range across the ledger,
+topic map, and lane report; whitespace and all 41 relative link occurrences
+pass. Read-only health at `2026-09-03T14:58:39.817Z` remains 26 facts and 16
+wake signals with `truncated:true`; root and app runtime state are empty, and
+the standing worktree is clean.
+
+All 9 canonical accepted commits remain ancestors and unaccepted
+`d041c41b54` remains excluded. Protected `/app` remains HEAD
+`386b445c…1fec8` / 886 / `07483e82…d420`; its Scout scope remains three
+records / `2760fb23…052`. Neither protected nor peer worktree was written,
+tested, or inspected beyond bounded provenance.
+
 ## Cycle 222 seed-first start
 
 Cycle 222 began from clean `842f96a6a6`. The exact bounded read-only
