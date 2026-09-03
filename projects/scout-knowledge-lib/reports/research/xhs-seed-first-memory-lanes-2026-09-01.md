@@ -9356,6 +9356,32 @@ local investigation freezes one pre-evaluator maintenance trigger→accepted
 child receipt only if its target and historical index revision are directly
 recoverable.
 
+## Cycle 258 checkpoint — one real target lacks a matched historical index
+
+Seed commit `e7a1364f68` preceded the bounded pair audit. The selected
+pre-evaluator child transition occurred at `2026-08-20T01:09:40.172Z` for
+`repair-future-dated-scans-241-261-provenance`; its exact receipt names
+`reports/triage/future-dated-scans-241-261-provenance-repair-2026-08-19.md`,
+16 canonical identities, 116 passing checks, and valid INDEX navigation. The
+real maintenance attempt then ran from `01:11:39.828Z` to `01:12:40.317Z` and
+accepted the child result without another edit.
+
+The target is stable, but the matched evaluation triple is not recoverable.
+Git history first contains that report in `d9da99476e` at
+`2026-08-25T06:10:59Z`, more than five days after the receipt; no INDEX commit
+exists in the maintenance-attempt window. The trigger retains an outcome and
+evidence, not the natural-language lookup query Scout used. Substituting the
+task outcome text as a query or using the later index would be retrospective
+invention. Therefore no scorer replay ran and this pair is not promoted as
+navigation evidence.
+
+Confidence is high for the receipt, target, and Git timing; low for the missing
+query and uncommitted historical index contents. GitHub/local evidence won;
+GitHub, arXiv, and Reddit made zero public requests and retain their exact
+topic-map evidence and triggers. Next, inspect the other nine path-bearing
+receipts for any pair whose query, target, and contemporaneous committed index
+are all exact; stop this historical route if none qualifies.
+
 ## Cycle 257 seed-first start — accepted-review trigger
 
 At `2026-09-03T18:39:16.265Z`, Cycle 237's exact receipt was one hundred two
