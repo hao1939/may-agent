@@ -9357,6 +9357,30 @@ unavailable at the same login-class boundary. Reviewer ref
 fence before treating the current Scout result as fully landed, then seek an
 actual consumer or later-reuse trace for navigation outcomes.
 
+## Cycle 255 checkpoint — the scorer has no retained real-use outcome
+
+Seed commit `0dc45df073` preceded accepted-review integration and the bounded
+consumer audit. Reviewer `aade007567` is standing `847286682b`; the changed
+test and cursor blobs are byte-identical, and the fixture digest fence now
+passes 7 focused tests with 27 assertions. Current tracked source has exactly
+four non-report navigation references: the evaluator, its test, the v1 fixture,
+and the package gate. The evaluator is imported only by its test and invoked
+only by `bun run check`. Git history since its introduction contains only
+implementation, fixture, diagnostic, and test commits. The owned runtime state
+is empty, and the protected checkout contains no outcome-schema record.
+
+Scout's planner does tell the agent to read `knowledge/INDEX.md`; that is a real
+semantic consumer of the index, but no retained trace joins the agent's chosen
+file or later decision to an evaluator query, rank, or outcome. Thus neither
+the 10/14 and 8/8 gates nor the title-weight counterfactuals are later-use
+evidence. Confidence is high for the current tree, history, and runtime-state
+boundary, and low for unrecorded human or agent reasoning outside those
+surfaces. GitHub/local evidence won; GitHub, arXiv, and Reddit made zero public
+requests and retain the exact lane evidence and triggers in the topic map. No
+scorer change is justified. The next ranked investigation audits the smallest
+reversible way to capture one real planner-consumer outcome without turning
+producer-authored fixtures into self-confirming evidence.
+
 ## Cycle 254 seed-first start — current receipt reused
 
 At `2026-09-03T18:24:18.878Z`, Cycle 237's exact receipt was eighty-seven
