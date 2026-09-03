@@ -4008,6 +4008,15 @@ revisit trigger in 11 lines / 749 bytes, removing 10 lines / 672 bytes. No
 source lane ran; RV-004 remains high/open. Next, audit the other 21-line /
 1,357-byte exact mirror after a bounded seed reconciliation.
 
+## Cycle 289 seed-first start — current receipt reused
+
+Cycle 289 began from clean validated `1eb3fe8fd3`. At
+`2026-09-03T22:45:14.670Z`, Cycle 237's receipt was about 348 minutes old and
+still inside cadence. No browser or public-source request ran; added/changed
+identities remain unknown, removals are `[]`, and all 132 IDs remain
+unavailable. Commit this ordering record before the ranked Cycle 252 mirror
+audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -9665,6 +9665,26 @@ compaction, not measured retrieval use or RV-004 outcome evidence; RV-004
 remains high/open. The next ranked exact mirror is the remaining 21-line /
 1,357-byte pair, subject to a fresh bounded seed reconciliation.
 
+## Cycle 289 seed-first start — exact Cycle 288 result retained
+
+Cycle 289 began from clean Cycle 288 result
+`1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 72 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The broad audit passed 1,540 documents / 1,708 links; read-only
+health at `2026-09-03T22:45:14.701Z` returned 30 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` remains contained and unaccepted
+`d041c41b54` excluded. The protected `/app` and Scout status snapshots remained
+at 386 / 296 records with this cycle's byte-stable fingerprints
+`7c285c09…1ca01b` / `7e4d0937…26a8a`; no attribution is inferred.
+
+At `2026-09-03T22:45:14.670Z`, the exact receipt through
+`2026-09-03T16:57:11.030Z` was about 348 minutes old, before the scheduled
+`2026-09-03T22:57:11.030Z` boundary. No browser, GitHub, arXiv, or Reddit
+request ran. Added/changed identities remain unknown, removals are `[]`, and
+all 132 durable IDs remain unavailable. Commit this ordering record before the
+ranked 21-line / 1,357-byte Cycle 252 mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
