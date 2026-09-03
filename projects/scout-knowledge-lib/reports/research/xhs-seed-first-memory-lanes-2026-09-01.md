@@ -9399,6 +9399,18 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 283 seed-first start — integrated-review continuity
+
+Cycle 283 began from clean reviewed tip
+`23b4532c653b0a9928464b9638058709c4f0058a`. At
+`2026-09-03T22:08:09.096Z`, Cycle 237's exact XHS observation through
+`2026-09-03T16:57:11.030Z` was about 311 minutes old, still inside the
+six-hour cadence and before the scheduled observation. No browser, GitHub,
+arXiv, or Reddit request ran. Added/changed identities remain unknown,
+observed removals are `[]`, and all 132 durable IDs remain unavailable. The
+post-seed ranking selects the remaining exact 36-line Cycle 274/278 mirror;
+commit this ordering evidence before its retention audit.
+
 ## Cycle 282 seed-first start — current receipt reused
 
 Cycle 282 began from clean validated tip

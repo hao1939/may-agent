@@ -3888,6 +3888,17 @@ evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
 review, otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 283 seed-first start — integrated-review continuity
+
+Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
+At `2026-09-03T22:08:09.096Z`, Cycle 237's exact observation through
+`2026-09-03T16:57:11.030Z` was about 311 minutes old, still inside the
+six-hour cadence. This bounded reconciliation made zero browser or public
+requests: added/changed identities remain unknown, observed removals are `[]`,
+and all 132 durable IDs remain unavailable. The remaining exact 36-line Cycle
+274/278 mirror stays highest-ranked; commit this ordering record before
+changing either copy.
+
 ## Cycle 282 seed-first start — current receipt reused
 
 At `2026-09-03T21:57:42.781Z`, Cycle 237's exact observation through
