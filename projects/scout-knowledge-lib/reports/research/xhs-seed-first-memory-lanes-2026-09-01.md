@@ -9345,6 +9345,33 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 248 checkpoint — seven gains are status-only at the selected result
+
+Seed-first commit `f7b4e000bb` preceded a matched v1 run against historical
+`086ed02f` and the current index. Both parse 754 entries. The pass count changes
+3/14→10/14, and exactly the seven explicit-unavailable cases account for every
+gain.
+
+All 14 cases retain the same selected title, target, matched tokens, coverage,
+score, ranked count, top-tie count, and absolute/relative top-two gap. Each of
+the seven gains changes the selected result only from false `available` to
+truthful `unavailable`. The repaired index therefore improves state truthfulness
+without changing which entry wins or inflating its score.
+
+The comparison also finds one diagnostic limitation. For the future-dated
+query, the singular second-place representative changes between Identity and
+Tooling Credibility and Protocol Identity, Robotics, and Memory. Both score
+`24.716029`, while the top gap stays `54.054543` / `0.686228`. A lone
+`runner_up` field hides an equal-score second-place set even when the selected
+result is stable. Confidence is high for both direct local observations.
+
+No GitHub, arXiv, or Reddit public request ran; all lane evidence and triggers
+remain unchanged. Focused comparison and fixture gates pass at historical v1
+3/14, current v1 10/14, and current v2 8/8. The immediately preceding full gate
+remains 293 tests with 1,462 assertions; Cycle 248 changes only this report and
+the topic map. The next ranked change reports all equal-score runners-up without
+changing navigation decisions.
+
 ## Cycle 247 checkpoint — diagnostics expose uncertainty without deciding it
 
 Seed-first commit `4c697fdec8` preceded exact local implementation
