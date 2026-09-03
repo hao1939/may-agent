@@ -9889,6 +9889,19 @@ account request ran. Static compaction is not outcome proof, so RV-004 remains
 high/open. The next exact-run candidate is Cycle 252's 11-line / 818-byte
 validation mirror.
 
+## Cycle 299 checkpoint — retain diagnostic decisions, link historical proof
+
+Seed-first `58e53134e4` preceded the audit. Material `30735a71ae` replaces the
+12-line Cycle 252 validation block—whose first 11 lines / 818 bytes matched
+this report exactly at `8a23eb92…8293`—with a 4-line / 371-byte pointer
+(`cabce526…8fde`). The authoritative report remains unchanged.
+
+The map still preserves score attribution, the counterexample, confidence, and
+no-change decision; linked detail retains the exact gate, health, lineage,
+runtime, and protected/overlay fingerprints. No source or account request ran.
+This reduces duplicate retrieval text without resolving RV-004, which remains
+high/open. Rescan the remaining exact mirrors next.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
