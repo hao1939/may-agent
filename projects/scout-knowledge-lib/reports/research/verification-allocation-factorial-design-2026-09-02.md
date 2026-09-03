@@ -2713,6 +2713,24 @@ fresh recomputation, policy approval, external provenance, authority, cost,
 drift, model behavior, or provider execution. No code change was justified.
 The next control tests bounded behavior for a deeply nested recognized payload.
 
+## Cycle 171 bounded output nesting
+
+Seed commit `35bd0bfb5c` preceded a depth ladder. Recognized direct-v1 payloads
+passed through 10,000 nested objects. The 25,000-level, 150,601-byte control
+threw `RangeError: Maximum call stack size exceeded` instead of returning a
+verdict; 50,000 and 100,000 levels reproduced the failure.
+
+Exact local `5eb3893d61` rejects raw JSON beyond 256 structural levels before
+recursive scans. A quoted string containing 300 opening braces remains valid,
+while a 1,000-level control returns schema null and every scoped verdict false
+without throwing. Twelve focused tests pass with 34 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves a bounded local consumer failure mode and repair, not a universal
+JSON resource limit, policy validity, provenance, authority, model behavior,
+cost, drift, or provider execution. The next audit checks other untrusted
+callers of the shared recursive duplicate-key scanner.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid

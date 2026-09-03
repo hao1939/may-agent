@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 171 checkpoint — deeply nested output now fails closed
+
+Seed commit `35bd0bfb5c` records unchanged semantic XHS access, zero
+attributable items, unknown additions/changes, no observed removals, and all
+132 durable seeds unavailable before the depth ladder.
+
+Recognized direct-v1 payloads passed through 10,000 nested objects, but the
+25,000-level, 150,601-byte control threw a stack `RangeError`; 50,000 and
+100,000 levels reproduced it. Exact local `5eb3893d61` rejects more than 256
+structural levels before recursive scans. Quoted braces remain valid and a
+1,000-level control returns all false verdicts without throwing. The focused
+gate passes 12 tests and 34 assertions plus TypeScript, formatting, and
+whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their exact heads, paper versions, RSS/JSON boundary, and
+triggers. Confidence is high for the tested local bound and low for general
+resource limits, policy, provenance, authority, cost, drift, models, or
+providers. The next ranked audit checks the inline policy/evidence CLI's use of
+the shared recursive duplicate-key scanner.
+
 ## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
 
 Seed commit `300c496e39` records unchanged semantic XHS access, zero

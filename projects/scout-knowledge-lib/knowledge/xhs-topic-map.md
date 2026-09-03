@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 170 supersedes the older table snapshot below. Starting tip
-`3a5817e98797efa88acc92277ca161d6af71d2e7` and seed commit
-`300c496e39` anchor the unchanged login-class
+Cycle 171 supersedes the older table snapshot below. Starting tip
+`34d21ab066cbcfb6ff78bec2d8132901dac60478` and seed commit
+`35bd0bfb5c` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -393,12 +393,15 @@ that those unrelated fields remain outside its contract.
 The actual retained-snapshot CLI then emitted 2,446 bytes at
 `e881ce4…f99a69` in 0.04 seconds. The renamed assessment passed all four
 reported fields while freeze and selection failures remained separate.
+Exact local `5eb3893…4624239` bounds recognized output JSON at 256 levels
+before recursive scans. A 1,000-level control now returns every verdict false
+instead of risking the reproduced stack failure.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 170; public trigger-deferred.** The actual fast snapshot process passed the renamed scoped assessment while retaining separate freeze/selection failures. This still does not validate policy or authority. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `931fab1…a7e044d` is current; retained snapshot `8bee607…edae76` produced assessment payload `e881ce4…f99a69` with every scoped verdict true. | Zero public requests. Next test a deeply nested recognized payload to determine whether recursive authority scanning throws instead of returning a bounded false verdict. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 170.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 170 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 171; public trigger-deferred.** Recognized output consumers now reject excessive JSON nesting before recursive duplicate-key and authority scans. Normal output and quoted braces remain valid. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `5eb3893…4624239` is current; 25,000 levels reproduced `RangeError`, while the fixed 1,000-level control returns schema null and three false verdicts. | Zero public requests. Next audit other untrusted callers of the shared recursive duplicate-key scanner, starting with inline policy/evidence CLI parsing, and add a bound only where a throw reproduces. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 171.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 171 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3327,6 +3330,30 @@ patch pairs, and 4/4 artifact equivalence. Protected `/app` retained HEAD
 records, and fingerprint `ad8d222c…e74780`. Neither checkout was written or
 tested. Commit this seed record first, then pursue the ranked deep-nesting
 consumer control locally.
+
+### Cycle 171 checkpoint — excessive output nesting fails closed
+
+Matched recognized direct-v1 payloads passed at depths 100, 1,000, 5,000, and
+10,000. At 25,000 nested objects, 150,601 bytes, the pre-fix assessment threw
+`RangeError: Maximum call stack size exceeded` in 61.313 ms instead of
+returning a consumer verdict; 50,000 and 100,000 levels reproduced the same
+error. The problem is local availability and fail-closed behavior, not a
+provider or policy bypass.
+
+Exact local `5eb3893d61` scans raw JSON iteratively and rejects nesting beyond
+256 levels before `JSON.parse`, duplicate-key recursion, or authority recursion.
+An otherwise valid payload containing 300 literal `{` characters inside a
+string still passes. A 1,000-level payload now returns schema null, denial
+false, identity false, and scoped conjunction false without throwing. The
+focused gate passes 12 tests and 34 assertions plus TypeScript, formatting, and
+whitespace.
+
+This is high-confidence local evidence for the tested depth boundary and
+quoted-string handling, not a general JSON resource limit or evidence about
+policy, provenance, authority, models, cost, drift, or providers. Public
+GitHub, arXiv, and Reddit made zero requests because no recorded trigger fired.
+The next ranked audit checks other untrusted callers of the shared recursive
+duplicate-key scanner, beginning with inline policy/evidence CLI inputs.
 
 ## Cycle 170 seed-first start
 
