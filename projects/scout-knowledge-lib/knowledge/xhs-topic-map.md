@@ -4078,6 +4078,18 @@ The next ranked local question is cross-layer diagnostic completeness: test
 whether a model-resolution mismatch and a schedule/model-order mismatch are
 both retained, without deriving policy scope or provider authority.
 
+Exact reviewed Cycle 218 tip
+`01f8615ecd9740bfe4bfc37da761b60841733214` passes syntax, TypeScript,
+source formatting, 277 tests, 1,427 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T14:21:53.287Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
+Unaccepted `d041c41b54` remains outside lineage.
+
+Protected `/app` and the human overlay remain
+`386b445c…1fec8` / 886 / `996480ad…752a3` and
+`fd4c68ec…1514663` / three / `ad8d222c…e74780`; neither was written or tested.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
