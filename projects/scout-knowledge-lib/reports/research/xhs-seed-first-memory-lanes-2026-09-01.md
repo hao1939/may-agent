@@ -9385,6 +9385,19 @@ The next ranked usability control is relative-link validation inside the same
 gate, replacing the repeated ad hoc three-document link command without
 turning external URLs into network work.
 
+Exact reviewed Cycle 224 material tip
+`2ca7951f6b65eef2fbc5f0b404a18b7fc611aaab` passes the integrated
+current-projection check, syntax, TypeScript, source formatting, 282 tests,
+1,436 assertions, whitespace, and all 43 relative link occurrences in the
+three current documents. Read-only health at `2026-09-03T15:03:50.388Z`
+remains 26 facts and 16 wake signals with `truncated:true`; root and app
+runtime state are empty, and the standing worktree is clean.
+
+All 9 canonical accepted commits remain ancestors, while unaccepted
+`d041c41b54` and later commits remain excluded. Protected `/app` remains HEAD
+`386b445c…1fec8` / 886 / `07483e82…d420`; its Scout scope remains three
+records / `2760fb23…052`. No protected or peer checkout was written or tested.
+
 ## Cycle 223 seed-first reconciliation — stable unavailable profile
 
 The exact bounded observation, reconciliation, authority boundary, and byte
