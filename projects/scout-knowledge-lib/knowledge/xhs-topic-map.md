@@ -3474,6 +3474,16 @@ without content inspection. The next ranked local control removes only one
 member of the record/declaration/schedule triple at a time and requires strict
 failure, testing whether an interrupted rollback can produce a mixed identity.
 
+Exact reviewed Cycle 206 tip
+`9ef67be0adca20748eceb15e1900b8dc09ff61c3` passes syntax, TypeScript,
+source formatting, 266 tests, 1,353 assertions, whitespace, and all 31 relative
+links. Read-only health at `2026-09-03T13:16:30.128Z` returns 26 facts, 16 wake
+signals, and `truncated:true`; root and app runtime state remain empty. All 9
+canonical accepted ancestors, both accepted patch pairs, and all 4 accepted
+artifact blobs remain exact. The standing worktree is clean. Protected source
+and overlay reproduce the Cycle 206 seed fingerprints exactly; neither was
+written or tested.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

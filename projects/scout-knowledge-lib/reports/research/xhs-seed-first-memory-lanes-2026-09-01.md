@@ -7920,6 +7920,15 @@ The next ranked local control tests interrupted rollback: remove only one
 member of the peer record/declaration/schedule triple at a time and require
 strict failure rather than a mixed accepted identity.
 
+Exact reviewed tip `9ef67be0adca20748eceb15e1900b8dc09ff61c3`
+passes the full Scout gate: syntax, TypeScript, source formatting, 266 tests,
+1,353 assertions, whitespace, and 31 relative links. Read-only health at
+`2026-09-03T13:16:30.128Z` remains bounded at 26 facts and 16 wake signals;
+root and app runtime state stay empty. The clean worktree retains 9/9 canonical
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifact
+blobs. Protected source and overlay reproduce the seed-record fingerprints;
+neither checkout was written or tested.
+
 ## Cycle 205 checkpoint — strict v1 already supports explicit per-model records
 
 Seed commit `15dc4d3da4` records the unchanged semantic XHS boundary before
