@@ -3925,7 +3925,7 @@ Zero `project.knowledge.maintained` rows means only absent from the retained
 window. Because its payload has no query, selected identity, later decision, or
 outcome join, longer retention would add telemetry without resolving RV-004;
 no code change is warranted. Validation remains 296 tests / 1,483 assertions,
-69 scoped links, 1,540 documents / 1,705 broad links, and clean projection,
+70 scoped links, 1,540 documents / 1,706 broad links, and clean projection,
 navigation, formatting, and whitespace. Confidence is high for the trigger,
 counts, source/process identities, and payload fields; low for deleted-row
 identity, causality, or a pruned outcome. RV-004 remains high/open.
