@@ -7752,6 +7752,30 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 143 checkpoint — seed evidence cannot contradict its declaration
+
+Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the matched
+control. A coherently rehashed seed-policy artifact then replaced declared
+`fixture-seed-01` with `fixture-seed-02`; the pre-fix verifier returned
+`ok:true`.
+
+Exact local `8fd2973624ecb684bfcd948beff3c71bb9ab2f90` requires canonical
+structured evidence whose namespace, algorithm, and seed IDs match the
+manifest. Contradictory, opaque, duplicate-key, and extended inputs fail closed
+across direct, bundle, and frontier paths. The focused gate passes 43 tests and
+210 assertions plus TypeScript, formatting, and whitespace. The fixture
+migrates to `seed-policy.json` and legitimately rolls its derived
+decision-record hash to `eb98a87…9e41`.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded exact heads, paper versions, RSS/JSON
+boundary, and revisit triggers. This proves local internal agreement, not
+policy authorship, authority, independence, freshness, or real execution. The
+next ranked investigation tests explicit schema/version identity for both
+structured evidence contracts before a format rollover.
+
 ## Cycle 142 checkpoint — model evidence cannot contradict its declaration
 
 Seed commit `1645ec9beee26396f7ebfe41d960c42489a92d09` records unchanged

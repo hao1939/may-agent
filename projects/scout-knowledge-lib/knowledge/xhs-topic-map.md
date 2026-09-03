@@ -322,21 +322,21 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 142 supersedes the older table snapshot below. Starting tip
-`718cc6cdac5e4df8081eee42125fa2e369c0495e` and seed commit
-`1645ec9beee26396f7ebfe41d960c42489a92d09` anchor the unchanged login-class
+Cycle 143 supersedes the older table snapshot below. Starting tip
+`9076529faa38a54e218f67d25169a32044c7ea2b` and seed commit
+`feeea2bd03862b965bdd2ebcff9a30a7e2932d59` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Exact local `d57428a…9bc88c` requires
-canonical model-resolution evidence whose requested ID, resolved ID, and
-resolution kind agree with the declaration before model scope is derived.
+unavailable. No public request was made. Exact local `8fd2973…ab2f90`
+requires canonical seed-policy evidence whose namespace, algorithm, and seed
+IDs agree with the declaration before protocol scope is derived.
 Accepted-result containment and protected-checkout preservation are rechecked
 on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Decision and revisit trigger                                                                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 142; public trigger-deferred.** Model-resolution evidence consistency was directly executable across the shared freeze paths.                         | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `d57428a…9bc88c` rejects contradictory, opaque, duplicate-key, and extended model evidence before scope derivation.                                           | Zero public requests. Next test whether the bound seed-policy artifact content agrees with namespace, algorithm, and seed IDs. Revisit public GitHub on a recorded trigger.         |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 142.** The papers remain contextual controls rather than local evidence-authority.                                 | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                                      | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                   |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 142 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                               | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                     |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 143; public trigger-deferred.** Seed-policy evidence consistency was directly executable across the shared freeze paths.                              | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `8fd2973…ab2f90` rejects contradictory, opaque, duplicate-key, and extended seed-policy evidence before scope derivation.                                             | Zero public requests. Next test explicit version identity for both structured evidence contracts before a format rollover. Revisit public GitHub on a recorded trigger.             |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 143.** The papers remain contextual controls rather than local evidence-authority.                                 | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                                                                                                      | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                   |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 143 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                               | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                     |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3472,6 +3472,32 @@ The ranked matched control now tests a distinct parser ambiguity: a same-value
 duplicate top-level JSON key can disappear during `JSON.parse` before exact
 object-key validation. Public GitHub, arXiv, and Reddit remain trigger-deferred
 until reconsidered after that control.
+
+### Cycle 143 checkpoint — seed evidence must agree before scope derivation
+
+Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` preceded the
+matched freeze control. On that exact source, a coherently rehashed policy
+artifact named `fixture-seed-02` while the manifest and schedule declared
+`fixture-seed-01`; verification still returned `ok:true`. The isolated
+expectation reported zero passes, one failure, and one assertion.
+
+Exact repair `8fd2973624ecb684bfcd948beff3c71bb9ab2f90` requires the bound
+artifact to be canonical UTF-8 JSON containing exactly `namespace`,
+`algorithm`, and `seedIds`, all equal to the manifest declaration.
+Contradictory, opaque, duplicate-key, and extended inputs fail before protocol
+scope is returned. Direct, descriptor-safe bundle, and frontier paths pass 43
+focused tests and 210 assertions plus TypeScript, formatting, and whitespace.
+The valid fixture migrates `seed-policy.md` to `seed-policy.json`; its
+decision-record hash rolls from `6894916…8b8e` to `eb98a87…9e41` because the
+protocol-scope evidence bytes are now structured.
+
+GitHub/local code won the rubric; GitHub, arXiv, and Reddit made zero public
+requests and retain their exact evidence and triggers above. Confidence is
+high for current local canonicalization, content agreement, and denial paths;
+it remains low for policy authorship, authority, independence, freshness, or
+real execution. The next ranked investigation tests whether both structured
+evidence contracts need explicit schema/version identity before any format
+rollover can be interpreted safely.
 
 ### Cycle 142 checkpoint — model evidence must agree before scope derivation
 

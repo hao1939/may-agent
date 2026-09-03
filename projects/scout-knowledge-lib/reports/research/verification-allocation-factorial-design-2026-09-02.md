@@ -2527,6 +2527,29 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 143 seed-policy evidence agreement
+
+Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` preceded a matched
+control. A policy artifact was coherently rehashed after replacing declared
+`fixture-seed-01` with `fixture-seed-02`; the manifest and schedule remained
+unchanged. The pre-fix verifier returned `ok:true`; the isolated expectation
+reported zero passes, one failure, and one assertion.
+
+Repair `8fd2973624ecb684bfcd948beff3c71bb9ab2f90` requires the artifact
+to be canonical UTF-8 JSON containing exactly `namespace`, `algorithm`, and
+`seedIds`, with all three matching the manifest. Contradictory, opaque,
+duplicate-key, and extended evidence fails before protocol scope is returned.
+Direct, descriptor-safe bundle, and frontier paths pass 43 tests and 210
+assertions plus TypeScript, source formatting, and whitespace.
+
+The valid fixture migrates from opaque `seed-policy.md` to structured
+`seed-policy.json`; the resulting protocol-scope change rolls the exact
+decision-record hash from `6894916…8b8e` to `eb98a87…9e41`. This is
+high-confidence local internal consistency, not policy authorship, authority,
+independence, freshness, or proof of real execution. The next investigation
+tests whether both structured evidence artifacts need explicit schema/version
+identity before any future format rollover.
+
 ## Cycle 142 model-resolution evidence agreement
 
 Seed commit `1645ec9beee26396f7ebfe41d960c42489a92d09` preceded a matched
