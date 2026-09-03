@@ -323,16 +323,17 @@ This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
 Cycle 124 supersedes the older table snapshot below. Starting tip
-`5a67fbd0bac62f13f1828bea1e5feede88128e4d` anchors the unchanged login-class
+`5a67fbd0bac62f13f1828bea1e5feede88128e4d` and seed commit
+`9dda9c28ba1f13f536a1fa33b57feb7937485e92` anchor the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Cycle 123's timestamp-proof result is
-retained; proof-to-manifest coherence is selected next. Accepted-result
-containment and protected-checkout preservation are rechecked on the resulting
-exact tip.
+unavailable. No public request was made. Exact local `a358ee3…3cfe1c` now
+labels proof bytes as locally present and semantically unverified rather than
+implying proof-to-manifest coherence. Accepted-result containment and
+protected-checkout preservation are rechecked on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 124; public trigger-deferred.** Proof-to-manifest coherence is directly testable in the standing implementation.                                                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact test contract `5df12fa…f494a5` preserves stable scope, equal-172 selection, and decision digest across a proof-byte-only change.                      | Zero public requests. Test whether the proof sidecar binds the checksum manifest without promoting local evidence. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 124; public trigger-deferred.** Proof-to-manifest coherence was directly testable in the standing implementation.                                                       | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `a358ee3…3cfe1c` proves arbitrary proof bytes are only presence-checked and exposes `local-byte-presence-unverified` separately.                 | Zero public requests. Next test whether positive registration evidence can coexist with an earlier artifact mismatch. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
 | **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 124.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 124 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
@@ -3259,6 +3260,32 @@ representative saved post was supported or read, and no XHS state changed.
 No proof-coherence control, public source, provider, or accepted-result request
 preceded this reconciliation. Commit this record first, then pursue the ranked
 proof-to-manifest coherence question locally.
+
+### Cycle 124 checkpoint — proof presence is not proof coherence
+
+Seed commit `9dda9c28ba1f13f536a1fa33b57feb7937485e92` preceded the
+control. A matched fixture replaced `MANIFEST.sha256.ots` with literal
+`not an OpenTimestamps proof` and updated only its declared local SHA-256.
+Before the repair, the verifier returned `ok: true`, registration status
+`local-byte-match-unverified`, and provider authority false but supplied no
+proof-specific qualification. The new regression failed exactly one of 11
+tests because `timestampProofEvidenceStatus` was absent.
+
+Exact local `a358ee349934b6702c6d21efde69a401e73cfe1c` adds
+`local-byte-presence-unverified` as a separate result field when the declared
+proof bytes locally match their digest, and returns an empty field on bundle
+load failures. It deliberately does not parse OpenTimestamps, attest that the
+proof commits to `MANIFEST.sha256`, contact a calendar, or grant provider
+authority. Three focused suites pass 29 tests and 115 assertions; TypeScript,
+source formatting, and whitespace pass.
+
+Confidence is high for the reproduced local ambiguity, output qualification,
+and unchanged provider denial. It remains low for proof validity, checksum
+commitment, external anchoring, deposit identity/time, authorship, and real
+execution. Public GitHub, arXiv, and Reddit made zero requests because no
+trigger fired. The next ranked investigation is status gating: ensure a
+positive local registration label cannot survive an earlier artifact digest
+or inventory error.
 
 ## Cycle 123 seed-first start
 

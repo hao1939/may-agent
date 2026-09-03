@@ -2262,6 +2262,32 @@ identify an owner, or prove a deposit. The next ranked control tests the
 proof-to-manifest coherence boundary while preserving the explicit unverified
 evidence class.
 
+## Cycle 124 proof-presence disclosure
+
+Seed commit `9dda9c28ba1f13f536a1fa33b57feb7937485e92` preceded this
+control. XHS semantic access and byte length were unchanged, all 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+The matched fixture replaced `MANIFEST.sha256.ots` with literal
+`not an OpenTimestamps proof` and updated only its declared local SHA-256. The
+pre-fix verifier returned `ok: true`, registration status
+`local-byte-match-unverified`, and provider authority false without a
+proof-specific result. The regression therefore failed one of 11 tests because
+the expected qualification was absent.
+
+Exact local `a358ee349934b6702c6d21efde69a401e73cfe1c` adds a separate
+`timestampProofEvidenceStatus`. Locally digest-matched bytes return
+`local-byte-presence-unverified`; bundle load failures return an empty value.
+The verifier still does not parse OpenTimestamps, bind the proof semantically
+to `MANIFEST.sha256`, contact a calendar, or authenticate the declared deposit.
+Three focused suites pass 29 tests and 115 assertions plus TypeScript, source
+formatting, and whitespace.
+
+This resolves the output ambiguity without promoting local evidence. The next
+ranked control tests whether the registration status itself is correctly gated
+by earlier artifact integrity errors rather than only registration-specific
+checks.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
