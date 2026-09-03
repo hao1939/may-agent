@@ -9345,6 +9345,58 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 244 checkpoint — matched controls explain four different failures
+
+Seed-first commit `18f4b78421` came before this local audit. Nothing changed in
+the index, either frozen fixture, or the scoring code. The original topic-map
+query selected the self-evolution report at score `15.605412`; replacing only
+its broad evidence/lane wording with the map's accepted summary concepts
+`active clusters contradictions blocks next explorations` selects the intended
+map at `50.407699` with 7/12 token coverage. The original caller-bound query
+selected the broad Read-Write note at `44.894763`; a matched lifecycle wording
+using `retrieval approval recall erasure temporary custody` selects the
+authority-boundary finding at `66.713178` with 13/13 coverage while the broad
+note scores `32.745095`.
+
+The coordination query is not merely a two-title tie: all three live indexed
+titles match the same four tokens at `35.610332`. Three matched additions then
+select their respective destinations: `canonical coordination reference`,
+`domain accountability metrics health signals`, and `updates trends marketplace
+artifact handoffs`. The negative query becomes a true miss when the generic
+`protocol` and `agent` overlap is removed, but adding a third generic `memory`
+term selects an unrelated unavailable item rather than making the result safe.
+
+These exact controls support different local causes—underspecified intent,
+summary-vocabulary coupling, one too-narrow frozen ambiguity expectation, and
+generic vocabulary—and contradict one blanket token-threshold fix. V1 remains
+10/14 and v2 remains 8/8. Changing the fixture, index, or threshold after seeing
+these results would be post-hoc tuning, so this checkpoint records the evidence
+without a production change. Confidence is high for the deterministic matched
+outcomes, moderate for nearby paraphrases, and low for human/model retrieval.
+
+No GitHub, arXiv, or Reddit public request ran. The four repository heads, two
+paper versions, Reddit RSS/JSON boundary, accepted standing lineage, and
+unaccepted-ref boundary remain unchanged. The next ranked investigation
+measures top-one/runner-up margins across both frozen sets to ask whether
+near-tie abstention can expose uncertainty without choosing a preferred target.
+
+The candidate tree passes syntax, TypeScript, source formatting, Cycle 237
+projection, 62 durable links, v1 at 10/14, v2 at 8/8, and all 292 tests with
+1,455 assertions. The broad audit covers 1,540 tracked Markdown documents and
+1,699 local prose links with zero unresolved or absolute links. Read-only
+health at `2026-09-03T17:41:17.524Z` returns 29 facts, 16 wake signals, and
+`truncated:true`; runtime and whitespace are clean. Accepted standing ancestors
+`d35632c2b1` and `8ab0a89cd0` remain contained; unaccepted `d041c41b54` and
+`d9da99476e` remain non-ancestors.
+
+Protected `/app` changed externally during validation from 893 records /
+`98c1c258…76c9f0` to 894 / `925801d5…e429c`, while HEAD remained
+`386b445c236e4609cd8870d22cc773cc4641fec8` and the protected Scout scope
+remained exactly 296 records / `a430d0c9…4322f7e`. The human overlay remained
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and
+`a52b97aa…394a15`. This worker did not write to or test either protected tree or
+any peer worktree.
+
 ## Cycle 243 checkpoint — a second frozen set passes without index tuning
 
 What changed: the first outcome set showed a real unavailable-state repair but

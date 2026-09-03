@@ -447,9 +447,9 @@ integration-ready accepted result, and was not imported.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 243; public trigger-deferred.** The repaired index now has two retained navigation-outcome sets.                                                    | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local Cycles 208–215 retain their registry distinctions. Cycle 242's frozen v1 set remains 10/14; Cycle 243's independently frozen v2 set passes 8/8 on the unchanged 754-entry index. Canonical accepted finite results are integrated through `8c5d8747a6` and `df80a1daa2`; `d041c41b54` and later unaccepted commits remain outside standing lineage. | Zero public requests. Revisit source code on a repository/artifact revision, provider result, accepted finite result, or newly readable seed. Next local work decomposes the four retained v1 failures with matched controls without changing either frozen fixture. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 243.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies new navigation-outcome evidence, registry ownership, or human/model retrieval evidence.                                                                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 243 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or navigation requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 244; public trigger-deferred.** The repaired index now has two retained navigation-outcome sets and matched explanations for v1's four failures.                                                    | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local Cycles 208–215 retain their registry distinctions. V1 remains 10/14 and v2 8/8. Cycle 244 shows two summary-specific recoveries, three intent-specific coordination outcomes, and an unsafe generic-token threshold. Canonical accepted finite results are integrated through `8c5d8747a6` and `df80a1daa2`; `d041c41b54` and later unaccepted commits remain outside standing lineage. | Zero public requests. Revisit source code on a repository/artifact revision, provider result, accepted finite result, or newly readable seed. Next local work measures score margins to determine whether near-tie abstention can disclose uncertainty without tuning either frozen fixture. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 244.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies new navigation-outcome evidence, registry ownership, or human/model retrieval evidence.                                                                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 244 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or navigation requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3853,6 +3853,49 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 source request ran. Matched causal controls on the four retained v1 navigation
 failures follow.
+
+### Cycle 244 checkpoint — the four failures have different causes
+
+Seed commit `18f4b78421` preceded the controls. No index, fixture, or scoring
+change was made. Against the same 754 entries, replacing the topic-map query's
+generic `evidence source lanes` terms with its accepted summary terms `active
+clusters contradictions blocks next explorations` recovers the intended map at
+7/12 tokens, score `50.407699`. Replacing the caller-bound query's generic
+operation list with the accepted finding's lifecycle terms `retrieval approval
+recall erasure temporary custody` recovers that finding at 13/13 tokens, score
+`66.713178`; the broader Read-Write note then falls to `32.745095`.
+
+The exact coordination query legitimately ties three indexed titles, not the
+two expected by frozen v1. Adding `canonical coordination reference`, `domain
+accountability metrics health signals`, or `updates trends marketplace artifact
+handoffs` selects each of the three respective destinations. The negative
+control becomes a miss when generic `protocol` and `agent` are removed, but
+adding a third generic `memory` term selects an unrelated unavailable entry.
+This contradicts a single minimum-token repair: the failures combine
+underspecified intent, summary coupling, a too-narrow expected ambiguity, and
+generic vocabulary. Changing the threshold or index after these observations
+would be post-hoc tuning, so no production change is justified.
+
+Confidence is high for the deterministic matched outcomes and causal token
+differences, moderate that more specific summaries improve nearby queries, and
+low for human/model behavior. The next ranked question measures top-one versus
+runner-up margins across both frozen sets to test whether honest near-tie
+abstention can improve uncertainty reporting without choosing a desired target.
+GitHub/local evidence won; GitHub, arXiv, and Reddit made zero public requests
+and retain the lane-table evidence and triggers.
+
+The candidate tree passes syntax, TypeScript, formatting, Cycle 237 projection,
+62 durable links, v1 at 10/14, v2 at 8/8, and 292 tests with 1,455 assertions.
+The broad audit covers 1,540 tracked Markdown documents and 1,699 local prose
+links with zero errors. Read-only health at `2026-09-03T17:41:17.524Z` returns
+29 facts, 16 wake signals, and `truncated:true`; runtime state is empty.
+Accepted standing ancestors `d35632c2b1` and `8ab0a89cd0` remain contained;
+unaccepted `d041c41b54` and `d9da99476e` remain non-ancestors. During the
+validation window protected `/app` changed externally from 893 records /
+`98c1c258…76c9f0` to 894 / `925801d5…e429c`; its HEAD stayed
+`386b445c236e4609cd8870d22cc773cc4641fec8` and its Scout scope stayed exactly
+296 / `a430d0c9…4322f7e`. The three-record human overlay stayed
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663` / `a52b97aa…394a15`.
 
 ## Cycle 243 seed-first start — current receipt reused
 
