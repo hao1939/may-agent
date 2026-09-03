@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -316,5 +316,79 @@ describe("identity-robust allocation frontier policy", () => {
         "local decision record does not match the provenance manifest and policy",
       ],
     });
+  });
+
+  it("records a coherent caller-manifest substitution as a distinct unverified identity", async () => {
+    const policy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "minimum-uniform-drift-reserve",
+      minimumUniformDriftReserve: 0.0006,
+      evidenceReference: "decision-record:fixture-substitution",
+    };
+    const fixture = manifest(policy);
+    const root = await mkdtemp(join(tmpdir(), "scout-frontier-substitution-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    await writeFile(
+      join(root, "decisions", "policy.json"),
+      fixture.decisionRecord,
+    );
+    const baseline = await selectIdentityRobustFrontierPointFromLocalRecord(
+      frontier,
+      policy,
+      fixture.value,
+      root,
+      fixture.policyScope,
+    );
+
+    const substituteRecord = `${JSON.stringify({
+      ...JSON.parse(fixture.decisionRecord),
+      decisionRevision: "decision-revision:substitute",
+      observedAt: "2026-09-03T00:01:00.000Z",
+    })}\n`;
+    const substituteManifest = {
+      ...fixture.value,
+      decisionRevision: "decision-revision:substitute",
+      observedAt: "2026-09-03T00:01:00.000Z",
+      decisionRecordArtifact: "decisions/substitute.json",
+      decisionRecordSha256: createHash("sha256")
+        .update(substituteRecord)
+        .digest("hex"),
+    };
+    await writeFile(
+      join(root, "decisions", "substitute.json"),
+      substituteRecord,
+    );
+    const substituted = await selectIdentityRobustFrontierPointFromLocalRecord(
+      frontier,
+      policy,
+      substituteManifest,
+      root,
+      fixture.policyScope,
+    );
+
+    expect(baseline).toMatchObject({
+      ok: true,
+      policyEvidenceStatus: "caller-supplied-unverified",
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "local-content-match-unverified",
+    });
+    expect(substituted).toMatchObject({
+      ok: true,
+      policyEvidenceStatus: "caller-supplied-unverified",
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "local-content-match-unverified",
+    });
+    expect(substituted.policySha256).toBe(baseline.policySha256);
+    expect(substituted.evidenceManifestSha256).not.toBe(
+      baseline.evidenceManifestSha256,
+    );
+    expect(substituted.decisionRecordSha256).not.toBe(
+      baseline.decisionRecordSha256,
+    );
+    expect(await readdir(root)).toEqual(["decisions"]);
   });
 });
