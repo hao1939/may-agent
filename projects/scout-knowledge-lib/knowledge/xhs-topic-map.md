@@ -3860,6 +3860,30 @@ at the same login-class boundary; no browser or public request ran. Accepted
 review ref advanced from integrated `72ed9c48e9` to `c187607b3f`. Reconcile its
 finite delta before classifying why each source-output count is zero.
 
+### Cycle 262 checkpoint — lane zeros now retain their cause
+
+Seed `e89312ece5` preceded accepted review `c187607b3f`, integrated with all
+reviewer lines plus the earlier accepted mapping as `90ec2f54b1`; compact status
+`d3cfb5b0f8` records the conflict disposition and keeps RV-004 high/open.
+
+Read-only protected state distinguishes the three zero cases Cycle 261 could
+not. XHS has a waiting canonical resource (`not-converged`); GitHub is
+converged with an evidence-backed no-op (`converged-without-output`); Reddit
+has no canonical task resource (`resource-unavailable`). ArXiv and HN remain
+`accepted-output` at one and two. Source `fdf6e8de25` emits those states beside
+the unchanged counts and aggregate. The matched fixture covers all four state
+classes.
+
+This classifies task state only, not source access, freshness, quality, or why
+a resource did not converge, and it does not alert on one missing lane.
+Confidence is high for deterministic classification and the protected sample,
+low for runtime retention or owner use of the structured note. Focused
+validation passes 20 tests / 42 assertions, TypeScript, formatting, and
+whitespace. GitHub, arXiv, and Reddit made zero public requests and retain their
+evidence and triggers. Next, determine whether the metric runtime durably
+retains the structured note; otherwise per-lane observability requires separate
+metrics rather than a claim based on transient command output.
+
 ## Cycle 261 seed-first start — accepted cursor trigger
 
 Exact Cycle 260 documentation tip `1b090a4f4c` passes the full Scout gate:
