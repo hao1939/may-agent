@@ -7860,6 +7860,26 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 193 checkpoint — sidecar integrity is not registration identity
+
+Seed commit `8d29025efb` records unchanged semantic XHS access and byte length,
+30 public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable. Only the
+saved-shell body SHA changed. No XHS state changed.
+
+Exact local `23f6578017` declares and byte-verifies a candidate-registry
+sidecar, then changes and rehashes it. Both versions remain valid, keep provider
+calls denied, report the same local-unverified execution-bundle registration,
+and preserve the baseline protocol scope. Focused validation passes 44 tests
+and 209 assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is supported behavior, not a defect: unreferenced bytes must not gain
+policy authority. It also means artifact declaration alone cannot implement
+the explicit registry design. GitHub/local code was selected. GitHub, arXiv,
+and Reddit made zero public requests and retain their exact heads, papers, and
+RSS/JSON boundary. The next ranked audit compares checksum-set closure with
+registered-archive member inventory before any registry schema change.
+
 ## Cycle 192 checkpoint — keep the registry compiled until authority exists
 
 Cycle 191 exact tip `b5b47e2450` passed the complete current gate: 252 tests,

@@ -2805,6 +2805,28 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 193 unreferenced-sidecar registration control
+
+Seed commit `8d29025efb` preceded exact test commit `23f6578017`. A
+canonical `candidate-registry.json` is added to the declared freeze artifact
+set with a correct local digest, then changed and rehashed. Both the original
+and changed seven-artifact freezes return `ok:true`, no errors,
+`local-byte-match-unverified`, provider denial, and the exact six-artifact
+baseline policy scope.
+
+The result is not a vulnerability: unreferenced files must not perturb policy
+identity, and the registration status is explicitly local and unverified. It
+does prove that artifact declaration plus SHA-256 is only local integrity. A
+future registry must be referenced by the freeze, included in protocol scope,
+and covered by a validated registration relation; otherwise it is not an
+authority. Focused validation passes 44 tests and 209 assertions plus
+TypeScript, exact-file formatting, and whitespace.
+
+The next audit compares two possible registration closures: validate a
+canonical checksum set over every protocol sidecar, or inventory a registered
+archive and bind exact member paths/digests. Neither should be implemented
+without duplicate, omission, substitution, migration, and rollback controls.
+
 ## Cycle 192 explicit candidate-registry design audit
 
 Seed commit `8ad547c390` preceded this audit. Exact current source provenance
