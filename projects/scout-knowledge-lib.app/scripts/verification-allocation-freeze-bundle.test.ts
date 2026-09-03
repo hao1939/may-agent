@@ -545,6 +545,50 @@ describe("verification-allocation freeze bundle", () => {
     }
   });
 
+  it("binds coherent model order into reversible policy scope", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    const writeCurrentSchedule = async () => {
+      const schedule = JSON.stringify(
+        buildSyntheticFactorialSchedule(
+          manifest.models.map((model) => model.resolvedId),
+          manifest.seedPolicy.seedIds,
+        ),
+      );
+      await writeFile(join(root, "schedule.json"), schedule);
+      const scheduleSha256 = freezeArtifactSha256(schedule);
+      manifest.schedule.sha256 = scheduleSha256;
+      manifest.schedule.modelIds = manifest.models.map(
+        (model) => model.resolvedId,
+      );
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "schedule.json",
+      )!.sha256 = scheduleSha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    manifest.models.reverse();
+    await writeCurrentSchedule();
+    const reversed = await verifyExecutionFreezeBundle(root);
+    expect(reversed.ok).toBe(true);
+    expect(reversed.policyScope?.modelScopeReference).not.toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reversed.policyScope?.protocolReference).not.toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reversed.providerCallsAuthorized).toBe(false);
+
+    manifest.models.reverse();
+    await writeCurrentSchedule();
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
