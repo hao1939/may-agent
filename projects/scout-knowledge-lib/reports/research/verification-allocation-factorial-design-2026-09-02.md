@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 194 checksum-set versus archive-member closure
+
+Seed commit `a7bb627aef` preceded exact test `7683519e23`. A registry sidecar
+is declared locally and added to `MANIFEST.sha256`; after one matching pass,
+the sidecar changes while the checksum line stays stale. Both paths remain
+valid with the baseline scope and local-unverified registration. Focused
+validation passes 45 tests and 213 assertions plus TypeScript, exact-file
+formatting, and whitespace.
+
+The result proves current claims are narrow and correct: only `bundle.zip` is
+validated against the checksum manifest. A future exact checksum-set relation
+is the smaller design because the manifest is already the proof target and
+local sidecars already have safe paths and exact digests. It still needs
+canonical ordering plus missing, duplicate, extra, unsafe-path, and mismatch
+denials. Archive membership would require a new parser and limits for duplicate
+names, traversal, links, compression, sizes, headers, and extraction; the
+current bundle is opaque.
+
+No production change is justified before a real registry authority exists.
+The next audit resolves checksum-set path ordering and escaping ambiguity.
+
 ## Cycle 193 unreferenced-sidecar registration control
 
 Seed commit `8d29025efb` preceded exact test commit `23f6578017`. A

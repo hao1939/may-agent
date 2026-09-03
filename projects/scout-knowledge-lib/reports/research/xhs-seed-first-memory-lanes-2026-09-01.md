@@ -7860,6 +7860,25 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 194 checkpoint — prefer exact checksums if registry authority appears
+
+Seed commit `a7bb627aef` records unchanged semantic XHS access, 30 public
+Explore notes, zero attributable saved items, unknown additions/changes, no
+observed removals, and all 132 seeds unavailable. Byte length changed by one
+and the body hash changed; these are response provenance. No XHS state changed.
+
+Exact local `7683519e23` adds a registry sidecar checksum line, then leaves it
+stale while changing and locally rehashing the sidecar. Both paths remain
+valid, provider-denied, baseline-scoped, and explicitly local/unverified. The
+current verifier therefore does not overclaim registration. Focused validation
+passes 45 tests and 213 assertions plus TypeScript, formatting, and whitespace.
+
+For a future justified registry, canonical exact checksum-set validation is
+smaller than parsing opaque archive members. No schema change is made because
+no registry authority or independent revision exists. GitHub/local code won;
+all public lanes made zero requests. The next ranked control examines checksum
+path ordering, duplicates, and escaped-path ambiguity.
+
 ## Cycle 193 checkpoint — sidecar integrity is not registration identity
 
 Seed commit `8d29025efb` records unchanged semantic XHS access and byte length,
