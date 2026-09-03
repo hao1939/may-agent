@@ -3877,6 +3877,29 @@ public requests, and the same change-bearing triggers remained in force. The
 explicit deferral of unaccepted `d041c41b54` are one shared continuity fact,
 not nine distinct findings.
 
+Exact reviewed Cycle 222 material tip
+`bb412b7119f766f54f3693b6d9b00a79f9090bae` passes syntax, TypeScript,
+source formatting, 278 tests, 1,429 assertions, whitespace, and all 39 relative
+link occurrences in the two affected documents. Its Scout app tree remains
+exactly `b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4`. Read-only health at
+`2026-09-03T14:53:07.885Z` returns 26 facts, 16 wake signals, and
+`truncated:true`; root and app runtime state are empty, and the standing
+worktree is clean.
+
+All 9 canonical accepted commits remain ancestors. Only canonical accepted
+finite results are integration candidates. Read-only commit metadata confirms
+unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` has parent
+`a25c0fe21568ff5bc680a7a971bf59d343c10810` and remains outside standing
+lineage; it and its later unaccepted commits were not read as content, tested,
+edited, or integrated.
+
+Protected `/app` retains HEAD `386b445c…1fec8` and 886 status records while
+its read-only porcelain-v2 fingerprint changed externally from the last
+recorded `7b786753…7f932` to `07483e82…d420`. The protected Scout scope
+retains three status records while its fingerprint changed from
+`a52b97aa…4a15` to `2760fb23…052`. These are external observations only; this
+worker wrote or tested neither protected checkout nor a peer worktree.
+
 ## Cycle 221 seed-first start
 
 Cycle 221 began from clean validation checkpoint `07d61e0e20`. Exactly one
