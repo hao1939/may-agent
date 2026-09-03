@@ -9364,6 +9364,30 @@ representative saved-post read was supported, no XHS state changed, and no
 GitHub, arXiv, Reddit, or HN request preceded this record. Commit this exact
 reconciliation, then audit missing HN Scan #151 by embedded source-set identity.
 
+## Cycle 237 checkpoint — exact accepted HN #151 body restored
+
+Seed commit `c2e4ff1eb1` preceded the audit. Accepted ancestor
+`2495a515933a24d4c28b2b917b39c62e7d9ea055` contains June 25 and July 12
+#151 bodies; accepted `8cd88aa594fba5ec8dc9a6e26f46e78ad9c8073b` contains a September 12
+copy. Their detailed prose and complete arXiv/GitHub source sets are identical.
+Exact blobs `4bd4c725…c956b`, `99126bbe…70c7e`, and `a0785780…0f26a` differ
+only in their two date fields. The collision audit instead lists the absent
+descriptive path twice, so it does not independently prove the claimed date
+pair.
+
+The earliest accepted June blob is restored byte-for-byte at the existing
+descriptive index target. Its resulting blob is exactly
+`4bd4c72519c8c5f4ee45e83851abc847b80c956b`; no unaccepted body or peer
+worktree was read. The 1,540-document audit holds 1,732 local prose links and
+zero absolute links while unresolved occurrences fall `34→33` across eight
+documents. This restores detailed evidence and its date-variant distinction
+without creating a new source claim. Confidence is high for accepted ancestry,
+byte identity, and source-set match, not for fresh validation of the historical
+claims. GitHub, arXiv, and Reddit made zero public requests and retain their
+recorded evidence, access limits, and revisit triggers. Next, audit the 22
+missing Scan #253–#275, triage, and coverage entries by accepted source identity,
+never number alone.
+
 ## Cycle 236 seed-first reconciliation — unchanged receipt reused
 
 At `2026-09-03T16:44:25.407Z`, the exact Cycle 233 receipt was 26 minutes old

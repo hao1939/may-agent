@@ -3862,6 +3862,30 @@ changed, and no GitHub, arXiv, Reddit, or HN request preceded this record.
 Process/network reachability is not account or collection authority. Commit
 this reconciliation before auditing missing HN Scan #151 by source-set identity.
 
+### Cycle 237 checkpoint — accepted source identity restores HN #151
+
+Seed commit `c2e4ff1eb1` preceded the audit. Standing accepted ancestor
+`2495a515933a24d4c28b2b917b39c62e7d9ea055` introduced June 25 and July 12
+#151 bodies; accepted `8cd88aa594fba5ec8dc9a6e26f46e78ad9c8073b` later introduced a September
+12 copy. Their prose and complete arXiv/GitHub source sets are identical; exact
+blobs `4bd4c725…c956b`, `99126bbe…70c7e`, and `a0785780…0f26a` differ only in
+`last_updated` and scan date. This supports the June 25 identity selected by the
+index. It also exposes contradictory triage metadata: the collision audit lists
+the absent descriptive target twice while calling the pair date drift.
+
+The exact accepted June blob is now restored without edits at the existing
+descriptive target `2026-06-25-escapability-hierarchy.md`; its post-write blob
+remains `4bd4c72519c8c5f4ee45e83851abc847b80c956b`. No unaccepted body or peer
+worktree was read. The 1,540-document audit retains 1,732 local prose links and
+zero absolute links while unresolved occurrences fall `34→33` across eight
+documents. Detailed evidence and the date-variant distinction are preserved;
+no source validity or freshness claim is added. Confidence is high for accepted
+lineage, byte identity, and source-set match, and unchanged for the historical
+source claims themselves. GitHub, arXiv, and Reddit made zero public requests
+and retain their recorded evidence/access triggers. Next, audit the 22 missing
+Scan #253–#275, triage, and coverage entries by accepted source identity, never
+number alone.
+
 ## Cycle 236 seed-first start — unchanged receipt, representation test selected
 
 At `2026-09-03T16:44:25.407Z`, Cycle 233's receipt was 26 minutes old and no
