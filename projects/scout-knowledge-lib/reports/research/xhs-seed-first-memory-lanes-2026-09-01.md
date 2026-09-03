@@ -9382,6 +9382,14 @@ row preserves every original field and requires an exact target or owner alias
 decision. The broad audit is now 1,738 links / 40 unresolved. Next, adjudicate
 XHS Scan #51/#52 from their contradictory temporal metadata.
 
+The XHS follow-up rejects both candidate choices. Scan #51's aliases conflict
+on July 22 versus August 22 and only the August date fits the retained 63-day
+gap; Scan #52's bodies say August 23 while their update dates say June/July.
+The prediction tracker supports topic/date claims but declares no canonical
+file. Both rows pass exact field-preservation checks in unavailable form. The
+broad audit is now 1,736 links / 38 unresolved. Next, compare the four residual
+HN aliases by complete story-set identity rather than title keywords.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old

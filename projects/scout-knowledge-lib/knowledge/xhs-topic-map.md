@@ -3881,6 +3881,15 @@ unavailable form and requires that declaration before linking an alias. Exact
 title/path/summary checks pass; the broad boundary becomes 1,738 / 40. Next,
 resolve XHS Scan #51/#52 temporal contradictions before choosing an alias.
 
+The XHS audit finds no canonical choice. Scan #51's June alias says August 22
+and a plausible 63-day gap but a June update date; its July alias says July 22
+while retaining the 63-day gap. Both Scan #52 aliases describe August 23 but
+carry June/July update dates. The accepted prediction tracker corroborates the
+August topics, not either filename. Both index rows now preserve exact fields
+in unavailable form with chronology-and-ownership triggers. The broad boundary
+is 1,736 links / 38 unresolved. Next, audit the four residual HN snapshot aliases
+against accepted story sets before choosing or deferring them.
+
 ## Cycle 235 seed-first start — current receipt remains sufficient
 
 At `2026-09-03T16:39:38.442Z`, Cycle 233's exact observation was 21 minutes
