@@ -5228,18 +5228,10 @@ score arithmetic, low for generalization. Next, sweep title multipliers across
 both frozen sets to test whether reducing that preference repairs one error by
 creating regressions elsewhere.
 
-The full gate now runs both frozen sets and passes syntax, TypeScript,
-formatting, Cycle 237 projection, 62 durable links, v1 at 10/14, v2 at 8/8,
-and 294 tests with 1,470 assertions. The broad audit covers 1,540 tracked
-Markdown documents and 1,698 local prose links with zero errors. Read-only
-health at `2026-09-03T18:20:55.564Z` returns 30 facts, 16 wake signals, and
-`truncated:true`; runtime state is empty. Accepted `d35632c2b1` and
-`8ab0a89cd0` remain contained, and the two accepted review patches remain exact
-as standing `98926518f0` and `6045108077`; unaccepted `d041c41b54` and
-`d9da99476e` remain non-ancestors. Protected `/app` changed externally from
-899 records / `bf41354e…9a864` to 901 / `1401be3a…ff1e`; HEAD and its
-296-record Scout scope `a430d0c9…4322f7e` stayed exact. The overlay stayed
-three records / `a52b97aa…394a15` at `fd4c68ecd6`.
+The [detailed Cycle 252 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-252-checkpoint--shared-rarity-loses-to-title-weighting)
+retains full validation, accepted/unaccepted lineage, runtime state, and exact
+protected/overlay fingerprints. This map keeps the diagnostic decision and
+its uncertainty rather than a second historical proof block.
 
 ## Cycle 251 seed-first start — current receipt reused
 
