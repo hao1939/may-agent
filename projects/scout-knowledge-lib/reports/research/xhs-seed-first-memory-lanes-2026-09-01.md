@@ -7890,6 +7890,36 @@ Protected source and overlay remained externally observed at
 adds no seed identity or registry requirement, so the ranked rollback control
 remains the next material work.
 
+## Cycle 206 checkpoint — exact rollback needs no registry migration
+
+Seed commit `abd11a10d9` preceded exact test-only commit `423f05d513`. The
+matched control captures the untouched one-model verifier result, expands the
+same fixture to two distinct matching per-model resolution records and 128
+schedule cells, then removes the peer record, declaration, and generated
+schedule cells.
+
+Strict v1 accepts the expanded bundle. After removal, its complete verification
+object is exactly equal to the untouched one-model baseline. Focused validation
+passes 19 tests and 98 assertions plus TypeScript, source formatting, and
+whitespace. This supports the v1 per-model alternative as locally reversible
+and contradicts the need for a registry merely to add and remove explicit
+model identities. It does not prove external ownership, atomic deployment,
+deposit/update authority, consumer compatibility, or provider behavior.
+
+GitHub/local code won the post-seed rubric. Public GitHub, arXiv, and Reddit
+made zero requests. GitHub retains its four named exact heads and exact local
+commit; arXiv retains MemGauge `2608.30177v1` at 15/15 and allocation study
+`2608.25553v3` at 14/15; Reddit remains at RSS HTTP 200 with stable
+`t3_1v8a3sh` and six comments, while JSON is last observed HTTP 403. Their
+revisit triggers remain a source revision, new accepted result, independent
+evidence, readable seed body, relevant thread delta, or access change. The
+unaccepted two-commit peer range ending at `d041c41b54` remains deferred
+without content inspection.
+
+The next ranked local control tests interrupted rollback: remove only one
+member of the peer record/declaration/schedule triple at a time and require
+strict failure rather than a mixed accepted identity.
+
 ## Cycle 205 checkpoint — strict v1 already supports explicit per-model records
 
 Seed commit `15dc4d3da4` records the unchanged semantic XHS boundary before

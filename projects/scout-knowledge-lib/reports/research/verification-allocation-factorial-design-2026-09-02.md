@@ -2805,6 +2805,22 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 206 exact per-model rollback
+
+Seed commit `abd11a10d9` preceded exact test-only commit `423f05d513`. A
+matched fixture records the untouched one-model verification result, expands
+to two distinct matching model-resolution records and 128 schedule cells, then
+removes the peer record, declaration, and generated schedule cells.
+
+Strict v1 accepts the expansion, and the complete rollback result is exactly
+equal to the untouched baseline. The focused bundle gate passes 19 tests and
+98 assertions plus TypeScript, source formatting, and whitespace. This
+supports the current per-model design as reversible without a registry
+migration. It remains local fixture evidence: external ownership, atomic
+deployment, deposit/update authority, consumer compatibility, and provider
+behavior are still unknown. The next control tests fail-closed partial rollback
+of each coupled component.
+
 ## Cycle 205 strict-v1 per-model resolution records
 
 Seed commit `15dc4d3da4` preceded exact test `dcbf6f99bf`. Two distinct
