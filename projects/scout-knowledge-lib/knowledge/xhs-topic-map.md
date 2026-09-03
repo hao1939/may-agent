@@ -4024,8 +4024,8 @@ The Cycle 252 map/report pair shared 21 exact lines / 1,357 bytes at SHA-256
 score decompositions, equal `caller` contribution, `7.063144` gap, 13/13
 control, narrow mechanism claim, and real-retrieval limit in 11 lines / 835
 bytes, removing 10 lines / 522 bytes. RV-004 remains high/open; no source lane
-ran. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256 seed/control
-transition, subject to seed-first review of its distinct ordering evidence.
+ran. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 257
+review-and-receipt block, subject to preserving its accepted-review provenance.
 
 ## Cycle 290 seed-first start — current receipt reused
 
@@ -4033,7 +4033,18 @@ Cycle 290 began from clean validated `a5c62bf6ff`. At
 `2026-09-03T22:49:29.765Z`, the current receipt was about 352 minutes old and
 inside cadence. No browser or public-source request ran; added/changed remain
 unknown, removals are `[]`, and all 132 IDs remain unavailable. Persist this
-ordering before the ranked Cycle 256 seed/control transition audit.
+ordering before the ranked Cycle 257 review-and-receipt audit.
+
+## Cycle 290 checkpoint — receipt evidence retains its boundary
+
+Context review corrects the prior scan label: the exact 21-line / 1,307-byte
+run at SHA-256 `5a775518…8c029f` is Cycle 257 review/receipt evidence, not Cycle
+256 seed/control evidence. The detailed report remains authoritative. The map
+replaces its 20 content lines / 1,306 bytes with 12 / 794, removing 8 lines /
+512 bytes while retaining reviewer/standing/status commits, 24 attempts, 14
+child receipts, absent maintained event, missing trigger/query/path join, and
+confidence. No lane ran and RV-004 remains high/open. Next is the 18-line /
+1,222-byte exact Cycle 250 policy block after seed-first context review.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
@@ -5026,26 +5037,18 @@ result before resuming the ranked read-only maintenance-event search.
 
 ### Cycle 257 checkpoint — receipts preserve paths, attempts do not
 
-Seed commit `a026d02e31` preceded accepted-review reconciliation. Reviewer
-`bce334a37b` is standing `59acb457bd`; RV-012 now states the actual
-double-precision crossover `1.896047856`, and RV-011's digest-fence test blob
-remains exact. Compact status commit `ee1b9a58ab` records both as resolved.
+Seed `a026d02e31` preceded review reconciliation. Reviewer `bce334a37b` is
+standing `59acb457bd`; `ee1b9a58ab` records RV-012's `1.896047856` crossover
+and RV-011's exact digest-fence blob as resolved.
 
-Read-only protected task state contains 24 completed `library-maintenance`
-attempts from `2026-08-19T08:54:44.486Z` through
-`2026-08-21T01:37:41.911Z`. All 24 retain summaries, but zero has a structured
-`output`, `result`, `evidence`, `outputs`, `receipt`, or `reconciliation`
-field; seven summaries merely contain path-like `INDEX`, `knowledge/`, or
-`.md` text. The same state retains 14 child receipts: 10 have nonempty,
-path-like evidence and responses, including exact canonical/report paths and
-verification outcomes. Neither task-state projection retains the emitted
-`project.knowledge.maintained` event itself.
-
-This is genuine later-outcome evidence, but only for child work. It does not
-bind the maintenance trigger or an evaluator query to the path Scout selected,
-and prose summaries cannot safely reconstruct that missing identity. Confidence
-is high for the protected-state counts and schema boundary, medium that one
-pre-evaluator trigger/receipt pair may yield a usable retrospective control,
+The read-only state held 24 completed maintenance attempts over
+`2026-08-19T08:54:44.486Z`–`2026-08-21T01:37:41.911Z`: all had summaries,
+none had a structured output/result/evidence/receipt field, and seven only had
+path-like prose. Fourteen child receipts remained, 10 with path-like evidence
+and responses; neither projection retained the emitted maintained event. This
+is later-outcome evidence only for child work, not a trigger/query-to-selected-
+path join. Confidence is high for counts/schema and medium that one earlier
+trigger/receipt pair could support a retrospective control,
 and low for general navigation effectiveness. No telemetry or scorer change is
 justified. Next, freeze one historical trigger→accepted-output pair and test
 whether its contemporaneous index revision can be reconstructed without

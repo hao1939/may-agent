@@ -9702,9 +9702,9 @@ multiplier sweep. No evidence or useful distinction was discarded.
 
 GitHub, arXiv, and Reddit made zero requests and retain their evidence and
 revisit triggers. Static compaction is not outcome evidence; RV-004 remains
-high/open. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 256
-seed/control transition, which requires a fresh seed-first audit before any
-change.
+high/open. The next exact-run scan ranks a 21-line / 1,307-byte Cycle 257
+review-and-receipt block, which requires preserving its accepted-review
+provenance.
 
 ## Cycle 290 seed-first start — exact Cycle 289 result retained
 
@@ -9723,7 +9723,28 @@ At `2026-09-03T22:49:29.765Z`, the receipt through
 scheduled `2026-09-03T22:57:11.030Z` pass. No browser, GitHub, arXiv, or Reddit
 request ran. Added/changed identities remain unknown, removals are `[]`, and
 all 132 IDs remain unavailable. Commit this ordering before the ranked Cycle
-256 seed/control transition audit.
+257 review-and-receipt audit.
+
+## Cycle 290 checkpoint — distinguish review provenance from receipt evidence
+
+Context review corrected the earlier scan label. The exact run is Cycle 257's
+accepted-review and protected receipt/attempt evidence, not a Cycle 256 seed
+transition: 21 lines / 1,307 bytes at SHA-256
+`5a775518c3e6812a196b7c081bedff5bfc38317db44a3356dfe8a7d6688c029f`.
+Seed `53ab65af9055ebb08747830c322b4eeb2445b57c` preceded the audit.
+
+This detailed copy remains unchanged. The corresponding 20 nonblank map lines
+/ 1,306 bytes become 12 / 794, removing 8 lines / 512 bytes. The map retains
+reviewer `bce334a37b`, standing `59acb457bd`, status `ee1b9a58ab`, RV-011/012
+resolution, the exact `1.896047856` crossover, all 24 attempt / 14 child-receipt
+counts and date bounds, path-like and structured-field distinctions, absent
+maintained-event projection, child-only later-outcome scope, missing
+trigger/query-to-path join, confidence, and retrospective-control trigger.
+
+No source, account, code, fixture, accepted result, or protected state changed.
+GitHub, arXiv, and Reddit made zero requests. This compaction does not close
+RV-004. The next exact-run scan ranks an 18-line / 1,222-byte Cycle 250 policy
+block, subject to a new seed-first context audit.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
