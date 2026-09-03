@@ -865,6 +865,29 @@ export function verifyFactorialSchedule(
       `expected ${expectedEpisodeCount} episodes, found ${schedule.episodes.length}`,
     );
   }
+  const invalidCandidateEpisode = schedule.episodes.find(
+    (episode) =>
+      !Array.isArray(episode.candidates) ||
+      episode.candidates.length !== 2 ||
+      MEMORY_IDS.some(
+        (memoryId) =>
+          !episode.candidates.some(
+            (candidate) => candidate?.memoryId === memoryId,
+          ),
+      ),
+  );
+  if (invalidCandidateEpisode) {
+    errors.push(
+      `${invalidCandidateEpisode.id}: candidates must describe both memories`,
+    );
+    return {
+      ok: false,
+      episodeCount: schedule.episodes.length,
+      expectedEpisodeCount,
+      scheduleSha256: digest,
+      errors,
+    };
+  }
 
   const seen = new Set<string>();
   const wordingShapes = {

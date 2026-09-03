@@ -484,6 +484,61 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("rejects an oversized episode candidate list before prompt traversal", () => {
+    const { manifest, artifactContents } = validFixture();
+    expect(verifyExecutionFreezeManifest(manifest, artifactContents).ok).toBe(
+      true,
+    );
+
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    episode.candidates = Array.from({ length: 20_000 }, () =>
+      structuredClone(episode.candidates[0]),
+    );
+    episode.prompt = renderFactorialPrompt(episode);
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      `schedule factorial verification failed: ${episode.id}: candidates must describe both memories`,
+    ]);
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
+  it("rejects duplicate candidate identities in a byte-bound episode", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    episode.candidates = [
+      structuredClone(episode.candidates[0]),
+      structuredClone(episode.candidates[0]),
+    ];
+    episode.prompt = renderFactorialPrompt(episode);
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      `schedule factorial verification failed: ${episode.id}: candidates must describe both memories`,
+    ]);
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);
