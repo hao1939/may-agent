@@ -3888,6 +3888,22 @@ evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
 review, otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 280 seed-first start — retained-outcome trigger check
+
+Cycle 280 began from clean integration checkpoint
+`5b13addd1d44b6a2ba76eb8680b3a9957428c90a`. At
+`2026-09-03T21:37:30.723Z`, Cycle 237's exact observation receipt was 280
+minutes old, inside the six-hour cadence and before the scheduled
+`2026-09-03T22:57:11.030Z` re-observation. This bounded reconciliation made
+zero browser or public requests: added/changed identities remain unknown,
+observed removals are `[]`, and all 132 durable IDs remain unavailable at the
+same login-class boundary. Protected `/app` remains externally observed at
+`386b445c…41fec8`, 386 records / `7c285c09…1ca01b`, with Scout scope 296 /
+`7e4d0937…c26a8a`; this worker did not write or test it. GitHub, arXiv, and
+Reddit retain their recorded heads, versions, RSS/JSON boundary, and
+change-bearing triggers. Commit this seed record before checking accepted refs
+or the ranked retained-outcome boundary; do not make an early public request.
+
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
 Standing source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` has direct-child

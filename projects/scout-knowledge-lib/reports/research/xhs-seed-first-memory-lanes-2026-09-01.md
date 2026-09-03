@@ -9399,6 +9399,28 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 280 seed-first start — retained-outcome trigger check
+
+Cycle 280 starts from clean producer integration checkpoint
+`5b13addd1d44b6a2ba76eb8680b3a9957428c90a`. At
+`2026-09-03T21:37:30.723Z`, the exact Cycle 237 XHS receipt observed through
+`2026-09-03T16:57:11.030Z` was 280 minutes old, still inside the six-hour
+cadence. No seed or semantic-access trigger changed, so this bounded
+reconciliation made zero browser or public requests. Added and changed
+identities remain unknown, observed removals are `[]`, and all 132 durable IDs
+remain unavailable behind the same login-class boundary. Elapsed time is not
+content evidence; uncertainty remains complete for current membership.
+
+Protected `/app` remains externally observed at HEAD `386b445c…41fec8`, 386
+short-status records / `7c285c09…1ca01b`; its Scout scope remains 296 /
+`7e4d0937…c26a8a`. This worker did not write or test the protected checkout.
+The accepted Cycle 278 reviewer result is contained exactly. GitHub, arXiv,
+and Reddit retain their last recorded repository heads, paper versions, and
+RSS-readable/JSON-403 boundary with change-bearing revisit triggers. Commit
+this reconciliation before the bounded accepted-ref and retained-outcome
+checks; if neither changed, keep all public lanes at zero requests until the
+scheduled XHS observation at `2026-09-03T22:57:11.030Z`.
+
 ## Cycle 279 checkpoint — Cycle 278 review lands exactly
 
 Reviewer source `29d3d8b8ccf7006ab7c6fac7ba4a79f84b40eedf` is the parent of
