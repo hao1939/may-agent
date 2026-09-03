@@ -3880,6 +3880,22 @@ persistence finding. GitHub, arXiv, and Reddit made zero public requests. The
 next ranked audit is the 17 runtime/workspace links: determine whether each has
 a durable accepted replacement before removing a non-portable provenance path.
 
+Exact reviewed Cycle 229 material tip
+`0a4b07edf72722880a1fe2e837a980bdb690e621` retains Scout app tree
+`ae458633a063095f1cd4063491ce7e7217da1f38`. The full current-revision gate
+passes syntax, TypeScript, source formatting, the Cycle 229 seed projection,
+53 durable links, 286 tests, and 1,440 assertions. The broad audit confirms
+zero absolute links and the declared 186-debt boundary; whitespace passes.
+Read-only health at `2026-09-03T15:31:04.638Z` remains 26 facts and 16 wake
+signals with `truncated:true`; runtime state is empty and the standing tree is
+clean.
+
+Containment remains 9/9 canonical accepted result ancestors; unaccepted
+`d041c41b54` and `d9da99476e` remain non-ancestors. Protected `/app` retains
+HEAD `386b445c…1fec8`, 887 porcelain-v2 records, and `63b17ec1…958f`; its
+Scout scope remains three records / `2760fb23…052`. Neither protected source
+nor a peer worktree was written or tested.
+
 ## Cycle 228 seed-first start
 
 The exact bounded observation, reconciliation, authority boundary, and byte
