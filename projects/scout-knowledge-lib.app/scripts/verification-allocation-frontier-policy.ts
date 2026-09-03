@@ -47,6 +47,7 @@ export type IdentityRobustLocalFrontierSelection =
 
 export type IdentityRobustLocalManifestFrontierSelection =
   IdentityRobustLocalFrontierSelection & {
+    manifestArtifact: string;
     manifestArtifactSha256: string;
     manifestArtifactByteLength: number;
     manifestArtifactEvidenceStatus: "local-byte-match-unverified" | "";
@@ -325,6 +326,7 @@ export async function selectIdentityRobustFrontierPointFromLocalManifest(
     decisionRecordByteLength: 0,
     decisionRecordEvidenceStatus: "" as const,
     decisionRecordContentStatus: "" as const,
+    manifestArtifact: "",
     manifestArtifactSha256: "",
     manifestArtifactByteLength: 0,
     manifestArtifactEvidenceStatus: "" as const,
@@ -375,6 +377,7 @@ export async function selectIdentityRobustFrontierPointFromLocalManifest(
       decisionRecordByteLength: binding.decisionRecordByteLength,
       decisionRecordEvidenceStatus: binding.decisionRecordEvidenceStatus,
       decisionRecordContentStatus: binding.decisionRecordContentStatus,
+      manifestArtifact: binding.manifestArtifact,
       manifestArtifactSha256: binding.manifestArtifactSha256,
       manifestArtifactByteLength: binding.manifestArtifactByteLength,
       manifestArtifactEvidenceStatus: binding.manifestArtifactEvidenceStatus,
@@ -410,6 +413,7 @@ export async function selectIdentityRobustFrontierPointFromLocalManifest(
     decisionRecordByteLength: binding.decisionRecordByteLength,
     decisionRecordEvidenceStatus: binding.decisionRecordEvidenceStatus,
     decisionRecordContentStatus: binding.decisionRecordContentStatus,
+    manifestArtifact: binding.manifestArtifact,
     manifestArtifactSha256: binding.manifestArtifactSha256,
     manifestArtifactByteLength: binding.manifestArtifactByteLength,
     manifestArtifactEvidenceStatus: binding.manifestArtifactEvidenceStatus,

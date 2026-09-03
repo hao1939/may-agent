@@ -428,6 +428,7 @@ describe("identity-robust allocation frontier policy", () => {
       ok: true,
       policyEvidenceStatus: "caller-supplied-unverified",
       selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      manifestArtifact: "policies/manifest.json",
       manifestArtifactSha256: manifestSha256,
       manifestArtifactByteLength: Buffer.byteLength(manifestText),
       manifestArtifactEvidenceStatus: "local-byte-match-unverified",

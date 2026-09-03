@@ -248,6 +248,10 @@ describe("identity-robust frontier freeze adapter", () => {
       join(policy.evidenceRoot, "policies", "manifest.json"),
       manifestBytes,
     );
+    await writeFile(
+      join(policy.evidenceRoot, "policies", "manifest-alias.json"),
+      manifestBytes,
+    );
     const localManifestResult =
       await selectIdentityRobustFrontierPointFromSnapshot(
         snapshotRoot,
@@ -264,6 +268,27 @@ describe("identity-robust frontier freeze adapter", () => {
           schema:
             "scout.verification-allocation-local-policy-manifest-input/v1",
           manifestArtifact: "policies/manifest.json",
+          manifestSha256,
+        },
+        policy.evidenceRoot,
+        freeze.root,
+      );
+    const aliasedManifestResult =
+      await selectIdentityRobustFrontierPointFromSnapshot(
+        snapshotRoot,
+        "frontier.json",
+        createHash("sha256").update(snapshotBytes).digest("hex"),
+        {
+          rowSha256: snapshot.rowSha256,
+          resultSha256: snapshot.resultSha256,
+          frontierSha256: snapshot.frontierSha256,
+          frontierCount: snapshot.frontier.length,
+        },
+        policy.policy,
+        {
+          schema:
+            "scout.verification-allocation-local-policy-manifest-input/v1",
+          manifestArtifact: "policies/manifest-alias.json",
           manifestSha256,
         },
         policy.evidenceRoot,
@@ -294,6 +319,7 @@ describe("identity-robust frontier freeze adapter", () => {
         selection: {
           ok: true,
           selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+          manifestArtifact: "policies/manifest.json",
           manifestArtifactSha256: manifestSha256,
           manifestArtifactEvidenceStatus: "local-byte-match-unverified",
           manifestArtifactContentStatus: "local-content-match-unverified",
@@ -303,6 +329,17 @@ describe("identity-robust frontier freeze adapter", () => {
       },
       providerCallsAuthorized: false,
     });
+    expect(aliasedManifestResult.frozenSelection?.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      manifestArtifact: "policies/manifest-alias.json",
+      manifestArtifactSha256: manifestSha256,
+    });
+    expect(
+      aliasedManifestResult.frozenSelection?.selection.evidenceManifestSha256,
+    ).toBe(
+      localManifestResult.frozenSelection?.selection.evidenceManifestSha256,
+    );
     const summary = summarizeIdentityRobustSnapshotFrontierSelection(result);
     const frontierSnapshotReference = identityRobustFrontierSnapshotReference({
       rowSha256: snapshot.rowSha256,
@@ -329,6 +366,14 @@ describe("identity-robust frontier freeze adapter", () => {
     expect(localManifestSummary).toContain(manifestSha256);
     expect(localManifestSummary).toContain(
       localManifestResult.frozenSelection!.selection.evidenceManifestSha256,
+    );
+    expect(localManifestSummary).toContain("policies/manifest.json");
+    const aliasedManifestSummary = JSON.stringify(
+      summarizeIdentityRobustSnapshotFrontierSelection(aliasedManifestResult),
+    );
+    expect(aliasedManifestSummary).toContain("policies/manifest-alias.json");
+    expect(aliasedManifestSummary).not.toContain(
+      '"manifestArtifact":"policies/manifest.json"',
     );
 
     const substituteSnapshot = createIdentityRobustFrontierSnapshot(

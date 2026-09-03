@@ -57,6 +57,7 @@ export type IdentityRobustLocalPolicyEvidenceBinding =
 
 export type IdentityRobustLocalManifestPolicyEvidenceBinding =
   IdentityRobustLocalPolicyEvidenceBinding & {
+    manifestArtifact: string;
     manifestArtifactSha256: string;
     manifestArtifactByteLength: number;
     manifestArtifactEvidenceStatus: "local-byte-match-unverified" | "";
@@ -469,6 +470,9 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
   manifestArtifactSha256: string,
   verifiedPolicyScopeCandidate: unknown = null,
 ): Promise<IdentityRobustLocalManifestPolicyEvidenceBinding> {
+  const safeManifestArtifact = isCanonicalRelativeEvidenceName(manifestArtifact)
+    ? manifestArtifact
+    : "";
   const localManifest = await readDescriptorSafeLocalEvidence(
     evidenceRoot,
     manifestArtifact,
@@ -488,6 +492,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
       errors: localManifest.errors,
       scopeLimit: localManifest.scopeLimit,
       ...emptyRecord,
+      manifestArtifact: safeManifestArtifact,
       manifestArtifactSha256: localManifest.sha256,
       manifestArtifactByteLength: localManifest.byteLength,
       manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
@@ -513,6 +518,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
       scopeLimit:
         "The local manifest bytes match their declared hash but do not form a valid policy provenance manifest. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
       ...emptyRecord,
+      manifestArtifact: safeManifestArtifact,
       manifestArtifactSha256: localManifest.sha256,
       manifestArtifactByteLength: localManifest.byteLength,
       manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
@@ -530,6 +536,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
       scopeLimit:
         "The local manifest bytes match their declared hash but contain ambiguous duplicate object keys. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
       ...emptyRecord,
+      manifestArtifact: safeManifestArtifact,
       manifestArtifactSha256: localManifest.sha256,
       manifestArtifactByteLength: localManifest.byteLength,
       manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
@@ -547,6 +554,7 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
   );
   return {
     ...binding,
+    manifestArtifact: safeManifestArtifact,
     manifestArtifactSha256: localManifest.sha256,
     manifestArtifactByteLength: localManifest.byteLength,
     manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
