@@ -392,6 +392,9 @@ function validateSchedule(
     const raw =
       typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
     const parsed = JSON.parse(raw) as unknown;
+    if (JSON.stringify(parsed) !== raw) {
+      errors.push("schedule artifact is not canonical verifiable JSON");
+    }
     if (!isRecord(parsed)) throw new Error("not an object");
     const parsedModels = stringArray(parsed.models) ?? [];
     const parsedSeeds = stringArray(parsed.seeds) ?? [];

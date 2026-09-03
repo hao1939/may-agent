@@ -248,6 +248,33 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects duplicate keys in the byte-bound schedule JSON", () => {
+    const { manifest, artifactContents } = validFixture();
+    artifactContents["schedule.json"] = artifactContents[
+      "schedule.json"
+    ].replace(
+      '"providerCallsAuthorized":false',
+      '"providerCallsAuthorized":false,"providerCallsAuthorized":false',
+    );
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "schedule artifact is not canonical verifiable JSON",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("separates overall validity, registration evidence, and proof presence", () => {
     const cases: Array<{
       name: string;
