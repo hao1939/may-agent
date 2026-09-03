@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 163 checkpoint — the fast CLI preserves schema and denial
+
+Seed commit `5ebe5b1cbc2cbe3f1adbf7778e6400a647f92efe` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the process
+control.
+
+The actual snapshot CLI read the retained 116,578-byte Cycle 109 snapshot at
+outer hash `8bee607…edae76` in 0.04 seconds. It emitted schema
+`scout.verification-allocation-snapshot-selection-output/v1`, preserved the
+exact row/result/frontier hashes and 508-point count, and labeled the bytes
+`local-byte-match-unverified`. With an empty policy and no freeze manifest it
+selected nothing, reported the expected manifest and explicit-policy errors,
+and kept provider authority false at every level.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named repository heads, paper versions, RSS/JSON
+boundary, and triggers. Confidence is high for current CLI wiring and local
+snapshot identity, and low for computation authentication, policy, authority,
+freshness, drift, models, or providers. The next ranked control audits whether
+any local consumer validates the schema before using nested fields.
+
 ## Cycle 162 checkpoint — snapshot output identifies its own format
 
 Seed commit `404461bd2786aa00c70a733f621e06660f715e48` records unchanged

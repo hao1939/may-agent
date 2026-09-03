@@ -2563,6 +2563,27 @@ computation, policy, authority, models, providers, or future compatibility.
 The next control exercises the actual fast snapshot CLI end to end and checks
 that the schema appears without changing nested evidence or provider denial.
 
+## Cycle 163 fast snapshot CLI serialization
+
+Seed commit `5ebe5b1cbc2cbe3f1adbf7778e6400a647f92efe` preceded the
+process run. The actual CLI read the retained 116,578-byte snapshot at exact
+outer SHA-256 `8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`
+in 0.04 seconds and emitted schema
+`scout.verification-allocation-snapshot-selection-output/v1`.
+
+The summary retained row, result, and frontier hashes
+`6fac7f99…d38252`, `383a699f…c2b8fff`, and `067201a6…b4530ef`, the
+508-point count, and `local-byte-match-unverified`. An empty policy and a
+goal-owned directory without `freeze-manifest.json` produced the exact
+selection error `exactly one explicit frontier policy with evidence is
+required` and a descriptor-read `ENOENT`; no point was selected and provider
+authority remained false at the snapshot, freeze, and outer levels.
+
+This proves current process wiring and local bytes, not earlier computation,
+generator identity, authority, policy, freshness, drift, models, or providers.
+The next control audits whether any consumer validates the output schema before
+using nested fields.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
