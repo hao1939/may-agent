@@ -9359,6 +9359,32 @@ The current-projection consistency control is the highest-ranked accessible
 work. Registry and all three public lanes retain their recorded change-bearing
 triggers without a request.
 
+## Cycle 224 checkpoint — current projections now fail closed on drift
+
+Seed commit `860cb928f2` preceded exact local implementation
+`f45105cfbe10a2c3b17202f869cd0224129912e2`. The new read-only checker derives
+the latest cycle and observation end from the first canonical seed-ledger row,
+then requires matching topic-map basis, source basis, observation cursor and
+lead summary plus matching source-lane summary and basis. It runs inside the
+standard Scout `check` gate.
+
+Four focused tests and seven assertions preserve the real match, independent
+topic/report drift errors, fail-closed missing-range behavior, and exact UTC-
+midnight rollover. The real Cycle 224 documents return `ok:true`, cycle 224,
+and observation end `2026-09-03T14:59:11.279Z`. The full gate passes syntax,
+TypeScript, source formatting, 282 tests, and 1,436 assertions.
+
+This prevents the exact Cycle 223 retrieval defect from recurring silently. It
+does not validate XHS membership, source claims, cycle ordering beyond the
+canonical first ledger row, or arbitrary prose. Confidence is high for the
+tested metadata contract and low for broader document semantics. GitHub,
+arXiv, and Reddit made zero public requests and retain their lane evidence and
+triggers.
+
+The next ranked usability control is relative-link validation inside the same
+gate, replacing the repeated ad hoc three-document link command without
+turning external URLs into network work.
+
 ## Cycle 223 seed-first reconciliation — stable unavailable profile
 
 The exact bounded observation, reconciliation, authority boundary, and byte
