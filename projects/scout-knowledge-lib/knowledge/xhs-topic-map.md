@@ -2,9 +2,9 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 220 observational reconciliation through 2026-09-03T14:31:57.642Z; exact access evidence and uncertainty are in the Cycle 220 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 220 at 2026-09-03T14:31:57.642Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 220 read-only XHS boundary through 2026-09-03T14:31:57.642Z."
+latest_seed_basis: "Cycle 221 observational reconciliation through 2026-09-03T14:39:53.294Z; exact access evidence and uncertainty are in the Cycle 221 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 221 at 2026-09-03T14:39:53.294Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 221 read-only XHS boundary through 2026-09-03T14:39:53.294Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -3986,6 +3986,23 @@ new regression is warranted because the exact matched control already exists.
 
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
+
+## Cycle 221 seed-first start
+
+Cycle 221 began from clean validation checkpoint `07d61e0e20`. Exactly one
+public status and one non-navigating saved status ran through direct localhost
+Chrome DevTools from `2026-09-03T14:39:50.469Z` through `14:39:53.294Z`.
+Explore remained readable at 30 notes. Saved status remained HTTP 200,
+`profile`, `ready:false`, and `loginWall:true`, with unchanged 161,608-byte
+length, access fingerprint `f6fb9a02…576ad`, and ten-link fingerprint
+`7934093c…3217`. Only body SHA changed from `47e8bfc4…4d753` to
+`6782bd19…2718a`.
+
+The byte change is response provenance only. Added/changed identities remain
+unknown, removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative post read, account mutation, public source request, or peer-
+worktree content inspection occurred. Persist this evidence before compacting
+the repeated Cycle 215–219 seed observations.
 
 ## Cycle 220 seed-first start
 
