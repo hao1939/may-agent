@@ -7773,6 +7773,29 @@ resource limits, policy, provenance, authority, cost, drift, models, or
 providers. The next ranked audit checks the inline policy/evidence CLI's use of
 the shared recursive duplicate-key scanner.
 
+## Cycle 172 checkpoint — deeply nested inline JSON now fails closed
+
+Seed commit `4f16af6f6c` records the read-only Cycle 172 boundary before this
+audit: public Explore returned 30 notes; the saved target remained HTTP 200,
+`login`, semantic fingerprint `3dab1b6d…8af420`, zero attributable items,
+unknown additions/changes, no observed removals, and all 132 durable seeds
+unavailable.
+
+The pre-fix inline policy parser accepted 25,000 object levels but threw a
+stack `RangeError` at 50,000 levels / 500,004 bytes; 100,000 and 200,000 levels
+reproduced it. Exact local `5b9d77b0f1` reuses the iterative 256-level scanner
+for both inline policy and evidence JSON before recursive duplicate-key
+inspection. Quoted braces remain valid and the boundary is pinned at 256/257.
+The focused gate passes 24 tests and 72 assertions plus TypeScript, formatting,
+and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the tested local failure and repair and
+low for broader limits, policy, provenance, authority, cost, drift, models, or
+providers. The next ranked audit checks the remaining local snapshot and
+policy-provenance readers that use the same recursive scanner.
+
 ## Cycle 170 checkpoint — actual snapshot output passes scoped assessment
 
 Seed commit `300c496e39` records unchanged semantic XHS access, zero

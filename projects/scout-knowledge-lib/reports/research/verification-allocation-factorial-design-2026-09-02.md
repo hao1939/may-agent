@@ -2731,6 +2731,25 @@ JSON resource limit, policy validity, provenance, authority, model behavior,
 cost, drift, or provider execution. The next audit checks other untrusted
 callers of the shared recursive duplicate-key scanner.
 
+## Cycle 172 bounded inline policy/evidence nesting
+
+Seed commit `4f16af6f6c` preceded the inline CLI depth ladder. A 25,000-level
+policy argument remained responsive, while 50,000 levels / 500,004 bytes threw
+`RangeError: Maximum call stack size exceeded`; 100,000 and 200,000 levels
+reproduced the failure. The evidence-manifest argument reached the same
+recursive scanner.
+
+Exact local `5b9d77b0f1` reuses the iterative output-nesting scanner and rejects
+more than 256 structural levels before recursive duplicate-key inspection.
+Quoted braces do not count as structure, 256 levels remain accepted, and 257
+are rejected with a stable argument-specific error. Twenty-four focused tests
+pass with 72 assertions plus TypeScript, formatting, and whitespace.
+
+This proves a bounded local CLI failure mode and repair, not a universal JSON
+resource limit, policy validity, provenance, authority, model behavior, cost,
+drift, or provider execution. The next audit checks the remaining local
+snapshot and policy-provenance readers that call the shared recursive scanner.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
