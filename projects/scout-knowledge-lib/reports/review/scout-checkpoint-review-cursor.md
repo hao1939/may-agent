@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing Cycle 252 seed d4a9208af8b70c9419efe8e2d8d4774506a4444c: token rarity is accepted only as an incomplete retrospective diagnostic; the v2 gate and miss wording are integrated; Cycle 252 correctly prioritizes exact control replay; RV-004 and RV-008 remain open; and one low-severity quartile qualification awaits integration."
+summary: "Independent Scout review cursor through standing Cycle 252 seed d4a9208af8b70c9419efe8e2d8d4774506a4444c: token rarity is accepted only as an incomplete retrospective diagnostic; the v2 gate, miss wording, and quartile qualification are integrated; Cycle 252 correctly prioritizes exact control replay; and RV-004 plus RV-008 remain open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "token specificity", "RV-004", "RV-006", "RV-007", "RV-008", "RV-009", "RV-010"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through d4a9208af8b70c9419efe8e2d8d4774506a4444c; independently reproduced current and historical navigation outcomes, 202 token perturbations, score margins, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, fixture lineage, reviewer patch identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
@@ -29,8 +29,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   behavior claim. Cycle 251's rarity analysis correctly rejects a universal
   rule and changes no scorer, but its upper quartile depends on an unstated
   convention. The v2 gate and miss wording are now integrated; the quartile
-  qualification remains pending integration. Cycle 252 is a seed-only boundary
-  that correctly makes RV-008 replay the next accessible gap.
+  qualification is now integrated. Cycle 252 is a seed-only boundary that
+  correctly makes RV-008 replay the next accessible gap.
 
 ## Exact scope and ordering
 
@@ -194,7 +194,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | Provenance and claim/source separation | **Accept.** Accepted identities, unavailable targets, and observational access remain distinct. |
 | Novelty and decision value | **Accept narrowly.** Nine frozen cases gain honest unavailable status; perturbations reject a bad policy; diagnostics expose uncertainty without deciding it. |
 | Related-work comparison | **Defer.** Existing papers are contextual controls; no fresh replication is claimed. |
-| Contradictions and uncertainty | **Revise under RV-008/RV-010.** The miss wording is integrated; the exact control input and quartile convention still need durable qualification. |
+| Contradictions and uncertainty | **Revise under RV-008.** The miss wording and quartile convention are integrated; the reviewed range still lacks the exact control input. |
 | Duplication and contamination | **Revise under RV-004.** No unaccepted bytes were admitted, but duplicated logs and same-producer fixtures limit independence. |
 | Usability and retrieval value | **Accept narrowly.** Broken links fall 130 to zero and exact status outcomes improve 9/22 without observed regression. |
 | Access boundaries | **Accept.** Reused receipts do not become collection evidence; no external mutation occurred. |
@@ -215,7 +215,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
 | `RV-008` | Medium | Cycle 244 matched caller-control evidence | Exact full query input is absent, and the stated replacement does not uniquely reproduce the recorded scores. A future threshold could be tuned against unreplayable evidence. | **Revise; open.** Persist exact control queries and expected outputs before using them for selection or policy; do not infer the missing input. |
 | `RV-009` | Low | Cycle 247 singular `runner_up` diagnostic | Equal-score second-place identities can change representative while the comparison tier is unchanged. | **Resolved by standing.** Cycle 249 `499fbb85cc` reports the full score tier, and Cycle 250 `3b0a2d2b6d` versions its diagnostic shape; focused tests pass. |
-| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report names 41 without its convention. Readers cannot reproduce the exact summary from the prose alone. | **Revise; locally fixed.** Qualify the convention and alternatives; no scorer, fixture, or substantive conclusion changes. |
+| `RV-010` | Low | Cycle 251 result `088a7f3c9a` | The 147-value pooled upper quartile is 41 with lower-index selection, 41.5 with linear interpolation, and 42 with nearest rank; the report named 41 without its convention. | **Resolved.** Reviewer `4a012e5158` is standing `f13dd4215a` at stable patch ID `2a820ea31f`; both durable reports now name the convention and alternatives. |
 
 ## Reviewer source/result and integration status
 
@@ -233,11 +233,11 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `fb5fe6f7b665e6b0823ac26b37ec42ddac2548fe`. Their gate and wording changes
   are integrated; their older cursor is superseded here.
 - Current reviewer source is
-  `d4a9208af8b70c9419efe8e2d8d4774506a4444c`. Integrate the directly following
-  cursor/quartile commit from
-  `codex/g-8c5b597e-cycle252-review`. Rollback is an ordinary revert
-  of that one documentation commit. It is not landed until standing contains
-  its exact or patch-equivalent changes.
+  `d4a9208af8b70c9419efe8e2d8d4774506a4444c`. Reviewer result
+  `4a012e5158c22a80484461dcc957000d32e99c40` is integrated as standing
+  `f13dd4215a533905bf50f05c7e7e3a3ec0df9359`; both share stable patch ID
+  `2a820ea31f9b54396983bc422207656b5dcb1b4b`. Rollback is an ordinary revert
+  of the standing documentation commit.
 - Earlier accepted projection and review changes remain integrated as standing
   `d35632c2b1` and `8ab0a89cd0`; Cycle 231 cursor `86788ca48c` is reconciled as
   standing `e420498c47`. Reviewer `7628faf755`, `f3ddc3ab36`, `b4c98626c3`,
@@ -248,9 +248,9 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 ## Next trigger
 
-Review the next material standing checkpoint. Also trigger on integration or
-rejection of RV-010, an exact-input disposition for RV-008, or a concrete
-RV-004 outcome. If none arrives, the next periodic audit is no earlier than
+Review the next material standing checkpoint, an independent disposition of
+the post-review exact-input work for RV-008, or a concrete RV-004 outcome. If
+none arrives, the next periodic audit is no earlier than
 `2026-09-04T18:18:37Z`. Do not poll unchanged state. This standing reviewer goal
 remains active.
 
