@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 98, including exact full-grid verifier 6fd185a54b4fa386d92ceba26b187a3a7963a6fe."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 99, including explicit frontier-policy gate 7a4c7ce5b934692271e418c64f0bba140126f4be."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1367,6 +1367,46 @@ shape, provider behavior, and the missing policy preference. The next ranked
 question is to require an independently justified reserve target or episode
 ceiling before selecting a frontier point, rejecting an implicit post-hoc
 choice.
+
+## Cycle 99 explicit operating-policy boundary
+
+Seed reconciliation `6151fc3398f1f8f25f2c9dd4bd4e9b49d8d437fa`
+preceded this work. It recorded a saved-shell login-to-profile transition but
+still exposed zero attributable items: added and changed IDs remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. The local-only
+accepted-result inventory at
+`2026-09-03T00:12:55.252Z–00:12:55.258Z` found all six refs unchanged. GitHub,
+arXiv, and Reddit therefore made zero public requests.
+
+Exact local `7a4c7ce5b934692271e418c64f0bba140126f4be` adds a
+schema-checked selector to the complete frontier verifier. It accepts exactly
+one of two caller policies: the minimum uniform-drift reserve to satisfy or the
+maximum episode count not to exceed. Each policy must carry a nonempty evidence
+reference. Missing, conflicting, malformed, structurally inconsistent, and
+unattainable input returns no selection. A reserve target selects the cheapest
+qualifying point; an episode ceiling selects the strongest point within the
+ceiling. The emitted SHA-256 binds the exact caller policy, while its evidence
+status remains `caller-supplied-unverified`.
+
+The exact full-grid rerun reproduced row SHA-256
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+result SHA-256
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Without a policy, the real 508-point frontier returned `selected: null` and
+`exactly one explicit frontier policy with evidence is required`. Focused
+coverage passes 4 tests and 9 assertions, including a malformed episode-count
+control, both selection bases, empty evidence, conflicting bases, and an
+unattainable target.
+
+This prevents optimization output from silently becoming an operating
+decision. It does not establish that a referenced reserve, budget, cost, or
+drift estimate is independent, current, affordable, or valid. Confidence is
+high for fail-closed parsing, deterministic selection, full-grid compatibility,
+and exact local hashes; low for every real-policy input and provider transfer.
+The next ranked question is whether a minimal provenance manifest can bind the
+caller policy to a named owner, decision revision, observation time, and
+independent evidence status without pretending to validate its substantive
+judgment.
 
 ## Go/no-go boundary
 
