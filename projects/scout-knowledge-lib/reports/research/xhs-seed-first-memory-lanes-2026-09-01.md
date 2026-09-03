@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 203: bounded observational reconciliation preceded a copied model-evidence identity control, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
+summary: "Seed-first Scout continuity through Cycle 204: bounded observational reconciliation preceded a copied cross-model evidence denial, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 203 observational reconciliation through 2026-09-03T12:50:10.427Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 203 at 2026-09-03T12:50:10.427Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only provenance inspection of later unaccepted self-evolution commits through d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 204 observational reconciliation through 2026-09-03T12:58:06.244Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 204 at 2026-09-03T12:58:06.244Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only provenance inspection of later unaccepted self-evolution commits through d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -7859,6 +7859,36 @@ GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
 public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
+
+## Cycle 204 checkpoint — copied bytes cannot register a different model
+
+Seed commit `e362380035` records one bounded public status and one
+non-navigating saved status before the control. Explore remained readable at
+30 notes; the saved target remained login-class at 46,763 bytes, the same
+semantic fingerprint, and zero attributable items. Added/changed identities
+remain unknown, removals are `[]`, and all 132 seeds remain unavailable. No
+XHS state changed.
+
+Exact local `ba9505219b` coherently expands the freeze to two distinct models,
+128 episodes, and seven declared artifacts. Model zero points to the original
+160-byte resolution object; model one points to its same-byte, same-digest copy
+on a distinct inode. Verification fails only with `models[1] resolution
+evidence does not match declaration`, returns null policy scope, and keeps
+provider authority false.
+
+The copied path therefore cannot manufacture independent evidence for another
+identity. This matches Cycle 202's shared-object denial while preserving Cycle
+203's valid one-model alias behavior: content identity may be stored more than
+once, but each declaration still needs content that names that model. The
+focused bundle gate passes 18 tests and 95 assertions plus TypeScript,
+formatting, and whitespace. No production change is justified.
+
+GitHub/local code again won. GitHub, arXiv, and Reddit made zero public
+requests and retain their exact evidence, access boundaries, and triggers.
+The unaccepted `d041c41b54` peer remains deferred. The next ranked explicit-
+identity alternative tests whether strict v1 already supports two distinct,
+matching per-model resolution artifacts and a coherent two-model schedule,
+which could avoid a registry migration entirely.
 
 ## Cycle 203 checkpoint — copied resolution bytes remain one identity
 

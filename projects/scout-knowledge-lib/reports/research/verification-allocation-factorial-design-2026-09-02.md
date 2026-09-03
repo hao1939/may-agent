@@ -2805,6 +2805,22 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 204 copied cross-model resolution denial
+
+Seed commit `e362380035` preceded exact test `ba9505219b`. A coherent
+two-model, 128-episode freeze points model zero to the original resolution
+object and model one to its separately declared same-byte copy on a distinct
+inode.
+
+The result fails only with `models[1] resolution evidence does not match
+declaration`, reports seven artifacts and two models, returns null policy
+scope, and denies provider authority. Copying bytes and changing the locator
+does not make those bytes evidence for a different model identity.
+
+The focused bundle gate passes 18 tests and 95 assertions plus TypeScript,
+formatting, and whitespace. The next alternative tests two distinct matching
+per-model objects under strict v1 before proposing any registry migration.
+
 ## Cycle 203 copied model-resolution identity
 
 Seed commit `c6f3cf77c3` preceded exact local test `366ef996ad`. A separately
