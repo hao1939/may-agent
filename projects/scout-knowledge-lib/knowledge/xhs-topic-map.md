@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 107 observational reconciliation through 2026-09-03T01:49:05.546Z; exact access evidence and uncertainty are in the Cycle 107 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 107 at 2026-09-03T01:49:05.546Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 107 read-only XHS boundary through 2026-09-03T01:49:05.546Z."
+latest_seed_basis: "Cycle 115 observational reconciliation through 2026-09-03T03:01:29.871Z; exact access evidence and uncertainty are in the Cycle 115 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 115 at 2026-09-03T03:01:29.871Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 115 read-only XHS boundary through 2026-09-03T03:01:29.871Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 107 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 115 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -322,20 +322,19 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 114 supersedes the older table snapshot below. Exact seed commit
-`a36cdf1cef8d76f004869ab95ac46afe81f274ba` records the unchanged login-class
+Cycle 115 supersedes the older table snapshot below. Exact seed commit
+`18703e0919e4ba5b4af1510b7aa6808274bf1e05` records the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. The post-seed local containment check at
-`2026-09-03T02:57:38.779Z–02:57:38.870Z` found all nine standing reconciliation
-commits contained and the four accepted self-evolution artifacts byte-equal to
-`df80a1da`. No public request was made. The local call-path authority control
-answered the ranked question while all public lanes remained deferred.
+unavailable. No public request was made. The local compact-output audit answered
+the ranked question while all public lanes remained deferred. Accepted-result
+containment and protected-checkout preservation are rechecked on the resulting
+exact tip.
 
-| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                                    | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Decision and revisit trigger                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 114; public trigger-deferred.** The ranked call-path authority question was directly testable in the standing implementation.                                                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact internal-scope fix is `72e925b…dab5e1`; the retained CLI result from Cycle 113 remains valid. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
-| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 114.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                                    | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                         | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 114 without quota work.** The unchanged access class and call-path result expose no seed-linked item, thread delta, access change, or community-specific claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                            | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
+| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                                 | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 115; public trigger-deferred.** The ranked compact-output question was directly testable in the standing implementation.                                                       | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact compact-output fix is `26a2969…b312a`; the retained snapshot identity remains unchanged. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
+| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 115.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                                 | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 115 without quota work.** The unchanged access class and output result expose no seed-linked item, thread delta, access change, or community-specific claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -2945,6 +2944,37 @@ durable seeds remain unavailable. No representative saved post was supported
 or read, and no XHS state changed. No output-auditability check, public source,
 provider, or accepted-result request preceded this reconciliation. Commit this
 seed record first, then test the ranked compact-output claim locally.
+
+### Cycle 115 checkpoint — compact output names the verified snapshot
+
+The matched pre-fix fixture loaded and verified a two-point local snapshot,
+selected equal 172 through the freeze-bound record, and denied provider calls.
+Its compact summary exposed the row, result, and frontier hashes plus the count,
+but omitted the derived reference. The exact failed expectation was
+`frontier-snapshot-sha256:4176d7766cebc51d2848fa07d870d6727c0c59f5cdd81762d7f095a5a5488471`;
+the output required a reader to reconstruct that relation or reopen evidence.
+
+Exact local `26a29696ce29b23729cf8ab2d32241e7eb9b312a` derives the
+reference from the already verified row/result/frontier/count tuple and adds it
+to the compact snapshot summary. The full frontier remains omitted, and
+provider authority remains false. Focused validation passes 10 tests and 31
+assertions plus TypeScript, formatting, and whitespace checks. This is strong
+code-level auditability evidence, not policy authority, snapshot freshness,
+real drift, cost, model, or provider evidence.
+
+The full candidate gate passes syntax, TypeScript, formatting, 180 tests with
+890 assertions, whitespace, and all 21 relative links. Read-only health remains
+bounded at 26 facts and 16 wake signals, runtime `.state` is empty, all 9
+accepted standing commits remain ancestors, and all 4 accepted artifact blobs
+remain exact. Protected `/app` and the human overlay retain their prior heads,
+record counts, and full status fingerprints; neither was written or tested.
+
+GitHub/local code was selected; public GitHub, arXiv, and Reddit made zero
+requests. MemGauge `2608.30177v1` and allocation study `2608.25553v3` retain
+their prior scores and roles. The next ranked investigation is process-level
+output: run the actual CLI against a snapshot-bound fixture and verify that its
+serialized JSON contains the exact derived reference while a stale-reference
+control still returns no selection.
 
 ## Cycle log
 

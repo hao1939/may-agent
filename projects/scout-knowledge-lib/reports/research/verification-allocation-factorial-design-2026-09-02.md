@@ -2031,6 +2031,35 @@ not decision authority or real provider readiness. The next ranked control is
 whether compact output explicitly preserves the matched snapshot reference or
 requires reopening the decision record to reconstruct that relation.
 
+## Cycle 115 compact-output auditability control
+
+Seed commit `18703e0919e4ba5b4af1510b7aa6808274bf1e05` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and GitHub, arXiv, and Reddit made zero public requests.
+
+The matched pre-fix fixture loaded a byte- and computation-matched snapshot,
+verified the freeze and local decision record, selected equal 172, and denied
+provider calls. Its compact summary omitted the exact derived snapshot
+reference even though it exposed the component hashes and point count. The
+failed expectation named
+`frontier-snapshot-sha256:4176d7766cebc51d2848fa07d870d6727c0c59f5cdd81762d7f095a5a5488471`.
+
+Exact local `26a29696ce29b23729cf8ab2d32241e7eb9b312a` adds the derived
+reference to the compact verified-snapshot object. It does not serialize the
+full frontier or change provider authority. Focused validation passes 10 tests
+and 31 assertions plus TypeScript, formatting, and whitespace checks. This
+supports local result auditability; it does not authenticate policy authority,
+snapshot freshness, real drift, cost, models, or providers.
+
+The full candidate gate passes syntax, TypeScript, formatting, 180 tests with
+890 assertions, whitespace, and 21 relative links. Read-only health remains at
+26 facts and 16 wake signals, runtime `.state` is empty, accepted containment is
+9/9 standing ancestors plus 4/4 artifact blobs, and both protected checkout
+fingerprints are unchanged.
+
+The next ranked control is process-level: exercise actual CLI serialization
+against a snapshot-bound fixture and preserve a stale-reference denial control.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
