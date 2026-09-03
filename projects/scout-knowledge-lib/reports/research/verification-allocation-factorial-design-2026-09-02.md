@@ -2805,6 +2805,20 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 207 partial rollback is fail-closed
+
+Seed commit `6c9327da55` preceded exact test-only commit `3a7e2a9228`. Three
+matched cases start from the same valid two-model bundle and remove only the
+peer resolution record, only its model declaration, or only its schedule
+cells. All return `ok:false`, null policy scope, and false provider authority.
+The exact distinguishing errors are missing bound resolution evidence,
+expected 64/found 128 episodes, and expected 128/found 64 episodes.
+
+The focused bundle gate passes 20 tests and 113 assertions plus TypeScript,
+formatting, and whitespace. This supports atomic coupling in the current v1
+design but supplies no registry owner, update authority, or consumer need. The
+next audit tests whether coherent model-order reversal changes semantic scope.
+
 ## Cycle 206 exact per-model rollback
 
 Seed commit `abd11a10d9` preceded exact test-only commit `423f05d513`. A

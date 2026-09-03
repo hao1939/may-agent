@@ -7877,6 +7877,28 @@ and overlay retain the Cycle 206 fingerprints. With no topic or accepted-ref
 trigger, all public lanes remain deferred and the ranked interrupted-rollback
 control proceeds locally.
 
+## Cycle 207 checkpoint — interrupted rollback is denied
+
+Seed commit `6c9327da55` preceded exact test-only commit `3a7e2a9228`. Each of
+three matched controls starts from the valid two-record, two-model,
+128-episode bundle. Removing only the peer record fails with `models[1] has no
+bound resolution evidence`; removing only the declaration fails with
+`schedule episode count must be 64, found 128`; replacing only the schedule
+cells fails with `schedule episode count must be 128, found 64`.
+
+Every case returns `ok:false`, null policy scope, and false provider authority.
+The focused gate passes 20 tests and 113 assertions plus TypeScript, formatting,
+and whitespace. This supports fail-closed coupling and an atomic update rule;
+it does not create a registry owner, update authority, or consumer need.
+
+GitHub/local code won again with zero public requests. GitHub retains its four
+named exact heads and local commit provenance; arXiv retains `2608.30177v1`
+and `2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. Their
+revisit triggers are unchanged, and the unaccepted peer range ending at
+`d041c41b54` remains deferred without content inspection. The next ranked
+local audit coherently reverses the two models and schedule order to determine
+whether order changes semantic scope or only presentation.
+
 ## Cycle 206 seed-first reconciliation — profile shell remains unavailable
 
 Cycle 206 began from clean checkpoint `c460920a4b`. The resumed worker is UID
