@@ -3714,6 +3714,17 @@ reorders keys in the seed-policy evidence record with its digest updated,
 testing whether the byte boundary changes protocol scope without changing model
 scope.
 
+Exact reviewed Cycle 211 tip
+`4c972d826a6b58208c64b9894eb6dae5d2d717d1` passes syntax, TypeScript,
+source formatting, 271 tests, 1,388 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:43:34.256Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
+Protected source and overlay reproduce HEAD/status fingerprints
+`386b445c…1fec8` / 886 / `996480ad…752a3` and `fd4c68ec…1514663` / 3 /
+`ad8d222c…e74780`; neither was written or tested. The two-commit unaccepted
+range ending at `d041c41b54` remains outside standing lineage.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
