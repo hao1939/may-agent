@@ -3992,7 +3992,8 @@ title or summary contains that token. No fixture, index, scorer, or threshold
 changed.
 
 The 17 correct non-miss results across frozen v1 and v2 contribute 147 matched
-tokens. Their pooled document-frequency quartiles are 4, 19, and 41, and every
+tokens. Their pooled lower-index quartiles are 4, 19, and 41; the upper
+quartile is 41.5 under linear interpolation and 42 under nearest rank. Every
 selected result has at least one token found in at most four entries; the 17
 per-result minima range from 1 to 4 with median 2. The correct reef negative is
 a miss and therefore has no selected token. By contrast, the generic negative
