@@ -2805,6 +2805,29 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 183 cross-cell candidate provenance binding
+
+Seed commit `206a3d37d6` preceded path-only and revision-only matched controls.
+Each changed one `memory-a` candidate field in one cell while retaining the
+candidate IDs and bodies, regenerating the exact prompt, and recomputing both
+schedule digests. Before repair, both freezes returned `ok:true`, no errors,
+provider authority false, model scope `ac29ae2…7c5bf`, and non-null protocol
+scopes `7b1b777…b071` and `bdbc111…1960`, respectively.
+
+Exact local `8db9e758e9` tracks one path/revision tuple per memory identity in
+the existing bounded factorial pass. Either drift now returns one exact
+cross-cell provenance error, null policy scope, and provider authority false.
+The complete freeze/factorial gate passes 79 tests and 682 assertions plus
+TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the matched synthetic invariant and
+contradictory evidence against treating body stability plus coherent byte
+rebinding as complete provenance isolation. It does not authenticate the
+tuple, require distinct tuples across identities, or establish authorship,
+registration, policy authority, cost, real-model behavior, or provider
+execution. The next audit tests whether two memory identities can share one
+path/revision tuple consistently across every cell.
+
 ## Cycle 182 candidate cardinality and identity binding
 
 Seed commit `43d0dd7727` preceded two matched candidate controls. A valid
