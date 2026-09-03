@@ -322,19 +322,18 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 123 supersedes the older table snapshot below. Its seed-first record
-starts from exact tip `39975952e7338cbaef803606a89c624c13d70cf4` and records
-the unchanged login-class shell, zero attributable items, no proven removals,
-and all 132 durable seeds unavailable. No public request was made. The
-same-byte artifact-alias control remains the last completed ranked question
-while all public lanes remain deferred; the timestamp-proof separation control
-is selected next.
+Cycle 123 supersedes the older table snapshot below. Starting tip
+`39975952e7338cbaef803606a89c624c13d70cf4` and exact seed commit
+`75507eabef7a6cc1c1219d39e18a0fc002760b36` anchor the unchanged login-class
+shell, zero attributable items, no proven removals, and all 132 durable seeds
+unavailable. No public request was made. The timestamp-proof control changed
+only the locally byte-bound proof and preserved scope, selection, and decision.
 Accepted-result containment and protected-checkout preservation are rechecked
 on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 123; public trigger-deferred.** The ranked timestamp-proof separation question is directly testable in the standing implementation.                                  | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact last test contract is `1170e66…a7879`; same bytes under a different registered artifact name change protocol scope and deny the old decision. | Zero public requests. Test timestamp-proof separation locally. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 123; public trigger-deferred.** The ranked timestamp-proof separation question was directly testable in the standing implementation.                                   | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact test contract `5df12fa…f494a5` preserves stable scope, equal-172 selection, and decision digest across a proof-byte-only change.                      | Zero public requests. Next test whether a proof artifact is coherently bound to the checksum manifest. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
 | **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 123.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 123 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
@@ -3258,6 +3257,32 @@ supported or read, and no XHS state changed. No timestamp-proof control,
 public source, provider, or accepted-result request preceded this
 reconciliation. Commit this seed record first, then run the ranked matched
 timestamp-proof control locally.
+
+### Cycle 123 checkpoint — timestamp-proof bytes do not define policy scope
+
+Seed commit `75507eabef7a6cc1c1219d39e18a0fc002760b36` preceded the
+control. Exact test-only commit
+`5df12fad1c66c2dddea5b7cd3d2ee1fd28f494a5` changed only
+`MANIFEST.sha256.ots` bytes and the matching local artifact digest. Bundle
+name and SHA-256, checksum manifest, schedule, models, seeds, frontier,
+snapshot, policy, and decision evidence stayed fixed.
+
+The proof digest changed from
+`90b8453eb4ad5b97194fa6168b3c151f992a8d9b358ec122d084d61b21e3f994`
+to `97296f89af73fbd23ebf1f10fb872a949ab1b0073ee7525c4a02bf0fb79e133e`.
+Both baseline and changed-proof paths selected equal 172 and returned decision
+digest `e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8`.
+Protocol and model scopes remained equal. Snapshot and registration evidence
+remained `local-byte-match-unverified`, and provider authority remained false.
+
+This is high-confidence local factor separation: an opaque timestamp-proof
+sidecar is evidence metadata, not an execution-policy input. It does not show
+that either proof is valid, refers to the checksum manifest, was externally
+anchored, or authenticates an owner or deposit time. Public GitHub, arXiv, and
+Reddit made zero requests because no trigger fired. The next ranked local
+investigation is proof-to-manifest coherence: determine whether arbitrary
+locally byte-matched proof bytes can be mistaken for a coherent proof binding,
+without claiming external timestamp validation.
 
 ## Cycle 122 seed-first start
 

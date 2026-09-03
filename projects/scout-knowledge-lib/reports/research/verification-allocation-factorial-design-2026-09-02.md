@@ -2233,6 +2233,35 @@ validity, policy authority, real execution, drift, prices, model behavior, or
 provider readiness. The next ranked control isolates timestamp-proof bytes
 from executable policy scope.
 
+## Cycle 123 timestamp-proof separation
+
+Seed commit `75507eabef7a6cc1c1219d39e18a0fc002760b36` preceded this
+control. XHS semantic access remained unchanged; the saved login shell changed
+by two bytes and body hash but exposed no attributable item. All 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+Exact test-only commit
+`5df12fad1c66c2dddea5b7cd3d2ee1fd28f494a5` changed only the
+`MANIFEST.sha256.ots` bytes and the corresponding local artifact digest. The
+proof SHA-256 changed from
+`90b8453eb4ad5b97194fa6168b3c151f992a8d9b358ec122d084d61b21e3f994`
+to `97296f89af73fbd23ebf1f10fb872a949ab1b0073ee7525c4a02bf0fb79e133e`.
+Execution artifact identity, checksum manifest, schedule, models, seeds,
+frontier, snapshot, policy, and decision evidence remained fixed.
+
+Both paths selected equal 172 and returned exact decision SHA-256
+`e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8`.
+Protocol and model scopes stayed equal, both local registrations remained
+`local-byte-match-unverified`, and provider authority remained false. Focused
+validation passes 10 tests and 49 assertions plus source formatting.
+
+This supports local factor separation: opaque timestamp-proof bytes do not
+change the execution policy. It does not validate either proof, bind it
+semantically to the checksum manifest, authenticate an external timestamp,
+identify an owner, or prove a deposit. The next ranked control tests the
+proof-to-manifest coherence boundary while preserving the explicit unverified
+evidence class.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
