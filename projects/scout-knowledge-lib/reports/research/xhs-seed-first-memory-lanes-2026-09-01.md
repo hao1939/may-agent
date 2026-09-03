@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 221: the seed ledger is current again, repeated Cycle 215–219 observations point to one canonical record, and no source-lane trigger fired."
+summary: "Seed-first Scout continuity through Cycle 222: the canonical seed ledger holds the latest exact receipt, and the next retrieval audit preserves incomplete Cycle 206–214 provenance."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 221 observational reconciliation through 2026-09-03T14:39:53.294Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 221 at 2026-09-03T14:39:53.294Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 222 observational reconciliation through 2026-09-03T14:46:18.292Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 222 at 2026-09-03T14:46:18.292Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -8195,6 +8195,16 @@ deduction and low for external receipt needs.
 
 Cycle continuity, lane disposition, accepted lineage, and focused validation
 are consolidated in the Cycle 220 checkpoint ledger.
+
+## Cycle 222 seed-first reconciliation — canonical receipt only
+
+Cycle 222 began from clean `842f96a6a6`. The exact bounded observation and
+full response receipt are retained once in
+[seed-ledger row 222](../../knowledge/xhs-seed-ledger.md). Semantic access
+remained unchanged: added/changed identities are unknown, removals are `[]`,
+all 132 durable seeds remain unavailable, and no public GitHub/arXiv/Reddit
+request or account mutation preceded this record. Commit it before the Cycle
+206–214 retrieval audit.
 
 ## Cycle 221 seed-first reconciliation — same boundary, fresh bytes
 
