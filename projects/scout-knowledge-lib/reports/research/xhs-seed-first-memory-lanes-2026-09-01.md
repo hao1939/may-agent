@@ -9869,6 +9869,24 @@ not measured later use or a user outcome, so RV-004 remains high/open. The next
 exact mirror is Cycle 255's 17-line / 1,153-byte real-use-outcome boundary;
 preserve that negative outcome while consolidating its historical proof.
 
+## Cycle 294 seed-first start — exact Cycle 293 result retained
+
+Cycle 294 began from clean Cycle 293 result
+`32c16f5ca63b1c16952a2a27f46d4f025d9742ee`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 292 projection, 74 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The broad audit passed 1,540 documents / 1,710 links; read-only
+health at `2026-09-03T23:08:44.081Z` returned 30 facts / 16 wakes with
+`truncated:true`.
+
+At `2026-09-03T23:08:43.878Z`, the Cycle 292 receipt was under ten minutes
+old. No browser, GitHub, arXiv, or Reddit request ran. Additions/changes remain
+unknown, removals are `[]`, and all 132 durable seeds remain unavailable. The
+protected wider checkout remains externally observed at HEAD
+`386b445c…41fec8`, 914 records / `5b4816ba…2f4`; its combined Scout scope is
+unchanged at 296 / `7e4d0937…26a8a`. Commit this ordering before compacting
+Cycle 255's negative real-use-outcome mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

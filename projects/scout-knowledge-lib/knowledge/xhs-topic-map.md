@@ -4116,6 +4116,17 @@ All source lanes made zero requests, their triggers remain unchanged, and
 RV-004 remains high/open. The next exact-run scan ranks Cycle 255's 17-line /
 1,153-byte real-use-outcome boundary, which must retain its negative finding.
 
+## Cycle 294 seed-first start — current receipt reused
+
+Cycle 294 began from clean validated `32c16f5ca6`. The exact tip passed the
+full 296-test / 1,483-assertion gate, Cycle 292 projection, 74 scoped links,
+both navigation fixtures, 1,540 documents / 1,710 broad links, and health at
+30 facts / 16 wakes. At `2026-09-03T23:08:43.878Z`, the scheduled Cycle 292
+receipt was under ten minutes old. No browser or public-source request ran;
+added/changed remain unknown, removals are `[]`, and all 132 IDs remain
+unavailable. The post-seed ranking selects Cycle 255's negative real-use
+outcome mirror before any lower-value proof block.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
