@@ -7752,6 +7752,29 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 153 checkpoint — caller substitution stays explicitly unverified
+
+Seed commit `f073902e899ef46cf0375cdf98d6772a28a9f4cb` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+control. Exact local `1e8026b5c830e8d7df1d0a99624b380e28e43c97` compares
+coherent baseline and substituted caller manifests plus their byte-bound local
+decision records.
+
+Both inputs select equal 172 at 1,032 blocks with unchanged policy identity and
+explicit unverified labels. Their manifest and decision-record identities
+differ, while the evidence root contains only `decisions/`. This reproduces a
+manifest-persistence gap but no silent authorization bypass. The focused gate
+passes 18 tests and 59 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for this local substitution comparison and
+low for persistence, authority, authorship, external compatibility, or real
+execution. The next ranked investigation tests a separate descriptor-safe,
+byte-bound manifest path with missing, hash-mismatch, and duplicate-key controls
+without redefining the caller-supplied API.
+
 ## Cycle 152 checkpoint — equivalent manifests now share one identity
 
 Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` records unchanged

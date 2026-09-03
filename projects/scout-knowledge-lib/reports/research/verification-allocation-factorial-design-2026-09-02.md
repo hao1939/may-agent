@@ -2527,6 +2527,29 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 153 caller-manifest persistence boundary
+
+Seed commit `f073902e899ef46cf0375cdf98d6772a28a9f4cb` preceded a coherent
+substitution control. Exact local
+`1e8026b5c830e8d7df1d0a99624b380e28e43c97` writes a baseline and
+substituted decision record beneath the same local root, supplies matching
+caller manifests, and selects from both. Each returns equal 172 at 1,032 blocks
+with explicit caller-supplied and local-match unverified labels. The policy hash
+is unchanged; both the manifest hash and decision-record hash change.
+
+The root inventory is exactly `decisions/`, so neither manifest is durably
+stored. That is direct evidence of a persistence limitation, not a hidden
+authority escalation: coherent substitution remains possible only through the
+already caller-supplied API and both results stay unverified. The focused gate
+passes 18 tests and 59 assertions plus TypeScript, source formatting, and
+whitespace. Confidence is high for this local comparison and low for durable
+persistence, authorship, authority, external compatibility, or execution.
+
+The next ranked investigation is a separate descriptor-safe, byte-bound
+policy-manifest path with missing-file, hash-mismatch, and duplicate-key
+controls. It must preserve rather than silently redefine the existing
+caller-supplied interface.
+
 ## Cycle 152 canonical policy-manifest identity
 
 Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` preceded a matched
