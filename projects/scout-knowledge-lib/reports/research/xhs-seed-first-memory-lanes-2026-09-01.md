@@ -9379,6 +9379,42 @@ fingerprints remain exact, and no source lane fired. Commit this seed record,
 then trace the newly observed 368-row protected-history contraction through
 repository-owned retention definitions without reading removed payloads.
 
+## Cycle 276 checkpoint — event absence is a retained-window fact
+
+The live database trigger observed at `2026-09-03T20:50:53.857Z` protects six
+reference classes from event deletion: open/orphan pairs, child traces, trace
+links, running/idle sessions, pending App admission plans, and unfinished inbox
+items. At `20:51:10.437Z`, all 15,995 retained rows had `ttl_ms = NULL`; 1,771
+were older than five days. A matched query at `20:51:59.964Z` found 116 rows
+currently eligible after applying all six protections.
+
+Protected local source supplies a consistent but non-authoritative mechanism:
+ignored `db/maintenance.ts` bytes at SHA-256 `be45928a…9bff4f` delete at most
+5,000 unprotected non-approval events older than five days, while ignored
+maintenance-mode bytes `470dc956…2939f` default to hourly passes. Live PID
+`2141` runs as UID 1000 with explicit interval `3600000`; deployed binary
+SHA-256 is `b4f95268…92450`. There is no accepted revision or build mapping
+between those ignored source bytes and the binary. `supervisorctl` is absent and
+stdout is a pipe, so no non-consuming maintenance receipt proves which exact
+rows the observed 368-row contraction removed. Bounded pruning is consistent
+with the evidence, not established causality.
+
+The accepted runtime contract says event counts are windowed and zero means
+“not seen in the retained window,” not “impossible.” Cycle 269's zero exact
+`project.knowledge.maintained` rows therefore cannot exclude an older pruned
+event. Current Scout emission carries summary, state, proposed actions, and
+evidence, but no lookup query, selected identity, later decision, or outcome
+join. Exempting that event type from generic pruning would retain more telemetry
+without creating RV-004 evidence, so make no Host or Scout code change.
+
+Cycle 275's full 296-test / 1,483-assertion gate remains the unchanged code
+baseline. Current documentation passes Cycle 237 projection, 69 scoped links,
+the 1,540-document / 1,705-link broad audit, and whitespace. Confidence is high
+for the live trigger, current counts, source bytes, process identity, and
+emission fields; low for exact deletion causality or any pruned outcome.
+`RV-004` remains high/open. The next evidence must be a newly retained outcome
+or accepted review; otherwise reconcile XHS at `2026-09-03T22:57:11.030Z`.
+
 ## Cycle 275 seed-first start — accepted review trigger
 
 Exact Cycle 274 result `e91bc6c0d6cd9c34c195dfdbf653df3dc18520a6`
@@ -9692,6 +9728,8 @@ only two payloads, both evaluator `project.owner.requested` records: ID
 and ID `6151587` at `2026-08-26T10:03:37.578Z`, payload SHA-256
 `b90e719756a19ec744493db7345dd26eaff47e87983a1fad1bab3671a1726357`.
 They request an outcome; they do not record one.
+Cycle 276 later establishes that this is retained-window evidence only; generic
+event pruning means it cannot exclude an older event that already aged out.
 
 Older operational activity remains: 60 `scout.explore` events through
 `6317493`, six `project.library_health.tick` events through `6317249`, and two
