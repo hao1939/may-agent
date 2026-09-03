@@ -904,6 +904,7 @@ export function verifyFactorialSchedule(
   const provenance = new Map<TargetIdentity, Set<string>>(
     MEMORY_IDS.map((memoryId) => [memoryId, new Set<string>()]),
   );
+  let candidateOrderMatchesPresentation = true;
   const balance = new Map<string, Set<string>>();
   for (const episode of schedule.episodes) {
     if (
@@ -972,6 +973,18 @@ export function verifyFactorialSchedule(
       episode.decoyMemoryId !== otherMemoryId(episode.targetMemoryId)
     ) {
       errors.push(`${episode.id}: target/decoy mapping is inconsistent`);
+    }
+    const expectedCandidateOrder =
+      episode.factors.presentationOrder === "target-first"
+        ? [episode.targetMemoryId, episode.decoyMemoryId]
+        : [episode.decoyMemoryId, episode.targetMemoryId];
+    if (
+      episode.candidates.some(
+        (candidate, index) =>
+          candidate.memoryId !== expectedCandidateOrder[index],
+      )
+    ) {
+      candidateOrderMatchesPresentation = false;
     }
     for (const [index, candidate] of episode.candidates.entries()) {
       if (!hasOnlyKeys(candidate, ["memoryId", "path", "revision", "body"])) {
@@ -1053,6 +1066,11 @@ export function verifyFactorialSchedule(
   ) {
     errors.push(
       "candidate path/revision tuples do not match their registered memories",
+    );
+  }
+  if (!candidateOrderMatchesPresentation) {
+    errors.push(
+      "candidate order does not match the registered presentation factor",
     );
   }
   for (const kind of ["plan", "temptation"] as const) {

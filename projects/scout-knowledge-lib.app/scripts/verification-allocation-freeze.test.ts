@@ -1274,6 +1274,37 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("rejects candidate order that contradicts the registered presentation factor", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    for (const episode of schedule.episodes) {
+      episode.candidates.reverse();
+      episode.prompt = renderFactorialPrompt(episode);
+    }
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect({
+      ok: result.ok,
+      errors: result.errors,
+      policyScope: result.policyScope,
+      providerCallsAuthorized: result.providerCallsAuthorized,
+    }).toEqual({
+      ok: false,
+      errors: [
+        "schedule factorial verification failed: candidate order does not match the registered presentation factor",
+      ],
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects the Cycle 47 source archive as a Scout execution freeze", () => {
     const { manifest, artifactContents } = validFixture();
     const sourceArchive = structuredClone(manifest);
