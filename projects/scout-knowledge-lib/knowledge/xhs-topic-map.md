@@ -2884,6 +2884,23 @@ a direct freeze-only caller can inject a snapshot reference without snapshot
 verification. If it can, keep snapshot scope construction internal to the
 verified adapter instead of treating a caller string as verified context.
 
+## Cycle 114 seed-first start
+
+Cycle 114 began from clean exact tip
+`bac6298e14cdb6e105927ec83433c039c678cd36`. The established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace ran
+at `2026-09-03T02:55:59.848Z–02:56:00.796Z`; the direct worker-port refusal
+from Cycle 113 was not needlessly repeated. Public Explore remained readable at
+30 notes. Saved status remained HTTP 200, `login`, 46,672 bytes, semantic
+fingerprint `3dab1b6…8af420`, a login wall, and zero attributable items.
+
+Only body SHA changed from `96cd035…a64337b` to `6fde28f…d8f8a4f`.
+Added and changed IDs remain unknown, observed removals are `[]`, and all 132
+durable seeds remain unavailable. No representative saved post was supported
+or read, and no XHS state changed. No call-path control, public source,
+provider, or accepted-result request preceded this reconciliation. Commit this
+seed record first, then test the ranked scope-construction boundary locally.
+
 ## Cycle log
 
 | Cycle                           | Seed reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Related discovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Deep dive                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Map decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Next                                                                                                                                                                                                                                                                                    |
