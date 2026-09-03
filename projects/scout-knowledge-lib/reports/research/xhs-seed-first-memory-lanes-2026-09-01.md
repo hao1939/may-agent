@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 159 checkpoint — parse malformed input before frontier generation
+
+Seed commit `53e2e77f64e076318c339dd7fc277e2e41c77950` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the bounded
+process control.
+
+Before repair, malformed direct input produced no output and timed out after
+1,010 ms before reaching its parser error; no goal-owned worker remained. Exact
+local `ae86874fc8717ea0c09d87f74aec7a05da80a616` relocates the existing
+parse ahead of worker launch. The same process regression now reports the root
+error in 35 ms without timeout. Eight tests and 30 assertions pass plus
+TypeScript, focused formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for failure ordering and low for positive
+full-result equivalence, authority, external compatibility, models, or
+providers. The next ranked control regenerates and compares the valid direct
+result once.
+
 ## Cycle 158 checkpoint — CLI filesystem inputs fail before adapters
 
 Seed commit `2b66eaf9677148233b2d05426c5e5901c5ea1185` records unchanged

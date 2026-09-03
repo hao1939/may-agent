@@ -2527,6 +2527,24 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 159 parse before exhaustive generation
+
+Seed commit `53e2e77f64e076318c339dd7fc277e2e41c77950` preceded a bounded
+process control. Before repair, malformed direct input ran for 1,010 ms until
+timeout exit 124, emitted zero bytes, and never reached the parser error. No
+goal-owned worker remained after the timeout.
+
+Exact local `ae86874fc8717ea0c09d87f74aec7a05da80a616` moves the
+existing direct-input parse ahead of the four exhaustive workers. The same
+malformed input now reaches the relative-root error in 35 ms without stdout or
+timeout. Eight focused parser/process tests pass with 30 assertions plus
+TypeScript, focused formatting, and whitespace.
+
+This proves local failure ordering and bounded work, not positive full-result
+equivalence, policy authority, external compatibility, or execution approval.
+The next control regenerates the valid no-policy result once and compares its
+retained row, result, and frontier identities.
+
 ## Cycle 158 fail-fast CLI filesystem inputs
 
 Seed commit `2b66eaf9677148233b2d05426c5e5901c5ea1185` preceded matched
