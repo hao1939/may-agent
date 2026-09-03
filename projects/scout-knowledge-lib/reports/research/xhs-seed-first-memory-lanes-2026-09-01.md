@@ -9368,6 +9368,28 @@ Accepted reviewer `f6a7a65928` was integrated patch-identically as standing
 comparable lane loss without converting unknown state into failure or emitting
 duplicate alerts.
 
+## Cycle 265 checkpoint — defer the classifier until its identities exist
+
+The two-note decision table is narrow: accepted→converged-no-output is a
+candidate loss, the reverse is a candidate recovery, same-state pairs are
+unchanged, and any non-converged, unavailable, missing, or malformed side is
+not comparable. Two notes do not prove persistence. Existing notes also lack a
+schema or collector revision, and protected history has no deployed
+`sourceStates` pair, so a current comparison would be invented.
+
+Host source adds an alert-identity boundary: automatic evaluation sees only
+scalars, while a manual alert re-emits a breach even when the same metric alert
+is already open. One aggregate ID collapses simultaneous lane state; five lane
+IDs recreate the rejected histories and migration. No classifier or alert code
+was added. GitHub/local code won the rubric; no GitHub, arXiv, Reddit, or XHS
+request ran, and all lane evidence/access triggers remain unchanged.
+
+Confidence is high for the local transition table and Host behavior, low for
+deployment and owner response, and absent for content improvement or RV-004.
+Next, audit whether Scout's idempotent project-event path can represent
+schema-versioned candidate transitions with stable lane keys and independent
+recovery without calling them metric alerts.
+
 ## Cycle 264 seed-first start — accepted review trigger
 
 Exact Cycle 263 tip `e82b841a82` passes the full 296-test / 1,479-assertion

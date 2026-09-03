@@ -3864,6 +3864,40 @@ integrated patch-identically as standing `cf1984200c` at patch ID
 `000cff67…b610a3`. Reconcile this finite cursor delta before testing the ranked
 two-snapshot transition-classifier question.
 
+## Cycle 265 checkpoint — two notes do not yet make a safe lane alert
+
+Two consecutive structured notes can support only a fail-closed candidate
+classification. `accepted-output`→`converged-without-output` is a candidate
+loss and the reverse is a candidate recovery. Same-state pairs are unchanged;
+positive-count or output-path changes are provenance changes, not quality.
+Any pair involving `not-converged`, `resource-unavailable`, a missing lane, or
+a malformed note is not comparable and must not produce a content alert.
+
+That decision table is insufficient for production use. Two notes cannot prove
+the proposed persistence condition. More importantly, the unchanged
+`latest-converged-resource-per-source` semantics string predates
+`sourceOutputCounts` and `sourceStates`, so notes carry no schema or collector
+revision with which to prove cross-revision comparability. Protected snapshots
+still contain only the older note shape, leaving no deployed pair to classify.
+
+Exact Host revision `d90b45d4c6` adds a second independent limit. Automatic
+evaluation cannot inspect notes. Manual `metrics.alert(id, ...)` deduplicates
+storage only by metric ID but emits another breach even when that alert is
+already open. Reusing the aggregate ID would collapse simultaneous lane
+distinctions; adding lane IDs recreates the five-history migration rejected in
+Cycle 264. A pure classifier therefore cannot by itself prevent duplicate
+events or preserve independent recoveries.
+
+No code or alert change is justified. Confidence is high for the local decision
+table, absent schema identity, protected-shape boundary, and Host emission
+behavior; confidence is low for deployment cadence and owner response. This is
+not content-quality or RV-004 outcome evidence. GitHub/local code again won the
+rubric; GitHub, arXiv, Reddit, and XHS made zero public requests and retain their
+prior evidence and triggers. The next ranked question is whether Scout's
+idempotent project-event path can carry schema-versioned candidate transitions
+with stable lane keys and independent recovery, without pretending they are
+metric alerts or deploying them before a real two-note pair exists.
+
 ## Cycle 264 seed-first start — accepted review trigger
 
 Exact Cycle 263 tip `e82b841a82` passes the full 296-test / 1,479-assertion
