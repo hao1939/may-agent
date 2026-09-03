@@ -9908,6 +9908,25 @@ creating a protected outcome or resolving RV-004, which remains high/open. The
 next exact run is Cycle 277's 20-line / 1,142-byte reviewer-integration proof;
 retain its patch provenance, resolved RV-018/RV-019 status, and outcome limit.
 
+## Cycle 295 seed-first start — exact Cycle 294 result retained
+
+Cycle 295 began from clean Cycle 294 result
+`268fbc465304ea08cd30f4db563698604ac57719`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 292 projection, 75 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The broad audit passed 1,540 documents / 1,711 links; read-only
+health at `2026-09-03T23:12:32.859Z` returned 30 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` remains contained and unaccepted
+`d041c41b54` excluded.
+
+At `2026-09-03T23:12:32.647Z`, the Cycle 292 receipt was under fourteen
+minutes old. No browser, GitHub, arXiv, or Reddit request ran; additions and
+changes remain unknown, removals are `[]`, and all 132 durable IDs remain
+unavailable. Protected `/app` stays externally observed at HEAD
+`386b445c…41fec8`, 914 records / `5b4816ba…2f4`; its combined Scout scope
+remains 296 / `7e4d0937…26a8a`. Commit this ordering before the ranked Cycle
+277 reviewer-integration mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

@@ -4139,6 +4139,16 @@ This compaction does not create the missing outcome; RV-004 stays high/open.
 Next is Cycle 277's 20-line / 1,142-byte reviewer-integration mirror, preserving
 its patch provenance, resolved findings, and outcome limit.
 
+## Cycle 295 seed-first start — current receipt reused
+
+Cycle 295 began from clean validated `268fbc4653`. The exact tip passed 296
+tests / 1,483 assertions, Cycle 292 projection, 75 scoped links, both navigation
+fixtures, 1,540 documents / 1,711 broad links, and health at 30 facts / 16
+wakes. At `2026-09-03T23:12:32.647Z`, the Cycle 292 receipt was under fourteen
+minutes old. No browser or public-source request ran; additions/changes remain
+unknown, removals are `[]`, and all 132 IDs remain unavailable. The ranked
+Cycle 277 reviewer-integration mirror follows.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
