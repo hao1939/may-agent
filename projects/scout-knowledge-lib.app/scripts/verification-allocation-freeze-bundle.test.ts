@@ -711,6 +711,62 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("binds canonical seed-policy key order into reversible protocol scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const policyArtifact = "seed-policy.json";
+    const artifact = manifest.artifacts.find(
+      (candidate) => candidate.name === policyArtifact,
+    )!;
+    const originalEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    });
+    const reorderedEvidence = JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      schema: "scout.verification-allocation-seed-policy/v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+      algorithm: "enumerated-fixture-v1",
+    });
+
+    expect(artifact.sha256).toBe(
+      "ea06290802e91f0ac3daa5c70bedfcea52e3ee1de84d4670e57eb7bd840e0495",
+    );
+    expect(ordered.policyScope?.protocolReference).toBe(
+      "freeze-protocol-sha256:bdee2f38ae63fccf3d67a4eb4e95d418fa3e8a752ef91ebab6c7592e7e8e6ee8",
+    );
+    expect(JSON.parse(reorderedEvidence)).toEqual(JSON.parse(originalEvidence));
+    expect(freezeArtifactSha256(reorderedEvidence)).toBe(
+      "b117778287e6c6ad7ecec3ffe41dfa91cac1fa55954abc492b21995ca6603fc3",
+    );
+    await writeFile(join(root, policyArtifact), reorderedEvidence);
+    artifact.sha256 = freezeArtifactSha256(reorderedEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const reordered = await verifyExecutionFreezeBundle(root);
+    expect(reordered.ok).toBe(true);
+    expect(reordered.policyScope?.protocolReference).toBe(
+      "freeze-protocol-sha256:f2d5446c9dc9e317ba485d559ee0f75a30293ea29fefa528997e8a4939286d91",
+    );
+    expect(reordered.policyScope?.modelScopeReference).toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reordered.providerCallsAuthorized).toBe(false);
+
+    await writeFile(join(root, policyArtifact), originalEvidence);
+    artifact.sha256 = freezeArtifactSha256(originalEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
