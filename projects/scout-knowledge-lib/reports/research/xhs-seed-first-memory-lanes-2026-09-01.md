@@ -9345,6 +9345,27 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 272 seed-first start — local continuity
+
+Exact Cycle 271 result `827fb6ece543b268a902038c60d2e99cdb84b20d`
+has tree `242192201ae498f798460d3f0b083e8f9c9a5788`, identical to its
+fully validated candidate tree. It passes syntax, TypeScript, formatting,
+Cycle 237 projection, all 67 scoped durable links, navigation v1 at 11/14 and
+v2 at 8/8, and 296 tests / 1,479 assertions. The standing tree is clean.
+
+At `2026-09-03T20:14:27.401Z`, the exact Cycle 237 receipt was one hundred
+ninety-seven minutes old, inside the six-hour observation cadence. No seed,
+semantic-access, public-lane, or accepted-review trigger changed, so this
+bounded reconciliation reused it with zero browser or public requests.
+Added/changed collected identities remain unknown, observed removals are `[]`,
+and all 132 durable IDs remain unavailable.
+
+Protected fingerprints stayed exact across Cycle 271: `/app` remains 907
+records / `80dc6582…e380`, its Scout scope remains 296 /
+`c4485b46…c375`, `cycle248-review` remains at two records, the human overlay at
+three, and accepted reviewer head remains `f6a7a65928`. None was written or
+tested. Commit this seed record before the maintenance-prompt boundary audit.
+
 ## Cycle 271 seed-first start — local continuity
 
 Exact Cycle 270 result `9a99396f67c12e2411cbadbaae9ed1e2e6039fbf`
