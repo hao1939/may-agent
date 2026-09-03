@@ -9875,6 +9875,20 @@ zero requests. This is static retrieval reduction, not RV-004 outcome evidence;
 RV-004 remains high/open. The next scan candidate is Cycle 254's 17-line /
 922-byte pass-stability proof mirror.
 
+## Cycle 298 checkpoint — uncertainty stays visible without repeated proof
+
+Seed-first `4db7786cc8` preceded the scan. Material `c5eb15e9cf` replaces the
+exact 17-line / 922-byte Cycle 254/253 map mirror (`0c8816be…34b4`) with a
+4-line / 379-byte pointer (`8b702e20…6ab1`), removing 13 lines / 543 bytes.
+This report retains the unchanged source block.
+
+The compact map keeps Cycle 254's contradictory uncertainty evidence and
+no-scoring-change decision; linked detail retains validation, Cycle 253's
+receipt and refs, seed uncertainty, and zero-request boundary. No source or
+account request ran. Static compaction is not outcome proof, so RV-004 remains
+high/open. The next exact-run candidate is Cycle 252's 11-line / 818-byte
+validation mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
