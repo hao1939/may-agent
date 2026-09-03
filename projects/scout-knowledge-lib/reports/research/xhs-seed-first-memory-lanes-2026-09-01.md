@@ -7892,6 +7892,28 @@ artifact, and schedule cells after a valid two-model expansion and requires an
 exact return to the original one-model result, pinning the no-migration
 rollback claim.
 
+Exact reviewed documentation tip `40c15b2a00b152c3dab9ab1ef0b4ade34a78faa2`
+passes syntax, TypeScript, source formatting, 266 tests, 1,352 assertions,
+whitespace, and all 31 relative links across the three current research
+documents plus the independent-review cursor. Read-only health at
+`2026-09-03T13:09:24.414Z` returns 26 facts, 16 wake signals, and
+`truncated:true`; root and app runtime state remain empty. The standing tree is
+clean at the validated tip.
+
+Containment remains exact for all 9 canonical accepted standing ancestors,
+both accepted source/standing patch pairs, and all 4 accepted artifact blobs.
+Only canonical accepted finite results are integration candidates. Read-only
+provenance still resolves the peer ref to unaccepted `d041c41b54`, ending a
+two-commit range after accepted predecessor `8c5d8747a6`; no commit in that
+range was read as content, tested, edited, or integrated.
+
+Protected checkout drift is externally observed. `/app` retains HEAD
+`386b445c…1fec8` but changed from 886 status records and fingerprint
+`7b786753…7f932` at the Cycle 205 pre-check to 386 records and
+`7c285c09…ca01b`. The human overlay retains HEAD `fd4c68ec…1514663`, three
+records, and `ad8d222c…e74780`. This worker did not write or test either
+checkout.
+
 ## Cycle 204 checkpoint — copied bytes cannot register a different model
 
 Seed commit `e362380035` records one bounded public status and one

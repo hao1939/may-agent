@@ -11,9 +11,9 @@ latest_seed_observation: "Cycle 205 read-only XHS boundary through 2026-09-03T13
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 202 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 205 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
-Supported `saved-status` retained final class `login` at 46,763 bytes,
+Supported `saved-status` retained final class `login` at 46,765 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
 attributable items. Public readiness and login-shell access are not a
 comparable collection inventory. Added and changed sets remain unknown, proven
@@ -3399,6 +3399,25 @@ tests and 97 assertions plus TypeScript, formatting, and whitespace. Public
 GitHub, arXiv, and Reddit made zero requests and retain their evidence and
 triggers above. The next ranked control verifies exact rollback from this
 two-record expansion to the original one-record result.
+
+Exact reviewed documentation tip
+`40c15b2a00b152c3dab9ab1ef0b4ade34a78faa2` passes the full Scout gate:
+syntax, TypeScript, source formatting, 266 tests, and 1,352 assertions. All 31
+relative links across the three current research documents and independent
+review cursor resolve; read-only health at `2026-09-03T13:09:24.414Z` remains
+bounded at 26 facts and 16 wake signals with `truncated:true`; root and app
+runtime state remain empty; whitespace is clean. All 9 canonical accepted
+standing commits remain ancestors, both accepted source/standing patch pairs
+retain IDs `9a8b80e3…f626d` and `5b5b3937…d18eb9`, and all 4 accepted artifacts
+remain blob-identical. The unaccepted peer ref remains `d041c41b54`, ending a
+two-commit range after its accepted predecessor; no commit in that range was
+read as content, tested, edited, or integrated.
+
+Protected source drift is externally observed rather than attributed to this
+worker. `/app` retains HEAD `386b445c…1fec8` but moved from the Cycle 205
+pre-check's 886 status records and `7b786753…7f932` fingerprint to 386 records
+and `7c285c09…ca01b`; the human overlay remains HEAD `fd4c68ec…1514663`, three
+records, and `ad8d222c…e74780`. Neither checkout was written or tested.
 
 ## Cycle 204 seed-first start
 
