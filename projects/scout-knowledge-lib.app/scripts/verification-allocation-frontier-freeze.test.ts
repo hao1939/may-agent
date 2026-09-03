@@ -425,6 +425,75 @@ describe("identity-robust frontier freeze adapter", () => {
     });
   });
 
+  it("selects the same frontier point from a fully aliased evidence bundle", async () => {
+    const freeze = await freezeFixture();
+    const policy = await policyFixture(freeze.policyScope);
+    const baseline = await selectIdentityRobustFrontierPointFromFreezeBundle(
+      frontier,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    const manifestPath = join(freeze.root, "freeze-manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    const aliases = new Map([
+      [
+        "evidence/model-resolution.json",
+        "evidence/aliased-model-resolution.json",
+      ],
+      ["seed-policy.json", "aliased-seed-policy.json"],
+      ["schedule.json", "aliased-schedule.json"],
+      ["MANIFEST.sha256", "aliased-MANIFEST.sha256"],
+      ["MANIFEST.sha256.ots", "aliased-MANIFEST.sha256.ots"],
+    ]);
+    for (const [original, alias] of aliases) {
+      await rename(join(freeze.root, original), join(freeze.root, alias));
+      manifest.artifacts.find(
+        (artifact: { name: string }) => artifact.name === original,
+      ).name = alias;
+    }
+    manifest.models[0].resolutionEvidenceArtifact = aliases.get(
+      "evidence/model-resolution.json",
+    );
+    manifest.seedPolicy.policyArtifact = aliases.get("seed-policy.json");
+    manifest.schedule.artifact = aliases.get("schedule.json");
+    manifest.externalRegistration.manifestArtifact =
+      aliases.get("MANIFEST.sha256");
+    manifest.externalRegistration.proofArtifact = aliases.get(
+      "MANIFEST.sha256.ots",
+    );
+    manifest.externalRegistration.proofTargetArtifact =
+      aliases.get("MANIFEST.sha256");
+    await writeFile(manifestPath, JSON.stringify(manifest));
+
+    const aliased = await selectIdentityRobustFrontierPointFromFreezeBundle(
+      frontier,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(aliased.freezeVerification).toMatchObject({
+      ok: true,
+      externalRegistrationEvidenceStatus:
+        baseline.freezeVerification.externalRegistrationEvidenceStatus,
+      timestampProofEvidenceStatus:
+        baseline.freezeVerification.timestampProofEvidenceStatus,
+      policyScope: freeze.policyScope,
+      providerCallsAuthorized: false,
+    });
+    expect(aliased.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "local-content-match-unverified",
+      errors: [],
+    });
+    expect(aliased.selection).toEqual(baseline.selection);
+  });
+
   it("keeps an old local decision applicable across unverified registration metadata", async () => {
     const freeze = await freezeFixture();
     const policy = await policyFixture(freeze.policyScope);
