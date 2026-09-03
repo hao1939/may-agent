@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 160 checkpoint — valid direct identities remain exact
+
+Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the positive
+control.
+
+The no-policy direct process completed in 498,128 ms. Its current 203,712-byte
+output has SHA-256 `201b4555…7ad65`; the exact 193-row, result, and 508-point
+frontier hashes match the retained expectations, and first pass remains
+`[171,171,171,172,172,172]` at 1,029 blocks. No-policy selection still fails
+closed.
+
+This supports computation equivalence after Cycle 159 but not whole-output
+byte equivalence, because subsequent output fields changed the serialization
+since Cycle 108. GitHub/local execution won the rubric. GitHub, arXiv, and
+Reddit made zero public requests and retain their named evidence, access
+boundaries, and triggers. Confidence is high for local deterministic identities
+and low for policy authority, cost, drift, models, or providers. The next
+ranked control tests an explicit top-level output schema/version.
+
 ## Cycle 159 checkpoint — parse malformed input before frontier generation
 
 Seed commit `53e2e77f64e076318c339dd7fc277e2e41c77950` records unchanged

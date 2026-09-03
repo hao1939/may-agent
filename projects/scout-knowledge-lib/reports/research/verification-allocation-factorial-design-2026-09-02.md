@@ -2527,6 +2527,24 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 160 positive direct-result equivalence
+
+Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
+no-policy direct regeneration. It completed in 498,128 ms and produced 203,712
+bytes at SHA-256 `201b45553a4d4056fcf844d30769dc2eff385176991540f28faef9449da7ad65`.
+
+The output retains the exact expected 193-row hash `6fac7f99…d38252`, result
+hash `383a699f…c2b8fff`, 508-point frontier hash `067201a6…b4530ef`, and
+1,029-block first pass `[171,171,171,172,172,172]`. Freeze verification remains
+null and no-policy selection fails with the explicit-policy error.
+
+This proves positive local computation equivalence after the parse relocation,
+not whole-file equivalence: later output fields make the current artifact
+larger than Cycle 108's 11,363-byte output. It also does not establish policy
+authority, cost, drift, model, or provider behavior. The next control asks
+whether the direct output needs a top-level schema/version so serialization
+evolution is explicit.
+
 ## Cycle 159 parse before exhaustive generation
 
 Seed commit `53e2e77f64e076318c339dd7fc277e2e41c77950` preceded a bounded
