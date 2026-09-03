@@ -131,6 +131,30 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("rejects caller-supplied proof authority outside the frozen schema", () => {
+    const { manifest, artifactContents } = validFixture();
+    Object.assign(manifest, {
+      timestampVerificationStatus: "verified",
+      providerAuthority: true,
+    });
+    Object.assign(manifest.externalRegistration, {
+      verifierResult: "Bitcoin timestamp verified",
+    });
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain("manifest contains unsupported fields");
+    expect(result.errors).toContain(
+      "external registration contains unsupported fields",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("separates overall validity, registration evidence, and proof presence", () => {
     const cases: Array<{
       name: string;

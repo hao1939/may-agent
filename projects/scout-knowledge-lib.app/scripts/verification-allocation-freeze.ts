@@ -86,6 +86,14 @@ function isSha256(value: unknown): value is string {
   return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
 }
 
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+): boolean {
+  const allowedKeys = new Set(allowed);
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
 function stringArray(value: unknown): string[] | null {
   if (!Array.isArray(value) || !value.every(isString)) return null;
   return value;
@@ -159,6 +167,21 @@ function parseManifest(
   if (!isRecord(value)) {
     errors.push("manifest must be an object");
     return null;
+  }
+  if (
+    !hasOnlyKeys(value, [
+      "schema",
+      "evidenceClass",
+      "providerCallsAuthorized",
+      "results",
+      "models",
+      "seedPolicy",
+      "schedule",
+      "artifacts",
+      "externalRegistration",
+    ])
+  ) {
+    errors.push("manifest contains unsupported fields");
   }
   if (value.schema !== "scout.verification-allocation-freeze/v1") {
     errors.push("manifest schema changed");
@@ -374,6 +397,23 @@ function validateExternalRegistration(
   if (!isRecord(registration) || registration.status !== "verified") {
     errors.push("external registration is not verified");
     return;
+  }
+  if (
+    !hasOnlyKeys(registration, [
+      "status",
+      "url",
+      "identifier",
+      "depositTimestampUtc",
+      "artifactName",
+      "artifactSha256",
+      "manifestArtifact",
+      "manifestSha256",
+      "proofArtifact",
+      "proofTargetArtifact",
+      "proofTargetSha256",
+    ])
+  ) {
+    errors.push("external registration contains unsupported fields");
   }
   if (
     !isString(registration.url) ||
