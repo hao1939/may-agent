@@ -9939,6 +9939,22 @@ not outcome evidence; RV-004 remains high/open. The next exact candidate is
 Cycle 253's 10-line / 655-byte decision mirror, which must keep its crossover,
 counterexamples, confidence, and no-change disposition.
 
+## Cycle 303 checkpoint — decisions and ordering survive the compact form
+
+Seed-first `e04409ec53` preceded every audit; material `5194ff45a7` changes
+only the map, with 18 insertions / 36 deletions.
+
+| Boundary | Before | After | Preserved distinction |
+| --- | --- | --- | --- |
+| Cycle 256 | 10 / 646, `d0ae7d87…10f3` | 4 / 382, `8f41425a…36e1` | Preliminary read excluded; post-seed rerun selected. |
+| Cycle 255 | 10 / 647, `dfb709ef…dbef` | 4 / 368, `6f0d6bc2…dff3` | Accepted reviewer advance and landed fixture fence. |
+| Cycle 253 | 19 / 1,252, `3f297a8e…056f` | 10 / 740, `8e564125…c9dd` | All weights, `1.896047856` crossover, three failures, post-hoc limit, confidence, and no scorer change. |
+
+The detailed report keeps all original text and validation. No source or
+account request ran. This reduces retrieval duplication but adds no later-use
+outcome, so RV-004 remains high/open. Next is Cycle 260's 10-line / 628-byte
+accepted-review seed boundary.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
