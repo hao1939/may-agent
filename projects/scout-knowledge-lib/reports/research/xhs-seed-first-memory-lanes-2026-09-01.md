@@ -7860,6 +7860,27 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 196 checkpoint — literal names do not prove portability
+
+Seed commit `a1ada76aa7` records unchanged semantic XHS access, 30 public
+Explore notes, zero attributable saved items, unknown additions/changes, no
+observed removals, and all 132 seeds unavailable. One-byte and body-hash drift
+are response provenance. No XHS state changed.
+
+Exact local `3d4d4da2dc` distinguishes directory safety from portability. NUL
+and backslash fail before reads; local proof names containing tab, newline,
+NFC, or NFD pass as distinct literals. Registered checksum targets accept both
+markers and exact tab, but newline cannot cross the line grammar and NFC/NFD
+never alias. Focused validation passes 59 tests and 284 assertions plus
+TypeScript, formatting, and whitespace. Provider authority remains false.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. Keep
+v1 and the compiled registry. A future v2 needs real registry authority and a
+platform/collision inventory before choosing conservative ASCII over Unicode
+normalization or a JSON registry. The next ranked audit covers case folding,
+reserved basenames, trailing dots, and component length.
+
 ## Cycle 195 checkpoint — checksum target spelling is exact
 
 Seed commit `2501738d81` records unchanged semantic XHS access, 30 public

@@ -2805,6 +2805,24 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 196 checksum path portability boundary
+
+Seed commit `a1ada76aa7` preceded exact test `3d4d4da2dc`. The local directory
+adapter rejects NUL and backslash, while proof aliases containing tab, newline,
+NFC, or NFD Unicode remain distinct valid names. The registered checksum
+target accepts both coreutils markers and an exact tab, rejects an embedded
+newline, and never aliases NFC with NFD. Provider authority stays false.
+
+Current v1 is literal and fail-closed, not portable across unspecified tools.
+No production change is justified without registry authority. A future v2
+should prefer sorted conservative-ASCII paths and one text marker; Unicode
+normalization or a JSON registry would add collision migration and schema
+rollover. Required evidence is a real deposit/path inventory, supported
+platform matrix, collision scan, explicit owner, dual-version reader,
+policy-scope rollover, and v1 rollback fixture. Focused validation passes 59
+tests and 284 assertions plus TypeScript, formatting, and whitespace. The next
+audit bounds case folding, reserved basenames, trailing dots, and path length.
+
 ## Cycle 195 checksum target exactness
 
 Seed commit `2501738d81` preceded exact test `17c53dbfea`. One unrelated

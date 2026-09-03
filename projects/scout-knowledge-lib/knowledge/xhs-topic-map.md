@@ -11,7 +11,7 @@ latest_seed_observation: "Cycle 196 read-only XHS boundary through 2026-09-03T11
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 191 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 196 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` retained final class `login` at 46,764 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -435,9 +435,9 @@ cannot inherit the compiled registry's policy scope.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 195; public trigger-deferred.** Current integrity is fail-closed; future explicit registry authority would need checksum-set closure.               | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `7683519…e1b3d` proves sidecar checksum lines remain unvalidated. Exact local `17c53db…d60c9` proves target order independence, exact-one duplicate denial, and rejection of escaped, `./`, and trailing-space aliases. | Zero public requests. Retain the compiled design. A future v2 set should use sorted exact literal paths. Next bound portable path and Unicode/control ambiguity. Revisit public GitHub on a recorded revision/artifact trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 195.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines the registry authority or registration closure.                                                                                                                                                                                                                                                                                                                                                     | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 195 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 196; public trigger-deferred.** Current v1 remains literal and fail-closed; it does not establish a portable registry grammar.                        | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `3d4d4da…d3d2d` proves marker/control/Unicode behavior across the direct verifier and directory adapter.                                                                                           | Zero public requests. Retain v1 and the compiled registry. If authority appears, prefer sorted ASCII-safe text-marker paths after a platform/collision inventory. Next audit case folding, reserved basenames, and length bounds. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 196.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines portable artifact names, registry authority, or registration closure.                                                                                                                                                                                                                                                                                                                           | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 196 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3360,6 +3360,35 @@ seeds remain unavailable. No representative saved-post read was supported, no
 XHS state changed, and no portability test or public-source request preceded
 this reconciliation. Commit it first, then test control characters, Unicode
 normalization, and checksum binary-marker behavior.
+
+### Cycle 196 checkpoint — v1 is literal, not a portable registry grammar
+
+Seed commit `a1ada76aa7` preceded exact local test
+`3d4d4da2dc9ed4900aa53a93abcf5c6fe92d3d2d`. The directory adapter rejects
+NUL and backslash before reading, but descriptor-safe proof aliases containing
+tab, newline, composed `café`, or decomposed `café` each remain valid and
+distinct. For the registered checksum target, text and binary markers both
+pass, an exact tab passes, an embedded newline cannot bind across checksum
+lines, and composed/decomposed spellings pass only against themselves.
+Provider authority remains false throughout.
+
+This is internally unambiguous because names and manifest bytes are compared
+literally; it is not evidence that every filesystem or checksum tool preserves
+those names. Keep v1 and the compiled candidate registry. The smallest future
+v2 is a sorted checksum set using one text marker and conservative ASCII path
+segments. A Unicode-NFC rule needs collision migration; a JSON name-to-digest
+registry needs new schema and authority. Either would require an identified
+depositor, real path inventory, platform matrix, collision scan, dual-version
+reader, policy-scope rollover, and a tested v1 rollback. None exists, so no
+production rule changes.
+
+Focused validation passes 59 tests and 284 assertions plus TypeScript,
+exact-file formatting, and whitespace. Confidence is high for current Bun and
+Linux behavior, moderate for the conditional ASCII design, and low for
+external deposit tooling. GitHub/local code won; all public lanes made zero
+requests and retain their evidence and triggers. The next ranked audit tests
+case folding, Windows-reserved basenames, trailing-dot behavior, and component
+length before selecting any v2 grammar.
 
 ## Cycle 195 seed-first start
 
