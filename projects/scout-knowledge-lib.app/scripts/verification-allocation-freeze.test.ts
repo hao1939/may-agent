@@ -248,6 +248,35 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects duplicate keys in the byte-bound prompt JSON", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    const episode = schedule.episodes[0];
+    episode.prompt = episode.prompt.replace(
+      '"authority":"fixture://scout/allocation-v1"',
+      '"authority":"fixture://scout/allocation-v1","authority":"fixture://scout/allocation-v1"',
+    );
+
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      `schedule factorial verification failed: ${episode.id}: prompt contains an unregistered difference`,
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("rejects duplicate keys in the byte-bound schedule JSON", () => {
     const { manifest, artifactContents } = validFixture();
     artifactContents["schedule.json"] = artifactContents[
