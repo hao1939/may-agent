@@ -3842,6 +3842,27 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
+## Cycle 269 seed-first start — bounded receipt reuse
+
+Exact Cycle 268 result `4cbea0b98f92fe4d3788ae153dc1df1a45dd2020`
+passes syntax, TypeScript, formatting, Cycle 237 projection, all 65 durable
+links, navigation v1 at 10/14 and v2 at 8/8, and the full 296-test /
+1,479-assertion gate. The standing worktree is clean.
+
+At `2026-09-03T20:02:14.957Z`, the exact Cycle 237 receipt was one hundred
+eighty-five minutes old, inside the retained six-hour observation cadence.
+No seed, semantic access, public-lane, or accepted-review trigger was known to
+have changed, so this bounded pass reused the receipt with zero browser or
+public requests. Added and changed collected identities remain unknown,
+observed removals are `[]`, and all 132 durable IDs remain unavailable at the
+same login-class boundary. No collection membership or post-content inference
+is made from elapsed time.
+
+An exploratory protected-store query occurred before this seed record. Its
+values are not selected Cycle 269 evidence. Commit this reconciliation first,
+then repeat the same read-only query before deciding whether protected state
+contains any retained `project.knowledge.maintained` outcome.
+
 ## Cycle 268 seed-first start — local continuity
 
 Exact Cycle 267 result `ca3211afe9` passes the full 296-test /
