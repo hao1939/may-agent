@@ -3862,6 +3862,16 @@ retain their evidence and triggers. The next ranked matched control transfers
 the nested-order result to the existing two-model explicit-identity fixture,
 the smallest registry-relevant generalization before closing this local audit.
 
+Exact reviewed Cycle 214 tip
+`c211f7e896d7abe621276a441dbbab6407aa20aa` passes syntax, TypeScript,
+source formatting, 274 tests, 1,407 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:58:02.014Z` remains 26 facts and 16
+wake signals; root and app runtime state are empty. The clean tip retains 9/9
+accepted ancestors, both accepted patch pairs, and 4/4 accepted artifacts.
+Protected source and overlay reproduce `386b445c…1fec8` / 886 /
+`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
+neither was written or tested. The unaccepted peer remains outside lineage.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

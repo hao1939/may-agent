@@ -8111,6 +8111,16 @@ unaccepted `d041c41b54` range remains outside standing lineage. The next ranked
 control repeats nested manifest ordering on the two-model explicit-identity
 fixture.
 
+Exact reviewed tip `c211f7e896d7abe621276a441dbbab6407aa20aa`
+passes syntax, TypeScript, source formatting, 274 tests, 1,407 assertions,
+whitespace, 31 relative links, read-only health 26/16, and empty root/app
+runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
+both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
+and the human overlay reproduce `386b445c…1fec8` / 886 /
+`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
+neither was written or tested. The unaccepted range remains outside standing
+lineage without content inspection.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
