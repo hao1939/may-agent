@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 205: bounded observational reconciliation preceded a strict-v1 multi-model identity control, accepted lineage remains contained, and later unaccepted peer commits remain deferred."
+summary: "Seed-first Scout continuity through Cycle 206: bounded observational reconciliation preserves a changed but unavailable saved-profile shell before the ranked strict-v1 rollback control."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 205 observational reconciliation through 2026-09-03T13:02:21.205Z; public Explore returned 30 notes, supported saved status remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 205 at 2026-09-03T13:02:21.205Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only provenance inspection of later unaccepted self-evolution commits through d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 206 observational reconciliation through 2026-09-03T13:11:44.885Z; public Explore returned 30 notes, supported saved status changed shell but remained unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 206 at 2026-09-03T13:11:44.885Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -7859,6 +7859,36 @@ GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
 public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
+
+## Cycle 206 seed-first reconciliation — profile shell remains unavailable
+
+Cycle 206 began from clean checkpoint `c460920a4b`. The resumed worker is UID
+1000 (`hao`) while Chrome PID 2136 is UID 0. Direct namespace entry failed at
+`2026-09-03T13:11:25.532Z` with permission denied before an XHS request, but
+the direct localhost DevTools endpoint returned HTTP 200. No credential or
+account action was needed.
+
+One sanitized public status and one non-navigating saved status ran from
+`2026-09-03T13:11:43.971Z` through `13:11:44.885Z`. Explore remained readable
+with 30 notes. Saved status returned HTTP 200, final class `profile`, 161,608
+bytes, body SHA-256 `822eb02f…14c0f3`, target-evidence SHA-256
+`e860da46…6906e`, access fingerprint `f6fb9a02…576ad`, 10 attributable links,
+and ID fingerprint `7934093c…3217`; it nevertheless remained `ready:false`
+with `loginWall:true`.
+
+The shell and fingerprint changed from Cycle 205's zero-item login response,
+but this is not a comparable authenticated inventory. The supported output
+does not expose the 10 identities. Added and changed IDs therefore remain
+unknown, removals are `[]`, and all 132 durable seeds remain unavailable. A
+representative saved-post read was unsupported and not attempted. No XHS state
+changed, and no local control or public GitHub, arXiv, or Reddit request
+preceded the reconciliation.
+
+Protected source and overlay remained externally observed at
+`386b445c…1fec8` / 386 / `7c285c09…ca01b` and `fd4c68ec…1514663` / 3 /
+`ad8d222c…e74780`; this worker did not write or test either. The shell change
+adds no seed identity or registry requirement, so the ranked rollback control
+remains the next material work.
 
 ## Cycle 205 checkpoint — strict v1 already supports explicit per-model records
 

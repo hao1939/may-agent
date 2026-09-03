@@ -2,9 +2,9 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 205 observational reconciliation through 2026-09-03T13:02:21.205Z; exact access evidence and uncertainty are in the Cycle 205 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 205 at 2026-09-03T13:02:21.205Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 205 read-only XHS boundary through 2026-09-03T13:02:21.205Z."
+latest_seed_basis: "Cycle 206 observational reconciliation through 2026-09-03T13:11:44.885Z; exact access evidence and uncertainty are in the Cycle 206 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 206 at 2026-09-03T13:11:44.885Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 206 read-only XHS boundary through 2026-09-03T13:11:44.885Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
@@ -3418,6 +3418,38 @@ worker. `/app` retains HEAD `386b445c…1fec8` but moved from the Cycle 205
 pre-check's 886 status records and `7b786753…7f932` fingerprint to 386 records
 and `7c285c09…ca01b`; the human overlay remains HEAD `fd4c68ec…1514663`, three
 records, and `ad8d222c…e74780`. Neither checkout was written or tested.
+
+## Cycle 206 seed-first start
+
+Cycle 206 began from clean checkpoint `c460920a4bbea0e85dbb1cd494a48b681e7c7b82`.
+The resumed worker is UID 1000 (`hao`); Chrome PID 2136 remains UID 0. An
+initial namespace entry at `2026-09-03T13:11:25.532Z` failed before any XHS
+request with `cannot open /proc/2136/ns/net: Permission denied`. The direct
+localhost DevTools endpoint then returned HTTP 200, so no credential or account
+action was required.
+
+Exactly one sanitized public `status` and one supported, non-navigating
+`saved-status` ran directly from `2026-09-03T13:11:43.971Z` through
+`13:11:44.885Z`. Explore was readable with 30 notes. Saved status returned HTTP
+200, final class `profile`, 161,608 bytes, body SHA-256 `822eb02f…14c0f3`,
+target-evidence SHA-256 `e860da46…6906e`, access fingerprint
+`f6fb9a02…576ad`, 10 attributable link identities, and ID fingerprint
+`7934093c…3217`, but also `ready:false` and `loginWall:true`.
+
+This is an access-shell change from Cycle 205's zero-item login response, not
+a comparable authenticated collection inventory. The supported summary does
+not expose the 10 identities, so added and changed IDs remain unknown;
+observed removals are `[]`, and all 132 durable seeds remain unavailable rather
+than removed. A representative saved-post read was therefore unsupported and
+was not attempted. No XHS state changed, and no local rollback control or
+public GitHub, arXiv, or Reddit request preceded this reconciliation. Protected
+source and overlay remained externally observed at `386b445c…1fec8` / 386 /
+`7c285c09…ca01b` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`.
+
+The shell change supplies no new topic identity or registry requirement.
+Retain the ranked local control: remove the peer model record, declaration, and
+schedule cells from a valid two-model bundle and require exact equality with
+the original one-model result.
 
 ## Cycle 204 seed-first start
 
