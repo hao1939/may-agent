@@ -2,24 +2,24 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 230 observational reconciliation through 2026-09-03T15:31:46.388Z; exact access evidence and uncertainty are in seed-ledger row 230."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 230 at 2026-09-03T15:31:46.388Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 230 read-only XHS boundary through 2026-09-03T15:31:46.388Z."
+latest_seed_basis: "Cycle 231 observational reconciliation through 2026-09-03T15:43:22.511Z; exact access evidence and uncertainty are in seed-ledger row 231."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 231 at 2026-09-03T15:43:22.511Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 231 read-only XHS boundary through 2026-09-03T15:43:22.511Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 230 used the established direct localhost Chrome
-DevTools connector as worker UID 1000 (`hao`). Public Explore remained readable
-with 30 notes. Supported `saved-status` retained final class `profile` at
-161,608 bytes, semantic access fingerprint `f6fb9a02…576ad`, an opaque
-ten-link fingerprint, and a login wall, so it remained `ready:false`. Public
-readiness and this unavailable profile shell are not a comparable collection
-inventory. Added and changed sets remain unknown, proven removals are `[]`, and
-all 132 durable seed IDs remain unavailable rather than removed. No
-representative saved post was available to read and no XHS state was changed.
+authenticated window. Cycle 231 used the established direct localhost Chrome
+DevTools endpoint through the effective-UID-0 namespace connector from worker
+UID 1000 (`hao`). Public Explore remained readable with
+30 notes, while supported `saved-status` changed from Cycle 230's profile shell
+to a 46,763-byte login response with zero attributable items. This is a
+material access-shell change, not a comparable collection inventory. Added and
+changed sets remain unknown, proven removals are `[]`, and all 132 durable seed
+IDs remain unavailable rather than removed. No representative saved post was
+available to read and no XHS state was changed.
 
 ## Revisable value rubric
 
@@ -3841,6 +3841,19 @@ new regression is warranted because the exact matched control already exists.
 
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
+
+## Cycle 231 seed-first start
+
+The canonical [seed-ledger row 231](./xhs-seed-ledger.md) records the exact
+read-only receipt. The saved surface changed from a profile-class response to a
+login response, but it still exposed zero attributable saved items. Therefore
+added/changed identities remain unknown, removals are `[]`, and all 132 seeds
+remain unavailable rather than removed.
+
+The access-shell change is material but does not outrank `RV-004`'s retrieval
+and outcome-evidence regression. Public GitHub, arXiv, and Reddit requests stay
+deferred; the next bounded work classifies the 169 remaining absent historical
+targets without restoring unaccepted bytes or resuming verifier micro-cycles.
 
 ## Cycle 230 seed-first start
 
