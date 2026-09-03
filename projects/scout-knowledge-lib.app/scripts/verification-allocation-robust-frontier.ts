@@ -8,6 +8,11 @@ import {
 import { parseIdentityRobustFrontierCliInput } from "./verification-allocation-frontier-cli";
 import { selectIdentityRobustFrontierPointFromFreezeBundle } from "./verification-allocation-frontier-freeze";
 import { selectIdentityRobustFrontierPoint } from "./verification-allocation-frontier-policy";
+import {
+  createIdentityRobustFrontierSnapshot,
+  RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION,
+  verifyIdentityRobustFrontierSnapshot,
+} from "./verification-allocation-frontier-snapshot";
 
 type Row = {
   runBlockCount: number;
@@ -264,12 +269,26 @@ const frozenSelection = cliInput
 const selection =
   frozenSelection?.selection ??
   selectIdentityRobustFrontierPoint(frontier, null, null);
+const rowSha256 = sha256(rows);
+const resultSha256 = sha256(resultRepresentation);
+const frontierSnapshot = createIdentityRobustFrontierSnapshot(
+  frontier,
+  rowSha256,
+  resultSha256,
+);
+const snapshotVerification = verifyIdentityRobustFrontierSnapshot(
+  frontierSnapshot,
+  RETAINED_IDENTITY_ROBUST_FRONTIER_EXPECTATION,
+);
+if (!snapshotVerification.ok) {
+  throw new Error(snapshotVerification.errors.join("; "));
+}
 process.stdout.write(
   `${JSON.stringify(
     {
       rowCount: rows.length,
-      rowSha256: sha256(rows),
-      resultSha256: sha256(resultRepresentation),
+      rowSha256,
+      resultSha256,
       maximumNull: {
         runBlockCount: maximumNull.runBlockCount,
         probability: maximumNull.maximumNullFalseDirectionalProbability,
@@ -282,6 +301,7 @@ process.stdout.write(
       frontierFirst: frontier.slice(0, 12),
       frontierLast: frontier.slice(-12),
       final: frontier.at(-1),
+      frontierSnapshot,
       freezeVerification: frozenSelection?.freezeVerification ?? null,
       selection,
     },

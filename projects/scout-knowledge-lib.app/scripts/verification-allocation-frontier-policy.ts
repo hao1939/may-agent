@@ -108,7 +108,7 @@ export function hashIdentityRobustFrontierPolicy(candidate: unknown): string {
     .digest("hex");
 }
 
-function validFrontier(
+export function isIdentityRobustFrontier(
   candidate: unknown,
 ): candidate is IdentityRobustFrontierPoint[] {
   if (!Array.isArray(candidate) || candidate.length === 0) return false;
@@ -154,7 +154,7 @@ export function selectIdentityRobustFrontierPoint(
 ): IdentityRobustFrontierSelection {
   const scopeLimit =
     "Selection is conditional on a caller-supplied policy and provenance manifest whose fields are recorded but not independently verified. It does not authenticate the owner, timestamp, revision, references, real drift, marginal estimates, dependence, provider behavior, or operating cost.";
-  if (!validFrontier(frontierCandidate)) {
+  if (!isIdentityRobustFrontier(frontierCandidate)) {
     return {
       ok: false,
       policySha256: "",
