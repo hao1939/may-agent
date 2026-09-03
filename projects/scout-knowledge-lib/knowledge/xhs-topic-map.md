@@ -322,19 +322,19 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 120 supersedes the older table snapshot below. Exact seed commit
-`3404c2dedc790459ed9ca2cfcfe3cbd0bf89ad60` records the unchanged login-class
+Cycle 121 supersedes the older table snapshot below. Exact seed commit
+`62c465ca99139affdd5d74c5a60b39815caa78ed` records the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. The execution-bundle scope control
+unavailable. No public request was made. The checksum-manifest coherence control
 answered the ranked question while all public lanes remained deferred.
 Accepted-result containment and protected-checkout preservation are rechecked
 on the resulting exact tip.
 
-| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                        | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 120; public trigger-deferred.** The ranked execution-bundle scope question was directly testable in the standing implementation.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local repair is `74ca45c…5ee86`; executable content now changes protocol scope while unverified registration metadata does not. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
-| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 120.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                        | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                           | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 120 without quota work.** The unchanged access class and bundle result expose no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
+| Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                           | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Decision and revisit trigger                                                                                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 121; public trigger-deferred.** The ranked checksum-manifest coherence question was directly testable in the standing implementation.                                    | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local repair is `fff1005…51e69`; the registered checksum manifest now has to bind the executable artifact. | Zero public requests. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit.                                                 |
+| **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 121.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                           | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                      | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 121 without quota work.** The unchanged access class and coherence result expose no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                         | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3207,6 +3207,36 @@ post was supported or read, and no XHS state changed. No checksum-manifest
 control, public source, provider, or accepted-result request preceded this
 reconciliation. Commit this seed record first, then inspect and test the ranked
 local coherence boundary.
+
+### Cycle 121 checkpoint — checksum evidence now binds the bundle
+
+The pre-fix accepted fixture used execution-bundle SHA-256
+`fd01710…ecdae` but stored the unrelated 25-byte text `fixture checksum
+manifest` as `MANIFEST.sha256`. Its separately declared SHA-256
+`46a3429…698c88` matched those opaque bytes, so freeze verification returned
+success and `local-byte-match-unverified` without showing that the checksum
+manifest named the bundle at all.
+
+Exact repair `fff100583e82a8fa9aea4ebb133f5c01e9451e69` requires exactly one
+standard SHA-256 line naming the registered artifact and matching its declared
+digest. Opaque text and a coherent-but-wrong zero digest both fail with the
+same stable relationship error and empty registration-evidence status. The
+Cycle 120 matched substitution now updates a valid checksum manifest too, so
+its stale-decision denial remains a fair control rather than failing earlier.
+
+Focused validation passes 26 tests and 102 assertions plus TypeScript,
+formatting, and whitespace. Confidence is high for the local checksum relation,
+duplicate/missing target denial through the exact-one rule, bundle substitution,
+and provider denial; it remains low for timestamp-proof validity, external
+registration, authorship, policy authority, real execution, drift, cost,
+models, or providers.
+
+GitHub/local code was selected. Public GitHub, arXiv, and Reddit made zero
+requests because no recorded trigger fired. The next ranked investigation is
+same-byte artifact aliasing: change the registered artifact name while keeping
+its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
+and confirm that the old decision fails because the executable entry point is
+part of protocol scope.
 
 ## Cycle log
 

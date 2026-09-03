@@ -2179,6 +2179,34 @@ authority, real execution, drift, prices, model behavior, or provider
 readiness. The next ranked control checks whether the opaque checksum-manifest
 artifact actually binds the execution bundle it purports to describe.
 
+## Cycle 121 checksum-manifest coherence
+
+Seed commit `62c465ca99139affdd5d74c5a60b39815caa78ed` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The prior accepted fixture paired bundle SHA-256
+`fd01710b5ef211e073b7dda564f30925cca256e4ff9b7ea7bd2fd49e672ecdae`
+with opaque checksum-manifest bytes whose unrelated SHA-256 was
+`46a3429c1b6283935a142b86bff9d077229d06e2a41ac441f092487115698c88`.
+Both declarations were locally byte-consistent, so the freeze passed even
+though the checksum artifact did not name or digest the bundle.
+
+Exact repair `fff100583e82a8fa9aea4ebb133f5c01e9451e69` requires exactly one
+standard SHA-256 entry whose filename and digest equal the registered artifact
+binding. Opaque text and a zero-digest contradiction now fail with
+`external registration checksum manifest does not bind its artifact` and no
+registration-evidence status. A coherent replacement manifest still allows
+the Cycle 120 bundle-substitution control to reach the intended stale-policy
+denial.
+
+Focused validation passes 26 tests and 102 assertions plus TypeScript,
+formatting, and whitespace. The result proves a local checksum relationship,
+not timestamp-proof validity, external deposit, authorship, policy authority,
+real execution, drift, prices, model behavior, or provider readiness. The next
+ranked control changes the registered artifact name while preserving identical
+bytes and all other decision inputs to test executable entry-point identity.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
