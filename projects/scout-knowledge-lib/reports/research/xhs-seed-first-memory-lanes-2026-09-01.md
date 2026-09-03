@@ -7860,6 +7860,29 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 180 checkpoint — declared schedule breadth stops traversal
+
+Seed commit `0c6a4feb22` records unchanged login-class XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before the
+local schedule control.
+
+A matched 64-episode schedule passed. After its episode array became 5,000
+shallow copies while both digests were rebound, the verifier recorded the
+declaration mismatch but still produced 5,016 factorial diagnostics in 0.54 s
+wall time with 220,016 KB peak process RSS. Exact local `fc763bc954` returns
+after the existing mismatch when parsed and declared episode counts differ.
+The control now returns one error in 0.30 s and 152,480 KB peak RSS; the full
+freeze/factorial gate passes 75 tests and 669 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the matched current-runtime improvement
+and low for general resource bounds, other runtimes, or broader provenance,
+authority, cost, drift, model, or provider claims. The next ranked audit tests
+oversized shallow model/seed metadata arrays before factorial balance loops.
+
 ## Cycle 179 checkpoint — result-bundle breadth is rejected early
 
 Seed commit `da4f103236` records unchanged semantic XHS access, 30 readable
