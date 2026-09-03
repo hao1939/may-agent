@@ -7752,6 +7752,22 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 134 checkpoint — duplicate schedule keys no longer disappear
+
+Seed commit `0da74737b8c0fae83a6de79fec0c35c831807998` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+removals, and 132 unavailable seeds before the matched control. A coherently
+rehashed schedule containing the same false provider-authority key twice still
+returned `ok:true` before repair.
+
+Exact local `fd7a02c360aec359c33c88a6d46aaf70e16708b1` requires canonical
+schedule bytes, so duplicate keys cannot disappear before exact-key checks.
+Three freeze paths pass 36 focused tests with 161 assertions plus TypeScript,
+formatting, and whitespace. GitHub/local code won the rubric; GitHub, arXiv,
+and Reddit made zero public requests and retain their recorded evidence and
+triggers. The next ranked control applies the duplicate-key question to the
+separately parsed freeze manifest.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.

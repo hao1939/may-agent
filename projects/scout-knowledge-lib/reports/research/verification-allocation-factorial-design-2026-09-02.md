@@ -2527,6 +2527,25 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 134 canonical schedule bytes
+
+Seed commit `0da74737b8c0fae83a6de79fec0c35c831807998` preceded a matched
+duplicate-key control. The schedule duplicated
+`providerCallsAuthorized:false` and coherently updated both digest bindings.
+Before repair the verifier returned `ok:true` because `JSON.parse` collapsed
+the duplicate before object-key validation.
+
+Exact repair `fd7a02c360aec359c33c88a6d46aaf70e16708b1` requires raw
+schedule bytes to match their canonical parsed serialization. The control now
+fails with `schedule artifact is not canonical verifiable JSON`; registration
+evidence clears, proof-byte presence remains explicitly unverified, and
+provider calls remain denied. Three freeze paths pass 36 tests and 161
+assertions plus TypeScript, formatting, and whitespace.
+
+This also rejects alternate whitespace and key order. Current generated
+fixtures are canonical, but no real freeze supplies broader compatibility
+evidence. The next control checks the separately parsed freeze manifest.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
