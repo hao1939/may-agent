@@ -9345,6 +9345,52 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 243 checkpoint — a second frozen set passes without index tuning
+
+What changed: the first outcome set showed a real unavailable-state repair but
+was retrospective and retained four failures. Cycle 243 therefore froze a
+disjoint eight-case set at `be4ef16bb1` after seed-first commit `b49e5a4725`
+and before adding any selector or changing the index. Exact local
+`034b03a73e` adds safe `--fixture` selection: only versioned
+`scout-navigation-heldout-vN.json` names are accepted, v1 remains the default,
+the output names its fixture, and missing values or paths fail closed.
+
+The unchanged 754-entry index passes all eight v2 cases: five available
+findings, both explicit unavailable findings, and the unrelated reef miss.
+Neither frozen fixture nor `INDEX.md` changed after observing the result. The
+evidence now consists of v1 at 10/14 and v2 at 8/8, while v1's two wrong ranks,
+one three-way tie, and one generic-token false positive stay visible. This
+raises confidence that the status-aware representation works outside the first
+repair-shaped set, but it remains a small library-authored lexical evaluation,
+not evidence of human or model behavior. Confidence is high for the exact
+bytes and deterministic outcomes, moderate for nearby paraphrases, and low for
+broad semantic retrieval.
+
+GitHub/local evidence won the rubric. No GitHub, arXiv, or Reddit public
+request ran. The four named repository heads, MemGauge `2608.30177v1` at
+15/15, allocation study `2608.25553v3` at 14/15, and Reddit's RSS-readable
+`t3_1v8a3sh` / JSON-last-observed HTTP 403 boundary remain current until their
+recorded triggers fire. The next ranked work uses matched controls to isolate
+generic-token precision, duplicate-title ambiguity, and summary coverage in
+the four v1 failures without modifying either fixture or tuning the index to
+v2.
+
+The exact candidate tree passes syntax, TypeScript, source formatting, Cycle
+237 projection, all 62 durable links, the v1 10/14 gate, and 292 tests with
+1,455 assertions. The explicit v2 run passes 8/8. The broad offline audit
+retains 1,540 tracked Markdown documents and 1,699 local prose links with zero
+unresolved or absolute links. Read-only health at
+`2026-09-03T17:36:17.155Z` returns 29 facts, 16 wake signals, and
+`truncated:true`; runtime state and whitespace are clean.
+
+Accepted projection/review equivalents remain contained as standing ancestors
+`d35632c2b1` and `8ab0a89cd0`; unaccepted `d041c41b54` and `d9da99476e`
+remain non-ancestors. Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 893 records, fingerprint
+`98c1c258…76c9f0`, and Scout scope 296 / `a430d0c9…4322f7e`. The human overlay
+remains `fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, and
+`a52b97aa…394a15`. No protected or peer worktree was written or tested.
+
 ## Cycle 242 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:16:39.376Z`, Cycle 237's exact receipt was nineteen minutes
