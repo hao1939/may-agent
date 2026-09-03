@@ -447,7 +447,7 @@ integration-ready accepted result, and was not imported.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 202; public trigger-deferred.** Within-role content reuse must still match each model declaration.                                                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `61dd65f…8c6fe` proves one resolution object cannot silently satisfy a second distinct model declaration. The self-evolution ref remains unaccepted at `d041c41b54`; accepted integration is bounded through `8c5d8747a6` and `df80a1daa2`.              | Zero public requests. Retain v1 and defer unaccepted peer commits. Revisit that range only on explicit acceptance/review. Next audit the v1/v2 migration and rollback matrix for any explicit registry artifact. |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 202; public trigger-deferred.** Within-role content reuse must still match each model declaration.                                                     | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact locals `61dd65f…8c6fe` and `c2d36a4…f209b` prove per-model evidence matching plus strict-v1 rejection and exact rollback for a v2-like registry extension. The self-evolution ref remains unaccepted at `d041c41b54`; accepted integration is bounded through `8c5d8747a6` and `df80a1daa2`.              | Zero public requests. Retain v1 and defer unaccepted peer commits. Revisit that range only on explicit acceptance/review. Next test whether copied same-byte model-resolution aliases remain one content identity without becoming independent evidence. |
 | **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 202.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines within-role resolution-object reuse, portable artifact names, registry authority, or registration closure.                                                                                                                                                                                                                                                                                    | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                               |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 202 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                 |
 
@@ -3414,10 +3414,35 @@ compatibility, real model resolution, and provider execution.
 
 GitHub/local code won the post-seed rubric. Public GitHub, arXiv, and Reddit
 made zero requests and retain the exact evidence and triggers in the lane
-table. The explicit candidate-registry audit remains the next accessible
-question: compare a strict dual-version handoff in which v2 has one parsed
-registry authority with v1 preservation and rollback, without widening v1 or
-reusing its policy decisions.
+table. The explicit candidate-registry audit remained the next accessible
+question and was pursued immediately below.
+
+### Cycle 202 continuation — strict v1 rejects a v2-like registry and rolls back
+
+Exact test-only commit `c2d36a4029fe05b1d9cbf0e7291fed43a96f209b`
+adds a 341-byte canonical v2-like two-candidate registry at SHA-256
+`7154c025a9ef0c92fc44ebc123b83560f77054123fcfb119f38ca239335994a7`.
+The matched manifest declares its artifact and digest, then adds one explicit
+`candidateRegistry` binding.
+
+The current strict v1 verifier rejects the extension solely with `manifest
+contains unsupported fields`, reports all seven locally matched artifacts,
+returns null policy scope, and keeps provider calls unauthorized. Removing the
+field, artifact declaration, and bytes reproduces the complete baseline v1
+result exactly, including policy scope and evidence labels.
+
+This supports a parallel strict v2 schema with one parsed registry authority,
+new scope/decisions, and an untouched v1 rollback path. It contradicts silently
+widening v1 or treating a declared sidecar as registry authority. It does not
+implement or validate v2, external ownership, deposit coverage, schedule
+generation from the registry, or cross-version policy migration. No production
+change is justified. The focused direct-freeze gate passes 48 tests and 269
+assertions plus TypeScript, exact test formatting, and whitespace.
+
+The next ranked accessible control asks whether copied same-byte
+model-resolution aliases retain one content identity without being counted as
+independent evidence. A real registry migration remains trigger-bound to an
+identified owner/deposit, second revision, and consumer requirement.
 
 ## Cycle 201 seed-first start
 

@@ -2824,9 +2824,22 @@ boundary: a multi-model registry requires a new strict schema, a single parsed
 authority used by schedule generation and verification, a new model scope and
 decision, preserved v1 reading, and rollback to the untouched v1 bundle. It
 cannot be introduced as a same-byte alias or an optional v1 sidecar. External
-owner/deposit authority and a real second registry revision remain absent. The
-next audit constructs the smallest v1/v2 migration and rollback failure matrix
-before any implementation.
+owner/deposit authority and a real second registry revision remain absent.
+
+Exact follow-up `c2d36a4029` constructs the migration/rollback failure matrix
+with a 341-byte canonical v2-like registry at
+`7154c025a9ef0c92fc44ebc123b83560f77054123fcfb119f38ca239335994a7`.
+Strict v1 rejects its explicit top-level binding solely as an unsupported
+field, returns null scope, and denies providers while still reporting seven
+locally matched artifacts. Deleting the binding, declaration, and bytes
+reproduces the complete baseline v1 result exactly.
+
+The focused direct-freeze gate passes 48 tests and 269 assertions plus
+TypeScript, exact-file formatting, and whitespace. This favors a parallel
+strict v2 reader and untouched-v1 rollback over an optional v1 field. It does
+not implement v2 or supply registry authority. The next control tests whether
+copied same-byte model-resolution aliases remain one content identity without
+becoming independent evidence.
 
 ## Cycle 201 cross-role digest reuse
 

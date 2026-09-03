@@ -7884,14 +7884,23 @@ revisit triggers. MemGauge `2608.30177v1` remains the 15/15 stage-wise anchor;
 `d041c41b54` peer range remains deferred; only canonical accepted finite
 results are integration candidates.
 
-The current result strengthens the explicit-registry design boundary. A v2
-registry must be a new strict, sole parsed authority for both construction and
-verification, with new model/policy scope and decisions. Migration must retain
-the v1 reader and original fixture; rollback must restore the untouched v1
-bundle rather than reinterpret v2 bytes. No real registry owner, deposit, or
-second revision exists, so no production schema change is justified. The next
-ranked audit constructs the minimal v1/v2 migration and rollback failure matrix
-without widening v1.
+The current result strengthens the explicit-registry design boundary. Exact
+follow-up `c2d36a4029` adds a 341-byte canonical v2-like registry at SHA-256
+`7154c025…994a7`, declares its local bytes, and binds it through one new
+top-level field. Strict v1 rejects only that unsupported field, returns null
+scope, and keeps provider authority false. Removing the binding, declaration,
+and bytes reproduces the complete baseline v1 result exactly. The focused
+direct-freeze gate passes 48 tests and 269 assertions plus TypeScript, exact
+test formatting, and whitespace.
+
+A real v2 registry must still be a new strict, sole parsed authority for both
+construction and verification, with new model/policy scope and decisions.
+Migration must retain the v1 reader and original fixture; rollback must restore
+the untouched v1 bundle rather than reinterpret v2 bytes. No real registry
+owner, deposit, or second revision exists, so no production schema change is
+justified. The next ranked accessible control asks whether copied same-byte
+model-resolution aliases remain one content identity without becoming
+independent evidence.
 
 ## Cycle 201 checkpoint — cross-role bytes remain role-bound
 
