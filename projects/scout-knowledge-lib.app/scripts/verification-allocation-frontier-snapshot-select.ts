@@ -34,6 +34,12 @@ export function summarizeIdentityRobustSnapshotFrontierSelection(
             resultSha256: snapshot.resultSha256,
             frontierSha256: snapshot.frontierSha256,
             frontierCount: snapshot.frontier.length,
+            frontierSnapshotReference: identityRobustFrontierSnapshotReference({
+              rowSha256: snapshot.rowSha256,
+              resultSha256: snapshot.resultSha256,
+              frontierSha256: snapshot.frontierSha256,
+              frontierCount: snapshot.frontier.length,
+            }),
             providerCallsAuthorized: snapshot.providerCallsAuthorized,
           }
         : null,

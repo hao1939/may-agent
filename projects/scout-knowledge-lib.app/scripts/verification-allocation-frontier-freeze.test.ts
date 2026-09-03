@@ -238,9 +238,16 @@ describe("identity-robust frontier freeze adapter", () => {
       providerCallsAuthorized: false,
     });
     const summary = summarizeIdentityRobustSnapshotFrontierSelection(result);
+    const frontierSnapshotReference = identityRobustFrontierSnapshotReference({
+      rowSha256: snapshot.rowSha256,
+      resultSha256: snapshot.resultSha256,
+      frontierSha256: snapshot.frontierSha256,
+      frontierCount: snapshot.frontier.length,
+    });
     expect(summary.snapshotVerification.snapshot).toMatchObject({
       frontierCount: 2,
       frontierSha256: snapshot.frontierSha256,
+      frontierSnapshotReference,
       providerCallsAuthorized: false,
     });
     expect(JSON.stringify(summary)).not.toContain('"frontier":');
