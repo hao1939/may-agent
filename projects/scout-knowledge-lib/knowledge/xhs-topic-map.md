@@ -3792,6 +3792,29 @@ read or account mutation occurred. GitHub, arXiv, and Reddit made zero public
 requests and retain their evidence and triggers. The ranked top-level manifest
 key-order control proceeds locally.
 
+### Cycle 213 checkpoint — top-level manifest order is presentation-only
+
+Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`.
+Two top-level freeze-manifest serializations parse equally and are each 2,011
+bytes, but hash to `a951e9ec…0878572` and `07bd1ee6…421174`. Strict v1 returns
+the complete same verification result for both, including identical model and
+protocol scopes and false provider authority; restoring the original bytes is
+also exact.
+
+This is high-confidence local evidence for a deliberate boundary: container
+key order is presentation, whereas declared model-resolution and seed-policy
+artifact bytes are role-specific identity. An explicit registry would be a
+declared artifact and therefore needs deterministic versioned bytes; merely
+placing equivalent fields in a differently ordered outer manifest must not
+create registry identity. No production schema change is justified.
+
+Focused validation passes 26 tests and 147 assertions plus TypeScript,
+formatting, and whitespace. GitHub/local code won; GitHub, arXiv, and Reddit
+made zero public requests and retain their evidence and triggers. The next
+ranked matched audit reorders keys inside nested manifest declarations while
+holding every declared artifact byte fixed, testing whether the presentation
+boundary is recursive across the container.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

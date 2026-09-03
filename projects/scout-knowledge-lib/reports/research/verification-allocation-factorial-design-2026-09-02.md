@@ -2805,6 +2805,24 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 213 top-level freeze-manifest order is presentation-only
+
+Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two
+top-level manifest serializations parse to equal objects and are each 2,011
+bytes, but hash to `a951e9ec…0878572` and `07bd1ee6…421174`.
+
+Both produce the complete same verification result: model scope, protocol
+scope, evidence labels, counts, errors, and false provider authority are
+unchanged. Restoring the original serialization is exact. The focused gate
+passes 26 tests and 147 assertions plus TypeScript, formatting, and whitespace.
+
+The container is therefore presentation-only at this boundary, while Cycles
+211–212 prove declared model and seed-policy artifacts are byte identities. A
+future registry must be a deterministic versioned declared artifact; outer
+manifest key order cannot substitute for registry identity. No current owner,
+authority, consumer, or provider result supports a schema change. The next
+control tests nested manifest-declaration key order with every artifact fixed.
+
 ## Cycle 212 seed-policy bytes control protocol scope
 
 Seed commit `0c9fcbd14a` preceded exact test-only commit `4a6c83abb1`. Two

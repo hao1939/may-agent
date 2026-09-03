@@ -8036,6 +8036,31 @@ and Reddit each made zero public requests and retain their evidence, access
 boundaries, and triggers. The highest-ranked accessible control now reorders
 only top-level freeze-manifest keys to test container presentation.
 
+## Cycle 213 checkpoint — outer manifest order is not evidence identity
+
+Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. The
+ordered and reversed-shape top-level manifests parse equally, are each 2,011
+bytes, and hash to `a951e9ec…0878572` and `07bd1ee6…421174`. Strict v1 returns
+the complete same verification result for both, including identical model and
+protocol scopes and false provider authority; restoring the original bytes is
+also exact.
+
+The focused bundle gate passes 26 tests and 147 assertions plus TypeScript,
+formatting, and whitespace. This qualifies Cycles 211–212: declared evidence
+bytes are role-specific identity, while top-level container key order is
+presentation-only. A future explicit registry must be one deterministic,
+versioned declared artifact rather than a second meaning inferred from outer
+manifest spelling. No production change is justified without owner, authority,
+consumer, or provider evidence.
+
+GitHub/local code won. GitHub retains the local regressions and last named
+heads; arXiv retains MemGauge `2608.30177v1` and allocation study
+`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. Public lanes
+made zero requests and retain their change-bearing triggers. The unaccepted
+`d041c41b54` range remains outside standing lineage. The next ranked matched
+control reorders nested manifest-declaration keys while holding every artifact
+byte fixed.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
