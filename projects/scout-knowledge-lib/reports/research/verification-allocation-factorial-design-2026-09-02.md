@@ -2805,6 +2805,28 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 186 registered candidate-body association
+
+Seed commit `2306cdba55` preceded a matched whole-schedule body swap. Every
+episode retained distinct, stable bodies and provenance tuples, but the two
+bodies exchanged memory IDs; prompts and both schedule digests were coherently
+rebound. Before repair the freeze returned `ok:true`, no errors, provider
+authority false, model scope `ac29ae2…7c5bf`, and protocol scope
+`0b3153e…9f850`.
+
+Exact local `c672fa7f4b` binds each stable, distinct body to the registered body
+for its memory identity. The swap now returns one exact error, null policy
+scope, and provider authority false. The complete freeze/factorial gate passes
+82 tests and 685 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+This is high-confidence local evidence for the byte-exact identity/body
+association and contradictory evidence against treating stability/uniqueness
+as sufficient factor isolation. It does not prove semantic equivalence,
+authorship, registration, policy authority, cost, real-model behavior, or
+provider execution. The next audit swaps the two distinct provenance tuples
+between otherwise correct identities and bodies.
+
 ## Cycle 185 cross-identity candidate body separation
 
 Seed commit `305b3cb2d1` preceded a matched whole-schedule content alias. Every
