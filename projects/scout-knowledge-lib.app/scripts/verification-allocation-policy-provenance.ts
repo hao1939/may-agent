@@ -3,7 +3,10 @@ import {
   isCanonicalRelativeEvidenceName,
   readDescriptorSafeLocalEvidence,
 } from "./descriptor-safe-local-evidence";
-import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  hasDuplicateJsonObjectKeys,
+  hasExcessiveJsonNesting,
+} from "./json-object-key-exactness";
 
 export type IdentityRobustPolicyEvidenceManifest = {
   schema: "scout.verification-allocation-policy-evidence/v2";
@@ -400,6 +403,21 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalRecord(
     decisionRecordText = new TextDecoder("utf-8", { fatal: true }).decode(
       localEvidence.bytes!,
     );
+    if (hasExcessiveJsonNesting(decisionRecordText)) {
+      return {
+        ...structural,
+        ok: false,
+        errors: [
+          "local decision record exceeds the supported JSON nesting limit",
+        ],
+        decisionRecordSha256: localEvidence.sha256,
+        decisionRecordByteLength: localEvidence.byteLength,
+        decisionRecordEvidenceStatus: localEvidence.evidenceStatus,
+        decisionRecordContentStatus: "",
+        scopeLimit:
+          "The local bytes match their declared hash but exceed the supported JSON nesting limit. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+      };
+    }
     decisionRecordCandidate = JSON.parse(decisionRecordText);
   } catch {
     return {
@@ -506,6 +524,24 @@ export async function bindIdentityRobustPolicyEvidenceFromLocalManifest(
     manifestText = new TextDecoder("utf-8", { fatal: true }).decode(
       localManifest.bytes!,
     );
+    if (hasExcessiveJsonNesting(manifestText)) {
+      return {
+        ok: false,
+        manifestSha256: "",
+        evidenceStatus: "",
+        errors: [
+          "local policy provenance manifest exceeds the supported JSON nesting limit",
+        ],
+        scopeLimit:
+          "The local manifest bytes match their declared hash but exceed the supported JSON nesting limit. No authorship, authority, independence, timestamp validity, or substantive correctness is established.",
+        ...emptyRecord,
+        manifestArtifact: safeManifestArtifact,
+        manifestArtifactSha256: localManifest.sha256,
+        manifestArtifactByteLength: localManifest.byteLength,
+        manifestArtifactEvidenceStatus: localManifest.evidenceStatus,
+        manifestArtifactContentStatus: "",
+      };
+    }
     manifestCandidate = JSON.parse(manifestText);
   } catch {
     return {

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   bindIdentityRobustPolicyEvidence,
+  bindIdentityRobustPolicyEvidenceFromLocalManifest,
   bindIdentityRobustPolicyEvidenceFromLocalRecord,
 } from "./verification-allocation-policy-provenance";
 
@@ -400,6 +401,59 @@ describe("identity-robust policy provenance", () => {
         errors: ["local decision record contains duplicate JSON object keys"],
       });
     }
+  });
+
+  it("rejects excessive nesting in byte-matched manifest and record files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "scout-policy-depth-"));
+    roots.push(root);
+    await mkdir(join(root, "decisions"));
+    await mkdir(join(root, "policies"));
+    const bytes = '{"value":'.repeat(1_000) + "null" + "}".repeat(1_000);
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    await writeFile(join(root, "policies", "manifest.json"), bytes);
+    await writeFile(join(root, "decisions", "policy.json"), bytes);
+
+    expect(
+      await bindIdentityRobustPolicyEvidenceFromLocalManifest(
+        policySha256,
+        evidenceReference,
+        policy,
+        root,
+        "policies/manifest.json",
+        sha256,
+        verifiedPolicyScope,
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: [
+        "local policy provenance manifest exceeds the supported JSON nesting limit",
+      ],
+      manifestArtifactSha256: sha256,
+      manifestArtifactByteLength: bytes.length,
+      manifestArtifactEvidenceStatus: "local-byte-match-unverified",
+      manifestArtifactContentStatus: "",
+      decisionRecordEvidenceStatus: "",
+    });
+
+    expect(
+      await bindIdentityRobustPolicyEvidenceFromLocalRecord(
+        policySha256,
+        evidenceReference,
+        policy,
+        { ...base, decisionRecordSha256: sha256 },
+        root,
+        verifiedPolicyScope,
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: [
+        "local decision record exceeds the supported JSON nesting limit",
+      ],
+      decisionRecordSha256: sha256,
+      decisionRecordByteLength: bytes.length,
+      decisionRecordEvidenceStatus: "local-byte-match-unverified",
+      decisionRecordContentStatus: "",
+    });
   });
 
   it("rejects byte-matched content that contradicts the manifest", async () => {
