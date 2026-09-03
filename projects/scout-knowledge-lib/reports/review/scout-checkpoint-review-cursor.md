@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing tip 086ed02f757d55f35b80ba73f48cdc969b6dc6dc: RV-001 is resolved, RV-004 remains open for high-cost cycle/report growth without retained outcome evidence, and RV-005 has an integration-ready seed-ledger projection fix."
+summary: "Independent Scout review cursor through standing Cycle 230: RV-001 and RV-005 are resolved, while RV-004 remains open for high-cost cycle/report growth without retained outcome evidence."
 triggers: ["Scout independent review", "checkpoint review cursor", "Scout productivity regression", "seed ledger projection", "RV-001", "RV-004", "RV-005"]
 last_updated: "2026-09-03"
-source_basis: "Exact standing diffs and history through 086ed02f757d55f35b80ba73f48cdc969b6dc6dc; current-revision validation in the reviewer-owned worktree; exact prior reviewer integration mapping; and the Cycle 67-229 independent review."
+source_basis: "Exact standing diffs and history through Cycle 230; current-revision validation in reviewer- and goal-owned worktrees; exact reviewer integration mappings; and the Cycle 67-229 independent review."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -62,7 +62,7 @@ source_basis: "Exact standing diffs and history through 086ed02f757d55f35b80ba73
 | `RV-002` | Low | Cycle 65 GitHub provenance | All four repository identities and exact heads were made self-contained. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction removed the recursive integration wrapper and is present on standing. | **Resolved.** |
 | `RV-004` | High | `37430cf4..086ed02f`, especially the topic map, lane report, factorial report, and verifier scripts | 163 cycles and +29,357/-255 lines in about 23 hours, with no real provider result, current authority-bearing policy, held-out evaluation, reuse evidence, or changed user decision. | **Revise; open.** Stop verifier micro-cycles, consolidate the current contract and rollback map, correct the design report's stale Cycle 106 source basis, and require a current execution opportunity or protected outcome before more work in this family. |
-| `RV-005` | Medium | Cycle 224 projection gate and `xhs-seed-ledger.md` | The gate passed at Cycle 229 while the ledger still advertised Cycle 222. | **Revise; pending integration.** Reviewer commit `b3c4fb8d3e161363f611520c32b44028b64277c6` fixes and tests the canonical projection. |
+| `RV-005` | Medium | Cycle 224 projection gate and `xhs-seed-ledger.md` | The gate passed at Cycle 229 while the ledger still advertised Cycle 222. | **Resolved.** Verified reviewer object `b3c4fb8d3e9588db9a4119f5b0f5c1645a22762b` is integrated as standing commit `d35632c2b1f6c7dbeddfd151a795a9cfd14da023`; Cycle 230 ledger fields now project the latest exact row. |
 
 ## Reviewer source/result and integration status
 
@@ -77,15 +77,20 @@ source_basis: "Exact standing diffs and history through 086ed02f757d55f35b80ba73
 - Earlier `RV-002`/`RV-003` reviewer corrections remain integrated. No prior
   accepted reviewer result is rejected, superseded, blocked, or unintegrated.
 - Current reviewer refinement source is
-  `086ed02f757d55f35b80ba73f48cdc969b6dc6dc`; result is
-  `b3c4fb8d3e161363f611520c32b44028b64277c6`. It is **pending**, not landed.
-  Reconcile that one commit and rerun the standing current-tip gate; rollback is
-  a revert of the same commit.
+  `086ed02f757d55f35b80ba73f48cdc969b6dc6dc`; the locally verified projection
+  result `b3c4fb8d3e9588db9a4119f5b0f5c1645a22762b` is integrated as standing
+  commit `d35632c2b1f6c7dbeddfd151a795a9cfd14da023` at stable patch ID
+  `f5d7665abebb7c35579ade161154cc52103681a8`. The longer `b3c4fb8d3e161…`
+  identifier supplied in the handoff does not name a local object. Reviewer
+  cursor source `9f0891cf97fcbf9ced68b2a72495ce464926da7f` is integrated as standing commit
+  `8ab0a89cd07b88c5e26feaeb1d1d3f82c7747c5d` at patch ID
+  `deac3b2799304a21aba0ecd2f524e922a7ffd516`.
+  Rollback is a normal revert of the corresponding standing commit.
 
 ## Next trigger
 
-Review the next material standing checkpoint, standing integration or rejection
-of `b3c4fb8d`, or concrete disposition of `RV-004`. If no such checkpoint
+Review the next material standing checkpoint or concrete disposition of
+`RV-004`. If no such checkpoint
 arrives, the next bounded periodic audit is no earlier than 24 hours after this
 review. Do not poll unchanged state. This standing reviewer goal remains active.
 
