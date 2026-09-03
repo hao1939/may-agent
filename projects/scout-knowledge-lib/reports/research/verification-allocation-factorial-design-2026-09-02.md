@@ -2010,6 +2010,27 @@ cost, models, or providers. The next ranked control is whether a direct
 freeze-only caller can inject a snapshot reference without having verified a
 snapshot; if so, the verified adapter must own scope construction.
 
+## Cycle 114 call-path authority control
+
+Seed commit `a36cdf1cef8d76f004869ab95ac46afe81f274ba` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and no public lane request was made.
+
+Before the fix, the public freeze-only adapter accepted a caller-provided
+snapshot reference. When the synthetic local decision repeated the arbitrary
+value, freeze verification and selection both succeeded without any snapshot
+read. Exact implementation `72e925bff6e7c76c2c97331f5762413926dab5e1`
+removes that argument: only the snapshot adapter can derive combined scope, and
+only after both snapshot and freeze verification. The matched direct call now
+fails closed; snapshot-backed selection and ordinary freeze-only selection
+retain their prior behavior.
+
+Focused validation passes 13 tests and 51 assertions, TypeScript, formatting,
+and whitespace. This proves call-path containment for the local implementation,
+not decision authority or real provider readiness. The next ranked control is
+whether compact output explicitly preserves the matched snapshot reference or
+requires reopening the decision record to reconstruct that relation.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
