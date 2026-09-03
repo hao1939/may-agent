@@ -53,6 +53,7 @@ type RankedEntry = NavigationEntry & {
 };
 
 export type NavigationRankingDiagnostics = {
+  schema: "scout.navigation-ranking-diagnostics/v1";
   ranked_count: number;
   top_tie_count: number;
   runner_up: Pick<RankedEntry, "kind" | "title" | "target" | "score"> | null;
@@ -225,6 +226,7 @@ export function rankingDiagnostics(
   const second = ranked[1];
   if (!first || !second) {
     return {
+      schema: "scout.navigation-ranking-diagnostics/v1",
       ranked_count: ranked.length,
       top_tie_count: first ? 1 : 0,
       runner_up: null,
@@ -242,6 +244,7 @@ export function rankingDiagnostics(
     score: Number(entry.score.toFixed(6)),
   });
   return {
+    schema: "scout.navigation-ranking-diagnostics/v1",
     ranked_count: ranked.length,
     top_tie_count: ranked.filter(
       (entry) => Math.abs(entry.score - first.score) < 1e-9,

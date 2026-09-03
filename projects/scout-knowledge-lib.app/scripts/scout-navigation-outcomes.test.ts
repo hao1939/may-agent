@@ -81,6 +81,7 @@ describe("Scout navigation outcome evaluation", () => {
     const diagnostics = rankingDiagnostics(rankNavigation(query, entries));
 
     expect(navigate(query, entries)).toEqual(before);
+    expect(diagnostics.schema).toBe("scout.navigation-ranking-diagnostics/v1");
     expect(diagnostics.ranked_count).toBe(2);
     expect(diagnostics.top_tie_count).toBe(1);
     expect(diagnostics.runner_up?.target).toBe("./notes.md");
@@ -90,6 +91,11 @@ describe("Scout navigation outcome evaluation", () => {
     expect(diagnostics.second_score_includes_top).toBe(false);
     expect(diagnostics.absolute_gap).toBeGreaterThan(0);
     expect(diagnostics.relative_gap).toBeGreaterThan(0);
+    expect(rankingDiagnostics([])).toMatchObject({
+      schema: "scout.navigation-ranking-diagnostics/v1",
+      ranked_count: 0,
+      second_score_tier: [],
+    });
 
     const tied = parseNavigationEntries(
       [
