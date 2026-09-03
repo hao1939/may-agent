@@ -9345,6 +9345,42 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 245 checkpoint — the observed margin boundary is retrospective
+
+Seed-first commit `17f79df077` preceded this audit. The two uniquely wrong v1
+rankings have relative top-one/runner-up gaps of `0.014277` for the topic-map
+query and `0.157327` for caller-bound memory. Across both frozen sets, every
+correct result that has a runner-up is separated by at least `0.345953`; three
+additional correct results have no runner-up. Exact ties remain zero-margin
+ambiguities and true misses have no ranking.
+
+On these exact 22 cases, a 25% relative margin would preserve all 17 uniquely
+correct selections and turn both uniquely wrong selections into explicit
+ambiguity. It would not fix the coordination three-way tie or the negative
+control's generic-token ambiguity. Because the boundary and candidate threshold
+were inspected after seeing both library-authored sets, they are diagnostic
+evidence, not an independently frozen rule. No evaluator change was made and
+v1/v2 remain 10/14 and 8/8.
+
+Confidence is high for the deterministic scores and this observed separation,
+low for future queries or human/model behavior. No GitHub, arXiv, or Reddit
+public request ran; all retained lane evidence and triggers are unchanged. The
+next ranked audit removes one query token at a time without changing labels to
+measure whether correct margins stay safely separated and wrong margins remain
+small before any abstention policy is considered.
+
+The candidate tree passes syntax, TypeScript, source formatting, Cycle 237
+projection, 62 durable links, v1 at 10/14, v2 at 8/8, and all 292 tests with
+1,455 assertions. The broad 1,540-document / 1,699-link audit has zero errors;
+read-only health at `2026-09-03T17:45:21.127Z` returns 29 facts, 16 wake
+signals, and `truncated:true`, and runtime state is empty. Accepted standing
+`d35632c2b1` and `8ab0a89cd0` remain contained; unaccepted `d041c41b54` and
+`d9da99476e` remain non-ancestors. Protected `/app` is stable at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 894 records, and
+`925801d5…e429c`, with unchanged Scout scope 296 / `a430d0c9…4322f7e`. The
+human overlay remains `fd4c68ecd6`, three records, and `a52b97aa…394a15`.
+No protected or peer worktree was written or tested.
+
 ## Cycle 244 checkpoint — matched controls explain four different failures
 
 Seed-first commit `18f4b78421` came before this local audit. Nothing changed in
