@@ -9353,6 +9353,25 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The bounded 22-entry HN/triage/coverage identity audit follows.
 
+## Cycle 238 checkpoint — 22 false clicks become explicit unavailable state
+
+Seed commit `05bd9bf956` preceded the audit. Every intended descriptive path
+has zero accepted standing-history. The collision audit names six of them as
+canonical (#255, #259–#263) but supplies neither a body nor a complete source-
+set mapping; scan-number aliases and topic overlap therefore cannot establish
+identity. The current owner snapshot also omits all 22 targets.
+
+Each index row now retains its exact title, intended path, full summary, and
+exact-target-or-owner-supersession trigger without presenting a false click.
+Checks pass 22/22. Across 1,540 documents, local prose links fall 1,732→1,710
+and unresolved occurrences fall 33→11 across seven documents; absolute links
+remain zero. No detailed summary distinction, body, or source claim was lost or
+invented. Confidence is high for accepted-path absence, field preservation,
+and navigation behavior, low for the unavailable bodies. GitHub, arXiv, and
+Reddit made zero public requests and retain their evidence/access triggers.
+Next, audit the three canonical-note citations to absent #253, #258, and #260
+for claim-level replacements or explicit unavailable state.
+
 ## Cycle 237 seed-first reconciliation — fresh receipt, unchanged semantics
 
 Cycle 237 began from clean `469a205391`. The requested next material cycle

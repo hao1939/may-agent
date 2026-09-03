@@ -3851,6 +3851,27 @@ seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The bounded 22-entry HN/triage/coverage identity audit wins the
 rubric and follows this reconciliation.
 
+### Cycle 238 checkpoint — absent identities become explicit state
+
+Seed commit `05bd9bf956` preceded the audit. All 22 intended descriptive paths
+have zero accepted standing-history. The accepted collision audit calls six
+paths canonical (#255, #259–#263), but supplies no body or complete source-set
+mapping; similarly numbered historical aliases cannot prove identity and the
+current owner snapshot omits every target. That evidence supports unavailable
+state and contradicts restoration by scan number or topic overlap.
+
+Each index row now preserves its exact title, intended path, full summary, and
+an exact-target-or-owner-supersession trigger without presenting a false click.
+Matched checks pass 22/22. The 1,540-document audit moves from 1,732 links / 33
+unresolved to 1,710 / 11 across seven documents, with zero absolute links.
+Detailed distinctions remain in the summaries; no body, provenance, or source
+claim was invented or deleted. Confidence is high for accepted-path absence,
+field preservation, and current navigation behavior, low for the unavailable
+bodies. GitHub, arXiv, and Reddit made zero public requests and retain their
+recorded evidence and triggers. Next, audit the three canonical-note citations
+to absent #253, #258, and #260 bodies for claim-level replacements or explicit
+unavailable state.
+
 ## Cycle 237 seed-first start — semantic boundary unchanged
 
 Cycle 237 began from clean checkpoint `469a205391`. The requested next
