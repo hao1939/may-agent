@@ -2312,6 +2312,27 @@ registration. The next ranked control maps overall validity, registration
 evidence, and proof-byte presence across proof-specific and unrelated
 integrity failures before any further schema decision.
 
+## Cycle 126 evidence-status matrix
+
+Seed commit `3fcff78042c06b2ec5e21ba09c5a4fb6070d7890` preceded exact
+test-only commit `441064d354314ad28a95a5b8dde3730ec1a3a0c3`. Five matched cases
+now pin the result contract:
+
+- a valid local bundle reports overall validity, locally matched unverified
+  registration, and locally present unverified proof bytes;
+- an unrelated schedule mismatch clears overall validity and registration but
+  preserves the independent proof-byte presence fact; and
+- proof digest mismatch, missing proof bytes, or undeclared proof bytes clear
+  both proof and registration statuses.
+
+Provider authority remains false throughout. Focused validation passes 12
+tests and 61 assertions plus TypeScript and source formatting. No production
+change was needed after Cycle 125's complete-error gate.
+
+This proves local status composition, not proof validity or target identity.
+The next ranked control asks whether the schema identifies the checksum
+manifest as the proof target before any cryptographic verification is added.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

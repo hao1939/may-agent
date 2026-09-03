@@ -323,15 +323,17 @@ This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
 Cycle 126 supersedes the older table snapshot below. Starting tip
-`ac8ff89f24b4668c1d086073acb03282f6806601` anchors the unchanged login-class
+`ac8ff89f24b4668c1d086073acb03282f6806601` and seed commit
+`3fcff78042c06b2ec5e21ba09c5a4fb6070d7890` anchor the unchanged login-class
 shell, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. Cycle 125's complete-error gate is
-retained; the status truth table is selected next. Accepted-result containment
-and protected-checkout preservation are rechecked on the resulting exact tip.
+unavailable. No public request was made. Exact test `441064d…1a3a0c3` pins the
+five-case evidence-status matrix without another production change.
+Accepted-result containment and protected-checkout preservation are rechecked
+on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 126; public trigger-deferred.** The proof/registration/overall status matrix is directly testable in the standing implementation.                                    | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `c037763…6242c4` makes registration status empty across tampered, missing, and undeclared artifact failures.                                                   | Zero public requests. Map the compact status matrix before changing schema semantics. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 126; public trigger-deferred.** The proof/registration/overall status matrix was directly testable in the standing implementation.                                      | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact test `441064d…1a3a0c3` separates five valid, unrelated-error, mismatched, missing, and undeclared proof cases.                                                          | Zero public requests. Next test whether the schema binds the intended proof target to the checksum manifest. Revisit public GitHub on a repository revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
 | **arXiv**               | **High relevance / high retained value / current; public trigger-deferred in Cycle 126.** The retained archive established the allocation basis but supplies no real Scout snapshot or freeze.                                       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Local ZIP SHA-256 `41ca426…a63138` and 5,400/5,400 completion entries verify; raw usage supplies historical volumes but no drift estimate, prices, transferable ceiling, real frontier snapshot, or real freeze bundle.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep the 0.0006 point non-operational. Revisit public arXiv on a paper/artifact/registration revision, independent replication, or newly readable seed body. |
 | **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 126 without quota work.** The unchanged access class exposes no seed-linked item, thread delta, access change, or community claim.                | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                       | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                         |
 
@@ -3247,6 +3249,25 @@ attributable items. Only body SHA changed
 `e7da856…b88692`→`c69a76a…bf7492`; additions/changes remain unknown,
 removals are `[]`, and all 132 durable seeds remain unavailable. No account
 state changed and no source/status-matrix request preceded this record.
+
+### Cycle 126 checkpoint — evidence statuses have distinct meanings
+
+Seed commit `3fcff78042c06b2ec5e21ba09c5a4fb6070d7890` preceded exact
+test-only commit `441064d354314ad28a95a5b8dde3730ec1a3a0c3`. The five matched
+cases establish: a valid local bundle reports all three positive/local states;
+an unrelated schedule mismatch clears overall validity and registration while
+retaining proof-byte presence; proof digest mismatch, missing proof bytes, and
+undeclared proof bytes clear all proof and registration statuses. Provider
+authority remains false in every case.
+
+Focused validation passes 12 tests and 61 assertions plus TypeScript and
+source formatting. No production change was needed because Cycle 125 already
+implemented the intended separation. Confidence is high for these local
+status combinations and low for proof parsing, target identity, external
+anchoring, registration, authorship, or execution. GitHub, arXiv, and Reddit
+made zero public requests. The next ranked investigation is proof-target
+identity: determine whether the freeze schema binds the intended proof target
+to the checksum manifest before considering any cryptographic verifier.
 
 ## Cycle 125 seed-first start
 
