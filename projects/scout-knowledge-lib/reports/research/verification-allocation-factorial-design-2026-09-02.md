@@ -2527,6 +2527,25 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 148 descriptor-safe bundle alias semantics
+
+Seed commit `18da6c376f1d462739d919d3581dec6fa1575dd3` preceded one real
+temporary-directory control. It renamed all five non-executable artifacts and
+updated only their manifest inventory/pointers while preserving bytes,
+digests, relations, schedule content, and the executable entry-point name.
+
+Exact regression `b9131efb44dc34c97c53e4a5fc23e490cc4824a3` records the existing
+contract: descriptor-safe inventory and regular-file reads accept the aliases,
+retain both local evidence labels and exact policy scope, and keep provider
+authority false. No runtime change is justified.
+
+The focused freeze gate passes 48 tests and 230 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local filesystem evidence,
+not external producer compatibility, timestamp authenticity, authorship,
+authority, independence, or real execution proof. The next matched control
+exercises complete frontier selection from the aliased bundle while retaining
+the executable-name substitution denial.
+
 ## Cycle 147 registration-locator alias semantics
 
 Seed commit `b97ea2633ebce183ce4f8063e0a363ef952f6006` preceded matched
