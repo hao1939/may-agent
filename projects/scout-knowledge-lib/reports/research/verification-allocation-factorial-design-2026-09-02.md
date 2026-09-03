@@ -2146,6 +2146,39 @@ was added. The next ranked control changes registered execution-bundle bytes
 instead; unlike metadata, executable content may affect what the decision
 actually authorizes.
 
+## Cycle 120 execution-bundle substitution
+
+Seed commit `3404c2dedc790459ed9ca2cfcfe3cbd0bf89ad60` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The pre-fix matched freeze-only control changed only `bundle.zip` bytes and
+the corresponding artifact and registration digests. The freeze still verified
+locally, protocol/model scope remained exactly
+`5626601a5b3e7b904341c813739f2b64c2303ad2136b532cac796b7e4793c12a` /
+`2c43a39dcf1489eee08ccc8cc037dc866e4136cdd6c701af8129c14c0363f1d7`,
+and old local decision `5a5acf9a38d31f39df6c8e1ad5405e4517332ddba5edc555d46e66c64d0868cd`
+still selected equal 172. This contradicted the expected meaning of a frozen
+execution protocol; provider authority remained false.
+
+Exact repair `74ca45c79e5437918ee70df4b472025a3555ee86` incorporates the
+locally verified registered artifact name and digest into protocol-scope
+derivation. The persistent regression strengthens the control through the
+snapshot adapter: snapshot, schedule, model, seed, frontier, policy, and local
+decision record
+`e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8`
+remain fixed. The baseline selects equal 172; the substituted bundle passes
+local freeze and snapshot verification but the old decision is rejected for a
+combined-scope mismatch. Changing only unverified registration identity still
+preserves scope and selection.
+
+Focused validation passes 17 tests and 80 assertions plus TypeScript,
+formatting, and whitespace. This proves local factor separation and stale-
+decision denial, not external registration, executable authenticity, policy
+authority, real execution, drift, prices, model behavior, or provider
+readiness. The next ranked control checks whether the opaque checksum-manifest
+artifact actually binds the execution bundle it purports to describe.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
