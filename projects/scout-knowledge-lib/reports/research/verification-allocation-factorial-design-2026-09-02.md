@@ -2805,6 +2805,24 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 201 cross-role digest reuse
+
+Seed commit `a8347e3640` preceded exact test `7bafcf4651`. In one bundle,
+`seed-policy.json` becomes a hard link to the model-resolution evidence; in a
+matched reverse bundle, the model-resolution path becomes a hard link to the
+seed policy. The target digest follows the substituted bytes and stat confirms
+one inode in both cases.
+
+Each substitution still fails all three applicable role checks: unknown fields,
+wrong schema, and declaration mismatch. Both results are invalid, expose no
+policy scope, and keep provider authority false. The evidence supports
+deduplicating content storage only while retaining typed logical declarations;
+digest or inode equality does not make evidence interchangeable. No production
+change is justified. Focused validation passes 62 tests and 350 assertions
+plus TypeScript, exact-file formatting, and whitespace. Transfer to a future
+object resolver and same-role multi-declaration reuse remain untested; the
+latter is the next control.
+
 ## Cycle 200 hard-link and duplicate-digest semantics
 
 Seed commit `cb0d876578` preceded exact test `3e0ea3d818`. A hard-linked proof

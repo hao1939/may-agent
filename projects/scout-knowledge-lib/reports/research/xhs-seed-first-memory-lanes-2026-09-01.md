@@ -7860,6 +7860,27 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 201 checkpoint — cross-role bytes remain role-bound
+
+Seed commit `a8347e3640` records the unchanged 30-note Explore boundary,
+login-class saved target, zero attributable items, unknown additions/changes,
+no proven removals, and all 132 durable seeds unavailable before source-lane
+work. The saved response body hash changed as provenance only; no XHS state
+changed.
+
+Exact local `7bafcf4651` hard-links model-resolution bytes over the seed-policy
+path and then tests the reverse in a fresh fixture. After the declared digest is
+updated and same-inode storage is proven, each role emits its exact unsupported-
+field, schema, and declaration errors. Both fail with null policy scope and
+false provider authority. Focused validation passes 62 tests and 350 assertions
+plus TypeScript, formatting, and whitespace. This is strong local evidence for
+typed v1 role binding, not future object-store or provider proof.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. No
+production change is warranted. The next ranked control tests one resolution
+object against two distinct model declarations.
+
 ## Cycle 200 checkpoint — deduplicated bytes are not independent evidence
 
 Seed commit `cb0d876578` records unchanged semantic XHS access and byte length,
