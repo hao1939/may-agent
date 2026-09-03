@@ -9353,6 +9353,23 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The duplicate #177 citations follow.
 
+## Cycle 241 checkpoint — complete tracked-library local-link closure
+
+Seed commit `0dfb16026e` preceded the audit. The #177 path has no accepted
+history and the index already calls the body physically absent. The two bullets
+preserve different evidence—MemStrata temporal validity and MemClaw production
+governance—so they retain distinct claim-specific replacement criteria while
+sharing the same explicit unavailable path boundary.
+
+Across 1,540 tracked Markdown documents, links fall 1,701→1,699 and unresolved
+occurrences 2→0; affected documents and absolute links are both zero. Both
+quantitative/production claim sets remain unchanged. Confidence is high for
+accepted-path absence, claim preservation, and the complete offline audit, low
+for the absent body. GitHub, arXiv, and Reddit made zero requests and retain
+their triggers. Next, measure a fixed held-out navigation set against the
+repaired index and unavailable-entry representation, preserving misses and
+ambiguity rather than continuing link repair without outcome evidence.
+
 ## Cycle 240 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:07:01.598Z`, Cycle 237's exact receipt was ten minutes old

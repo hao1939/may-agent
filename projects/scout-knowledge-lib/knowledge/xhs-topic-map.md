@@ -3850,6 +3850,26 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The duplicate #177 citations now win.
 
+### Cycle 241 checkpoint — tracked prose has no false local links
+
+Seed commit `0dfb16026e` preceded the audit. The #177 target has no accepted
+path history, and the index already records it as physically absent. The two
+citations are not duplicates in meaning: one preserves MemStrata temporal-
+validity evidence and the other MemClaw production-governance evidence. This
+supports a shared unavailable source boundary but contradicts collapsing either
+claim into the other.
+
+Both bullets retain their full quantitative/production evidence and exact
+intended path, with claim-specific replacement criteria. Across 1,540 tracked
+Markdown documents, links move 1,701→1,699 and unresolved occurrences 2→0;
+affected documents and absolute links are both zero. Confidence is high for
+accepted-path absence, claim preservation, and the complete offline link audit,
+low for the absent #177 body. GitHub, arXiv, and Reddit made zero requests and
+retain their recorded evidence/access triggers. The next ranked investigation
+must measure retrieval outcome rather than continue link repair: run a fixed
+held-out navigation set against the repaired index and explicit unavailable
+entries, preserving misses and ambiguity.
+
 ## Cycle 240 seed-first start — current receipt reused
 
 At `2026-09-03T17:07:01.598Z`, Cycle 237's exact receipt was ten minutes old
