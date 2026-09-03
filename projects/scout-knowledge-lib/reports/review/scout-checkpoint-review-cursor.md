@@ -340,12 +340,11 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   patch ID `27e5dcc8381420d6f1930738dd51539729199ac2` and exact cursor blob
   `7456416b2ffa3cab62305c66f00a189294323c93`. Reconciliation
   `c799ca1528` correctly records this status. RV-004 remains high/open.
-- Current reviewer source is standing `c799ca15288dc7b4903e976d2df0df86b947bdf5`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 258 disposition and
-  advances this cursor. Rollback is one ordinary revert. It is not landed until
-  standing contains its exact or patch-equivalent change and current-tip
-  validation passes.
+- Reviewer `e2f6e08a4f894871644ef0fc86aa89198c94472e` is integrated as
+  standing `8bb45ca26a31f721fc7e6720e70882b6e0e03154`; both share stable
+  patch ID `4aa63c02a789500d987c2cfb5ccfed0329b08581` and exact cursor blob
+  `daff9a6e48d20588fb3b6edac182d3033102c543`. Rollback is one ordinary
+  revert; current-tip validation follows this status correction.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
