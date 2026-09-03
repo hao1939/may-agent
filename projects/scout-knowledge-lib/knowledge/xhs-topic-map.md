@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 106 observational reconciliation through 2026-09-03T01:41:36.847Z; exact access evidence and uncertainty are in the Cycle 106 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 106 at 2026-09-03T01:41:36.847Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 106 read-only XHS boundary through 2026-09-03T01:41:36.847Z."
+latest_seed_basis: "Cycle 107 observational reconciliation through 2026-09-03T01:49:05.546Z; exact access evidence and uncertainty are in the Cycle 107 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 107 at 2026-09-03T01:49:05.546Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 107 read-only XHS boundary through 2026-09-03T01:49:05.546Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 106 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 107 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` changed to final class `login`, 46,672 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -2371,6 +2371,24 @@ audit remain the highest supported evidence in this execution environment.
   state remain unknown. Reddit JSON previously returned HTTP 403, while post
   RSS returns HTTP 200 with the post and six comments; that is attributable
   community evidence, not paper validation.
+
+## Cycle 107 seed-first start
+
+Cycle 107 began from clean exact tip
+`5c2c655efb96fc18968371c84a74583b80b151d3`. From
+`2026-09-03T01:49:04.484Z` through `01:49:05.546Z`, the established connector
+ran as effective UID 0 in root-owned Chrome PID 2136's network namespace.
+Public Explore remained readable with 30 notes. Non-navigating saved status
+again returned HTTP 200, final class `login`, 46,672 bytes, semantic access
+fingerprint `3dab1b6d…8af420`, a login wall, and zero attributable items. Only
+the body SHA changed from `f99a032…2531d` to `6a8b86d…2ae8a`.
+
+Added and changed IDs remain unknown, observed removals are `[]`, and all 132
+durable seeds remain unavailable rather than removed. No representative saved
+post was supported or read, and no XHS state changed. Direct worker ports were
+not repeated after the Cycle 105 curl-7/HTTP-000 result. This record preceded
+all Cycle 107 source, accepted-ref, and CLI work. Pursue the explicit verified-
+freeze bundle-root integration next.
 
 ## Cycle 106 seed-first start
 
