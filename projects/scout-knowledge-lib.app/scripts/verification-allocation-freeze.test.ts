@@ -351,6 +351,38 @@ describe("verification-allocation execution freeze", () => {
     }
   });
 
+  it("bounds deeply nested canonical artifacts before recursive serialization", () => {
+    const bytes = '{"value":'.repeat(1_000) + "null" + "}".repeat(1_000);
+    for (const [name, error] of [
+      [
+        "model-resolution.json",
+        "models[0] resolution evidence is not canonical verifiable JSON",
+      ],
+      [
+        "seed-policy.json",
+        "seed policy evidence is not canonical verifiable JSON",
+      ],
+      [
+        "schedule.json",
+        "schedule artifact exceeds the supported JSON nesting limit",
+      ],
+    ] as const) {
+      const { manifest, artifactContents } = validFixture();
+      artifactContents[name] = bytes;
+      const digest = freezeArtifactSha256(bytes);
+      manifest.artifacts.find((artifact) => artifact.name === name)!.sha256 =
+        digest;
+      if (name === "schedule.json") manifest.schedule.sha256 = digest;
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain(error);
+      expect(result.policyScope).toBeNull();
+      expect(result.providerCallsAuthorized).toBe(false);
+    }
+  });
+
   it("rejects unknown fields throughout the byte-bound schedule", () => {
     const { manifest, artifactContents } = validFixture();
     const schedule = JSON.parse(artifactContents["schedule.json"]);

@@ -3,6 +3,7 @@ import {
   type FactorialSchedule,
   verifyFactorialSchedule,
 } from "./verification-allocation-factorial";
+import { hasExcessiveJsonNesting } from "./json-object-key-exactness";
 
 type ArtifactBytes = string | Uint8Array;
 
@@ -129,7 +130,7 @@ function canonicalArtifactRecord(
   value: ArtifactBytes,
 ): Record<string, unknown> | null {
   const text = artifactText(value);
-  if (text === null) return null;
+  if (text === null || hasExcessiveJsonNesting(text)) return null;
   try {
     const parsed: unknown = JSON.parse(text);
     return isRecord(parsed) && text === JSON.stringify(parsed) ? parsed : null;
@@ -486,6 +487,12 @@ function validateSchedule(
   try {
     const raw =
       typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
+    if (hasExcessiveJsonNesting(raw)) {
+      errors.push("schedule artifact exceeds the supported JSON nesting limit");
+      return Number.isInteger(schedule.episodeCount)
+        ? schedule.episodeCount
+        : 0;
+    }
     const parsed = JSON.parse(raw) as unknown;
     if (JSON.stringify(parsed) !== raw) {
       errors.push("schedule artifact is not canonical verifiable JSON");
