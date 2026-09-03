@@ -9482,6 +9482,30 @@ Added/changed identities remain unknown, observed removals are `[]`, and all
 132 durable IDs remain unavailable. Commit this ordering record before the
 ranked exact 21-line Cycle 272 mirror audit.
 
+## Cycle 285 checkpoint — bounded-navigation provenance is retained once
+
+What was wrong: the full Cycle 272 seed and preservation record was repeated
+in both the living map and this detailed report. Seed
+`ab67f6bdd606e4e740696ba682b61b76ae0120e3` preceded the audit. The exact
+shared block measured 21 lines / 1,203 bytes at SHA-256
+`99925ebb66e9e79a980c53876c10f49f015611eb9d7821adb09dfe429ca585f0`.
+
+Material `d27fe00e55f061e33f0a10d82a98d625d610b443` retains this report copy
+unchanged and replaces the map copy with a 9-line / 569-byte transition at
+SHA-256 `f4d7ff05…2f6515031`. The map removes 12 net lines / 634 bytes while
+retaining exact Cycle 271 result and Cycle 272 seed identities, a link to full
+validation, the zero-request receipt reuse, unknown additions/changes,
+removals `[]`, 132 unavailable IDs, and protected/peer preservation. No source,
+claim, code, fixture, account, evaluator, or protected state changed.
+
+GitHub remains trigger-deferred at the four exact retained repository heads;
+arXiv retains `2608.30177v1` and `2608.25553v3`; Reddit retains RSS HTTP 200
+for `t3_1v8a3sh` / six comments and JSON HTTP 403. All made zero requests and
+keep the Cycle 284 revisit triggers. This is static retrieval reduction rather
+than observed use, token savings, later behavior, or user outcome, so RV-004
+remains high/open. The next ranked adjacent mirror is the exact 16-line Cycle
+273 seed block.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

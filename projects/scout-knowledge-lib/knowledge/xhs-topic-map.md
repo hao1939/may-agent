@@ -3909,6 +3909,23 @@ remain unavailable. Cycle 284 passed 296 tests / 1,483 assertions, 69 scoped
 links, 1,540 documents / 1,705 broad links, and read-only health at 30 facts /
 16 wakes. Commit this seed record before compacting the ranked Cycle 272 mirror.
 
+## Cycle 285 checkpoint — Cycle 272 seed provenance has one detailed home
+
+Seed `ab67f6bdd606e4e740696ba682b61b76ae0120e3` preceded the audit. The
+map and report shared an exact 21-line / 1,203-byte Cycle 272 seed block at
+SHA-256 `99925ebb…ca585f0`. Material
+`d27fe00e55f061e33f0a10d82a98d625d610b443` preserves the report and
+replaces only the map copy with a 9-line / 569-byte linked transition, removing
+12 net lines / 634 bytes. Result/seed identities, validation provenance,
+unavailable-seed uncertainty, zero-request access, and protected-state
+preservation remain available without default duplication.
+
+GitHub, arXiv, and Reddit made zero requests; their retained heads, exact paper
+versions, RSS/JSON boundary, and change-bearing triggers remain current.
+RV-004 stays high/open because this is static retrieval evidence only. The next
+measured adjacent mirror is Cycle 273's exact 16-line seed block; retain its
+ranking context and keep complete evidence in one authoritative location.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
