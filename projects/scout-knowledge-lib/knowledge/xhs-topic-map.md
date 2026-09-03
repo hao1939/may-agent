@@ -5213,23 +5213,10 @@ high for the exact deterministic sweep and low for generalization. Next, replay
 the existing 202 leave-one-token perturbations across the apparent repair
 interval to test whether its no-regression result is stable.
 
-This documentation-only candidate passes 62 durable links, the v1 10/14 and
-v2 8/8 gates, and the focused 7-test / 26-assertion replay. The unchanged code
-tree's full Cycle 252 gate remains 294 tests / 1,470 assertions; the broad
-1,540-document / 1,698-link audit has zero errors.
-
-## Cycle 252 seed-first start — current receipt reused
-
-At `2026-09-03T18:15:42.544Z`, Cycle 237's exact receipt was seventy-nine
-minutes old. The accepted Cycle 250 review corrections had just been integrated
-as standing `98926518f0` and `6045108077`, with their status reconciled by
-`2d5c31924a`; body-evolution and durable review refs otherwise remained
-`df80a1daa2` and `9f0891cf97`, and unaccepted self-evolution remained
-`d041c41b54`. No collection, source-revision, schedule, or access trigger had
-fired. Added/changed identities remain unknown, removals are `[]`, and all 132
-seeds remain unavailable at the same login-class boundary. No browser or
-public-source request ran. The accepted review makes exact Cycle 244 control
-replay and caller score attribution the highest-value accessible local gap.
+The [detailed Cycle 253 report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-253-checkpoint--one-retrospective-interval-repairs-one-error)
+retains its exact validation. The preceding Cycle 252 section there retains
+the 79-minute receipt age, accepted/unaccepted refs, zero-request boundary,
+seed uncertainty, and why caller-score attribution ranked first.
 
 ### Cycle 252 checkpoint — shared rarity loses to title weighting
 
