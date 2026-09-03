@@ -335,7 +335,7 @@ export function bindIdentityRobustPolicyEvidence(
   return {
     ok: true,
     manifestSha256: createHash("sha256")
-      .update(JSON.stringify(candidate))
+      .update(canonicalJson(candidate))
       .digest("hex"),
     evidenceStatus: "caller-supplied-unverified",
     errors: [],

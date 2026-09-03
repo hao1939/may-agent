@@ -86,6 +86,52 @@ describe("identity-robust policy provenance", () => {
     expect(result.manifestSha256).toHaveLength(64);
   });
 
+  it("keeps manifest identity stable across JSON object key order", () => {
+    const baseline = bindIdentityRobustPolicyEvidence(
+      policySha256,
+      evidenceReference,
+      policy,
+      base,
+      verifiedPolicyScope,
+    );
+    const reordered = {
+      independentEvidenceStatus: base.independentEvidenceStatus,
+      policyEvidenceApplicability: {
+        applicabilityStatus:
+          base.policyEvidenceApplicability.applicabilityStatus,
+        modelScopeReference:
+          base.policyEvidenceApplicability.modelScopeReference,
+        protocolReference: base.policyEvidenceApplicability.protocolReference,
+        evidenceUnit: base.policyEvidenceApplicability.evidenceUnit,
+        evidenceKind: base.policyEvidenceApplicability.evidenceKind,
+        schema: base.policyEvidenceApplicability.schema,
+      },
+      decisionRecordSha256: base.decisionRecordSha256,
+      decisionRecordArtifact: base.decisionRecordArtifact,
+      observedAt: base.observedAt,
+      decisionRevision: base.decisionRevision,
+      decisionOwner: base.decisionOwner,
+      evidenceReference: base.evidenceReference,
+      policySha256: base.policySha256,
+      evidenceClass: base.evidenceClass,
+      schema: base.schema,
+    };
+    const equivalent = bindIdentityRobustPolicyEvidence(
+      policySha256,
+      evidenceReference,
+      policy,
+      reordered,
+      verifiedPolicyScope,
+    );
+
+    expect(equivalent).toMatchObject({
+      ok: true,
+      evidenceStatus: "caller-supplied-unverified",
+      errors: [],
+    });
+    expect(equivalent.manifestSha256).toBe(baseline.manifestSha256);
+  });
+
   it("binds an optional frontier snapshot identity and rejects a rollover mismatch", () => {
     const frontierSnapshotReference = `frontier-snapshot-sha256:${"c".repeat(64)}`;
     const snapshotApplicability = {
