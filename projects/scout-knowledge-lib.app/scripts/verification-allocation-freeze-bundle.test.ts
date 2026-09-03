@@ -603,6 +603,58 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("binds coherent seed order into reversible protocol scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    const writeCurrentSeedOrder = async () => {
+      const seedPolicy = JSON.stringify({
+        schema: "scout.verification-allocation-seed-policy/v1",
+        namespace: manifest.seedPolicy.namespace,
+        algorithm: manifest.seedPolicy.algorithm,
+        seedIds: manifest.seedPolicy.seedIds,
+      });
+      await writeFile(join(root, "seed-policy.json"), seedPolicy);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "seed-policy.json",
+      )!.sha256 = freezeArtifactSha256(seedPolicy);
+
+      const schedule = JSON.stringify(
+        buildSyntheticFactorialSchedule(
+          manifest.models.map((model) => model.resolvedId),
+          manifest.seedPolicy.seedIds,
+        ),
+      );
+      await writeFile(join(root, "schedule.json"), schedule);
+      const scheduleSha256 = freezeArtifactSha256(schedule);
+      manifest.schedule.sha256 = scheduleSha256;
+      manifest.schedule.seedIds = [...manifest.seedPolicy.seedIds];
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "schedule.json",
+      )!.sha256 = scheduleSha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    manifest.seedPolicy.seedIds.reverse();
+    await writeCurrentSeedOrder();
+    const reversed = await verifyExecutionFreezeBundle(root);
+    expect(reversed.ok).toBe(true);
+    expect(reversed.policyScope?.protocolReference).not.toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reversed.policyScope?.modelScopeReference).toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reversed.providerCallsAuthorized).toBe(false);
+
+    manifest.seedPolicy.seedIds.reverse();
+    await writeCurrentSeedOrder();
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
