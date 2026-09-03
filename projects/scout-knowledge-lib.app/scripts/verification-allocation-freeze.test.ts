@@ -18,7 +18,11 @@ function validFixture() {
       resolvedId: "fixture-model-a",
       resolutionKind: "content-addressed",
     }),
-    "seed-policy.md": "fixture seeds are enumerated once",
+    "seed-policy.json": JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    }),
     "bundle.zip": bundleBytes,
     "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
     "MANIFEST.sha256.ots": "fixture timestamp proof",
@@ -45,7 +49,7 @@ function validFixture() {
     seedPolicy: {
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
-      policyArtifact: "seed-policy.md",
+      policyArtifact: "seed-policy.json",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],
     },
     schedule: {
@@ -229,6 +233,65 @@ describe("verification-allocation execution freeze", () => {
       artifactContents["model-resolution.json"] = bytes;
       manifest.artifacts.find(
         (artifact) => artifact.name === "model-resolution.json",
+      )!.sha256 = freezeArtifactSha256(bytes);
+
+      const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContain(error);
+      expect(result.policyScope).toBeNull();
+      expect(result.providerCallsAuthorized).toBe(false);
+    }
+  });
+
+  it("rejects seed-policy evidence that contradicts its declaration", () => {
+    const { manifest, artifactContents } = validFixture();
+    artifactContents["seed-policy.json"] = JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-02"],
+    });
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "seed-policy.json",
+    )!.sha256 = freezeArtifactSha256(artifactContents["seed-policy.json"]);
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "seed policy evidence does not match declaration",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.policyScope).toBeNull();
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
+  it("rejects opaque, duplicate-key, or extended seed-policy evidence", () => {
+    const matchingFields =
+      '"namespace":"scout.verification-allocation/v1","algorithm":"enumerated-fixture-v1","seedIds":["fixture-seed-00","fixture-seed-01"]';
+    const cases = [
+      {
+        bytes: "fixture seeds are enumerated once",
+        error: "seed policy evidence is not canonical verifiable JSON",
+      },
+      {
+        bytes: `{${matchingFields},"algorithm":"enumerated-fixture-v1"}`,
+        error: "seed policy evidence is not canonical verifiable JSON",
+      },
+      {
+        bytes: `{${matchingFields},"providerAuthority":true}`,
+        error: "seed policy evidence contains unsupported fields",
+      },
+    ];
+
+    for (const { bytes, error } of cases) {
+      const { manifest, artifactContents } = validFixture();
+      artifactContents["seed-policy.json"] = bytes;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "seed-policy.json",
       )!.sha256 = freezeArtifactSha256(bytes);
 
       const result = verifyExecutionFreezeManifest(manifest, artifactContents);
@@ -542,10 +605,15 @@ describe("verification-allocation execution freeze", () => {
       first.policyScope?.modelScopeReference,
     );
 
-    artifactContents["seed-policy.md"] = "changed seed policy evidence";
+    artifactContents["seed-policy.json"] = JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v2",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    });
+    manifest.seedPolicy.algorithm = "enumerated-fixture-v2";
     manifest.artifacts.find(
-      (artifact) => artifact.name === "seed-policy.md",
-    )!.sha256 = freezeArtifactSha256(artifactContents["seed-policy.md"]);
+      (artifact) => artifact.name === "seed-policy.json",
+    )!.sha256 = freezeArtifactSha256(artifactContents["seed-policy.json"]);
     const changedProtocol = verifyExecutionFreezeManifest(
       manifest,
       artifactContents,
@@ -628,12 +696,12 @@ describe("verification-allocation execution freeze", () => {
       "schedule.json": `${artifactContents["schedule.json"]}tampered`,
       "undeclared.txt": "not in the manifest",
     };
-    delete (evidence as Partial<typeof evidence>)["seed-policy.md"];
+    delete (evidence as Partial<typeof evidence>)["seed-policy.json"];
 
     const result = verifyExecutionFreezeManifest(manifest, evidence);
     const errors = result.errors;
     expect(errors).toContain("artifact schedule.json digest mismatch");
-    expect(errors).toContain("artifact seed-policy.md has no supplied bytes");
+    expect(errors).toContain("artifact seed-policy.json has no supplied bytes");
     expect(errors).toContain("undeclared artifact bytes: undeclared.txt");
     expect(result.externalRegistrationEvidenceStatus).toBe("");
     expect(errors).toContain(

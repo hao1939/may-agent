@@ -29,7 +29,11 @@ async function fixture() {
       resolvedId: "fixture-model-a",
       resolutionKind: "content-addressed",
     }),
-    "seed-policy.md": "fixture seeds are enumerated once",
+    "seed-policy.json": JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    }),
     "bundle.zip": bundleBytes,
     "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
     "MANIFEST.sha256.ots": "fixture timestamp proof",
@@ -52,7 +56,7 @@ async function fixture() {
     seedPolicy: {
       namespace: "scout.verification-allocation/v1",
       algorithm: "enumerated-fixture-v1",
-      policyArtifact: "seed-policy.md",
+      policyArtifact: "seed-policy.json",
       seedIds: ["fixture-seed-00", "fixture-seed-01"],
     },
     schedule: {
@@ -167,10 +171,13 @@ describe("verification-allocation freeze bundle", () => {
 
   it("rejects symlinks even when their target is readable", async () => {
     const { root } = await fixture();
-    await symlink(join(root, "seed-policy.md"), join(root, "linked-policy.md"));
+    await symlink(
+      join(root, "seed-policy.json"),
+      join(root, "linked-policy.json"),
+    );
 
     expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
-      "symbolic links are not allowed in a freeze bundle: linked-policy.md",
+      "symbolic links are not allowed in a freeze bundle: linked-policy.json",
     );
   });
 

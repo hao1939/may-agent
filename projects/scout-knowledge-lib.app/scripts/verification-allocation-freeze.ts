@@ -120,6 +120,19 @@ function artifactText(value: ArtifactBytes): string | null {
   }
 }
 
+function canonicalArtifactRecord(
+  value: ArtifactBytes,
+): Record<string, unknown> | null {
+  const text = artifactText(value);
+  if (text === null) return null;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return isRecord(parsed) && text === JSON.stringify(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function freezeArtifactSha256(value: ArtifactBytes): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -295,14 +308,8 @@ function validateModels(
     }
     const evidenceBytes = artifactContents[model.resolutionEvidenceArtifact];
     if (evidenceBytes === undefined) continue;
-    const evidenceText = artifactText(evidenceBytes);
-    let evidence: unknown;
-    try {
-      evidence = evidenceText === null ? undefined : JSON.parse(evidenceText);
-    } catch {
-      evidence = undefined;
-    }
-    if (!isRecord(evidence) || evidenceText !== JSON.stringify(evidence)) {
+    const evidence = canonicalArtifactRecord(evidenceBytes);
+    if (!evidence) {
       errors.push(
         `models[${index}] resolution evidence is not canonical verifiable JSON`,
       );
@@ -337,6 +344,7 @@ function validateModels(
 function validateSeedPolicy(
   manifest: FreezeManifest,
   artifacts: Map<string, FreezeArtifact>,
+  artifactContents: Record<string, ArtifactBytes>,
   errors: string[],
 ): string[] {
   const policy = manifest.seedPolicy;
@@ -370,6 +378,27 @@ function validateSeedPolicy(
   if (!seedIds || seedIds.length === 0 || !uniqueStrings(seedIds)) {
     errors.push("seed IDs must be unique and non-empty");
     return seedIds ?? [];
+  }
+  if (isString(policy.policyArtifact) && artifacts.has(policy.policyArtifact)) {
+    const evidenceBytes = artifactContents[policy.policyArtifact];
+    if (evidenceBytes !== undefined) {
+      const evidence = canonicalArtifactRecord(evidenceBytes);
+      if (!evidence) {
+        errors.push("seed policy evidence is not canonical verifiable JSON");
+      } else {
+        if (!hasOnlyKeys(evidence, ["namespace", "algorithm", "seedIds"])) {
+          errors.push("seed policy evidence contains unsupported fields");
+        }
+        const evidenceSeedIds = stringArray(evidence.seedIds) ?? [];
+        if (
+          evidence.namespace !== policy.namespace ||
+          evidence.algorithm !== policy.algorithm ||
+          !sameStrings(evidenceSeedIds, seedIds)
+        ) {
+          errors.push("seed policy evidence does not match declaration");
+        }
+      }
+    }
   }
   return seedIds;
 }
@@ -601,7 +630,12 @@ export function verifyExecutionFreezeManifest(
     artifactContents,
     errors,
   );
-  const seedIds = validateSeedPolicy(manifest, artifacts, errors);
+  const seedIds = validateSeedPolicy(
+    manifest,
+    artifacts,
+    artifactContents,
+    errors,
+  );
   const episodeCount = validateSchedule(
     manifest,
     artifactContents,
