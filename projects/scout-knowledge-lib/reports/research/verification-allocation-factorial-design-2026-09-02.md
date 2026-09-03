@@ -1915,6 +1915,48 @@ identity. If the current decision provenance cannot distinguish that
 substitution, bind the frontier reference in the smallest schema-backed way
 without promoting local integrity into authority.
 
+## Cycle 111 cross-snapshot substitution control
+
+Seed reconciliation `b470c35c6e82557186a41743782437ce0e3e15b8`
+preceded this control. The saved surface retained the login-class semantic
+fingerprint, login wall, 46,672-byte length, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, removals are `[]`,
+and all 132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made
+zero public requests.
+
+The matched fixture kept the freeze bundle, policy object, provenance
+manifest, local decision bytes, and evidence roots unchanged. It modified one
+frontier point's reserve, then recomputed both the frontier hash and outer file
+hash so the substitute remained internally consistent. Exact local
+`2e3aae4473b370714be579ff7bd81e6a90bfebbd` verifies the current behavior:
+the retained expectation rejects the substitute with `frontier snapshot does
+not match the expected computation`; freeze verification is never attempted,
+no selection is returned, and provider authority remains false.
+
+This supports the code-level snapshot identity as a current-revision boundary
+and contradicts adding a decision-record field solely for same-revision
+substitution: that path is already closed before policy evidence is evaluated.
+Focused validation passes 12 tests and 35 assertions plus TypeScript,
+formatting, and whitespace.
+
+The evidence is narrower than a durable provenance conclusion. The snapshot
+expectation is supplied by the executable revision, while the policy decision
+record does not name it. A future revision that intentionally updates the
+expectation could therefore have a different transfer boundary. Confidence is
+high for current substitution denial and low for cross-version policy rollover,
+real freeze availability, approval, drift, cost, model identity, and provider
+behavior.
+
+The accepted-result check at
+`2026-09-03T02:34:23.125Z–02:34:23.201Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a version-rollover control that changes only
+the expected snapshot identity while holding the old policy evidence fixed. A
+schema change is justified only if that old evidence silently authorizes the
+new computation.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
