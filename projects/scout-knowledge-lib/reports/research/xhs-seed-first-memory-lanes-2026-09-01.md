@@ -7860,6 +7860,27 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 199 checkpoint — restricted paths are the smaller conditional v2
+
+Seed commit `30cba41d32` records unchanged semantic XHS access and byte length,
+30 public Explore notes, zero attributable saved items, unknown additions/
+changes, no observed removals, and all 132 seeds unavailable. Body-hash drift
+is response provenance. No XHS state changed.
+
+A read-only local audit found all 6 current bundle names pass a conservative
+ASCII/case-collision rule and all 3 known collision classes fail it. Four exact
+alias regressions at `b9131efb44`, `b5b7d70373`, `1170e66987`, and
+`df65aaf56d` pass with 26 assertions: non-execution aliases preserve
+selection, while the registered executable name remains policy-bound. Logical
+ID records save only 12 JSON bytes across six artifacts and still need a new
+object inventory, resolver, external-name mapping, scope/replay migration, and
+rollback. No production change or provider authority is inferred.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact heads, paper versions, RSS/JSON boundary, and triggers. V1
+remains unchanged. The next ranked audit tests hard-link and duplicate-digest
+semantics across distinct artifact identities.
+
 ## Cycle 198 checkpoint — simultaneous collision pairs remain exact locally
 
 Seed commit `ae11b42b23` records unchanged semantic XHS access and byte length,

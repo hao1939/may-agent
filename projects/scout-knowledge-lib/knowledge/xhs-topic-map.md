@@ -435,9 +435,9 @@ cannot inherit the compiled registry's policy scope.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 198; public trigger-deferred.** Current v1 keeps simultaneous host-valid collision pairs exact rather than folding them.                             | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `df65aaf…0efcd5` materializes case-fold, NFC/NFD, and trailing-dot pairs as seven distinct declared artifacts on this host.                                                                                                 | Zero public requests. Retain v1 and compiled registry. Next compare lowercase restricted paths with logical-ID/content-digest decoupling for a future v2, including migration and rollback cost. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 198.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines portable artifact names, a collision domain, registry authority, or registration closure.                                                                                                                                                                                                                                                                                                         | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 198 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 199; public trigger-deferred.** A restricted-path v2 is the smallest credible portability design; current v1 remains unchanged.                       | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Four exact local controls show non-execution aliases preserve selection, execution-name aliases invalidate old scope, and collision pairs coexist locally. The candidate rule accepts 6/6 current names and rejects 3/3 collision classes.                                          | Zero public requests. Retain v1. Require real registry authority before v2. Next test hard-link and duplicate-digest semantics across distinct artifact IDs/names.                                   |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 199.** The papers remain contextual controls rather than local evidence-authority.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally; neither paper defines portable artifact names, a collision domain, registry authority, or registration closure.                                                                                                                                                                                                                                                                                                         | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                              |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 199 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry claim.   | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3360,6 +3360,44 @@ unavailable. No representative saved-post read was supported, no XHS state
 changed, and no v2 design test or public-source request preceded this
 reconciliation. Commit it first, then compare restricted paths with logical
 artifact IDs mapped to digest-derived storage.
+
+### Cycle 199 checkpoint — restrict paths before adding an object store
+
+Seed commit `30cba41d32` preceded a read-only design audit over the current six
+bundle names and exact existing alias controls. A candidate v2 rule uses
+1–64-byte ASCII segments that begin/end alphanumeric, allows internal `._-`,
+caps the whole path at 240 bytes, rejects Windows device basenames, and requires
+unique lowercase collision keys. All 6/6 current names pass; case-fold,
+NFC/NFD, and trailing-dot pairs fail 3/3. No current file needs renaming.
+
+Four focused existing regressions from exact commits
+`b9131efb44dc34c97c53e4a5fc23e490cc4824a3`,
+`b5b7d70373d85e11b868b419898ebdb3be34a8d2`,
+`1170e6698775771778409518445a044df30a7879`, and
+`df65aaf56dc48abe4927fd6ae9a07f802d0efcd5` pass with 26 assertions. They
+prove that renaming every non-execution artifact preserves freeze scope and
+selection,
+while renaming the same-byte registered executable changes protocol scope and
+invalidates the old decision. The six current `{name,sha256}` records occupy
+632 JSON bytes; changing only `name` to logical `id` occupies 620. That
+12-byte saving is not the migration cost: digest storage would require a v2
+schema, object inventory, every reference to resolve IDs, a separate external
+deposit filename, and scope/replay migration. The executable's external name
+must remain policy-bound either way.
+
+The restricted rule is therefore the smallest credible v2 if real registry
+authority appears. It still requires a complete real-path/collision inventory,
+supported-platform declaration, dual v1/v2 reader, protocol-scope rollover,
+and rollback fixture. No deposit, owner, or provider authority exists, so
+current v1 and the compiled candidate registry remain unchanged. Confidence is
+high for the code-path and byte comparisons, moderate for the proposed bounds,
+and low for untested platforms.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their exact evidence and triggers. The next ranked question tests
+hard-link and duplicate-digest semantics across distinct artifact identities,
+which determines whether a future object store needs an explicit uniqueness
+rule or may intentionally deduplicate bytes.
 
 ## Cycle 198 seed-first start
 

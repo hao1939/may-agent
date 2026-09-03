@@ -2805,6 +2805,26 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 199 restricted paths versus digest-object storage
+
+Seed commit `30cba41d32` preceded a read-only design audit. A candidate v2 rule
+with 1–64-byte ASCII segments, alphanumeric ends, internal `._-`, 240-byte
+total bound, device-name denial, and unique lowercase keys accepts all 6
+current names and rejects all 3 collision classes. No rename is required.
+
+Four existing alias controls at `b9131efb44`, `b5b7d70373`, `1170e66987`, and
+`df65aaf56d` pass with 26 assertions. Non-execution path
+aliases preserve scope and selection; the same-byte executable alias changes
+protocol scope and invalidates the old decision. Current artifact records use
+632 JSON bytes; logical-ID/digest records use 620, only 12 fewer. An object
+store still needs a new schema, inventory, reference resolver, separate
+external filename, scope/replay migration, and rollback. The external
+executable name remains policy identity, so restricted paths dominate as the
+smallest conditional v2. No authority exists and v1 remains unchanged.
+
+The next audit tests hard-link and duplicate-digest semantics across distinct
+artifact identities before deciding whether byte deduplication needs a rule.
+
 ## Cycle 198 simultaneous path-collision pairs
 
 Seed commit `ae11b42b23` preceded exact test `df65aaf56d`. On this Linux host,
