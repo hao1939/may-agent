@@ -9399,6 +9399,18 @@ next ranked operation is a newly retained outcome or accepted review;
 otherwise perform the scheduled seed-first XHS observation at
 `2026-09-03T22:57:11.030Z`.
 
+## Cycle 282 seed-first start — current receipt reused
+
+Cycle 282 began from clean validated tip
+`12efeb6cd90dc62be60ea03cfc3b7f6be2c1dbd9`. At
+`2026-09-03T21:57:42.781Z`, Cycle 237's exact XHS observation through
+`2026-09-03T16:57:11.030Z` was about 301 minutes old, still inside the
+six-hour cadence and before the scheduled `2026-09-03T22:57:11.030Z` pass.
+No browser, GitHub, arXiv, or Reddit request ran. Added/changed identities
+remain unknown, observed removals are `[]`, and all 132 durable IDs remain
+unavailable. The post-seed ranking selects the exact 40-line Cycle 222
+rollback-ledger mirror for a bounded retention audit before any source call.
+
 ## Cycle 281 checkpoint — duplicate link history now has one detailed home
 
 The permitted bounded seed step remains exact Cycle 280 seed commit
