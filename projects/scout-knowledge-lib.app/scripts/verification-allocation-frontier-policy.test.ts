@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
+  hashIdentityRobustFrontierPolicy,
   selectIdentityRobustFrontierPoint,
   type IdentityRobustFrontierPoint,
+  type IdentityRobustFrontierPolicy,
 } from "./verification-allocation-frontier-policy";
 
 const frontier: IdentityRobustFrontierPoint[] = [
@@ -24,6 +26,19 @@ const frontier: IdentityRobustFrontierPoint[] = [
     uniformDriftBuffer: 0.044820541675075244,
   },
 ];
+
+function manifest(policy: IdentityRobustFrontierPolicy) {
+  return {
+    schema: "scout.verification-allocation-policy-evidence/v1",
+    evidenceClass: "caller-supplied-policy-provenance",
+    policySha256: hashIdentityRobustFrontierPolicy(policy),
+    evidenceReference: policy.evidenceReference,
+    decisionOwner: "fixture-owner",
+    decisionRevision: "decision-revision:fixture",
+    observedAt: "2026-09-03T00:00:00.000Z",
+    independentEvidenceStatus: "not-provided",
+  };
+}
 
 describe("identity-robust allocation frontier policy", () => {
   it("fails closed without exactly one explicit policy and evidence reference", () => {
@@ -69,16 +84,39 @@ describe("identity-robust allocation frontier policy", () => {
       selected: null,
       errors: ["identity-robust frontier is invalid"],
     });
+    const validPolicy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "maximum-episode-count",
+      maximumEpisodeCount: 33_024,
+      evidenceReference: "decision-record:fixture-missing-manifest",
+    };
+    expect(
+      selectIdentityRobustFrontierPoint(frontier, validPolicy),
+    ).toMatchObject({
+      ok: false,
+      policySha256: hashIdentityRobustFrontierPolicy(validPolicy),
+      evidenceManifestSha256: "",
+      selected: null,
+      errors: [
+        "an exact caller-supplied policy provenance manifest is required",
+      ],
+    });
   });
 
   it("selects the cheapest point meeting an explicit reserve target", () => {
-    const result = selectIdentityRobustFrontierPoint(frontier, {
+    const policy: IdentityRobustFrontierPolicy = {
       schema: "scout.verification-allocation-frontier-policy/v1",
       evidenceClass: "caller-supplied-operating-policy",
       selectionBasis: "minimum-uniform-drift-reserve",
       minimumUniformDriftReserve: 0.0006,
       evidenceReference: "decision-record:fixture-reserve",
-    });
+    };
+    const result = selectIdentityRobustFrontierPoint(
+      frontier,
+      policy,
+      manifest(policy),
+    );
     expect(result).toMatchObject({
       ok: true,
       policyEvidenceStatus: "caller-supplied-unverified",
@@ -86,17 +124,19 @@ describe("identity-robust allocation frontier policy", () => {
       errors: [],
     });
     expect(result.policySha256).toHaveLength(64);
+    expect(result.evidenceManifestSha256).toHaveLength(64);
   });
 
   it("selects the strongest point within an explicit episode ceiling", () => {
+    const policy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "maximum-episode-count",
+      maximumEpisodeCount: 33_024,
+      evidenceReference: "decision-record:fixture-budget",
+    };
     expect(
-      selectIdentityRobustFrontierPoint(frontier, {
-        schema: "scout.verification-allocation-frontier-policy/v1",
-        evidenceClass: "caller-supplied-operating-policy",
-        selectionBasis: "maximum-episode-count",
-        maximumEpisodeCount: 33_024,
-        evidenceReference: "decision-record:fixture-budget",
-      }),
+      selectIdentityRobustFrontierPoint(frontier, policy, manifest(policy)),
     ).toMatchObject({
       ok: true,
       policyEvidenceStatus: "caller-supplied-unverified",
@@ -106,14 +146,15 @@ describe("identity-robust allocation frontier policy", () => {
   });
 
   it("returns no selection when the explicit policy is unattainable", () => {
+    const policy: IdentityRobustFrontierPolicy = {
+      schema: "scout.verification-allocation-frontier-policy/v1",
+      evidenceClass: "caller-supplied-operating-policy",
+      selectionBasis: "minimum-uniform-drift-reserve",
+      minimumUniformDriftReserve: 0.05,
+      evidenceReference: "decision-record:fixture-unattainable",
+    };
     expect(
-      selectIdentityRobustFrontierPoint(frontier, {
-        schema: "scout.verification-allocation-frontier-policy/v1",
-        evidenceClass: "caller-supplied-operating-policy",
-        selectionBasis: "minimum-uniform-drift-reserve",
-        minimumUniformDriftReserve: 0.05,
-        evidenceReference: "decision-record:fixture-unattainable",
-      }),
+      selectIdentityRobustFrontierPoint(frontier, policy, manifest(policy)),
     ).toMatchObject({
       ok: false,
       policyEvidenceStatus: "caller-supplied-unverified",

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { bindIdentityRobustPolicyEvidence } from "./verification-allocation-policy-provenance";
 
 export type IdentityRobustFrontierPoint = {
   runBlockCount: number;
@@ -19,6 +20,7 @@ export type IdentityRobustFrontierPolicy = {
 export type IdentityRobustFrontierSelection = {
   ok: boolean;
   policySha256: string;
+  evidenceManifestSha256: string;
   policyEvidenceStatus: "caller-supplied-unverified" | "";
   selected: IdentityRobustFrontierPoint | null;
   errors: string[];
@@ -75,6 +77,26 @@ function parsePolicy(candidate: unknown): IdentityRobustFrontierPolicy | null {
   return candidate as IdentityRobustFrontierPolicy;
 }
 
+export function hashIdentityRobustFrontierPolicy(candidate: unknown): string {
+  const policy = parsePolicy(candidate);
+  if (!policy) return "";
+  const threshold =
+    policy.selectionBasis === "minimum-uniform-drift-reserve"
+      ? { minimumUniformDriftReserve: policy.minimumUniformDriftReserve }
+      : { maximumEpisodeCount: policy.maximumEpisodeCount };
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        schema: policy.schema,
+        evidenceClass: policy.evidenceClass,
+        selectionBasis: policy.selectionBasis,
+        ...threshold,
+        evidenceReference: policy.evidenceReference,
+      }),
+    )
+    .digest("hex");
+}
+
 function validFrontier(
   candidate: unknown,
 ): candidate is IdentityRobustFrontierPoint[] {
@@ -116,13 +138,15 @@ function validFrontier(
 export function selectIdentityRobustFrontierPoint(
   frontierCandidate: unknown,
   policyCandidate: unknown,
+  evidenceManifestCandidate: unknown = null,
 ): IdentityRobustFrontierSelection {
   const scopeLimit =
-    "Selection is conditional on a caller-supplied policy whose evidence reference is recorded but not independently verified. It does not validate real drift, marginal estimates, dependence, provider behavior, or operating cost.";
+    "Selection is conditional on a caller-supplied policy and provenance manifest whose fields are recorded but not independently verified. It does not authenticate the owner, timestamp, revision, references, real drift, marginal estimates, dependence, provider behavior, or operating cost.";
   if (!validFrontier(frontierCandidate)) {
     return {
       ok: false,
       policySha256: "",
+      evidenceManifestSha256: "",
       policyEvidenceStatus: "",
       selected: null,
       errors: ["identity-robust frontier is invalid"],
@@ -134,6 +158,7 @@ export function selectIdentityRobustFrontierPoint(
     return {
       ok: false,
       policySha256: "",
+      evidenceManifestSha256: "",
       policyEvidenceStatus: "",
       selected: null,
       errors: [
@@ -142,9 +167,23 @@ export function selectIdentityRobustFrontierPoint(
       scopeLimit,
     };
   }
-  const policySha256 = createHash("sha256")
-    .update(JSON.stringify(policy))
-    .digest("hex");
+  const policySha256 = hashIdentityRobustFrontierPolicy(policy);
+  const evidenceBinding = bindIdentityRobustPolicyEvidence(
+    policySha256,
+    policy.evidenceReference,
+    evidenceManifestCandidate,
+  );
+  if (!evidenceBinding.ok) {
+    return {
+      ok: false,
+      policySha256,
+      evidenceManifestSha256: "",
+      policyEvidenceStatus: "",
+      selected: null,
+      errors: evidenceBinding.errors,
+      scopeLimit,
+    };
+  }
   let selected: IdentityRobustFrontierPoint | undefined;
   if (policy.selectionBasis === "minimum-uniform-drift-reserve") {
     selected = frontierCandidate.find(
@@ -162,6 +201,7 @@ export function selectIdentityRobustFrontierPoint(
   return {
     ok: Boolean(selected),
     policySha256,
+    evidenceManifestSha256: evidenceBinding.manifestSha256,
     policyEvidenceStatus: "caller-supplied-unverified",
     selected: selected ?? null,
     errors: selected

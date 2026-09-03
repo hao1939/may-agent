@@ -250,16 +250,24 @@ const maximumNull = rows.reduce((worst, row) =>
 );
 const localTotals = new Set([1_029, 1_030, 1_031, 1_032]);
 let policyCandidate: unknown = null;
+let evidenceManifestCandidate: unknown = null;
 if (process.argv[2] !== undefined) {
-  if (process.argv[2] !== "--policy-json" || process.argv.length !== 4) {
+  if (
+    process.argv[2] !== "--policy-json" ||
+    process.argv[4] !== "--evidence-manifest-json" ||
+    process.argv.length !== 6
+  ) {
     throw new Error(
-      "optional usage: --policy-json '<single JSON policy object>'",
+      "optional usage: --policy-json '<single JSON policy object>' --evidence-manifest-json '<single JSON manifest object>'",
     );
   }
   try {
     policyCandidate = JSON.parse(process.argv[3]!);
+    evidenceManifestCandidate = JSON.parse(process.argv[5]!);
   } catch {
-    throw new Error("--policy-json must contain valid JSON");
+    throw new Error(
+      "policy and evidence manifest arguments must contain valid JSON",
+    );
   }
 }
 process.stdout.write(
@@ -280,7 +288,11 @@ process.stdout.write(
       frontierFirst: frontier.slice(0, 12),
       frontierLast: frontier.slice(-12),
       final: frontier.at(-1),
-      selection: selectIdentityRobustFrontierPoint(frontier, policyCandidate),
+      selection: selectIdentityRobustFrontierPoint(
+        frontier,
+        policyCandidate,
+        evidenceManifestCandidate,
+      ),
     },
     null,
     2,
