@@ -9361,6 +9361,23 @@ identities remain unknown, observed removals are `[]`, and all 132 durable IDs
 remain unavailable. Commit this seed record before the project-README route
 audit.
 
+## Cycle 278 seed-first start — reviewed duplication trigger
+
+Cycle 278 began from clean integration checkpoint
+`eaf5fc7c763fce3d2d8531f41867214bf80e0da4`. At
+`2026-09-03T21:15:26.714Z`, Cycle 237's exact XHS receipt was 258 minutes old,
+inside its six-hour cadence. No seed or semantic-access observation changed,
+so this bounded reconciliation made zero browser or public requests:
+added/changed identities remain unknown, observed removals are `[]`, and all
+132 durable IDs remain unavailable. Reviewer `af409f4ef3` is contained;
+protected `/app` remains `386b445c…41fec8`, 386 records /
+`7c285c09…1ca01b`, and its Scout scope remains 296 records /
+`7e4d0937…c26a8a`. GitHub, arXiv, and Reddit retain their recorded heads,
+versions, RSS/JSON boundary, and change-bearing revisit triggers. The accepted
+review's explicit 111-line Cycle 275-276 mirror duplication now outranks an
+early provider reread: measure whether one detailed report plus a compact
+topic-map pointer preserves every useful distinction at lower retrieval cost.
+
 ## Cycle 277 checkpoint — Cycle 276 review lands exactly
 
 Standing source `2e7f6cb01084e8fc7c6a0b6ceddd01de6c24e370` has direct-child
