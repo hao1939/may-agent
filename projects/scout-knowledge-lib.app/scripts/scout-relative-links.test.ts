@@ -50,4 +50,25 @@ describe("Scout durable-document relative links", () => {
       errors: ["/library/index.md: absolute local link /private/file.md"],
     });
   });
+
+  it("ignores Markdown-like links inside fenced and inline code", () => {
+    const contents = [
+      "[real](finding.md)",
+      "`[inline](not-a-link.md)`",
+      "``[wide inline](also-not-a-link.md)``",
+      "```ts",
+      'const example = "[fenced](not-a-link.md)";',
+      "```",
+      "~~~md",
+      "[tilde fenced](not-a-link.md)",
+      "~~~~",
+    ].join("\n");
+
+    expect(
+      inspectRelativeLinks(
+        [{ path: "/library/topic.md", contents }],
+        (path) => path === "/library/finding.md",
+      ),
+    ).toEqual({ ok: true, checked: 1, errors: [] });
+  });
 });

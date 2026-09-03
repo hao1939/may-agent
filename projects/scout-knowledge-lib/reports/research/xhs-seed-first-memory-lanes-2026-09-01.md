@@ -9360,6 +9360,38 @@ Reference-style local-link coverage remains highest-ranked. Registry and all
 three public lanes retain their recorded change-bearing triggers without a
 request.
 
+## Cycle 226 checkpoint — code examples no longer become link failures
+
+Seed commit `1a5b36b2c6` preceded the local checker repair. The initial
+read-only audit covered all 1,379 Markdown documents under `knowledge/` and
+`reports/research/`: its naive inline pattern counted 1,755 link-like strings
+and 207 apparent failures. Three were not links at all. They were the literal
+Markdown example `[task](task)` inside inline or fenced code in three retained
+documents.
+
+The checker now removes backtick code spans and backtick or tilde fenced code
+blocks before inspecting prose. A matched regression keeps one real link while
+excluding single- and multi-backtick spans plus both fence forms. The same
+audit now counts 1,752 links and 204 unresolved occurrences in 24 documents:
+169 genuinely absent historical targets (78 distinct target strings across 18
+documents), 17 root-relative historical paths across six documents, 17
+non-portable runtime/workspace paths across five documents, and one existing
+file reached from the wrong relative root. These categories are occurrence
+counts; their document sets overlap.
+
+This supports the parser repair but contradicts expanding the mandatory gate
+to the whole historical library now: doing so would fail on known debt with
+mixed ownership and portability semantics. The current three continuity
+documents remain protected. Confidence is high for the exact offline counts
+and code exclusion, and low for the intended authority or replacement of the
+204 historical occurrences. GitHub, arXiv, and Reddit made zero public
+requests and retain their recorded evidence and change-bearing triggers.
+
+The next ranked usability question is whether the 67 failures in
+`knowledge/INDEX.md` are stale generated inventory, authoritative hand-written
+navigation, or a mixture; classify that ownership before repairing or gating
+any entry.
+
 ## Cycle 225 seed-first reconciliation — one-byte response change
 
 The exact bounded observation, reconciliation, authority boundary, and byte

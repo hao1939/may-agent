@@ -24,6 +24,34 @@ function localTarget(rawTarget: string): string | null {
   }
 }
 
+function markdownWithoutCode(contents: string): string {
+  const lines = contents.split("\n");
+  let fence: { marker: "`" | "~"; length: number } | null = null;
+
+  const withoutFences = lines.map((line) => {
+    const marker = line.match(/^ {0,3}(`{3,}|~{3,})/u)?.[1];
+    if (fence) {
+      if (
+        marker?.[0] === fence.marker &&
+        marker.length >= fence.length &&
+        new RegExp(`^ {0,3}${fence.marker}{${fence.length},}\\s*$`, "u").test(
+          line,
+        )
+      ) {
+        fence = null;
+      }
+      return "";
+    }
+    if (marker) {
+      fence = { marker: marker[0] as "`" | "~", length: marker.length };
+      return "";
+    }
+    return line;
+  });
+
+  return withoutFences.join("\n").replace(/(`+)(?:(?!\1)[\s\S])*?\1/gu, "");
+}
+
 export function inspectRelativeLinks(
   documents: MarkdownDocument[],
   pathExists: (path: string) => boolean = existsSync,
@@ -32,7 +60,8 @@ export function inspectRelativeLinks(
   const errors: string[] = [];
 
   for (const document of documents) {
-    for (const match of document.contents.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+    const prose = markdownWithoutCode(document.contents);
+    for (const match of prose.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
       const target = localTarget(match[1]);
       if (!target) continue;
       checked += 1;
