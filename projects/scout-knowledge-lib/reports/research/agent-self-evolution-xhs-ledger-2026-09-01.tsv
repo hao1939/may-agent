@@ -1,7 +1,10 @@
 # XHS collection resolution ledger
-# observation=2026-09-01; declared=995; observed=906; unobserved=89; fingerprint=a87a3648fcfc53d95ea3895a0fe0effbcf199a6e14aa72f7c84acc2e21b33c5c
+# observation=2026-09-03; declared=998; observed=909; unobserved=89; sorted-id-sha256=d6996a8844cbec2cc33a3a6285a777371daf738c140d37839fe5829fc880ae43
 # access=metadata-only unless a companion evidence note explicitly records a readable body; title text is not treated as a technical claim.
 stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
+6a99391e000000002803b791	AI终于能盯着一个目标持续干好多天了！LoopX把目标、待办、证据和关键状态持久	青青王-AI	body-observed	core	safety-governance	LoopX	resolved:primary-project-and-deep-comparison	resolved:named-source-or-project
+6a96667100000000290122ae	卖维修零件，年营收25亿美元？	图灵云科技	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
+6a96b1320000000012024529	微软开源：SkillOpt 技能训练器	CountryRoad	body-observed	core	skill-lifecycle	SkillOpt; arXiv:2605.23904	resolved:primary-paper-and-existing-scout-evidence	resolved:named-source-or-project
 6a966f4f00000000280392db	Navara开源的3D地图引擎	RoboMiner	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a9536d8000000000a009ef3	四个开源项目让本地模型和云端工具协同运行	AI樟榆树	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 6a955b35000000000400afaf	谷歌团队：让Agent Skills和知识库一起演化	大模型知识分享	metadata-only	core	skill-lifecycle		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
@@ -508,7 +511,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 698dda3d000000000b011a93	Seed | 自提出自进化Rubrics监督CoT RL	叫什么好呢	metadata-only	core	evaluator-admission	ByteDance Seed (organization)	unresolved:title-claim-needs-body-or-primary-match	retained:rubric-RL-lead-not-SEED-method
 69903d6e000000001a035976	微软：将LLM经验内化成参数	每日ComputerScience	metadata-only	core	memory-experience	Continual Experience Internalization	arxiv:2606.04703	deep-dived:primary-and-comparison
 6982f1c6000000000c036d7a	复旦×普林斯顿：用熵下降管住LLM乱用工具	每日ComputerScience	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
-69903894000000000c036195	阿里AutoRefine：自动提取技能远超人工设计	AutomaticMAS	metadata-only	core	skill-lifecycle		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+69903894000000000c036195	阿里AutoRefine：自动提取技能远超人工设计	AutomaticMAS	metadata-only	core	skill-lifecycle	AutoRefine; arXiv:2601.22758	resolved:primary-paper-and-official-code	resolved:named-source-or-project
 6989b8d6000000001a01e993	一个8KB的文件，打爆了如日中天的Skills	智东西	metadata-only	adjacent	skill-lifecycle		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 69874b0a000000001a0304cc	openClaw的skills大集合	广叔AI	metadata-only	adjacent	skill-lifecycle		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 6970eff2000000001a02d713	一个视频看完ClaudeCode过去几个月重大更新	创哥的AI实验室	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
@@ -690,7 +693,7 @@ stable_id	title	author	access	scope	cluster	entity_hint	resolution	disposition
 68ea6a17000000000303b2a6	作者几乎全华人，Meta发了篇重量级论文	新智元	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 68e94b570000000005013051	🔥微软这方法让AI推理效率直接翻倍❗️	代码熊大模型论文分享	metadata-only	out	out-of-scope		not-applicable	screened-out:not-agent-evolution
 68e9a2000000000005039be5	Meta：不靠奖励信号，AI像人类一样学习经验	每日ComputerScience	metadata-only	adjacent	memory-experience		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
-68de9d770000000003011f4a	Agent共进化：Socratic-Zero	🎃量子智心	metadata-only	core	cross-cutting		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
+68de9d770000000003011f4a	Agent共进化：Socratic-Zero	🎃量子智心	body-observed	core	weight-training	Socratic-Zero; arXiv:2509.24726	resolved:primary-paper-and-official-code	resolved:named-source-or-project
 68e6122a00000000070326f6	OpenAI Agents SDK：用 Python 写多智能体	云栈开源日记	metadata-only	adjacent	multiagent-autonomy		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control
 68e5205d000000000303a03b	Agentic上下文工程：让AI自己优化上下文	Jemini	metadata-only	core	routing-context		unresolved:title-claim-needs-body-or-primary-match	retained:explicit-open-lead
 68e5161e0000000004002a62	FlowRL: 将LLM RL目标转变为匹配奖励分布	nlper今天读paper了吗	metadata-only	adjacent	weight-training		cluster-context:no-unique-primary-in-title	retained:adjacent-comparison-or-control

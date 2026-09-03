@@ -625,6 +625,43 @@
   adoption.
 - File: `knowledge/findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md`
 
+## AutoRefine typed-artifact investigation — 2026-09-03
+
+- **Finding:** AutoRefine shows that a learned trajectory lesson should not
+  automatically become another Skill. It first chooses the least runtime
+  boundary that owns all evidence-supported observations, state, decisions,
+  and completion: Rule, parent Skill, or bounded Subagent.
+- **Evidence:** the paper reports TravelPlanner 80.56% versus a 50.0% strongest
+  baseline; removing boundary closure or replay costs 15.00 and 16.11 points.
+  The released lifecycle example passed locally, but uses stubs and does not
+  reproduce the benchmark campaign.
+- **Caveat:** closure is only as complete as the model-generated specification,
+  replay covers linked cases rather than the distribution, and validation uses
+  2.82× optimizer tokens and 3.05× wall time on SpreadsheetBench.
+- File: `knowledge/findings/2026-09-03-arxiv-autorefine-typed-artifact-compilation.md`
+
+## Socratic-Zero curriculum investigation — 2026-09-03
+
+- **Finding:** Socratic-Zero's useful mechanism is failure-targeted curriculum
+  generation near the Solver's learning frontier plus distillation of an
+  expensive Teacher into a 32B Generator. It is not demonstrated three-agent
+  co-evolution: the Teacher is fixed, and the published algorithm never feeds
+  Generator outputs back into Solver training.
+- **Contradiction:** “data-free” conflicts with 100 selected MATH seeds, an
+  essential 1,500-problem MATH SFT bootstrap, and reference solutions used as
+  DPO winners. Without SFT, AIME-24 reaches only 11.98%, versus 28.02% with it.
+- **Evidence:** the reported Solver average is 56.1% (`+15.4` over static
+  augmentation and `+15.2` over LLM2LLM). Generator downstream utility is
+  37.72%, only `+0.59` over its Teacher and `+0.09` over Claude, with no repeat
+  variance. The public repository's reward, enhancement, and training paths
+  were directly confirmed as placeholders.
+- **Comparison:** Absolute Zero provides stronger executor-grounded zero-data
+  evidence; R-Zero supplies genuine two-policy co-evolution but documents
+  eventual collapse at every tested scale. Scout should borrow frontier
+  curricula, replay, and independent downstream evaluation—not the autonomy
+  label.
+- File: `knowledge/findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md`
+
 ---
 
 *This file resets when it exceeds ~1,000 lines. Dated archives live alongside it.*

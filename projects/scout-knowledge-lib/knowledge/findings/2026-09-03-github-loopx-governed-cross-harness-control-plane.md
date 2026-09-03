@@ -252,6 +252,17 @@ reports. The public record can establish that artifacts exist; it cannot by
 itself establish causal attribution to LoopX, the reported token counts, or
 superiority over a simpler workflow.
 
+The authenticated Xiaohongshu card that led to this investigation was also
+read observationally. Its body says that work survives interruption, restart,
+and harness changes, and points to two official trajectories spanning more
+than 200 hours. The persistence claim is directionally supported by the pinned
+implementation's durable state, recovery, and cross-harness protocols. The
+duration claim needs the narrower interpretation above: it describes elapsed
+project history, not one continuously autonomous run, and it supplies no
+control group. The post is therefore useful discovery provenance, but the
+pinned project sources and direct checks—not the social summary—carry the
+technical conclusion.
+
 LoopX also explicitly says it is not an autonomous production controller. That
 honest boundary should be preserved in any adoption decision.
 

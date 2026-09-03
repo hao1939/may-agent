@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 906 observed Xiaohongshu cards with primary papers, repositories, and prior Scout work; records all 969 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
+summary: "Evidence report for a source-agnostic deep investigation of agent self-evolution and autonomy. It reconciles 909 observed Xiaohongshu cards with primary papers, repositories, and prior Scout work; records all 978 leads explicitly; compares mechanisms and alternatives; and separates source claims from direct inspection and analysis."
 triggers: ["self-evolution deep dive", "autonomy evidence report", "agent evolution lead ledger", "XHS collection resolution", "skill and harness evolution evidence"]
-last_updated: "2026-09-01"
-source_basis: "Goal-owned lead ledgers, 29 locally extracted full-text papers, pinned repository inspections, existing Scout notes, and bounded standard-library or no-credential code checks. External performance results are attributed, not presented as Scout reproductions."
+last_updated: "2026-09-03"
+source_basis: "Goal-owned lead ledgers, 35 locally extracted full-text papers, pinned repository inspections, existing Scout notes, and bounded standard-library or no-credential code checks. External performance results are attributed, not presented as Scout reproductions."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy — Deep Investigation Report
@@ -30,27 +30,40 @@ claim of recursive autonomy.
 ## Research frontier and lead accounting
 
 The [unified lead ledger](./agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 969 unique rows:
+contains 978 unique rows:
 
-- 906 Xiaohongshu collection cards with stable IDs;
-- 36 paper, survey, primary-metadata, or benchmark records;
-- 19 code-bearing, code-metadata, or paper-plus-code records where implementation evidence changes
-  the judgment; and
+- 909 Xiaohongshu collection cards with stable IDs;
+- 61 primary paper, repository, benchmark, survey, or paper-plus-code records
+  where source or implementation evidence changes the judgment; and
 - 8 existing Scout notes and reports, each reconciled rather than silently reused.
 
 The companion [Xiaohongshu resolution ledger](./agent-self-evolution-xhs-ledger-2026-09-01.tsv)
 preserves the complete observed surface rather than only retained cards. Its
-bounded snapshot contains 906 observed of 995 declared collection notes, with
+bounded snapshot contains 909 observed of 998 declared collection notes, with
 89 unobserved and stable-ID fingerprint
-`a87a3648fcfc53d95ea3895a0fe0effbcf199a6e14aa72f7c84acc2e21b33c5c`.
-Classification is 162 core, 296 adjacent, and 448 outside this topic.
+`d6996a8844cbec2cc33a3a6285a777371daf738c140d37839fe5829fc880ae43`.
+Classification is 164 core, 296 adjacent, and 449 outside this topic.
 
-At this revision the goal-owned browser was logged out. The QR was refreshed
-for the human, but no authenticated body access had yet been observed. All 906
-cards are therefore labeled `metadata-only`: titles and authors are discovery
-evidence, never proof of the technical claim. The 89-card tail and all bodies
-remain explicit access boundaries. No card is guessed from neighboring text,
-and no account or content action was performed.
+The human authenticated the goal-owned browser, and collection pagination then
+recovered all 906 prior IDs plus three new cards. Exactly three readable bodies
+were observed: LoopX, SkillOpt, and Socratic-Zero. Their social claims were
+checked against pinned code, primary papers, and existing Scout evidence. The
+remaining 906 cards stay `metadata-only`, and the 89-card unobserved tail remains
+an explicit access boundary. No card was guessed from neighboring text, and no
+account or content action was performed.
+
+The body checks changed interpretation rather than merely adding prose:
+
+- LoopX's persistence claim is supported by its durable-state protocols, while
+  “200+ hours” means elapsed project history rather than continuous autonomy.
+- SkillOpt's `best_skill.md`, +23.5-point GPT-5.5 direct-chat result, and no
+  extra deployment-time model call are present in the v2 primary abstract and
+  current repository. SkillOpt-Sleep still spends offline provider calls,
+  exposes a transcript-data boundary, and stages gated proposals for review;
+  multi-skill fan-out is not silently auto-adopted.
+- Socratic-Zero's social summary repeats “three-agent co-evolution” and
+  “no external human annotation” while omitting the fixed Teacher, supervised
+  bootstrap, reference answers, and missing Generator-to-Solver feedback edge.
 
 The unified ledger's dispositions are intentionally not all “researched”:
 
@@ -133,6 +146,13 @@ from the narrative.
 | [Arbor `2606.11926`](https://arxiv.org/abs/2606.11926) | paper and pinned code | persistent Idea Tree, isolated executors, retry artifacts, and held-out promotion support metric-driven research | author-reported, expensive, fixed-evaluator tasks; LoopX adaptation not validated by Arbor results |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent/tree/562ee8ab76a703b7f524172cae0b1d52f9f94bd3) | pinned code and docs | integrated runtime now has durable Kanban, goal loops, memory, skills, claims, worktrees, retry, and review | Kanban is single-host; background learning prompt risks overlearning |
 | [OpenClaw](https://github.com/openclaw/openclaw/tree/8a718610bd26ffcffeb04e19641c80e6693731a1) | pinned code and docs | provenance-tiered memory and proposal/hash/rollback skill governance create stronger self-learning boundaries | design rationale is not outcome proof; autonomous Skill Workshop defaults to auto |
+| [SkillOpt `2605.23904v2`](https://arxiv.org/abs/2605.23904) + [repo](https://github.com/microsoft/SkillOpt/tree/db46cd9ae7ce12f1dbd73c945185816aa738751d) | v2 abstract, pinned code/docs, prior Scout paper analysis | bounded text edits with held-out gating yield a deployable `best_skill.md`; Sleep extends the pattern to offline replay and staged adoption | results remain author-reported; Sleep is preview, uses provider calls offline, has a transcript-data boundary, and reports mostly single-seed cells |
+| [AutoRefine `2601.22758`](https://arxiv.org/abs/2601.22758) + [repo](https://github.com/AutoRefine/Autorefine/tree/58ebf902f8a1f7f9bdcce3a34856f5a4e6e9bb79) | v2 paper, pinned code, deterministic lifecycle | contrastive evidence can select the least-powerful adequate Rule, Skill, or bounded Subagent and gate it with contract plus preservation replay | model-generated specification may omit requirements; evidence-local gate, single-run results, roughly 3× offline cost |
+| [Socratic-Zero `2509.24726`](https://arxiv.org/abs/2509.24726) + [repo](https://github.com/Frostlinx/Socratic-Zero/tree/09a5e593c3fabfcfef781a0cc9b4667987d698ec) | full paper, pinned code/history, direct placeholder-path check | frontier-weighted Teacher rewrites can train a Solver and be distilled into a smaller question Generator | supervised MATH bootstrap is essential; Generator does not feed Solver; public code is non-reproductive scaffolding |
+| [Absolute Zero `2505.03335`](https://arxiv.org/abs/2505.03335) | full paper | executable proposer–solver self-play can learn without an external task dataset | code-task restriction and observed safety concerns limit generality |
+| [R-Zero `2508.05004`](https://arxiv.org/abs/2508.05004) | full ICLR 2026 paper | separate Challenger and Solver provide a genuine reciprocal zero-seed curriculum | every tested model scale eventually degrades; pseudo-labels and diversity decay |
+| [LLM2LLM `2403.15042`](https://arxiv.org/abs/2403.15042) | full paper | a strong Teacher can iteratively augment Student failure cases without a co-evolution claim | depends on seed data and Teacher quality; no learned frontier Generator |
+| [SPIN `2401.01335`](https://arxiv.org/abs/2401.01335) | full paper | self-play preference learning can improve a model without an additional strong Teacher | target distribution remains anchored to human SFT demonstrations |
 
 The unified ledger holds additional baselines and implementation records,
 including AgentFlow, RLTF, SkillRL, Continual Experience Internalization,
@@ -146,9 +166,11 @@ RecHarness, and skill-evolver.
 ### Skill lifecycle
 
 The literature often treats “skill evolution” as one method, but the reviewed
-systems cover four different problems:
+systems cover five different problems:
 
 - Memento-Skills, MetaClaw, and Trace2Skill **create** procedures.
+- AutoRefine **selects the execution boundary**: local Rule, parent Skill, or
+  independently terminating Subagent.
 - SkillOS, Bayesian-Agent, and PL-HCL **curate or admit** them.
 - SkillOps and later Memento code **maintain** library contracts.
 - OPID, SEED, and SkillRL **internalize** guidance into policy weights.
@@ -158,6 +180,14 @@ rollback and inspection matter. Add evidence-aware admission when the library
 or failure stream grows. Add maintenance when redundancy and interface drift
 become visible. Internalize only stable, frequently reused procedures because a
 bad external file is easier to remove than a bad weight update.
+
+AutoRefine adds an important prior decision: do not call every durable lesson a
+skill. It derives a type-neutral intervention, then chooses the first runtime
+boundary that owns every declared observation, state variable, dependent
+decision, and completion condition. Its contract and paired replay gates are
+strong, but only relative to the model-generated specification and linked
+cases. Missing requirements, artifact interactions, and distribution-wide
+regression remain outside the guarantee.
 
 ### Harness, weights, and joint change
 
@@ -174,6 +204,34 @@ through task generation, learned program refinement, environment wrapping, and
 typed sibling trajectories. Their reported gains are useful leads, but they do
 not add cleanly: once policy, harness, data, and environment all move, a fixed
 anchor and staged ablations are the only way to preserve causal identity.
+
+### Curriculum generation: Socratic-Zero versus zero-data self-play
+
+The focused [Socratic-Zero investigation](../../knowledge/findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md)
+resolves an XHS “agent co-evolution” lead into a narrower architecture. A fixed
+Qwen3-235B Teacher labels Solver trajectories and creates new problems; DPO
+updates the Solver; Solver success rates weight Teacher examples used to train
+a 32B Generator. In the paper's pseudocode, the Solver's next curriculum comes
+from the Teacher, not the Generator. The trained Generator is a downstream
+distillation product rather than a demonstrated cause of Solver improvement.
+
+The “data-free” wording is also contradicted by the experimental protocol: 100
+selected MATH seed questions, 1,500 Level-5 MATH problems for essential SFT,
+and curriculum reference solutions remain in the loop. Without SFT, the
+reported AIME-24 score reaches only 11.98%; with SFT it reaches 28.02%. The
+final seven-benchmark average of 56.1% is 15.4 points above static augmentation
+and 15.2 above LLM2LLM, but the study does not isolate DPO, Teacher judging,
+adaptive questions, replay, or Generator feedback in a causal factorial.
+
+Absolute Zero is the stronger zero-task-data comparison because Python grounds
+both proposed executable tasks and answers. R-Zero is the stronger co-evolution
+comparison because separate Challenger and Solver policies reciprocally train,
+but its paper documents eventual collapse at every tested scale. LLM2LLM
+captures Socratic-Zero's simpler Teacher-to-Student edge; SPIN isolates
+preference self-play while retaining a fixed human demonstration distribution.
+The practical synthesis is to borrow frontier curricula and replay while
+retaining independent evaluation, human-data anchors, diversity checks, and a
+long enough horizon to expose recursive collapse.
 
 ### Evaluator authority
 
@@ -272,6 +330,13 @@ readiness. The strongest judgments are:
 7. **LoopX's value is governance, not autonomous intelligence.** Typed evidence,
    scoped authority, quotas, frontier projections, and idempotent settlement are
    worth borrowing; duplicating an existing durable supervisor is not.
+8. **Artifact form is part of the learned hypothesis.** AutoRefine's ownership-
+   based Rule/Skill/Subagent selection is genuinely distinct and actionable,
+   while its evidence-local validation prevents a global safety claim.
+9. **Curriculum evolution needs causal topology, not an autonomy label.**
+   Socratic-Zero offers useful Teacher distillation, but its fixed Teacher,
+   supervised bootstrap, and missing Generator-to-Solver edge do not establish
+   data-free three-agent co-evolution.
 
 ## Contradictions resolved
 
@@ -294,6 +359,15 @@ readiness. The strongest judgments are:
 8. **“Recursive means unbounded.”** HyperAgents changes its improvement code,
    yet still runs inside fixed tasks, evaluators, archives, budgets, and human
    controls.
+9. **“Minimal seeds means data-free.”** Socratic-Zero depends on selected MATH
+   seeds, 1,500 SFT problems, and reference solutions; the loop amplifies a
+   supervised bootstrap rather than eliminating it.
+10. **“Three roles means three-way co-evolution.”** Socratic-Zero freezes its
+    Teacher and does not feed Generator questions back to the Solver in the
+    published algorithm.
+11. **“A higher point estimate means a superior generator.”** Its 37.72%
+    downstream score is only 0.09 points above Claude and 0.59 above its
+    Teacher, without repeat variance.
 
 ## Focused direct checks already completed
 
@@ -313,6 +387,46 @@ The first evaluator call failed because `eval.sh` assumes its materialized
 workspace is the current directory; the same command succeeded there. This
 proves the released state/evidence/evaluator path, not autonomous multi-agent
 improvement, comparative superiority to Arbor, or the public showcase claims.
+
+### AutoRefine typed artifact lifecycle
+
+Pinned source: `AutoRefine/Autorefine@58ebf902f8a1f7f9bdcce3a34856f5a4e6e9bb79`.
+
+```text
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  python3 examples/run_lifecycle.py
+  -> OK: extraction, both gates, revision, and every ablation seam hold
+```
+
+Source inspection confirmed staged activation, active-versus-staged replay,
+positive correction delta, default rejection of correction or preservation
+regression, staged-error rejection, and inherited cases for revisions. The
+example intentionally stubs the dataset, agent, evaluator, and model, and the
+repository does not ship the full benchmark campaigns. It validates the
+lifecycle implementation, not the paper's reported scores.
+
+### Socratic-Zero repository paths
+
+Pinned source: `Frostlinx/Socratic-Zero@09a5e593c3fabfcfef781a0cc9b4667987d698ec`.
+
+Source and history inspection found 1,471 current Python lines. The last three
+commits deleted evaluation, dataset, and script directories while the README
+and package entry points still reference them. The README separately admits
+that end-to-end orchestration requires significant manual intervention.
+
+A standard-library direct check supplied a Teacher object and a nonexistent
+training dataset. The remaining code returned:
+
+```text
+reward=[0.5]; placeholder=true
+enhanced=["Enhanced: 1+1?"]
+training_success=true
+saved_at="placeholder_timestamp"
+```
+
+This is stronger than an environment failure: it directly establishes that the
+released reward, enhancement, and training paths simulate success rather than
+execute the paper's method. No performance campaign was attempted or claimed.
 
 ### Harness-Bench
 
@@ -370,10 +484,10 @@ a comparative capability campaign prevent an efficacy claim.
   the application and workflows, passed TypeScript and Prettier checks, and ran
   78 tests with 0 failures and 226 assertions.
 - A standard-library TSV validator read all records at their declared widths:
-  906 unique XHS IDs across 9 columns and 969 unique unified lead IDs across 14
+  909 unique XHS IDs across 9 columns and 978 unique unified lead IDs across 14
   columns. Every unified row has a research question.
-- A scoped resolver checked 9 relative links across the canonical note, this
-  report, the LoopX finding, and its index target; 0 were missing. A broader
+- A scoped resolver checked 11 relative links across the canonical note, this
+  report, the three focused findings, and their index targets; 0 were missing. A broader
   INDEX scan still exposes inherited missing links outside this goal's diff.
 - `git diff --check` exited 0.
 - `bun projects/scout-knowledge-lib.app/scripts/library-health-readonly.ts`
@@ -384,16 +498,16 @@ a comparative capability campaign prevent an efficacy claim.
 
 ## Remaining limits
 
-- Xiaohongshu body access and the final 89 declared cards remain login-bound at
-  this revision. The open browser lets the human authenticate observational
-  access; no account mutation is authorized.
+- The final 89 declared Xiaohongshu cards remain unobserved, and 906 observed
+  cards remain metadata-only. These are explicit access limits, not inferred
+  evidence; no account mutation is authorized.
 - Many 2026 papers are recent preprints. Results are author-reported unless a
   direct check above says otherwise.
 - No deep-learning campaign was reproduced locally. The environment lacks the
   required model weights, provider calls, benchmark services, and large GPU
   budgets; those are capability boundaries for reproduction, not blockers to
   source analysis.
-- The 969-row ledger is complete for the bounded encountered frontier, not for
+- The 978-row ledger is complete for the bounded encountered frontier, not for
   every paper that could exist. Each unresolved or deferred row includes the
   evidence that would reopen it.
 - Existing Scout notes were reused for task-order, SkillRise, memory governance,

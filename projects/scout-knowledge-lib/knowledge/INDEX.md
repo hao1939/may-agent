@@ -38,15 +38,17 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Future-dated scans 151–275 provenance repair](../reports/triage/future-dated-scans-151-275-provenance-repair.md) — dispositions and provenance evidence for 14 repaired HN, arXiv, and XHS artifact identities.
 - [Stuck arXiv reconciliation (2026-08-23)](../reports/operations/stuck-arxiv-reconciliation-2026-08-23.md) — verified closure of an orphaned source workflow and the bounded HTTP retrieval contract that prevents recurrence.
 - [XHS seed-first research cycle (2026-09-01)](../reports/research/xhs-seed-first-cycle-2026-09-01.md) — first collection reconciliation boundary, local source deduplication, topic-map rubric, and coalition-reliability deep dive.
-- [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — source-agnostic deep investigation across 969 explicit leads, including all 906 observed collection cards, primary-source comparisons, existing Scout reconciliation, code checks, contradictions, and reproduction limits.
+- [Agent self-evolution and autonomy evidence report (2026-09-01)](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md) — source-agnostic deep investigation across 978 explicit leads, including all 909 observed collection cards, three authenticated body-claim audits, primary-source comparisons, existing Scout reconciliation, code checks, contradictions, and reproduction limits.
 - [Agent self-evolution unified lead ledger (2026-09-01)](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv) — provenance, access, research question, value, related work, novelty, credibility, disposition, and stopping condition for every lead in the bounded frontier.
-- [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 906 observed stable card IDs, including metadata-only, unresolved, adjacent, and screened-out records.
+- [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 909 observed stable card IDs, including body-observed, metadata-only, unresolved, adjacent, and screened-out records.
 
 ## Recent Source-Grounded Findings
 
 ### 2026-09-03
 
 - [LoopX: governed cross-harness work, not another agent runtime](./findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md) — pinned-code and bounded-reproduction investigation of LoopX's typed evidence, authority, quota, recovery, auto-research, and Reward Memory; separates its Arbor inheritance from its genuine control-plane novelty and compares current Hermes Agent and OpenClaw mechanisms, value conditions, learning policies, maturity, and risks.
+- [AutoRefine: the lesson's execution boundary is part of what must be learned](./findings/2026-09-03-arxiv-autorefine-typed-artifact-compilation.md) — resolves a collected XHS lead to arXiv:2601.22758 and pinned official code; analyzes type-neutral trajectory compilation into Rule, Skill, or bounded Subagent, preservation-aware admission, reported ablations and cost, direct lifecycle evidence, alternatives, and specification/interaction limits.
+- [Socratic-Zero: useful curriculum distillation, overstated co-evolution](./findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md) — resolves a collected XHS lead to arXiv:2509.24726 and pinned official code; separates its fixed Teacher, DPO Solver, and distilled Generator, identifies the missing Generator-to-Solver feedback edge and supervised-data contradiction, audits the placeholder repository, and compares LLM2LLM, SPIN, Absolute Zero, R-Zero, AgentEvolver, and MetaEvolve.
 
 ### 2026-09-01
 

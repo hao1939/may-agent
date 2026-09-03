@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission; LoopX, Arbor, Hermes, and OpenClaw further show that durable governance, execution runtimes, optimization loops, and self-learning policy are distinct layers."
+summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, curricula, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission; Socratic-Zero and zero-data alternatives show why task generation, learner change, and genuine reciprocal co-evolution must also be separated."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-01"
-source_basis: "A source-agnostic 969-row lead ledger: 906 observed cards from the human's Xiaohongshu collection, 55 primary paper, repository, benchmark, and survey records, and 8 existing Scout artifacts; full-text paper review; pinned repository inspection; existing Scout reconciliation; and bounded local code checks. Xiaohongshu bodies remained login-bound at this revision, so card titles are discovery metadata rather than technical evidence."
+last_updated: "2026-09-03"
+source_basis: "A source-agnostic 978-row lead ledger: 909 observed cards from the human's Xiaohongshu collection, 61 primary paper, repository, benchmark, and survey records, and 8 existing Scout artifacts; full-text paper review; pinned repository inspection; existing Scout reconciliation; and bounded local code checks. Three authenticated Xiaohongshu bodies were observed and claim-checked; the other 906 cards remain title-level discovery metadata rather than technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -72,6 +72,7 @@ general agent can safely rewrite itself.
 | Within-task repair | only `X` | error or critique | paired retry on the same task | search mislabeled as learning |
 | Experience memory | `K` episodes/facts | outcome and reflection | fresh-session retrieval and knockout | stale or poisoned recall |
 | Skill creation | new `K` procedures | traces, lessons, synthesis | held-out marginal gain | fluent but false procedure |
+| Artifact-boundary compilation | typed `P`, `K`, or worker in `W` | contrastive traces plus ownership closure | type contract plus correction/preservation replay | omitted requirement makes a narrow boundary appear closed |
 | Skill curation/admission | activation state or routing over `K` | verifier outcomes | paired candidate/knockout gate | coalition credit and early overconfidence |
 | Skill maintenance | typed metadata and library structure | consistency/static checks | repair without downstream regression | clean metadata, unchanged behavior |
 | Skill internalization | `M` trained with privileged skills | RL or distillation | skill-free inference on held-out tasks | privileged-context leakage |
@@ -83,7 +84,7 @@ general agent can safely rewrite itself.
 | Evaluator evolution | `J` | meta-judgment or downstream reward | independent anchor catches judge drift | policy–judge collusion |
 | Meta-procedure evolution | proposer/search code in `W` | future candidate quality | transfer of improvement ability | fixed benchmark mistaken for open-endedness |
 
-## Seven comparisons that matter in practice
+## Eight comparisons that matter in practice
 
 ### 1. Creation, admission, maintenance, and internalization are separate jobs
 
@@ -97,6 +98,14 @@ general agent can safely rewrite itself.
 Creation is not proof of usefulness. Admission is not maintenance. Maintenance
 does not show that a skill transfers. Internalization makes rollback harder and
 therefore needs a stricter gate than external retrieval.
+
+[AutoRefine](./findings/2026-09-03-arxiv-autorefine-typed-artifact-compilation.md)
+adds a prior stage: a contrastive trajectory lesson is compiled into the first
+runtime boundary that owns all declared observations, state, decisions, and
+completion—a Rule, parent-executed Skill, or bounded Subagent. Contract checks
+and correction/preservation replay make the type executable rather than
+decorative. The residual risk is specification omission: mechanical closure
+cannot test a requirement the model failed to declare.
 
 Trace2Skill adds an important warning: skill value is combinatorial. A patch can
 help the trace that produced it and regress unrelated tasks when combined with
@@ -135,7 +144,27 @@ joint optimization, but not yet recursive general improvement: the study is
 math-focused, contains two full rounds, needs a capable critic and substantial
 training compute, and leaves structural harness redesign to humans.
 
-### 3. Fixed, generated, and co-evolving evaluators have different evidential weight
+### 3. Adaptive curricula are not automatically data-free or co-evolving
+
+[Socratic-Zero](./findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md)
+combines a fixed 235B Teacher, a DPO-trained Solver, and a 32B Generator that
+distills Teacher problem rewrites weighted near 50% Solver success. Its
+frontier-targeted curriculum and historical replay are useful, but its labels
+overreach. The experiments use 100 selected MATH seeds, an essential 1,500-
+problem MATH SFT bootstrap, and reference answers. More importantly, the
+published algorithm adds Teacher—not Generator—outputs to the next Solver
+curriculum, so the two trained components do not form a reciprocal loop.
+
+The closest simple causal baseline is LLM2LLM: a strong Teacher creates more
+examples from Student failures. Absolute Zero makes a stronger zero-data claim
+because Python validates self-proposed executable tasks and answers. R-Zero
+trains separate Challenger and Solver policies without seed tasks, but every
+tested scale eventually degrades as pseudo-labels and synthetic diversity
+decay. These comparisons yield a stricter test: call a system co-evolving only
+when each changing component causally affects the other's later learning, and
+retain a fixed external anchor against recursive collapse.
+
+### 4. Fixed, generated, and co-evolving evaluators have different evidential weight
 
 | Evaluator | Examples | Evidence quality | Appropriate use |
 |---|---|---|---|
@@ -151,7 +180,7 @@ blind spots. Cross-model review, as in ARIS, adds diversity but also does not
 create independence: models may share training data, prompts, and benchmark
 assumptions.
 
-### 4. Centralized and decentralized sharing exchange speed for contamination risk
+### 5. Centralized and decentralized sharing exchange speed for contamination risk
 
 | Topology | Examples | Benefit | Risk | Required control |
 |---|---|---|---|---|
@@ -164,7 +193,7 @@ skills, however, are directly writable; evaluator isolation protects scores,
 not the truth of shared knowledge. Shared memory accelerates both learning and
 pollution.
 
-### 5. Task-level and per-step routing address different credit problems
+### 6. Task-level and per-step routing address different credit problems
 
 Agent-as-a-Router chooses a model for a whole coding task. Giving a vanilla
 router held-out per-dimension performance statistics improves its score from
@@ -180,7 +209,7 @@ at inference. This is more precise than applying one outcome to every token,
 but the paper's reviewed results do not provide the repeated-run uncertainty
 needed to know how stable the gains are.
 
-### 6. World prediction and policy evolution must be measured separately
+### 7. World prediction and policy evolution must be measured separately
 
 ECHO trains the policy to predict terminal observation tokens already present
 in its rollouts while retaining the ordinary policy-gradient objective. It
@@ -203,7 +232,7 @@ training, and co-evolution. Its breadth is also a risk: if every useful feedback
 source is called a world model, the term stops distinguishing prediction from
 memory, tools, and evaluators.
 
-### 7. Control planes, runtimes, and research optimizers are different layers
+### 8. Control planes, runtimes, and research optimizers are different layers
 
 [LoopX](./findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md)
 is a provider-neutral control plane above agent harnesses. It owns typed goals,
@@ -247,6 +276,12 @@ rollback, and explicit no-op states. Do not add a second canonical supervisor.
 - **SkillCoach** shows why outcome-only admission is unsafe: a successful final
   answer can hide wrong skill selection and ad-hoc repair. Semantically similar
   distractors degrade routing before a library visibly collapses.
+- **AutoRefine** reports TravelPlanner 80.56% against a 50.0% strongest baseline;
+  removing boundary closure or replay costs 15.00 and 16.11 points. Its
+  SpreadsheetBench gate raises 67.50% to 73.57% while using 2.82× optimizer
+  tokens and 3.05× wall time. These are author-reported single-run effects; the
+  released deterministic lifecycle passed locally, but full campaigns are not
+  shipped.
 
 ### Search strategy can evolve without the deployed agent evolving
 
@@ -292,12 +327,14 @@ Use four independent scores rather than rewarding a new name:
 |---|---:|---:|---:|---:|---|
 | protected harness evolution | 3/4 | 4/4 | 3/4 | 4/4 | deployable pattern with bounded evidence |
 | skill creation + gated admission | 3/4 | 4/4 | 2/4 | 3/4 | high value; coalition and transfer tests missing |
+| typed artifact-boundary compilation | 4/4 | 4/4 | 3/4 | 2/4 | strong representation insight; specification and interaction gaps remain |
 | per-step skill internalization | 3/4 | 3/4 | 2/4 | 2/4 | promising training method, expensive to reverse |
 | adaptive search portfolios | 3/4 | 3/4 | 3/4 | 3/4 | useful optimizer; often mislabeled agent evolution |
 | meta-procedure evolution | 4/4 | 4/4 | 2/4 | 2/4 | genuinely novel, still bounded by fixed evaluation |
 | generated/co-evolving evaluators | 4/4 | 4/4 | 1/4 | 1/4 | important frontier, unsafe as sole admission gate |
 | world-model adaptation | 3/4 | 3/4 | 3/4 | 2/4 | strong for planning under shift, not general autonomy |
 | broad-goal autonomous learning | 4/4 | 4/4 | 2/4 | 1/4 | valuable negative result; current reliability is poor |
+| adaptive curriculum co-training | 2/4 | 3/4 | 2/4 | 1/4 | useful training controls; Socratic-Zero autonomy and causal claims overreach |
 | typed cross-harness governance | 4/4 | 4/4 | 3/4 | 2/4 | strong LoopX design; comparative outcome and maturity evidence still missing |
 
 ## A practical governed evolution loop
@@ -347,14 +384,22 @@ Practical rules:
 7. **Control-topology comparison:** run Arbor and LoopX on one fixed problem
    with identical models, budgets, and evaluators; measure useful novelty,
    duplicate work, recovery, coordination cost, and held-out outcome.
+8. **Artifact-boundary tournament:** give the same contrastive traces to a
+   rule-only, skill-only, subagent-only, and ownership-compiled learner; test
+   fresh negative boundaries, pairwise artifact interactions, and break-even
+   reuse against offline validation cost.
+9. **Curriculum topology factorial:** compare fixed-data DPO, Teacher judging,
+   Teacher-generated questions, learned-Generator questions, frontier weighting,
+   and replay under identical data and compute; continue long enough to measure
+   diversity and recursive-collapse onset.
 
 ## Evidence and provenance
 
 The source-agnostic [lead ledger](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv)
-contains 969 records with access, provenance, research question, value, novelty,
+contains 978 records with access, provenance, research question, value, novelty,
 credibility, related work, disposition, and stopping condition. The companion [Xiaohongshu
 resolution ledger](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv)
-preserves all 906 observed stable card IDs. The [evidence report](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md)
+preserves all 909 observed stable card IDs. The [evidence report](../reports/research/agent-self-evolution-autonomy-deep-dive-2026-09-01.md)
 separates paper claims, inspected code, bounded local checks, analysis, and
 unresolved access boundaries.
 
@@ -373,4 +418,8 @@ the [world-proxy survey](https://arxiv.org/abs/2608.02713),
 [Arbor](https://arxiv.org/abs/2606.11926),
 [LoopX](https://github.com/huangruiteng/loopx/tree/ae4887d707e69c19e712c379c4a1ef98b159ae64),
 [Hermes Agent](https://github.com/NousResearch/hermes-agent/tree/562ee8ab76a703b7f524172cae0b1d52f9f94bd3),
-and [OpenClaw](https://github.com/openclaw/openclaw/tree/8a718610bd26ffcffeb04e19641c80e6693731a1).
+[OpenClaw](https://github.com/openclaw/openclaw/tree/8a718610bd26ffcffeb04e19641c80e6693731a1),
+and [AutoRefine](https://arxiv.org/abs/2601.22758),
+[Socratic-Zero](https://arxiv.org/abs/2509.24726),
+[Absolute Zero](https://arxiv.org/abs/2505.03335), and
+[R-Zero](https://arxiv.org/abs/2508.05004).
