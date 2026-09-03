@@ -1,0 +1,138 @@
+{
+  "schema": "scout.navigation-heldout/v1",
+  "frozen_at": "2026-09-03T17:19:00.000Z",
+  "frozen_against_tip": "357dbee5324de0046f3255cd168d20b99d6735c8",
+  "source_basis": "User-like paraphrases of decision-relevant Scout library needs and repaired unavailable-entry boundaries, frozen before the evaluator implementation. The set was not used to change INDEX.md.",
+  "cases": [
+    {
+      "id": "seed-membership-reconciliation",
+      "query": "reconcile the saved Xiaohongshu collection and distinguish unavailable posts from removals",
+      "expected": {
+        "kind": "available",
+        "title": "Xiaohongshu human-collection seed ledger",
+        "target": "./xhs-seed-ledger.md"
+      }
+    },
+    {
+      "id": "ranked-source-lane-questions",
+      "query": "rank unresolved Xiaohongshu research questions across evidence source lanes",
+      "expected": {
+        "kind": "available",
+        "title": "Xiaohongshu living topic map",
+        "target": "./xhs-topic-map.md"
+      }
+    },
+    {
+      "id": "verification-allocation-design",
+      "query": "factorial test of provisional plan temptation and authenticated supersession under a verification budget",
+      "expected": {
+        "kind": "available",
+        "title": "Verification-allocation factorial design (2026-09-02)",
+        "target": "../reports/research/verification-allocation-factorial-design-2026-09-02.md"
+      }
+    },
+    {
+      "id": "caller-bound-memory-governance",
+      "query": "bind agent memory write read revise and forget operations to the verified caller identity",
+      "expected": {
+        "kind": "available",
+        "title": "Agent memory governance is an authority-placement problem",
+        "target": "./findings/2026-08-26-agent-memory-governance-authority-boundaries.md"
+      }
+    },
+    {
+      "id": "external-enforcement-substrate",
+      "query": "enforcement substrate inaccessible to the enforced agent with fail-closed external evidence",
+      "expected": {
+        "kind": "available",
+        "title": "HN Scan #151 — June 25, 2026",
+        "target": "./findings/2026-06-25-escapability-hierarchy.md"
+      }
+    },
+    {
+      "id": "future-dated-provenance-repair",
+      "query": "fourteen future-dated HN arXiv and XHS artifact identity dispositions and provenance repair",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Future-dated scans 151–275 provenance repair",
+        "intended_target": "../reports/triage/future-dated-scans-151-275-provenance-repair.md"
+      }
+    },
+    {
+      "id": "stuck-arxiv-workflow",
+      "query": "orphaned arXiv workflow closure and bounded HTTP retrieval contract",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Stuck arXiv reconciliation (2026-08-23)",
+        "intended_target": "../reports/operations/stuck-arxiv-reconciliation-2026-08-23.md"
+      }
+    },
+    {
+      "id": "durable-interrupted-effects",
+      "query": "durable acceptance checkpoints and reconciliation of interrupted external effects",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Agent durability is a reconciliation protocol, not process resumption",
+        "intended_target": "./findings/2026-08-24-agent-durability-is-reconciliation-not-resumption.md"
+      }
+    },
+    {
+      "id": "inverted-memory-confidence",
+      "query": "directionally inverted memory confidence contract across implementation and documentation",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Agent-memory feedback semantics must be executable and versioned",
+        "intended_target": "./findings/2026-08-24-agent-memory-confidence-contract-drift.md"
+      }
+    },
+    {
+      "id": "safety-guarantee-enforcement",
+      "query": "read-only scope and credential safety guarantees mapped to enforcement and bypass paths",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Audit agent safety claims guarantee by guarantee",
+        "intended_target": "./findings/2026-08-24-agent-safety-guarantees-below-prompt.md"
+      }
+    },
+    {
+      "id": "portable-verdict-evidence",
+      "query": "typed predicates hash-chained records and anti-regression portable verdict evidence",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Agent claims should resolve to harness-owned, portable evidence",
+        "intended_target": "./findings/2026-08-24-harness-owned-verdict-evidence-bundle.md"
+      }
+    },
+    {
+      "id": "filesystem-projection-boundary",
+      "query": "filesystem projection owns identity freshness conflicts authorization and write review",
+      "expected": {
+        "kind": "unavailable",
+        "title": "Filesystem interfaces relocate agent integration complexity",
+        "intended_target": "./findings/2026-08-24-locality-conflict-aware-filesystem-projection.md"
+      }
+    },
+    {
+      "id": "duplicate-coordination-title",
+      "query": "multi-agent coordination patterns",
+      "expected": {
+        "kind": "ambiguous",
+        "titles": [
+          "Multi-Agent Coordination Patterns",
+          "Multi-Agent Coordination Patterns"
+        ],
+        "targets": [
+          "./multi-agent-coordination.md",
+          "./findings/multi-agent-coordination-patterns.md"
+        ]
+      }
+    },
+    {
+      "id": "absent-topic-negative-control",
+      "query": "quantum gardening protocols for autonomous greenhouse agents",
+      "expected": {
+        "kind": "miss"
+      }
+    }
+  ]
+}
