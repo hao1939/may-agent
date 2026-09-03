@@ -3938,6 +3938,24 @@ remain unknown, removals are `[]`, and all 132 IDs remain unavailable. Cycle
 1,706 broad links, and read-only health at 30 facts / 16 wakes. Commit this
 seed record before checking accepted refs and the ranked Cycle 273 mirror.
 
+## Cycle 286 checkpoint — Cycle 273 seed provenance has one detailed home
+
+Seed `0112e228896ae61433802992a6f18a72abf756e0` preceded both the
+accepted-ref check and retrieval audit. Reviewer source `f97bebdec5` advanced
+to result `ff09ef8d0c`, integrated as standing `ff923ccde4` at stable patch ID
+`570bf2b3…0a73943`; `ac86bc94d0` closes its cursor status. RV-022/RV-023 are
+resolved and RV-004 remains high/open.
+
+The map and report shared an exact 16-line / 902-byte Cycle 273 seed block at
+SHA-256 `14cf1d1d…e62bd6a4`. Material
+`efc32bf1cfaa19c0c9348c3a768545c058972cc3` preserves the report and replaces
+only the map copy with a 9-line / 507-byte linked transition, removing 7 net
+lines / 395 bytes. GitHub, arXiv, and Reddit made zero requests and retain
+their recorded evidence and triggers. The next ranked maintenance question is
+Cycle 280's 41-line map / 79-line report retained-outcome narration: it shares
+only eight individual lines and a two-line longest exact run, so preserve
+causal and rollback distinctions before any semantic compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

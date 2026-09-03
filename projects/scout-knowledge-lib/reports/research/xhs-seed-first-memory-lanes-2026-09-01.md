@@ -9526,6 +9526,40 @@ Added/changed identities remain unknown, observed removals are `[]`, and all
 132 durable IDs remain unavailable. Commit this ordering record before the
 accepted-ref check and ranked exact 16-line Cycle 273 mirror audit.
 
+## Cycle 286 checkpoint — category-ranking provenance is retained once
+
+What was wrong: the complete Cycle 273 seed record appeared byte-identically
+in the map and this detailed report. Seed
+`0112e228896ae61433802992a6f18a72abf756e0` preceded the accepted-ref check
+and audit. The shared block measured 16 lines / 902 bytes at SHA-256
+`14cf1d1d893fb13c4a1ff998e83dc410a60f6f07e71c2950d9ca3f02e62bd6a4`.
+
+Material `efc32bf1cfaa19c0c9348c3a768545c058972cc3` leaves this detailed
+copy unchanged and replaces the map copy with a 9-line / 507-byte transition
+at SHA-256 `3a8d271a…58119d29`, removing 7 net lines / 395 bytes. The map keeps
+the exact Cycle 272 result and Cycle 273 seed identities, current-receipt
+uncertainty, zero-request boundary, and link to complete validation. No source,
+claim, code, fixture, account, evaluator, or protected state changed.
+
+The post-seed accepted-ref check found Cycle 284 result-review source
+`f97bebdec5a59cfb48abd24f49c87accc2ce67d4` and direct-child result
+`ff09ef8d0cb7a0c08df663e1f8b1274d417b63d5`. It is integrated as standing
+`ff923ccde428270db699aefe4c38c2a9a51e3314`; both share stable patch ID
+`570bf2b3747ef0cb3516ac52970f57d8e0a73943`. Status
+`ac86bc94d0` records the landed state. Earlier Cycle 283 result review
+`4654c9e267` and Cycle 284 material review `e7927c6bb9` are cursor-only earlier
+cuts superseded by the direct Cycle 284 result review. RV-022/RV-023 are
+resolved; RV-004 remains high/open.
+
+GitHub retains its four exact heads, arXiv retains `2608.30177v1` and
+`2608.25553v3`, and Reddit retains RSS HTTP 200 for `t3_1v8a3sh` / six comments
+with JSON HTTP 403. All made zero requests and retain their change-bearing
+revisit triggers. The next ranked maintenance question is Cycle 280's 41-line
+map and 79-line report narration. They share eight individual lines but only a
+two-line longest exact run, so a future seed-first audit must preserve mutable
+retention, causality, validation, and rollback distinctions rather than apply
+mechanical exact-block deletion.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
