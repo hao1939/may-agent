@@ -7860,6 +7860,28 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 177 checkpoint — embedded prompt latency is bounded
+
+Seed commit `03b197144b` records unchanged semantic XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before
+the local prompt control.
+
+A matched freeze baseline verified `ok:true`; a 50,000-level JSON value inside
+one quoted prompt then returned a generic invalid-schedule error after 1,227.86
+ms. Exact local `cfbceace65` checks prompt depth before parsing and recursive
+lineage rendering. The same control now returns the exact episode-scoped error
+in 23.24 ms in the complete freeze file, with null policy scope and provider
+denial. The wider focused gate passes 75 tests and 660 assertions plus
+TypeScript, formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the matched current-runtime improvement
+and low for other runtimes or broader provenance, authority, cost, drift,
+model, or provider claims. The next ranked audit tests deeply nested result
+objects before result-bundle serialization.
+
 ## Cycle 176 checkpoint — execution-freeze artifact latency is bounded
 
 Seed commit `496756883e` records unchanged semantic XHS access, 30 readable

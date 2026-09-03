@@ -2805,6 +2805,29 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 177 bounded embedded-prompt latency
+
+Seed commit `03b197144b` preceded a matched execution-freeze control. Its
+baseline verified `ok:true` with provider calls denied. The changed fixture
+embedded a 50,000-level JSON object in one quoted `episode.prompt`, then
+canonically reserialized and byte-bound the otherwise shallow schedule.
+
+Before repair, recursive lineage rendering reached the outer catch after
+1,227.86 ms and returned only `schedule artifact is not valid verifiable JSON`.
+The exception stayed contained and provider authority stayed false, but the
+latency and error attribution were wrong. Exact local `cfbceace65` applies the
+shared 256-level iterative check at the embedded-prompt parse boundary. The
+same control now returns an episode-scoped prompt-depth error in 23.24 ms in
+the complete freeze file (47.52 ms first isolated), with null policy scope and
+provider denial. The matched regression passes seven assertions; the wider
+focused gate passes 75 tests and 660 assertions plus TypeScript, formatting,
+and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general resource bound, substantive provenance, policy authority, cost, drift,
+model behavior, or provider execution. The next audit tests deeply nested
+objects in result bundles before post-analysis serialization.
+
 ## Cycle 176 bounded execution-freeze artifact latency
 
 Seed commit `496756883e` preceded matched schedule, model-resolution, and
