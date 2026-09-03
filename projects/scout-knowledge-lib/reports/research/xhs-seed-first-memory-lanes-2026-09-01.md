@@ -8229,9 +8229,12 @@ arXiv, and Reddit made zero public requests and retain their evidence and
 change-bearing triggers.
 
 This is high-confidence retrieval and stale-state repair, not new source or
-model evidence. The next ranked accessible maintenance question is whether the
-missing Cycle 206–214 ledger rows can be recovered exactly from immutable seed
-commits; preserve an explicit gap rather than infer unavailable bytes.
+model evidence. Read-only inspection of all nine Cycle 206–214 seed commits
+recovered their times and access semantics but found abbreviated body receipts,
+so exact ledger rows cannot be reconstructed without invention. Their original
+seed sections remain in place and the canonical ledger now states the gap.
+The next ranked maintenance work may compact their repeated lane/validation
+prose, but must not remove those seed sections or fabricate full hashes.
 
 Exact Cycle 221 material tip
 `a4d0585f446ccaf1a70ccc0fb4589458f4b1e148` passes whitespace and all 45
