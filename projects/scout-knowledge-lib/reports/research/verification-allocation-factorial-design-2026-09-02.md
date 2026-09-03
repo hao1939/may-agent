@@ -2843,6 +2843,26 @@ consumer requirements, or provider behavior. The useful local candidate-
 registry ordering audit is closed; a schema migration remains trigger-bound to
 that missing external evidence.
 
+## Cycle 216 multi-model failure attribution
+
+Seed commit `8b3c8a050c` preceded exact test-only commit `97986c1ec1`. Two
+matched two-model bundles substitute only the requested ID inside either the
+first or second model's canonical resolution record and update that artifact's
+digest. The verifier attributes the mismatch to the exact `models[0]` or
+`models[1]` ordinal, retains two models and 128 episodes, returns no policy
+scope, and denies provider calls.
+
+The byte-bound manifest preserves the ordinal-to-requested-ID, resolved-ID,
+and artifact mapping. The result JSON deliberately contains none of those
+three values. The focused gate passes 29 tests and 169 assertions plus
+TypeScript, formatting, and whitespace. This makes the current boundary
+explicit: a failure result is not a self-contained model registry or receipt;
+it must be interpreted with its manifest. No result-schema change is justified
+without an identified consumer, and reflecting unvalidated caller identifiers
+from an invalid manifest needs its own safety contract. The next control asks
+whether an opaque content reference can bind a failed manifest without
+granting it scope or echoing those identifiers.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two

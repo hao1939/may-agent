@@ -3948,6 +3948,32 @@ mutation occurred. GitHub, arXiv, and Reddit made zero public requests before
 this reconciliation. Commit this record first, then pursue the ranked multi-
 model diagnostic-traceability question locally.
 
+### Cycle 216 checkpoint — failed model identity stays manifest-bound
+
+Seed commit `8b3c8a050c` preceded exact test-only commit `97986c1ec1`. Two
+matched two-model bundles change only the declared requested ID inside either
+the first or second model's byte-bound resolution record, then update that
+artifact's digest. Both fail closed with the exact corresponding
+`models[0]` or `models[1]` declaration-mismatch error, retain model count 2 and
+episode count 128, return no policy scope, and deny provider calls.
+
+The bound manifest still maps that ordinal to the requested ID, resolved ID,
+and resolution artifact. The result JSON contains none of those three values.
+This supports ordinal attribution but contradicts treating the result as a
+self-contained model registry or independent diagnostic receipt. Confidence is
+high for the strict-v1 local boundary and low for external consumers, log
+handling, or desired receipt schema. The focused gate passes 29 tests and 169
+assertions plus TypeScript, formatting, and whitespace. No production change
+is justified without a consumer contract; echoing unvalidated caller IDs from
+an invalid manifest could itself be unsafe.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their Cycle 215 evidence, access boundaries, and change-bearing revisit
+triggers. The accepted-lineage boundary is unchanged. The next ranked local
+question is whether a compact content-addressed diagnostic reference can bind
+the exact failed manifest without echoing untrusted model identifiers or
+promoting an invalid bundle to policy authority.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

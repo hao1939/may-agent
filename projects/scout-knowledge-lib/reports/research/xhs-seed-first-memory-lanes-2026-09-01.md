@@ -8197,6 +8197,31 @@ and Reddit made zero public requests before reconciliation and retain their
 Cycle 215 evidence and triggers. Commit this record first, then run the ranked
 multi-model diagnostic-traceability control locally.
 
+## Cycle 216 checkpoint — failure attribution requires the bound manifest
+
+Seed commit `8b3c8a050c` preceded exact test-only commit `97986c1ec1`. In two
+matched two-model bundles, only the requested ID inside the first or second
+byte-bound model-resolution record is substituted and that artifact's digest
+is updated. Each result fails closed at the corresponding `models[0]` or
+`models[1]` declaration mismatch, retains two models and 128 episodes, returns
+no policy scope, and keeps provider authority false.
+
+The manifest maps each ordinal to its requested ID, resolved ID, and evidence
+artifact. The result JSON exposes none of those identifiers. The focused gate
+passes 29 tests and 169 assertions plus TypeScript, formatting, and whitespace.
+This supports precise ordinal attribution while contradicting any claim that a
+failure result is a self-contained model registry or diagnostic receipt. No
+production change is justified without a consumer contract, especially because
+invalid caller identifiers should not be reflected casually.
+
+GitHub/local code won. GitHub retains the exact local regression and prior
+named public heads; arXiv retains MemGauge `2608.30177v1` and allocation study
+`2608.25553v3`; Reddit retains RSS-readable `t3_1v8a3sh` and its JSON-403
+boundary. All public lanes made zero requests and retain their change-bearing
+triggers. The accepted-lineage boundary is unchanged. The next ranked local
+question is whether a compact content reference can bind the failed manifest
+without echoing untrusted model IDs or creating policy authority.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
