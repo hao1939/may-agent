@@ -995,6 +995,62 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(bothFailed);
   });
 
+  it("retains model and schedule failures across validation layers", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const model = manifest.models[0];
+    const mismatchedEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: `${model.requestedId}-substitute`,
+      resolvedId: model.resolvedId,
+      resolutionKind: model.resolutionKind,
+    });
+    await writeFile(
+      join(root, model.resolutionEvidenceArtifact),
+      mismatchedEvidence,
+    );
+    manifest.artifacts.find(
+      (artifact) => artifact.name === model.resolutionEvidenceArtifact,
+    )!.sha256 = freezeArtifactSha256(mismatchedEvidence);
+
+    const reversedModelIds = manifest.models
+      .map((candidate) => candidate.resolvedId)
+      .reverse();
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        reversedModelIds,
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.modelIds = reversedModelIds;
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: false,
+      errors: [
+        "models[0] resolution evidence does not match declaration",
+        "schedule model IDs do not match immutable resolutions",
+      ],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(result);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
