@@ -9365,6 +9365,27 @@ ref `codex/g-8c5b597e-cycle257-review` advanced from integrated
 `72ed9c48e981644accee665994ae102fc0ca62fc`. Reconcile only that finite cursor
 delta before testing whether the scalar output total masks one missing source.
 
+## Cycle 261 checkpoint — per-source loss is preserved, not alerted
+
+Seed commit `10afb928a8` preceded accepted reviewer `72ed9c48e9`, integrated
+as `9e04b0ec2e` with stable patch ID
+`4768fdae542cf5a79ecafd1e5ef57eaea954365f`, then source
+`b2a2461d2a`. The
+[detailed topic-map audit](../../knowledge/xhs-topic-map.md#cycle-261-checkpoint--aggregate-health-no-longer-erases-lane-zeros)
+records the matched result: arXiv one plus HN one gives aggregate two; replacing
+only arXiv evidence with the supported no-op gives aggregate one, which remains
+healthy under the exclusive threshold one.
+
+The compatible correction retains aggregate history but adds zero-inclusive
+per-source counts. Current read-only protected state at
+`2026-09-03T19:15:12Z` is aggregate three, `arxiv:1`, `hn:2`, and zero for XHS,
+GitHub, and Reddit. A zero is not yet reason-qualified and is not a content or
+access judgment. Focused validation passes 20 tests / 41 assertions plus
+TypeScript, formatting, and whitespace. All three public lanes made zero
+requests and retain their prior exact evidence and triggers. Next, distinguish
+unavailable/non-converged task state from an evidence-backed latest no-op before
+considering separate per-source alerts.
+
 ## Cycle 260 seed-first start — follow-up review trigger
 
 At `2026-09-03T19:01:34.334Z`, Cycle 237's exact receipt was one hundred
