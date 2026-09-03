@@ -2805,6 +2805,18 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 209 artifact declaration order is non-semantic
+
+Seed commit `e8514b7a0f` preceded exact test-only commit `1ea329b404`. The
+valid two-model fixture reverses only its seven artifact declarations. Raw
+manifest bytes change, but the verifier returns the complete same result,
+including identical model and protocol scopes and false provider authority.
+
+The focused bundle gate passes 22 tests and 119 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes set-like artifact inventory
+from semantic model order. External registration and consumer behavior remain
+unknown. The next matched audit tests coherent seed-order reversal.
+
 ## Cycle 208 model order is reversible execution identity
 
 Seed commit `7ab40b9f80` preceded exact test-only commit `582423d8ff`. A valid

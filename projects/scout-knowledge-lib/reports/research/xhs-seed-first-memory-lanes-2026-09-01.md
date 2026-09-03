@@ -7874,6 +7874,26 @@ unavailable. No representative saved-post read, account mutation, artifact-
 order control, or public source request preceded this record. Public lanes
 remain deferred while the ranked local permutation control proceeds.
 
+## Cycle 209 checkpoint — artifact inventory order does not change scope
+
+Seed commit `e8514b7a0f` preceded exact test-only commit `1ea329b404`. The
+matched valid two-model bundle reverses only its seven artifact declarations.
+Raw freeze-manifest bytes change, while all files, digests, models, seeds, and
+schedule bytes remain fixed.
+
+Strict v1 returns the complete same verification object, including identical
+model and protocol scopes and false provider authority. Focused validation
+passes 22 tests and 119 assertions plus TypeScript, formatting, and whitespace.
+This supports set-like artifact inventory and contradicts treating its list
+order as identity; Cycle 208's model/schedule order remains semantic.
+
+GitHub/local code won. Public GitHub, arXiv, and Reddit made zero requests and
+retain their evidence and revisit triggers. The unaccepted peer range ending
+at `d041c41b54` remains deferred without content inspection. External consumer,
+deposit, signature, and provider behavior remain unknown. The next ranked
+matched audit reverses seed order with its generated schedule to test
+reversible protocol identity.
+
 ## Cycle 208 seed-first reconciliation — stable unavailable shell
 
 Cycle 208 began from clean `745ef3e8bb`. One direct public status and one
