@@ -124,6 +124,7 @@ describe("verification-allocation freeze bundle", () => {
       seedCount: 0,
       episodeCount: 0,
       externalRegistrationEvidenceStatus: "",
+      timestampProofEvidenceStatus: "",
       policyScope: null,
       providerCallsAuthorized: false,
     });

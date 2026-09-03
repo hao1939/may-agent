@@ -61,6 +61,7 @@ export type FreezeVerificationResult = {
   seedCount: number;
   episodeCount: number;
   externalRegistrationEvidenceStatus: "local-byte-match-unverified" | "";
+  timestampProofEvidenceStatus: "local-byte-presence-unverified" | "";
   policyScope: FreezePolicyScope | null;
   providerCallsAuthorized: false;
 };
@@ -454,6 +455,7 @@ export function verifyExecutionFreezeManifest(
       seedCount: 0,
       episodeCount: 0,
       externalRegistrationEvidenceStatus: "",
+      timestampProofEvidenceStatus: "",
       policyScope: null,
       providerCallsAuthorized: false,
     };
@@ -481,6 +483,16 @@ export function verifyExecutionFreezeManifest(
       errors.length === errorCountBeforeRegistration
         ? "local-byte-match-unverified"
         : "",
+    timestampProofEvidenceStatus: (() => {
+      const proofName = String(manifest.externalRegistration?.proofArtifact);
+      const proofArtifact = artifacts.get(proofName);
+      const proofBytes = artifactContents[proofName];
+      return proofArtifact &&
+        proofBytes !== undefined &&
+        freezeArtifactSha256(proofBytes) === proofArtifact.sha256
+        ? "local-byte-presence-unverified"
+        : "";
+    })(),
     policyScope:
       errors.length === 0
         ? derivePolicyScope(

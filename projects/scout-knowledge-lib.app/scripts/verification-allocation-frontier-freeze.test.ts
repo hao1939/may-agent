@@ -773,6 +773,7 @@ describe("identity-robust frontier freeze adapter", () => {
       seedCount: 0,
       episodeCount: 0,
       externalRegistrationEvidenceStatus: "",
+      timestampProofEvidenceStatus: "",
       policyScope: null,
       providerCallsAuthorized: false,
     });

@@ -112,6 +112,23 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("labels arbitrary proof bytes as present but semantically unverified", () => {
+    const { manifest, artifactContents } = validFixture();
+    artifactContents["MANIFEST.sha256.ots"] = "not an OpenTimestamps proof";
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "MANIFEST.sha256.ots",
+    )!.sha256 = freezeArtifactSha256(artifactContents["MANIFEST.sha256.ots"]);
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result).toMatchObject({
+      ok: true,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      timestampProofEvidenceStatus: "local-byte-presence-unverified",
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects opaque or contradictory external checksum manifests", () => {
     for (const checksumBytes of [
       "fixture checksum manifest",
