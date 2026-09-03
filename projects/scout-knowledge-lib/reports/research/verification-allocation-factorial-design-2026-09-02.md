@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 102, including decision-record content cross-binding bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 104, including policy-evidence unit and applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1586,6 +1586,48 @@ shape. The illustrative 0.0006 record remains non-operational. The next ranked
 question is whether the policy evidence schema can distinguish retrieval-count
 budgets, measured but non-transferable usage, and a protocol-matched approved
 episode ceiling, failing closed when units or applicability are absent.
+
+## Cycle 104 policy-evidence applicability boundary
+
+Seed reconciliation `b54a008a7f10984c94107e619e9b5d6ce5ec2cd6`
+preceded this work. The saved shell changed from profile-class to login-class,
+but still exposed a login wall and zero attributable items: added and changed
+IDs remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable. The local accepted-result check at
+`2026-09-03T01:29:26.379Z–01:29:26.385Z` found all five accepted reviewer refs
+unchanged and all nine standing reconciliation commits contained. GitHub,
+arXiv, and Reddit made zero public requests.
+
+Exact local `5364acc811249d991829d4b43edb6a69b0246eb2` makes the
+policy-evidence contract distinguish the two accepted operating quantities.
+A minimum-reserve policy now requires evidence kind
+`uniform-marginal-drift-reserve` in `probability-per-model`; an episode-ceiling
+policy requires `complete-factorial-episode-ceiling` in
+`complete-factorial-episodes`. Both must name a nonempty protocol reference and
+model-scope reference. Missing applicability, a wrong policy/unit pair,
+retrieval-count units, extra fields, and an explicit `not-established` status
+all fail closed. The byte-matched decision record must carry exactly the same
+applicability declaration as its manifest.
+
+The retained synthetic decision record is deliberately migrated with
+`applicabilityStatus: not-established`. Its 1,434 bytes have SHA-256
+`dc3a5143b7706d3e62dfd73c0d135976d4e1165f6664729bd7109e6e24f09092`,
+while its policy hash remains
+`3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`.
+A production-shaped local call returns no selection and the exact error
+`policy evidence applicability is not established for this protocol and model
+scope`. Focused validation passes 11 tests and 37 assertions plus TypeScript,
+formatting, and whitespace.
+
+This closes a structural unit-confusion path; it does not prove that a named
+protocol or model set matches the evidence. The positive status is explicitly
+`protocol-matched-unverified`, so owner, revision, timestamp, applicability,
+independence, cost, drift, and provider behavior remain caller-supplied rather
+than authenticated. Confidence is high for exact schema rejection and local
+failure controls, and low for every real operating-policy claim. The next
+ranked question is whether protocol and model-scope references can themselves
+be descriptor-safe, byte-bound artifacts whose declared units and identities
+are derived rather than accepted as free text.
 
 ## Go/no-go boundary
 
