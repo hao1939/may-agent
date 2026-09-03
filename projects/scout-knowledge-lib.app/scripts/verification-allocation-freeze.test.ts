@@ -129,6 +129,90 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("separates overall validity, registration evidence, and proof presence", () => {
+    const cases: Array<{
+      name: string;
+      mutate: (fixture: ReturnType<typeof validFixture>) => void;
+      ok: boolean;
+      registration: "local-byte-match-unverified" | "";
+      proof: "local-byte-presence-unverified" | "";
+      error?: string;
+    }> = [
+      {
+        name: "valid local bundle",
+        mutate: () => {},
+        ok: true,
+        registration: "local-byte-match-unverified",
+        proof: "local-byte-presence-unverified",
+      },
+      {
+        name: "unrelated schedule mismatch",
+        mutate: ({ artifactContents }) => {
+          artifactContents["schedule.json"] += "tampered";
+        },
+        ok: false,
+        registration: "",
+        proof: "local-byte-presence-unverified",
+        error: "artifact schedule.json digest mismatch",
+      },
+      {
+        name: "proof digest mismatch",
+        mutate: ({ artifactContents }) => {
+          artifactContents["MANIFEST.sha256.ots"] += "tampered";
+        },
+        ok: false,
+        registration: "",
+        proof: "",
+        error: "artifact MANIFEST.sha256.ots digest mismatch",
+      },
+      {
+        name: "missing proof bytes",
+        mutate: ({ artifactContents }) => {
+          delete (artifactContents as Partial<typeof artifactContents>)[
+            "MANIFEST.sha256.ots"
+          ];
+        },
+        ok: false,
+        registration: "",
+        proof: "",
+        error: "artifact MANIFEST.sha256.ots has no supplied bytes",
+      },
+      {
+        name: "undeclared proof bytes",
+        mutate: ({ manifest }) => {
+          manifest.artifacts = manifest.artifacts.filter(
+            (artifact) => artifact.name !== "MANIFEST.sha256.ots",
+          );
+        },
+        ok: false,
+        registration: "",
+        proof: "",
+        error: "external registration proof artifact is missing",
+      },
+    ];
+
+    for (const testCase of cases) {
+      const fixture = validFixture();
+      testCase.mutate(fixture);
+      const result = verifyExecutionFreezeManifest(
+        fixture.manifest,
+        fixture.artifactContents,
+      );
+
+      expect(result, testCase.name).toMatchObject({
+        ok: testCase.ok,
+        externalRegistrationEvidenceStatus: testCase.registration,
+        timestampProofEvidenceStatus: testCase.proof,
+        providerCallsAuthorized: false,
+      });
+      if (testCase.error) {
+        expect(result.errors, testCase.name).toContain(testCase.error);
+      } else {
+        expect(result.errors, testCase.name).toEqual([]);
+      }
+    }
+  });
+
   it("rejects opaque or contradictory external checksum manifests", () => {
     for (const checksumBytes of [
       "fixture checksum manifest",
