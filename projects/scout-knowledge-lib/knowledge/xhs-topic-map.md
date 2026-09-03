@@ -3522,6 +3522,15 @@ The next ranked local audit coherently reverses two model declarations and
 schedule order to determine whether strict v1 treats order as semantic scope
 or incidental presentation.
 
+Exact reviewed Cycle 207 tip
+`df98b0821c1e010e626db9fe182762977c2b10e1` passes syntax, TypeScript,
+source formatting, 267 tests, 1,368 assertions, whitespace, and 31 relative
+links. Read-only health at `2026-09-03T13:22:20.284Z` remains 26 facts and 16
+wake signals; runtime state is empty. The clean tip retains 9/9 accepted
+ancestors and 4/4 accepted artifacts. Protected source and overlay reproduce
+their Cycle 206 fingerprints, and the unaccepted two-commit peer range remains
+outside the standing lineage without content inspection.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
