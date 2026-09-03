@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 151 checkpoint — summaries retain the changed manifest hash
+
+Seed commit `2713353aeb748cb75efefc968397254fc9d639b6` records unchanged
+login-class XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the local
+control. Exact local `349ee07fdf882729723878f0a02cd18443dbd639` proves the
+compact snapshot-selection summary serializes the aliased manifest hash and
+not the baseline identity while retaining the qualified equal-172 decision.
+
+Local code has one production summarizer caller and no separate replay
+consumer. This is direct serialization evidence, not durable replay: the hash
+is present but its caller-supplied manifest bytes are not. No production change
+or speculative replay format was required. The focused gate passes 21 tests
+and 79 assertions plus TypeScript, formatting, and whitespace.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+revisit triggers. Confidence is high for local serialization and low for
+persistence, replay, external producer compatibility, authority, or real
+execution. The next ranked investigation is descriptor-safe byte binding for
+the caller-supplied policy evidence manifest itself.
+
 ## Cycle 150 checkpoint — locator aliases qualify identity
 
 Seed commit `65fb0d29f3ca2312182ad913eb039d944d875419` records unchanged

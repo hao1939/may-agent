@@ -2527,6 +2527,29 @@ prompt quality, proof validity, model behavior, or provider authority.
 The next distinct parser question is whether same-value duplicate JSON keys
 can be accepted because `JSON.parse` collapses them before exact-key checks.
 
+## Cycle 151 compact-summary manifest identity
+
+Seed commit `2713353aeb748cb75efefc968397254fc9d639b6` preceded a matched
+serialization assertion on the aliased snapshot selection. Exact regression
+`349ee07fdf882729723878f0a02cd18443dbd639` proves the compact summary and
+its JSON serialization carry the aliased evidence-manifest SHA-256
+`0b78d31…cf216` and do not retain baseline `0f6d11f…e7dea1`. Selection,
+record/policy identity, and provider denial remain unchanged.
+
+The snapshot branch of `verification-allocation-robust-frontier.ts` is the sole
+production summarizer caller; no separate replay consumer exists. The result
+therefore proves local serialization, not durable replay. In particular, the
+summary preserves the manifest hash but not the caller-supplied manifest bytes
+needed to reconstruct it. No runtime change or invented replay format is
+justified.
+
+The focused snapshot, CLI-input, and selection gate passes 21 tests and 79
+assertions plus TypeScript, source formatting, and whitespace. Confidence is
+high for local serialization and low for persistence, replay, external
+producer compatibility, authority, or execution. The next ranked question is
+whether the policy evidence manifest itself should be a descriptor-safe byte-
+bound artifact before selection.
+
 ## Cycle 150 local locator aliases preserve selection, not manifest identity
 
 Seed commit `65fb0d29f3ca2312182ad913eb039d944d875419` preceded one matched
