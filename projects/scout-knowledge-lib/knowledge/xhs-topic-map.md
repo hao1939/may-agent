@@ -2399,6 +2399,41 @@ ranked descriptor-safe protocol/model-scope artifact question; public lanes
 remain subject to their recorded revision, artifact, replication, content,
 access, and readable-seed triggers.
 
+### Cycle 105 checkpoint — reuse the freeze authority, do not duplicate it
+
+The post-seed audit found that the existing freeze verifier already binds the
+32-cell protocol, requested and immutable resolved model identities, model
+resolution evidence, schedule bytes, seeds, and episode count. Its bundle
+adapter already reads those files through pinned no-follow descriptors. Exact
+source commits are `f71b2f1…a9cb` for the freeze contract and
+`882bee0…30a88f` for descriptor-safe bundle and local-evidence loading. Focused
+validation passes 18 tests and 46 assertions plus TypeScript.
+
+Supporting evidence therefore favors composing with the freeze result.
+Contradictory evidence rejects a current applicability claim: the public result
+returns only counts, not exact model identities or a canonical schedule-scope
+digest, and the library retains no real freeze manifest or schedule bundle.
+The only relevant JSON is the Cycle 104 synthetic decision record explicitly
+marked `not-established`. Adding separate scope manifests would duplicate the
+freeze contract and create another consistency risk. Confidence is high for
+the current local interface and repository inventory, and low for any real
+provider, bundle, applicability, or approval claim.
+
+All lanes were reconsidered after the seed commit. GitHub/local code was
+selected for the contract audit; public GitHub made zero requests and retains
+its four named repository heads and existing triggers. ArXiv made zero requests
+and retains `2608.30177v1` at 15/15 plus `2608.25553v3` at 14/15; revisit on a
+paper, artifact, registration, replication, or readable-seed change. Reddit
+made zero requests and remains RSS-readable/JSON-403; revisit on seed-linked
+reproducible evidence, a content delta, or access change. Five accepted
+reviewer refs were unchanged and nine standing reconciliation commits remained
+contained at `2026-09-03T01:38:26.110Z–01:38:26.181Z`.
+
+The next ranked investigation is one composition adapter that derives
+canonical protocol and resolved-model-scope digests from a verified freeze
+bundle and requires them at the policy binder. It must not introduce a second
+scope-authority format or treat local byte integrity as provider approval.
+
 ## Cycle log
 
 | Cycle                           | Seed reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Related discovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Deep dive                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Map decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Next                                                                                                                                                                                                                                                                                    |

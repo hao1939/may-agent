@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 104, including policy-evidence unit and applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 105, including policy-evidence unit/applicability binding 5364acc811249d991829d4b43edb6a69b0246eb2 and verified-freeze composition audit c48dc033c97f753ea094129e070748c4e4feadac."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1628,6 +1628,49 @@ failure controls, and low for every real operating-policy claim. The next
 ranked question is whether protocol and model-scope references can themselves
 be descriptor-safe, byte-bound artifacts whose declared units and identities
 are derived rather than accepted as free text.
+
+## Cycle 105 verified-scope composition audit
+
+Seed reconciliation `c48dc033c97f753ea094129e070748c4e4feadac`
+preceded this audit. The saved shell remained login-class with zero attributable
+items; only its body hash changed. Added and changed IDs remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. The local
+accepted-result check at `2026-09-03T01:38:26.110Z–01:38:26.181Z` found the
+five accepted reviewer refs unchanged and all nine standing reconciliation
+commits contained. GitHub, arXiv, and Reddit made zero public requests.
+
+The existing freeze path already supplies most of the required scope evidence.
+Exact source `f71b2f185a08061cc67340017a31c643e7d0a9cb` requires immutable
+requested-to-resolved model mappings with bound resolution artifacts, a
+`scout.verification-allocation-schedule/v1` schedule with exactly 32 cells per
+model/seed, exact schedule/model identity agreement, and episode count derived
+as models times seeds times 32. Exact source
+`882bee03a8ae5957e3fdad1c8f63d8f6418f3e17` inventories an explicit bundle
+through pinned no-follow descriptors and rejects linked, undeclared, malformed,
+or mismatched bytes. Focused validation passes 18 tests and 46 assertions plus
+TypeScript.
+
+That evidence also contradicts adding separate protocol and model-scope
+manifests. They would duplicate facts already cross-checked by the freeze gate
+and create another disagreement surface. The actual composition gap is
+smaller: `FreezeVerificationResult` returns only counts and discards the exact
+resolved model identities and schedule-scope digest that the policy binder
+would need. The library retains no real freeze manifest or schedule bundle at
+all; the only matching JSON artifact is the explicitly non-applicable synthetic
+policy record. Therefore no current policy scope can honestly be promoted from
+`protocol-matched-unverified` to byte-bound.
+
+GitHub/local code was selected because this was an implementation-contract
+question. arXiv remains high-value and retains MemGauge `2608.30177v1` plus
+allocation study `2608.25553v3`; no paper or artifact trigger fired. Reddit
+remains RSS-readable/JSON-403 and deferred without quota because there was no
+seed-linked claim, content delta, or access change. Confidence is high for the
+current interface, descriptor behavior, repository inventory, and focused
+controls; low for any unretained real bundle, provider identity, or operating
+approval. The next ranked investigation is a single composition adapter that
+derives canonical protocol and resolved-model-scope digests from one verified
+freeze bundle and requires those digests at the policy binder, without a
+second scope-authority format.
 
 ## Go/no-go boundary
 
