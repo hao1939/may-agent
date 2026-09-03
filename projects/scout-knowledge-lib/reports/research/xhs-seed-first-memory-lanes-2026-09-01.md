@@ -9955,6 +9955,21 @@ account request ran. This reduces retrieval duplication but adds no later-use
 outcome, so RV-004 remains high/open. Next is Cycle 260's 10-line / 628-byte
 accepted-review seed boundary.
 
+## Cycle 304 checkpoint — uncertainty and reviewer lineage stay explicit
+
+Seed-first `b9212db636` preceded the batch; material `0fae266092` changes only
+the map and removes 15 net lines.
+
+| Boundary | Before | After | Preserved distinction |
+| --- | --- | --- | --- |
+| Cycle 260 | 10 / 628, `5b3acf9a…9cff` | 4 / 353, `f4778ec7…2287` | Reviewer advance and accepted-output audit. |
+| Cycle 254 | 17 / 1,119, `be121527…1642` | 10 / 728, `e91778c4…4a78` | All perturbation counts, contradictory failures, confidence, and no scorer change. |
+| Cycle 251 | 9 / 572, `e189480f…0803` | 4 / 345, `49ec7961…d432` | Exact refs, seed uncertainty, and ranked rarity audit. |
+
+No source or account request ran; the report retains the full source text.
+RV-004 remains high/open. Next is Cycle 261's 8-line / 566-byte accepted-cursor
+seed boundary.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
