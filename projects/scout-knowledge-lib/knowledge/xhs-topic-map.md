@@ -3850,6 +3850,27 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The three residual stable-looking KE citations now win.
 
+### Cycle 240 checkpoint — KE collisions and mutable locators stay deferred
+
+Seed commit `54464bcee9` preceded the audit. Accepted KE-1780 is
+`KE-1780-handler-lifecycle-events-underdocumented-in-cron-md.md` at source
+commit `28cf49d9d141196e78acbbba0df53306636445b4`; it is not the claimed Write-
+Path Trap. KE-1996 and KE-1997 have no accepted project-owned entries. The two
+`today.md` references and one coach-workspace proposal are mutable runtime
+locators, not durable evidence. These facts contradict ID-only or path-root
+rewrites.
+
+All six occurrences now retain their exact claimed identity/path and a narrow
+replacement criterion: an exact accepted registry entry for KE claims, an
+immutable project-owned archive/finding for each digest, or an accountable-
+owner published stable proposal. Detailed surrounding analyses remain intact.
+The 1,540-document audit moves 1,707→1,701 links and 8→2 unresolved
+occurrences, both in one document, with zero absolute links. Confidence is high
+for accepted-tree identity/absence and locator mutability, low for missing
+historical artifacts. GitHub, arXiv, and Reddit made zero requests. Next, audit
+the duplicate #177 citations against accepted path history and complete story
+identity.
+
 ## Cycle 239 seed-first start — current receipt reused
 
 At `2026-09-03T17:05:28.593Z`, Cycle 237's exact receipt was eight minutes old

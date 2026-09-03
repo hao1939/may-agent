@@ -7,8 +7,14 @@ last_updated: "2026-07-17"
 # The Guard Paradox: When Safety Mechanisms Become the Dominant Failure Mode
 
 **Extends:** Compilation Gradient, Prompt Mass Problem  
-**KE:** [KE-1996](../../shared/knowledge/entries/KE-1996-guard-paradox-behavioral-warnings-context-pollution.md)  
-**Full analysis:** [today.md digest](../../agents/scout/workspace/digest/today.md)
+**KE:** **KE-1996 unavailable** *(intended project-owned path:
+`../../../shared/knowledge/entries/KE-1996-guard-paradox-behavioral-warnings-context-pollution.md`;
+restore a link only when that exact identity enters accepted lineage or the
+registry owner declares a provenance-preserving supersession)*
+**Full analysis:** **mutable digest reference deferred** *(claimed runtime path:
+`../../agents/scout/workspace/digest/today.md`; replace only when an immutable
+project-owned archive or finding preserves this complete analysis and its
+provenance at an accepted revision)*
 
 ## Core Finding
 

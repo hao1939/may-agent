@@ -7,8 +7,14 @@ last_updated: "2026-07-17"
 # The Ghost Metabolism: When Dead Sessions Feed the Living System
 
 **Extends:** Meta-Escalation Ratchet, Fail-Plausible Equilibrium  
-**KE:** [KE-1997](../../shared/knowledge/entries/KE-1997-ghost-metabolism-dead-sessions-feed-living-overhead.md)  
-**Full analysis:** [today.md digest](../../agents/scout/workspace/digest/today.md)
+**KE:** **KE-1997 unavailable** *(intended project-owned path:
+`../../../shared/knowledge/entries/KE-1997-ghost-metabolism-dead-sessions-feed-living-overhead.md`;
+restore a link only when that exact identity enters accepted lineage or the
+registry owner declares a provenance-preserving supersession)*
+**Full analysis:** **mutable digest reference deferred** *(claimed runtime path:
+`../../agents/scout/workspace/digest/today.md`; replace only when an immutable
+project-owned archive or finding preserves this complete analysis and its
+provenance at an accepted revision)*
 
 ## Core Finding
 

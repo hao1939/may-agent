@@ -50,4 +50,8 @@ function selectExamples(taskContent) {
 ## References
 
 - [KE-065: Comprehensive Findings](../../../shared/knowledge/entries/KE-065.md)
-- [Production Deployment Proposal](../../../coach/workspace/proposal-fewshot-production-deployment.md)
+- **Production Deployment Proposal — mutable coach reference deferred**
+  *(claimed runtime path:
+  `../../../coach/workspace/proposal-fewshot-production-deployment.md`; replace
+  only when the accountable owner publishes a stable project-owned proposal
+  preserving its complete scope and provenance at an accepted revision)*

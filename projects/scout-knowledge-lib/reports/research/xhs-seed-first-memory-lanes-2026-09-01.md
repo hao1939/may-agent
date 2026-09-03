@@ -9353,6 +9353,24 @@ fired. Added/changed identities remain unknown, removals are `[]`, and all 132
 seeds remain unavailable at the same login-class boundary. No browser or public
 request ran. The three residual stable-looking KE citations follow.
 
+## Cycle 240 checkpoint — durable KE identity separated from runtime locators
+
+Seed commit `54464bcee9` preceded the audit. Accepted KE-1780 names the unrelated
+cron handler-lifecycle finding at exact source commit
+`28cf49d9d141196e78acbbba0df53306636445b4`; KE-1996 and KE-1997 have no
+accepted project-owned entries. The two `today.md` links and coach-workspace
+proposal are mutable runtime locators rather than durable provenance.
+
+The six occurrences now keep their exact claimed identity/path and explicit
+replacement criteria: an exact accepted KE entry, an immutable project-owned
+digest archive/finding, or an accountable-owner published stable proposal.
+Their detailed surrounding analyses remain intact. Across 1,540 documents,
+links fall 1,707→1,701 and unresolved occurrences 8→2 in one document;
+absolute links remain zero. Confidence is high for accepted-tree identity and
+absence plus locator mutability, low for the missing artifacts. GitHub, arXiv,
+and Reddit made zero requests and retain their triggers. Next, audit the two
+duplicate #177 citations by accepted path history and complete story identity.
+
 ## Cycle 239 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:05:28.593Z`, Cycle 237's exact receipt was eight minutes old
