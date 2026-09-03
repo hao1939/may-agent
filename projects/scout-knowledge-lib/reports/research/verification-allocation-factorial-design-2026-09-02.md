@@ -1862,6 +1862,59 @@ It must verify the retained computation before passing its frontier to the
 existing freeze/decision selector, reject missing or tampered bytes, and never
 authorize provider calls.
 
+## Cycle 110 snapshot-backed fast selection
+
+Seed reconciliation `5bd90ec78e8f05c82ec85a19c53f02424cff21ff`
+preceded this work. The saved surface retained the same login-class semantic
+fingerprint and zero attributable items; only its body SHA changed. Added and
+changed IDs remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable. GitHub, arXiv, and Reddit made zero public requests.
+
+Exact local `cab0d65a17d2de7decd463707335d6b62991764b` adds an
+explicit `snapshot` CLI mode. Its ordered inputs name the snapshot root,
+canonical relative artifact, expected outer SHA-256, policy JSON, evidence
+manifest JSON, evidence root, and freeze root. It descriptor-safely loads the
+retained 508-point computation first and returns no freeze result or selection
+when that step fails. A positive integration fixture then proves that a valid
+snapshot proceeds through freeze scope, local decision byte/content checks,
+and the equal-172 selection without authorizing provider calls.
+
+Two actual process controls avoid the 8-minute computation. The valid retained
+snapshot loaded in 38 ms; a deliberately relative freeze root then failed at
+exact error `bundle root must be an explicit absolute path`, with selection
+false and provider authority false. Replacing only the expected outer hash
+loaded in 32 ms, failed with `local evidence bytes do not match the declared
+SHA-256`, and left freeze and selection unattempted. This distinguishes cache
+failure from downstream freeze failure.
+
+The initial success-path diagnostic was 209,109 bytes because it serialized all
+508 verified points again. Follow-up `b45d8450a2609fbee79947331d745a56d7d8f52b`
+keeps those points internal and emits only snapshot schema, evidence class,
+generator reference, three hashes, point count, and provider denial before the
+freeze/selection result. The compact 2,070-byte output has SHA-256
+`f54c64367939322bf509ede8454e86e5e6a625037638baddd0c3ef41cdb6cff3`,
+a 99.01% reduction. Focused validation passes 24 tests and 57 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves fast local integrity composition, ordered short-circuiting, and
+compact diagnostics. It does not prove a positive real policy because the
+library retains no real freeze or applicable decision. It also does not yet
+bind the policy decision record to the exact frontier hash; the executable's
+retained expectation supplies a current code-level boundary, not decision
+provenance. Confidence is high for local behavior and low for approval, real
+drift, cost, model identity, external registration, and provider transfer.
+
+The accepted-result check at
+`2026-09-03T02:29:45.729Z–02:29:45.798Z` found all nine standing reconciliation
+commits contained and all four self-evolution artifacts byte-identical to
+`df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a matched cross-snapshot substitution: hold
+the freeze and decision evidence fixed while changing the exact frontier
+identity. If the current decision provenance cannot distinguish that
+substitution, bind the frontier reference in the smallest schema-backed way
+without promoting local integrity into authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
