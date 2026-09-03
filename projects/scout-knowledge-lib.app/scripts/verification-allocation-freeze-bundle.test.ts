@@ -289,6 +289,59 @@ describe("verification-allocation freeze bundle", () => {
     );
   });
 
+  it("rejects one hard-linked digest reused across semantic roles", async () => {
+    const cases = [
+      {
+        source: "evidence/model-resolution.json",
+        target: "seed-policy.json",
+        errors: [
+          "seed policy evidence contains unsupported fields",
+          "seed policy evidence schema changed",
+          "seed policy evidence does not match declaration",
+        ],
+      },
+      {
+        source: "seed-policy.json",
+        target: "evidence/model-resolution.json",
+        errors: [
+          "models[0] resolution evidence contains unsupported fields",
+          "models[0] resolution evidence schema changed",
+          "models[0] resolution evidence does not match declaration",
+        ],
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { root, manifest } = await fixture();
+      await rm(join(root, testCase.target));
+      await link(join(root, testCase.source), join(root, testCase.target));
+      const sourceArtifact = manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.source,
+      )!;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.target,
+      )!.sha256 = sourceArtifact.sha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const [sourceStatus, targetStatus] = await Promise.all([
+        stat(join(root, testCase.source)),
+        stat(join(root, testCase.target)),
+      ]);
+      expect(targetStatus.ino).toBe(sourceStatus.ino);
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok).toBe(false);
+      expect(result.policyScope).toBeNull();
+      expect(result.providerCallsAuthorized).toBe(false);
+      for (const error of testCase.errors) {
+        expect(result.errors).toContain(error);
+      }
+    }
+  });
+
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
     const { root, manifest } = await fixture();
     const rawManifest = JSON.stringify(manifest).replace(
