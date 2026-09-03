@@ -152,11 +152,15 @@ export async function verifyExecutionFreezeBundle(
   try {
     let manifest: unknown;
     try {
-      manifest = JSON.parse(
-        new TextDecoder().decode(
-          await readRegularChildNoFollow(rootHandle, MANIFEST_NAME),
-        ),
-      ) as unknown;
+      const rawManifest = new TextDecoder().decode(
+        await readRegularChildNoFollow(rootHandle, MANIFEST_NAME),
+      );
+      manifest = JSON.parse(rawManifest) as unknown;
+      if (JSON.stringify(manifest) !== rawManifest) {
+        return failed([
+          "freeze-manifest.json is not canonical verifiable JSON",
+        ]);
+      }
     } catch (error) {
       return failed([
         `freeze-manifest.json is not readable JSON: ${String(error)}`,

@@ -117,6 +117,22 @@ describe("verification-allocation freeze bundle", () => {
     );
   });
 
+  it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
+    const { root, manifest } = await fixture();
+    const rawManifest = JSON.stringify(manifest).replace(
+      '"providerCallsAuthorized":false',
+      '"providerCallsAuthorized":false,"providerCallsAuthorized":false',
+    );
+    await writeFile(join(root, "freeze-manifest.json"), rawManifest);
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "freeze-manifest.json is not canonical verifiable JSON",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("rejects an implicit relative root", async () => {
     expect(await verifyExecutionFreezeBundle("fixture")).toEqual({
       ok: false,
