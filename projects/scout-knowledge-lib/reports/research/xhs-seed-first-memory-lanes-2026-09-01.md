@@ -7860,6 +7860,29 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 179 checkpoint — result-bundle breadth is rejected early
+
+Seed commit `da4f103236` records unchanged semantic XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before the
+local breadth control.
+
+A matched 64-outcome bundle passed; 50,000 shallow copies of one envelope then
+produced 50,062 diagnostics after 896.67 ms and 384,076 KB peak process RSS.
+Exact local `678c67109a` checks the envelope-valid count against the schedule
+before depth traversal, pooled analysis, or serialization. The same control now
+returns one count error in 84.15 ms in the complete factorial file, with null
+pooled analysis and no digest; isolated peak fell to 118,856 KB. The focused
+gate passes 44 tests and 485 assertions plus TypeScript, formatting, and
+whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the matched current-runtime improvement
+and low for general resource bounds, other runtimes, or broader provenance,
+authority, cost, drift, model, or provider claims. The next ranked audit tests
+an oversized shallow schedule episode list before factorial traversal.
+
 ## Cycle 178 checkpoint — result-bundle object depth is bounded
 
 Seed commit `05f38abc42` records unchanged semantic XHS access, 30 readable

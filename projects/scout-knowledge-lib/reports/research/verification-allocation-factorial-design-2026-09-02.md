@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 179 bounded result-bundle breadth
+
+Seed commit `da4f103236` preceded a matched result-bundle control. The baseline
+64-outcome bundle passed. Replacing its outcome array with 50,000 shallow copies
+of one valid envelope preserved the outer schema, evidence class, and schedule
+digest.
+
+Before repair, the analyzer accumulated 50,062 duplicate/missing diagnostics,
+traversed and serialized the bundle, and denied it after 896.67 ms with 384,076
+KB peak process RSS. Exact local `678c67109a` compares the envelope-valid count
+with the supplied schedule before depth traversal, pooled analysis, or
+serialization. The same control now returns one exact count error in 84.15 ms
+in the full factorial file (119.04 ms first isolated), with null pooled analysis
+and no bundle digest; isolated peak RSS fell to 118,856 KB. The focused gate
+passes 44 tests and 485 assertions plus TypeScript, formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth/resource ceiling, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests an
+oversized shallow episode list inside a byte-bound schedule.
+
 ## Cycle 178 bounded result-bundle object depth
 
 Seed commit `05f38abc42` preceded a matched result-bundle control. The baseline
