@@ -4095,15 +4095,15 @@ zero requests and retain their evidence and triggers. RV-004 remains high/open.
 Next is Cycle 258's 19-line / 1,120-byte historical-target boundary; preserve
 its missing query and contemporaneous-index uncertainty.
 
-## Cycle 300 seed-first start — completed checkpoint rolled forward
+## Cycle 301 seed-first start — completed checkpoint rolled forward
 
-Cycles 296–299 retain their seed ordering and results in the detailed report.
-At `2026-09-03T23:41:46.198Z`, the Cycle 292 receipt was 43 minutes old; no XHS
+Cycles 296–300 retain their seed ordering and results in the detailed report.
+At `2026-09-03T23:42:59.935Z`, the Cycle 292 receipt was 44 minutes old; no XHS
 cadence, access, seed, source-lane, or accepted-result trigger changed. This
 bounded reconciliation made zero browser or public requests: additions and
 changes remain unknown, removals are `[]`, and all 132 seeds remain unavailable.
-Clean `5b32d18e72` contains accepted `ff923ccde4`, excludes unaccepted
-`d041c41b54`, and passed 296 tests / 1,483 assertions. Audit Cycle 264 next.
+Clean `1f75f42d4c` contains accepted `ff923ccde4` and excludes unaccepted
+`d041c41b54`. Audit Cycle 223's remaining projection boundary next.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
