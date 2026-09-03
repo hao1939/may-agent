@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 206: bounded observational reconciliation preserves a changed but unavailable saved-profile shell before the ranked strict-v1 rollback control."
+summary: "Seed-first Scout continuity through Cycle 207: a compact unchanged-shell reconciliation precedes the ranked strict-v1 partial-rollback control."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 206 observational reconciliation through 2026-09-03T13:11:44.885Z; public Explore returned 30 notes, supported saved status changed shell but remained unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 206 at 2026-09-03T13:11:44.885Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 207 observational reconciliation through 2026-09-03T13:16:55.452Z; public Explore returned 30 notes, supported saved status was semantically unchanged and unavailable, and no source-lane work preceded it."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 207 at 2026-09-03T13:16:55.452Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -7859,6 +7859,23 @@ GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
 public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
+
+## Cycle 207 seed-first reconciliation — unchanged shell, volatile bytes
+
+Cycle 207 began from clean `4e1fc2dde5`. One direct sanitized public status
+and one non-navigating saved status ran from `2026-09-03T13:16:54.332Z` through
+`13:16:55.452Z`. Explore retained 30 readable notes. Saved status retained HTTP
+200, final class `profile`, 161,608 bytes, `ready:false`, `loginWall:true`,
+access fingerprint `f6fb9a02…576ad`, 10 attributable links, and ID fingerprint
+`7934093c…3217`; only body SHA changed `822eb02f…14c0f3`→`451843dd…9195a`.
+
+The byte change is provenance only. Added/changed IDs remain unknown, removals
+are `[]`, and all 132 durable seeds remain unavailable. No representative
+saved-post read was supported, no XHS state changed, and no partial-rollback or
+public GitHub, arXiv, or Reddit request preceded this record. Protected source
+and overlay retain the Cycle 206 fingerprints. With no topic or accepted-ref
+trigger, all public lanes remain deferred and the ranked interrupted-rollback
+control proceeds locally.
 
 ## Cycle 206 seed-first reconciliation — profile shell remains unavailable
 
