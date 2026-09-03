@@ -9357,6 +9357,24 @@ ref `codex/g-8c5b597e-cycle257-review` advanced from integrated
 `e2f6e08a4f894871644ef0fc86aa89198c94472e`. Inspect and reconcile only its
 finite delta before beginning the accepted-source-output audit.
 
+## Cycle 260 checkpoint — the all-zero metric boundary was unreachable
+
+Seed commit `b6674e315b` preceded reviewer integration `8bb45ca26a`, compact
+status `d82bf7fed5`, and source fix `6aa75130c2`. The
+[detailed topic-map audit](../../knowledge/xhs-topic-map.md#cycle-260-checkpoint--zero-accepted-outputs-can-now-breach)
+shows that snapshot `1964391` binds four paths to three source resources, but
+2,806 later snapshots produced no alert or metric-linked event. The metric
+governance chain is real; an output-identity-driven content decision is not.
+
+The local count cannot be negative, while its exclusive low rule used threshold
+zero. Source `6aa75130c2` changes the threshold to one and adds a direct zero /
+one boundary regression. Focused validation passes formatting, TypeScript,
+whitespace, and 19 tests / 37 assertions. No protected database, deployment,
+or account state changed, and no live downstream outcome is claimed. GitHub /
+local evidence won; GitHub, arXiv, and Reddit made zero public requests and
+retain the topic map's exact evidence and triggers. Next, test whether the
+scalar total masks loss of one supported source lane.
+
 ## Cycle 259 seed-first start — accepted-review trigger
 
 At `2026-09-03T18:52:25.015Z`, Cycle 237's exact receipt was one hundred
