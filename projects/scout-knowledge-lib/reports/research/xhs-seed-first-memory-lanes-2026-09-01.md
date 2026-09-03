@@ -9356,6 +9356,49 @@ access trigger had fired. Added/changed identities remain unknown, removals are
 No browser or public-source request ran. The ranked local document-frequency
 specificity audit follows.
 
+## Cycle 251 checkpoint — rarity flags some errors, not the caller error
+
+Seed-first commit `6a6964ebde` preceded this audit. The existing tokenizer was
+run over each title plus summary in the unchanged 754-entry index. For every
+token matched by a selected result, document frequency is the number of entries
+whose title or summary contains that token. No fixture, index, scorer, or
+threshold changed.
+
+The 17 correct non-miss results across frozen v1 and v2 contribute 147 matched
+tokens. Their pooled document-frequency quartiles are 4, 19, and 41, and every
+selected result has at least one token found in at most four entries; the 17
+per-result minima range from 1 to 4 with median 2. The correct reef negative is
+a miss and therefore has no selected token. By contrast, the generic negative
+false positive matches only `protocol` (53 entries) and `agent` (563), and the
+wrong source-lane result matches only `across` (80), `evidence` (68), and
+`source` (444). The too-broad coordination tie likewise bottoms out at 46.
+
+This separation is incomplete. The wrong caller-bound result matches
+`caller`, which occurs in only two entries, alongside `bind` 56, `memory` 199,
+`write` 46, `read` 40, and `operations` 53. A rare-anchor rule would therefore
+retain that wrong result along with all 17 correct non-miss results. Corpus
+rarity is useful diagnostic evidence for the generic negative and source-lane
+miss, but it is neither a sufficient error detector nor an independently
+frozen policy. Confidence is high for these exact local counts and low for
+future queries or human/model retrieval. GitHub/local evidence won; GitHub,
+arXiv, and Reddit made zero public requests and retain the exact lane-table
+evidence and revisit triggers. Next, decompose title and summary score
+contributions for the caller-bound wrong and intended entries to locate why the
+rare `caller` anchor still loses.
+
+The candidate tree passes syntax, TypeScript, formatting, Cycle 237 projection,
+62 durable links, v1 at 10/14, v2 at 8/8, and 293 tests with 1,467 assertions.
+The broad audit covers 1,540 tracked Markdown documents and 1,699 local prose
+links with zero errors. Read-only health at `2026-09-03T18:10:25.043Z`
+returns 29 facts, 16 wake signals, and `truncated:true`; runtime state is empty.
+Accepted `d35632c2b1` and `8ab0a89cd0` remain contained; unaccepted
+`d041c41b54` and `d9da99476e` remain non-ancestors. Protected `/app` changed
+externally from 898 records / `b100e23c…3bde4` to 899 /
+`bf41354e…9a864`; HEAD and its 296-record Scout scope
+`a430d0c9…4322f7e` stayed exact. The overlay stayed three records /
+`a52b97aa…394a15` at `fd4c68ecd6`; no protected or peer worktree was written
+or tested.
+
 ## Cycle 250 checkpoint — ranking evidence has an explicit schema identity
 
 Seed-first commit `50f69fbb13` preceded implementation `3b0a2d2b6d`. Every
