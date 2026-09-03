@@ -359,4 +359,45 @@ describe("identity-robust frontier output", () => {
       scopedChecksPass: true,
     });
   });
+
+  it("rejects excessive nesting before recursive consumer scans", () => {
+    const output = {
+      schema: IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA,
+      rowSha256: expectedIdentity.rowSha256,
+      resultSha256: expectedIdentity.resultSha256,
+      frontierCount: expectedIdentity.frontierCount,
+      frontierSnapshot: {
+        rowSha256: expectedIdentity.rowSha256,
+        resultSha256: expectedIdentity.resultSha256,
+        frontierSha256: expectedIdentity.frontierSha256,
+        frontier: [{ unverified: 1 }, { unverified: 2 }],
+        providerCallsAuthorized: false,
+      },
+      freezeVerification: null,
+      quotedBraces: "{".repeat(300),
+    };
+    expect(
+      assessIdentityRobustOutputForConsumption(
+        JSON.stringify(output),
+        expectedIdentity,
+      ).scopedChecksPass,
+    ).toBe(true);
+
+    const prefix = `${JSON.stringify(output).slice(0, -1)},"nested":`;
+    const excessiveDepth = 1_000;
+    const deeplyNested =
+      prefix +
+      '{"value":'.repeat(excessiveDepth) +
+      "null" +
+      "}".repeat(excessiveDepth) +
+      "}";
+    expect(
+      assessIdentityRobustOutputForConsumption(deeplyNested, expectedIdentity),
+    ).toEqual({
+      schema: null,
+      providerDenialVerified: false,
+      computationIdentityMatched: false,
+      scopedChecksPass: false,
+    });
+  });
 });
