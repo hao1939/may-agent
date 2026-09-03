@@ -9887,6 +9887,27 @@ protected wider checkout remains externally observed at HEAD
 unchanged at 296 / `7e4d0937…26a8a`. Commit this ordering before compacting
 Cycle 255's negative real-use-outcome mirror.
 
+## Cycle 294 checkpoint — retain the outcome gap, remove its proof mirror
+
+The selected run was the first 17 lines / 1,153 bytes of Cycle 255's checkpoint,
+byte-identical in the map and this report at SHA-256
+`41556649bad666dab9b6611c4e6acea17d2ca10b95c28ce43a6e0c1d8df75efc`.
+This detailed copy remains unchanged and authoritative.
+
+The map replacement retains the decision-relevant negative evidence: Scout's
+planner reads the index, but no retained query/rank→selected-file→later-decision
+join exists, so the frozen gates and title-weight counterfactuals are not
+later-use outcomes. It also keeps the high local / low unrecorded-reasoning
+confidence split, no-scorer-change decision, and next reversible-capture
+question. Exact integration, fixture, source-reference, history, runtime, and
+protected-state proof remain linked here.
+
+GitHub, arXiv, and Reddit made zero requests and retain their exact last useful
+evidence and revisit triggers. This reduces default-read duplication without
+creating a protected outcome or resolving RV-004, which remains high/open. The
+next exact run is Cycle 277's 20-line / 1,142-byte reviewer-integration proof;
+retain its patch provenance, resolved RV-018/RV-019 status, and outcome limit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

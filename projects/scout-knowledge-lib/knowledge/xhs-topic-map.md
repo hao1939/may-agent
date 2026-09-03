@@ -4127,6 +4127,18 @@ added/changed remain unknown, removals are `[]`, and all 132 IDs remain
 unavailable. The post-seed ranking selects Cycle 255's negative real-use
 outcome mirror before any lower-value proof block.
 
+## Cycle 294 checkpoint — negative outcome remains visible once
+
+Cycle 255's leading 17 checkpoint lines were byte-identical across map and
+report: 1,153 bytes at SHA-256 `41556649…df75efc`. The detailed report remains
+authoritative. The map now keeps the missing query/rank→selection→later-decision
+join, its confidence boundary, no-change decision, and next investigation while
+linking the integration, fixture, source, history, runtime, and protected proof.
+All public lanes made zero requests and retain their evidence and triggers.
+This compaction does not create the missing outcome; RV-004 stays high/open.
+Next is Cycle 277's 20-line / 1,142-byte reviewer-integration mirror, preserving
+its patch provenance, resolved findings, and outcome limit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -5175,23 +5187,14 @@ actual consumer or later-reuse trace for navigation outcomes.
 
 ### Cycle 255 checkpoint — the scorer has no retained real-use outcome
 
-Seed commit `0dc45df073` preceded accepted-review integration and the bounded
-consumer audit. Reviewer `aade007567` is standing `847286682b`; the changed
-test and cursor blobs are byte-identical, and the fixture digest fence now
-passes 7 focused tests with 27 assertions. Current tracked source has exactly
-four non-report navigation references: the evaluator, its test, the v1 fixture,
-and the package gate. The evaluator is imported only by its test and invoked
-only by `bun run check`. Git history since its introduction contains only
-implementation, fixture, diagnostic, and test commits. The owned runtime state
-is empty, and the protected checkout contains no outcome-schema record.
-
-Scout's planner does tell the agent to read `knowledge/INDEX.md`; that is a real
-semantic consumer of the index, but no retained trace joins the agent's chosen
-file or later decision to an evaluator query, rank, or outcome. Thus neither
-the 10/14 and 8/8 gates nor the title-weight counterfactuals are later-use
-evidence. Confidence is high for the current tree, history, and runtime-state
-boundary, and low for unrecorded human or agent reasoning outside those
-surfaces. No scorer change is justified. The next ranked investigation audits
+The [detailed Cycle 255 checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-255-checkpoint--the-scorer-has-no-retained-real-use-outcome)
+retains reviewer/standing equivalence, fixture validation, source references,
+history, runtime, and protected-state proof. The planner reads
+`knowledge/INDEX.md`, but no retained trace joins an evaluator query or rank to
+the selected file or a later decision. The frozen gates and counterfactuals are
+therefore not later-use evidence. Confidence is high for the inspected local
+surfaces and low for unrecorded reasoning. No scorer change is justified. The
+next ranked investigation audits
 the smallest reversible way to capture one real planner-consumer outcome
 without turning producer-authored fixtures into self-confirming evidence.
 
