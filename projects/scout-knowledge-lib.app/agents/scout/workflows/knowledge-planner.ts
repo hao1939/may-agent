@@ -81,7 +81,13 @@ Start by reading:
 - ${appDir}/project.json
 - the bounded reconciliation packet below
 - ${projectDir}/README.md
-- ${projectDir}/knowledge/INDEX.md
+- ${projectDir}/knowledge/README.md
+
+Open ${projectDir}/knowledge/INDEX.md only when the trigger does not identify
+the relevant file or an exhaustive file map is necessary. Open
+${projectDir}/knowledge/xhs-topic-map.md only when choosing among ranked
+unresolved questions or source-lane evidence gaps. Do not load either large
+artifact merely as a heartbeat.
 
 Valid durable outcomes:
 - update an existing knowledge note to reduce duplication or improve reuse

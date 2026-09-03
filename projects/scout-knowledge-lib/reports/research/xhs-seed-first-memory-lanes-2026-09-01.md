@@ -9366,6 +9366,36 @@ records / `80dc6582…e380`, its Scout scope remains 296 /
 three, and accepted reviewer head remains `f6a7a65928`. None was written or
 tested. Commit this seed record before the maintenance-prompt boundary audit.
 
+## Cycle 272 checkpoint — the planner starts small and escalates navigation
+
+Seed commit `98dbd0a162352f7bcecc7ccadf0bbde60114be9e`
+preceded the prompt audit. Every maintenance session previously had to read the
+598,418-byte / 982-line INDEX, while the 1,381-byte / 37-line knowledge landing
+page was absent and the 1,128,324-byte / 10,795-line topic map had no explicit
+opening condition. This was unnecessary retrieval cost when a bounded trigger
+already named a smaller repair.
+
+The prompt now starts with `knowledge/README.md`. It opens INDEX only for an
+unidentified target or exhaustive-map need, and opens the topic map only to
+choose among ranked unresolved questions or source-lane evidence gaps. It also
+forbids loading either large artifact merely as a heartbeat. No task, event,
+source, authority, or output contract changed.
+
+Focused planner validation passes 6 tests / 23 assertions and checks all three
+navigation layers plus removal of INDEX from the mandatory list. The initial
+focused failure was a test-only newline assumption; the generated prompt was
+correct, and the whitespace-tolerant assertion passes. Formatting, 67 scoped
+links, v1 11/14, and v2 8/8 also pass. This proves prompt structure and static
+read-size reduction, not deployed savings or model compliance; `RV-004`
+remains high/open.
+
+GitHub/local code won without a public request. arXiv retains
+`2608.30177v1` / `2608.25553v3`; Reddit retains `t3_1v8a3sh` at RSS HTTP 200 /
+JSON HTTP 403. Accepted mappings remain contained and unaccepted
+`d041c41b54` remains excluded. Next, begin seed-first and sample the landing
+page's eight unlinked main-topic labels for unique accepted canonical targets
+before adding any further links.
+
 ## Cycle 271 seed-first start — local continuity
 
 Exact Cycle 270 result `9a99396f67c12e2411cbadbaae9ed1e2e6039fbf`

@@ -125,6 +125,22 @@ describe("Scout owner reconciliation boundary", () => {
     );
 
     expect(prompt).toContain("Host is the sole task-state mutation authority");
+    const startList = prompt.slice(
+      prompt.indexOf("Start by reading:"),
+      prompt.indexOf("Valid durable outcomes:"),
+    );
+    expect(startList).toContain(
+      "/app/projects/scout-knowledge-lib/knowledge/README.md",
+    );
+    expect(startList).not.toContain(
+      "- /app/projects/scout-knowledge-lib/knowledge/INDEX.md",
+    );
+    expect(prompt).toContain(
+      "Open /app/projects/scout-knowledge-lib/knowledge/INDEX.md only when",
+    );
+    expect(prompt).toMatch(
+      /Open\s+\/app\/projects\/scout-knowledge-lib\/knowledge\/xhs-topic-map\.md only when/u,
+    );
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",

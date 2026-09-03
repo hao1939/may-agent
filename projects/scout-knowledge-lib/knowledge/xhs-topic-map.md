@@ -3863,6 +3863,39 @@ records / `80dc6582…e380`, its Scout scope remains 296 /
 three, and accepted reviewer head remains `f6a7a65928`. None was written or
 tested. Commit this seed record before the maintenance-prompt boundary audit.
 
+## Cycle 272 checkpoint — bounded navigation replaces mandatory INDEX loading
+
+Seed commit `98dbd0a162352f7bcecc7ccadf0bbde60114be9e`
+preceded the prompt audit. The maintenance workflow required every session to
+read the 598,418-byte / 982-line exhaustive INDEX, did not read the 1,381-byte /
+37-line knowledge landing page, and gave no direct condition for opening the
+1,128,324-byte / 10,795-line topic map. That contradicted the landing page's
+new navigation layering and imposed a large default read even when a health
+trigger already named the relevant files.
+
+The smallest code change makes `knowledge/README.md` part of the bounded start
+list. INDEX is now conditional on a missing target or an exhaustive-map need;
+the topic map is conditional on selecting among ranked unresolved questions or
+source-lane gaps. The prompt explicitly rejects loading either large artifact
+as a heartbeat. It does not remove access to either file or change task,
+event, source, authority, or output behavior.
+
+The focused planner suite passes 6 tests / 23 assertions and now freezes the
+mandatory landing-page path, conditional INDEX path, conditional topic-map
+path, and absence of INDEX from the mandatory list. The first run found only a
+newline-sensitive test expectation; the emitted prompt was correct, and the
+assertion now matches template whitespace. Formatting, all 67 durable links,
+v1 at 11/14, and v2 at 8/8 pass. Confidence is high for prompt bytes and static
+retrieval cost, low for agent compliance or deployed savings; `RV-004` remains
+open.
+
+GitHub/local code won with zero public requests. arXiv retains
+`2608.30177v1` / `2608.25553v3`, Reddit retains `t3_1v8a3sh` at RSS HTTP 200 /
+JSON HTTP 403, accepted mappings remain contained, and unaccepted
+`d041c41b54` remains excluded. Next, begin seed-first and examine the short
+landing page's eight unlinked main-topic labels: test a bounded sample for
+unique canonical accepted targets before adding any further links.
+
 ## Cycle 271 seed-first start — local continuity
 
 Exact Cycle 270 result `9a99396f67c12e2411cbadbaae9ed1e2e6039fbf`
