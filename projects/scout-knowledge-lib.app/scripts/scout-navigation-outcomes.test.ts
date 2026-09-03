@@ -160,4 +160,45 @@ describe("Scout navigation outcome evaluation", () => {
       fixture.cases.map((testCase) => navigate(testCase.query, entries)),
     ).toHaveLength(14);
   });
+
+  it("replays the exact caller-bound diagnostic controls", () => {
+    const fixture = JSON.parse(
+      readFileSync(
+        resolve(
+          import.meta.dir,
+          "fixtures/scout-navigation-diagnostic-controls-v1.json",
+        ),
+        "utf8",
+      ),
+    ) as {
+      schema: string;
+      cases: Array<{
+        query: string;
+        expected_ranks: Array<{
+          target: string;
+          matched: string[];
+          coverage: number;
+          score: number;
+        }>;
+      }>;
+    };
+    const index = readFileSync(
+      resolve(import.meta.dir, "../../scout-knowledge-lib/knowledge/INDEX.md"),
+      "utf8",
+    );
+    const entries = parseNavigationEntries(index);
+
+    expect(fixture.schema).toBe("scout.navigation-diagnostic-controls/v1");
+    for (const testCase of fixture.cases) {
+      const ranks = rankNavigation(testCase.query, entries);
+      expect(
+        ranks.slice(0, testCase.expected_ranks.length).map((entry) => ({
+          target: entry.target,
+          matched: entry.matched,
+          coverage: Number(entry.coverage.toFixed(6)),
+          score: Number(entry.score.toFixed(6)),
+        })),
+      ).toEqual(testCase.expected_ranks);
+    }
+  });
 });

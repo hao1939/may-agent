@@ -9358,6 +9358,55 @@ seeds remain unavailable at the same login-class boundary. No browser or
 public-source request ran. The accepted review makes exact Cycle 244 control
 replay and caller score attribution the highest-value accessible local gap.
 
+## Cycle 252 checkpoint — shared rarity loses to title weighting
+
+Seed-first commit `d4a9208af8` preceded a new versioned diagnostic-control
+fixture. It freezes the original caller-bound v1 query and the exact current
+control `bind agent memory write retrieval approval recall erasure temporary
+custody verified caller identity`, plus their first two ranked outputs, before
+any index or scorer change. The control reproduces Cycle 244's reported
+`66.713178` intended score and `32.745095` competing score, but its source basis
+explicitly treats that coincidence as current replay evidence rather than proof
+of the unstored historical input. A focused replay passes 7 tests and 26
+assertions.
+
+On the original query, the wrong Read-Write entry scores `44.894763`: coverage
+contributes `1.090909`, title matches contribute `30.054349`, and summary-only
+matches contribute `13.749506`. The intended governance finding scores
+`37.831620`: `1.454545` coverage, `10.860192` from title, and `25.516883` from
+summary. The rare `caller` match contributes the same `6.528105` summary score
+to both, so it cannot distinguish them. The wrong entry's title advantage
+outweighs the intended entry's broader coverage and summary evidence by the
+observed `7.063144` gap.
+
+In the exact lifecycle control, the intended entry's complete 13/13 match lifts
+its summary contribution to `53.852987` and coverage contribution to `2`,
+overcoming the competitor's remaining title advantage. This supports a narrow
+mechanism claim—shared rarity is neutral and the fixed threefold title weight
+dominates this original pair—not a general title-weight defect. The fixture is
+producer-authored, the historical query remains unknown, and neither human nor
+model retrieval is measured. Confidence is high for exact local replay and
+score arithmetic, low for generalization. GitHub/local evidence won; GitHub,
+arXiv, and Reddit made zero public requests and retain their exact lane-table
+evidence and revisit triggers. Next, sweep title multipliers across both frozen
+sets to test whether reducing that preference repairs one error by creating
+regressions elsewhere.
+
+The full gate now runs both frozen sets and passes syntax, TypeScript,
+formatting, Cycle 237 projection, 62 durable links, v1 at 10/14, v2 at 8/8,
+and 294 tests with 1,470 assertions. The broad audit covers 1,540 tracked
+Markdown documents and 1,698 local prose links with zero errors. Read-only
+health at `2026-09-03T18:20:55.564Z` returns 30 facts, 16 wake signals, and
+`truncated:true`; runtime state is empty. Accepted `d35632c2b1` and
+`8ab0a89cd0` remain contained, and the two accepted review patches remain exact
+as standing `98926518f0` and `6045108077`; unaccepted `d041c41b54` and
+`d9da99476e` remain non-ancestors. Protected `/app` changed externally from
+899 records / `bf41354e…9a864` to 901 / `1401be3a…ff1e`; HEAD and its
+296-record Scout scope `a430d0c9…4322f7e` stayed exact. The overlay stayed
+three records / `a52b97aa…394a15` at `fd4c68ecd6`; no protected or peer
+worktree was written or tested. This prospectively addresses the `RV-008`
+replayability gap; independent disposition remains pending.
+
 ## Cycle 251 seed-first start — current receipt reused
 
 At `2026-09-03T18:04:44.199Z`, Cycle 237's exact receipt was sixty-eight
@@ -9619,6 +9668,9 @@ select their respective destinations: `canonical coordination reference`,
 artifact handoffs`. The negative query becomes a true miss when the generic
 `protocol` and `agent` overlap is removed, but adding a third generic `memory`
 term selects an unrelated unavailable item rather than making the result safe.
+Cycle 252 freezes one exact current caller lifecycle control and its outputs for
+replay; it matches the reported scores but does not reconstruct or claim the
+missing historical query.
 
 These exact controls support different local causes—underspecified intent,
 summary-vocabulary coupling, one too-narrow frozen ambiguity expectation, and
