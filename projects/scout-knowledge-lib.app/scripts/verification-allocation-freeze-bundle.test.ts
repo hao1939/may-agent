@@ -15,7 +15,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
 import { freezeArtifactSha256 } from "./verification-allocation-freeze";
-import { buildToyFactorialSchedule } from "./verification-allocation-factorial";
+import {
+  buildSyntheticFactorialSchedule,
+  buildToyFactorialSchedule,
+} from "./verification-allocation-factorial";
 
 const temporaryRoots: string[] = [];
 
@@ -340,6 +343,59 @@ describe("verification-allocation freeze bundle", () => {
         expect(result.errors).toContain(error);
       }
     }
+  });
+
+  it("rejects one resolution object reused across distinct model declarations", async () => {
+    const { root, manifest } = await fixture();
+    const peerModel = {
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed" as const,
+      resolutionEvidenceArtifact: "evidence/model-resolution.json",
+    };
+    manifest.models.push(peerModel);
+
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        manifest.models.map((model) => model.resolvedId),
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 128;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(manifest.models[0].resolutionEvidenceArtifact).toBe(
+      peerModel.resolutionEvidenceArtifact,
+    );
+    expect(
+      manifest.artifacts.filter(
+        (artifact) => artifact.name === peerModel.resolutionEvidenceArtifact,
+      ),
+    ).toHaveLength(1);
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: false,
+      errors: ["models[1] resolution evidence does not match declaration"],
+      artifactCount: 6,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
   });
 
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
