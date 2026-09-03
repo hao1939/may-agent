@@ -3988,6 +3988,16 @@ The candidate passes the full 296-test / 1,483-assertion Scout gate, 72 scoped
 links, the 1,540-document / 1,708-link broad audit, and read-only health at 30
 facts / 16 wakes.
 
+## Cycle 288 seed-first start — current receipt reused
+
+Cycle 288 began from clean validated Cycle 287 result `051c301a7c`. At
+`2026-09-03T22:39:53.560Z`, the Cycle 237 receipt through
+`2026-09-03T16:57:11.030Z` was about 343 minutes old, inside the six-hour
+cadence. No browser or public-source request ran: added/changed identities
+remain unknown, removals are `[]`, and all 132 durable IDs remain unavailable.
+Commit this bounded ordering record before auditing the ranked Cycle 256
+consumer-boundary mirror.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

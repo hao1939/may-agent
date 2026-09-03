@@ -9624,6 +9624,24 @@ Markdown documents / 1,708 local prose links. Read-only health at
 `2026-09-03T22:35:07.355Z` remains bounded at 30 facts / 16 wakes with
 `truncated:true`.
 
+## Cycle 288 seed-first start — no early observation
+
+Cycle 288 began from clean Cycle 287 result
+`051c301a7cffc14fd04221148da2edac07eafa58`. Its exact-tip gate passed
+syntax, TypeScript, formatting, Cycle 237 projection, 72 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,483
+assertions. The broad audit passed 1,540 documents / 1,708 links; read-only
+health returned 30 facts / 16 wakes with `truncated:true`. Accepted standing
+review `ff923ccde4` remains contained and unaccepted `d041c41b54` excluded.
+
+At `2026-09-03T22:39:53.560Z`, Cycle 237's exact receipt through
+`2026-09-03T16:57:11.030Z` was about 343 minutes old, inside the six-hour
+cadence and before the scheduled `2026-09-03T22:57:11.030Z` boundary. No
+browser, GitHub, arXiv, or Reddit request ran. Added/changed identities remain
+unknown, observed removals are `[]`, and all 132 durable IDs remain
+unavailable. Commit this ordering record before the ranked Cycle 256
+consumer-boundary mirror audit.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
