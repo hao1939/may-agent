@@ -9345,6 +9345,19 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 252 seed-first start — current receipt reused
+
+At `2026-09-03T18:15:42.544Z`, Cycle 237's exact receipt was seventy-nine
+minutes old. The accepted Cycle 250 review corrections had just been integrated
+as standing `98926518f0` and `6045108077`, with their status reconciled by
+`2d5c31924a`; body-evolution and durable review refs otherwise remained
+`df80a1daa2` and `9f0891cf97`, and unaccepted self-evolution remained
+`d041c41b54`. No collection, source-revision, schedule, or access trigger had
+fired. Added/changed identities remain unknown, removals are `[]`, and all 132
+seeds remain unavailable at the same login-class boundary. No browser or
+public-source request ran. The accepted review makes exact Cycle 244 control
+replay and caller score attribution the highest-value accessible local gap.
+
 ## Cycle 251 seed-first start — current receipt reused
 
 At `2026-09-03T18:04:44.199Z`, Cycle 237's exact receipt was sixty-eight
