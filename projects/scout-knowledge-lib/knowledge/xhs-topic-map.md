@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 128 observational reconciliation through 2026-09-03T04:24:42.884Z; exact access evidence and uncertainty are in the Cycle 128 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 128 at 2026-09-03T04:24:42.884Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 128 read-only XHS boundary through 2026-09-03T04:24:42.884Z."
+latest_seed_basis: "Cycle 129 observational reconciliation through 2026-09-03T04:33:34.745Z; exact access evidence and uncertainty are in the Cycle 129 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 129 at 2026-09-03T04:33:34.745Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 129 read-only XHS boundary through 2026-09-03T04:33:34.745Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 128 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 129 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` retained final class `login` and changed to 46,729 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -3240,6 +3240,24 @@ its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
 
+## Cycle 129 seed-first start
+
+Cycle 129 began from clean, validated tip
+`39c31ae49043b9badc24f7b444a2156aaca6f2bb`. At
+`2026-09-03T04:33:33.475Z–04:33:34.745Z`, the established read-only connector
+found public Explore at 30 notes and the saved target at HTTP 200, `login`,
+46,729 bytes, semantic fingerprint `3dab1b6d…8af420`, and zero attributable
+items. Semantic access and byte length were unchanged; only body SHA changed
+`48113c2…175470`→`cf2b94d…c7b327`. Additions and changes remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved-post read was supported, no account state changed, and no
+verifier/source request preceded this record.
+
+The ranked question is now whether an external-verifier result can be bound to
+the exact proof and target without trusting a caller-supplied authority label.
+Public GitHub, arXiv, and Reddit remain trigger-deferred until reconsidered
+after that local investigation.
+
 ## Cycle 128 seed-first start
 
 Cycle 128 began from clean tip `8958e2ba8a326fc90ebf0539b7bfa7f5b6bdd94e`.
@@ -3287,7 +3305,15 @@ remains `local-byte-presence-unverified`. Confidence is high for archive,
 member, size, digest, header, embedded-byte, and tool-availability observations;
 it is low for proof syntax, calendar response, Bitcoin anchoring, deposit
 authority, authorship, or temporal ordering. GitHub, arXiv, and Reddit made
-zero public requests. The next ranked local investigation is whether an
+zero public requests. Exact documentation tip
+`39c31ae49043b9badc24f7b444a2156aaca6f2bb` passes the full Scout gate at 189
+tests and 944 assertions plus syntax, TypeScript, formatting, 30 affected-file
+relative links, health 26/16, empty runtime state, 9/9 accepted ancestors, and
+4/4 accepted artifacts. Protected `/app` remained HEAD `386b445c…1fec8` with
+891 records and fingerprint `f2aeb63c…df8975`; the human overlay remained
+HEAD `fd4c68ec…1514663` with three records and `ad8d222c…e74780`.
+
+The next ranked local investigation is whether an
 external verifier result can be byte- and target-bound without allowing a
 caller-supplied status string to manufacture authority.
 
