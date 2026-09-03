@@ -148,6 +148,24 @@ describe("verification-allocation execution freeze", () => {
     expect(changedProtocol.policyScope?.modelScopeReference).toBe(
       changedModel.policyScope?.modelScopeReference,
     );
+
+    artifactContents["bundle.zip"] = "changed execution bundle";
+    const bundleSha256 = freezeArtifactSha256(artifactContents["bundle.zip"]);
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "bundle.zip",
+    )!.sha256 = bundleSha256;
+    manifest.externalRegistration.artifactSha256 = bundleSha256;
+    const changedBundle = verifyExecutionFreezeManifest(
+      manifest,
+      artifactContents,
+    );
+    expect(changedBundle.ok).toBe(true);
+    expect(changedBundle.policyScope?.protocolReference).not.toBe(
+      changedProtocol.policyScope?.protocolReference,
+    );
+    expect(changedBundle.policyScope?.modelScopeReference).toBe(
+      changedProtocol.policyScope?.modelScopeReference,
+    );
   });
 
   it("keeps locally unverified registration metadata outside policy applicability", () => {

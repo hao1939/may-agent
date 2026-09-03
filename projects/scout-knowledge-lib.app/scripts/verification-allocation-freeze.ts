@@ -122,6 +122,10 @@ function derivePolicyScope(
       seedIds,
       episodeCount,
       scheduleSha256: manifest.schedule.sha256,
+      executionArtifactName: manifest.externalRegistration.artifactName,
+      executionArtifactSha256: artifacts.get(
+        manifest.externalRegistration.artifactName,
+      )!.sha256,
     }),
   );
   const modelScopeSha256 = freezeArtifactSha256(

@@ -437,6 +437,96 @@ describe("identity-robust frontier freeze adapter", () => {
     });
   });
 
+  it("rejects old decision evidence across execution-bundle substitution", async () => {
+    const freeze = await freezeFixture();
+    const snapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const expectedSnapshot = {
+      rowSha256: snapshot.rowSha256,
+      resultSha256: snapshot.resultSha256,
+      frontierSha256: snapshot.frontierSha256,
+      frontierCount: snapshot.frontier.length,
+    };
+    const policy = await policyFixture(
+      freeze.policyScope,
+      identityRobustFrontierSnapshotReference(expectedSnapshot),
+    );
+    const snapshotRoot = await mkdtemp(
+      join(tmpdir(), "scout-frontier-bundle-substitution-"),
+    );
+    temporaryRoots.push(snapshotRoot);
+    const snapshotBytes = `${JSON.stringify(snapshot)}\n`;
+    const snapshotSha256 = createHash("sha256")
+      .update(snapshotBytes)
+      .digest("hex");
+    await writeFile(join(snapshotRoot, "frontier.json"), snapshotBytes);
+
+    const baseline = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    expect(baseline.frozenSelection?.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+      decisionRecordSha256:
+        "e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8",
+    });
+
+    const manifestPath = join(freeze.root, "freeze-manifest.json");
+    const substituted = JSON.parse(await readFile(manifestPath, "utf8"));
+    const substituteBytes = "substitute fixture bundle bytes";
+    const substituteSha256 = freezeArtifactSha256(substituteBytes);
+    substituted.artifacts.find(
+      (artifact: { name: string }) => artifact.name === "bundle.zip",
+    ).sha256 = substituteSha256;
+    substituted.externalRegistration.artifactSha256 = substituteSha256;
+    await writeFile(join(freeze.root, "bundle.zip"), substituteBytes);
+    await writeFile(manifestPath, JSON.stringify(substituted));
+
+    const result = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(result.snapshotVerification).toMatchObject({
+      ok: true,
+      snapshotEvidenceStatus: "local-byte-match-unverified",
+      providerCallsAuthorized: false,
+    });
+    expect(result.frozenSelection).toMatchObject({
+      freezeVerification: {
+        ok: true,
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        providerCallsAuthorized: false,
+      },
+      selection: {
+        ok: false,
+        selected: null,
+        errors: [
+          "a matching verified freeze and frontier snapshot policy scope is required for applicability",
+        ],
+      },
+    });
+    expect(result.frozenSelection?.freezeVerification.policyScope).not.toEqual(
+      freeze.policyScope,
+    );
+  });
+
   it("rejects snapshot-scoped policy through the direct freeze-only adapter", async () => {
     const freeze = await freezeFixture();
     const frontierSnapshotReference = `frontier-snapshot-sha256:${"d".repeat(64)}`;
