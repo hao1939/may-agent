@@ -9345,6 +9345,13 @@ semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
 
+## Cycle 236 seed-first reconciliation — unchanged receipt reused
+
+At `2026-09-03T16:44:25.407Z`, the exact Cycle 233 receipt was 26 minutes old
+and no recorded trigger had fired. Added/changed seeds remain unknown,
+removals are `[]`, and all 132 remain unavailable at the same login-class
+boundary. No browser or public request preceded the unavailable-entry test.
+
 ## Cycle 235 seed-first reconciliation — no trigger, no repeated observation
 
 At `2026-09-03T16:39:38.442Z`, the latest exact XHS receipt was 21 minutes old
