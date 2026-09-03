@@ -447,9 +447,9 @@ integration-ready accepted result, and was not imported.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Decision and revisit trigger                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GitHub / local code** | **High relevance / high local value / selected locally through Cycle 215; public trigger-deferred.** The bounded local candidate-registry ordering audit is now closed.                                             | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local Cycles 208–215 distinguish ordered model/seed execution identity, set-like artifact inventory, role-specific evidence bytes, and recursively presentational manifest object keys, including a two-model transfer. Canonical accepted finite results are integrated through `8c5d8747a6` and `df80a1daa2`; `d041c41b54` and later unaccepted commits remain outside standing lineage. | Zero public requests. Revisit registry design only for an identified owner, deposit/update contract, consumer requirement, provider evidence, or accepted finite result. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 215.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies registry ownership, update, migration, rollback, or consumer requirements.                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 215 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or registry requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 242; public trigger-deferred.** The repaired index now has retained navigation-outcome evidence.                                                    | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local Cycles 208–215 retain their registry distinctions. Cycle 242's frozen 14-query set moves from 3/14 at `086ed02f` to 10/14 at `b63dbf03`; all seven gains are correct unavailable-state results, while four ranking/ambiguity failures remain visible. Canonical accepted finite results are integrated through `8c5d8747a6` and `df80a1daa2`; `d041c41b54` and later unaccepted commits remain outside standing lineage. | Zero public requests. Revisit source code on a repository/artifact revision, provider result, accepted finite result, or newly readable seed. Next local work isolates the four retained navigation failures without tuning this frozen set. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred through Cycle 242.** The papers remain contextual controls rather than local evidence-authority.                   | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Neither paper supplies new navigation-outcome evidence or registry ownership, update, migration, rollback, or consumer requirements.                                                                                                                                                                                                                                                                                                                                                                                                | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.                                                                  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred through Cycle 242 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or navigation requirement. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3852,6 +3852,50 @@ unknown, removals are `[]`, and all 132 seeds remain unavailable at the same
 login-class boundary. No browser or public-source request ran. The fixed
 navigation-outcome set now wins because `RV-004` requires retained outcome
 evidence rather than more link repair or verifier micro-cycles.
+
+### Cycle 242 checkpoint — unavailable entries change navigation outcomes
+
+Seed commit `357dbee532` preceded the evaluation. The 14 user-like prompts and
+their expected available, unavailable, ambiguous, or miss outcomes were frozen
+at commit `4aa648d8db` before the evaluator existed; `INDEX.md` was not changed
+after the set was frozen. Exact local `b63dbf03d3` adds one deterministic,
+status-aware lexical evaluator and a 10/14 regression floor to the full Scout
+gate.
+
+The same 754-entry parser passes 3/14 against pre-repair `086ed02f` and 10/14
+against the current index. All seven gains keep the same intended title and
+target but change a false clickable result into explicit `unavailable` state.
+The remaining four outcomes are preserved rather than tuned away: the topic-map
+and caller-bound-memory prompts rank broader notes first; “Multi-Agent
+Coordination Patterns” has three equally scored destinations, not the expected
+two; and the absent-topic negative control ambiguously returns four generic
+agent/protocol entries. This supports a real status/expectation improvement and
+contradicts both perfect retrieval and unique canonical navigation.
+
+Confidence is high for the frozen bytes, deterministic comparison, exact
+status delta, and retained failures. It is low for human or model navigation,
+semantic retrieval, and generalization: the prompts were authored after the
+link repairs, so this is retrospective matched evidence, not a prospective
+causal holdout. The next ranked investigation freezes an independent second set
+before any index change, then isolates whether title duplication, summary
+coverage, or the generic-token threshold causes the four misses without using
+the first set as training data.
+
+The candidate gate passes syntax, TypeScript, formatting, Cycle 237 projection,
+62 durable links, the 10/14 navigation floor, and 291 tests with 1,451
+assertions. The broad offline audit remains 1,540 Markdown documents, 1,699
+local prose links, zero unresolved, and zero absolute links; health is 29 facts,
+16 wake signals, and `truncated:true`. This confirms the consolidation retained
+all detailed evidence while removing false retrieval paths. Standing ancestors
+`d35632c2b1` and `8ab0a89cd0` preserve the accepted projection/review patches;
+unaccepted `d041c41b54` and `d9da99476e` remain non-ancestors.
+
+Read-only preservation proof keeps protected `/app` at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 893 records, fingerprint
+`98c1c258…76c9f0`, and its 296-record Scout scope at
+`a430d0c9…4322f7e`. The human overlay remains at
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663`, three records, fingerprint
+`a52b97aa…394a15`; every other peer is clean. None was written or tested.
 
 ## Cycle 241 seed-first start — current receipt reused
 

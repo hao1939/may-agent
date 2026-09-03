@@ -9356,6 +9356,66 @@ was inspected read-only; no browser or public GitHub, arXiv, or Reddit request
 ran. The fixed navigation-outcome set follows before any further link repair or
 verifier work.
 
+## Cycle 242 checkpoint — the repaired index now has outcome evidence
+
+What was wrong: Cycles 231–241 proved that local links resolved or were marked
+unavailable, but they did not show what a reader would retrieve. Seed commit
+`357dbee532` came first. Commit `4aa648d8db` then froze 14 user-like prompts and
+expected outcomes before the evaluator was implemented, and the index was not
+edited afterward. Exact local implementation `b63dbf03d3` makes the evaluation
+repeatable and adds its current 10/14 floor to the Scout gate.
+
+The matched result is 3/14 on `086ed02f` and 10/14 on the current 754-entry
+index. The seven gains are exactly the repaired unavailable entries: titles and
+intended targets remain retrievable, but the result no longer promises a false
+click. Four limitations remain explicit. Two useful prompts choose broader
+notes instead of the topic map or caller-bound authority finding; the exact
+coordination title has three equal destinations rather than two; and an absent
+topic false-positives on generic `agent`/`protocol` overlap. No prompt,
+expectation, or index entry was changed after seeing these results.
+
+This is retained retrospective outcome evidence, not proof of human or model
+behavior. The prompts were authored after the repairs, the retriever is lexical,
+and 10/14 is a floor rather than a perfection claim. It nevertheless changes a
+reader-facing fact: seven tested destinations now honestly disclose
+unavailability instead of appearing usable. The previous consolidation also
+keeps every detailed title, summary, intended path, distinction, and replacement
+criterion; the broad audit and exact validation are recorded on the final
+checkpoint tip.
+
+GitHub/local work won the post-seed rubric. Its last useful public evidence
+remains the four named HTTP-200 heads:
+`beining1008/cross-episode-memory-client@4c0dabd64b`,
+`arquicanedo/self-reflective-apis@567b6a0e01`,
+`wallidsaydi-creator/HOM-AIMOS@2b93af11e7`, and
+`sattyamjjain/mnemo@2994abf185`; no public request ran. arXiv retains MemGauge
+`2608.30177v1` at 15/15 and `2608.25553v3` at 14/15, with no version or artifact
+trigger. Reddit remains RSS-readable for `t3_1v8a3sh` with six comments and
+JSON-last-observed HTTP 403; it is deferred without quota work until a seed-
+linked result, thread delta, or access change.
+
+The next ranked work is an independent second-set navigation check frozen
+before any index change. It will separate title duplication, summary coverage,
+and generic-token precision without tuning this first set or reopening the
+allocation-verifier micro-cycle family.
+
+Validation on the candidate tree passes syntax, TypeScript, formatting, Cycle
+237 projection, 62 durable-document links, the 10/14 navigation floor, and all
+291 tests / 1,451 assertions. The complete offline audit remains 1,540 tracked
+Markdown documents / 1,699 local prose links / zero unresolved / zero absolute.
+Read-only health at `2026-09-03T17:24:45.271Z` is 29 facts, 16 wake signals,
+and `truncated:true`; runtime and whitespace are clean.
+
+Accepted projection `b3c4fb8d3e` remains patch-equivalent to contained standing
+`d35632c2b1`, and reviewer `9f0891cf97` remains patch-equivalent to contained
+standing `8ab0a89cd0`. Unaccepted `d041c41b54` and `d9da99476e` are not
+ancestors. Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 893 porcelain-v2 records,
+fingerprint `98c1c258…76c9f0`; its 296-record Scout scope remains
+`a430d0c9…4322f7e`. The three-record overlay remains
+`fd4c68ecd6fe2ce14afd93815b63f790c1514663` / `a52b97aa…394a15`, and all
+other peer worktrees are clean. None was written or tested.
+
 ## Cycle 241 seed-first reconciliation — current receipt reused
 
 At `2026-09-03T17:09:19.262Z`, Cycle 237's exact receipt was twelve minutes old
