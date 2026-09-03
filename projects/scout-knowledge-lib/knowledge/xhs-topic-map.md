@@ -2783,6 +2783,25 @@ the expected snapshot identity while holding the old decision evidence fixed.
 If the old decision then selects, bind the snapshot identity to decision
 provenance; otherwise preserve the smaller current schema.
 
+## Cycle 112 seed-first start
+
+Cycle 112 began from clean exact tip
+`22d2f8a76000def705af867c5c02bdac48c0b6b1`. Direct ports 9222 and 9333
+refused UID 1000 with curl exit 7 and HTTP 000 at
+`2026-09-03T02:40:40.822Z`. The established effective-UID-0 connector in
+root-owned Chrome PID 2136's network namespace completed at `02:40:41.904Z`.
+Public Explore remained readable at 30 notes; saved status remained HTTP 200,
+`login`, 46,673 bytes, semantic fingerprint `3dab1b6…8af420`, a login wall,
+and zero attributable items.
+
+Semantic access is unchanged. Byte length changed 46,672→46,673 and body SHA
+changed from `91a1093…9f3da3` to `12d47df…5c1400c`. Added and changed IDs
+remain unknown, observed removals are `[]`, and all 132 durable seeds remain
+unavailable. No representative saved post was supported or read, and no XHS
+state changed. No version-rollover fixture, source, provider, or accepted-result
+request preceded this reconciliation. Commit this seed record first, then test
+the ranked rollover boundary locally.
+
 ## Cycle log
 
 | Cycle                           | Seed reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Related discovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Deep dive                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Map decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Next                                                                                                                                                                                                                                                                                    |
