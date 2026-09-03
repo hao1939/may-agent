@@ -2805,6 +2805,22 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 214 nested freeze-manifest order is presentation-only
+
+Seed commit `cfb5bd7e8b` preceded exact test-only commit `7945490bf5`. The
+original and recursively reordered manifests parse equally but hash to
+`a951e9ec…0878572` and `d9fb263a…ee00a8`. The control reorders keys inside the
+model, seed-policy, schedule, artifact, and external-registration declarations
+while holding every artifact byte and every array order fixed.
+
+Strict v1 returns the complete same verification result for both
+serializations, and restoration is exact. The focused gate passes 27 tests and
+152 assertions plus TypeScript, formatting, and whitespace. Container key
+order is therefore recursively presentational in the one-model fixture;
+declared evidence bytes remain role-specific identity. No external owner,
+authority, consumer, or provider result supports a schema change. The next
+control repeats this boundary on the two-model explicit-identity fixture.
+
 ## Cycle 213 top-level freeze-manifest order is presentation-only
 
 Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two

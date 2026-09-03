@@ -3841,6 +3841,27 @@ account mutation occurred. GitHub, arXiv, and Reddit made zero public requests
 and retain their triggers. The nested manifest-declaration ordering control
 proceeds locally.
 
+### Cycle 214 checkpoint — nested manifest key order is also presentation
+
+Seed commit `cfb5bd7e8b` preceded exact test-only commit `7945490bf5`. The
+original and recursively reordered manifests parse equally; their hashes are
+`a951e9ec…0878572` and `d9fb263a…ee00a8`. Reordering keys inside the model,
+seed-policy, schedule, artifact, and external-registration declarations while
+holding all declared artifact bytes and array order fixed returns the complete
+same verification result. Restoring the original serialization is exact.
+
+Focused validation passes 27 tests and 152 assertions plus TypeScript,
+formatting, and whitespace. The evidence supports recursive container-
+presentation semantics for this one-model fixture, while Cycles 211–212 retain
+role-specific content-addressed evidence. It does not prove a multi-model
+registry, external consumer, deposit authority, or provider behavior; no
+production schema change is justified.
+
+GitHub/local code won. GitHub, arXiv, and Reddit made zero public requests and
+retain their evidence and triggers. The next ranked matched control transfers
+the nested-order result to the existing two-model explicit-identity fixture,
+the smallest registry-relevant generalization before closing this local audit.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

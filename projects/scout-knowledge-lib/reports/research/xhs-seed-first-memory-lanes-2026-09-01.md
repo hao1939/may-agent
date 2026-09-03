@@ -8087,6 +8087,30 @@ read or account mutation occurred. GitHub, arXiv, and Reddit each made zero
 public requests and retain their evidence and triggers. The nested manifest-
 declaration key-order control now proceeds locally.
 
+## Cycle 214 checkpoint — nested manifest order remains presentation-only
+
+Seed commit `cfb5bd7e8b` preceded exact test-only commit `7945490bf5`. The
+original and recursively reordered manifests parse equally but hash to
+`a951e9ec…0878572` and `d9fb263a…ee00a8`. With all declared artifact bytes and
+array order fixed, reordering keys inside model, seed-policy, schedule,
+artifact, and external-registration declarations returns the complete same
+verification result; restoring the original serialization is exact.
+
+The focused bundle gate passes 27 tests and 152 assertions plus TypeScript,
+formatting, and whitespace. This supports recursive container-presentation
+semantics for the one-model fixture and preserves the role-specific evidence-
+byte conclusions from Cycles 211–212. Multi-model transfer, registry ownership,
+deposit/update authority, external consumers, and provider behavior remain
+unknown, so no production change is justified.
+
+GitHub/local code won. GitHub retains the local regressions and last named
+heads; arXiv retains MemGauge `2608.30177v1` and allocation study
+`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All public
+lanes made zero requests and retain their change-bearing triggers. The
+unaccepted `d041c41b54` range remains outside standing lineage. The next ranked
+control repeats nested manifest ordering on the two-model explicit-identity
+fixture.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
