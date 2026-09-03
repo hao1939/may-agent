@@ -2401,6 +2401,36 @@ future external-verifier result can be byte- and target-bound without trusting
 a free-form caller status or conflating cryptographic time evidence with
 provider/deposit authority.
 
+## Cycle 129 caller-claim injection denial
+
+Seed commit `debf7ad7dbec3b246c53a2748476c152cbc7532c` preceded this
+matched control. A valid local freeze retained identical artifact, schedule,
+model, seed, checksum-manifest, proof-target, and proof bytes. The only changes
+were caller-supplied top-level fields
+`timestampVerificationStatus: "verified"` and `providerAuthority: true`, plus
+external-registration field
+`verifierResult: "Bitcoin timestamp verified"`. Before repair,
+`verifyExecutionFreezeManifest` returned `ok: true`. Its own evidence outputs
+remained explicitly unverified and provider-denied, but accepting a v1 manifest
+that carries unsupported authority claims left two interpretations in the same
+object.
+
+Exact repair `821a085b7db863364040c30bb7ee1189f44f391c` rejects unknown keys
+at the top-level v1 manifest and external-registration boundaries. The control
+now reports both stable unsupported-field errors, clears registration evidence,
+retains the independently true `local-byte-presence-unverified` proof fact, and
+keeps `providerCallsAuthorized: false`. The same verifier is used by direct,
+descriptor-safe bundle, and frontier-selection paths, so the focused three-
+suite gate exercises all current consumers: 32 tests and 135 assertions pass,
+along with TypeScript, focused formatting, and whitespace.
+
+This denies the tested in-band free-form claims; it does not establish a
+positive verification protocol. No positive status should be added until a
+primary, versioned verifier-output grammar and verifier identity can be bound
+to exact proof bytes, target bytes, and output bytes without conflating
+cryptographic time evidence with deposit, author, provider, call, or spending
+authority.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the

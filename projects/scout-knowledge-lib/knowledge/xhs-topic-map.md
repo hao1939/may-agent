@@ -322,21 +322,21 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 128 supersedes the older table snapshot below. Starting tip
-`8958e2ba8a326fc90ebf0539b7bfa7f5b6bdd94e` and seed commit
-`259eedf1a3938fdc442283912609d30e918b0d45` anchor the unchanged login-class
+Cycle 129 supersedes the older table snapshot below. Starting tip
+`39c31ae49043b9badc24f7b444a2156aaca6f2bb` and seed commit
+`debf7ad7dbec3b246c53a2748476c152cbc7532c` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
-unavailable. No public request was made. The retained archive audit confirms
-the exact proof bytes are locally present but no capable OpenTimestamps client
-is available, so `local-byte-presence-unverified` remains the strongest
-supported evidence class. Accepted-result containment and protected-checkout
+unavailable. No public request was made. Exact local `821a085…f391c` rejects
+unsupported timestamp-verification and provider-authority claims at both
+authority-bearing v1 schema boundaries while keeping proof-byte presence
+explicitly unverified. Accepted-result containment and protected-checkout
 preservation are rechecked on the resulting exact tip.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                                       | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Decision and revisit trigger                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 128; public trigger-deferred.** The proof/tool boundary was directly testable from retained bytes and the standing implementation.                                   | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `c190ba8…2afe9d6` binds declared proof intent; Cycle 128 finds no tracked proof, `ots` executable, or Python OpenTimestamps module. | Zero public requests. Preserve the explicitly unverified presence status. Next test whether an injected verifier result can be bound without trusting free-form caller claims. Revisit public GitHub on a revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
-| **arXiv**               | **High relevance / high retained value / inspected locally in Cycle 128; public trigger-deferred.** The retained archive supplies the only exact proof bytes relevant to the current boundary.                                      | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. The 61,508,909-byte ZIP remains `41ca426…a63138`. Experiment C's 12,987-byte manifest is `cb6e7c8…6225`; its 945-byte proof is `5d0097b…a4fe`. Source files call it OpenTimestamps-stamped/VERIFIED, while the source runner checks only non-empty presence and this worker cannot execute a verifier.                                                                                          | Zero public requests. Retain both papers; classify proof validity and anchoring as unverified locally. Revisit public arXiv on a paper/artifact/registration revision, independent verification, or newly readable seed body.                          |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 128 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                          |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 129; public trigger-deferred.** Caller-claim injection was directly testable in the standing freeze API.                                                            | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Pre-fix injected authority fields returned `ok:true`; exact local `821a085…f391c` rejects them at the manifest and external-registration boundaries.               | Zero public requests. Preserve unverified proof presence and provider denial. Next require a primary, versioned verifier-output grammar before adding any positive verification receipt. Revisit public GitHub on a revision, artifact, independent/deployment result, readable seed, or compact scheduled audit. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 129.** The retained archive supplies exact proof controls but no independently runnable verifier.                                | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. The 61,508,909-byte ZIP remains `41ca426…a63138`; Experiment C manifest/proof hashes remain `cb6e7c8…6225`/`5d0097b…a4fe`. The source runner checks only non-empty presence and this worker has no `ots` client.                                                                                                                                                                                    | Zero public requests. Retain both papers and keep proof validity/anchoring unverified locally. Revisit public arXiv on a paper/artifact/registration revision, independent verification, or newly readable seed body.             |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 129 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim.                 | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                                                                                        | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                                                                          |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3257,6 +3257,35 @@ The ranked question is now whether an external-verifier result can be bound to
 the exact proof and target without trusting a caller-supplied authority label.
 Public GitHub, arXiv, and Reddit remain trigger-deferred until reconsidered
 after that local investigation.
+
+### Cycle 129 checkpoint — unsupported authority claims fail closed
+
+Seed commit `debf7ad7dbec3b246c53a2748476c152cbc7532c` preceded the
+matched control. The fixture kept the valid freeze, exact artifact bytes,
+schedule, models, seeds, checksum manifest, proof target, and proof bytes, then
+added only top-level `timestampVerificationStatus: "verified"` and
+`providerAuthority: true` fields plus external-registration
+`verifierResult: "Bitcoin timestamp verified"`. Before repair the verifier
+returned `ok: true`; the new expectation produced 13 passes and one failure
+with 65 assertions.
+
+Exact local `821a085b7db863364040c30bb7ee1189f44f391c` restricts the
+top-level v1 manifest and its authority-bearing external-registration object to
+their declared keys. The same control now returns
+`manifest contains unsupported fields` and
+`external registration contains unsupported fields`. Registration evidence is
+cleared, local proof-byte presence remains
+`local-byte-presence-unverified`, and provider authority remains false.
+
+The focused freeze, descriptor-safe bundle, and frontier-adapter gate passes
+32 tests with 135 assertions plus TypeScript, formatting, and whitespace. This
+is high-confidence denial of the tested in-band caller claims across every
+current freeze path. It does not parse OpenTimestamps, validate a calendar or
+Bitcoin attestation, authenticate a verifier, or define a positive receipt
+format. GitHub, arXiv, and Reddit made zero public requests. The next ranked
+question is what primary, versioned verifier-output grammar and verifier
+identity would be necessary before Scout could accept a byte-bound positive
+receipt without manufacturing authority.
 
 ## Cycle 128 seed-first start
 

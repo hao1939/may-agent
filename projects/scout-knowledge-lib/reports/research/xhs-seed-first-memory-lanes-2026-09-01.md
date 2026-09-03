@@ -7647,6 +7647,33 @@ triggers. No source, account, or provider state was mutated. The next ranked
 investigation is whether a future external-verifier result can be bound to the
 exact proof and target without trusting a caller-supplied authority label.
 
+## Cycle 129 checkpoint — freeze manifests cannot carry extra authority claims
+
+The problem was subtle: Scout's returned status remained safely unverified,
+but a caller could add timestamp-verification, provider-authority, and
+verifier-result fields to an otherwise valid v1 freeze and still receive
+`ok: true`.
+That left unsupported claims inside an accepted manifest. Seed commit
+`debf7ad7dbec3b246c53a2748476c152cbc7532c` records the unchanged semantic
+XHS boundary before this control; no source request preceded it.
+
+Exact local `821a085b7db863364040c30bb7ee1189f44f391c` now rejects unknown
+fields at the two authority-bearing schema boundaries. The reproduced control
+returns both unsupported-field errors, clears registration evidence, preserves
+the independent local proof-presence fact as explicitly unverified, and keeps
+provider calls denied. Direct freeze, descriptor-safe bundle, and frontier
+paths pass 32 focused tests with 135 assertions, plus TypeScript, formatting,
+and whitespace.
+
+GitHub/local code won the rubric because the claim was executable from current
+evidence. ArXiv retains MemGauge `2608.30177v1`, allocation study
+`2608.25553v3`, and the exact local proof-byte controls; Reddit remains at its
+RSS-readable/JSON-403 boundary. The public lanes made zero requests. Remaining
+uncertainty is positive verification: Scout still has no official client,
+versioned output grammar, authenticated verifier identity, calendar result, or
+Bitcoin result. The next ranked investigation is to establish the primary
+output contract required before a positive byte-bound receipt could be safe.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
