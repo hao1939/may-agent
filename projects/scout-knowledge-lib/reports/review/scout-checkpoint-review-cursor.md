@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through Cycle 260 checkpoint 1b090a4f4ceed5c2c147e10a9e61108069b60a3c: the accepted-output metric's prior strict lower bound was unreachable, the threshold-one fix is a valid prospective observability correction, protected history still supplies no content outcome or promotion evidence, the newer reviewer result remains pending integration, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through Cycle 260 checkpoint 1b090a4f4ceed5c2c147e10a9e61108069b60a3c: the accepted-output metric's prior strict lower bound was unreachable, the threshold-one fix is a valid prospective observability correction, protected history still supplies no content outcome or promotion evidence, the Cycle 260 reviewer result is integrated, and RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "project.knowledge.maintained", "RV-004", "RV-008", "RV-010", "RV-011", "RV-012", "RV-013"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through 1b090a4f4ceed5c2c147e10a9e61108069b60a3c; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, protected-state attempt, receipt, metric, snapshot, alert, and event counts, all ten historical receipt joins, six report-addition histories, the complete available-object commit window, collector and Host alert-path source, fixture lineage, current-revision gates, broad links, and health in the reviewer-owned worktree."
@@ -413,14 +413,16 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   patch ID `4768fdae542cf5a79ecafd1e5ef57eaea954365f`. It adds the Cycle
   258-259 dispositions and advances this cursor. Rollback is one ordinary
   revert; later standing work is not independently reviewed by this cursor.
-- Current reviewer source is standing `1b090a4f4ceed5c2c147e10a9e61108069b60a3c`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 258-260 dispositions,
-  including RV-013, and advances this cursor. Rollback is one ordinary revert.
-  It is not landed until standing contains its exact or patch-equivalent change
-  and current-tip validation passes. If the standing owner rejects the source
-  fix, revert report `1b090a4f4c` before or with implementation `6aa75130c2` so
-  the durable behavior claim does not outlive the code.
+- Reviewer `c187607b3fea92a0530b0a270c567bf0c2378526` is integrated as
+  standing `90ec2f54b12b23567ef8df7e235ed4f192fcaa03`. The source patch ID is
+  `ddf3212def014cace11921792d395fede0e8f155`; the resolved standing patch ID
+  is `defa5a7125e5e5f8a36a6cdbf6c4b0ac48fd972e` because conflict resolution
+  retained exactly the five already-accepted `72ed9c48e9`→`9e04b0ec2e`
+  mapping lines while preserving every reviewer line. It adds the Cycle
+  258-260 dispositions, including RV-013. Rollback is one ordinary revert. If
+  the standing owner rejects the source fix, revert report `1b090a4f4c` before
+  or with implementation `6aa75130c2` so the durable behavior claim does not
+  outlive the code.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
