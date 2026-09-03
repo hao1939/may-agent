@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing reconciliation c799ca15288dc7b4903e976d2df0df86b947bdf5 after Cycle 258 and the Cycle 259 seed: one real child target lacks both its historical query and contemporaneous committed index, so it is correctly rejected as matched navigation evidence; the Cycle 257 reviewer result is integrated, the newer Cycle 258 review remains pending, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through standing reconciliation d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94 after Cycle 259 and the Cycle 260 seed: all ten path-bearing historical receipts lack an exact query-to-target-to-contemporaneous-index triple, so retrospective scorer replay is correctly closed; the Cycle 258 reviewer result is integrated, the newer Cycle 259 review remains pending, and RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "project.knowledge.maintained", "RV-004", "RV-008", "RV-010", "RV-011", "RV-012"]
 last_updated: "2026-09-04"
-source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through c799ca15288dc7b4903e976d2df0df86b947bdf5; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, protected-state attempt and receipt counts, one historical receipt/commit-window audit, bounded consumer/event/reference searches, fixture lineage, reviewer patch and blob identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
+source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, protected-state attempt and receipt counts, all ten historical receipt joins, six report-addition histories, the complete available-object commit window, bounded consumer/event/reference searches, fixture lineage, reviewer patch and blob identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `c799ca15288dc7b4903e976d2df0df86b947bdf5`
+  `d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -27,9 +27,10 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   `52e5a2e045f3485d12e79a401a7c19123448ccef` (Cycle 254),
   `c6134af2e7dcb1419a8563219206a089c6efff27` (Cycle 255),
   `32a0b4255754f4b5c81ad70a2585f564c5d90c4b` (Cycle 256),
-  `c305ef77444069109f946aa0431ddfe317f6b320` (Cycle 257), and
-  `9cb952514196bbb51b223098339ab8ea5896dce8` (Cycle 258).
-- Review date: `2026-09-04T02:58:00+08:00`
+  `c305ef77444069109f946aa0431ddfe317f6b320` (Cycle 257),
+  `9cb952514196bbb51b223098339ab8ea5896dce8` (Cycle 258), and
+  `dfb2e46102b7a92a72ebcf25322e267ab4f5be3d` (Cycle 259).
+- Review date: `2026-09-04T03:05:38+08:00`
 - Overall disposition: **revise**. Link state and exact lexical outcomes
   improve, and the post-hoc 25% margin observation is numerically correct.
   Evidence remains producer-authored and does not justify a threshold or broad
@@ -46,14 +47,15 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   Cycle 257 finds path-bearing child outcomes but no query/selection join, so it
   correctly keeps the investigation read-only. Cycle 258 tests one real pair
   and rejects it because both its lookup query and contemporaneous committed
-  index are unavailable. The fail-closed fixture digest and exact crossover
-  correction are integrated.
+  index are unavailable. Cycle 259 confirms the same essential boundary across
+  every remaining path-bearing receipt and closes retrospective replay. The
+  fail-closed fixture digest and exact crossover correction are integrated.
 
 ## Exact scope and ordering
 
 - The reviewed standing range
-  `e420498c471fa6b5d6ee8632c89ef48cdc40f0ca..c799ca15288dc7b4903e976d2df0df86b947bdf5`
-  contains 77 commits, 25 changed files, 3,873 insertions, and 270 deletions.
+  `e420498c471fa6b5d6ee8632c89ef48cdc40f0ca..d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94`
+  contains 81 commits, 25 changed files, 3,979 insertions, and 270 deletions.
 - Cycles 232-241 resolve or explicitly quarantine local-link debt. Cycle 242
   freezes v1 and adds the evaluator. Cycle 243 freezes v2 and adds selector
   support. Cycle 244 records matched failure probes; Cycle 245 records score
@@ -69,7 +71,8 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   audits the smallest current post-consumer event boundary without implementing
   an unsupported telemetry schema. Cycle 257 audits retained attempts and child
   receipts. Cycle 258 disqualifies one incomplete historical pair; Cycle 259
-  begins seed reconciliation.
+  closes that historical route after checking every remaining receipt.
+  Cycle 260 begins with the accepted Cycle 258 reviewer delta.
 - Result/seed ordering is exact: Cycle 243 result `f18c93e45e` precedes Cycle
   244 seed `18f4b78421`; Cycle 244 result `4ad017a2a7` precedes Cycle 245 seed
   `17f79df077`; later result/seed pairs remain linear through Cycle 249 seed
@@ -88,7 +91,9 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   reconciliation `ee1b9a58ab`, and result `c305ef7744` follow in that exact
   order. Cycle 258 seed `e7a1364f68` precedes result `9cb9525141`; Cycle 259 seed
   `a4da1117fd` precedes reviewer integration `590a0b804a` and reconciliation
-  `c799ca1528`, the current tip.
+  `c799ca1528`, then result `dfb2e46102`, the current tip.
+  Cycle 260 seed `b6674e315b` then precedes reviewer integration `8bb45ca26a`
+  and reconciliation `d82bf7fed5`, the current tip.
 
 ## Evidence examined
 
@@ -96,7 +101,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 
 - The prior cursor measured 1,539 tracked Markdown documents, 1,763 local
   prose links, 130 unresolved occurrences, and zero absolute local links. The
-  standing tip independently measures 1,540 documents, 1,698 local prose
+  standing tip independently measures 1,540 documents, 1,699 local prose
   links, zero unresolved occurrences, and zero absolute local links.
 - Exact accepted identities replace aliases. When provenance is ambiguous,
   mutable, or unaccepted-only, the diffs preserve title, intended path,
@@ -288,17 +293,37 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   The retained trigger contains no natural-language lookup query. The producer
   therefore correctly declines a scorer replay instead of substituting task
   prose or a later index and mislabeling the result as matched evidence.
+- Cycle 259 result `dfb2e46102` makes zero public requests and changes only the
+  two durable reports. Independent inspection reproduces 108 total attempts,
+  14 receipts, 10 path-bearing receipts, seven remaining child-transition
+  joins, and two owner-review receipts. Recursive key inspection finds no query,
+  selected-target/document, or index-revision field. Two child receipts name no
+  unique report; all six uniquely named child reports first appear together in
+  `d9da99476e` at `2026-08-25T06:10:59Z`. The producer inspected 42,185 commit
+  objects; immediately after the result commit and reviewer rebase, independent
+  inventory counted 42,187. Of those, 761 fell in the stated union time window
+  and none changed
+  `knowledge/INDEX.md`. The object count is time-local, but the zero-match result
+  reproduces. Closing this retrospective route is justified; downstream durable
+  output use must not be represented as validation of the navigation scorer.
+- Cycle 260 seed `b6674e315b` makes zero public requests and correctly limits
+  work to the accepted reviewer delta before the downstream-output audit.
+  Standing `8bb45ca26a` and reviewer `e2f6e08a4f` share stable patch ID
+  `4aa63c02a789500d987c2cfb5ccfed0329b08581` and exact cursor blob
+  `daff9a6e48d20588fb3b6edac182d3033102c543`; reconciliation `d82bf7fed5`
+  accurately records that landed status without changing RV-004.
 
 ### Current-revision validation
 
-- Exact standing source `c799ca15288dc7b4903e976d2df0df86b947bdf5`
-  contains the integrated two-fixture gate and fail-closed diagnostic-control
-  replay. The final reviewer tree based on that source passes the full
-  `bun run check`: syntax, TypeScript, formatting, Cycle 237 projection, 62
-  durable links, v1 at 10/14, v2 at 8/8,
-  294 tests, and 1,471 assertions. Its broad audit covers 1,540 tracked
-  Markdown documents and 1,698 local prose links with zero unresolved or
-  absolute links.
+- Exact standing source `d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94`
+  changes only the topic map, lane report, and review cursor after the fully
+  gated source `a4da1117fd`; the application, evaluator, fixtures, and index are
+  identical.
+  That full gate passed syntax, TypeScript, formatting, v1 at 10/14, v2 at 8/8,
+  294 tests, and 1,471 assertions. On the exact current reviewer tree, the
+  affected projection passes, all 63 durable links pass, and the broad audit
+  covers 1,540 tracked Markdown documents and 1,699 local prose links with zero
+  unresolved or absolute links.
 
 ## Canonical rubric
 
@@ -306,24 +331,24 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 | --- | --- |
 | Lead completeness and disposition | **Accept with limits.** Link debt is explicit; four v1 failures remain; perturbations and comparison ties now have concrete dispositions. |
 | Provenance and claim/source separation | **Accept.** Accepted identities, unavailable targets, and observational access remain distinct. |
-| Novelty and decision value | **Accept narrowly.** Nine frozen cases gain honest unavailable status; title-weight perturbations reject a tempting scorer change; retained child receipts narrow the search, and one invalid historical pair is now rejected. |
+| Novelty and decision value | **Accept narrowly.** Nine frozen cases gain honest unavailable status; title-weight perturbations reject a tempting scorer change; the complete historical receipt route is tested and closed without inventing evidence. |
 | Related-work comparison | **Defer.** Existing papers are contextual controls; no fresh replication is claimed. |
 | Contradictions and uncertainty | **Accept with limits.** RV-008 is prospectively resolved without reconstructing history; RV-010 and RV-012 corrections are integrated. |
 | Duplication and contamination | **Revise under RV-004.** No unaccepted bytes were admitted, but duplicated logs and same-producer fixtures limit independence. |
 | Usability and retrieval value | **Accept narrowly.** Broken links fall 130 to zero and exact status outcomes improve 9/22 without observed regression. |
 | Access boundaries | **Accept.** Reused receipts do not become collection evidence; no external mutation occurred. |
 | Validation quality | **Accept with limits.** Both outcome sets, the current control, 202 matched perturbations, and protected-state counts reproduce; the integrated digest fence fails closed, but none supplies protected promotion evidence. |
-| Cost and productivity | **Revise under RV-004.** Useful outcomes include rejected scorer and premature telemetry changes plus one falsified historical pair, but there is still no protected navigation or retained decision outcome through Cycle 258. |
+| Cost and productivity | **Revise under RV-004.** Useful outcomes include rejected scorer and premature telemetry changes plus closure of an unproductive historical route, but there is still no protected navigation or retained decision outcome through Cycle 259. |
 | Rollback and integration safety | **Accept.** The digest assertion and crossover wording are ordinary reverts; no scorer, fixture, authority, or external state changed. |
 
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
 | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 source cadence | Cycles 67-259 defer unchanged public lanes at zero request cost while using bounded local diagnostics. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; local review remains productive. |
+| `RV-001` | Medium | Cycle 65 source cadence | Cycles 67-260 defer unchanged public lanes at zero request cost while using bounded local diagnostics. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; local review remains productive. |
 | `RV-002` | Low | Cycle 65 GitHub provenance | Exact repository identities remain integrated. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction remains on standing. | **Resolved.** |
-| `RV-004` | High | `37430cf4..c799ca15`, especially duplicated logs and verifier work | 590 commits, 67 files, +33,567/-521 lines through Cycle 258, the Cycle 259 seed, and review reconciliation yield nine exact status gains, zero broken links, rejected thresholds/title weights, versioned diagnostics, one replayable caller control, path-bearing child outcomes, and one falsified historical pair. There is still no protected evaluator, query-to-selection join, human/model outcome, retained later-decision evidence, current provider result, authority-bearing policy, or changed user decision. | **Revise; high/open.** Cycle 258 correctly rejects a real target whose query and matched index cannot be reconstructed; it does not supply navigation outcome evidence. Require a directly reconstructible, non-inferred historical join or fresh protected/later-use evidence before broader promotion. Stop this historical route if the remaining nine receipts have the same boundary. |
+| `RV-004` | High | `37430cf4..d82bf7fe`, especially duplicated logs and verifier work | 594 commits, 67 files, +33,673/-521 lines through Cycle 259, the Cycle 260 seed, and review reconciliation yield nine exact status gains, zero broken links, rejected thresholds/title weights, versioned diagnostics, one replayable caller control, path-bearing child outcomes, and a closed ten-receipt historical route. There is still no protected evaluator, query-to-selection join, human/model outcome, retained later-decision evidence, current provider result, authority-bearing policy, or changed user decision. | **Revise; high/open.** Cycle 259 correctly stops retrospective replay instead of manufacturing a complete evaluation triple. Require fresh protected navigation or later-decision evidence before broader promotion; downstream use of durable output identities alone cannot resolve this finding. |
 | `RV-005` | Medium | Seed projection | Exact Cycle 237 projection remains current and passes. | **Resolved.** |
 | `RV-006` | Medium | `package.json` through `6045108077` | Standing previously reported v2 8/8 while gating only v1. | **Resolved.** Standing `98926518f0` has stable patch ID `816b747af0` with reviewer `4f6de66f7b`; current-tip validation runs both fixtures. |
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
@@ -343,8 +368,14 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 - Reviewer `e2f6e08a4f894871644ef0fc86aa89198c94472e` is integrated as
   standing `8bb45ca26a31f721fc7e6720e70882b6e0e03154`; both share stable
   patch ID `4aa63c02a789500d987c2cfb5ccfed0329b08581` and exact cursor blob
-  `daff9a6e48d20588fb3b6edac182d3033102c543`. Rollback is one ordinary
-  revert; current-tip validation follows this status correction.
+  `daff9a6e48d20588fb3b6edac182d3033102c543`. Reconciliation
+  `d82bf7fed5` correctly records this status. Rollback is one ordinary revert.
+- Current reviewer source is standing `d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94`.
+  Integrate the directly following result from
+  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 258-259 dispositions and
+  advances this cursor. Rollback is one ordinary revert. It is not landed until
+  standing contains its exact or patch-equivalent change and current-tip
+  validation passes.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
@@ -383,7 +414,7 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
 Review the next material standing checkpoint, misuse of the prospectively
 resolved RV-008 control, or a concrete RV-004 protected/later-reuse outcome. If
 none arrives, the next periodic audit is no earlier than
-`2026-09-04T18:58:00Z`. Do not poll unchanged state. This standing reviewer goal
+`2026-09-04T19:05:38Z`. Do not poll unchanged state. This standing reviewer goal
 remains active.
 
 ## Supervision
