@@ -2805,6 +2805,29 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 202 within-role resolution-object reuse
+
+Seed commit `3ad68e1706` preceded exact test `61dd65f4d8`. A coherent
+two-model schedule has 128 episodes, two unique requested/resolved model IDs,
+and one shared `model-resolution.json` artifact. The artifact's structured v1
+content matches model zero and not model one.
+
+Verification fails only with the second declaration's evidence-mismatch error,
+returns null policy scope, and keeps provider authority false. The result
+supports byte reuse for one declared identity but rejects implicit inference
+that one v1 object can register several models. It does not justify global
+digest uniqueness or a production change. The focused bundle gate passes 16
+tests and 86 assertions plus TypeScript, exact-file formatting, and whitespace.
+
+For the explicit candidate-registry alternative, this narrows the migration
+boundary: a multi-model registry requires a new strict schema, a single parsed
+authority used by schedule generation and verification, a new model scope and
+decision, preserved v1 reading, and rollback to the untouched v1 bundle. It
+cannot be introduced as a same-byte alias or an optional v1 sidecar. External
+owner/deposit authority and a real second registry revision remain absent. The
+next audit constructs the smallest v1/v2 migration and rollback failure matrix
+before any implementation.
+
 ## Cycle 201 cross-role digest reuse
 
 Seed commit `a8347e3640` preceded exact test `7bafcf4651`. In one bundle,
