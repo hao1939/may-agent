@@ -1809,6 +1809,59 @@ must reproduce the exact row/result hashes and all 508 points before selection.
 It should make positive process controls practical while rejecting missing,
 stale, or tampered bytes and must not confer policy or provider authority.
 
+## Cycle 109 byte-bound frontier snapshot
+
+Seed reconciliation `1eac5ae21354e22bbfaebe2fa83bd0b08c781231`
+preceded this work. The saved target retained the login-class semantic
+fingerprint, 46,672-byte length, login wall, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, removals are `[]`,
+and all 132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made
+zero public requests.
+
+Exact local `8cf88b8f5ddd437da5e61a8bdf442f99b138d093` adds a
+versioned offline frontier snapshot. It records the exact row SHA-256, result
+SHA-256, canonical frontier SHA-256, all ordered points, a fixed generator
+reference, and `providerCallsAuthorized: false`. The exhaustive generator now
+constructs this snapshot and refuses output unless it matches the retained
+193-row, 508-point computation identity.
+
+The full candidate run from `2026-09-03T02:13:31.043Z` through
+`02:21:41.445Z` took 8m10.407s. It reproduced row hash
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`,
+result hash `383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`,
+508 points, and frontier hash
+`067201a66252a39d1deb6a6189783137921b6610ac8b2d35acbea38d5b4530ef`.
+The 203,712-byte wrapper output has SHA-256
+`201b45553a4d4056fcf844d30769dc2eff385176991540f28faef9449da7ad65`.
+
+The extracted 116,578-byte snapshot has outer SHA-256
+`8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`.
+Its explicit descriptor-safe load returned the same three inner hashes, all 508
+points, local byte-match status, and provider denial. Focused tests reject an
+outer byte mismatch before parsing, an inner point mutation under a stale hash,
+a fully re-hashed wrong frontier against the retained computation, malformed
+structure, and added provider authority. Eleven tests and 27 assertions pass
+with TypeScript, formatting, and whitespace.
+
+This proves repeatable local computation identity and one pinned local byte
+read. It does not authenticate the generator revision, author, timestamp,
+policy approval, real marginal drift, cost, model identity, external
+registration, or provider behavior. No real snapshot or execution freeze is
+retained as operating evidence, and the illustrative 0.0006 policy remains
+`not-established`. Confidence is high for exact local integrity and failure
+controls and low for all substantive transfer.
+
+The local accepted-result check at
+`2026-09-03T02:22:58.098Z–02:22:58.188Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a fast CLI mode that requires an explicit
+snapshot root, canonical relative artifact name, and expected outer SHA-256.
+It must verify the retained computation before passing its frontier to the
+existing freeze/decision selector, reject missing or tampered bytes, and never
+authorize provider calls.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
