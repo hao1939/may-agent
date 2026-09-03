@@ -127,6 +127,53 @@ describe("verification-allocation freeze bundle", () => {
     );
   });
 
+  it("preserves content-addressed aliases through descriptor-safe directory reads", async () => {
+    const { root, manifest } = await fixture();
+    const baseline = await verifyExecutionFreezeBundle(root);
+    const aliases = new Map([
+      [
+        "evidence/model-resolution.json",
+        "evidence/aliased-model-resolution.json",
+      ],
+      ["seed-policy.json", "aliased-seed-policy.json"],
+      ["schedule.json", "aliased-schedule.json"],
+      ["MANIFEST.sha256", "aliased-MANIFEST.sha256"],
+      ["MANIFEST.sha256.ots", "aliased-MANIFEST.sha256.ots"],
+    ]);
+    for (const [original, alias] of aliases) {
+      await rename(join(root, original), join(root, alias));
+      manifest.artifacts.find((artifact) => artifact.name === original)!.name =
+        alias;
+    }
+    manifest.models[0].resolutionEvidenceArtifact = aliases.get(
+      "evidence/model-resolution.json",
+    )!;
+    manifest.seedPolicy.policyArtifact = aliases.get("seed-policy.json")!;
+    manifest.schedule.artifact = aliases.get("schedule.json")!;
+    manifest.externalRegistration.manifestArtifact =
+      aliases.get("MANIFEST.sha256")!;
+    manifest.externalRegistration.proofArtifact = aliases.get(
+      "MANIFEST.sha256.ots",
+    )!;
+    manifest.externalRegistration.proofTargetArtifact =
+      aliases.get("MANIFEST.sha256")!;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const aliased = await verifyExecutionFreezeBundle(root);
+    expect(aliased).toMatchObject({
+      ok: true,
+      errors: [],
+      artifactCount: 6,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      timestampProofEvidenceStatus: "local-byte-presence-unverified",
+      providerCallsAuthorized: false,
+    });
+    expect(aliased.policyScope).toEqual(baseline.policyScope);
+  });
+
   it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
     const { root, manifest } = await fixture();
     const rawManifest = JSON.stringify(manifest).replace(
