@@ -155,6 +155,29 @@ describe("verification-allocation execution freeze", () => {
     expect(result.providerCallsAuthorized).toBe(false);
   });
 
+  it("rejects unknown fields in every nested freeze-manifest object", () => {
+    const { manifest, artifactContents } = validFixture();
+    Object.assign(manifest.artifacts[0], { label: "execution bundle" });
+    Object.assign(manifest.models[0], { modelAuthority: true });
+    Object.assign(manifest.seedPolicy, { randomnessAuthority: "caller" });
+    Object.assign(manifest.schedule, { providerAuthority: true });
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain("artifacts[0] contains unsupported fields");
+    expect(result.errors).toContain("models[0] contains unsupported fields");
+    expect(result.errors).toContain("seed policy contains unsupported fields");
+    expect(result.errors).toContain(
+      "schedule metadata contains unsupported fields",
+    );
+    expect(result.externalRegistrationEvidenceStatus).toBe("");
+    expect(result.timestampProofEvidenceStatus).toBe(
+      "local-byte-presence-unverified",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
   it("separates overall validity, registration evidence, and proof presence", () => {
     const cases: Array<{
       name: string;

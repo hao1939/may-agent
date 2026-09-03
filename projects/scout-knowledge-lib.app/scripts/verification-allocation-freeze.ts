@@ -217,6 +217,9 @@ function validateArtifacts(
       errors.push(`artifacts[${index}] is malformed`);
       continue;
     }
+    if (!hasOnlyKeys(artifact, ["name", "sha256"])) {
+      errors.push(`artifacts[${index}] contains unsupported fields`);
+    }
     if (byName.has(artifact.name)) {
       errors.push(`artifact ${artifact.name} is declared more than once`);
       continue;
@@ -249,6 +252,16 @@ function validateModels(
     if (!isRecord(model)) {
       errors.push(`models[${index}] is malformed`);
       continue;
+    }
+    if (
+      !hasOnlyKeys(model, [
+        "requestedId",
+        "resolvedId",
+        "resolutionKind",
+        "resolutionEvidenceArtifact",
+      ])
+    ) {
+      errors.push(`models[${index}] contains unsupported fields`);
     }
     if (!isString(model.requestedId) || !isString(model.resolvedId)) {
       errors.push(`models[${index}] must name requested and resolved IDs`);
@@ -288,6 +301,16 @@ function validateSeedPolicy(
     errors.push("seed policy is missing");
     return [];
   }
+  if (
+    !hasOnlyKeys(policy, [
+      "namespace",
+      "algorithm",
+      "policyArtifact",
+      "seedIds",
+    ])
+  ) {
+    errors.push("seed policy contains unsupported fields");
+  }
   if (policy.namespace !== "scout.verification-allocation/v1") {
     errors.push("seed policy namespace is not Scout-specific");
   }
@@ -319,6 +342,19 @@ function validateSchedule(
   if (!isRecord(schedule)) {
     errors.push("schedule metadata is missing");
     return 0;
+  }
+  if (
+    !hasOnlyKeys(schedule, [
+      "artifact",
+      "sha256",
+      "schema",
+      "modelIds",
+      "seedIds",
+      "cellsPerModelSeed",
+      "episodeCount",
+    ])
+  ) {
+    errors.push("schedule metadata contains unsupported fields");
   }
   if (
     schedule.schema !== "scout.verification-allocation-schedule/v1" ||
