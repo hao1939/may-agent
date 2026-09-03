@@ -4036,6 +4036,19 @@ integration. The next ranked retrieval work compacts the repeated Cycle
 215–219 seed-observation prose only if exact times, byte provenance, and
 unavailable-seed uncertainty remain intact.
 
+Exact reviewed Cycle 220 material tip
+`2b33afc0e334d95798b31510a2ebc6022fe6d92c` passes syntax, TypeScript,
+source formatting, 278 tests, 1,429 assertions, whitespace, and all 33 relative
+links. Read-only health at `2026-09-03T14:39:15.871Z` remains bounded at 26
+facts and 16 wake signals; root and app runtime state are empty. The clean tip
+retains 9/9 canonical accepted ancestors and excludes unaccepted
+`d041c41b54`.
+
+Protected fingerprints reproduce the Cycle 219 post-drift observations:
+`/app` remains `386b445c…1fec8` / 886 / `7b786753…7f932`, and the human
+overlay remains `fd4c68ec…1514663` / three / `a52b97aa…4a15`. Neither was
+written or tested.
+
 ## Cycle 219 seed-first start
 
 Cycle 219 began from clean `65e38d701c`. One public status and one non-
