@@ -343,6 +343,72 @@ describe("verification-allocation freeze bundle", () => {
     expect(aliasReferenced.policyScope).toEqual(originalReferenced.policyScope);
   });
 
+  it("rejects a copied resolution alias reused by a distinct model", async () => {
+    const { root, manifest } = await fixture();
+    const source = "evidence/model-resolution.json";
+    const alias = "evidence/copied-model-resolution.json";
+    await copyFile(join(root, source), join(root, alias));
+    const sourceArtifact = manifest.artifacts.find(
+      (artifact) => artifact.name === source,
+    )!;
+    manifest.artifacts.push({
+      name: alias,
+      sha256: sourceArtifact.sha256,
+    });
+    manifest.models.push({
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed" as const,
+      resolutionEvidenceArtifact: alias,
+    });
+
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        manifest.models.map((model) => model.resolvedId),
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 128;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const [sourceStatus, aliasStatus] = await Promise.all([
+      stat(join(root, source)),
+      stat(join(root, alias)),
+    ]);
+    expect(aliasStatus.ino).not.toBe(sourceStatus.ino);
+    expect(
+      manifest.artifacts.filter(
+        (artifact) => artifact.sha256 === sourceArtifact.sha256,
+      ),
+    ).toHaveLength(2);
+    expect(
+      manifest.models.map((model) => model.resolutionEvidenceArtifact),
+    ).toEqual([source, alias]);
+
+    expect(await verifyExecutionFreezeBundle(root)).toMatchObject({
+      ok: false,
+      errors: ["models[1] resolution evidence does not match declaration"],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
