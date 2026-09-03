@@ -314,6 +314,102 @@ describe("identity-robust frontier freeze adapter", () => {
     });
   });
 
+  it("selects the same snapshot-bound point through local locator aliases", async () => {
+    const freeze = await freezeFixture();
+    const snapshot = createIdentityRobustFrontierSnapshot(
+      frontier,
+      "a".repeat(64),
+      "b".repeat(64),
+    );
+    const expectedSnapshot = {
+      rowSha256: snapshot.rowSha256,
+      resultSha256: snapshot.resultSha256,
+      frontierSha256: snapshot.frontierSha256,
+      frontierCount: snapshot.frontier.length,
+    };
+    const policy = await policyFixture(
+      freeze.policyScope,
+      identityRobustFrontierSnapshotReference(expectedSnapshot),
+    );
+    const snapshotRoot = await mkdtemp(
+      join(tmpdir(), "scout-frontier-local-aliases-"),
+    );
+    temporaryRoots.push(snapshotRoot);
+    const snapshotBytes = `${JSON.stringify(snapshot)}\n`;
+    const snapshotSha256 = createHash("sha256")
+      .update(snapshotBytes)
+      .digest("hex");
+    await writeFile(join(snapshotRoot, "frontier.json"), snapshotBytes);
+
+    const baseline = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+    await rename(
+      join(snapshotRoot, "frontier.json"),
+      join(snapshotRoot, "aliased-frontier.json"),
+    );
+    await rename(
+      join(policy.evidenceRoot, "decisions", "policy.json"),
+      join(policy.evidenceRoot, "decisions", "aliased-policy.json"),
+    );
+    policy.evidenceManifest.decisionRecordArtifact =
+      "decisions/aliased-policy.json";
+
+    const aliased = await selectIdentityRobustFrontierPointFromSnapshot(
+      snapshotRoot,
+      "aliased-frontier.json",
+      snapshotSha256,
+      expectedSnapshot,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(aliased).toMatchObject({
+      snapshotVerification: {
+        ok: true,
+        snapshotEvidenceStatus:
+          baseline.snapshotVerification.snapshotEvidenceStatus,
+        providerCallsAuthorized: false,
+      },
+      frozenSelection: {
+        freezeVerification: {
+          ok: true,
+          policyScope: freeze.policyScope,
+          providerCallsAuthorized: false,
+        },
+        selection: {
+          ok: true,
+          selected: { runBlockCount: 1_032, episodeCount: 33_024 },
+          decisionRecordEvidenceStatus: "local-byte-match-unverified",
+          decisionRecordContentStatus: "local-content-match-unverified",
+          errors: [],
+        },
+      },
+      providerCallsAuthorized: false,
+    });
+    expect(aliased.frozenSelection?.selection.selected).toEqual(
+      baseline.frozenSelection?.selection.selected,
+    );
+    expect(aliased.frozenSelection?.selection.decisionRecordSha256).toBe(
+      baseline.frozenSelection?.selection.decisionRecordSha256,
+    );
+    expect(aliased.frozenSelection?.selection.policySha256).toBe(
+      baseline.frozenSelection?.selection.policySha256,
+    );
+    expect(aliased.frozenSelection?.selection.evidenceManifestSha256).not.toBe(
+      baseline.frozenSelection?.selection.evidenceManifestSha256,
+    );
+  });
+
   it("rejects old decision evidence across an expected-snapshot version rollover", async () => {
     const freeze = await freezeFixture();
     const oldSnapshot = createIdentityRobustFrontierSnapshot(
