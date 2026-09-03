@@ -392,6 +392,34 @@ describe("identity-robust frontier freeze adapter", () => {
     });
   });
 
+  it("rejects snapshot-scoped policy through the direct freeze-only adapter", async () => {
+    const freeze = await freezeFixture();
+    const frontierSnapshotReference = `frontier-snapshot-sha256:${"d".repeat(64)}`;
+    const policy = await policyFixture(
+      freeze.policyScope,
+      frontierSnapshotReference,
+    );
+
+    const result = await selectIdentityRobustFrontierPointFromFreezeBundle(
+      frontier,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(result).toMatchObject({
+      freezeVerification: { ok: true },
+      selection: {
+        ok: false,
+        selected: null,
+        errors: [
+          "a matching verified freeze and frontier snapshot policy scope is required for applicability",
+        ],
+      },
+    });
+  });
+
   it("returns the exact freeze error and no selection for an invalid root", async () => {
     const result = await selectIdentityRobustFrontierPointFromFreezeBundle(
       frontier,

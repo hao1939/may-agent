@@ -24,7 +24,6 @@ export async function selectIdentityRobustFrontierPointFromFreezeBundle(
   evidenceManifestCandidate: unknown,
   evidenceRoot: string,
   freezeBundleRoot: string,
-  frontierSnapshotReference?: string,
 ): Promise<IdentityRobustFrozenFrontierSelection> {
   const freezeVerification =
     await verifyExecutionFreezeBundle(freezeBundleRoot);
@@ -35,9 +34,7 @@ export async function selectIdentityRobustFrontierPointFromFreezeBundle(
           policyCandidate,
           evidenceManifestCandidate,
           evidenceRoot,
-          frontierSnapshotReference
-            ? { ...freezeVerification.policyScope, frontierSnapshotReference }
-            : freezeVerification.policyScope,
+          freezeVerification.policyScope,
         )
       : selectIdentityRobustFrontierPoint(
           frontierCandidate,

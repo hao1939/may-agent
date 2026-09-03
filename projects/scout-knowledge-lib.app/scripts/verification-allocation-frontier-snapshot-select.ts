@@ -1,7 +1,9 @@
+import { type IdentityRobustFrozenFrontierSelection } from "./verification-allocation-frontier-freeze";
+import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
 import {
-  selectIdentityRobustFrontierPointFromFreezeBundle,
-  type IdentityRobustFrozenFrontierSelection,
-} from "./verification-allocation-frontier-freeze";
+  selectIdentityRobustFrontierPoint,
+  selectIdentityRobustFrontierPointFromLocalRecord,
+} from "./verification-allocation-frontier-policy";
 import {
   identityRobustFrontierSnapshotReference,
   loadIdentityRobustFrontierSnapshot,
@@ -67,20 +69,32 @@ export async function selectIdentityRobustFrontierPointFromSnapshot(
       providerCallsAuthorized: false,
     };
   }
-  const frozenSelection =
-    await selectIdentityRobustFrontierPointFromFreezeBundle(
-      snapshotVerification.snapshot.frontier,
-      policyCandidate,
-      evidenceManifestCandidate,
-      evidenceRoot,
-      freezeBundleRoot,
-      identityRobustFrontierSnapshotReference({
-        rowSha256: snapshotVerification.snapshot.rowSha256,
-        resultSha256: snapshotVerification.snapshot.resultSha256,
-        frontierSha256: snapshotVerification.snapshot.frontierSha256,
-        frontierCount: snapshotVerification.snapshot.frontier.length,
-      }),
-    );
+  const freezeVerification =
+    await verifyExecutionFreezeBundle(freezeBundleRoot);
+  const frontierSnapshotReference = identityRobustFrontierSnapshotReference({
+    rowSha256: snapshotVerification.snapshot.rowSha256,
+    resultSha256: snapshotVerification.snapshot.resultSha256,
+    frontierSha256: snapshotVerification.snapshot.frontierSha256,
+    frontierCount: snapshotVerification.snapshot.frontier.length,
+  });
+  const selection =
+    freezeVerification.ok && freezeVerification.policyScope
+      ? await selectIdentityRobustFrontierPointFromLocalRecord(
+          snapshotVerification.snapshot.frontier,
+          policyCandidate,
+          evidenceManifestCandidate,
+          evidenceRoot,
+          { ...freezeVerification.policyScope, frontierSnapshotReference },
+        )
+      : selectIdentityRobustFrontierPoint(
+          snapshotVerification.snapshot.frontier,
+          policyCandidate,
+          evidenceManifestCandidate,
+        );
+  const frozenSelection: IdentityRobustFrozenFrontierSelection = {
+    freezeVerification,
+    selection,
+  };
   return {
     snapshotVerification,
     frozenSelection,
