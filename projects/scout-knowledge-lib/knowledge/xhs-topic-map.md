@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-03"
-latest_seed_basis: "Cycle 150 observational reconciliation through 2026-09-03T06:44:27.603Z; exact access evidence and uncertainty are in the Cycle 150 seed-first section."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 150 at 2026-09-03T06:44:27.603Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 150 read-only XHS boundary through 2026-09-03T06:44:27.603Z."
+latest_seed_basis: "Cycle 151 observational reconciliation through 2026-09-03T06:49:40.295Z; exact access evidence and uncertainty are in the Cycle 151 seed-first section."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 151 at 2026-09-03T06:49:40.295Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 151 read-only XHS boundary through 2026-09-03T06:49:40.295Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 150 reached Chrome PID 2136's DevTools listener
+authenticated window. Cycle 151 reached Chrome PID 2136's DevTools listener
 through its network namespace. Public Explore remained readable with 30 notes.
 Supported `saved-status` retained final class `login` and changed to 46,729 bytes,
 semantic access fingerprint `3dab1b6d…8af420`, a login wall, and zero
@@ -3245,6 +3245,32 @@ same-byte artifact aliasing: change the registered artifact name while keeping
 its bytes, digest, schedule, model, seed, snapshot, policy, and decision fixed,
 and confirm that the old decision fails because the executable entry point is
 part of protocol scope.
+
+## Cycle 151 seed-first start
+
+Cycle 151 began from clean, validated tip
+`93a872d744faec2153db976927e38887d80d452b`. From
+`2026-09-03T06:49:39.421Z` through `06:49:40.295Z`, the established
+effective-UID-0 connector in root-owned Chrome PID 2136's network namespace
+found public Explore readable at 30 notes and the saved target still HTTP 200,
+`login`, 46,730 bytes, semantic fingerprint `3dab1b6d…8af420`, a login wall,
+and zero attributable items.
+
+Semantic access is unchanged. Byte length changed 46,729→46,730 and body SHA
+changed `d86856e…35d743`→`18a1883…081ba`; both are response provenance,
+not seed-content evidence. Added and changed IDs remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable. No
+representative saved-post read was supported, no XHS state changed, and no
+replay/summary or public-source request preceded this reconciliation.
+
+The exact Cycle 150 tip passed 213 tests and 1,065 assertions, 30 relative
+links, health 26/16, empty runtime state, 9/9 accepted-ancestor containment,
+and 4/4 accepted-artifact equivalence. The protected source retained HEAD
+`386b445c…1fec8`, 882 records, fingerprint `4325371…abf0f`; the overlay
+retained HEAD `fd4c68ec…1514663`, three records, fingerprint
+`ad8d222c…e74780`. Neither checkout was written or tested. Commit this seed
+record first, then test whether compact selection summaries preserve distinct
+evidence-manifest identity across semantically equal locator aliases.
 
 ## Cycle 150 seed-first start
 
