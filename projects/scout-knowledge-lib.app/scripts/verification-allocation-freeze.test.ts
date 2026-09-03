@@ -150,6 +150,26 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
+  it("keeps locally unverified registration metadata outside policy applicability", () => {
+    const { manifest, artifactContents } = validFixture();
+    const first = verifyExecutionFreezeManifest(manifest, artifactContents);
+    const substituted = structuredClone(manifest);
+    substituted.externalRegistration.url =
+      "https://substitute.example.invalid/scout-freeze/other";
+    substituted.externalRegistration.identifier = "substitute-registration";
+    substituted.externalRegistration.depositTimestampUtc =
+      "2026-09-03T00:00:00Z";
+
+    const second = verifyExecutionFreezeManifest(substituted, artifactContents);
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(second.externalRegistrationEvidenceStatus).toBe(
+      "local-byte-match-unverified",
+    );
+    expect(second.policyScope).toEqual(first.policyScope);
+  });
+
   it("rejects result-bearing or provider-authorized manifests", () => {
     const { manifest, artifactContents } = validFixture();
     const unsafe = {

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -402,6 +402,38 @@ describe("identity-robust frontier freeze adapter", () => {
       decisionRecordEvidenceStatus: "local-byte-match-unverified",
       decisionRecordContentStatus: "local-content-match-unverified",
       errors: [],
+    });
+  });
+
+  it("keeps an old local decision applicable across unverified registration metadata", async () => {
+    const freeze = await freezeFixture();
+    const policy = await policyFixture(freeze.policyScope);
+    const manifestPath = join(freeze.root, "freeze-manifest.json");
+    const substituted = JSON.parse(await readFile(manifestPath, "utf8"));
+    substituted.externalRegistration.url =
+      "https://substitute.example.invalid/scout-freeze/other";
+    substituted.externalRegistration.identifier = "substitute-registration";
+    substituted.externalRegistration.depositTimestampUtc =
+      "2026-09-03T00:00:00Z";
+    await writeFile(manifestPath, JSON.stringify(substituted));
+
+    const result = await selectIdentityRobustFrontierPointFromFreezeBundle(
+      frontier,
+      policy.policy,
+      policy.evidenceManifest,
+      policy.evidenceRoot,
+      freeze.root,
+    );
+
+    expect(result.freezeVerification).toMatchObject({
+      ok: true,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      policyScope: freeze.policyScope,
+      providerCallsAuthorized: false,
+    });
+    expect(result.selection).toMatchObject({
+      ok: true,
+      selected: { runBlockCount: 1_032, episodeCount: 33_024 },
     });
   });
 
