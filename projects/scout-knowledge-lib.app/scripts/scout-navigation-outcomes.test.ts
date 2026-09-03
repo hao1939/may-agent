@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -162,15 +163,17 @@ describe("Scout navigation outcome evaluation", () => {
   });
 
   it("replays the exact caller-bound diagnostic controls", () => {
-    const fixture = JSON.parse(
-      readFileSync(
-        resolve(
-          import.meta.dir,
-          "fixtures/scout-navigation-diagnostic-controls-v1.json",
-        ),
-        "utf8",
+    const fixtureBytes = readFileSync(
+      resolve(
+        import.meta.dir,
+        "fixtures/scout-navigation-diagnostic-controls-v1.json",
       ),
-    ) as {
+      "utf8",
+    );
+    expect(createHash("sha256").update(fixtureBytes).digest("hex")).toBe(
+      "0adba8052ebeb28d2e6a40387b224ba164f3f2448bebad9029a84595268e5c27",
+    );
+    const fixture = JSON.parse(fixtureBytes) as {
       schema: string;
       cases: Array<{
         query: string;
