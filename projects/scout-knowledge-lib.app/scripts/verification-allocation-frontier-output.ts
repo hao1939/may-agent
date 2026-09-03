@@ -1,4 +1,8 @@
 import { hasDuplicateJsonObjectKeys } from "./json-object-key-exactness";
+import {
+  identityRobustFrontierSnapshotReference,
+  type IdentityRobustFrontierSnapshotExpectation,
+} from "./verification-allocation-frontier-snapshot";
 
 export const IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA =
   "scout.verification-allocation-robust-frontier-output/v1" as const;
@@ -94,6 +98,73 @@ export function verifyIdentityRobustOutputProviderDenial(raw: string): boolean {
       (record(frozenSelection) &&
         record(freeze) &&
         freeze.providerCallsAuthorized === false))
+  );
+}
+
+function validExpectedIdentity(
+  expected: IdentityRobustFrontierSnapshotExpectation,
+): boolean {
+  return (
+    /^[0-9a-f]{64}$/.test(expected.rowSha256) &&
+    /^[0-9a-f]{64}$/.test(expected.resultSha256) &&
+    /^[0-9a-f]{64}$/.test(expected.frontierSha256) &&
+    Number.isSafeInteger(expected.frontierCount) &&
+    expected.frontierCount > 0
+  );
+}
+
+function matchesExpectedIdentity(
+  candidate: Record<string, unknown>,
+  expected: IdentityRobustFrontierSnapshotExpectation,
+): boolean {
+  return (
+    matchesExpectedRowAndResult(candidate, expected) &&
+    candidate.frontierSha256 === expected.frontierSha256
+  );
+}
+
+function matchesExpectedRowAndResult(
+  candidate: Record<string, unknown>,
+  expected: IdentityRobustFrontierSnapshotExpectation,
+): boolean {
+  return (
+    candidate.rowSha256 === expected.rowSha256 &&
+    candidate.resultSha256 === expected.resultSha256
+  );
+}
+
+/**
+ * Match only the serialized computation identity fields against an explicit
+ * expectation. This does not recompute or authenticate any result.
+ */
+export function matchesIdentityRobustOutputComputationIdentity(
+  raw: string,
+  expected: IdentityRobustFrontierSnapshotExpectation,
+): boolean {
+  if (!validExpectedIdentity(expected)) return false;
+  const parsed = parseIdentityRobustOutput(raw);
+  if (!parsed) return false;
+
+  if (parsed.schema === IDENTITY_ROBUST_FRONTIER_OUTPUT_SCHEMA) {
+    const snapshot = parsed.output.frontierSnapshot;
+    return (
+      matchesExpectedRowAndResult(parsed.output, expected) &&
+      parsed.output.frontierCount === expected.frontierCount &&
+      record(snapshot) &&
+      matchesExpectedIdentity(snapshot, expected) &&
+      Array.isArray(snapshot.frontier) &&
+      snapshot.frontier.length === expected.frontierCount
+    );
+  }
+
+  const verification = parsed.output.snapshotVerification;
+  const snapshot = record(verification) ? verification.snapshot : undefined;
+  return (
+    record(snapshot) &&
+    matchesExpectedIdentity(snapshot, expected) &&
+    snapshot.frontierCount === expected.frontierCount &&
+    snapshot.frontierSnapshotReference ===
+      identityRobustFrontierSnapshotReference(expected)
   );
 }
 
