@@ -9808,6 +9808,26 @@ unavailable. No representative saved-post read was supported, no XHS state
 changed, and no GitHub, arXiv, or Reddit request preceded this record. Commit
 this reconciliation before re-ranking the next accessible question.
 
+## Cycle 292 checkpoint — compact duplicated historical proof
+
+The post-reconciliation ranking selected Cycle 221's validation/protected-state
+mirror. Its 20 map lines / 1,193 bytes had SHA-256
+`f1887178183475ea356df3e95cfcd8b6be771b2921284f9204f9ce1156a38b9a`.
+This detailed Cycle 221 report remains unchanged and authoritative.
+
+The map replacement keeps the incomplete Cycle 206–214 receipt limit, the
+prohibition on inventing hashes or deleting original seed sections, the
+local-only confidence boundary, and explicit pointers to exact validation,
+tree-equivalence, accepted-lineage, runtime-state, and protected-checkout
+proof. It removes repeated historical values from the default-read map without
+discarding a useful distinction.
+
+GitHub, arXiv, and Reddit made zero requests and retain their exact recorded
+heads, paper versions, RSS/JSON access boundary, and revisit triggers. No
+source, claim, code, fixture, account, accepted result, or protected state
+changed. This is static retrieval reduction, not measured use, savings, later
+behavior, or user outcome; RV-004 remains high/open.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

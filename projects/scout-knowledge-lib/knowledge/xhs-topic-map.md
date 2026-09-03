@@ -4083,6 +4083,17 @@ remain unavailable. No representative read was supported and no account or
 public-source mutation occurred. Re-rank the queue only from this persisted
 boundary.
 
+## Cycle 292 checkpoint — historical proof keeps one detailed home
+
+The highest-ranked exact mirror was Cycle 221's 20-line / 1,193-byte map block
+at SHA-256 `f1887178…a38b9a`. The linked detailed report remains authoritative.
+This map replaces that validation/protected-state copy with a six-line summary
+while retaining the incomplete-receipt limit, original-section preservation,
+local-only confidence, exact evidence categories, and no-source-evidence
+decision. GitHub, arXiv, and Reddit made zero requests and keep their last
+useful evidence and revisit triggers. Static compaction is not a retained
+outcome; RV-004 remains high/open.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
@@ -6311,25 +6322,12 @@ ledger still preserves exact seed/test/result commits and focused/full gates.
 GitHub, arXiv, and Reddit made zero public requests and retain their existing
 evidence and triggers.
 
-This is high-confidence retrieval and stale-state repair, not new source or
-model evidence. Read-only inspection of all nine Cycle 206–214 seed commits
-recovered their times and access semantics but found abbreviated body receipts,
-so exact ledger rows cannot be reconstructed without invention. Their original
-seed sections remain in place and the canonical ledger now states the gap.
-The next ranked maintenance work may compact their repeated lane/validation
-prose, but must not remove those seed sections or fabricate full hashes.
-
-Exact Cycle 221 material tip
-`a4d0585f446ccaf1a70ccc0fb4589458f4b1e148` passes whitespace and all 45
-relative links. Read-only health at `2026-09-03T14:44:10.454Z` remains 26 facts
-and 16 wake signals; root and app runtime state are empty. Its Scout app tree
-`b004bc31aa8afde9f895ff4aeb1afcb2c4cb78b4` is byte-identical to the Cycle
-220 tip that passed 278 tests and 1,429 assertions. The clean tip retains 9/9
-canonical accepted ancestors and excludes unaccepted `d041c41b54`.
-
-Protected source and overlay remain exactly
-`386b445c…1fec8` / 886 / `7b786753…7f932` and
-`fd4c68ec…1514663` / three / `a52b97aa…4a15`; neither was written or tested.
+The [detailed Cycle 221 checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-221-checkpoint--canonical-seed-ledger-replaces-repeated-prose)
+retains the exact validation, tree-equivalence, accepted-lineage, runtime-state,
+and protected-checkout evidence. This map keeps the decision: the retrieval
+repair is high-confidence local evidence, but the nine Cycle 206–214 commits
+retain abbreviated body receipts, so missing hashes cannot be reconstructed.
+Keep their original seed sections; this is not new source or model evidence.
 
 ## Cycle 220 seed-first start
 
