@@ -1016,6 +1016,15 @@ export function verifyFactorialSchedule(
   ) {
     errors.push("candidate bodies must identify distinct memories");
   }
+  if (
+    MEMORY_IDS.every((memoryId) => bodies.get(memoryId)?.size === 1) &&
+    new Set(bodyValues).size === MEMORY_IDS.length &&
+    MEMORY_IDS.some(
+      (memoryId) => !bodies.get(memoryId)?.has(CANDIDATES[memoryId].body),
+    )
+  ) {
+    errors.push("candidate bodies do not match their registered memories");
+  }
   const provenanceTuples = MEMORY_IDS.flatMap((memoryId) => [
     ...(provenance.get(memoryId) ?? []),
   ]);
