@@ -7752,6 +7752,28 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 167 checkpoint — the current direct output passes every consumer
+
+Seed commit `6aaff007aa` records unchanged semantic XHS access, zero
+attributable items, unknown additions/changes, no observed removals, and all
+132 durable seeds unavailable before the direct-output audit.
+
+One goal-owned direct regeneration completed in 561.69 seconds with producer
+exit 0. Its 203,783-byte v1 output at SHA-256 `a371cb0…7bd9cb7` passed schema
+identification, provider-denial verification, and the retained computation-
+identity match. It preserved the exact row/result/frontier hashes, 508-point
+count, and first pass `[171,171,171,172,172,172]` at 1,029 blocks. With null
+freeze verification and no explicit policy evidence, it correctly selected
+nothing and returned the exact explicit-policy error.
+
+GitHub/local execution won the rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their four named heads, paper versions, RSS/JSON
+boundary, and recorded triggers. Confidence is high for current local
+producer/consumer interoperability and low for authority, external provenance,
+cost, drift, models, or providers. The next ranked audit asks whether callers
+need one explicit all-of consumer result so a partial check cannot be mistaken
+for full acceptance.
+
 ## Cycle 166 checkpoint — consumers can match computation identities
 
 Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` records unchanged

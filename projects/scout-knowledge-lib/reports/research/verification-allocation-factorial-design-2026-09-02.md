@@ -2636,6 +2636,27 @@ not recomputation or authority. The next control regenerates one current direct
 v1 output and applies all three consumers; the older retained direct artifact
 predates the schemas.
 
+## Cycle 167 current direct-result consumer audit
+
+Seed commit `6aaff007aa` preceded one current no-policy direct regeneration.
+The producer exited 0 after 561.69 seconds and emitted 203,783 bytes at exact
+SHA-256 `a371cb088abeab1fbdcfc710b175b4701e7f238abbd35789a2d8305657bd9cb7`.
+
+The stream consumer identified direct-output v1, verified provider denial, and
+matched the retained computation tuple. The output carries exact row hash
+`6fac7f99…d38252`, result hash `383a699f…c2b8fff`, 508 frontier points at
+`067201a6…b4530ef`, and the 1,029-block first pass
+`[171,171,171,172,172,172]`. It has null freeze verification, no selection,
+and the exact explicit-policy error.
+
+This supports current producer/consumer interoperability and deterministic
+local regeneration. It does not make the identity matcher a recomputation
+oracle or establish policy authority, external provenance, provider execution,
+cost, or model behavior. No implementation change was justified. The next
+control audits whether callers need one explicit all-of result for schema,
+provider denial, and computation identity rather than three independently
+callable booleans.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
