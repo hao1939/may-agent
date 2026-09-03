@@ -704,8 +704,8 @@ describe("verification-allocation execution freeze", () => {
     );
   });
 
-  it("keeps policy scope content-addressed across same-byte evidence artifact aliases", () => {
-    for (const kind of ["model", "seed"] as const) {
+  it("keeps policy scope content-addressed across same-byte evidence and schedule aliases", () => {
+    for (const kind of ["model", "seed", "schedule"] as const) {
       const fixture = validFixture();
       const baseline = verifyExecutionFreezeManifest(
         fixture.manifest,
@@ -713,11 +713,17 @@ describe("verification-allocation execution freeze", () => {
       );
       const contents = fixture.artifactContents as Record<string, string>;
       const original =
-        kind === "model" ? "model-resolution.json" : "seed-policy.json";
+        kind === "model"
+          ? "model-resolution.json"
+          : kind === "seed"
+            ? "seed-policy.json"
+            : "schedule.json";
       const alias =
         kind === "model"
           ? "aliased-model-resolution.json"
-          : "aliased-seed-policy.json";
+          : kind === "seed"
+            ? "aliased-seed-policy.json"
+            : "aliased-schedule.json";
       contents[alias] = contents[original];
       delete contents[original];
       fixture.manifest.artifacts.find(
@@ -725,8 +731,10 @@ describe("verification-allocation execution freeze", () => {
       )!.name = alias;
       if (kind === "model") {
         fixture.manifest.models[0].resolutionEvidenceArtifact = alias;
-      } else {
+      } else if (kind === "seed") {
         fixture.manifest.seedPolicy.policyArtifact = alias;
+      } else {
+        fixture.manifest.schedule.artifact = alias;
       }
 
       const aliased = verifyExecutionFreezeManifest(
