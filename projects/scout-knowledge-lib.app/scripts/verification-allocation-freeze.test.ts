@@ -1233,6 +1233,47 @@ describe("verification-allocation execution freeze", () => {
     });
   });
 
+  it("rejects candidate provenance swapped between registered memories", () => {
+    const { manifest, artifactContents } = validFixture();
+    const schedule = JSON.parse(artifactContents["schedule.json"]);
+    for (const episode of schedule.episodes) {
+      const memoryA = episode.candidates.find(
+        ({ memoryId }: { memoryId: string }) => memoryId === "memory-a",
+      );
+      const memoryB = episode.candidates.find(
+        ({ memoryId }: { memoryId: string }) => memoryId === "memory-b",
+      );
+      [memoryA.path, memoryB.path] = [memoryB.path, memoryA.path];
+      [memoryA.revision, memoryB.revision] = [
+        memoryB.revision,
+        memoryA.revision,
+      ];
+      episode.prompt = renderFactorialPrompt(episode);
+    }
+    artifactContents["schedule.json"] = JSON.stringify(schedule);
+    const digest = freezeArtifactSha256(artifactContents["schedule.json"]);
+    manifest.schedule.sha256 = digest;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = digest;
+
+    const result = verifyExecutionFreezeManifest(manifest, artifactContents);
+
+    expect({
+      ok: result.ok,
+      errors: result.errors,
+      policyScope: result.policyScope,
+      providerCallsAuthorized: result.providerCallsAuthorized,
+    }).toEqual({
+      ok: false,
+      errors: [
+        "schedule factorial verification failed: candidate path/revision tuples do not match their registered memories",
+      ],
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
   it("rejects the Cycle 47 source archive as a Scout execution freeze", () => {
     const { manifest, artifactContents } = validFixture();
     const sourceArchive = structuredClone(manifest);

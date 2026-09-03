@@ -1036,6 +1036,25 @@ export function verifyFactorialSchedule(
       "candidate path/revision tuples must identify distinct memories",
     );
   }
+  if (
+    MEMORY_IDS.every((memoryId) => provenance.get(memoryId)?.size === 1) &&
+    new Set(provenanceTuples).size === MEMORY_IDS.length &&
+    MEMORY_IDS.some(
+      (memoryId) =>
+        !provenance
+          .get(memoryId)
+          ?.has(
+            JSON.stringify([
+              CANDIDATES[memoryId].path,
+              CANDIDATES[memoryId].revision,
+            ]),
+          ),
+    )
+  ) {
+    errors.push(
+      "candidate path/revision tuples do not match their registered memories",
+    );
+  }
   for (const kind of ["plan", "temptation"] as const) {
     if (wordingShapes[kind].size !== 1 || wordingLengths[kind].size !== 1) {
       errors.push(`${kind} wording is not structurally and length matched`);
