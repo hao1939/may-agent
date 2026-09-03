@@ -894,6 +894,64 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("keeps failed model identity in the bound manifest, not the result", async () => {
+    const cases = [
+      {
+        artifact: "evidence/model-resolution.json",
+        index: 0,
+        requestedId: "fixture-model",
+        resolvedId: "fixture-model-a",
+      },
+      {
+        artifact: "evidence/peer-model-resolution.json",
+        index: 1,
+        requestedId: "fixture-model-peer",
+        resolvedId: "fixture-model-b",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { root, manifest } = await fixture();
+      await addPeerModel(root, manifest);
+      const mismatchedEvidence = JSON.stringify({
+        schema: "scout.verification-allocation-model-resolution/v1",
+        requestedId: `${testCase.requestedId}-substitute`,
+        resolvedId: testCase.resolvedId,
+        resolutionKind: "content-addressed",
+      });
+      await writeFile(join(root, testCase.artifact), mismatchedEvidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.artifact,
+      )!.sha256 = freezeArtifactSha256(mismatchedEvidence);
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      expect(manifest.models[testCase.index]).toMatchObject({
+        requestedId: testCase.requestedId,
+        resolvedId: testCase.resolvedId,
+        resolutionEvidenceArtifact: testCase.artifact,
+      });
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result).toMatchObject({
+        ok: false,
+        errors: [
+          `models[${testCase.index}] resolution evidence does not match declaration`,
+        ],
+        artifactCount: 7,
+        modelCount: 2,
+        seedCount: 2,
+        episodeCount: 128,
+        policyScope: null,
+        providerCallsAuthorized: false,
+      });
+      expect(JSON.stringify(result)).not.toContain(testCase.requestedId);
+      expect(JSON.stringify(result)).not.toContain(testCase.resolvedId);
+      expect(JSON.stringify(result)).not.toContain(testCase.artifact);
+    }
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
