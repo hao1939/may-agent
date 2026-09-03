@@ -7886,26 +7886,9 @@ scope but preserves model scope; returning to the original order reproduces
 the complete original verification object exactly. Focused validation passes
 23 tests and 124 assertions plus TypeScript, formatting, and whitespace.
 
-GitHub/local code won. Public GitHub, arXiv, and Reddit made zero requests and
-retain their evidence and triggers. The unaccepted peer range ending at
-`d041c41b54` remains deferred. The next ranked matched audit reorders keys in a
-semantically matching model-resolution record and updates its digest, testing
-byte identity against parsed identity and model scope.
-
-Exact reviewed tip `d15357835e0f27c210c777d98f300efcd1d911dc`
-passes syntax, TypeScript, source formatting, 270 tests, 1,379 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty root/app
-runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
-both accepted patch pairs, and 4/4 accepted artifact blobs.
-
-Integration remains acceptance-gated: only canonical accepted finite results
-are candidates. Read-only provenance confirms `d041c41b54` ends a two-commit
-unaccepted range after `8c5d8747a6`, remains outside standing lineage, and was
-not read as content, tested, edited, or integrated. Protected `/app` retains
-HEAD `386b445c…1fec8` while its externally observed state changed to 886
-records and fingerprint `996480ad…752a3`; the human overlay retains HEAD
-`fd4c68ec…1514663`, three records, and fingerprint `ad8d222c…e74780`.
-Neither checkout was written or tested.
+The next ranked matched audit reorders keys in a semantically matching model-
+resolution record and updates its digest, testing byte identity against parsed
+identity and model scope.
 
 ## Cycle 211 seed-first reconciliation — stable shell, one-byte response change
 
@@ -7947,23 +7930,8 @@ rollback must restore the original v1 bytes and scope. No production change is
 justified without an owner, deposit/update authority, consumer need, or
 provider evidence.
 
-GitHub/local code won. GitHub retains the exact local regression and its last
-four named public heads; arXiv retains MemGauge `2608.30177v1` and allocation
-study `2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All
-three public lanes made zero requests and retain their change-bearing revisit
-triggers. The unaccepted `d041c41b54` range remains outside standing lineage.
 The next ranked matched control reorders seed-policy evidence keys with its
 digest updated, testing the corresponding protocol-only byte boundary.
-
-Exact reviewed tip `4c972d826a6b58208c64b9894eb6dae5d2d717d1`
-passes syntax, TypeScript, source formatting, 271 tests, 1,388 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty root/app
-runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
-both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
-and the human overlay reproduce `386b445c…1fec8` / 886 /
-`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
-neither was written or tested. The two-commit unaccepted peer range remains
-outside standing lineage without content inspection.
 
 ## Cycle 212 seed-first reconciliation — stable unavailable profile
 
@@ -8001,23 +7969,9 @@ bytes and exact rollback rather than duplicate authority. No production change
 is justified without an owner, deposit/update authority, consumer need, or
 provider evidence.
 
-GitHub/local code won. GitHub retains the local regressions and last four named
-public heads; arXiv retains MemGauge `2608.30177v1` and allocation study
-`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All public
-lanes made zero requests and retain their change-bearing revisit triggers. The
-unaccepted `d041c41b54` range remains outside standing lineage. The next ranked
-control reorders only top-level freeze-manifest keys to test whether container
-presentation is outside the declared evidence byte identities.
-
-Exact reviewed tip `20d8560f39f8170bfea87c4e67cd35acc261387a`
-passes syntax, TypeScript, source formatting, 272 tests, 1,397 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty root/app
-runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
-both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
-and the human overlay reproduce `386b445c…1fec8` / 886 /
-`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
-neither was written or tested. The unaccepted range remains outside standing
-lineage without content inspection.
+The next ranked control reorders only top-level freeze-manifest keys to test
+whether container presentation is outside the declared evidence byte
+identities.
 
 ## Cycle 213 seed-first reconciliation — stable semantics and byte length
 
@@ -8053,23 +8007,8 @@ versioned declared artifact rather than a second meaning inferred from outer
 manifest spelling. No production change is justified without owner, authority,
 consumer, or provider evidence.
 
-GitHub/local code won. GitHub retains the local regressions and last named
-heads; arXiv retains MemGauge `2608.30177v1` and allocation study
-`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. Public lanes
-made zero requests and retain their change-bearing triggers. The unaccepted
-`d041c41b54` range remains outside standing lineage. The next ranked matched
-control reorders nested manifest-declaration keys while holding every artifact
-byte fixed.
-
-Exact reviewed tip `5f8f5d83ad87e19231f827e87faf6e2285711628`
-passes syntax, TypeScript, source formatting, 273 tests, 1,402 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty root/app
-runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
-both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
-and the human overlay reproduce `386b445c…1fec8` / 886 /
-`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
-neither was written or tested. The unaccepted range remains outside standing
-lineage without content inspection.
+The next ranked matched control reorders nested manifest-declaration keys
+while holding every artifact byte fixed.
 
 ## Cycle 214 seed-first reconciliation — stable saved-profile boundary
 
@@ -8103,23 +8042,8 @@ byte conclusions from Cycles 211–212. Multi-model transfer, registry ownership
 deposit/update authority, external consumers, and provider behavior remain
 unknown, so no production change is justified.
 
-GitHub/local code won. GitHub retains the local regressions and last named
-heads; arXiv retains MemGauge `2608.30177v1` and allocation study
-`2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All public
-lanes made zero requests and retain their change-bearing triggers. The
-unaccepted `d041c41b54` range remains outside standing lineage. The next ranked
-control repeats nested manifest ordering on the two-model explicit-identity
-fixture.
-
-Exact reviewed tip `c211f7e896d7abe621276a441dbbab6407aa20aa`
-passes syntax, TypeScript, source formatting, 274 tests, 1,407 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty root/app
-runtime state. The clean worktree retains 9/9 canonical accepted ancestors,
-both accepted patch pairs, and 4/4 accepted artifact blobs. Protected `/app`
-and the human overlay reproduce `386b445c…1fec8` / 886 /
-`996480ad…752a3` and `fd4c68ec…1514663` / 3 / `ad8d222c…e74780`;
-neither was written or tested. The unaccepted range remains outside standing
-lineage without content inspection.
+The next ranked control repeats nested manifest ordering on the two-model
+explicit-identity fixture.
 
 ## Cycle 215 seed-first reconciliation — stable unavailable semantics
 
@@ -8418,19 +8342,9 @@ passes 22 tests and 119 assertions plus TypeScript, formatting, and whitespace.
 This supports set-like artifact inventory and contradicts treating its list
 order as identity; Cycle 208's model/schedule order remains semantic.
 
-GitHub/local code won. Public GitHub, arXiv, and Reddit made zero requests and
-retain their evidence and revisit triggers. The unaccepted peer range ending
-at `d041c41b54` remains deferred without content inspection. External consumer,
-deposit, signature, and provider behavior remain unknown. The next ranked
-matched audit reverses seed order with its generated schedule to test
-reversible protocol identity.
-
-Exact reviewed tip `35bc3a6895cb5e88df429fc5da8870c8c2bed1ae`
-passes syntax, TypeScript, source formatting, 269 tests, 1,374 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty runtime state.
-The clean tree retains 9/9 accepted ancestors and 4/4 accepted artifacts.
-Protected source and overlay reproduce their established fingerprints; neither
-was written or tested. The unaccepted peer range remains deferred.
+External consumer, deposit, signature, and provider behavior remain unknown.
+The next ranked matched audit reverses seed order with its generated schedule
+to test reversible protocol identity.
 
 ## Cycle 208 seed-first reconciliation — stable unavailable shell
 
@@ -8460,18 +8374,8 @@ formatting, and whitespace. This supports model order as frozen execution
 identity rather than incidental registry presentation. It does not provide a
 registry owner, update authority, or migration need.
 
-GitHub/local code won again. Public GitHub, arXiv, and Reddit made zero
-requests and retain their exact local/public evidence and revisit triggers.
-The unaccepted peer range ending at `d041c41b54` remains deferred without
-content inspection. The next ranked matched control reverses only artifact-
-declaration order, distinguishing inventory presentation from model order.
-
-Exact reviewed tip `d2f340d19d439c17c9cc034aae9ed85a7931ecec`
-passes syntax, TypeScript, source formatting, 268 tests, 1,373 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty runtime state.
-The clean tree retains 9/9 accepted ancestors and 4/4 accepted artifacts.
-Protected source and overlay reproduce the Cycle 206 fingerprints; neither was
-written or tested. The unaccepted peer range remains deferred.
+The next ranked matched control reverses only artifact-declaration order,
+distinguishing inventory presentation from model order.
 
 ## Cycle 207 seed-first reconciliation — unchanged shell, volatile bytes
 
@@ -8504,20 +8408,8 @@ The focused gate passes 20 tests and 113 assertions plus TypeScript, formatting,
 and whitespace. This supports fail-closed coupling and an atomic update rule;
 it does not create a registry owner, update authority, or consumer need.
 
-GitHub/local code won again with zero public requests. GitHub retains its four
-named exact heads and local commit provenance; arXiv retains `2608.30177v1`
-and `2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. Their
-revisit triggers are unchanged, and the unaccepted peer range ending at
-`d041c41b54` remains deferred without content inspection. The next ranked
-local audit coherently reverses the two models and schedule order to determine
-whether order changes semantic scope or only presentation.
-
-Exact reviewed tip `df98b0821c1e010e626db9fe182762977c2b10e1`
-passes syntax, TypeScript, source formatting, 267 tests, 1,368 assertions,
-whitespace, 31 relative links, read-only health 26/16, and empty runtime state.
-The worktree is clean with 9/9 accepted ancestors and 4/4 accepted artifacts.
-Protected source and overlay reproduce the Cycle 206 fingerprints; neither was
-written or tested. The unaccepted two-commit peer range remains deferred.
+The next ranked local audit coherently reverses the two models and schedule
+order to determine whether order changes semantic scope or only presentation.
 
 ## Cycle 206 seed-first reconciliation — profile shell remains unavailable
 
@@ -8565,28 +8457,9 @@ and contradicts the need for a registry merely to add and remove explicit
 model identities. It does not prove external ownership, atomic deployment,
 deposit/update authority, consumer compatibility, or provider behavior.
 
-GitHub/local code won the post-seed rubric. Public GitHub, arXiv, and Reddit
-made zero requests. GitHub retains its four named exact heads and exact local
-commit; arXiv retains MemGauge `2608.30177v1` at 15/15 and allocation study
-`2608.25553v3` at 14/15; Reddit remains at RSS HTTP 200 with stable
-`t3_1v8a3sh` and six comments, while JSON is last observed HTTP 403. Their
-revisit triggers remain a source revision, new accepted result, independent
-evidence, readable seed body, relevant thread delta, or access change. The
-unaccepted two-commit peer range ending at `d041c41b54` remains deferred
-without content inspection.
-
 The next ranked local control tests interrupted rollback: remove only one
 member of the peer record/declaration/schedule triple at a time and require
 strict failure rather than a mixed accepted identity.
-
-Exact reviewed tip `9ef67be0adca20748eceb15e1900b8dc09ff61c3`
-passes the full Scout gate: syntax, TypeScript, source formatting, 266 tests,
-1,353 assertions, whitespace, and 31 relative links. Read-only health at
-`2026-09-03T13:16:30.128Z` remains bounded at 26 facts and 16 wake signals;
-root and app runtime state stay empty. The clean worktree retains 9/9 canonical
-accepted ancestors, both accepted patch pairs, and 4/4 accepted artifact
-blobs. Protected source and overlay reproduce the seed-record fingerprints;
-neither checkout was written or tested.
 
 ## Cycle 205 checkpoint — strict v1 already supports explicit per-model records
 
@@ -9471,6 +9344,31 @@ Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` records unchanged
 semantic XHS access, zero attributable items, unknown additions/changes, no
 observed removals, and all 132 durable seeds unavailable before the identity
 audit.
+
+## Cycle 222 checkpoint — compact Cycle 206–214 validation lineage
+
+Seed observations stay in their original sections because some body receipts
+are abbreviated. Detailed matched controls remain in the
+[factorial design report](./verification-allocation-factorial-design-2026-09-02.md);
+this table consolidates only exact code/result lineage and repeated validation:
+
+| Cycle | Seed | Test | Material result | Focused / full tests/assertions | Conclusion |
+| --- | --- | --- | --- | --- | --- |
+| 206 | `abd11a10d920862d7b2207a83e94e218111dc5fd` | `423f05d513c0ddb662dee52f989794ae13bbbb71` | `9ef67be0adca20748eceb15e1900b8dc09ff61c3` | 19 / 98; 266 / 1,353 | Complete per-model rollback is exactly reversible. |
+| 207 | `6c9327da5589d3f6f5f235c66fbdde278e6479ad` | `3a7e2a9228aa0f547abd24d7b0e28ad7c7c05448` | `df98b0821c1e010e626db9fe182762977c2b10e1` | 20 / 113; 267 / 1,368 | Every partial rollback fails closed. |
+| 208 | `7ab40b9f80d5171e0e26793cfde36965df832a80` | `582423d8ffe741879c183bb8f9e478d8efca30e8` | `d2f340d19d439c17c9cc034aae9ed85a7931ecec` | 21 / 118; 268 / 1,373 | Coherent model order is reversible execution identity. |
+| 209 | `e8514b7a0f589ca390988645792f58fafac01855` | `1ea329b4042aa91256ccaddb28f4cd9ec5c2d100` | `35bc3a6895cb5e88df429fc5da8870c8c2bed1ae` | 22 / 119; 269 / 1,374 | Artifact declaration order is presentation-only. |
+| 210 | `ed53da97d1651ec8b545197cae6a9e3373f73f07` | `5adf98250d6f0b011dbe35a5cdf44da4f995cc17` | `d15357835e0f27c210c777d98f300efcd1d911dc` | 23 / 124; 270 / 1,379 | Coherent seed order is reversible protocol identity. |
+| 211 | `27948c969b11a8a056bb0b6e5a0f2166fa824480` | `d157824111eb073f6a0338693b8f28f192d62161` | `4c972d826a6b58208c64b9894eb6dae5d2d717d1` | 24 / 133; 271 / 1,388 | Canonical model-evidence bytes set model scope. |
+| 212 | `0c9fcbd14ad5fa2576afced35fc3900e798512c2` | `4a6c83abb1a08c5df243a0ec61a386db6bd597d5` | `20d8560f39f8170bfea87c4e67cd35acc261387a` | 25 / 142; 272 / 1,397 | Canonical seed-policy bytes set protocol scope. |
+| 213 | `2603a53b297ce5c7df5e01783c6f9fde864612d2` | `76307212e1f996d58782714101e36cc8bfc285a7` | `5f8f5d83ad87e19231f827e87faf6e2285711628` | 26 / 147; 273 / 1,402 | Top-level manifest key order is presentation-only. |
+| 214 | `cfb5bd7e8bc647b6eea45f07eade33604a3dd55c` | `7945490bf55b5c4b6b894e10c91f64b878e36160` | `c211f7e896d7abe621276a441dbbab6407aa20aa` | 27 / 152; 274 / 1,407 | Nested manifest key order is also presentation-only. |
+
+Across these cycles GitHub/local code won, GitHub, arXiv, and Reddit made zero
+public requests, and the same change-bearing triggers remained in force. The
+9/9 accepted ancestors, both accepted patch pairs, 4/4 accepted artifacts, and
+explicit deferral of unaccepted `d041c41b54` are one shared continuity fact,
+not nine distinct findings.
 
 Exact local `88e3d86b53bf23fe0bedf010177e2b5e40dace50` separately matches
 the serialized row, result, frontier, count, and snapshot-reference identity
