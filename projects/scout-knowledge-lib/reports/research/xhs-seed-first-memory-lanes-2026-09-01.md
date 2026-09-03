@@ -7860,6 +7860,29 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 187 checkpoint — candidate provenance remains bound to identity
+
+Seed commit `9e186e90a3` records unchanged semantic XHS access, a one-byte
+saved-shell change, 30 readable public Explore notes, zero attributable saved
+items, unknown additions and changes, no observed removals, and all 132 durable
+seeds unavailable before the local provenance-association control.
+
+A whole-schedule swap retained registered IDs and bodies plus two distinct,
+stable path/revision tuples but exchanged the tuples between memory identities,
+regenerating every prompt and both digest bindings. Before repair it returned
+`ok:true`, no errors, non-null local policy scope, and provider authority false.
+Exact local `dcd601390a` binds each tuple to its registered memory. The control
+now returns one exact denial with null policy scope; the complete
+freeze/factorial gate passes 83 tests and 686 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the byte-exact synthetic association and
+low for substantive provenance, authorship, authority, cost, real models, or
+providers. The next ranked audit tests actual candidate order against the
+declared `presentationOrder` factor.
+
 ## Cycle 186 checkpoint — candidate bodies remain bound to identity
 
 Seed commit `2306cdba55` records unchanged semantic XHS access, a one-byte

@@ -2805,6 +2805,28 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 187 registered candidate-provenance association
+
+Seed commit `9e186e90a3` preceded a matched whole-schedule provenance swap.
+Every episode retained the registered IDs and bodies plus two distinct, stable
+path/revision tuples, but the tuples exchanged memory IDs; prompts and both
+schedule digests were coherently rebound. Before repair the freeze returned
+`ok:true`, no errors, provider authority false, model scope `ac29ae2…7c5bf`,
+and protocol scope `1c289ac…41869`.
+
+Exact local `dcd601390a` binds each stable, distinct provenance tuple to its
+registered memory identity. The swap now returns one exact error, null policy
+scope, and provider authority false. The complete freeze/factorial gate passes
+83 tests and 686 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+This is high-confidence local evidence for the byte-exact identity/provenance
+association and contradictory evidence against treating tuple stability and
+uniqueness as sufficient. It does not authenticate provenance, authorship,
+registration, policy authority, cost, real-model behavior, or provider
+execution. The next audit tests whether actual candidate order matches the
+declared `presentationOrder` factor.
+
 ## Cycle 186 registered candidate-body association
 
 Seed commit `2306cdba55` preceded a matched whole-schedule body swap. Every
