@@ -322,9 +322,9 @@ stamp/threat-model artifact.
 This record supports the next seed-first cycle; it is a value decision log, not
 a source-activity quota.
 
-Cycle 165 supersedes the older table snapshot below. Starting tip
-`a3a1505bb7d36188fc15cac62a645caeef9ad195` and seed commit
-`23126e5fa656e0e9f066b5245660495ffbf87a4d` anchor the unchanged login-class
+Cycle 166 supersedes the older table snapshot below. Starting tip
+`9d9b3c1192bf2cf9c733653fe450f90ca9fb9213` and seed commit
+`96ee5aeba7d49d005c10b8319f55182626b83985` anchor the unchanged login-class
 access, zero attributable items, no proven removals, and all 132 durable seeds
 unavailable. No public request was made. Exact local `b9131ef…4824a3`
 first preserved local evidence labels and policy scope across all five same-
@@ -375,12 +375,15 @@ nested value or authority judgment.
 Exact local `a264b31…583e4f8` separately verifies the provider-denial fields
 required by each recognized shape and rejects any contradictory authority key
 anywhere in the payload.
+Exact local `88e3d86…40dace50` separately matches the declared row, result,
+frontier, count, and snapshot-reference identity against one explicit expected
+tuple without treating the match as recomputation.
 
 | Lane                    | Current relevance / expected value / freshness                                                                                                                                                                      | Access and last useful evidence                                                                                                                                                                                                                                                                                                                                                                                                                            | Decision and revisit trigger                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 165; public trigger-deferred.** Schema identity and provider-denial validation are now separate consumer operations; neither authenticates computation. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `a264b31…583e4f8` is current; the actual 2,446-byte snapshot CLI output passed its consumer. | Zero public requests. Next match the serialized computation identity tuple and snapshot reference to one explicit expected identity without claiming recomputation. Revisit GitHub on a recorded trigger. |
-| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 165.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
-| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 165 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
+| **GitHub / local code** | **High relevance / high local value / selected locally in Cycle 166; public trigger-deferred.** Schema, provider denial, and computation-identity matching are separate consumer checks; none establishes recomputation or authority. | Last exact anonymous HTTP-200 heads remain `beining1008/cross-episode-memory-client` at `4c0dabd64b36035d6fc18eb66be99d4b7779c641`, `arquicanedo/self-reflective-apis` at `567b6a0e01b49de6b353eb32a3e2f6774052225e`, `wallidsaydi-creator/HOM-AIMOS` at `2b93af11e79d114ed64eec04100e6c390778d9e7`, and `sattyamjjain/mnemo` at `2994abf185da50d43e5fa4b3f826812bd09c2f20`. Exact local `88e3d86…40dace50` is current; the actual snapshot CLI passed all three consumers. | Zero public requests. Next regenerate one current direct v1 output and exercise its schema, denial, and identity consumers against the retained expectation. Revisit GitHub on a recorded trigger. |
+| **arXiv**               | **High relevance / high retained value / current local evidence; public trigger-deferred in Cycle 166.** The papers remain contextual controls rather than local evidence-authority.       | Last exact HTTP 200 checks retain MemGauge `2608.30177v1` at 15/15 and allocation study `2608.25553v3` at 14/15. Exact retained proof/parser evidence from Cycles 128–130 remains unchanged and explicitly unverified locally.                                                                                                                                                                                                                             | Zero public requests. Retain both papers. Revisit on a paper/artifact/registration revision, independent verification, or newly readable seed body.  |
+| **Reddit**              | **Medium relevance / low incremental value / unchanged; trigger-deferred in Cycle 166 without quota work.** The retained access class exposes no seed-linked item, thread delta, access change, or community claim. | Last useful evidence remains post RSS HTTP 200 at `2026-09-01T10:43:38Z`, stable `t3_1v8a3sh`, and six comments. JSON remains last observed HTTP 403.                                                                                                                                                                                                                                                                                                      | Zero public requests. Revisit for seed-linked reproducible evidence, a thread/content delta, or an access change.                                    |
 
 Cycle 46 seed reconciliation was committed first at
 `8ec554315dcc8f28a2a5e33ca3871154745270f0`. ArXiv-anchored local design
@@ -3308,6 +3311,30 @@ HEADs, 882/3 records, and exact fingerprints `4325371…abf0f` and
 `ad8d222c…e74780`; neither checkout was written or tested. Commit this seed
 record first, then match serialized computation identities against one explicit
 expected tuple without claiming recomputation.
+
+### Cycle 166 checkpoint — computation identities are separately matchable
+
+Exact local `88e3d86b53bf23fe0bedf010177e2b5e40dace50` adds
+`matchesIdentityRobustOutputComputationIdentity`. It requires one explicit
+valid row/result/frontier/count expectation. Direct output must agree at its
+outer row/result/count and embedded snapshot hashes/frontier length;
+snapshot-selection output must agree on all four fields and the derived
+snapshot reference.
+
+The matcher deliberately ignores provider authority and does not recompute the
+frontier. A snapshot fixture with a true authority claim can match identity but
+fails the separate denial verifier. Wrong counts, hashes, references, malformed
+expectations, ambiguous JSON, and unknown schemas fail. The focused gate passes
+20 tests and 99 assertions plus TypeScript, formatting, and whitespace.
+
+The actual retained-snapshot CLI again emitted 2,446 bytes and passed schema,
+provider denial, and retained identity as three independent checks. Confidence
+is high for local declaration equality and low for computation provenance,
+generator authenticity, policy, freshness, drift, cost, models, or providers.
+GitHub/local code won; public lanes made zero requests. Next begin seed-first,
+then regenerate one current direct v1 result and run all three consumers on it;
+the older retained direct artifact predates these output schemas and cannot
+prove current direct serialization.
 
 ## Cycle 165 seed-first start
 

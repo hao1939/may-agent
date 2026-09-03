@@ -7752,6 +7752,27 @@ made zero requests and retain their named heads, paper versions, RSS/JSON
 boundary, and recorded triggers. The next ranked control tests same-value
 duplicate JSON keys before exact object-key validation.
 
+## Cycle 166 checkpoint — consumers can match computation identities
+
+Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` records unchanged
+semantic XHS access, zero attributable items, unknown additions/changes, no
+observed removals, and all 132 durable seeds unavailable before the identity
+audit.
+
+Exact local `88e3d86b53bf23fe0bedf010177e2b5e40dace50` separately matches
+the serialized row, result, frontier, count, and snapshot-reference identity
+against an explicit expectation. It does not recompute results or validate
+authority. The focused gate passes 20 tests and 99 assertions plus TypeScript,
+formatting, and whitespace; the real 2,446-byte snapshot CLI output passed
+schema, denial, and retained identity independently.
+
+GitHub/local code won the rubric. GitHub, arXiv, and Reddit made zero public
+requests and retain their named heads, paper versions, RSS/JSON boundary, and
+triggers. Confidence is high for declaration equality and low for computation
+provenance, policy, freshness, drift, models, or providers. The next ranked
+control regenerates one current direct v1 output and applies all three
+consumers; the older retained direct artifact predates these schemas.
+
 ## Cycle 165 checkpoint — consumers can verify provider denial
 
 Seed commit `23126e5fa656e0e9f066b5245660495ffbf87a4d` records unchanged

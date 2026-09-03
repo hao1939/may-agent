@@ -2620,6 +2620,22 @@ This proves current local denial serialization only. The next control matches
 the declared computation identity tuple and derived snapshot reference to an
 explicit expectation without calling that recomputation or authority.
 
+## Cycle 166 consumer-side computation identity
+
+Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` preceded matched
+direct and snapshot controls. Exact local
+`88e3d86b53bf23fe0bedf010177e2b5e40dace50` compares serialized row,
+result, frontier, count, and derived-reference declarations against one
+explicit valid expectation. Cross-field count/hash/reference contradictions
+fail; provider denial remains a separate check.
+
+Twenty focused tests pass with 99 assertions plus TypeScript, formatting, and
+whitespace. The actual 2,446-byte snapshot CLI output independently passed
+schema, denial, and retained-identity checks. This is equality of declarations,
+not recomputation or authority. The next control regenerates one current direct
+v1 output and applies all three consumers; the older retained direct artifact
+predates the schemas.
+
 ## Cycle 160 positive direct-result equivalence
 
 Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
