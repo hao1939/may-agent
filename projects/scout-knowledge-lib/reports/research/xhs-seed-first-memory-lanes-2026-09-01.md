@@ -7860,6 +7860,29 @@ public requests and retain their exact heads, paper versions, RSS/JSON boundary,
 and triggers. The next ranked audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 182 checkpoint — candidate cardinality and identity are bound
+
+Seed commit `43d0dd7727` records unchanged login-class XHS access, 30 readable
+public Explore notes, zero attributable saved items, unknown additions and
+changes, no observed removals, and all 132 durable seeds unavailable before the
+local candidate controls.
+
+A coherently rebound 20,000-candidate episode took 358.28 ms and 193,304 KB
+peak RSS before returning one lineage error. A separate two-candidate fixture
+duplicated one identity and incorrectly returned `ok:true`. Exact local
+`ea660109ca` requires one of each registered memory before episode traversal.
+The oversized control now returns one exact denial in 229.66 ms and 165,028 KB
+peak RSS; the duplicate fixture fails with null policy scope and provider
+authority false. The full freeze/factorial gate passes 78 tests and 681
+assertions plus TypeScript, exact-file formatting, and whitespace.
+
+GitHub/local code won the post-seed rubric. GitHub, arXiv, and Reddit made zero
+public requests and retain their exact heads, paper versions, RSS/JSON boundary,
+and triggers. Confidence is high for the synthetic local acceptance repair and
+matched runtime, and low for broader provenance, authority, cost, drift, model,
+or provider claims. The next ranked audit tests cross-cell candidate path and
+revision stability.
+
 ## Cycle 181 checkpoint — mismatched metadata breadth stops traversal
 
 Seed commit `7ef315207a` records unchanged login-class XHS access, 30 readable

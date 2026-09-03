@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 182 candidate cardinality and identity binding
+
+Seed commit `43d0dd7727` preceded two matched candidate controls. A valid
+64-episode schedule was coherently rebound after one episode's candidate list
+and matching prompt expanded from two entries to 20,000 copies. Before repair,
+verification returned a lineage-length error after 358.28 ms, 0.39 s process
+wall time, and 193,304 KB peak RSS. A second fixture retained two candidates
+but duplicated one memory identity; the resulting freeze returned `ok:true`.
+
+Exact local `ea660109ca` requires exactly one of each registered memory before
+episode traversal. The oversized control now returns one exact error in 229.66
+ms, 0.26 s wall time, and 165,028 KB peak RSS. The duplicate-identity fixture
+now fails with null policy scope and provider authority false. The full
+freeze/factorial gate passes 78 tests and 681 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the synthetic acceptance boundary
+and matched current runtime, not a general resource ceiling, substantive
+provenance, policy authority, cost, drift, model behavior, or provider
+execution. The next audit tests cross-cell candidate path/revision stability.
+
 ## Cycle 181 bounded schedule-metadata breadth
 
 Seed commit `7ef315207a` preceded two matched schedule controls. The valid
