@@ -8165,6 +8165,20 @@ content inspection, testing, editing, or import. The next accessible question
 is multi-model diagnostic traceability when one explicit resolution record
 fails; more registry-order permutations are lower value.
 
+Exact reviewed tip `32e2f3b822660ca2b62f72c086bc433be8100d96`
+passes syntax, TypeScript, source formatting, 275 tests, 1,414 assertions,
+whitespace, all 31 relative links across the three current research documents
+and independent-review cursor, read-only health 26/16 at
+`2026-09-03T14:06:52.242Z`, and empty root/app runtime state. The worktree is
+clean with 9/9 canonical accepted ancestors, both accepted patch-equivalence
+pairs, and 4/4 accepted artifact blobs. Explicit ancestry checks keep
+unaccepted `d041c41b54` and its predecessor outside standing lineage.
+
+Protected `/app` remains at `386b445c…1fec8`, 886 status records, and
+`996480ad…752a3`; the human overlay remains at `fd4c68ec…1514663`, three
+records, and `ad8d222c…e74780`. Read-only inspection used optional Git locks
+disabled. Neither protected checkout was written or tested.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one

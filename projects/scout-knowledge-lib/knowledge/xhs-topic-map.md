@@ -3916,6 +3916,20 @@ question is whether current verification diagnostics preserve each model's
 explicit resolution identity when one record fails, rather than collapsing a
 multi-model failure into an untraceable bundle-level error.
 
+Exact reviewed Cycle 215 tip
+`32e2f3b822660ca2b62f72c086bc433be8100d96` passes syntax, TypeScript,
+source formatting, 275 tests, 1,414 assertions, whitespace, and all 31 relative
+links. Read-only health at `2026-09-03T14:06:52.242Z` remains bounded at 26
+facts and 16 wake signals; root and app runtime state are empty. The clean tip
+retains 9/9 canonical accepted ancestors, both accepted patch-equivalence
+pairs, and 4/4 accepted artifact blobs. `d041c41b54` and its unaccepted
+predecessor are not ancestors.
+
+Protected `/app` and the human overlay reproduce HEAD
+`386b445c…1fec8` / 886 records / `996480ad…752a3` and
+`fd4c68ec…1514663` / three records / `ad8d222c…e74780`. Both were inspected
+with optional Git locks disabled and neither was written or tested.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip
