@@ -2805,6 +2805,27 @@ not a general resource ceiling, timing guarantee, policy or provenance claim,
 or provider result. The next audit tests execution-freeze schedule and
 canonical artifact readers under matched depth controls.
 
+## Cycle 211 model evidence bytes control model scope
+
+Seed commit `27948c969b` preceded exact test-only commit `d157824111`. Two
+model-resolution records parse to equal objects while differing only in object-
+key order. The original 160-byte record hashes to `87914189…36708b` and model
+scope `ac29ae22…7c5bf`; the reordered bytes hash to `3e5e4a77…962116` and
+model scope `0760afdd…80b31`.
+
+Both bundles verify with the same protocol scope and false provider authority.
+Restoring the original record and digest reproduces the complete original
+verification result. The focused gate passes 24 tests and 133 assertions plus
+TypeScript, formatting, and whitespace.
+
+Current v1 therefore content-addresses canonical round-trippable bytes rather
+than normalizing parsed field order. A future explicit registry must specify a
+single field order or deterministic canonicalization, version the resulting
+scope change, and retain the exact v1 bytes for rollback. No current owner,
+deposit/update authority, consumer requirement, or provider execution supports
+that migration. The next audit applies the same matched key-order control to
+the seed-policy evidence record.
+
 ## Cycle 210 seed order is reversible protocol identity
 
 Seed commit `ed53da97d1` preceded exact test-only commit `5adf98250d`. The

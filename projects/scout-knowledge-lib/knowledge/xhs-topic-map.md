@@ -3688,6 +3688,32 @@ evidence and revisit triggers. Local code remains highest value: test reordered
 keys in a semantically matching model-resolution record with its digest
 updated, while the unaccepted `d041c41b54` range stays provenance-only.
 
+### Cycle 211 checkpoint — model evidence scope binds canonical bytes
+
+Seed commit `27948c969b` preceded exact test-only commit `d157824111`.
+The parsed original and reordered model-resolution objects are equal. Their
+canonical bytes nevertheless hash to `87914189…36708b` and
+`3e5e4a77…962116`, producing exact model scopes `ac29ae22…7c5bf` and
+`0760afdd…80b31`. Both verify, retain the same protocol scope, and deny
+provider authority; restoring the original bytes reproduces the complete
+original result.
+
+This is high-confidence local evidence that v1 model identity binds declared
+content bytes, not only parsed fields. It contradicts treating object-key order
+as normalized semantic identity. A future explicit registry must therefore
+choose and version one exact field order or another deterministic
+canonicalization rule; rollback must restore original v1 bytes and scope. No
+owner, deposit/update contract, external consumer, or provider result justifies
+changing v1 now.
+
+Focused validation passes 24 tests and 133 assertions plus TypeScript,
+formatting, and whitespace. GitHub/local code won; GitHub, arXiv, and Reddit
+made zero public requests and retain their last useful evidence, access
+boundaries, and change-bearing revisit triggers. The next ranked matched audit
+reorders keys in the seed-policy evidence record with its digest updated,
+testing whether the byte boundary changes protocol scope without changing model
+scope.
+
 ## Cycle 204 seed-first start
 
 Cycle 204 began from clean documentation tip

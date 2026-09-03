@@ -7930,6 +7930,31 @@ reorder model-resolution record keys, update the declared digest, and compare
 the resulting model and protocol scopes. The unaccepted `d041c41b54` peer
 range remains deferred without content inspection.
 
+## Cycle 211 checkpoint — model evidence bytes, not parsed equality, set scope
+
+Seed commit `27948c969b` preceded exact test-only commit `d157824111`. The
+original and reordered model-resolution records parse to equal objects, but
+their bytes hash to `87914189…36708b` and `3e5e4a77…962116`. Exact model
+scope changes from `ac29ae22…7c5bf` to `0760afdd…80b31` while protocol scope
+is unchanged, both variants remain valid with false provider authority, and
+restoring the original bytes reproduces the complete original result.
+
+The focused bundle gate passes 24 tests and 133 assertions plus TypeScript,
+formatting, and whitespace. This supports v1 content identity and contradicts
+interpreting parsed object equality as model-scope equality. A future explicit
+registry would need one versioned field order or deterministic canonicalizer;
+rollback must restore the original v1 bytes and scope. No production change is
+justified without an owner, deposit/update authority, consumer need, or
+provider evidence.
+
+GitHub/local code won. GitHub retains the exact local regression and its last
+four named public heads; arXiv retains MemGauge `2608.30177v1` and allocation
+study `2608.25553v3`; Reddit retains its RSS-readable/JSON-403 boundary. All
+three public lanes made zero requests and retain their change-bearing revisit
+triggers. The unaccepted `d041c41b54` range remains outside standing lineage.
+The next ranked matched control reorders seed-policy evidence keys with its
+digest updated, testing the corresponding protocol-only byte boundary.
+
 ## Cycle 209 seed-first reconciliation — stable shell, new body bytes
 
 Cycle 209 began from clean `5bb3f65e40`. One direct public status and one
