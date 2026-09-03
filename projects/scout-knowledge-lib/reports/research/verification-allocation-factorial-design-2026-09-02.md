@@ -2124,6 +2124,28 @@ the declaration. The next ranked control is cross-registration substitution:
 hold protocol/model/snapshot/decision evidence fixed, change only registration
 identity, and see whether the same policy scope remains applicable.
 
+## Cycle 119 cross-registration substitution
+
+Seed commit `c5a55a42f3db767d07ffb6d7fc34fb21caef7f2d` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds remained
+unavailable, and no public lane request was made.
+
+Matched controls held every protocol, model, seed, artifact byte, frontier,
+policy, manifest, and local decision field fixed while changing only the
+reserved registration URL, identifier, and deposit timestamp. Both results
+remained `local-byte-match-unverified`, their derived protocol/model scopes were
+identical, and the old decision still selected equal 172 with provider authority
+false. Exact test-only commit
+`28a3164bbbcf68cf8b1477d71b25aaf9725d4a46` preserves the direct and
+end-to-end results.
+
+Focused validation passes 23 tests and 98 assertions plus TypeScript,
+formatting, and whitespace. The conclusion is qualified: unverified deposit
+metadata is provenance, not policy applicability, so no production scope field
+was added. The next ranked control changes registered execution-bundle bytes
+instead; unlike metadata, executable content may affect what the decision
+actually authorizes.
+
 ## Go/no-go boundary
 
 This checkpoint authorizes no provider call. Execution requires all of the
