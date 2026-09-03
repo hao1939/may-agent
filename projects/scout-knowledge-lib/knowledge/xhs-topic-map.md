@@ -2,16 +2,16 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 237 observational reconciliation through 2026-09-03T16:57:11.030Z; exact access evidence and uncertainty are in seed-ledger row 237."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 237 at 2026-09-03T16:57:11.030Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 237 read-only XHS boundary through 2026-09-03T16:57:11.030Z."
+latest_seed_basis: "Cycle 292 observational reconciliation through 2026-09-03T22:59:03.253Z; exact access evidence and uncertainty are in seed-ledger row 292."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 292 read-only XHS boundary through 2026-09-03T22:59:03.253Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 237 used the established direct localhost Chrome
+authenticated window. Cycle 292 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`). Public Explore
 remained readable with 30 notes, while supported `saved-status`
@@ -4063,6 +4063,25 @@ policy. Its 17 content lines / 1,221 bytes become 10 / 752 in the map, removing
 frequency, caller counterexample, confidence, and the diagnostic-not-policy
 decision. No lane ran; RV-004 stays high/open. Next is Cycle 221's exact
 21-line / 1,194-byte validation/protected-state block after seed reconciliation.
+
+## Cycle 292 seed-first reconciliation — scheduled receipt, unchanged boundary
+
+Cycle 292 began from clean `40bc4a7157`, whose exact-tip gate passed 296 tests
+/ 1,483 assertions plus syntax, TypeScript, formatting, Cycle 237 projection,
+72 scoped links, both navigation fixtures, broad links, and read-only health.
+After the six-hour cadence elapsed, worker UID 1000 (`hao`) used passwordless
+`sudo nsenter` as effective UID 0 in root-owned Chrome PID 2136's network
+namespace for one public status and one non-navigating saved status at
+`2026-09-03T22:59:02.203Z–22:59:03.253Z`.
+
+Explore remained readable with 30 notes. Saved status retained HTTP 200,
+`login`, 46,763 bytes, target evidence `e860da4…906e`, access fingerprint
+`3dab1b6…af420`, zero attributable items, empty fingerprint `e3b0c44…b855`,
+and `ready:false`. Only body SHA changed `a548dd2…dc6b`→`3eae646…6e819`.
+Added/changed identities remain unknown, removals are `[]`, and all 132 seeds
+remain unavailable. No representative read was supported and no account or
+public-source mutation occurred. Re-rank the queue only from this persisted
+boundary.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
