@@ -5055,27 +5055,16 @@ recoverable.
 
 ### Cycle 258 checkpoint — one real target lacks a matched historical index
 
-Seed commit `e7a1364f68` preceded the bounded pair audit. The selected
-pre-evaluator child transition occurred at `2026-08-20T01:09:40.172Z` for
-`repair-future-dated-scans-241-261-provenance`; its exact receipt names
-`reports/triage/future-dated-scans-241-261-provenance-repair-2026-08-19.md`,
-16 canonical identities, 116 passing checks, and valid INDEX navigation. The
-real maintenance attempt then ran from `01:11:39.828Z` to `01:12:40.317Z` and
-accepted the child result without another edit.
-
-The target is stable, but the matched evaluation triple is not recoverable.
-Git history first contains that report in `d9da99476e` at
-`2026-08-25T06:10:59Z`, more than five days after the receipt; no INDEX commit
-exists in the maintenance-attempt window. The trigger retains an outcome and
-evidence, not the natural-language lookup query Scout used. Substituting the
-task outcome text as a query or using the later index would be retrospective
-invention. Therefore no scorer replay ran and this pair is not promoted as
-navigation evidence.
-
-Confidence is high for the receipt, target, and Git timing; low for the missing
-query and uncommitted historical index contents. Next, inspect the other nine
-path-bearing receipts for any pair whose query, target, and contemporaneous
-committed index are all exact; stop this historical route if none qualifies.
+Seed `e7a1364f68` preceded this audit. The real receipt at
+`2026-08-20T01:09:40.172Z` names task
+`repair-future-dated-scans-241-261-provenance`, its exact report target, 16
+canonical identities, and 116 passing checks; the maintenance attempt accepted
+it at `01:11:39.828Z–01:12:40.317Z`. The [detailed checkpoint](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-258-checkpoint--one-real-target-lacks-a-matched-historical-index)
+retains the path and full evidence. Git first contains the report in
+`d9da99476e` over five days later; no contemporaneous INDEX commit or natural-
+language query survives. No retrospective replay or promotion ran. Confidence
+is high for receipt/target chronology and low for missing query/index bytes;
+Cycle 259 closed the same route after auditing the other nine receipts.
 
 ## Cycle 257 seed-first start — accepted-review trigger
 
