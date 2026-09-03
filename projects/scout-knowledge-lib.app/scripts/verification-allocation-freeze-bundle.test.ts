@@ -797,6 +797,69 @@ describe("verification-allocation freeze bundle", () => {
     expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
   });
 
+  it("keeps nested freeze-manifest key order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reorderedManifest = JSON.stringify({
+      schema: manifest.schema,
+      evidenceClass: manifest.evidenceClass,
+      providerCallsAuthorized: manifest.providerCallsAuthorized,
+      results: manifest.results,
+      models: manifest.models.map((model) => ({
+        resolutionEvidenceArtifact: model.resolutionEvidenceArtifact,
+        resolutionKind: model.resolutionKind,
+        resolvedId: model.resolvedId,
+        requestedId: model.requestedId,
+      })),
+      seedPolicy: {
+        seedIds: manifest.seedPolicy.seedIds,
+        policyArtifact: manifest.seedPolicy.policyArtifact,
+        algorithm: manifest.seedPolicy.algorithm,
+        namespace: manifest.seedPolicy.namespace,
+      },
+      schedule: {
+        episodeCount: manifest.schedule.episodeCount,
+        cellsPerModelSeed: manifest.schedule.cellsPerModelSeed,
+        seedIds: manifest.schedule.seedIds,
+        modelIds: manifest.schedule.modelIds,
+        schema: manifest.schedule.schema,
+        sha256: manifest.schedule.sha256,
+        artifact: manifest.schedule.artifact,
+      },
+      artifacts: manifest.artifacts.map((artifact) => ({
+        sha256: artifact.sha256,
+        name: artifact.name,
+      })),
+      externalRegistration: {
+        proofTargetSha256: manifest.externalRegistration.proofTargetSha256,
+        proofTargetArtifact: manifest.externalRegistration.proofTargetArtifact,
+        proofArtifact: manifest.externalRegistration.proofArtifact,
+        manifestSha256: manifest.externalRegistration.manifestSha256,
+        manifestArtifact: manifest.externalRegistration.manifestArtifact,
+        artifactSha256: manifest.externalRegistration.artifactSha256,
+        artifactName: manifest.externalRegistration.artifactName,
+        depositTimestampUtc: manifest.externalRegistration.depositTimestampUtc,
+        identifier: manifest.externalRegistration.identifier,
+        url: manifest.externalRegistration.url,
+        status: manifest.externalRegistration.status,
+      },
+    });
+
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "a951e9ec8bd546c4c436766604bc9891c068b93db04eb81447d5ed24a0878572",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "d9fb263a34827b7112767ea0eb4d4235c47a0dc440ab4ee56860513e28ee00a8",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
   it("rejects one hard-linked digest reused across semantic roles", async () => {
     const cases = [
       {
