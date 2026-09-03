@@ -3842,51 +3842,26 @@ new regression is warranted because the exact matched control already exists.
 Cycle continuity, source-lane disposition, accepted lineage, and focused gate
 are consolidated in the Cycle 220 compact ledger.
 
-## Cycle 274 seed-first start — local continuity
+## Cycles 274 and 278 compact retrieval transition
 
-Exact Cycle 273 result `7f8f268460672cc446eed07b3b9c4d86d85b3581`
-passes Cycle 237 projection, all 67 scoped links, navigation v1 at 11/14 and v2
-at 8/8, and whitespace; its code parent passed the full 296-test /
-1,483-assertion gate. The result is documentation-only and the standing tree is
-clean.
+The [detailed lane report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-274-seed-first-start--local-continuity)
+retains both seed receipts, the complete Cycle 278 overlap measurement,
+protected-checkout evidence, source-lane triggers, and rollback limits. This
+map retains the decisions once:
 
-At `2026-09-03T20:20:22.489Z`, the exact Cycle 237 receipt was two hundred
-three minutes old, inside the six-hour cadence. No seed, semantic-access,
-public-lane, or accepted-review trigger changed. This bounded reconciliation
-reused it with zero browser or public requests: added/changed collected
-identities remain unknown, observed removals are `[]`, and all 132 durable IDs
-remain unavailable. Commit this seed record before the project-README route
-audit.
+- Cycle 274 seed `cf086863ab` followed validated result `7f8f268460`; result
+  `e91bc6c0d6` then aligned the project entry point without a provider request.
+- Cycle 278 seed `3029cf2ed5` followed accepted Cycle 276 review integration
+  `eaf5fc7c76`; result `29d3d8b8cc` reduced the byte-identical 109-line
+  Cycle 275–276 mirror to a 50-line decision summary while retaining the full
+  detailed copy at SHA-256 `8e16c292…e90fc4`.
+- The 59-line (54%) reduction is static retrieval evidence, not observed reuse,
+  token savings, or user-outcome evidence. `RV-004` remains high/open.
 
-## Cycle 278 seed-first start — reviewed duplication trigger
-
-Cycle 278 began from clean integration checkpoint
-`eaf5fc7c763fce3d2d8531f41867214bf80e0da4`. At
-`2026-09-03T21:15:26.714Z`, Cycle 237's exact XHS receipt was 258 minutes old,
-inside its six-hour cadence. No seed or semantic-access observation changed,
-so this bounded reconciliation made zero browser or public requests:
-added/changed identities remain unknown, observed removals are `[]`, and all
-132 durable IDs remain unavailable. Reviewer `af409f4ef3` is contained;
-protected `/app` remains `386b445c…41fec8`, 386 records /
-`7c285c09…1ca01b`, and its Scout scope remains 296 records /
-`7e4d0937…c26a8a`. GitHub, arXiv, and Reddit retain their recorded heads,
-versions, RSS/JSON boundary, and change-bearing revisit triggers. The accepted
-review's explicit 111-line Cycle 275-276 mirror duplication now outranks an
-early provider reread: measure whether one detailed report plus a compact
-topic-map pointer preserves every useful distinction at lower retrieval cost.
-
-## Cycle 278 checkpoint — retain detail once, retrieve the decision here
-
-The Cycle 275-276 block was byte-identical across the topic map and detailed
-report: 109 lines, SHA-256 `8e16c292…e90fc4`. The detailed report remains
-unchanged; this map now retains a 50-line decision summary with the seed
-uncertainty, source/result identities, RV-018 digest, RV-019 qualification,
-retention counts, mechanism/causality boundary, validation, RV-004 status, and
-revisit trigger. This removes 59 repeated lines (54%) without discarding the
-full record. It improves static retrieval cost, not observed reuse or outcome
-evidence; RV-004 remains high/open. Next, prefer a retained outcome or accepted
-review, otherwise perform the scheduled seed-first XHS observation at
-`2026-09-03T22:57:11.030Z`.
+GitHub, arXiv, and Reddit made zero requests across this transition. Seed
+additions/changes remained unknown, removals were `[]`, and all 132 durable
+IDs remained unavailable. Revisit the historical detail only for exact
+validation, rollback, or review provenance.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
