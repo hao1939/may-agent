@@ -2,7 +2,7 @@
 summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
 triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
 last_updated: "2026-09-03"
-source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 99, including explicit frontier-policy gate 7a4c7ce5b934692271e418c64f0bba140126f4be."
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes and the Cycle 42–44 selection, ordering, and design audits; plus deterministic synthetic controls through Cycle 100, including policy-provenance binding 6eab5e9bd76022e0b65aa26d43019e49a8348644."
 </ai_context>
 
 # Separate relevance from freshness before claiming a scheduler
@@ -1407,6 +1407,46 @@ The next ranked question is whether a minimal provenance manifest can bind the
 caller policy to a named owner, decision revision, observation time, and
 independent evidence status without pretending to validate its substantive
 judgment.
+
+## Cycle 100 policy-provenance binding
+
+Seed reconciliation `3f01ee4ae6eb2ae8f8220781045dfb2a26fca2ed`
+preceded this work. The saved profile shell retained the same semantic access
+fingerprint and zero attributable items; only its byte length and body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. The local-only accepted-result inventory at
+`2026-09-03T00:38:49.086Z–00:38:49.089Z` found all six refs unchanged. GitHub,
+arXiv, and Reddit made zero public requests.
+
+Exact local `6eab5e9bd76022e0b65aa26d43019e49a8348644` requires a
+policy-provenance manifest before selecting a frontier point. The manifest
+binds the exact policy SHA-256 and evidence reference to a nonempty decision
+owner, decision revision, exact UTC observation time, and one of two honest
+independent-evidence states: `not-provided` or `provided-unverified`. A
+provided state requires its own reference. Mismatched hashes or references,
+malformed timestamps, unbound fields, missing evidence, and contradictory
+status/reference combinations fail closed. The selector hashes the accepted
+manifest separately and still labels the entire binding
+`caller-supplied-unverified`.
+
+The real 508-point synthetic control used reserve target `0.0006`, policy
+SHA-256 `ab3e639387e21f092303d992b215daf4f67cf79289c8ddfc1a92eef20615373d`,
+and manifest SHA-256
+`f7b8f28bde41941b5ae48ee2874940a30555cf76a7d1259281519eb9405afed8`.
+It selected the cheapest qualifying point: equal 172 sampling, 1,032 blocks,
+33,024 episodes, and reserve `0.0006254995932553816`. Established row and
+result hashes remained
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Focused validation passes 7 tests and 20 assertions.
+
+This proves structural provenance binding, not that the synthetic reserve is a
+good operating target or that any named owner, revision, timestamp, or
+independent evidence is authentic. Confidence is high for exact binding,
+failure controls, selection, and hashes; low for real policies and provider
+transfer. The next ranked question is to byte-bind the referenced decision
+record itself through the existing descriptor-safe local evidence path, while
+continuing to distinguish integrity from authority and independent validation.
 
 ## Go/no-go boundary
 
