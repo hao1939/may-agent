@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent Scout review cursor through standing reconciliation d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94 after Cycle 259 and the Cycle 260 seed: all ten path-bearing historical receipts lack an exact query-to-target-to-contemporaneous-index triple, so retrospective scorer replay is correctly closed; the Cycle 258 reviewer result is integrated, the newer Cycle 259 review remains pending, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through standing reconciliation d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94 after Cycle 259 and the Cycle 260 seed: all ten path-bearing historical receipts lack an exact query-to-target-to-contemporaneous-index triple, so retrospective scorer replay is correctly closed; the Cycle 258 and Cycle 259 reviewer results are integrated, and RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "project.knowledge.maintained", "RV-004", "RV-008", "RV-010", "RV-011", "RV-012"]
 last_updated: "2026-09-04"
 source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89ef48cdc40f0ca through d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94; independently reproduced current and historical navigation outcomes, title-weight sweeps and 202 leave-one-token perturbations, score margins, contribution decomposition and exact crossover, comparison tiers and schema, 147 matched-token frequencies and quartile conventions, exact diagnostic-control bytes and failure modes, protected-state attempt and receipt counts, all ten historical receipt joins, six report-addition histories, the complete available-object commit window, bounded consumer/event/reference searches, fixture lineage, reviewer patch and blob identities, current-revision gates, broad links, health, and accepted-source blob lineage in reviewer-owned worktrees."
@@ -370,12 +370,11 @@ source_basis: "Exact standing history and diffs from e420498c471fa6b5d6ee8632c89
   patch ID `4aa63c02a789500d987c2cfb5ccfed0329b08581` and exact cursor blob
   `daff9a6e48d20588fb3b6edac182d3033102c543`. Reconciliation
   `d82bf7fed5` correctly records this status. Rollback is one ordinary revert.
-- Current reviewer source is standing `d82bf7fed5c96d7d44d69c5c8b9f34762c0cad94`.
-  Integrate the directly following result from
-  `codex/g-8c5b597e-cycle257-review`; it adds the Cycle 258-259 dispositions and
-  advances this cursor. Rollback is one ordinary revert. It is not landed until
-  standing contains its exact or patch-equivalent change and current-tip
-  validation passes.
+- Reviewer `72ed9c48e981644accee665994ae102fc0ca62fc` is integrated as
+  standing `9e04b0ec2e124269c7a5f0e4df5098a0cb2c20fd`; both share stable
+  patch ID `4768fdae542cf5a79ecafd1e5ef57eaea954365f`. It adds the Cycle
+  258-259 dispositions and advances this cursor. Rollback is one ordinary
+  revert; later standing work is not independently reviewed by this cursor.
 - Historical reviewer `faf3b5020e9b8d1ff8786f4697f3b1d3302cab9b`
   and standing result `3826aa2f69dcb3ed8b311bde8ce6f307591a482b`
   share parent `fb241b243d4711d05169bc3ecb7c72b3459eb3e8`, exact tree
