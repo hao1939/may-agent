@@ -6563,6 +6563,18 @@ composed safety. Next seed-first, then audit the uncited AIM LoCoMo gains and
 their representation/model controls if that remains the highest accessible
 gap.
 
+Exact material `c0e0115c9776eb659c57e10f1b6a0aa541d7037a` passes
+syntax, TypeScript, formatting, Cycle 341 projection, 90 scoped links,
+navigation at 11/14 and 8/8, and all 296 tests / 1,484 assertions with zero
+failures in 101.47 seconds. The broad audit passes 1,540 tracked Markdown
+documents / 1,728 local prose links. Read-only health at
+`2026-09-04T05:25:44.418Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` are ancestors; unaccepted
+`d041c41b54` remains excluded. Standing status and both runtime surfaces are
+empty. Protected `/app` remains externally observed at `386b445c…1fec8`, 916
+/ `8e3558f4…e8a36` overall and 296 / `a430d0c9…2f7e` in Scout scope. This
+worker wrote or tested neither protected surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
