@@ -7348,6 +7348,51 @@ synthesis gaps; (5) Reddit until trigger; (6) compaction. Select `2607.06194`
 and audit population construction, signature extraction, verified-versus-
 present semantics, trust tiers, biases, uncertainty, and public artifacts.
 
+### Cycle 356 checkpoint — signature presence is not author identity
+
+At `2026-09-04T07:10:11.348Z`, arXiv `2607.06194v1` supplied a
+3,250-byte Atom record (SHA-256 `bbc2dcd4…4695`) and a 28,035-byte source
+archive (`42eb111b…c136`). The paper scans 128 World of Code V2604 shards and
+reports 1,031,721,316/5,866,595,698 commits (17.59%) with a canonical signature
+header. Strict and loose marker rates agree within 0.01 percentage points; this
+supports header-family detection, not cryptographic validation or author
+identity.
+
+The author/key join is dominated by shared signers. GitHub's web-flow key and
+one other platform key cover 95.9% of 44,871,077 author-key associations. The
+paper's fan-out-50 heuristic leaves 583,360 candidate person keys, but its own
+fan-out-two triage rejects the raw “cryptographic alias gold” reading: only
+9,036/32,192 map disagreements (28.1%) have a corroborating email, name, or
+domain signal; 23,156 (71.9%) are two people sharing one key.
+
+Of 62,579,994 canonical authors, 49.0% are T0, 50.3% platform-signed T1, and
+only 465,398 (0.74%) candidate person-key T2. T3's 966 scholarly authors are a
+subset not separated in the exhaustive table. In the only outward verification
+sample, 78/398 candidate keys are keyserver-retrievable (19.6%, Wilson 95%
+16.0--23.8%); 39/78 retrieved user-id emails match the author string (50.0%,
+39.2--60.8%), or 39/398 overall (9.8%, 7.3--13.1%). This measures public-key/
+email reachability, not a residual forgery rate or real-person identity.
+
+The five-file source claims a released bundle but retains
+`TODO/woc-commit-signatures-v2604` and “DOI to be minted.” At
+`2026-09-04T07:10:32Z`, one exact-title GitHub search returned only a
+non-author repository; exact and broad Hugging Face dataset searches returned
+empty arrays. No data row, extractor, key parser, or replication script is
+attributable, so the full-corpus results cannot be independently reproduced
+from the promised package.
+
+ArXiv wins as primary evidence. GitHub/Hugging Face establish the artifact
+boundary; revisit on `2607.06194v2+` or a named dataset/code release. Reddit
+made zero requests and remains deferred until a relevant-thread/access trigger.
+Confidence is high for source arithmetic and the distinction among marker,
+platform key, candidate person key, and sampled email match; moderate for the
+paper's full-corpus extraction because artifacts are absent; low for person
+identity, alias precision, or cross-corpus attestation. `RV-004` remains high/
+open because no protected Scout outcome join changed. Next seed-first,
+primary-review VAORA `2607.06522`, the remaining accessible Scan #456 claim:
+audit reward definitions, pre/post visual authority, baselines, denominators,
+uncertainty, and released artifacts before calling dual rewards verification.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

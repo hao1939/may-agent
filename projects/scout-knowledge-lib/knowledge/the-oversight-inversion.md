@@ -894,9 +894,20 @@ The durable condition is therefore: type claims and gate them, but measure
 extractor recall, ontology coverage, and substrate authority. Untyped or unseen
 claims pass no matter how strict the downstream checker is.
 
+Claimed or Attested (`2607.06194v1`) reinforces the need to type evidence
+levels. Its 17.59% is exact signature-header presence across WoC V2604, not
+verified author identity. Two platform keys produce 95.9% of author-key
+associations and only 0.74% of canonical authors reach its candidate person-key
+tier. Even fan-out-two keys are not identity gold: 71.9% of map disagreements
+are two people sharing a key; only 28.1% have another corroborating signal. The
+promised data and replication package remain unavailable behind a TODO locator.
+Signature marker, key possession, account/email binding, person identity, and
+content correctness are separate claims.
+
 Source: findings/2026-07-09-hn-arxiv-github-scan-456.md,
 https://arxiv.org/abs/2607.06495v1,
-https://arxiv.org/abs/2606.09376v2
+https://arxiv.org/abs/2606.09376v2,
+https://arxiv.org/abs/2607.06194v1
 
 ### Layer 29: The Variance Signal (Scan #457, 2026-07-10)
 

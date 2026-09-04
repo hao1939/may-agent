@@ -14303,6 +14303,76 @@ inspect World of Code population construction, signature extraction, signature
 presence versus verification, trust-tier evidence, biases, uncertainty, and
 attributable public artifacts.
 
+## Cycle 356 checkpoint — qualify commit signatures as provenance evidence
+
+Seed-ordering commit `1e55156d5a718ea51bed68fe981a0def31c8b283`
+preceded discovery. At `2026-09-04T07:10:11.348Z`, arXiv `2607.06194v1`
+returned a 3,250-byte Atom record with SHA-256
+`bbc2dcd4346f8977e2b0e179207366b21914ed41e762eb3c28cdb9ec0bfd4695`.
+The 28,035-byte source archive has SHA-256
+`42eb111bfca39ec9ce8303d25e590717086da3f66685ca8e7a495ee069b2c136`.
+It contains five files and no extraction, parser, test, or data artifact.
+
+The paper scans all 128 World of Code V2604 commit-table shards for canonical
+signature headers. It reports 1,031,721,316/5,866,595,698 commits (17.59%):
+98.96% PGP, 1.02% SSH, and 0.02% X.509/sigstore among marked commits. Three
+SHA-space shards range 17.53--17.65% and strict versus loose markers agree
+within 0.01 percentage points. Those controls support signature-marker and
+family detection. They do not verify each signature, its keyholder, or the
+identity named in the commit's author field.
+
+The key graph demonstrates why those levels matter. Across 44,871,077 author-
+key associations, GitHub's web-flow key binds 30,440,944 authors and a second
+platform key 12,592,731—95.9% together. A fan-out threshold of 50 removes
+2,651 shared keys and retains 583,360 candidate person keys. The threshold has
+no reported held-out validation.
+
+The source first calls author strings co-signed by a candidate person key a
+cryptographic alias gold, then contradicts that guarantee in its triage. Of
+32,192 fan-out-two pairs the production map leaves apart, only 9,036 (28.1%)
+also share an email local-part, non-generic domain, or name token. The other
+23,156 (71.9%) are two people sharing a key and are correctly separate. Raw
+co-signature is therefore investigation evidence, not same-person gold; the
+fan-out table does not measure alias-map precision.
+
+The exhaustive author table separates 30,638,625 T0 unsigned (49.0%),
+31,475,971 T1 platform-signed only (50.3%), and 465,398 T2 candidate person-key
+authors (0.74%). The claimed 966 T3 scholarly authors are described as a subset
+but not a separate row. PGP user-id email, GitHub-registered SSH key, and OIDC
+subject bind accounts or asserted addresses, not automatically real people.
+
+The only network verification sample draws 398 candidate person keys. Ubuntu's
+keyserver returns 78 (19.6%; Wilson 95% interval 16.0--23.8%); 39 of those 78
+carry an email matching the signed author string (50.0%; 39.2--60.8%), or
+39/398 overall (9.8%; 7.3--13.1%). Thirty-seven emails differ and two keys have
+no user-id. Missing keys and mismatch semantics are unresolved, so this does
+not bound a residual forgery rate or validate the whole corpus.
+
+The availability section nevertheless says all artifacts are released while
+retaining `TODO/woc-commit-signatures-v2604` and a DOI “to be minted.” At
+`2026-09-04T07:10:32Z`, one unauthenticated exact-title GitHub search returned
+HTTP 200 and one non-author repository. Exact and broad Hugging Face dataset
+searches returned HTTP 200 and empty arrays. No released row, extraction job,
+PGP parser, tier generator, or replication script was attributable. The exact
+and broad Hugging Face responses are `[]` with SHA-256 `4f53cda1…b945`; the
+GitHub response has SHA-256 `b5464c76…ccc4`.
+
+The finding, index, Oversight Inversion, topic map, and report now keep the
+17.59% prevalence while separating marker presence, valid signature, key
+control, account/email binding, real-person identity, and correctness. ArXiv
+was selected; GitHub and Hugging Face supplied the artifact boundary. Revisit
+arXiv on v2+, artifact lanes on a named release, and Reddit only on a relevant-
+thread/access change; Reddit made zero requests. Confidence is high for source
+arithmetic and evidence-level distinctions, moderate for unreproduced global
+extraction, and low for identity/alias accuracy or cross-corpus attestation.
+
+`RV-004` remains high/open because no protected Scout query/rank -> selection
+-> later-outcome join changed. Next seed-first, primary-review VAORA
+`2607.06522`, the remaining accessible Scan #456 claim; audit reward
+definitions, pre/post visual authority, benchmark/model denominators,
+baselines, uncertainty, and released artifacts before treating dual rewards as
+independent verification.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

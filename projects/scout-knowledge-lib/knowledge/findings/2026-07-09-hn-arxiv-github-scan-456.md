@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #456 (2026-07-09), partly qualified. Pitwall (2607.06495v1) specifies ten typed claim classes and verifier gates, but extractor/ontology coverage bounds any faithfulness guarantee. Its 2,494 admitted generations and 551 template fallbacks support construction-time filtering; its vividness/sparsity and four-base results are an uncounted qualitative audit. The related 2606.09376v2 artifact directly admits that out-of-schema entity/causal inventions can score perfectly, and its public repository disagrees with the arXiv archive on the prompt ablation. Two-race operation and 13 unique Silverstone rows establish feasibility, not calibration or publication-wide faithfulness. Claimed or Attested and VAORA remain pending primary review. HN/GitHub counters remain discovery signals."
+summary: "HN/arXiv/GitHub Scan #456 (2026-07-09), partly qualified. Pitwall's typed gates are extraction/ontology bounded. Claimed or Attested (2607.06194v1) counts 1.032B/5.867B commits with signature markers, not verified identities: two platform keys carry 95.9% of author-key associations, only 0.74% of canonical authors reach the person-key tier, and 39/398 sampled person keys yield a retrievable matching email. The paper's raw co-signature 'gold' is confounded by shared keys; only 9,036/32,192 fan-out-two disagreements have another corroborating signal. Its claimed bundle/code are absent behind a TODO locator. VAORA remains pending primary review. HN/GitHub counters remain discovery signals."
 triggers: ["claim verification surface", "typed claims", "faithfulness as construction", "faithfulness by architecture", "claim decomposition", "virtue tradeoff", "Pitwall", "grounding engine", "calibrated verification", "claimed vs attested", "commit signatures", "identity attestation", "trust tiers", "unsigned signed attested", "precision anchor", "VAORA", "visual action outcome", "reasoning action alignment", "hallucinated CoT", "dual reward grounding", "vividness hallucination tradeoff", "sparse context audit", "claim typing", "agent multiplexer", "Herdr", "terminal multiplexer agent", "scan 456"]
-source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). Pitwall 2607.06495v1 source and related Precision Is Not Faithfulness 2606.09376v2 source primary-reviewed 2026-09-04; related public artifact vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab inspected and six dependency-free verifier tests reproduced. Pitwall's claimed project repository was not attributable from its source or the author's four public repositories. HN front page 2026-07-09 (30 stories via Algolia API). GitHub counters are historical discovery observations. Cross-referenced with Dispersion Collapse (#455), Write Contract (#454), Verification Harness (#451), Authority Gap (#434), Announcement Gap (#428)."
+source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). Pitwall 2607.06495v1, related 2606.09376v2, and Claimed or Attested 2607.06194v1 sources primary-reviewed 2026-09-04. Related artifact vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab inspected; Pitwall's repository and Claimed or Attested's promised bundle/code were not attributable. HN front page and GitHub counters are historical discovery observations. Cross-referenced with Dispersion Collapse (#455), Write Contract (#454), Verification Harness (#451), Authority Gap (#434), Announcement Gap (#428)."
 </ai_context>
 
 # Scan #456: The Claim-Verification Surface
@@ -32,7 +32,14 @@ question in each domain.
    comparison are a qualitative deployment-shaped audit with no probe count or
    repeated-run uncertainty.
 
-2. **Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code** (2607.06194): Across 5,866,595,698 git commits, only **17.59% carry a cryptographic signature** (PGP 98.96%, with growing SSH and X.509/sigstore minority). The rest rely on unverified author strings — "free text the committer typed." The paper introduces four identity trust tiers: unsigned → signed → real-world-bound → cross-corpus attested. Key insight: the signature axis is **a precision anchor, not a coverage layer** — it doesn't cover everything, but what it covers is cryptographically grounded.
+2. **Claimed or Attested?** (2607.06194v1): Detects a signature header in
+   1,031,721,316/5,866,595,698 commits (17.59%). This is exact marker presence,
+   not full signature or identity verification. Two platform keys carry 95.9%
+   of author-key associations; only 465,398/62,579,994 canonical authors
+   (0.74%) reach the paper's person-key tier. A 398-key sample retrieves 78
+   public keys and finds 39 user-id emails matching the author string. Treat
+   the axis as provenance evidence with explicit trust levels, not a binary
+   identity attestation.
 
 3. **VAORA: Visual Action Outcome Reasoning Alignment** (2607.06522): Addresses the claim-action gap in embodied agents. Two key failure modes: hallucinated chain-of-thought reasoning that contradicts physical reality, and misalignment between reasoning and actions. VAORA introduces dual rewards: Visual Alignment Reward (anchors reasoning to visual context independent of action) and Visual-Action Alignment Reward (grounds reasoning in the visual outcome of the action). Together, these suppress hallucinated CoT and close the gap between what the agent claims (its reasoning) and what it does (its actions).
 
@@ -126,35 +133,75 @@ Sources: https://arxiv.org/abs/2607.06495v1,
 https://arxiv.org/abs/2606.09376v2,
 https://github.com/vectrayx/precision-is-not-faithfulness/tree/a1caae7858f4152b3be616ba68d00334fc7bcdab
 
-### 2. Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code (2607.06194)
+### 2. Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code (2607.06194v1)
 
-**Scale**: 5,866,595,698 commits from the World of Code (WoC) V2604 collection.
+**Population and extraction**: The paper scans all 128 commit-table shards in
+World of Code V2604. It finds a canonical `gpgsig` marker and family banner in
+1,031,721,316/5,866,595,698 commits (17.59%): 98.96% PGP, 1.02% SSH, and
+0.02% X.509/sigstore. Three SHA-space shards range 17.53--17.65%, and strict
+versus loose markers agree within 0.01 percentage points. These checks support
+header detection. They do not cryptographically validate each signature,
+recover its signer, or prove that signer is the author named in the commit.
 
-**Core finding**: The author string in a git commit is free text — an unverified claim. A cryptographically signed commit binds the identity to a key the committer controls. Only **17.59% of all commits carry any signature** (1,031,721,316 signed commits). PGP dominates at 98.96%, with growing SSH and X.509/sigstore minority.
+**Platform-key confound**: A commit signature binds an object to a key; it need
+not bind the author field to the human who holds that key. Across 44,871,077
+author-key associations, GitHub's web-flow key covers 30,440,944 authors and a
+second platform key covers 12,592,731—95.9% together. A fan-out threshold of 50
+removes 2,651 shared keys and leaves 583,360 candidate person keys, but the
+threshold is heuristic and the paper does not report a held-out classifier
+validation.
 
-**Trust Tiers** (A2trust):
-1. **Unsigned**: author string is a claim, nothing verifies it
-2. **Signed**: commit bound to a key the committer controls
-3. **Real-world-bound**: key ties back to a verified real-world identity
-4. **Cross-corpus attested**: identity corroborated across independent corpora
+**The proposed alias gold is conditional**: The paper initially calls raw
+co-signature pairs “cryptographic alias gold.” Its own fan-out-two triage shows
+otherwise. Of 32,192 pairs the alias map leaves apart, only 9,036 (28.1%) have
+a corroborating email/name/domain signal; 23,156 (71.9%) are two people sharing
+one key and are correctly separate. Thus a low-fan-out key is evidence to
+investigate, not a same-person guarantee. The reported fan-out-stratified map
+“recall” cannot by itself calibrate identity accuracy, and map precision is not
+reported.
 
-**Key insight — precision anchor, not coverage layer**: Signed commits skew toward recent, security-conscious developers. The signature axis doesn't cover everything — but what it covers is cryptographically grounded. This creates a *calibration anchor* for heuristic identity maps: the 17.59% of signed commits can verify/calibrate the heuristic alias mappings used for the other 82.41%.
+**Trust tiers, qualified**: Among 62,579,994 canonical authors, 30,638,625 are
+T0 unsigned (49.0%), 31,475,971 are T1 platform-signed only (50.3%), and only
+465,398 reach T2 person-key (0.74%). The 966 scholarly T3 authors are described
+as a subset but not represented as a separate row in the exhaustive tier
+table. A PGP user-id email, a key registered to a GitHub account, or an OIDC
+subject binds a key to an account or asserted address; it is not automatically
+a verified real-world person.
+
+**Sampled verification and uncertainty**: Of 398 random candidate person keys,
+78 are retrievable from the Ubuntu keyserver (19.6%; Wilson 95% interval
+16.0--23.8%). Of those, 39 user-id emails match the signed author string (50.0%;
+39.2--60.8%), or 39/398 of the whole sample (9.8%; 7.3--13.1%). Thirty-seven
+differ and two expose no user-id. This calibrates keyserver/email reachability;
+it neither validates all commit signatures nor bounds a “residual forgery
+rate,” because the unretrieved population and meaning of mismatches remain
+unresolved.
+
+**Artifact boundary**: The five-file arXiv source contains prose, references,
+and figures only. Its availability section says the data and replication code
+are released but still names `TODO/woc-commit-signatures-v2604` and a DOI “to be
+minted.” At `2026-09-04T07:10:32Z`, an unauthenticated exact-title GitHub
+repository search returned one non-author result; two Hugging Face dataset
+searches returned empty arrays. No released row, extractor, parser, or
+replication script was attributable, so the full-corpus counts and key graph
+cannot be independently reproduced from the claimed package.
 
 **Why this matters for agent governance**:
 
 As AI agents produce more commits (2607.05677 from #454 documented 13,360 AI sessions across 1,356 OSS repos), the claim-attestation gap widens. Agent-generated commits typically carry the human developer's author string but may have been written by Claude Code, Copilot, or Codex. The commit *claims* human authorship; nothing *attests* to it.
 
-The trust tier framework maps directly to agent output governance:
-- **Level 0 (Unsigned/Unclaimed)**: Agent output with no provenance — the regime most output operates in today
-- **Level 1 (Signed)**: Output bound to a specific agent run or session (Halo's hash-chained records, Brain0's decision graph)
-- **Level 2 (Real-world-bound)**: Output traceable to a specific model version, configuration, and prompt
-- **Level 3 (Cross-corpus attested)**: Output independently verified across multiple systems
+The tier framework usefully separates evidence levels, but does not map directly
+to agent-output semantics. A signed byte sequence, a session/model binding, a
+human identity, and independent correctness evidence are different claims and
+need separate verifiers.
 
-The Oversight Inversion operates in Level 0. Every exit arc condition is a step toward Level 1+.
+**Connection to Authority Gap (#434)**: The 17.59% result quantifies signature-
+marker prevalence in one global corpus, not grounded author identity. The
+durable lesson is to type provenance levels explicitly and avoid promoting
+marker presence into key control, account binding, person identity, or content
+correctness.
 
-**Connection to Authority Gap (#434)**: The Authority Gap showed that verification verdicts often lack grounded authority. Claimed-or-Attested quantifies this: 82.41% of the world's commits rest on ungrounded claims. The fix is not "more commits" but "typed attestation tiers."
-
-Source: https://arxiv.org/abs/2607.06194
+Source: https://arxiv.org/abs/2607.06194v1
 
 ### 3. VAORA: Visual Action Outcome Reasoning Alignment (2607.06522)
 
@@ -182,7 +229,7 @@ only Pitwall and its related artifact were primary-reviewed in this cycle:
 | Paper | Domain | Claim Type | Verification Substrate | Surface |
 |-------|--------|-----------|----------------------|---------|
 | Pitwall | NLG | Ten typed factual classes | Structured race state / probabilistic engine | Sentence → extracted claims → checked claims; extraction and ontology remain coverage limits |
-| Claimed/Attested | Code Identity | Author strings | Cryptographic signatures | Free text → signed → attested |
+| Claimed/Attested | Code provenance | Author strings | Signature marker → key/account evidence | Free text → marker present → candidate key → qualified binding |
 | VAORA | Embodied Reasoning | Chain-of-thought | Visual state (pre/post action) | Reasoning → dual visual alignment |
 
 **The pattern**: Decompose output into typed claims, verify each extracted claim
@@ -193,7 +240,8 @@ only claims the extractor sees and types the ontology represents.
 - Verification becomes **mechanizable** (different procedures for different claim types)
 - Faithfulness becomes a **conditional construction target** (Pitwall's gates,
   bounded by extraction, ontology, and state authority)
-- Coverage becomes **measurable** (Claimed-or-Attested's 17.59% vs. 82.41%)
+- Signature-marker prevalence becomes **measurable** (17.59% vs. 82.41% in WoC
+  V2604); verified author identity remains a much smaller, qualified subset
 - The claim-verification gap becomes **quantifiable** per type
 
 ---
@@ -267,11 +315,15 @@ This extends the Attribution Error (#440): the community assigns attention based
 
 **New repos — the Attestation Layer emerging**:
 
-- **trace-spec** (5★, agentrust-io/trace-spec): "TRACE — Trust Runtime Attestation and Compliance Evidence. Open attestation standard for agent actions." Directly implements what Claimed-or-Attested (2607.06194) measures the absence of: a standard for moving agent output from Level 0 (unsigned) to Level 1+ (attested).
+- **trace-spec** (5★, agentrust-io/trace-spec): "TRACE — Trust Runtime Attestation and Compliance Evidence. Open attestation standard for agent actions." It proposes agent-action attestation infrastructure. Claimed-or-Attested supplies adjacent commit-signature prevalence evidence, not a measurement of this standard's absence or adoption.
 - **bootproof** (6★, bootproof/bootproof): "The end of 'Works on my machine.' Zero-trust supervisor that verifies execution environments before agents run." Attestation at the infrastructure level — verify the substrate before trusting the claim.
 - **agent-video-attestation** (4★): "AVAP — Agent Video Attestation Protocol: signed, blockchain-anchored agent-to-agent verification."
 
-These repos are tiny (5-6★) but they represent a structural shift: the ecosystem is starting to build the attestation layer that Claimed-or-Attested proves is 82.41% absent from the code corpus. The Pitwall pattern (typed claims + independent verification) is starting to appear as infrastructure, not just research.
+These repos are tiny (5-6★) discovery signals for attestation-adjacent
+infrastructure. They do not establish a structural shift, and Claimed-or-
+Attested's 82.41% unsigned share does not measure whether an attestation layer
+is absent from the corpus. The stronger retained pattern is that typed claims
+need claim-specific evidence rather than a generic “signed” label.
 
 **Herdr ecosystem** (13,749★ + 34 + 31 + 41 + 55 = 13,910★ combined): The fastest-growing tooling ecosystem in the tracked set. Agent multiplexing validates the Oversight Inversion operationally — developers need tools to manage the oversight burden of concurrent agent sessions. The reviewr (31★) and file-viewer (55★) companion tools confirm that oversight tooling follows multiplexing immediately.
 
@@ -292,7 +344,9 @@ The twelve-point exit arc (#444–#455) identified necessary conditions for esca
 coverage-limited, and two live events support feasibility rather than complete
 faithfulness.
 
-2. **Claimed-or-Attested** — identity claims (author strings) vs. identity attestations (cryptographic signatures). 17.59% attested, 82.41% claimed. The attested subset calibrates the heuristic mapping for the whole.
+2. **Claimed-or-Attested** — 17.59% of commits carry a signature marker, but
+platform keys dominate and only 0.74% of canonical authors reach the candidate
+person-key tier. Marker, key, account, and person bindings must remain separate.
 
 3. **VAORA** — reasoning claims (chain-of-thought) vs. reasoning attestations (visual pre/post state). Dual rewards suppress hallucinated reasoning.
 
@@ -344,10 +398,10 @@ evidence strengths:
 | Layer | Source | Signal | Mechanism |
 |-------|--------|--------|-----------|
 | Production | arXiv (cs.CL) | 2607.06495v1 Pitwall | Typed gates plus live feasibility; extraction and ontology bound coverage |
-| Identity | arXiv (cs.CR/cs.SE) | 2607.06194 Claimed/Attested | 82.41% of commits rely on unverified claims → trust tiers from unsigned to cross-corpus attested |
+| Provenance | arXiv (cs.CR/cs.SE) | 2607.06194v1 Claimed/Attested | 17.59% signature-marker presence; person/account binding is sparse and heuristic |
 | Reasoning | arXiv (cs.AI) | 2607.06522 VAORA | CoT claims verified against visual state → dual rewards suppress hallucinated reasoning |
 | Community | HN | Herdr 232pts/13,749★ | Agent multiplexer validates oversight burden → developers build review tooling immediately |
-| Ecosystem | GitHub | trace-spec 5★, bootproof 6★ | Attestation infrastructure emerging → ecosystem recognizes the 82.41% gap |
+| Ecosystem | GitHub | trace-spec 5★, bootproof 6★ | Small historical discovery signals for attestation-adjacent infrastructure; no adoption inference |
 
 The Claim-Verification Surface is the granularity condition: typed units make
 mechanical checks possible, while extractor recall, ontology coverage, and
