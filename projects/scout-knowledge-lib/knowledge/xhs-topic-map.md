@@ -4978,6 +4978,50 @@ action-space/subtraction conclusion; (4) HeRo's selective-disclosure claims;
 and (7) compaction. Select Cortex and test the intervention, baselines,
 statistics, artifact surface, demonstration/evaluation boundary, and transfer.
 
+### Cycle 318 checkpoint — a 32-label interface is not 32 robot actions
+
+Seed commit `16e542370dbb8f77ea18b00131939c4091425218` preceded all
+public reads. Anonymous arXiv observation ran from
+`2026-09-04T01:53:24.321Z` through `01:53:50.430Z`. The v1 source archive is
+33,516,660 bytes with SHA-256 `8233fd185d285d3d10e9f5bb0cda60bc7edf415a6889b56b4b2c30c0af02c1c3`;
+the record has one version, submitted July 6.
+
+Cortex directly fixes a 32-way language vocabulary between System-2 planning
+and a continuous-action System-1 executor. Its LIBERO table reports 95.5%
+versus `pi0.5`'s 92.4%, and its RoboTwin figure reports 86.8% versus 82.7%
+overall: absolute gaps of 3.1 and 4.1 percentage points. The paper does not
+vary taxonomy size or remove the taxonomy alone. It bundles the interface with
+re-annotation, spatial and numerical grounding, event-balanced sampling,
+textual memory, and harness logic; closed-loop tables report no seeds or
+uncertainty. A narrower Galaxea sampling ablation reports 8.18 versus 7.58
+with fewer samples, but uses one held-out-episode protocol and no variability.
+
+The real-world table averages 20 trials per suite: Cortex reports 65% and 55%
+success, two end-to-end baselines report 0%, and a human-selected-subtask
+control reports 75% and 70%. This is not a fully untrained robot result: the
+System-1 executor is fine-tuned on about ten hours of target-setup
+subtask-to-action data. The planner's transfer, recovery cases, and other
+physical tasks therefore support demonstrations and aggregate task results,
+not an isolated taxonomy or action-space effect.
+
+The project link redirects from `steinate/Cortex` to
+`InternRobotics/Cortex`, observed at public commit
+`d2a9795b15aff369314b260d2727d7a0cdbf0b46`. GitHub supplies System-2
+evaluation and annotation code; Hugging Face exposes model revision
+`477c6041…e9e` and dataset revision `1b561c78…bc5`. The repository explicitly
+leaves joint LIBERO/RoboTwin evaluation and System-2 training unreleased.
+Confidence is high in the interface/results/artifact description, medium in
+the unreplicated point estimates, and low in taxonomy, “subtraction,” or
+transfer causality.
+
+arXiv supplied primary method/results evidence; GitHub and Hugging Face
+supplied attributable artifact boundaries. Reddit made zero requests and
+retains its RSS-readable / JSON-403 boundary until a relevant thread or access
+change. `RV-004` stays high/open because no protected outcome join appeared.
+Next begin seed-first and primary-review HeRo `2607.05353`, testing whether
+selective disclosure actually reduces verification cost and what security
+assumptions its hierarchy requires.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

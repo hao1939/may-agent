@@ -10897,6 +10897,68 @@ relevant-thread/access trigger; and (7) compaction. Select Cortex. Test the
 intervention, baselines, statistics, attributable artifacts,
 demonstration/evaluation boundary, and transfer before preserving the claim.
 
+## Cycle 318 checkpoint — constrain the claim, not the robot action space
+
+Seed-first commit `16e542370dbb8f77ea18b00131939c4091425218`
+preceded every public request. Anonymous arXiv reads ran from
+`2026-09-04T01:53:24.321Z` through `01:53:50.430Z`. The `2607.05377v1`
+source archive is 33,516,660 bytes with SHA-256
+`8233fd185d285d3d10e9f5bb0cda60bc7edf415a6889b56b4b2c30c0af02c1c3`;
+the 44,477-byte abstract receipt has SHA-256 `7e0776bc…e961`. The one-version
+record was submitted July 6.
+
+The source and released code agree that Cortex supplies System-2 with a fixed
+32-way vocabulary, maps its generated language to executor-compatible
+commands, and leaves System-1 to generate continuous robot action. Thus “32
+primitives” describes an intermediate language interface, not a reduction
+from infinite physical action to 32 discrete actions.
+
+The reported 3.1 and 4.1 values are absolute percentage-point comparisons:
+LIBERO-Long is 95.5% for Cortex versus 92.4% for `pi0.5`, while RoboTwin
+overall is 86.8% versus 82.7%. Neither closed-loop comparison reports seeds,
+dispersion, or confidence intervals. No experiment varies the taxonomy size or
+removes only standardization; re-annotation, attributes, reachability,
+event-balanced sampling, textual memory, and harness rules change with it.
+The open-loop component table also bundles those choices. A narrower Galaxea
+ablation does support event-balanced sampling directionally—8.18 versus 7.58
+total score with 2.72M versus 3.10M samples—but evaluates one held-out episode
+protocol with no variability.
+
+The physical-robot table averages 20 trials per task suite. Cortex reports
+65% chemical and 55% washing success, versus 0% for `pi0.5` and task-level
+`pi_mem`, and below a human-selected-subtask control at 75%/70%. “Zero-shot”
+is qualified: System-2 is presented as transferring to unseen tasks, while
+the MEM-style System-1 executor is fine-tuned on about ten hours of
+target-setup subtask-to-action data. Recovery and prompt-mode figures add
+qualitative cases, not separate controlled success estimates.
+
+At `2026-09-04T01:54:25.724Z`, the project button redirected
+`steinate/Cortex` to attributable repository `InternRobotics/Cortex` at
+`d2a9795b15aff369314b260d2727d7a0cdbf0b46`. The repository exposes
+System-2 step/episode evaluation, validation annotations, and annotation
+tooling. Public Hugging Face APIs at `01:54:45.459Z` exposed ungated model
+revision `477c604188d25a6d26fcd2512a04ebd5a1c30e9e` and dataset revision
+`1b561c78c94e931b56eb1464158ead5c9445abc5`. Its TODO leaves joint
+System-1/2 LIBERO and RoboTwin evaluation plus System-2 training unreleased,
+so the headline closed-loop results cannot be independently reproduced from
+the public repository alone.
+
+Both Scan 449 variants, INDEX, and Oversight Inversion now retain the exact
+point estimates and public artifacts while retracting action-space reduction,
+taxonomy causality, and unqualified zero-shot inference. Confidence is high in
+source/table/code extraction, medium in the unreplicated reported results, and
+low in 32-label, “subtraction,” or transfer causality.
+
+Lane continuity: arXiv supplied the paper and source archive; GitHub and
+Hugging Face supplied the attributable code/model/data boundary. Revisit on a
+taxonomy-size ablation, repeated closed-loop results, or release of the joint
+benchmark/training paths. Reddit made zero requests and stays
+RSS-readable/JSON-403 until a relevant-thread or access change. `RV-004`
+remains high/open at the missing protected outcome join. Next begin seed-first
+and primary-review HeRo `2607.05353`: test its access hierarchy, security
+assumptions, selective-disclosure evidence, and any measured verification-cost
+effect before preserving the Oversight Inversion claim.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

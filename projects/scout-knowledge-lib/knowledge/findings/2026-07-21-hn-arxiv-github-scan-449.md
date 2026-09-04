@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #449 (2026-07-21): The Subtraction Economy, qualified. Slopfix directly posts a conditional $10,000 price for one week by three senior engineers, but the page reports no transactions, costs, demand, or market-clearing evidence. Comparing that team-week offer with an unrelated $149 Fable-port production anecdote produces arithmetic, not a 67× price or cost estimate. OptiAgent (2607.05346v1) reports the highest table value on 3/4 datasets and four feedback routes, but one run, mixed baseline provenance, no variability, no loop ablation, and no audit metric prevent causal or governance conclusions. Cortex and HeRo remain pending primary review. HN and GitHub counters remain discovery evidence, not market valuation."
+summary: "HN/arXiv/GitHub Scan #449 (2026-07-21): The Subtraction Economy, qualified. Slopfix posts a conditional $10,000 team-week offer but no transactions or costs. OptiAgent reports four feedback routes and the best single-run value on 3/4 datasets without isolating the loops. Cortex reports 3.1- and 4.1-percentage-point benchmark gaps, but its 32-label planner interface is bundled with data, sampling, memory, and harness changes; it does not reduce continuous robot action to 32 actions. Public artifacts cover System-2 evaluation and annotation, not the closed-loop benchmark or training paths. HeRo remains pending primary review."
 triggers: ["subtraction economy", "deletion economy", "code deletion service", "slop fix", "slopfix", "$10k deletion", "subtraction pricing", "subtraction deficit priced", "OptiAgent", "multi-loop validation", "specialized feedback loops", "Cortex embodied agent", "32 canonical primitives", "skill primitive taxonomy", "harness engineering robotics", "HeRo watermarking", "selective disclosure", "hierarchical vocabulary routing", "verification access control", "peerd browser agent", "brain.md", "agent brain file", "awesome-evals", "deletion as premium", "subtraction as value", "scan 449"]
 source_basis: "HN front page 2026-07-21 (30 stories via Algolia API). arXiv API (2607.05346 OptiAgent, 2607.05377 Cortex, 2607.05353 HeRo Selective Disclosure Watermarking). GitHub API (shepherd 1,046★, local-llm 1,175★, rowboat 15,255★, security-audit-skill 2,335★, SkillSpector 12,317★, eve 3,302★, peerd 328★, brain.md 205★, awesome-evals 689★, Agentic-First-Enterprises 213★, agent-runtime 208★). Cross-referenced with Architecture Premium (#448), Subtraction Deficit (library thesis), Oversight Inversion (thesis), Restraint Premium (#445)."
 </ai_context>
@@ -20,7 +20,7 @@ Three differently scoped signals motivate separate questions rather than one eco
 
 2. **OptiAgent** (2607.05346v1): Its table reports the best solving accuracy on three of four datasets for the GPT-5.4 configuration and describes four targeted feedback routes. The study uses one run per configuration, mixes copied and newly run baselines without variability measures, and leaves loop/component ablations, multi-run evaluation, interpretability metrics, and human audit evaluation to future work. The data do not identify the loops as the cause, and calling retries “subtractive” is this library's metaphor rather than the paper's measured intervention.
 
-3. **Cortex** (2607.05377): Constrains embodied manipulation from infinite action space to 32 canonical skill primitives, then applies "carefully designed harness engineering from task contexts to skill constraints." Outperforms monolithic baselines by 3.1-4.1% on long-horizon tasks. The breakthrough is *standardization as subtraction* — reducing the possible to the canonical.
+3. **Cortex** (2607.05377v1): Uses 32 canonical skill labels as the language interface between a planner and a continuous-action executor. It reports 95.5% versus 92.4% on LIBERO-Long and 86.8% versus 82.7% overall on RoboTwin: absolute gaps of 3.1 and 4.1 percentage points. The taxonomy is bundled with annotation, event-balanced sampling, memory, and harness changes and is not independently ablated, so the results do not identify action-space subtraction as the cause.
 
 **The Subtraction Economy hypothesis**: Falling production cost could shift value toward remediation, constraints, specialized checks, and selective disclosure. Establishing an economic regime would require comparable units, observed purchases and quantities, supplier costs, alternatives, and change over time; this scan has none of those.
 
@@ -48,17 +48,21 @@ Source: https://arxiv.org/abs/2607.05346
 
 ### 2. Cortex: Bidirectionally Aligned Embodied Agent Framework (2607.05377)
 
-**Core finding**: Hierarchical VLM-VLA systems suffer from a gap between high-level planning semantics and low-level execution kinematics. Cortex resolves this by standardizing manipulation subtasks into **32 canonical skill primitives** with tractability principles (representative object attributes, improved trajectory reachability). The framework uses harness engineering from task contexts to skill constraints during inference.
+**Supported finding**: Cortex standardizes planner-to-executor language into **32 canonical skill labels**, adds object/spatial annotations, event-balanced transition sampling, textual memory, and an asynchronous harness, then maps generated language to executor-compatible commands. The 32 labels constrain the high-level interface; the low-level vision-language-action policy still emits continuous robot actions.
 
 **Key results**:
-- Outperforms monolithic baselines by 3.1% on Libero-long and 4.1% on RoboTwin
-- Zero-shot completion of unseen real-world long-horizon tasks (multi-stage chemistry experiments)
+- Reports 95.5% versus 92.4% for the shared-`pi0.5` LIBERO-Long comparison and 86.8% versus 82.7% overall on RoboTwin: 3.1- and 4.1-percentage-point gaps, not relative-percent effects
+- Reports real-world Cortex success rates of 65% and 55% over 20 trials per suite, versus 0% for two end-to-end baselines and 75%/70% for a human-selected-subtask control
 - Automatic annotation of over 4K hours of open-source video data
-- Event-balanced sampling for planning ambiguity at subtask transitions
+- An event-balanced Galaxea ablation reports 8.18 versus 7.58 total score with fewer samples, but uses one held-out episode protocol and reports no variability
 
-**Structural significance**: The 32 canonical primitives are a **subtraction operator on the action space** — from infinite possible actions to 32 that matter. This is the Restraint Premium (#445) applied to robotics: fewer primitives, better outcomes. The "harness engineering from task contexts to skill constraints" is architecturally identical to the Configuration Layer (#425): the harness constrains, and the constraint is the value.
+**Identification limits**: No experiment varies the taxonomy size or removes only the 32-label standardization. The open-loop component table bundles interface, sampling, and harness choices, while the closed-loop tables provide point estimates without seeds or uncertainty. “Zero-shot” applies to the high-level transfer claim: the real-world executor is still fine-tuned on about ten hours of target-setup, subtask-to-action data. Qualitative demonstrations cover prompt flexibility and recovery, but only two task suites have 20-trial aggregate results.
 
-**Connection to GaP (2607.05369, Scan #437)**: GaP generates computation graphs from a modular skill library and rehearses them. Cortex standardizes skills into primitives and uses harness engineering to constrain them. Both converge on: **skill governance through architectural subtraction**.
+**Artifact surface**: Primary review at `2026-09-04T01:53:24Z` read the 33,516,660-byte v1 source archive (SHA-256 `8233fd18…c1c3`). The project link resolves from `steinate/Cortex` to `InternRobotics/Cortex`, observed at commit `d2a9795b15aff369314b260d2727d7a0cdbf0b46`. Public artifacts include System-2 model `477c6041…e9e`, dataset `1b561c78…bc5`, validation annotations, open-loop evaluation, and annotation code. The repository TODO leaves System-1/2 LIBERO and RoboTwin evaluation plus System-2 training unreleased, so the headline closed-loop results are not independently reproducible from that repository alone.
+
+**Structural significance, qualified**: A canonical interface is a plausible constraint on planner output and may improve executability. Calling it “subtraction” is this library's interpretation, not a measured intervention: Cortex does not compare taxonomy sizes or isolate the taxonomy's effect.
+
+**Connection to GaP (2607.05369, Scan #437)**: Both use structured skill interfaces. Whether fewer labels improve governance remains open; Cortex supports interface standardization, not an optimal compression level.
 
 Source: https://arxiv.org/abs/2607.05377
 
@@ -248,4 +252,4 @@ Scan #449: Subtraction Economy     → Test realized remediation demand
 
 2. **Selective verification as standard**: HeRo's hierarchical access control is currently niche (watermarking). When does it generalize to all agent verification? The Composition Surface (#447) predicts: when composition-aware verification tools emerge.
 
-3. **32 is a magic number?**: Cortex uses 32 canonical primitives. Cognitive-Core-Skills (274★) uses 159 skill cards across 8 categories. Is there a natural compression limit for skill taxonomies? The Subtraction Deficit predicts: whatever the starting number, it will grow (addition) unless a subtraction mechanism is built in.
+3. **Taxonomy-size identification**: Cortex fixes 32 labels but does not compare another taxonomy size or remove standardization alone. Test matched taxonomies and report executor success, planner invalid-output rate, transfer, and annotation cost before treating 32—or fewer—as beneficial.
