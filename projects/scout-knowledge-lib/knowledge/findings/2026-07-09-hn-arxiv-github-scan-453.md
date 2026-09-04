@@ -105,6 +105,27 @@ Five proposed cross-cutting gaps within the selected corpus:
    five-axis randomized 500-scenario design, the authorization-tier range is
    2.6--3.1 percentage points.
 
+**OverEager's framework claim is product-bundle evidence, not a permission-
+gate ablation.** On the two shared cells with exact counts, Claude Code exceeds
+OpenHands by 8.29 points for GLM-4.6 (64/500 versus 22/488; two-sided Fisher
+`p=2.86e-6`) and 11.59 points for MiniMax-M2.7 (59/500 versus 1/485;
+`p=2.59e-17`). The direction is strong for those evaluated bundles. But the
+paper calls “framework” a change that also changes the product's default system
+prompt, tool interface, adapter, and confirmation-disabling mechanism; it does
+not toggle a common permission gate while holding those factors fixed. The
+matrix is populated by availability, runs are treated as independent without
+scenario clustering, and OpenHands timeouts are excluded from its denominator.
+The reported 26.6-point Sonnet cross-product range is an extreme-range
+comparison, not a fitted framework-versus-model variance component.
+
+The results table also does not retain enough counts to reconstruct every
+contrast. It declares `n=500` for all non-OpenHands cells, but five one-decimal
+rates (27.7%, 13.5%, 13.1%, 16.9%, and 13.9%) cannot be integer event counts
+over 500, and the promised raw bundles are unavailable. Preserve the observed
+product-level differences; do not promote them into isolated permission-gate
+causality or a general framework-dominance estimate until exact denominators,
+paired scenario outcomes, and a matched intervention are inspectable.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is

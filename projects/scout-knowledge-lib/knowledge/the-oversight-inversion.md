@@ -1187,6 +1187,16 @@ not independently reproducible.
    separate 500-scenario randomized authorization-tier range is **2.6--3.1
    points**, and its promised scenarios/audit bundles are not yet public.
 
+OverEager separately reports strong product-level differences, but “framework
+dominates” is not a variance decomposition or permission-gate ablation. Exact
+published counts reproduce Claude Code–OpenHands gaps of 8.29 points for
+GLM-4.6 and 11.59 points for MiniMax-M2.7 with the stated Fisher results. The
+comparison simultaneously changes default system prompts, tools, event
+adapters, and confirmation configuration; excludes OpenHands timeouts; treats
+repeated scenarios as independent; and lacks exact counts for several cells.
+The 26.6-point Sonnet maximum is therefore a useful bundle-level warning, not
+proof that permission gating alone dominates model choice.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

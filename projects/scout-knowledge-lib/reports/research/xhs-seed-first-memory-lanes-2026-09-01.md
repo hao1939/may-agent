@@ -18276,6 +18276,82 @@ framework comparison. Next seed-first, audit the stronger framework-dominance
 claim against shared-model controls, tool-surface differences, timeout
 exclusions, and released evidence if it remains highest after ranking.
 
+## Cycle 394 checkpoint — retain product differences without gate causality
+
+What was wrong: the primary paper and the newly qualified topic map still said
+the framework axis “dominates” model choice as though the study decomposed
+variance or toggled permission gating. It actually compares distinct agent
+products and reports pairwise tests and extrema in an incomplete matrix.
+
+What changes: the canonical Scan #453 finding, Oversight synthesis, and topic
+map now preserve the two exact, strong Claude Code/OpenHands comparisons while
+separating product-bundle evidence from an isolated gate effect. They also
+record the timeout, clustering, denominator, and raw-artifact limits that
+prevent full reconstruction.
+
+### Seed order, ranking, and retained evidence
+
+Cycle 394 began from clean validated Cycle 393 result
+`1bcf8800094ab35ac6cf353d86fcc8028e2065b8`. At
+`2026-09-04T15:23:58.033Z`, the XHS cadence still pointed to
+`2026-09-04T17:09:20.326Z`; no trigger had fired. The bounded reconciliation
+made zero account requests: additions/changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, and
+Cycle 375's exact receipt/ledger remain provenance. No XHS state changed.
+
+High/open `RV-004` and `RV-034` remain first but inaccessible at the protected
+outcome and external-runtime boundaries. Memory in the Loop's provider result
+remains unreleased. OverEager's framework claim was the highest accessible
+decision gap and could be tested from Cycle 393's checksum-pinned
+`2605.18583v1` package without another source request. GitHub and arXiv retain
+that cycle's exact useful evidence; Reddit made zero requests and retains its
+RSS-readable/JSON-403 boundary.
+
+### Matched comparisons and claim boundary
+
+The two comparisons with published integer counts reproduce exactly:
+
+- Claude Code + GLM-4.6: 64/500 versus OpenHands + GLM-4.6 at 22/488
+  after 12 timeouts, an 8.2918-point difference and two-sided Fisher
+  `p=2.861588e-6`.
+- Claude Code + MiniMax-M2.7: 59/500 versus OpenHands + MiniMax-M2.7 at
+  1/485 after 15 timeouts, an 11.5938-point difference and two-sided Fisher
+  `p=2.593315e-17`.
+
+These are strong differences between evaluated bundles. They do not hold all
+else fixed except a gate: each product retains its own default system prompt,
+tool interface, event adapter, and confirmation-disabling configuration.
+OpenHands excludes timeout runs while the other reported cells nominally use
+500; scenarios recur across cells but the analysis treats runs as independent
+without clustering. The matrix is populated by availability, not a complete
+randomized crossing, and no permission behavior is ablated within one product.
+
+The “dominates” conclusion compares maximum ranges rather than estimating
+framework and model variance components. Across products, the reported range
+is 26.6 points for Sonnet, 11.6 for MiniMax, and 9.0 for GLM. Within products,
+the three shared-model range is 15.9 for Claude Code, 4.3 for OpenHands, 8.1
+for Codex, and 3.1 for Gemini. Codex–Gemini is significant on Sonnet but not
+MiniMax or GLM. Product context matters, but the effect is heterogeneous.
+
+Five non-OpenHands percentages—27.7%, 13.5%, 13.1%, 16.9%, and 13.9%—cannot
+be integer event counts over the table's declared `n=500`. Allowing integer
+denominators from 1 through 1,000, the displayed 27.7% with Wilson interval
+[24.1, 32.8] still has no exact one-decimal match under the standard 1.96
+normal quantile; the other four can match only at non-500 denominators. The raw
+audit bundles are absent, so exact reconstruction and timeout sensitivity are
+unavailable rather than inferred.
+
+Confidence is high in the two count-based differences, reproduced Fisher
+values, stated configurations, and denominator inconsistency; moderate in a
+bundle-level product effect; low in permission-gate causality, a general
+framework variance ranking, timeout robustness, and deployment transfer.
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit
+on exact cell bundles/counts, timeout-inclusive analysis, scenario-clustered
+inference, or a within-product permission intervention. Next seed-first, audit
+the 50-run human re-annotation claim and its two-annotator majority-vote,
+stratification, and false-positive concentration if it remains the highest
+accessible reliability gap.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

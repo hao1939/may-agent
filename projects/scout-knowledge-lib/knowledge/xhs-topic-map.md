@@ -10049,6 +10049,65 @@ framework-dominance claim against shared-model controls, tool-surface
 differences, timeout exclusions, and released evidence if it remains the
 highest accessible gap.
 
+### Cycle 394 seed-first start — reuse the primary package; test dominance
+
+Cycle 394 starts from clean validated Cycle 393 result
+`1bcf8800094ab35ac6cf353d86fcc8028e2065b8`. At
+`2026-09-04T15:23:58.033Z`, the next scheduled XHS observation remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. Make zero XHS requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's exact browser receipt
+and seed-ledger row remain the provenance.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries; Memory in the Loop's provider result remains unreleased. Select
+OverEager's framework-dominance claim because its exact primary package is
+already retained and the claim changes where a builder would invest—in model
+choice or in the surrounding product. Reuse Cycle 393's verified arXiv bytes;
+make no new arXiv, GitHub, or Reddit request.
+
+### Cycle 394 checkpoint — bundle differences are real; gate causality is open
+
+The strongest exact shared-model comparisons reproduce. Claude Code + GLM-4.6
+has 64/500 trapped runs versus OpenHands + GLM-4.6 at 22/488 after 12
+timeouts: an 8.29-point difference and two-sided Fisher `p=2.86e-6`. Claude
+Code + MiniMax-M2.7 has 59/500 versus OpenHands at 1/485 after 15 timeouts: an
+11.59-point difference and `p=2.59e-17`. These support material differences
+between the tested product bundles.
+
+They do not isolate one framework mechanism. Changing products also changes
+the default system prompt, tool vocabulary and routing, event adapter, and the
+way confirmation is disabled. OpenHands alone uses completed-run denominators,
+all scenario-runs are treated as independent without clustering repeated
+scenarios, and the availability-filled matrix is not a complete randomized
+factorial. No common permission behavior is toggled across products.
+
+The headline “dominates” comparison uses extrema rather than a fitted variance
+component: across products the reported Sonnet, MiniMax, and GLM ranges are
+26.6, 11.6, and 9.0 points, while within-product shared-model ranges are 15.9
+for Claude Code, 4.3 for OpenHands, 8.1 for Codex, and 3.1 for Gemini. Codex
+versus Gemini differs significantly only on Sonnet (`p=0.0046`); MiniMax is
+reported `p=0.066` and GLM `p=0.93`. Thus product context matters, but its size
+is model- and product-pair-dependent rather than one uniform framework effect.
+
+Raw reconstruction remains blocked. The table says every non-OpenHands cell
+has `n=500`, yet 27.7%, 13.5%, 13.1%, 16.9%, and 13.9% cannot be one-decimal
+roundings of integer counts over 500. The text supplies exact counts for only
+two Claude Code/OpenHands pairs, no OpenHands Sonnet denominator, and no raw
+bundles. Confidence is high in the two reproduced comparisons and table
+inconsistency; moderate in a product-bundle effect; low in variance dominance,
+permission-gate causality, timeout robustness, and deployment transfer.
+
+ArXiv and GitHub retain Cycle 393's exact useful evidence and access boundary;
+Reddit remains RSS-readable/JSON-403 and trigger-deferred with zero request.
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit
+when exact cell counts/bundles release, timeout outcomes are included, a
+scenario-clustered analysis appears, or a common-agent permission intervention
+is run. Next seed-first, audit the paper's 50-run human re-annotation claim—
+especially its stratification, majority-vote construction with two annotators,
+and concentration of all six false positives—if it remains the highest
+accessible reliability gap.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
