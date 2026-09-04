@@ -11653,6 +11653,52 @@ synthesis. Test PatchBench's population and baselines, accepted-output and
 leakage definitions, enforcement scope, artifact, and whether blocked declared
 violations generalize beyond constructed contracts.
 
+Exact Cycle 325 material `4b45ed8fa04001d55272ad3d50c0fc77c5a4ef53`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 99.79 seconds. The inherited
+validation process was polled to terminal and was not restarted. The requested
+older `f26bd4f3a590b59d241536326199e805777df1be` checkpoint is an ancestor of
+the validated current tip.
+
+The broad offline audit passes 1,540 tracked Markdown documents / 1,728 local
+prose links. Read-only health at `2026-09-04T03:04:45.691Z` returns 26 facts,
+16 wake signals, and `truncated:true`. Accepted `ff923ccde4` is contained,
+unaccepted `d041c41b54` is excluded, and the standing status and runtime state
+are empty. Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`; its NUL-delimited porcelain-v2
+surface is 916 records / SHA-256
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`,
+and the combined Scout scope is 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+Neither protected surface was written, tested, cleaned, or otherwise mutated.
+
+## Cycle 326 seed-first start — test declared-contract enforcement
+
+At `2026-09-04T03:05:07.340Z`, the last observational XHS receipt still ends
+at `2026-09-03T22:59:03.253Z`, inside the six-hour cadence and before the next
+eligible boundary at `2026-09-04T04:59:03.253Z`. This bounded reconciliation
+makes zero XHS, GitHub, arXiv, Reddit, or other public requests. Added/changed
+identities remain unknown, observed removals are `[]`, all 132 durable seeds
+remain unavailable, provenance remains the last browser receipt plus canonical
+ledger, and no account state changes.
+
+Expected knowledge value ranks the complete accessible queue rather than
+defaulting to easy compaction: (1) high/open `RV-004`, which cannot move because
+readable protected history ends before the required post-August-31 Scout query/
+rank-to-selection-to-later-outcome join; (2) Memory in the Loop's unreleased
+frozen provider artifact and authority-bearing result; (3) PatchOptic
+`2607.05483`, the highest accessible claim because Scan 462 still turns its
+declared-write contract into a categorical safety boundary; (4) Cortex's
+missing taxonomy-size ablation; (5) other unsourced claims, primary-evidence,
+contradiction, reproducibility, retrieval, and synthesis gaps; (6) Reddit until
+a relevant-thread/access change; and (7) byte/line compaction. PatchOptic has
+higher expected value than compaction because it can change a user-facing
+safety claim with direct primary evidence. Select it and test PatchBench's
+population and matched baselines, accepted-output and leakage definitions,
+enforcement scope, public artifacts, and whether blocked declared violations
+transfer beyond constructed contracts.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

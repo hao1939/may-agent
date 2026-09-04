@@ -5512,6 +5512,35 @@ remains trigger-deferred.
 seed-first and review PatchOptic `2607.05483`, the highest accessible remaining
 claim in this synthesis, before Cortex, other scans, Reddit, or compaction.
 
+Exact Cycle 325 material `4b45ed8fa04001d55272ad3d50c0fc77c5a4ef53`
+passes the full Scout gate at 296 tests / 1,484 assertions with zero failures in
+99.79 seconds. The broad audit passes 1,540 documents / 1,728 links; read-only
+health at `2026-09-04T03:04:45.691Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and standing
+status/runtime state are empty. Protected `/app` remains externally observed
+at `386b445c236e4609cd8870d22cc773cc4641fec8`: 916 records /
+`8e3558f4…8a36` overall and 296 records / `a430d0c9…f7e` for Scout scope.
+
+### Cycle 326 seed-first start — test declared-contract enforcement
+
+At `2026-09-04T03:05:07.340Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence. This bounded
+reconciliation makes zero XHS or public requests: additions/changes remain
+unknown, observed removals are `[]`, all 132 seeds remain unavailable,
+provenance remains the last browser receipt plus ledger, and no account state
+changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible without the protected post-August-31 query/rank-to-selection-to-
+outcome join; (2) Memory in the Loop's unreleased authority-bearing result;
+(3) PatchOptic `2607.05483`, highest accessible because its contract-blocking
+claim remains categorical in the current synthesis; (4) Cortex's missing
+taxonomy-size ablation; (5) other unsourced claims and retrieval gaps; (6)
+Reddit until a relevant-thread/access change; and (7) byte/line compaction.
+Select PatchOptic. Test population, matched baselines, accepted-output and
+leakage definitions, enforcement scope, released artifacts, and whether
+blocked declared violations transfer beyond constructed contracts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
