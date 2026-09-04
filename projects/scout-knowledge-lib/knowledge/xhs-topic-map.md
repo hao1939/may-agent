@@ -4831,6 +4831,39 @@ Next begin seed-first without an early XHS request and audit the next
 highest-impact unsourced causal scan claim. Prefer a claim whose primary or
 local evidence can change durable advice; keep byte/line compaction last.
 
+Exact Cycle 315 material `bf3e0551d69f5e841ac0df443d59279f6bf5f0f8`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad
+audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T01:42:57.055Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing tree is clean. Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+The whole-checkout count is externally observed; the Scout fingerprint matches
+the prior recorded state, and this worker wrote or tested neither surface.
+
+### Cycle 316 seed-first start — test the market-pricing comparison
+
+At `2026-09-04T01:43:22.667Z`, the last XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. No XHS or
+public-source request ran during reconciliation: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) `RV-004`'s missing
+protected query/rank-to-selected-file-to-later-outcome join, inaccessible
+because readable protected history ends August 31 without it; (2) Memory in
+the Loop's unreleased frozen provider artifact and authority-bearing result;
+(3) Scan 449's accessible claim that unrelated $149 production and $10k/week
+consulting prices form a 67× market estimate; (4) its unreviewed OptiAgent,
+Cortex, and HeRo primary claims; (5) other unsourced scans; (6) Reddit until a
+relevant-thread/access trigger; and (7) byte/line compaction. Select item 3
+because it directly extends the corrected Architecture Premium into economic
+advice and can be checked from a stable HN identity and first-party page.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

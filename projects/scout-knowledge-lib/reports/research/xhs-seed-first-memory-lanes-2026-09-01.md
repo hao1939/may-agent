@@ -10721,6 +10721,44 @@ Next begin seed-first without an early XHS request, re-rank the full queue, and
 audit the highest-impact accessible unsourced causal scan claim. Static
 compaction remains last because it does not add primary or outcome evidence.
 
+Exact Cycle 315 material `bf3e0551d69f5e841ac0df443d59279f6bf5f0f8`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and the full 296-test / 1,484-assertion gate.
+The broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T01:42:57.055Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing worktree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+The whole-checkout state is externally observed; the Scout-scope fingerprint
+matches the prior receipt, and this worker wrote or tested neither surface.
+
+## Cycle 316 seed-first start — audit the purported market price
+
+At `2026-09-04T01:43:22.667Z`, the current XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance stays the last browser receipt plus the
+durable ledger, and no account state changed.
+
+The complete queue ranks `RV-004` first, but its protected
+query/rank-to-selected-file-to-later-outcome join remains inaccessible because
+readable protected history ends August 31. Memory in the Loop's unreleased
+frozen provider artifact and authority-bearing result ranks second. Scan 449's
+claim that a $149 production anecdote and $10k/week consulting offer form a
+67× market estimate is the highest-value accessible gap because it directly
+extends the just-corrected Architecture Premium into economic advice. Its
+unreviewed OptiAgent/Cortex/HeRo claims follow, then other unsourced scans,
+Reddit until a relevant-thread/access trigger, and static compaction last.
+Select the pricing claim; recover its stable HN identity, read the first-party
+offer, and distinguish a posted consulting rate from transactions, costs,
+comparable units, market clearing, and causal demand.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
