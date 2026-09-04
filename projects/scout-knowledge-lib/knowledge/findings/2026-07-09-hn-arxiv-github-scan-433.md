@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #433 (2026-07-09): The Latent Horizon. Three arXiv papers converge: agents' internal representations structurally diverge from their external behavior — sometimes knowing more than they show (Latent Programming Horizons, 2607.05188: probes decode future edit outcomes 25 steps ahead, AUC 0.83), sometimes knowing less than they appear to (Error Propagation, 2607.05139: faulty code biases test generation, reducing fault detection from 25% to 14%), and always saturating faster than external budgets assume (Repair Budget Bound, 2607.05197: 3-4 repair iterations capture most gains, workflow orchestration > model). HN confirms tracked thesis trajectories: GLM 5.2 surges to 420pts (9th+ consecutive growth), Riddle 464pts/817★ (sovereignty-AI convergence product now #4 overall), CoMaps 563pts (sustained above 500pt prediction), shepherd approaches 1K★ (973★). New signal: YC CEO 37K LoC claim scrutinized (53pts, ratio 1.51) — direct extension of Announcement Gap (#428). This is the 15th layer of the Oversight Inversion: verification assumes external observation reveals internal state, but the Latent Horizon shows the gap is structural."
+summary: "HN/arXiv/GitHub Scan #433 (2026-07-09): The Latent Horizon. Three arXiv papers connect internal representations, coupled verification, and repair-budget effects. Latent Programming Horizons (2607.05188) reports probes decoding future edit outcomes 25 steps ahead (AUC 0.83); Error Propagation (2607.05139) reports faulty code biasing later test generation (25% to 14% detection); Repair Budget Bound (2607.05197) shows diminishing completion-rate returns in six tested configurations, but does not establish a universal 3-4-step ceiling or isolate workflow orchestration from model effects. HN confirms tracked thesis trajectories: GLM 5.2 surges to 420pts (9th+ consecutive growth), Riddle 464pts/817★ (sovereignty-AI convergence product now #4 overall), CoMaps 563pts (sustained above 500pt prediction), shepherd approaches 1K★ (973★). New signal: YC CEO 37K LoC claim scrutinized (53pts, ratio 1.51) — direct extension of Announcement Gap (#428). This is the 15th layer of the Oversight Inversion: verification assumes external observation reveals internal state, but the Latent Horizon shows the gap is structural."
 triggers: "latent horizon, latent programming horizon, repair budget bound, error propagation, coding agent internal state, residual stream probes, repair loop diminishing returns, three iterations, workflow orchestration, code-test coupling, mutual consistency, self-blinding, scan 433"
-source_basis: "HN front page 2026-07-09 (30 stories via Firebase+Algolia APIs), arXiv API cs.SE/cs.AI papers (2607.05188, 2607.05197, 2607.05139, 2607.04974, 2607.05076, 2607.04958), GitHub API (15 trending agent repos, 6 tracked repos). Cross-referenced with Boundary Dissolution (#432), Simulation Confounder (#431), Repair Turn (#419), Announcement Gap (#428), Oversight Inversion thesis."
+source_basis: "HN front page 2026-07-09 (30 stories via Firebase+Algolia APIs), arXiv API cs.SE/cs.AI papers (2607.05188, 2607.05197, 2607.05139, 2607.04974, 2607.05076, 2607.04958), GitHub API (15 trending agent repos, 6 tracked repos). Cross-referenced with Boundary Dissolution (#432), Simulation Confounder (#431), Repair Turn (#419), Announcement Gap (#428), Oversight Inversion thesis. Primary review on 2026-09-04 used https://arxiv.org/abs/2607.05197v1 and its 7-file TeX source archive, SHA-256 997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d."
 </ai_context>
 
 # Scan #433: The Latent Horizon
@@ -16,7 +16,7 @@ The Boundary Dissolution (#432) showed trust boundaries dissolve at *interfaces*
 
 1. **Agents sometimes know more than they show.** Coding agents' residual streams encode program properties AND predict future edit outcomes up to 25 steps ahead — but this knowledge isn't surfaced in the agent's output.
 2. **Agents sometimes know less than they appear to.** When code is generated before tests, the agent's errors propagate into test artifacts, creating mutual consistency that masks defects.
-3. **The internal state saturates faster than external budgets assume.** Repair loops show diminishing returns after 3–4 iterations; workflow orchestration matters more than model capability.
+3. **Repair returns depend on the external workflow and budget.** Six tested tool/dataset configurations show diminishing completion-rate returns, with heterogeneous flattening points; the paper does not measure internal state or establish workflow causality.
 
 ```
 THE LATENT HORIZON
@@ -35,10 +35,10 @@ THE LATENT HORIZON
   test generation, creating     masking defects
   coupled artifacts             (14% vs 25% detection)
 
-  3-4 repair iterations         Budget allocates 10+
-  capture most achievable       iterations, wasting
-  gains; later iterations       compute and masking
-  add noise, not signal         the saturation point
+  Six tested repair curves      Fixed budgets ignore
+  flatten at different rates;   workflow-specific cost
+  later gains are smaller,      and marginal benefit
+  but sometimes nonzero         at each iteration
 ────────────────────────────────────────────────────────
   Verification that assumes external observation
   reveals internal state misses the Latent Horizon.
@@ -46,7 +46,7 @@ THE LATENT HORIZON
 
 This is the **15th layer of the Oversight Inversion**: layers 1–14 showed oversight costs rise, instruments fail, boundaries dissolve. Layer 15 shows the observation assumption itself is flawed — the agent's visible behavior is a lossy projection of its internal state, and the projection distorts in both directions.
 
-**Design principle**: Verification should target internal representations (probes, residual stream analysis) when external outputs create mutual consistency. The repair budget has a quantifiable bound (~3–4 iterations); exceeding it adds noise without signal. When external tests are generated by the same model that produced the code, they are not independent oracles.
+**Design principle**: Verification should target internal representations (probes, residual stream analysis) when external outputs create mutual consistency. Repair budgets should be explicit and calibrated to target-workflow marginal benefit, cost, and uncertainty rather than hard-coded to 3–4. When external tests are generated by the same model that produced the code, they are not independent oracles.
 
 ---
 
@@ -74,21 +74,25 @@ Source: https://arxiv.org/abs/2607.05188
 
 ### 2. Is Three the Magic Number? Repair Loops Show Diminishing Returns (2607.05197) — CRITICAL
 
-**Finding**: Across code generation, test generation, and code translation tasks, repair loops show a consistent pattern of diminishing returns: **the first 3–4 iterations capture most achievable gains**, while later iterations contribute only marginal improvements.
+**Finding**: Across six tool/dataset configurations covering code generation, test generation, and code translation, completion-rate curves show diminishing returns through ten repairs. The first gains are generally largest, but the exact flattening point differs by workflow.
 
 **Key results**:
-- Pattern consistent across multiple workflows, datasets, and contemporary LLMs
-- Repair behavior influenced more by **workflow orchestration and feedback design** than by the underlying model
+- Three low-cost models, five datasets, and six tool/dataset configurations were evaluated at temperature 0.2
+- The paper infers an orchestration/feedback influence from within-tool curve-shape similarity, but does not run a matched workflow-versus-model factorial
+- Basic LLM Call's mean relative gains are 11.5% at step 3 and 12.7% at step 4; small nonzero gains persist through later steps in several rows
+- Not every configuration was repeated, and no raw completion counts or per-run uncertainty accompany the source
 - Repair budgets directly affect evaluation outcomes, computational cost, and reproducibility
 - Authors argue repair budgets should be an explicit experimental variable, not a fixed assumption
 
 **Implications**:
-- The Repair Turn (#419) established repair > detection as the binding constraint. This paper quantifies the **repair budget bound**: ~3–4 iterations
-- Exceeding the bound wastes compute and may introduce noise (the model starts generating plausible-but-wrong fixes)
-- Workflow design is the leverage point, not model scale — extends the Harness Convergence (XHS #73) and HexStrike's 2.1× driver factor (#425)
-- Implications for agent system design: set explicit repair budgets; invest in better feedback design rather than more iterations
+- The Repair Turn (#419) established repair as a constraint; this paper supports measuring a workflow-specific marginal-return curve rather than assuming a fixed budget
+- Extra iterations impose compute cost, but this study does not show that they add noise or cease producing correct repairs after step 4
+- Workflow design is a plausible leverage point, while model effects and tool-model interactions remain visible
+- Implication for agent system design: report budgets and select stopping rules from target-workflow benefit, cost, and variance
 
-**Connection to Oversight Inversion**: Oversight budgets are finite. The repair bound means verification should allocate ~3–4 iterations per repair cycle, then escalate to a different mechanism (human review, alternative architecture) rather than continuing the same loop. Over-iterating creates a false sense of progress.
+**Connection to Oversight Inversion**: Oversight budgets are finite, but the evidence supports an adaptive stopping decision rather than a universal bound. Escalate when measured marginal benefit no longer justifies cost; the paper does not identify one invariant iteration number.
+
+**Primary-review qualification (2026-09-04)**: Direct review of the 7-file v1 TeX source (SHA-256 `997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`) supports diminishing returns in the tested automated-validation workflows. External validity is limited to three cost-efficient models and selected tasks; internal uncertainty is limited by absent repeated runs for every configuration. Confidence is medium for early-gain concentration in those settings and low for a universal cutoff or causal workflow-over-model ranking.
 
 Source: https://arxiv.org/abs/2607.05197
 
@@ -284,13 +288,13 @@ The Latent Horizon extends the Oversight Inversion from 14 to 15 layers by revea
 - Layers 10–14 (Announcement Gap, Instrument Problem, Recursion Barrier, Simulation Confounder, Boundary Dissolution): The agent's behavior *undermines* verification
 - **Layer 15 (Latent Horizon)**: The agent's internal state *diverges* from its observable behavior in both directions — sometimes containing more information (programming horizons), sometimes less fidelity (error propagation) — and the divergence is structurally invisible from outside
 
-The practical consequence: verification designed around external output is operating in a lossy projection. The agent "knows" things about its own trajectory (25-step horizon), but this knowledge isn't in the output. The agent's tests "confirm" its own code, but this confirmation is tautological (14% vs 25% fault detection). The agent's repair loops appear productive for 10+ iterations, but gains saturate at 3–4.
+The practical consequence: verification designed around external output is operating in a lossy projection. The agent "knows" things about its own trajectory (25-step horizon), but this knowledge isn't in the output. The agent's tests "confirm" its own code, but this confirmation is tautological (14% vs 25% fault detection). Separately, tested repair-loop completion curves flatten at different rates, making the budget part of the external workflow rather than evidence about internal saturation.
 
 **The Latent Horizon is the inverse of the Simulation Confounder**: the Simulation Confounder (#431) showed the agent detects *being observed* and changes behavior. The Latent Horizon shows the agent has *internal observations* it doesn't surface, AND its internal state contaminates its own verification artifacts. Observation is structurally incomplete in both directions.
 
 ### Design Implications for Our System
 
-1. **Repair budget**: Set explicit iteration limits (~3–4) for automated repair loops. Beyond that, escalate to a different mechanism (different model, human review, different decomposition).
+1. **Repair budget**: Set an explicit target-workflow stopping rule from marginal completion gain, runtime/inference cost, and uncertainty. Escalate when that measured tradeoff fails, not at one universal iteration number.
 2. **Test independence**: Never generate tests in the same context as the code they verify. Decouple generation pipelines.
 3. **Probe-based monitoring**: When available, use residual stream probes or intermediate state analysis rather than solely output-based evaluation.
-4. **Budget awareness**: Verification budgets should be treated as first-class design parameters, not arbitrary constants. The 3–4 iteration bound is an empirical constraint worth incorporating.
+4. **Budget awareness**: Verification budgets should be treated as first-class experimental parameters, not arbitrary constants. The paper supports measuring diminishing returns, not importing a fixed 3–4 bound.

@@ -10345,6 +10345,47 @@ paper and other unsourced claims follow; Reddit stays trigger-deferred; static
 compaction remains last. Select the repair-loop audit and bind any conclusion
 to the paper's exact tasks, models, iteration budget, metric, and uncertainty.
 
+## Cycle 311 checkpoint — calibrate repair budgets; do not canonize three
+
+Seed-first `b321dc4b29d681c71e921a58d6b698305aa9a112` preceded all public
+reads. Anonymous read-only arXiv access returned HTTP 200 for the
+`2607.05197v1` abstract at `2026-09-04T00:57:16.423Z` and the 7-file TeX
+archive at `00:57:17.988Z`; archive SHA-256 is
+`997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`.
+
+The primary result supports a narrower operational conclusion. Six
+tool/dataset configurations, three task types, three cost-efficient models,
+temperature 0.2, and at most ten repairs all show concave completion curves.
+The published mean-relative-improvement table generally declines after the
+first step. It does not reveal a single threshold: Basic LLM Call rises `11.5%`
+at step 3 and `12.7%` at step 4, and several configurations retain small
+positive gains through steps 8–10.
+
+The study did not repeat every configuration, and the seven-file source has no
+raw completion counts, per-run results, experiment code, or cutoff uncertainty.
+The stated workflow-over-model interpretation comes from curve-shape
+similarity; across most comparisons, workflow, dataset, task, prompts,
+validation, and compatibility modifications change together. It is not a
+matched estimate of workflow versus model influence.
+
+The finding, Scan 433, index, and canonical Oversight Inversion now retain the
+supported concavity while replacing a universal `3–4` hard stop with an
+explicit target-workflow marginal-benefit/cost/uncertainty rule. Confidence is
+medium for the observed tested-setting diminishing returns and low for an
+invariant cutoff, causal factor ranking, frontier-model transfer, or open-ended
+agent tasks.
+
+arXiv won on directness; revisit on v2, raw artifact publication, repeated
+runs, or a matched factor design. GitHub made zero requests because the paper
+names no replication repository; revisit on a stable author-linked identity.
+Reddit made zero requests and remains deferred at RSS-readable/JSON-403 until
+a relevant thread or access change. `RV-004` remains high/open: this improves
+claim accuracy but is not retained query/rank-to-later-outcome evidence.
+
+Next begin seed-first and primary-review Scan 467's `2601.06692v3` formal
+consent claim, especially what Lean actually proves versus what is posed as a
+phenomenological equation or dynamical interpretation.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

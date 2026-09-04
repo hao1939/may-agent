@@ -4518,6 +4518,44 @@ compaction is last. Select item 3. Check tasks, models, stopping criterion,
 iteration effect sizes, and whether the paper supports a universal ceiling or
 only tested-setting diminishing returns.
 
+### Cycle 311 checkpoint — diminishing returns do not define one hard stop
+
+Seed-first `b321dc4b29d681c71e921a58d6b698305aa9a112` preceded all public
+reads. Anonymous read-only arXiv access returned HTTP 200 for
+`2607.05197v1` metadata at `2026-09-04T00:57:16.423Z` and its 7-file TeX
+source at `00:57:17.988Z`. The archive SHA-256 is
+`997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`.
+
+Supporting evidence: six tool/dataset configurations across three task types
+and three low-cost models all have concave completion curves through ten
+repairs. The first increment is the largest in the published relative-gain
+table, and later increments generally shrink. Contradictory/qualifying
+evidence: flattening differs materially by workflow; Basic LLM Call reports
+`11.5%` at step 3 and `12.7%` at step 4; multiple rows retain small nonzero
+gains through steps 8–10. The study did not repeat every configuration and its
+source archive contains no raw completion counts, per-run results, code, or
+uncertainty for a 3–4 cutoff.
+
+The “workflow more than model” claim is an interpretation of similar
+within-tool curve shapes. Most cross-tool comparisons also change dataset,
+task, prompt, validation, and tool modifications, so they cannot identify a
+workflow-versus-model effect. Confidence is medium for diminishing returns in
+the tested automated-validation settings and low for a universal cutoff,
+frontier-model transfer, open-ended agent work, or a causal factor ranking.
+
+arXiv supplied the selected primary evidence; revisit on v2, artifact release,
+repeated-run uncertainty, or a matched orchestration/model design. GitHub made
+zero requests because the paper names no replication repository; revisit on a
+stable author-linked code/data identity. Reddit made zero requests and remains
+deferred at RSS-readable/JSON-403 until a relevant thread or access change.
+`RV-004` remains high/open because the correction is knowledge quality, not a
+retained navigation-to-outcome join.
+
+Next begin seed-first and audit Scan 467's `2601.06692v3` consent/formalism
+claim. Its equation, Lean proof scope, and jump from comparative statics to
+“dynamical attractor” are primary-accessible and still shape a canonical
+governance synthesis, so this ranks above compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
