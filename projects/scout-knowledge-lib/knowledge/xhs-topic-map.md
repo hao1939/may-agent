@@ -7939,6 +7939,37 @@ scores, exposure ages, and whether the event semantics and submission authors
 support a matched within-release sequence. Retain GitHub Cycle 362 and arXiv
 Cycle 361; make no Reddit request without a relevant-thread trigger.
 
+### Cycle 364 checkpoint — three submissions are not one decay experiment
+
+Seed-ordering commit `af194ca682e08e9ef4c41448e512875cdccb17d7`
+precedes source work. Firebase records observed at
+`2026-09-04T08:10:46.431Z` confirm three Sol-related HN identities:
+`48689028` is a preview blog submitted by `minimaxir` at
+`2026-06-26T17:06:55Z`, final 1,139 points / 744 descendants
+(`f6a583a9…49be`); `48799614` is a third-party X post about Ultra in Codex,
+submitted by `mfiguiere` at `2026-07-06T01:04:03Z`, final 415 / 405
+(`59160105…d995`); `48827402` is an OpenAI X availability notice submitted by
+`jfrbfbreudh` at `2026-07-08T04:12:13Z`, final 235 / 210
+(`a8f3818e…3d20`). The last title says the family “will launch publicly this
+Thursday”; July 8 was Wednesday, so it is not the deployment event.
+
+The reported 83% is `1 - 193/1,137`, a historical cross-item score ratio. The
+items are 9.33 and 2.13 days apart and differ in submitter, URL, title, source,
+event semantics, capability claim, exposure, and competition. HN does not
+retain impressions, rank duration, audience overlap, or evaluation work.
+Comments are not coded security/capability review and points are not a
+validated endorsement scale. The ordering is compatible with audience
+saturation, but also with source/title, timing, and event differences; it does
+not identify novelty depletion, oversight loss, or a general release law.
+
+Confidence is high in item identity, chronology, final metadata, and the
+descriptive ratio; low in causal attention decay or cross-release transfer.
+HN was useful; GitHub and arXiv retain Cycles 362/361, and Reddit makes zero
+requests absent its trigger. `RV-004` remains high/open. Next seed-first, audit
+Scan #471's downstream “cross-vendor confirmation” from one Grok item: require
+a stable item, matched release-arc controls, and actual evaluation evidence
+before treating a second selected point as replication.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
