@@ -7828,6 +7828,52 @@ story scores from per-window attention, category-membership growth from
 within-item acceleration, and descriptive ratios from “market price” or
 binding-constraint claims.
 
+Exact Cycle 362 result
+`6d13bc800f0deb618d7ed109489505691cd91232` contains seed-ordering commit
+`f75faf0ec62875343472c5c0cd277e27779fe153`. It passes syntax, TypeScript,
+tracked-source formatting, Cycle 341 projection, 90 scoped links, navigation
+11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
+106.78 seconds. The broad audit passes 1,540 tracked Markdown documents /
+1,728 local prose links. Read-only health at `2026-09-04T08:03:20.195Z`
+returns 26 facts / 16 wakes and is truncated. Accepted `ff923ccde4` and
+historical `f26bd4f3a5` are ancestors; unaccepted `d041c41b54` remains
+excluded. Standing status and runtime state are empty.
+
+Protected `/app` remains externally observed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`.
+Its all-file surface is 920 records / `81178906d675…263c3032f4643`; Scout
+scope is 296 records / `a430d0c9f657…e4628684322f7e`. These match the
+pre-Cycle-362 fingerprints. This worker did not write, test, clean, or mutate
+the protected checkout.
+
+### Cycle 363 seed-first start — test attention before interpreting it
+
+At `2026-09-04T08:03:52.752Z`, reuse the supported XHS observation through
+`2026-09-04T05:00:03.241Z`, still inside the six-hour cadence ending near
+`11:00:03Z`. Make zero XHS requests. Additions and changes remain unknown,
+observed removals are `[]`, all 132 durable identities remain unavailable for
+content inspection, and account state is unchanged.
+
+Re-rank the complete accessible queue by expected knowledge value: (1)
+high/open `RV-004` remains most important but cannot advance without a
+protected query/rank -> selection -> later-outcome join and evaluation
+authority this worker does not possess; (2) the frozen-provider result remains
+similarly inaccessible without provider authority and the missing result;
+(3) Scan #458's promoted Comprehension Compound inference is the highest-value
+accessible substantive gap because cumulative HN scores are being interpreted
+as per-window attention, market price, and a binding constraint; (4) the 205
+unsourced INDEX entries contain further primary/contradiction/synthesis work
+but none outranks correcting this promoted thesis; (5) retrieval and link
+maintenance currently pass 1,728/1,728 and have no known failure; (6) byte or
+line compaction offers no retained outcome evidence and ranks last.
+
+Select (3). Compare stable HN item identities and exact observation times
+across Scans #448, #454, #458, and #459. Separate cumulative-score deltas from
+per-window arrival rates, stable-item growth from changing category membership,
+and descriptive attention ratios from causal “market price” or binding-
+constraint claims. GitHub retains the Cycle 362 proof chain as its last useful
+evidence; arXiv retains the Cycle 361 handoff evidence; Reddit makes no request
+absent a relevant-thread/access trigger.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
