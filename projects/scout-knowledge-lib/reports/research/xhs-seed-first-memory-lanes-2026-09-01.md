@@ -12059,6 +12059,39 @@ denominators, safe-completion tradeoff, threat model, evaluator/oracle
 construction, false denial, uncertainty, and attributable artifacts before
 retaining cross-domain convergence.
 
+## Cycle 330 checkpoint — zero observed escape does not mean complete safety
+
+What was wrong: the synthesis said CXI architecturally prevents whole attack
+classes. What changes for the user: the zero-escape result is now scoped to
+mediated sinks under fixed policies, with safe completion and residual risks
+visible rather than collapsed into the security endpoint.
+
+ArXiv observation through `2026-09-04T03:32:29.907Z` returned 2,710 abstract
+bytes (`c65066abc3bcd88ff74aba7e22612ffd4344bdad3e396fe72789e15793bfadfa`)
+and 43,990 v1 source bytes
+(`02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1`).
+The 720 AgentDojo episodes / 1,739 calls report 199 safe task completions and
+no observed mediated field/effect/invocation escape. The 400 repository
+episodes report 231 safe completions and no observed escape; 73 parse failures,
+61 no-effect-authorizations, and 35 authorized-but-unsuccessful executions
+account for every other episode.
+
+The contract excludes compromised policy, model weights, host runtime, and
+privileged tools. Wrong field classes, broad validators, incomplete mediation,
+unreviewed sinks, validator incompleteness, and task quality remain residual
+risks. Hosted/API rows are archived compatibility traces, not provider-
+internal evidence. The anonymous artifact returned HTTP 401 at
+`2026-09-04T03:32:52Z`, so no table regeneration or record-level deduplication
+is claimed.
+
+Confidence is high for declared semantics and denominators, medium for the
+execution record without the artifact, and low for generalized attack-class
+prevention or utility preservation. ArXiv is revisited on revision;
+GitHub/artifact access on a readable release; Reddit made zero requests and
+remains trigger-deferred. `RV-004` remains high/open because this is not the
+missing Scout outcome join. Next begin seed-first and re-rank remaining primary,
+contradiction, reproducibility, retrieval, and synthesis gaps before compaction.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

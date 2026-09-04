@@ -5771,6 +5771,33 @@ compaction. Select CXI. Test denominators, safe-completion tradeoff, threat
 model, evaluator/oracle construction, false denial, uncertainty, and artifact
 availability before retaining cross-domain convergence.
 
+### Cycle 330 checkpoint — zero escape is a mediated-admission result
+
+ArXiv observation through `2026-09-04T03:32:29.907Z` returned 2,710 abstract
+bytes (`c65066ab…bfadfa`) and 43,990 v1 source bytes
+(`02f14a0c…9ace1`). Supporting evidence is exact but narrow: 720 AgentDojo
+episodes / 1,739 calls have 199 safe task completions and no observed escape at
+the mediated sink; 400 repository episodes have 231 safe task completions and
+no observed escape. The 169 non-completions split into 73 parse failures, 61
+parse-valid rows without effect authorization, and 35 authorized executions
+that miss the task oracle.
+
+The paper itself contradicts broad prevention language: policy authoring,
+validator completeness, task quality, wrong field classes, unmediated sinks,
+and compromised host/runtime remain outside the contract. Hosted/API rows are
+archived compatibility traces, not provider-internal mask/attention/cache
+evidence. The named anonymous artifact returned HTTP 401 at
+`2026-09-04T03:32:52Z`, so tables, run records, and deduplication were not
+independently regenerated.
+
+Confidence is high for the declared fixed-policy admission semantics and
+aggregate denominators; medium for the zero-observed-escape execution record
+without the artifact; low for general attack-class prevention or utility
+preservation. ArXiv is revisited on revision; GitHub/artifact access on a
+readable attributable release; Reddit made zero requests and remains
+trigger-deferred. `RV-004` stays high/open. Next begin seed-first and re-rank
+the remaining primary and contradiction gaps before any compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
