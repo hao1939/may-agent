@@ -18006,6 +18006,78 @@ distinct patch ID `0e277e14e05f103c96212285e58daf17a8ca66f7`; its useful
 substance is semantically reconciled and superseded rather than represented as
 commit or patch containment.
 
+## Cycle 391 checkpoint — reconcile the already-accepted survey audit
+
+What was wrong: Cycle 368 had already qualified the Balkanization survey, but
+Scan #453, two Oversight summaries, and the main index still called its four
+CVEs production agent-harness incidents, treated five corpus-derived gaps as
+confirmed field-wide absences, and repeated “rarely cite” without a citation-
+edge denominator. Cycle 390's proposed next audit would have repeated the
+public source read instead of reconciling accepted evidence.
+
+What changes: those retrieval surfaces now agree with qualified Scan #473.
+The survey provides a useful 39-row/17-category taxonomy and cross-category
+research agenda. Its strongest retained within-corpus result is that selected
+isolation and access-control mechanisms lack a shared head-to-head benchmark.
+It does not measure field-wide citation fragmentation or prove the five
+absences outside its non-exhaustive search.
+
+### Seed order, evidence, and lanes
+
+Cycle 391 began from clean validated Cycle 390 result
+`a6236a312d00121026b9f8f5e939cc21385c599f`. At
+`2026-09-04T14:54:41.967Z`, before evidence inspection, the next XHS boundary
+remained `2026-09-04T17:09:20.326Z` and no trigger had fired. The bounded pass
+made zero account requests: additions and changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, no account
+state changed, and Cycle 375's browser receipt/ledger remain provenance.
+
+Accepted Cycle 368 had already retrieved `2607.05743v1`, so Cycle 391 made no
+new arXiv request. Local re-inspection at `2026-09-04T14:55:46.294Z` used the
+retained 852,843-byte source archive (SHA-256
+`68eeba16c86b2952e33dca0f09b64dfcd4a0fb42aa65da0fa96e8afdb3a8385c`)
+and 1,005,745-byte PDF (`1fb8aa5216ebc5e4cf969544b608093bebe7584ced98cc66acc070fc958722f7`).
+The source explicitly describes an iterative, citation-following,
+non-exhaustive search, judgment-based single-category assignment, and indirect
+gap evidence. It supplies no citation-edge table/count/denominator.
+
+The four incidents are `CVE-2024-21626` (runc), `CVE-2025-53773`
+(Copilot/Visual Studio), and two Claude Code issues, `CVE-2025-59536` and
+`CVE-2026-21852`. The runc escape predates agent tooling and is inherited-
+substrate evidence. The paper checks metadata against NVD/vendor advisories but
+does not reproduce the exploits. The source archive contains generated tables,
+macros, bibliography, figures, and all 39 appendix rows, but not the claimed
+CSV or independent verifier; counts are inspectable while selection,
+classification, citation assertions, and regeneration are not independently
+reproducible.
+
+GitHub made zero requests and retains the prior exact repository evidence.
+ArXiv's last useful evidence is the accepted Cycle 368 archive. Reddit made
+zero requests and stays at its RSS-readable/JSON-403 boundary until a relevant
+thread or access change. High/open `RV-004` and `RV-034` remain inaccessible at
+their recorded protected-outcome and external-runtime boundaries; `RV-036`
+remains medium/open.
+
+Confidence is high in exact archive identity, source wording, 39 generated
+rows, and the incident identities; moderate in gaps bounded to the selected
+corpus; low in completeness, field-wide citation prevalence, and artifact
+regeneration. Revisit on a released corpus/verifier, citation-edge data, survey
+revision, or matched cross-mechanism evaluation. The next ranked accessible
+investigation is to trace the survey's “69–98%” enforcement-fragility range to
+ShellSieve and YoloFS primary denominators and artifacts, after the next bounded
+seed-first pass.
+
+### Cycle 391 validation boundary
+
+The five-document candidate from source
+`a6236a312d00121026b9f8f5e939cc21385c599f` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 seed projection, 101
+scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 95.22 seconds. The broad offline audit passes
+1,540 tracked Scout-library Markdown documents / 1,741 local prose links.
+Read-only health at `2026-09-04T15:00:05.007Z` returns 26 facts / 16 wake
+signals with `truncated:true` and creates no runtime packet.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

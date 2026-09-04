@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #453 (2026-07-09): The Execution Boundary. Five arXiv papers converge on a gap between approval and execution. MCP TAG-Block Concealment (2607.05744) reports a deterministic reference-harness result: 8/8 metadata techniques survive into serialized prompt/JSON-RPC bytes, 4/8 evade its lexical sanitizer, 1/8 is hidden by its simplified renderer, and 0/8 force protocol re-approval. It does not run a model, measure model interpretation or action, audit a named deployed client, or establish attack prevalence. CXI (2607.06000) reports no observed escapes at fixed-policy mediated sinks, while safe task completion is 199/720 AgentDojo and 231/400 repository episodes; validator completeness and unreviewed sinks remain outside the guarantee. Balkanization survey (2607.05743) shows the research studying this gap is itself fragmented — 39 papers in 17 categories that rarely cite each other, with 5 cross-cutting gaps no single paper addresses. 25th layer of the Oversight Inversion and tenth extension of the exit arc. HN: sovereignty stack contracts as top stories age off (~2,683pts from 7 stories vs ~3,991pts last scan), but Comprehension:News ratio crosses 1.0 for the first time (1.21). 30papers at 399pts (1pt from 400 prediction). Fortress (35pts/32c) = stealth Chromium for agents. GitHub: T3MP3ST 3,354★ (plateau), openscience 1,422★, claude-code-merge-queue 295★ (NEW — parallel agent coordination), Godcoder 282★ (NEW — 'AI builds its own Harness'). Running accuracy: ~96.0% (69/72)."
+summary: "HN/arXiv/GitHub Scan #453 (2026-07-09): The Execution Boundary. Five arXiv papers converge on a gap between approval and execution. MCP TAG-Block Concealment (2607.05744) reports a deterministic reference-harness result: 8/8 metadata techniques survive into serialized prompt/JSON-RPC bytes, 4/8 evade its lexical sanitizer, 1/8 is hidden by its simplified renderer, and 0/8 force protocol re-approval. It does not run a model, measure model interpretation or action, audit a named deployed client, or establish attack prevalence. CXI (2607.06000) reports no observed escapes at fixed-policy mediated sinks, while safe task completion is 199/720 AgentDojo and 231/400 repository episodes; validator completeness and unreviewed sinks remain outside the guarantee. Balkanization survey (2607.05743) classifies 39 selected papers into 17 categories through an iterative, non-exhaustive search and proposes five cross-cutting gaps; it releases no citation-edge denominator, and one of four CVE examples is inherited runc substrate risk rather than an agent-harness incident. 25th layer of the Oversight Inversion and tenth extension of the exit arc. HN: sovereignty stack contracts as top stories age off (~2,683pts from 7 stories vs ~3,991pts last scan), but Comprehension:News ratio crosses 1.0 for the first time (1.21). 30papers at 399pts (1pt from 400 prediction). Fortress (35pts/32c) = stealth Chromium for agents. GitHub: T3MP3ST 3,354★ (plateau), openscience 1,422★, claude-code-merge-queue 295★ (NEW — parallel agent coordination), Godcoder 282★ (NEW — 'AI builds its own Harness'). Running accuracy: ~96.0% (69/72)."
 triggers: ["execution boundary", "approval surface", "execution surface", "approval fidelity gap", "MCP TAG block", "Unicode concealment", "CXI", "context-to-execution integrity", "Balkanization execution security", "aiAuthZ", "off-host authorization", "execution fidelity", "TOCTOU agent", "tool metadata attack", "doomed from start", "early abort", "probe cascade", "hidden state probes", "approval-execution gap", "scan 453"]
-source_basis: "arXiv cs.CR 2026-07-08 (2607.05744 MCP TAG-Block, 2607.06000 CXI, 2607.05743 Balkanization, 2607.05518 aiAuthZ, 2607.06503 Doomed from Start). TAG-block v1 source primary-reviewed 2026-09-04 at SHA-256 41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c; the ancillary endpoint returned the identical manuscript archive and two GitHub repository searches returned zero results, so the claimed driver, data, and verifier were not available on inspected surfaces. CXI v1 source primary-reviewed 2026-09-04 at SHA-256 02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1; anonymous artifact HTTP 401 after redirect. aiAuthZ v1 source primary-reviewed 2026-09-04 at SHA-256 0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760; public repository Sports-Vision-Inc/aiAuthZ pinned at 6eaac86ae5bfd8bf7b8a65786a5c77a7c0bce673 (archive SHA-256 c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (T3MP3ST 3,354★, openscience 1,422★, security-audit-skill 2,338★, claude-code-merge-queue 295★, Godcoder 282★, agent-memory-engine 122★). Cross-referenced with Co-Evolution Imperative (#452), Predicate Gate (#446), Boundary Dissolution (#432), Authority Gap (#434), Latent Horizon (#433), Oversight Inversion (thesis)."
+source_basis: "arXiv cs.CR 2026-07-08 (2607.05744 MCP TAG-Block, 2607.06000 CXI, 2607.05743 Balkanization, 2607.05518 aiAuthZ, 2607.06503 Doomed from Start). TAG-block v1 source primary-reviewed 2026-09-04 at SHA-256 41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c; the ancillary endpoint returned the identical manuscript archive and two GitHub repository searches returned zero results, so the claimed driver, data, and verifier were not available on inspected surfaces. CXI v1 source primary-reviewed 2026-09-04 at SHA-256 02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1; anonymous artifact HTTP 401 after redirect. Balkanization v1 source primary-reviewed 2026-09-04 at SHA-256 68eeba16c86b2952e33dca0f09b64dfcd4a0fb42aa65da0fa96e8afdb3a8385c; it contains generated tables and 39 appendix rows but not the claimed CSV or verifier. aiAuthZ v1 source primary-reviewed 2026-09-04 at SHA-256 0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760; public repository Sports-Vision-Inc/aiAuthZ pinned at 6eaac86ae5bfd8bf7b8a65786a5c77a7c0bce673 (archive SHA-256 c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (T3MP3ST 3,354★, openscience 1,422★, security-audit-skill 2,338★, claude-code-merge-queue 295★, Godcoder 282★, agent-memory-engine 122★). Cross-referenced with Co-Evolution Imperative (#452), Predicate Gate (#446), Boundary Dissolution (#432), Authority Gap (#434), Latent Horizon (#433), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #453: The Execution Boundary
@@ -20,12 +20,16 @@ Three convergent arXiv papers motivate separate checks at the approval and execu
 
 2. **Context-to-Execution Integrity (CXI)** (2607.06000): A fixed-policy admission design. CXI introduces **triple-binding**: before a tool call executes, a deterministic gate verifies that field authority, exact-effect authorization, and invocation authority all bind to the same action manifest. The paper reports no observed escape at mediated sinks; safe task completion is 199/720 AgentDojo episodes (1,739 LLM calls) and 231/400 repository episodes. Validator completeness, task quality, compromised policy/runtime, and unreviewed sinks remain outside the guarantee.
 
-3. **The Balkanization of Execution-Security Research** (2607.05743): Systematizes 39 papers (2023–2026) into 17 categories and confirms 4 disclosed, patched CVEs in production agent harnesses. Surfaces 5 cross-cutting gaps:
-   - (1) Isolation architectures and capability models are never evaluated against each other
-   - (2) Policy enforcement reports 69–98% failure rates, yet isolation papers don't test under adversarial settings
-   - (3) TOCTOU and MCP threats are analyzed separately despite being the same state-validation problem
-   - (4) **Every enforcement mechanism assumes an honest policy author** — policy-authoring error is unaddressed
-   - (5) Benign but out-of-scope agent actions (up to 17.1%) are addressed by no access-control paper
+3. **The Balkanization of Execution-Security Research** (2607.05743):
+   Classifies 39 selected papers (2023–2026) into 17 categories through an
+   iterative, non-exhaustive search. Its five gaps are author synthesis over
+   that corpus: no shared isolation/access-control benchmark, no reuse of the
+   named enforcement-fragility tests, a proposed TOCTOU/MCP state-validation
+   analogy, an honest-policy-author assumption, and no access-control treatment
+   of the cited 17.1% benign out-of-scope result. No citation-edge denominator
+   supports the field-wide “rarely cite” phrase. Three CVEs affect Copilot/
+   Visual Studio or Claude Code; the fourth predates agent tooling and concerns
+   inherited runc container risk.
 
 **The 25th Layer of the Oversight Inversion**: The Execution Boundary. Verification deployed at any layer above the execution boundary provides approval-confidence, not execution-confidence. The TAG-block paper supports the narrower transport claim that the reference approval view is not byte-faithful to the serialized prompt. Whether a model decodes, follows, or acts on the concealed instruction—and how deployed clients render or sanitize it—remains untested.
 
@@ -80,20 +84,38 @@ Source: https://arxiv.org/abs/2607.06000
 
 ### 3. The Balkanization of Execution-Security Research (2607.05743)
 
-**Core finding**: 39 papers (2023–2026) on execution security for AI coding agents, systematized into 17 categories. Papers on sandbox isolation, capability/access control, policy enforcement, TOCTOU, MCP threats, identity delegation, execution provenance, network egress, and static analysis are published independently and **rarely cite one another**.
+**Core finding**: A systematization assigns 39 selected papers (2023–2026) to
+17 execution-security categories. The search is iterative and citation-
+following rather than exhaustive, eight categories contain one paper, and
+several multi-category papers are forced into one primary label. The paper says
+categories rarely cite one another but releases no citation-edge table, count,
+or denominator; the field-wide prevalence of cross-category citation is
+therefore unknown.
 
-Five cross-cutting gaps:
-1. **No shared benchmark**: Isolation architectures and capability models aren't evaluated against each other
-2. **No adversarial testing of defenses**: Policy enforcement reports 69–98% failure rates; isolation papers don't retest under those conditions
-3. **Same problem, separate literatures**: TOCTOU and MCP threats are both state-validation problems but analyzed in isolation
-4. **Honest-author assumption**: Every enforcement mechanism assumes the policy is correctly authored — policy-authoring error is itself unaddressed
-5. **Benign out-of-scope**: Up to 17.1% of agent actions under realistic prompting are benign but out-of-scope — addressed by zero access-control papers
+Five proposed cross-cutting gaps within the selected corpus:
+1. **No shared benchmark**: No isolation/access-control head-to-head comparison
+2. **No adversarial co-evaluation**: No isolation paper reuses the named 69–98% enforcement-fragility setting
+3. **TOCTOU/MCP analogy**: The paper interprets both as state-validation problems; it does not test one mitigation across both
+4. **Honest-author assumption**: Reviewed mechanisms do not measure policy-authoring error
+5. **Benign out-of-scope**: No selected access-control/capability paper addresses the cited result of up to 17.1%
 
-Additionally: 4 disclosed, patched CVEs directly affecting production agent harnesses are confirmed through the verification protocol.
+The paper checks four CVE metadata records against NVD and vendor advisories but
+does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
+Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
+evidence of inherited container-runtime risk, not an observed agent-harness
+incident.
 
-**Why this matters**: This is the **Correlated Blindness (#436) applied to the research community itself**. The 17 categories don't cite each other → they share correlated blind spots → the 5 cross-cutting gaps are invisible from within any single category. The fix mirrors the original: orthogonal verification requires cross-category reading.
+**Why this matters**: The taxonomy exposes useful cross-category test
+questions, especially the missing shared benchmark and policy-authoring-error
+study. It motivates the **Correlated Blindness** analogy; it does not measure
+field-wide citation fragmentation or prove that the five absences hold outside
+its non-exhaustive corpus.
 
-**Gap 4 is the deepest**: "Every enforcement mechanism assumes an honest policy author." This is the Authority Gap (#434) at the infrastructure level — the source of authority for policies is unexamined. Policies constrain agents, but who constrains policies?
+**Reproducibility boundary**: The inspected v1 source contains generated
+tables/macros, bibliography, figures, and all 39 appendix rows, but not the
+claimed machine-readable corpus or independent verifier. Counts and wording
+are inspectable; search completeness, classifications, citation assertions,
+and regeneration are not independently reproducible from that archive.
 
 Source: https://arxiv.org/abs/2607.05743
 

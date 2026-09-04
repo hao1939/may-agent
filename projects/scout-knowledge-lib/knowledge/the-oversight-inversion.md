@@ -827,7 +827,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 
 **Context-to-Execution Integrity (CXI)** (2607.06000): **Triple-binding** at the execution boundary. Policies mark protected sink fields; typed releases carry narrow validated values; a deterministic gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the **same action manifest**. The paper reports no observed escape at mediated sinks; safe task completion is 199/720 AgentDojo episodes (1,739 LLM calls) and 231/400 repository episodes. This is a fixed-policy admission result, not complete-safety or utility-preservation evidence.
 
-**Balkanization of Execution-Security Research** (2607.05743): Systematizes 39 papers (2023–2026) into 17 categories that **rarely cite each other**. Confirms 4 disclosed, patched CVEs in production agent harnesses. Surfaces 5 cross-cutting gaps: (1) no shared benchmark across isolation architectures; (2) policy enforcement reports 69–98% failure but isolation papers don't test adversarially; (3) TOCTOU and MCP threats analyzed separately despite being the same state-validation problem; (4) **every enforcement mechanism assumes an honest policy author**; (5) benign out-of-scope actions (up to 17.1%) addressed by zero papers. This is the Correlated Blindness (#436) applied to the research community itself — the 17 categories share correlated blind spots.
+**Balkanization of Execution-Security Research** (2607.05743): Assigns 39 selected papers (2023–2026) to 17 categories through an iterative, non-exhaustive search and proposes five cross-category gaps. The strongest within-corpus result is the missing shared isolation/access-control benchmark; TOCTOU/MCP equivalence and the broader absence claims are author synthesis. No citation-edge denominator supports “rarely cite.” Three checked CVEs affect Copilot/Visual Studio or Claude Code; the fourth is pre-agent runc substrate risk. The source archive contains 39 generated appendix rows but not the claimed CSV/verifier, so counts are inspectable while selection and regeneration are not independently reproducible. This motivates Correlated Blindness (#436), not a measured field-wide citation effect.
 
 **aiAuthZ** (2607.05518): Off-host authorization gateway whose public benchmark retains 116/120 completed model/scenario cells and one representative verdict for each of 44 cells with a dangerous-call attempt; all 44 are denied under a fixed restrictive policy. Four Qwen cells contain only HTTP 429 errors, the 187 underlying attempts are not individually retained, and the claimed raw model transcripts are absent. AgentDojo separately shows seven argument-allowlist denials but starts at 0/20 no-defense attack success and loses 20 points of clean utility. This supports covered-call denial under complete mediation, not uniform model safety or identity-only attribution; the 0.0304 ms maximum per-model average excludes end-to-end gateway/network cost.
 
@@ -1164,7 +1164,15 @@ Source: findings/2026-07-08-hn-arxiv-github-scan-469.md, arXiv 2607.00269
 
 Layers 25–33 identified governance failures at specific surfaces within systems. Layer 34 reveals the same structural failure operating **on the research community studying those systems**.
 
-**The Balkanization of Execution-Security Research** (2607.05743v1) systematizes **39 papers (2023–2026)** across **17 categories** covering sandbox isolation, capability/access control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress, and static analysis of agent-generated code. The categories **rarely cite each other**. The verification protocol confirms four disclosed, patched CVEs affecting production agent harnesses.
+**The Balkanization of Execution-Security Research** (2607.05743v1) assigns
+**39 selected papers (2023–2026)** to **17 categories** through an iterative,
+non-exhaustive search. No released citation-edge denominator supports “rarely
+cite,” and the five gaps are author synthesis over the selected corpus. Three
+checked CVEs concern Copilot/Visual Studio or Claude Code; the fourth is a
+pre-agent runc escape used as inherited-substrate evidence, not an observed
+agent-harness incident. The claimed CSV/verifier are absent from the inspected
+source archive, so generated rows are inspectable but corpus regeneration is
+not independently reproducible.
 
 **Five cross-cutting gaps that no single paper addresses:**
 1. Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark
@@ -1173,7 +1181,11 @@ Layers 25–33 identified governance failures at specific surfaces within system
 4. Every enforcement mechanism assumes an **honest policy author**, leaving policy-authoring error unaddressed
 5. Benign but out-of-scope agent actions at rates up to **17.1%** under realistic prompting are addressed by **no** paper in the corpus
 
-**The Balkanization Problem**: The governance knowledge needed to govern agent systems is *itself* fragmented across non-citing literatures, reproducing the Handoff Fallacy (#459) at the research level. Each paper passes its own review; the cross-category handoffs — where isolation meets policy enforcement meets TOCTOU defense meets identity delegation — are unverified. The Oversight Inversion is self-similar: it manifests not only in agent systems but in the academic community studying them.
+**The Balkanization Problem, as a hypothesis**: The taxonomy identifies
+unverified cross-category handoffs—especially the missing shared benchmark and
+policy-authoring-error study. It motivates a research-level Handoff Fallacy
+(#459), but does not measure field-wide citation fragmentation or prove its
+five absences beyond the non-exhaustive corpus.
 
 Companion papers from this scan form a diagnosis-architecture-evaluation arc:
 - **AGL-1** (2607.03516v1) proposes a vendor-neutral seven-domain reference model (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability); it does not provide or evaluate an implemented control plane

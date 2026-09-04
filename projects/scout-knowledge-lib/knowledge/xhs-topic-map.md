@@ -9882,6 +9882,60 @@ a utility-matched identity ablation. Next seed-first, audit the Balkanization
 survey's four-CVE verification and five-gap synthesis if it remains the
 highest accessible execution-boundary claim after ranking.
 
+### Cycle 391 seed-first start — reuse cadence; reconcile accepted survey audit
+
+Cycle 391 starts from clean validated Cycle 390 result
+`a6236a312d00121026b9f8f5e939cc21385c599f`. At
+`2026-09-04T14:54:41.967Z`, the scheduled XHS boundary remains
+`2026-09-04T17:09:20.326Z`; no access or collection trigger has fired. Make
+zero account requests and retain Cycle 375's browser receipt and ledger:
+added/changed identities remain unknown, observed removals remain `[]`, all
+132 durable identities remain unavailable, and no account state changes.
+
+The proposed Balkanization audit is not a fresh retrieval target: accepted
+Cycle 368 already inspected exact `2607.05743v1`. Re-rank its unreconciled
+cross-surface residue above a duplicate public read. High/open `RV-004` and
+`RV-034` remain first at their protected-outcome and external-runtime
+boundaries; Memory in the Loop's provider result remains unavailable. The
+stale Scan #453, index, and Oversight mirrors are the highest accessible gap
+because they still promote the qualified survey into field-wide citation and
+agent-harness-CVE claims. Select that reconciliation and re-inspect the retained
+Cycle 368 source before editing.
+
+### Cycle 391 checkpoint — survey gaps are corpus-bounded synthesis
+
+Local re-inspection at `2026-09-04T14:55:46.294Z` confirms the retained exact
+v1 source archive is 852,843 bytes / SHA-256
+`68eeba16c86b2952e33dca0f09b64dfcd4a0fb42aa65da0fa96e8afdb3a8385c`;
+the retained PDF is 1,005,745 bytes /
+`1fb8aa5216ebc5e4cf969544b608093bebe7584ced98cc66acc070fc958722f7`.
+No public source request was made. The source calls its search iterative,
+citation-following, and non-exhaustive; forces multi-category work into one
+primary label; and gives no citation-edge table, count, or denominator. Its
+five gaps are indirect author synthesis over the selected corpus, not measured
+field-wide absences. The strongest retained result is the missing shared
+isolation/access-control benchmark inside that corpus.
+
+The incident section names four CVEs. Three affect GitHub Copilot/Visual Studio
+or Claude Code. `CVE-2024-21626` is a runc container escape that predates agent
+tooling and illustrates inherited substrate risk, not an observed agent-
+harness incident. The paper checks metadata against NVD/vendor advisories but
+does not reproduce any exploit. Its archive contains all 39 generated appendix
+rows and generated counts, but not the claimed CSV or independent verifier.
+
+Scan #453, both Oversight layers, and the index now inherit Cycle 368's exact
+qualification instead of contradicting qualified Scan #473. ArXiv and GitHub
+make zero requests and retain their last useful evidence; Reddit remains
+RSS-readable/JSON-403 and trigger-deferred without a request. Confidence is
+high in archive identity, source wording, generated rows, and the four named
+incidents; moderate in within-corpus gaps; low in search completeness,
+field-wide citation prevalence, and corpus regeneration. `RV-004` and
+`RV-034` remain high/open; `RV-036` remains medium/open. Revisit on a released
+corpus/verifier, citation-edge data, survey revision, or matched cross-
+mechanism evaluation. Next seed-first, trace the survey's “69–98%” enforcement-
+fragility range to ShellSieve and YoloFS primary denominators and artifacts if
+it remains the highest accessible unresolved evidence gap.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
