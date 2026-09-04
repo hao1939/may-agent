@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 406 landed exact reviewed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with protected bytes preserved and exactly 23 intended Scout divergences. A no-renames audit corrects the expected expanded status from 493 to 492 because an R100 pair represented two preflight dirty records. RV-041 and RV-043 are resolved for this landing; RV-044 records the failed first rollback and requires safer future transition tooling."
+summary: "Cycle 406 landed exact reviewed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with protected bytes preserved and exactly 23 intended Scout divergences. A no-renames audit corrects the expected expanded status from 493 to 492 because an R100 pair represented two preflight dirty records. RV-041 and RV-043 are resolved for this landing; RV-044 is mitigated by a read-only no-renames planner pending integration and isolated use."
 triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "RV-043", "RV-044", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T04:50:08+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, standing postflight 8bf1a0b1cc0858280d0780202100a7fc649b37ee containing reviewer result 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, and rollback boundary."
+source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T05:04:13+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, integrated standing reconciliation 6787e1673695ce5ea82faa7b7f9c279df1fa36ae, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, rollback boundary, and read-only planner regression coverage."
 </ai_context>
 
 # Cycle 406 local-main integration
@@ -201,14 +201,15 @@ is `765 - 296 + 23 = 492`. The old source remains absent; old-main source,
 candidate destination, and protected destination all share blob
 `4bd4c72519c8c5f4ee45e83851abc847b80c956b`.
 
-Disposition: **accept the exact landed result; revise future transition
-tooling.** RV-041 and RV-043 are resolved for this landing. RV-044 remains
-medium/open because the first rollback left residue and the manifest was
-rename-sensitive. Any later transition must disable rename collapsing, model
-both sides, preclassify additions, and exercise the exact 77-restore/63-remove
-rollback form in isolated space. Rollback now must return to old main using
-those object-guarded sets and reproduce all three preflight fingerprints;
-never clean, stash, checkout, or hard-reset the protected overlay.
+Disposition: **accept the exact landed result; mitigate future transition risk
+with the reviewer-owned read-only planner.** RV-041 and RV-043 are resolved for
+this landing. RV-044 remains medium/open pending planner integration and a
+fresh isolated forward/rollback use. The planner disables rename collapsing,
+models both sides, compares worktree bytes with both trees, rejects staged
+indexes, and emits distinct restore/remove sets without mutation. Rollback now
+must return to old main using object-guarded sets and reproduce all three
+preflight fingerprints; never clean, stash, checkout, or hard-reset the
+protected overlay.
 
 ## Release-maintenance inventory and cleanup
 
@@ -238,5 +239,6 @@ worktree were excluded from cleanup.
 Local `main` now contains exact reviewed canonical parent `1d25aaadd5` through
 merge `803240b27f`. The next release candidate must start from that exact main,
 include the then-current canonical tip, model diffs with renames disabled, and
-repeat protected preflight plus an addition-safe rollback exercise. Historical
+run `bun run overlay-plan -- <base> <candidate> [repo-root]` before protected
+preflight plus an addition-safe rollback exercise. Historical
 candidates `283f723fd1` and `be902d03fc` remain superseded for landing.
