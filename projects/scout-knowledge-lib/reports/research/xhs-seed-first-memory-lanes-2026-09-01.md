@@ -12571,6 +12571,44 @@ post-August-31 query/rank/selection/outcome join. Next primary-review the RSI
 survey `2607.07663` to test whether it supports any cross-method ordering after
 predicate, study population, and verification target are held explicit.
 
+Exact material `38994a6904fdbe8b2fedc4d7a85c5c6a62cc5a15` passes syntax,
+TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and 296 tests / 1,484 assertions
+with zero failures in 97.96 seconds. The broad audit passes 1,540 documents /
+1,728 links with zero errors. Read-only health at
+`2026-09-04T04:25:43.996Z` returns 26 facts, 16 wakes, and `truncated:true`.
+Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314` and
+`f26bd4f3a590b59d241536326199e805777df1be` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` is excluded. Standing status and
+`.goal-runtime` are empty.
+
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+overall and 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e` in
+Scout scope. This worker did not write, test, clean, or otherwise mutate it.
+
+## Cycle 336 seed-first start — test the survey's ordering claim
+
+At `2026-09-04T04:25:43.996Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` remains inside its six-hour cadence. This bounded
+reconciliation makes zero XHS requests: added and changed identities remain
+unknown, observed removals are `[]`, all 132 seeds remain unavailable, and
+account state is unchanged.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible without the protected post-August-31
+query/rank/selection/outcome join; (2) Memory in the Loop's unreleased
+provider result; (3) `2607.07663`, highest accessible because this unreviewed
+survey remains the principal basis for the cross-method verification ordering;
+(4) EvoSOP, agentic-governance, primary-contradiction, reproducibility,
+retrieval, and synthesis gaps; (5) Reddit until a relevant thread or access
+change; and (6) byte/line compaction. Select `2607.07663`. Inspect corpus
+construction, screening and coding, the verification taxonomy, measured
+variables behind any ordering, causal language, artifacts, contradictions,
+and transfer limits.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

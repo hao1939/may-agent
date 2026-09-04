@@ -6101,6 +6101,30 @@ boundary. Next primary-review `2607.07663` to determine whether its survey
 actually derives a cross-method verification ordering or instead compares
 different predicates and study populations.
 
+Exact material `38994a6904fdbe8b2fedc4d7a85c5c6a62cc5a15` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 90 scoped links, navigation v1
+at 11/14, navigation v2 at 8/8, and 296 tests / 1,484 assertions with zero
+failures in 97.96 seconds. Broad links pass 1,540 documents / 1,728 links;
+health at `2026-09-04T04:25:43.996Z` is 26 facts / 16 wakes, truncated.
+Accepted `ff923ccde4` and `f26bd4f3a5` are contained; unaccepted `d041c41b54`
+is excluded. Standing status and runtime state are empty. Protected `/app`
+remains `386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
+`a430d0c9…32d7e` in Scout scope.
+
+### Cycle 336 seed-first start — test the survey's ordering claim
+
+At `2026-09-04T04:25:43.996Z`, the XHS receipt remains inside cadence. Make
+zero XHS requests: added/changed identities remain unknown, observed removals
+are `[]`, all 132 seeds remain unavailable, and account state is unchanged.
+Rank (1) high/open `RV-004`, blocked on the protected post-August-31 outcome
+join; (2) the unreleased Memory in the Loop result; (3) `2607.07663`, highest
+accessible because its unreviewed survey is the remaining basis for a
+cross-method verification ordering; (4) EvoSOP, agentic governance, and other
+primary/reproducibility gaps; (5) Reddit until its trigger; and (6)
+compaction. Select `2607.07663`; inspect its corpus construction, verification
+taxonomy, measured variables, ordering evidence, causal language, artifacts,
+and limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
