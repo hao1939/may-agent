@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 406 landed exact reviewed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with protected bytes preserved and exactly 23 intended Scout divergences. A no-renames audit corrects the expected expanded status from 493 to 492 because an R100 pair represented two preflight dirty records. RV-041 and RV-043 are resolved for this landing; RV-044 is mitigated by a read-only no-renames planner pending integration and isolated use."
+summary: "Cycle 406 landed exact reviewed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with protected bytes preserved and exactly 23 intended Scout divergences. A no-renames audit corrects the expected expanded status from 493 to 492 because an R100 pair represented two preflight dirty records. RV-041 and RV-043 are resolved for this landing; the RV-044 read-only planner is integrated and awaits its first isolated transition use."
 triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "RV-043", "RV-044", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T05:04:13+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, integrated standing reconciliation 6787e1673695ce5ea82faa7b7f9c279df1fa36ae, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, rollback boundary, and read-only planner regression coverage."
+source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T05:12:27+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, standing integration cfea84eca8a9a91eabc54f6959edd33ce368c8a4, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, rollback boundary, and read-only planner regression coverage."
 </ai_context>
 
 # Cycle 406 local-main integration
@@ -203,8 +203,8 @@ candidate destination, and protected destination all share blob
 
 Disposition: **accept the exact landed result; mitigate future transition risk
 with the reviewer-owned read-only planner.** RV-041 and RV-043 are resolved for
-this landing. RV-044 remains medium/open pending planner integration and a
-fresh isolated forward/rollback use. The planner disables rename collapsing,
+this landing. RV-044 remains medium/open pending a fresh isolated
+forward/rollback use. The integrated planner disables rename collapsing,
 models both sides, compares worktree bytes with both trees, rejects staged
 indexes, and emits distinct restore/remove sets without mutation. Rollback now
 must return to old main using object-guarded sets and reproduce all three
