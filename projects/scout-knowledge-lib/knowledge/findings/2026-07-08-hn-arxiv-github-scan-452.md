@@ -245,13 +245,77 @@ Source: https://arxiv.org/abs/2607.03228
 
 ### 5. SwarmResearch: Orchestrating Coding Agents for Open-Ended Discovery (2607.02807) [SUPPORTING]
 
-**Core finding**: Long-running coding agents converge on a single approach and make only low-level edits. The paper identifies **two harness-level design choices** causing this: accumulating context in a single agent, and exposing only one program state. SwarmResearch introduces a Shepherd Agent with global context steering multiple Search Agents with local context, each on their own git branch.
+**Core finding, qualified**: SwarmResearch uses a globally informed Shepherd
+to launch locally contextualized Search Agents on separate git branches. The
+paper reports this harness as better or comparable to EvoX and CORAL on 13/15
+open-ended optimization tasks. That is evidence for a useful population-search
+design, but it is not a clean causal isolation of branching or context.
 
-Results: Better or comparable solutions to SOTA on 13/15 open-ended optimization tasks.
+The main table is one stochastic run per method and task. SwarmResearch and
+CORAL use Opus 4.6 at about $50/task; EvoX uses the same model for 100
+iterations at $23.50/task on average, even though the paper says EvoX's
+original GPT-5 results were stronger on some tasks. The authors also substitute
+originally reported CORAL state-of-the-art scores where their local CORAL
+reproduction is worse. These model-history, budget, and result-selection
+differences make the comparison informative but unmatched.
 
-**Why this matters**: The convergence failure is a *fixed harness* failure — a single-context, single-state harness constrains exploration. The fix (population-based, multi-branch orchestration) is a structural harness evolution, not a model improvement. This validates the Architecture Premium from the exploration architecture level.
+The headline also compresses different comparisons. The table supports **12**
+strict SwarmResearch wins over EvoX, one tie, and two losses, not the prose's
+13 strict wins. Against CORAL it supports 10 strict wins, two ties, and three
+losses. The later result box instead calls three small math differences
+"similar," producing eight wins plus five similar results. Thus "better or
+comparable on 13/15" is a declared tolerance judgment, not one stable strict
+win count.
 
-Source: https://arxiv.org/abs/2607.02807
+Lines changed are also only a proxy for exploration level. SwarmResearch's
+reported 3.2x larger changes than CORAL and 1.7x larger changes than EvoX do
+not establish semantic novelty or show that branch/context separation caused
+the score differences. The separate fixed-scaling study is stronger but
+narrower: on five tasks, three runs, and 60 iterations, a Sonnet 4.6
+orchestrator choosing parents for Minimax-M2.5 subagents beats the best tested
+fixed Minimax configuration on four tasks. It isolates capable adaptive parent
+selection more than it isolates the full main harness.
+
+The speculative-decoding case study is likewise a useful capability/oversight
+example, not clean architecture attribution. SwarmResearch reports 4.58x
+vanilla throughput at 60.6% accuracy versus vanilla's 65.8%, after an extra
+approximately 11-hour analysis phase followed by approximately 11 hours of
+solution generation. Much of the gain comes from known batching and
+distribution-processing optimizations; adaptive expert count is explicitly
+not lossless. The authors also document attractive but incorrect proposals and
+a high human review burden.
+
+**Artifact boundary**: exact v1 arXiv source was observed on 2026-09-04
+(358,806 bytes; SHA-256
+`f428c409e96626675be636eff92eb48e6ca7d6ccd0f69d967669687b61349929`).
+The attributable implementation is
+`SwarmResearch/SwarmResearch@cfdcb71c85ed16e05536a8fce083b075a5e17b3c`.
+The author-linked reproduction repository is
+`SwarmResearch/swarmresearch-paper-reproduce@e848d8d5760065714c38fa7558f0298573db17ab`
+(archive SHA-256
+`b46181076294c3f007e1c10ceecb2ddd89d5eb77dc0ccd36d6e877bed46b4791`).
+It materially improves inspectability: all 15 Swarm task directories, 572
+JSONL transcripts, final workspaces, compact branch histories, benchmark tasks,
+and evaluator/container infrastructure are public. Every one of the ten
+recorded $50 cutoff hashes appears in its corresponding history. However, the
+cutoff CSV omits all five heuristic tasks; no CORAL or EvoX trajectory is
+included; and no retained script maps all 15 histories to the paper's final
+table. Exact regeneration still requires building task containers, satisfying
+task-specific dependencies/cache mounts, evaluating selected commits, and
+checking score transformations. This is provenance and partial reproduction
+support, not independent result replay.
+
+**Why this matters**: Multi-branch orchestration is a credible alternative to
+one-state greedy search, and the public trajectories make that mechanism much
+more inspectable. The present evidence does not show that a fixed harness
+degraded, that this architecture alone caused the gains, or that the scores are
+stable across independent runs. It therefore supports the Co-Evolution
+Imperative as a design hypothesis while qualifying the earlier Architecture
+Premium claim.
+
+Sources: https://arxiv.org/abs/2607.02807,
+https://github.com/SwarmResearch/SwarmResearch,
+https://github.com/SwarmResearch/swarmresearch-paper-reproduce
 
 ### 6. When Aggregate Alignment Misleads: Auditing Policy Repair (2607.03386) [SUPPORTING]
 
@@ -371,7 +435,8 @@ for one capability level may degrade at another. Treat this as the proposed
 - Organizational Memory: one frozen synthetic procurement memory improves
   binary policy decisions over RAG; sharing, governance, updates, and evolution
   remain proposed rather than evaluated
-- SwarmResearch: Single-context harness causes convergence failure; multi-branch orchestration is a structural evolution
+- SwarmResearch: multi-branch orchestration preserves alternative search paths,
+  but unmatched single-run comparisons do not isolate context or branch effects
 
 **Connection to preceding layers**:
 - Extends the Verification Harness (#451): a checker may need governed updates, but the update mechanism still needs a named authority

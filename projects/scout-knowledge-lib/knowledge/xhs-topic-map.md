@@ -9672,6 +9672,80 @@ primary audit is SwarmResearch `2607.02807`: test whether its reported 13/15
 result isolates multi-branch orchestration from model, budget, selection, and
 baseline differences, and whether attributable code/results support replay.
 
+### Cycle 388 seed-first start — preserve cadence before SwarmResearch
+
+Cycle 388 starts from clean Cycle 387 result
+`ab70560508a8613e102405ce8d4c325db51532f0`. At
+`2026-09-04T14:20:10.333Z`, the scheduled XHS boundary
+`2026-09-04T17:09:20.326Z` had not arrived and no collection/access trigger
+had fired. The bounded reconciliation therefore made zero XHS requests:
+added and changed identities remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and no account state changed.
+Cycle 375's browser receipt and ledger row remain the provenance. This is an
+access-qualified unknown, not evidence of an unchanged live collection.
+
+High/open `RV-004` remains first but inaccessible without the protected
+query/rank-to-selection-to-later-outcome join. High/open `RV-034` remains at an
+external runtime boundary. SwarmResearch `2607.02807` is therefore the highest
+accessible unresolved primary claim and was selected only after this seed
+record: test the claimed 13/15 result against its table, controls, and public
+artifacts.
+
+### Cycle 388 checkpoint — inspectable population search, unmatched attribution
+
+The [canonical finding](./findings/2026-07-08-hn-arxiv-github-scan-452.md)
+now separates a useful design from a causal claim. Branch-isolated Search
+Agents under a global Shepherd plausibly preserve alternatives. But the main
+15-task comparison is one stochastic run per method/task: SwarmResearch and
+CORAL spend about $50/task with Opus 4.6, EvoX averages $23.50/task, and poorer
+local CORAL reproductions are sometimes replaced by originally reported
+state-of-the-art scores. This does not isolate branch structure or context.
+
+The numeric table yields 12 strict SwarmResearch wins over EvoX, one tie, and
+two losses, contradicting the prose's 13 strict wins. Against CORAL it yields
+10 wins, two ties, and three losses; the result box reaches 13 "better or
+similar" by treating three small math differences as similar. The reported
+3.2x/1.7x code-change ratios are exploration proxies, not semantic or causal
+measures. A separate five-task, three-run fixed-scaling experiment supports
+adaptive parent selection by a stronger orchestrator on four tasks, not every
+component of the main harness.
+
+ArXiv v1 is frozen at source SHA-256
+`f428c409e96626675be636eff92eb48e6ca7d6ccd0f69d967669687b61349929`.
+GitHub identifies implementation head
+`SwarmResearch/SwarmResearch@cfdcb71c85ed16e05536a8fce083b075a5e17b3c`
+and author-linked reproduction head
+`SwarmResearch/swarmresearch-paper-reproduce@e848d8d5760065714c38fa7558f0298573db17ab`.
+The reproduction tree retains all 15 Swarm task directories, 572 transcripts,
+final workspaces, histories, tasks, and evaluator infrastructure. Its ten $50
+cutoff hashes all appear in the matching histories, but the CSV omits five
+heuristic tasks, baseline trajectories are absent, and no retained script
+derives all paper-table values. This is strong inspectability and partial
+provenance, not complete replay.
+
+The speculative-decoding case adds an oversight qualification: 4.58x
+throughput accompanies 60.6% accuracy versus vanilla's 65.8%, an extra
+approximately 11-hour analysis phase precedes solution generation, known
+systems optimizations drive much of the gain, and authors report incorrect
+attractive proposals plus high review burden. Confidence is high in source and
+repository identity, table arithmetic, and artifact contents; moderate in the
+single-run task comparison; low in run stability and causal architecture
+attribution. `RV-004`/`RV-034` stay high/open and `RV-036` stays medium/open.
+Reddit made zero requests and retains its RSS-readable/JSON-403 boundary.
+
+Revisit on a complete 15-task cutoff manifest, exact table-generation script,
+CORAL/EvoX trajectories, repeated matched-budget runs, or component ablations.
+Next seed-first, rank the strongest remaining primary claim that currently
+conflates an inspectable artifact with independent result regeneration.
+
+The four-document candidate from source
+`ab70560508a8613e102405ce8d4c325db51532f0` passes syntax, TypeScript,
+tracked-source formatting, Cycle 375 seed projection, 98 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486 assertions in
+97.29 seconds. The broad audit passes 1,540 tracked Markdown documents / 1,737
+local prose links. Read-only health at `2026-09-04T14:29:05.374Z` returns 26
+facts / 16 wake signals with `truncated:true` and creates no runtime packet.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

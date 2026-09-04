@@ -17659,7 +17659,100 @@ whether its 13/15 headline isolates branch/population orchestration from model,
 budget, selection, and baseline differences, and whether attributable
 implementation and results permit replay.
 
-### Validation and preservation
+## Cycle 388 checkpoint — qualify SwarmResearch's 13/15 and replay claims
+
+What was wrong: Scan #452 converted SwarmResearch's architecture and 13/15
+headline into evidence that single-context harnesses cause convergence failure.
+The population/branch design is credible, but the experiment does not isolate
+it and the paper's own table does not support every stated count.
+
+What changes: the [canonical Scan #452 finding](../../knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md)
+now retains the design and results while making the comparison boundary
+explicit. The main benchmark uses one stochastic run per method and task.
+SwarmResearch and CORAL use Opus 4.6 at about $50/task, while EvoX uses the
+same model for 100 iterations at $23.50/task on average. The paper says its
+Opus EvoX results can underperform original GPT-5 runs and substitutes original
+CORAL state-of-the-art scores where its own CORAL reproduction is worse.
+
+The table yields 12 strict SwarmResearch wins over EvoX, one tie, and two
+losses—not the prose's 13 strict wins. It yields 10 strict wins, two ties, and
+three losses against CORAL. The later eight-win/five-similar description
+reclassifies three small mathematical differences as similar. Larger code
+diffs (3.2x CORAL and 1.7x EvoX) remain a proxy for high-level exploration,
+not semantic novelty or causal attribution.
+
+### Seed order and lane evidence
+
+The cycle began from clean Cycle 387 result
+`ab70560508a8613e102405ce8d4c325db51532f0`. The bounded reconciliation at
+`2026-09-04T14:20:10.333Z` preceded selection. Because the XHS cadence boundary
+remains `2026-09-04T17:09:20.326Z` and no trigger fired, it made zero XHS
+requests: added/changed identities are unknown, observed removals are `[]`, and
+all 132 durable identities remain unavailable. Cycle 375's browser receipt and
+ledger row remain provenance; no account state changed.
+
+ArXiv was read-only at `2026-09-04T14:20:15.482Z–14:20:17.466Z`. The 2,568-byte
+Atom response has SHA-256
+`d7a4c5c099f78b4dee6e0875177e11924649538e8237fd8b8fc09eafbfdf885f`;
+the 358,806-byte v1 source archive has SHA-256
+`f428c409e96626675be636eff92eb48e6ca7d6ccd0f69d967669687b61349929`.
+It identifies v1, published and updated `2026-07-02T22:47:35Z`.
+
+GitHub was useful at `2026-09-04T14:20:45.847Z–14:21:32.091Z`. The primary
+implementation is
+`SwarmResearch/SwarmResearch@cfdcb71c85ed16e05536a8fce083b075a5e17b3c`
+(38,816,602-byte archive; SHA-256
+`31249e712c82242bb4f96edd5ec06a0312367f454e980a4d58ec47ef430b1717`).
+The author-linked reproduction repository is
+`SwarmResearch/swarmresearch-paper-reproduce@e848d8d5760065714c38fa7558f0298573db17ab`
+(222,603,356-byte archive; SHA-256
+`b46181076294c3f007e1c10ceecb2ddd89d5eb77dc0ccd36d6e877bed46b4791`).
+Neither repository has tags or releases. Reddit made zero requests and keeps
+its RSS-readable/JSON-403 boundary until a relevant thread or access change.
+
+### Artifact proof and remaining uncertainty
+
+The reproduction tree is not a paper-only shell: its recursive GitHub tree is
+complete at 1,513 entries / 1,240 blobs / 646,918,364 bytes. It includes 15
+Swarm task directories, 572 JSONL transcripts, final workspaces, compact git
+histories, benchmark definitions, and containerized evaluator infrastructure.
+All ten cutoff hashes listed in `closest_50usd_commit_cutoffs.csv` occur in the
+corresponding histories.
+
+It is still not complete result replay. The cutoff CSV has only ten tasks and
+omits all five heuristic tasks. No CORAL or EvoX trajectory is retained. No
+script maps the 15 histories through score transformations into the paper's
+table. A full check requires building task containers, satisfying task-specific
+dependencies and host cache mounts, evaluating selected commits, and comparing
+every transformed score. No install or container build was run in this audit.
+
+The separate fixed-scaling experiment uses five tasks, 60 iterations, and
+three runs. Minimax-M2.5 subagents with a Sonnet 4.6 parent-selecting
+orchestrator beat the best tested fixed Minimax configuration on four tasks.
+This supports adaptive parent selection with a sufficiently capable
+orchestrator; it does not independently isolate branch/context effects in the
+main harness.
+
+The speculative-decoding case reports 4.58x vanilla throughput with 60.6%
+accuracy versus vanilla's 65.8%, following approximately 11 hours of analysis
+and approximately 11 hours of solution generation. Known batching and
+distribution-processing optimizations drive much of the gain; adaptive expert
+count is not lossless. The authors explicitly report attractive but incorrect
+proposals and high review burden.
+
+Confidence is high in repository/source identity, table arithmetic, retained
+artifact counts, and stated protocol differences; moderate in the reported
+single-run task outcomes; low in run stability, matched-budget advantage,
+semantic exploration measurement, or causal architecture attribution.
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open.
+
+Revisit when a complete 15-task cutoff manifest and table-generation script,
+baseline trajectories, repeated matched-budget runs, or component ablations
+appear. Next seed-first, rank the remaining primary evidence gaps and select
+the strongest case where an inspectable artifact is still being treated as
+independent result regeneration.
+
+### Cycle 387 inherited validation and preservation
 
 The exact four-document candidate passes whitespace, syntax, TypeScript,
 tracked-source formatting, the Cycle 375 projection, 96 scoped links,
@@ -17679,6 +17772,27 @@ and 296 Scout-scope records / SHA-256
 Those counts differ from some earlier checkpoints and are recorded as external
 drift, not attributed to this worker. No test, generator, formatter, install,
 cleanup, or write ran in `/app` or a peer worktree.
+
+### Cycle 388 validation and preservation
+
+The exact four-document candidate from source
+`ab70560508a8613e102405ce8d4c325db51532f0` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 projection, 98 scoped
+links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 97.29 seconds. The broad offline audit passes
+1,540 tracked Scout-library Markdown documents / 1,737 local prose links.
+Read-only health at `2026-09-04T14:29:05.374Z` returns 26 facts / 16 wake
+signals with `truncated:true`; it writes no runtime packet.
+
+Before validation, the protected checkout was re-observed read-only at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`: 894 whole short-status records /
+SHA-256 `f8767e1cb4abddc919669a07402829943cf6ba4780a7b6a6fe4ec81f3af092ea`,
+and 296 Scout-scope records / SHA-256
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+The 19 other registered worktrees had aggregate HEAD/status fingerprint
+`004f5b34e64379673adcc25b4377e11d03d13ac82fbec8d6407a1c54d35d0039`.
+These are observational baselines; no command tested, generated, formatted,
+installed, cleaned, or wrote in a protected or peer worktree.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

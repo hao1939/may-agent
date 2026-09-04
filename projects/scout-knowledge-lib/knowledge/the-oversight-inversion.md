@@ -787,7 +787,13 @@ replay, or a claim that its harness must continually evolve.
 
 Supporting evidence:
 - **Organizational Memory for Agentic Business Process Execution** (2607.03228): A structured, frozen memory improves binary create/refuse decisions over document RAG in one synthetic procurement fixture. Sharing across agents, human governance, policy updates, and evolution are architectural requirements, not evaluated results.
-- **SwarmResearch** (2607.02807): Single-context harness causes exploration convergence failure. Multi-branch orchestration with a Shepherd Agent is a structural harness evolution that achieves SOTA on 13/15 tasks.
+- **SwarmResearch** (2607.02807): A Shepherd and branch-isolated Search Agents
+  are a credible alternative to one-state greedy search, and the released
+  trajectories make all 15 Swarm runs inspectable. The main benchmark is one
+  stochastic run per method/task with unmatched EvoX budget and selectively
+  substituted CORAL reference scores; its table gives 12 strict EvoX wins,
+  not the prose's 13. This supports a structural search design, not a causal
+  claim that single context caused the gains or that a fixed harness degraded.
 - **Aggregate Alignment Misleads** (2607.03386): In one hotel-pricing simulator, pooled/reference-state distances and closed-loop revenue rank two repairs differently. This supports multi-resolution audit, not exact per-state divergence or audit co-evolution over time.
 
 **Connection to preceding layers**:
