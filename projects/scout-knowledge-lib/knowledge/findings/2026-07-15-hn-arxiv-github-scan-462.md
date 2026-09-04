@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe (2607.06184v1) adds deterministic process profiles and same-task localization to resolve-rate reporting, but does not show that outcome metrics erase evidence, distinguish luck from skill, predict failure or reliability, or reduce review cost. The other three proposed Process Erasure components remain pending their own primary reviews. HN counters are attention observations, not value or causal evidence."
+summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds deterministic process profiles but does not show that outcome metrics erase evidence or improve decisions. AgentTether reports conditional matched repair gains on 123 initially failed tau-bench tasks; runtime intervention significantly helps only Banking, can also hurt, uses auxiliary LLM judgments, and has no currently readable artifact. StateFuse and PatchOptic remain pending primary review. HN counters are attention observations."
 triggers: ["process erasure", "trajectory diagnostics", "TraceProbe", "StateFuse", "conflict-preserving memory", "PatchOptic", "verified patches", "AgentTether", "runtime repair", "LogicHunter", "agentic oracle", "PiSAs", "contextual integrity", "SICP overtakes Sol", "foundations turn 1000", "chat control 700", "scan 462", "resolve rate", "outcome metrics"]
 source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 48818311 (Chat Control 702pts), 48823557 (EU Car Camera 675pts), 48819608 (30papers 546pts), 48821576 (Kokoro 433pts), 48829312 (Uniqlo 340pts), 48821848 (Davit 322pts), 48756578 (Herdr 303pts), 48827858 (GitLost 250pts), 48825749 (Tenda 238pts), 48824826 (GAO 216pts), 48827325 (ZFS 216pts), 48825664 (SICP 204pts), 48819308 (Postgres 202pts), 48827402 (Sol 197pts), 48820119 (QR Font 189pts), 48819808 (Rowboat 168pts), 48821378 (l runtime 151pts). arXiv API: 2607.06184 (TraceProbe), 2607.05844 (StateFuse), 2607.05483 (PatchOptic), 2607.06273 (AgentTether), 2607.06195 (LogicHunter), 2607.05318 (PiSAs). GitHub API: omnigent 6,715★, Horizon 34★, memclaw-cross-fleet-gov 21★."
 </ai_context>
@@ -17,7 +17,7 @@ useful for governance. The reviewed TraceProbe evidence establishes added
 measurement detail, not systematic erasure or downstream governance benefit.
 
 Four arXiv papers are grouped under that hypothesis from different domains;
-only the TraceProbe component has been primary-reviewed here:
+TraceProbe and AgentTether have now been primary-reviewed:
 
 - **TraceProbe** (2607.06184v1): Resolve rate omits trajectory measurements.
   Across 2,500 SWE-Bench Verified runs, deterministic process profiles and
@@ -25,12 +25,14 @@ only the TraceProbe component has been primary-reviewed here:
   predictors or causal diagnostics.
 - **StateFuse** (2607.05844): Collapsed memory hides conflict structure — CRDT-based memory that preserves contradictions as explicit conflict objects enables safer abstention and correction than early collapse. 282-question MemoryAgentBench evaluation.
 - **PatchOptic** (2607.05483): Unconstrained writes hide authorization structure — an optic-inspired interface that declares projected read views, authorized write regions, and patch-source regions for each workflow step. 46-case PatchBench evaluation.
-- **AgentTether** (2607.06273): Blind retry hides failure localization — Transition Units + Critical Transition Graphs localize failure-critical subtrajectories. Repairs 59–65% of initially failed tasks on tau-bench.
+- **AgentTether** (2607.06273v1): On model-specific Banking failure sets, full repair reaches 59.04% for Qwen3.7-max and 65.12% for GPT-5.4. Across all 123 initially failed Qwen tasks, it reaches 69.11% versus 43.09% blind retry. These are conditional repair rates, not full-task success rates or transferred guidance.
 
 The scan proposes that these are four instances of one structural error. The
 reviewed TraceProbe evidence establishes additional measurement detail, not
 that a scalar outcome destroys source trajectories or that the detail changes
-governance outcomes. The remaining components require separate primary review.
+governance outcomes. AgentTether establishes one matched repair result with
+auxiliary-model and artifact-access limits. StateFuse and PatchOptic require
+separate primary review.
 
 On HN, the Foundations Turn crosses the **1,000pt milestone** (1,030pts) and SICP **overtakes** Sol's public launch — the convergence predicted in Scan #461 is confirmed. Chat Control crosses 700pts. The Accretive Signal (#461) is compounding.
 
@@ -193,15 +195,17 @@ Source: https://arxiv.org/abs/2607.05483
 
 ### Paper 4: AgentTether — Runtime Repair via Transition Graphs (2607.06273)
 
-**Core finding**: Blind retry and outcome-only feedback are the dominant repair strategies for failed agent runs, but both erase the information needed for effective repair. AgentTether abstracts each run into Transition Units, links them through a dependency-aware Critical Transition Graph, and localizes failure-critical subtrajectories by combining an offline normal-behavior model with a run-local graph detector. It converts localized causes into behavior-scoped guidance backed by cross-iteration Repair Memory.
+**Supported mechanism**: AgentTether abstracts failed runs into Transition Units, links them through a dependency-aware Critical Transition Graph, and combines an offline normal-behavior model with a run-local anomaly detector. An auxiliary analyst LLM converts selected regions into guidance, Repair Memory carries guidance across up to three retries, and an auxiliary verifier optionally injects corrections after tool returns or generated text. This augments blind retry; it does not show that retry erases the source trajectory.
 
 **Key results** (261 tau-bench tasks, 3 domains, Qwen3.7-max + cross-model GPT-5.4):
-- Repairs 59.04% (49/83) of initially failed Qwen3.7-max tasks on Banking
-- Repairs 65.12% (56/86) of initially failed GPT-5.4 tasks on Banking
-- Reduces agent turns and end-to-end tokens — repair that's also cheaper
-- Cross-model transfer: repair guidance from Qwen transfers to GPT-5.4
+- On 123 initially failed Qwen3.7-max tasks, repairs 85 (69.11%) versus 53 (43.09%) for blind retry and 74 (60.16%) for post-run guidance alone
+- On Banking, repairs 49/83 Qwen failures and 56/86 GPT-5.4 failures; these are separate model-specific failure sets, not Qwen-to-GPT guidance transfer
+- Uses 56.36 average agent turns and 1,197K method tokens versus blind retry's 66.52 and 1,376K; user-simulator/evaluator calls are excluded
+- Runtime intervention versus post-run-only is significant on Banking (13 helped, 3 hurt, p=0.021), neutral on Airline, and not significant on Retail
 
-**Structural significance**: AgentTether implements the Handoff Fallacy (#459) insight at the repair level: it diagnoses failure at transitions between components (Transition Units), not at component outcomes. The Critical Transition Graph is a structural representation of the handoff topology. By localizing failure to specific transitions and preserving repair memory across iterations, it converts the process information that blind retry erases into durable diagnostic knowledge.
+**Limits**: The paper reports no repeated stochastic LLM runs or confidence intervals. DeepSeek-V4-Pro supplies the simulator/evaluator and AgentTether's analyst/verifier, and the localization evaluation uses tau-bench gold actions despite the method's oracle-free framing. The claimed code/data URL returned HTTP 401 `{"error":"not_connected"}` on 2026-09-04; complete GitHub repository searches found no attributable mirror. The result is not locally reproduced and does not establish production, code-generation, multi-agent, or operator-skill effects.
+
+**Structural significance, qualified**: Transition-localized evidence plus stateful guidance is a supported repair design in the tested benchmark. Calling it durable diagnostic knowledge or evidence that blind retry erases information is an inference; intervention happens after observations and sometimes blocks a correct path.
 
 Source: https://arxiv.org/abs/2607.06273
 
@@ -228,28 +232,37 @@ Source: https://arxiv.org/abs/2607.05318
 
 ---
 
-## The Process Erasure — 32nd Layer of the Oversight Inversion
+## The Process Erasure Hypothesis — Proposed 32nd Layer
 
-The sixteen-point exit arc (#444–#460) provided conditions for governance at the component, handoff, and attention levels. Layer 32 reveals the structural mechanism that undermines all of them: **outcome metrics systematically erase the process signatures that governance requires**.
+The sixteen-point exit arc (#444–#460) proposed conditions for governance at
+the component, handoff, and attention levels. This scan hypothesizes that
+outcome-only summaries can omit process signatures useful for governance. The
+reviewed TraceProbe and AgentTether evidence supports richer description and
+one conditional repair result; it does not establish systematic evidence
+destruction or a common causal mechanism across the four domains.
 
-Four domains, same structural error:
+Four proposed instances, with unequal evidence:
 
 | Domain | What's erased | Erasure mechanism | Remedy |
 |--------|--------------|-------------------|---------|
 | Evaluation | Trajectory structure | Resolve rate (binary) | TraceProbe: canonical action taxonomy + anti-pattern detection |
 | Memory | Conflict structure | Overwrite/collapse | StateFuse: immutable history + explicit conflict objects |
 | State mutation | Authorization structure | Unconstrained writes | PatchOptic: declared read views + verified write regions |
-| Repair | Failure localization | Blind retry | AgentTether: Transition Units + Critical Transition Graphs |
+| Repair | Failure localization | Blind retry supplies no diagnostic guidance | AgentTether: Transition Units + Critical Transition Graphs; one conditional benchmark result, not evidence destruction |
 
-The process erasure is upstream of every preceding layer:
-- The Variance Signal (#457) identified that variance-destroying evaluation removes governance information — Process Erasure names the general mechanism
-- The Write Contract (#454) identified that shared state mutations need governance — PatchOptic provides the formalization
-- The Handoff Fallacy (#459) identified that handoffs fail while components pass — AgentTether localizes failure to transitions
-- The Dispersion Collapse (#455) showed agent populations converge — StateFuse prevents memory systems from accelerating the convergence
+The possible connections to preceding layers remain hypotheses:
+- The Variance Signal (#457) argues that distributional summaries can omit governance-relevant variance; TraceProbe supplies an analogous trajectory view without measuring governance benefit.
+- The Write Contract (#454) argues that shared-state mutations need governance; PatchOptic requires separate primary review here.
+- The Handoff Fallacy (#459) concerns inter-component failure; AgentTether uses transition-localized evidence but does not prove the handoff thesis.
+- The Dispersion Collapse (#455) concerns population convergence; StateFuse requires separate primary review here.
 
 **Seventeen-point exit arc**:
 1–16: (#444–#460)
-17. **Process Erasure (#462): Preserve process signatures at each governance layer — trajectory diagnostics for evaluation, conflict objects for memory, declared contracts for state mutation, transition graphs for repair — because outcome metrics destroy the information governance needs to function (process preservation condition)**
+17. **Process Erasure hypothesis (#462): Test whether preserving process
+signatures—trajectory measurements, conflict objects, declared contracts, or
+transition graphs—improves decisions enough to justify its cost. Current
+evidence does not show that scalar outcomes destroy source evidence or that
+the proposed remedies generalize.**
 
 ---
 

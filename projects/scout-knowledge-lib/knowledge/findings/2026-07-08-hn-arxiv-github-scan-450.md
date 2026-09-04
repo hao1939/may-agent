@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #450 (2026-07-08), primary-qualified in 2026-09: five papers motivate a Knowledge Erosion hypothesis, but the reviewed evidence is narrower. A separate randomized study (2601.20245) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task with AI; Agents That Teach (2607.06101v1) uses that result to motivate Knowledge Debt and six proposed design principles but does not measure longitudinal atrophy or evaluate SHIELD. TraceProbe (2607.06184v1) deterministically describes trajectory differences across 2,500 SWE-Bench Verified runs, while Observability-Aware Code (2607.05785v1) reports limited lexical restoration and low explicit fault-signal rates. HN and repository counters are discovery signals, not causal or economic confirmation."
+summary: "HN/arXiv/GitHub Scan #450 (2026-07-08), primary-qualified in 2026-09: five papers motivate a Knowledge Erosion hypothesis, but the reviewed evidence is narrower. A separate randomized study (2601.20245) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task; Agents That Teach proposes unevaluated Knowledge Debt/SHIELD. TraceProbe describes 2,500 trajectories, Observability-Aware Code reports limited diagnostic restoration, and AgentTether reports matched repair gains on 123 initially failed tau-bench tasks but relies on auxiliary LLM judgments and has no currently readable artifact. HN and repository counters are discovery signals."
 triggers: ["knowledge erosion", "skill atrophy", "knowledge debt", "incidental learning loss", "developer deskilling", "resolve rate hides", "trajectory diagnostics", "TraceProbe", "trajectory opacity", "observability-aware code", "diagnostic evidence", "agent observability gap", "AgentTether", "runtime repair", "task graph repair", "LogicHunter", "agentic oracle", "framework testing", "silent attrition", "remediation debt", "knowledge infrastructure", "human authorship premium", "expertise erosion", "learning pathway disruption", "process evidence loss", "scan 450"]
 source_basis: "HN front page 2026-07-08 (30 stories via Firebase API). arXiv API (2607.06101 Agents That Teach, 2607.06184 What Resolve Rate Hides, 2607.05785 Observability-Aware Code, 2607.06273 AgentTether, 2607.06195 LogicHunter). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,315★, eve 3,303★, rowboat 15,273★, horizon 34★, agent-apprenticeship 1,295★). Cross-referenced with Subtraction Economy (#449), Architecture Premium (#448), Oversight Inversion (thesis), Comprehension Dividend (#444)."
 </ai_context>
@@ -126,9 +126,11 @@ Source: https://arxiv.org/abs/2607.05785
 
 ### 4. AgentTether: Graph-Guided Diagnosis and Runtime Intervention (2607.06273) [CORRECTIVE]
 
-**Core finding**: Post-hoc review of agent trajectories is insufficient — early decisions propagate into later errors and external state changes. AgentTether builds a **task graph** of expected execution flow and intervenes at runtime when the agent deviates. Key insight: "blind retry adds no diagnosis, outcome feedback says whether a run failed but not where or why, and self-reflection often lacks grounded evidence."
+**Supported finding**: AgentTether converts a failed run into Transition Units and a dependency-aware **Critical Transition Graph**; it does not build a graph of expected execution flow. An offline normal-execution model plus run-local anomaly detector selects suspicious subtrajectories, an auxiliary LLM turns them into guidance, Repair Memory carries guidance between up to three retries, and an optional verifier can inject corrections after tool returns or generated text.
 
-**Structural significance**: This is the architectural corrective to the Knowledge Erosion. Instead of relying on human diagnostic capacity (which is eroding), AgentTether externalizes the diagnostic structure into an architectural artifact — the task graph. Diagnosis becomes a property of the system, not of the operator. This is the Predicate Gate (#446) applied to runtime: prevent deviation before it compounds, don't diagnose it after.
+**Matched result and limits**: Qwen3.7-max initially failed 123 of 261 tau-bench tasks. On that conditional set, full AgentTether repaired 85/123 (69.11%) versus 53/123 (43.09%) for blind retry and 74/123 (60.16%) for post-run guidance alone. The paired intervention comparison is significant only on Banking (13 helped, 3 hurt, p=0.021); it is neutral on Airline and not significant on Retail. A separate GPT-5.4 Banking failure set reaches 56/86, but no Qwen guidance transfers to GPT: the method is rerun on model-specific failed tasks. The study reports no repeated stochastic LLM runs or confidence intervals, depends on DeepSeek-V4-Pro analyst/verifier/evaluator judgments, and uses tau-bench gold actions to evaluate localization. Code/data are claimed at an anonymous repository, but the link returned HTTP 401 `not_connected` on 2026-09-04, so the result is not locally reproduced.
+
+**Structural significance, qualified**: The benchmark supports a conditional repair mechanism and shows that intervention can both help and hurt. It does not establish that human diagnostic capacity is eroding, make diagnosis operator-independent, prevent execution before state change, or demonstrate production transfer.
 
 Source: https://arxiv.org/abs/2607.06273
 
@@ -298,7 +300,13 @@ evidence:
 | Process evidence | Process detail absent from outcome-only reports | TraceProbe adds deterministic profiles; diagnosis and intervention effects untested | 2607.06184v1 |
 | Diagnostic content | Low restoration F1 and fault-signal rate in two benchmark settings | Longitudinal erosion and application correctness untested | 2607.05785v1 |
 
-The correction requires making knowledge preservation an architectural responsibility, not a human habit. AgentTether (2607.06273) externalizes process knowledge into task graphs. LogicHunter (2607.06195) externalizes framework testing into agentic oracles. horizon (34★) externalizes verification into symbolic checking. agent-apprenticeship (1,295★) externalizes work experience into reusable data.
+One proposed correction is to make knowledge preservation an architectural
+responsibility rather than only a human habit. AgentTether (2607.06273v1)
+turns failed-run transitions into a Critical Transition Graph and uses
+auxiliary-model guidance for retry; its benchmark supports conditional repair,
+not preserved human expertise or expected-flow task graphs. LogicHunter,
+horizon, and agent-apprenticeship remain candidate architectures pending their
+own primary reviews.
 
 **Proposed structural lesson**: Architectural support may reduce dependence on
 human capacities, but the reviewed evidence does not establish that operators
@@ -313,7 +321,7 @@ are becoming less capable or that these systems preserve that capability.
 | Knowledge Erosion hypothesis | Oversight Inversion Layer 2 | Connects possible epistemic loss to review burden; no ability loss measured here |
 | TraceProbe (trajectory diagnostics) | Granularity Gap (#439) | TraceProbe adds a finer process view; downstream diagnostic value remains untested |
 | Observability-Aware Code | Subtraction Economy (#449) | You can't delete what you can't diagnose — observability is a prerequisite for subtraction |
-| AgentTether (graph-guided repair) | Predicate Gate (#446) | Both prevent bad states; AgentTether at runtime, Predicate Gate at execution |
+| AgentTether (graph-guided repair) | Predicate Gate (#446) | Both intervene on execution, but AgentTether can act only after observations and sometimes blocks a correct path |
 | horizon (7B=671B via verification) | Convergence Proof (#426, PAW) | Both close model gaps through verification/compilation, not scale |
 | agent-apprenticeship (work-as-data) | Agents That Teach (2607.06101) | Counter-architecture to the Knowledge Erosion |
 | $10k deletion item (+211% attention) | Subtraction Economy (#449) | Discovery signal only; no transaction, cost, or causal erosion evidence |

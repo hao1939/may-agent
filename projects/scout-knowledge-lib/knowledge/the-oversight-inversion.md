@@ -656,7 +656,7 @@ currently supports only the narrower benchmark evidence below.
   remediation, cost savings, future reliability, or evidence-destruction.
 - **"Observability-Aware Code"** (2607.05785v1): Static restoration produces Position F1 0.278–0.633 and lexical KeyBag F1 0.197–0.398; a separate generated-microservice study reports 4.95–13.99% explicit fault-signal rates, or 6.56–20.62% among runnable services. It does not test application correctness, developer diagnosis, test-driven incentives, rising agent-authored share, or longitudinal erosion, and supplies no human-written runtime control.
 
-**Corrective architectures emerging**: AgentTether (2607.06273) externalizes diagnostic structure into task graphs — diagnosis becomes a system property, not an operator skill. LogicHunter (2607.06195) uses agents to test agent frameworks — detecting silent semantic failures in LangChain, LlamaIndex, CrewAI that manifest as "ordinary exceptions" not crashes. horizon (34★) achieves 7B=671B parity through verification architecture (hard test execution + symbolic checking + agentic repair). agent-apprenticeship (1,295★) turns completed work into reusable experience data.
+**Corrective architectures emerging**: AgentTether (2607.06273v1) reports higher conditional repair rates when failed-run transition graphs, auxiliary LLM diagnosis, repair memory, and optional intervention augment blind retry. It does not make diagnosis operator-independent, and its artifact is currently unreadable. LogicHunter, horizon, and agent-apprenticeship remain separate claims pending their own primary reviews.
 
 **HN discovery signal**: “$10k/wk to delete AI-generated code” rose to 137
 points. The service page reports no transaction, cost, customer motive, or
@@ -910,30 +910,36 @@ The fifteen-point exit arc (#444–#459) provided conditions for governance at t
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-460.md, HN items 48689028, 48799614, 48827402
 
-### Layer 32: The Process Erasure (Scan #462, 2026-07-15)
+### Layer 32: The Process Erasure Hypothesis (Scan #462, 2026-07-15)
 
-The sixteen-point exit arc (#444–#460) provided conditions for governance at the component, handoff, and attention levels. Layer 32 reveals the structural mechanism that undermines all of them: **outcome metrics systematically erase the process signatures that governance requires**.
+The sixteen-point exit arc (#444–#460) proposed conditions for governance at
+the component, handoff, and attention levels. Layer 32 asks whether
+outcome-only summaries omit process signatures useful for governance. The
+reviewed evidence does not yet establish a common causal mechanism.
 
-Four uncovered arXiv papers converge on the same structural error from different domains:
+Four papers motivate related but differently supported cases:
 
 | Domain | What's erased | Erasure mechanism | Remedy |
 |--------|--------------|-------------------|---------|
 | Evaluation | Trajectory structure | Outcome-only reporting omits process measurements | TraceProbe (2607.06184v1): canonical nine-action taxonomy and fixed pattern rules over 2,500 SWE-Bench Verified runs. Same-task comparisons localize divergence, but several measures use gold-patch anchors and the study does not provide per-run causal diagnosis or remediation. |
 | Memory | Conflict structure | Overwrite/collapse | StateFuse (2607.05844): CRDT-based immutable history + explicit conflict objects + semantic correction handles. 282-question MemoryAgentBench. Preserving ambiguity enables safer abstention than early collapse — accuracy ties, but contradiction visibility diverges. |
 | State mutation | Authorization structure | Unconstrained writes | PatchOptic (2607.05483): optic-inspired projected reads + declared write regions + patch-source regions. 46-case PatchBench. Runtime verification blocks contract violations before commit; path-level footprints support static reordering. |
-| Repair | Failure localization | Blind retry | AgentTether (2607.06273): Transition Units + Critical Transition Graphs with offline normal-behavior model + cross-iteration Repair Memory. 261 tau-bench tasks. Repairs 59–65% of failed tasks; reduces turns and tokens; transfers cross-model. |
+| Repair | Failure localization | Blind retry supplies no diagnostic guidance | AgentTether (2607.06273v1): on 123 initially failed Qwen tau-bench tasks, full repair is 85/123 versus 53/123 blind retry and 74/123 post-run-only. Separate Banking failure sets reach 49/83 Qwen and 56/86 GPT-5.4; no guidance transfers between models. Intervention significantly helps only Banking and hurts 3 cases. Auxiliary LLM judgments, gold-action localization evaluation, no reported repeated runs, and an HTTP-401 artifact limit transfer and reproducibility. |
 
-**The Process Erasure**: Compressing a rich process into a scalar outcome destroys the information needed for governance. Resolve rate compresses trajectories into binary. Overwrite memory compresses history into latest-value. Unconstrained mutation compresses authorization into implicit trust. Blind retry compresses failure into repeat. Every governance failure in the preceding 31 layers can be restated as a case where process information was compressed into an outcome metric.
+**The Process Erasure hypothesis**: Scalar outcomes omit process information that can support diagnosis. TraceProbe demonstrates added description and AgentTether demonstrates a conditional repair gain from one richer pipeline, but neither shows that the source process was destroyed or that every governance failure is an instance of compression.
 
-**Connection to preceding layers**:
-- The Variance Signal (#457) identified variance-destroying evaluation — Process Erasure names the general mechanism
-- The Write Contract (#454) identified ungoverned state mutations — PatchOptic provides the optic-based formalization
-- The Handoff Fallacy (#459) identified inter-component failure — AgentTether localizes failure to transitions
-- The Dispersion Collapse (#455) identified population convergence — StateFuse prevents memory collapse from accelerating it
+**Proposed connections to preceding layers**:
+- The Variance Signal (#457) argues that summaries can omit distributional information; TraceProbe supplies an analogous trajectory view without measuring governance benefit.
+- The Write Contract (#454) concerns ungoverned state mutations; PatchOptic still requires primary review here.
+- The Handoff Fallacy (#459) concerns inter-component failure; AgentTether uses transition-localized evidence, with gold-action and auxiliary-judgment limits.
+- The Dispersion Collapse (#455) concerns population convergence; StateFuse still requires primary review here.
 
 **Seventeen-point exit arc**:
 1–16: (#444–#460)
-17. **Process Erasure (#462): Preserve process signatures at each governance layer — trajectory diagnostics for evaluation, conflict objects for memory, declared contracts for state mutation, transition graphs for repair — because outcome metrics destroy the information governance needs to function (process preservation condition)**
+17. **Process Erasure hypothesis (#462): Test whether richer process
+signatures—trajectory measurements, conflict objects, declared contracts, or
+transition graphs—improve decisions enough to justify their storage,
+complexity, and review cost.**
 
 Source: findings/2026-07-15-hn-arxiv-github-scan-462.md, arXiv 2607.06184, 2607.05844, 2607.05483, 2607.06273
 
@@ -1435,7 +1441,7 @@ https://scalex.dev/blog/ai-agent-permissions-stats/
 12. **Variance preservation under scaling**: The Variance Signal (#457) shows distributional structure is the governance-relevant information, but current infrastructure (benchmarks, leaderboards, eval dashboards) is designed to compress variance into ranks. How can evaluation infrastructure preserve and expose distributional information without making results incomprehensible? The tension: variance-rich evaluation is informationally dense but cognitively expensive — potentially creating a second-order Oversight Inversion where reviewing distributional evaluations costs more than reviewing point estimates. The Monitoring paper (2606.02494) suggests a resolution: deterministic triage routes 97% to automation, surfacing only the 2% of variable behavior for human attention. Can this 97/2 principle be generalized across evaluation contexts?
 13. **Handoff verification scalability**: The Handoff Fallacy (#459) shows verification must target transition states between components, not just component outcomes. But the number of handoffs grows combinatorially with system complexity — N components produce O(N²) potential handoffs. Can handoff verification be made tractable? The Semantic Handoff paper (2607.06256) suggests typed postconditions and preconditions as a compression mechanism, but this requires formalization that most agent systems lack. The open question: what minimum set of handoff specifications is needed to bridge the gap between component-confidence and system-confidence, and can these specifications be inferred from execution traces rather than manually authored?
 14. **Attention distribution across release arcs**: The Attention Decay Curve (#460) shows evaluative attention peaks at preview and depletes by launch — the inverse of where oversight matters most. Can release processes be redesigned to distribute evaluative attention across the announcement arc? Possibilities include: delayed previews (announce only at launch), staged evaluation budgets (reserve oversight capacity for deployment), or attention-aware disclosure (sequence announcements to maximize evaluative attention at deployment milestones). The deeper question: is the decay curve a property of HN/community attention, or a general property of how humans allocate evaluative effort to sequenced announcements? If general, institutional oversight bodies may exhibit the same decay — evaluating previews thoroughly and rubber-stamping launches.
-15. **Process preservation cost**: The Process Erasure (#462) shows governance requires process signatures — trajectory diagnostics, conflict objects, declared contracts, transition graphs — rather than outcome metrics. But preserving process information has a cost: storage (immutable histories), complexity (action taxonomies, CRDTs), and cognitive load (reviewing trajectories instead of scores). Can process preservation be made cheap enough to be default? TraceProbe's anti-pattern detection, StateFuse's projection-time resolution, PatchOptic's static certificates, and AgentTether's 97% turn/token reduction each demonstrate that process-aware systems can be *cheaper* than process-erasing ones. The open question: does this hold generally, or are these favorable domains? And can process preservation compose across layers — trajectory diagnostics within conflict-preserving memory within declared-contract state mutation — without combinatorial complexity?
+15. **Process preservation cost**: The Process Erasure hypothesis asks whether richer process signatures improve governance enough to justify storage, system complexity, and review load. AgentTether reports 15.3% fewer agent turns and about 13% fewer method tokens than blind retry on its conditional failed-task set—not 97%—while excluding fixed simulator/evaluator calls and adding auxiliary latency. TraceProbe does not measure downstream savings, and StateFuse/PatchOptic still require primary review here. The open question is whether these gains reproduce, transfer to production, and compose across layers without combinatorial complexity.
 
 ---
 

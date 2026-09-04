@@ -11415,6 +11415,68 @@ AgentTether. Test the task population, controls, graph mechanism, outcome
 definitions, public artifacts, and transfer limits before carrying the claim
 into the synthesis.
 
+## Cycle 323 checkpoint — AgentTether is a conditional repair result
+
+What was wrong was a mechanism and scope inflation. Scan 450 described an
+expected-flow task graph that made diagnosis independent of operators, while
+Scan 462 generalized the paper into systematic process erasure. The primary
+paper instead builds a Critical Transition Graph from an already failed run,
+uses auxiliary LLM judgments, and reports conditional repair on the tasks its
+base model initially failed. The library now carries that narrower result and
+the cases where runtime intervention hurt rather than treating the mechanism
+as universal prevention or preserved human expertise.
+
+ArXiv was the selected primary-evidence lane. Observation began at
+`2026-09-04T02:43:58.511Z`. The `2607.06273v1` abstract page was 43,854 bytes
+with SHA-256
+`d824fae96794c67784925d7ab2ba567968549318d8566f9d257cee4a1b9e5ddf`;
+the source archive was 929,635 bytes with SHA-256
+`5cfc34c06b7c247ea5689df6e7d504791e086f25b0cf926aae6c678c5d7c1a33`.
+AgentTether decomposes a failed trajectory into Transition Units and a
+dependency-aware Critical Transition Graph. An offline normal-execution model
+and run-local anomaly detector select regions; a DeepSeek-V4-Pro analyst turns
+them into guidance; Repair Memory carries guidance through up to three
+retries; and an optional verifier can intervene after tool observations or
+generated text.
+
+Qwen3.7-max initially failed 123 of 261 tau-bench tasks. Full AgentTether
+repairs 85/123 (69.11%), versus 53/123 (43.09%) for blind retry and 74/123
+(60.16%) for post-run-only guidance. On separate model-specific Banking
+failure sets it repairs 49/83 Qwen and 56/86 GPT-5.4 tasks; the experiment
+reruns the method and does not transfer Qwen guidance to GPT. Relative to
+post-run-only, runtime intervention helps 13 Banking cases and hurts 3
+(`p=0.021`), is neutral on Airline, and adds one net Retail repair
+(`p=1.00`). Average agent turns are 56.36 versus 66.52 for blind retry, a
+15.3% reduction. Reported method tokens are 1,197K versus 1,376K, about 13%
+lower; user-simulator/evaluator calls are excluded.
+
+Confidence is high in these source-reported denominators and in the graph's
+failed-run construction. Transfer and reproducibility confidence are low. The
+paper reports no repeated stochastic LLM runs or confidence intervals,
+DeepSeek-V4-Pro also supplies the user simulator/evaluator, and localization
+is evaluated with tau-bench gold actions. The claimed code/data endpoint
+`https://anonymous.4open.science/r/AgentTether-9416/` redirected to its API and
+returned HTTP 401 `{"error":"not_connected"}`. Git clone and `ls-remote`
+were unavailable. Complete GitHub repository searches at
+`2026-09-04T02:44:47.347Z` for the paper identity found no attributable mirror.
+No local reproduction is claimed.
+
+The reviewed scope is both Scan 450 variants, Scan 462, the Oversight
+Inversion synthesis, and the library index. GitHub's last useful evidence is
+the negative attributable-mirror search; revisit on a named repository,
+readable anonymous artifact, or attributable mirror. ArXiv's last useful
+evidence is the exact v1 source; revisit on a revision, per-run release, or
+repeated-run evaluation. Reddit made zero requests and remains trigger-
+deferred at RSS-readable/JSON-403 until a relevant thread or access change.
+`RV-004` stays high/open because this paper contains no Scout query/rank-to-
+selection-to-later-outcome join.
+
+Next begin seed-first and rank again. LogicHunter `2607.06195` is the expected
+highest accessible item because Scan 462 converts its comparative framework-
+testing result into a necessity claim. Test the baseline definitions, bug-
+confirmation provenance, artifact availability, repeated-run uncertainty, and
+whether the evidence supports necessity or only comparative performance.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

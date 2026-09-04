@@ -5357,6 +5357,43 @@ relevant-thread/access trigger; and (8) compaction. Select AgentTether. Test
 its population, matched controls, graph mechanism, outcome definitions,
 artifact availability, and transfer limits before preserving the synthesis.
 
+### Cycle 323 checkpoint — failed-run graphs improve conditional repair, not operator skill
+
+At `2026-09-04T02:43:58.511Z`, arXiv `2607.06273v1` supplied a
+43,854-byte abstract page (`d824fae9…5ddf`) and 929,635-byte source archive
+(`5cfc34c0…1a33`). AgentTether builds a Critical Transition Graph from a
+failed run's Transition Units, not an expected-flow task graph. On the 123 of
+261 tau-bench tasks initially failed by Qwen3.7-max, full repair succeeds on
+85 versus 53 for blind retry and 74 for post-run-only guidance. Runtime
+intervention versus post-run-only is significant only in Banking (13 helped,
+3 hurt, `p=0.021`), neutral in Airline, and not significant in Retail.
+Separate Qwen and GPT-5.4 Banking failure sets reach 49/83 and 56/86; no
+guidance transfers between models.
+
+This supports a conditional benchmark repair result, with high confidence in
+the reported denominators and mechanism. It does not support preserved human
+expertise, operator-independent diagnosis, production transfer, or systematic
+destruction of source evidence. DeepSeek-V4-Pro supplies the analyst,
+verifier, simulator, and evaluator roles; gold actions ground localization;
+the paper reports no repeated stochastic runs or confidence intervals. Average
+agent turns fall from 66.52 to 56.36 (15.3%) and method tokens from 1,376K to
+1,197K (about 13%), excluding user-simulator/evaluator calls—not 97%.
+
+The claimed anonymous artifact returned HTTP 401 `not_connected`; complete
+GitHub searches at `2026-09-04T02:44:47.347Z` found no attributable mirror, so
+the result is not locally reproduced. GitHub's last useful evidence is this
+negative identity search; revisit on a named repository, attributable mirror,
+or readable anonymous artifact. ArXiv's last useful evidence is the exact v1
+source; revisit on a revision, released per-run results, or repeated-run study.
+Reddit made zero requests and remains trigger-deferred at RSS-readable/
+JSON-403 until a relevant thread or access change.
+
+`RV-004` remains high/open because none of this supplies the missing
+post-August-31 query/rank-to-selection-to-outcome join. Next begin seed-first
+and primary-review LogicHunter `2607.06195`, the highest accessible claim,
+testing its baseline definition, bug-confirmation provenance, artifacts, and
+whether its evidence justifies necessity rather than comparative performance.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
