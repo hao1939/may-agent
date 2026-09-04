@@ -10462,6 +10462,40 @@ Next begin seed-first and select the highest-impact remaining unsourced Scan 467
 claim, prioritizing a primary contradiction or decision-changing correction.
 Static byte/line compaction remains last.
 
+Cycle 312 seed/source `d3ae19af8f16e9aefe4045ea9be77d4eaae970fb`
+produced material `bcffb09afca1a800b87ed5779ec7b2c90a851be3`.
+The exact tip passes syntax, TypeScript, formatting, Cycle 292 projection, 90
+scoped links, navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions.
+The broad audit passes 1,540 documents / 1,728 links; read-only health at
+`2026-09-04T01:12:34.728Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`, and
+296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+## Cycle 313 seed-first start — inspect the evaluation comparison
+
+At `2026-09-04T01:13:13.749Z`, Cycle 313 began from clean validated
+`bcffb09afca1a800b87ed5779ec7b2c90a851be3`. The latest XHS receipt through
+`2026-09-03T22:59:03.253Z` was about 134 minutes old and inside cadence. The
+bounded reconciliation made zero XHS, GitHub, arXiv, or Reddit requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, and no account state changed.
+
+The complete queue ranks `RV-004`'s missing protected outcome join first, but
+readable protected history ends August 31 without it. Memory in the Loop's full
+provider experiment follows but remains unavailable without the frozen artifact
+and model authority. The highest-value accessible gap is Scan 467's
+`2607.05125v1` architecture/autonomy claim; remaining HN narratives follow,
+Reddit stays trigger-deferred, and static compaction ranks last. Select the
+paper and test its sample, interventions, outcomes, factor separation, and
+uncertainty before retaining architecture-over-model advice.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

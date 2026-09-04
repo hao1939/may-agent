@@ -4615,6 +4615,36 @@ Next begin seed-first and audit the highest-impact remaining unsourced Scan
 467 claim. Rank direct primary contradictions or corrections above another
 historical attention narrative and keep static compaction last.
 
+Cycle 312 seed/source `d3ae19af8f16e9aefe4045ea9be77d4eaae970fb`
+produced material `bcffb09afca1a800b87ed5779ec7b2c90a851be3`.
+The exact tip passes syntax, TypeScript, formatting, Cycle 292 projection, 90
+scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The
+broad audit passes 1,540 documents / 1,728 links; read-only health at
+`2026-09-04T01:12:34.728Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing worktree is clean. Protected `/app` remains HEAD `386b445c…41fec8`,
+916 whole-status records / `f7080322…a93a`, and 296 Scout-scope records /
+`7e4d0937…26a8a`; this worker wrote or tested neither surface.
+
+## Cycle 313 seed-first start — primary-check the evaluation comparison
+
+At `2026-09-04T01:13:13.749Z`, Cycle 313 began from clean validated
+`bcffb09afca1a800b87ed5779ec7b2c90a851be3`. The last XHS observation through
+`2026-09-03T22:59:03.253Z` was about 134 minutes old, inside the six-hour
+cadence. No XHS or public request ran during reconciliation: added/changed
+identities remain unknown, observed removals are `[]`, all 132 durable seeds
+remain unavailable, and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) `RV-004`'s protected
+query/rank-to-later-outcome join, unavailable because readable protected
+history still ends August 31 without that join; (2) Memory in the Loop's full
+provider result, unavailable without its frozen artifact and model authority;
+(3) Scan 467's accessible `2607.05125v1` autonomy/tooling comparison; (4) its
+remaining HN causal narratives; (5) Reddit after a relevant thread or access
+change; and (6) byte/line compaction. Select item 3 because a primary
+qualification could change the durable architecture-over-model advice. Check
+sample, intervention, outcome definitions, factor separation, and uncertainty.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
