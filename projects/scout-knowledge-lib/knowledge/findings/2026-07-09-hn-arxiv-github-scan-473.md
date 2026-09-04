@@ -139,9 +139,10 @@ not a product specification or empirical benchmark. It defines the seven
 domains, minimum evidence fields, seven artifact classes, a staged roadmap,
 and a 0–3 maturity rubric. Its industry section cites vendor and standards
 documents as signals that component capabilities exist; it does not evaluate
-their integration. The sector examples are hypothetical. No organization,
-agent, control plane, intervention, comparison, outcome, or implementation
-artifact is reported. The limitations section leaves scenario evaluation,
+their integration. The sector examples are hypothetical. No evaluated
+organization or deployment, agent, control plane, intervention, comparison,
+outcome, or implementation artifact is reported. The limitations section
+leaves scenario evaluation,
 comparative implementation analysis, telemetry schemas, and reference
 blueprints to future work.
 

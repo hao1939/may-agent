@@ -21,8 +21,8 @@ HexStrike-AI and SkillOpt-Lite remain scan-reported claims pending separate
 review.
 
 - **CONTRA** (2607.03220): 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged search. This is a skill-level search yield, not configuration or incident prevalence.
-- **HexStrike-AI** (2607.02873): The driving client is a **2.1× factor** over model choice for a fixed model. Performance lives in orchestrator configuration, not model capability.
-- **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. One line of vibe enables a nano model to outperform its larger sibling under standard pipelines. Configuration > parameters.
+- **HexStrike-AI** (2607.02873): The driving client produces a reported **2.1× gap** for a fixed model in the paper's evaluated cells. Orchestrator configuration is therefore a material factor in that task, not evidence that it generally dominates model capability.
+- **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. In the reported cells, a nano model with an optimized skill or harness outperforms a larger sibling under a standard pipeline; this is a task-specific comparison, not a general ordering of configuration over parameters.
 - **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
 - **self-learning-skills** (843★): Agents that configure *themselves*. Recognizes golden paths in sessions and harvests them as reusable skills.
 
@@ -251,19 +251,19 @@ results; they have not yet been shown to measure one shared causal construct.
 
 The original scan summarized three reported results:
 1. **Risk**: 75.1% of 473 selected skills had at least one successful generated target under CONTRA's simulated search
-2. **Performance**: 2.1× gap from client configuration, dwarfing model-to-model differences (HexStrike)
-3. **Optimization**: Smaller model + optimized configuration > larger model + standard configuration (SkillOpt-Lite)
+2. **Performance**: 2.1× gap from client configuration for a fixed model in the evaluated cells (HexStrike)
+3. **Optimization**: In the reported cells, a smaller model with optimized configuration outperforms a larger model under the standard pipeline (SkillOpt-Lite)
 
 ### Connection to Prior Theses
 
 | Thesis | Configuration Layer Connection |
 |--------|-------------------------------|
-| Oversight Inversion (#382) | You can't oversee what you can't configure — governance IS configuration governance |
-| Depth Mismatch (#424) | Configuration is one testable depth; its importance is system- and task-dependent |
-| Cost Inversion (#404) | Configuration optimization and model scaling need matched cost/outcome accounting |
+| Oversight Inversion (#382) | Configuration governance is one candidate part of system governance; the cited reports do not establish equivalence |
+| Depth Mismatch (#424) | Configuration is one verification depth to test when the failure mechanism lives there |
+| Cost Inversion (#404) | The reported optimized-small-model cells motivate a matched-cost comparison with model scaling; configuration work is not cost-free |
 | Governance Depth (#405) | AGL-1/CAGE-1 propose control-plane and prebind vocabularies; neither validates an implementation |
 | Persistence Attack Surface (#423) | Configurations persist — every persisted config is an attack surface |
-| Verification Stack (#412) | Configuration verification is the missing layer in the stack |
+| Verification Stack (#412) | Configuration verification is a candidate layer where configuration-sensitive failures are plausible |
 | Repair Turn (#419) | Configuration repair may be cheaper, but that comparison is not measured here |
 
 ### The Self-Configuration Risk

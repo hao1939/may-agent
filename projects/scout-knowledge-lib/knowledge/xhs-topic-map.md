@@ -8412,9 +8412,10 @@ the extracted 713-line / 6,343-word / 54,164-byte text has SHA-256
 AGL-1 contributes a conceptual seven-domain reference model, minimum evidence
 fields, seven artifact classes, a staged roadmap, and maturity questions. It
 explicitly is not a product specification or empirical benchmark. It reports
-no organization, agent, integrated control plane, intervention, comparison,
-outcome, or implementation artifact; its sector examples are hypothetical,
-and scenario evaluation, comparative implementation analysis, telemetry
+no evaluated organization or deployment, agent, integrated control plane,
+intervention, comparison, outcome, or implementation artifact; its sector
+examples are hypothetical, and scenario evaluation, comparative implementation
+analysis, telemetry
 schemas, and reference blueprints remain future work. Cited vendor and
 standards documents show that component capabilities exist, not that AGL-1's
 integrated layer was built or evaluated.

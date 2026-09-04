@@ -315,12 +315,14 @@ comparable:
 
 Enterprise governance reports AGL-1 (2607.03516) and CAGE-1 (2607.03510) propose vocabulary for this surface: seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability) and a seven-field prebind checklist. Neither report implements or empirically validates the proposed control plane.
 
-**Self-configuration risk hypothesis**: self-learning-skills (843★ on GitHub)
-describes agents modifying reusable skills. CONTRA's simulated search yield
-motivates, but does not run, the key recursive-risk test: whether
-self-optimization selects a dangerous configuration that passes its own
-validation. Anchored Self-Play (2607.03523) suggests testing against a realistic
-reference distribution rather than assuming that mitigation transfers.
+**Self-configuration risk hypothesis**: self-learning-skills describes harvesting
+session patterns into reusable skills, while CONTRA reports dangerous
+configurations in a separate simulated benchmark. Together they motivate a
+test of whether a self-modifying system can select a dangerous configuration
+that still passes its own validation gate; the current evidence does not run
+that joined test. Anchored Self-Play (2607.03523) separately reports that
+reference-distribution anchoring reduces drift in its code-repair setting, so
+it is a candidate comparison rather than a demonstrated mitigation here.
 
 **Configuration Layer completes the Oversight Inversion depth stack**:
 - Economic: monitoring output volume (wrong) vs. monitoring production cost (right)

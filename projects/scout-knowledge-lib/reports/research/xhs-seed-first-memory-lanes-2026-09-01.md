@@ -15645,9 +15645,10 @@ so no new source request was needed. Exact provenance is:
 AGL-1 proposes seven governance domains, minimum evidence fields, seven
 artifact classes, a roadmap, and maturity questions. It explicitly describes
 a vendor-neutral reference model rather than a product specification or an
-empirical benchmark. The paper reports no named organization, evaluated agent,
-integrated control plane, intervention, comparison, outcome, or implementation
-artifact. Its sector examples are hypothetical, while scenario evaluation,
+empirical benchmark. The paper reports no evaluated organization or
+deployment, evaluated agent, integrated control plane, intervention,
+comparison, outcome, or implementation artifact. Its sector examples are
+hypothetical, while scenario evaluation,
 comparative implementation analysis, telemetry schemas, and reference
 blueprints are future work. The industry-platform section synthesizes cited
 vendor and standards documents; it is not an observation of those components
