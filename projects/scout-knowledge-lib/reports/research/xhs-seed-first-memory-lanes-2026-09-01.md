@@ -14056,6 +14056,44 @@ not a protected query/rank-to-outcome join. Next seed-first, primary-review
 SkillReranker `2607.06283`; its task-graph mechanism and savings claims are the
 highest accessible unresolved Scan #455 evidence.
 
+Exact material commit `f88b30973782c7bfd7a219af7006b9e32722a98b`
+passes the full 24-file Scout suite at 277 tests / 1,426 assertions in 159.01
+seconds and the focused descriptor/projection/link/navigation run at 19 tests /
+51 assertions, all with zero failures. An earlier invocation used Bun's
+5-second default, so two unchanged exhaustive allocation controls timed out
+after completing in 8.5 and 21.7 seconds; the corrected 30-second run passed
+without a source change. TypeScript, tracked Scout source formatting,
+whitespace, Cycle 341 projection, 90 scoped links, and navigation v1 11/14 and
+v2 8/8 pass. The broad audit covers 1,540 documents / 1,728 links / zero
+errors. Read-only health at `2026-09-04T06:50:39.655Z` is 26 facts / 16 wakes
+and truncated.
+
+Historical `f26bd4f3a590b59d241536326199e805777df1be`, accepted `ff923ccde4`,
+and Cycle 352 `7cb650bd50` remain ancestors; unaccepted `d041c41b54` remains
+excluded. The standing tree is clean. Protected `/app` remains read-only at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 918 all-file records /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`,
+and 296 Scout records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+
+## Cycle 354 seed-first start — test decomposition-driven skill retrieval
+
+At `2026-09-04T06:51:34.322Z`, Cycle 341's XHS observation through
+`05:00:03.241Z` remains inside cadence. Make zero XHS requests: additions and
+changes remain unknown, removals are `[]`, all 132 seeds remain unavailable,
+and no account state changes.
+
+Expected knowledge value ranks (1) high/open `RV-004`, still inaccessible
+without protected query/rank -> selection -> later outcome; (2) Memory in the
+Loop's missing provider result; (3) SkillReranker `2607.06283`, highest
+accessible because its decomposition-driven retrieval, task performance,
+interaction, and token claims remain primary-unreviewed in Scan #455; (4)
+other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
+(5) Reddit until relevant-thread/access change; (6) compaction. Select
+`2607.06283` and inspect corpus construction, graph/decomposition mechanism,
+matched baselines, task/model denominators, ablations, uncertainty, accounting,
+and attributable public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -7165,6 +7165,40 @@ independent reproduction. Next seed-first, primary-review SkillReranker
 its execution graph, baselines, and savings establish decomposition-driven
 retrieval rather than a task-specific reranker result.
 
+Exact Cycle 353 material
+`f88b30973782c7bfd7a219af7006b9e32722a98b` passes 277 full-suite tests /
+1,426 assertions and 19 focused tests / 51 assertions, all with zero failures.
+The focused run covers descriptor-safe evidence, Cycle 341 projection, durable
+links, and navigation. TypeScript, tracked Scout source formatting, whitespace,
+90 scoped links, projection, and navigation at 11/14 and 8/8 pass. The broad
+audit covers 1,540 Markdown documents / 1,728 links / zero errors. Read-only
+health at `2026-09-04T06:50:39.655Z` is 26 facts / 16 wakes and truncated.
+
+An initial full invocation used Bun's 5-second default and timed out two
+unchanged exhaustive controls that completed in 8.5 and 21.7 seconds; the
+repository-compatible 30-second rerun includes all 24 files and passes in
+159.01 seconds. Historical `f26bd4f3…f1be`, accepted `ff923ccde4`, and Cycle
+352 `7cb650bd50` are contained; unaccepted `d041c41b54` is excluded. The
+standing tree is clean. Protected `/app` remains read-only and exact at
+`386b445c…1fec8`, 918 records / `0d1ab91f…a932` overall and 296 records /
+`7e4d0937…6a8a` in Scout scope.
+
+### Cycle 354 seed-first start — test decomposition-driven skill retrieval
+
+At `2026-09-04T06:51:34.322Z`, reuse Cycle 341's supported XHS observation
+through `05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable seeds remain unavailable, and account state is unchanged. Rank
+(1) high/open `RV-004`, inaccessible without the protected query/rank ->
+selection -> later-outcome join; (2) Memory in the Loop's missing provider
+result; (3) SkillReranker `2607.06283`, highest accessible because its graph-
+decomposition, task-performance, interaction, and token claims remain
+unreviewed in Scan #455; (4) other primary, contradiction, reproducibility,
+retrieval, and synthesis gaps; (5) Reddit until its trigger; (6) compaction.
+Select `2607.06283` and inspect corpus construction, graph/decomposition
+mechanism, matched baselines, task/model denominators, ablations, uncertainty,
+token/step accounting, and attributable artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
