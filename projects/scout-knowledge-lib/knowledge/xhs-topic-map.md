@@ -4645,6 +4645,38 @@ change; and (6) byte/line compaction. Select item 3 because a primary
 qualification could change the durable architecture-over-model advice. Check
 sample, intervention, outcome definitions, factor separation, and uncertainty.
 
+### Cycle 313 checkpoint — fixed phase order does not isolate architecture
+
+Anonymous arXiv reads at `2026-09-04T01:13:37Z–01:13:39Z` returned the
+`2607.05125v1` abstract and a 419,344-byte PDF at SHA-256
+`4187af14…619ebe`. The e-print route redirected to `/src/2607.05125v1` but
+served PDF rather than TeX; no raw spreadsheet, logs, application artifacts,
+or analysis code were available through the paper route.
+
+One four-student team built the same greenfield app in fixed order with partial
+Copilot, AI-exclusive Copilot, then AI-exclusive Kiro. The table records hours
+`36.0/9.4/5.9`, requirement traceability `18/19/20` of 22, mental demand
+`12.75/8.5/7.5`, and frustration `6.25/6.75/7.5`. Those values are descriptive:
+the phases were not randomized or counterbalanced, accumulated familiarity is
+the paper's primary confound, and exact model/runtime identities were not
+archived. The conclusion's `87%` hours claim conflicts with the table's `83.6%`;
+methods say the evaluator knew phase identity while the appendix says not.
+
+Scan 448's two retained date variants, Scan 467, the exhaustive index, and the
+Oversight Inversion now treat this as a directional pilot for a matched design,
+not proof that architecture independently caused the differences or that
+autonomy caused the workload pattern. Confidence is high in the table and
+design limits, medium in within-team direction, and low in causal attribution
+or transfer.
+
+arXiv supplied the selected primary evidence. GitHub made zero requests because
+the paper supplies no stable replication repository; revisit on a linked
+artifact or exact runtime archive. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because this correction is not a retained later-outcome join.
+Next begin seed-first and primary-review `2607.04846`, whose causal curriculum
+claim now carries the remaining substantive weight in the Architecture Premium.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

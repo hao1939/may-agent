@@ -241,10 +241,17 @@ The transition from ±7pts oscillation to a 50pt gap in two scans is not gradual
 ### 2607.05125v1: Three-Phase Evaluation of AI-Assisted Software Development (supporting)
 
 **Key findings**:
-- Four developers reimplemented same full-stack web app across three AI autonomy phases
-- Increasing autonomy affects productivity, requirement adherence, and cognitive workload
-- Exploratory evaluation with a small team, but directly relevant to the delegation frontier
-- Connection: Ground-level complement to the Language Frontier paper — what delegation looks like from inside the development process, not just in aggregate statistics.
+- One four-student team reimplemented the same greenfield app in three fixed-order phases: partial Copilot, AI-exclusive Copilot, then AI-exclusive Kiro
+- Hours were 36.0, 9.4, and 5.9; requirement traceability was 18/22, 19/22, and 20/22; n=4 mental-demand means fell while frustration means rose modestly
+- Tool, workflow, order, accumulated familiarity, and unarchived runtime identity are confounded; phases were not randomized or counterbalanced
+- The conclusion's 87% hour reduction conflicts with the table's 83.6%, and evaluator blinding is described inconsistently between methods and appendix
+- Connection: A directional pilot for a matched architecture study, not evidence that architecture independently caused the outcomes or that autonomy caused the workload pattern
+
+#### Cycle 313 primary-source correction (2026-09-04)
+
+Anonymous arXiv access returned the v1 abstract and a 419,344-byte PDF (SHA-256 `4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe`). The e-print route redirected to `/src/2607.05125v1` but served the same PDF content type, so no TeX source, raw spreadsheet, tool logs, application artifacts, or analysis code was available from the paper route.
+
+The primary paper explicitly calls accumulated familiarity its principal confound, says the fixed phases cannot cleanly separate treatment effects, and asks for randomized or parallel replication. Confidence is high in the descriptive table and internal inconsistencies, medium in the within-team directional pattern, and low in architecture, autonomy, or frustration causality and in transfer to professional teams, legacy systems, or longer operation.
 
 ---
 

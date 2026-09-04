@@ -571,7 +571,7 @@ Source: findings/2026-07-19-hn-arxiv-github-scan-447.md, https://arxiv.org/abs/2
 
 Scan #448 completes the five-scan exit arc by establishing the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — actively invest in the architecture. Two uncovered arXiv papers converge:
 
-- **Three-Phase Evaluation** (2607.05125, cs.SE): Four developers reimplemented the same app across three AI autonomy levels. AWS Kiro (spec-driven architecture) outperforms GitHub Copilot (model-driven workflow) on most measured dimensions. Key finding: "tooling architecture may influence outcomes **independently of AI autonomy level**." NASA-TLX workload measures reveal the **Frustration Paradox**: cognitive load decreases with autonomy but frustration increases — the Oversight Inversion at the individual developer level.
+- **Three-Phase Evaluation** (2607.05125v1, cs.SE): One four-student team reimplemented the same app in three fixed-order phases. Later Kiro values were directionally better on several measures, while mental-demand means fell and frustration means rose. Platform, workflow, order, accumulated familiarity, and unarchived runtime identity are confounded; n=4 workload values are descriptive, and evaluator blinding is internally inconsistent. This is a pilot hypothesis for a randomized architecture comparison, not an independent architecture effect or a confirmed individual-level Oversight Inversion.
 - **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846, cs.LG): Training order determines governance surface. Imbalanced curricula produce **disentangled neural circuits** enabling precise safety fine-tuning; balanced training creates shared pathways where suppressing one capability degrades another. The curriculum is the architecture of learning — governance costs are determined at training time.
 
 **The Architecture Premium is fractal** — it applies at every phase:
@@ -588,7 +588,7 @@ Scan #448 completes the five-scan exit arc by establishing the **positive coroll
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle — the exit from the Oversight Inversion is architectural investment)
+5. Architecture Premium (#448): Treat architecture as an explicit factor; its universal advantage over model choice is unproved
 
 Source: findings/2026-07-20-hn-arxiv-github-scan-448.md, https://arxiv.org/abs/2607.05125, https://arxiv.org/abs/2607.04846
 
@@ -614,7 +614,7 @@ Three forms of subtraction:
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 
 Source: findings/2026-07-21-hn-arxiv-github-scan-449.md, https://arxiv.org/abs/2607.05346, https://arxiv.org/abs/2607.05377, https://arxiv.org/abs/2607.05353
@@ -641,7 +641,7 @@ When a developer writes code, three knowledge byproducts emerge for free: (1) ex
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. **Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)**
 
@@ -672,7 +672,7 @@ The seven-scan exit arc (#444–#450) demanded an exit that is architectural, no
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. **Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)**
@@ -711,7 +711,7 @@ Supporting evidence:
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)
@@ -753,7 +753,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)

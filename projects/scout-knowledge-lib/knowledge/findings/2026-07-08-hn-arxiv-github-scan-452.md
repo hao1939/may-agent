@@ -217,7 +217,7 @@ The GitHub landscape validates the Co-Evolution Imperative:
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
+5. Architecture Premium (#448): Architecture is a factor to test, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite)
 8. Verification Harness (#451): The architecture is a harness providing constructive soundness (instantiation)

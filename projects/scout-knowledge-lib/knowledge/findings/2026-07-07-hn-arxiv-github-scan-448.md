@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #448 (2026-07-07): The Architecture Premium. Two uncovered arXiv papers and updated HN/GitHub data converge: outcomes are determined by surrounding architecture (scaffold, curriculum, governance layer), not by the model or its autonomy level. Three-Phase Evaluation (2607.05125) proves tooling architecture (Kiro vs Copilot) influences outcomes independently of AI autonomy — same developers, same app, different architecture → different results. Pretraining Curricula (2607.04846) proves training order determines what can be safely governed — imbalanced curricula produce disentangled circuits enabling precise safety fine-tuning (curriculum = architecture of learning). HN sovereignty stack strengthens: Comprehension:News ratio hits 0.81 (new ATH, sustained above 0.7). Predictions confirmed: ✅ EU Car Camera >300pts (336pts), ✅ 30papers >300pts (300pts exact). Mid-tier surge continues — Kokoro TTS +26.9% to 222pts, Rowboat +27.8% to 69pts, while top-tier stories plateau (<3%). GitHub: fable-soul 89★ (judgment layer), sail-skill 116★ (91-risk security catalog as skill), watch-skill 100★ (video observation for agents) — governance layers growing faster than capability layers. Running accuracy: ~95.7% (67/70)."
+summary: "HN/arXiv/GitHub Scan #448 (2026-07-07): The Architecture Premium, partly qualified. Three-Phase Evaluation (2607.05125v1) reports directional differences across three sequential implementations by one four-student team, but tool, workflow, order, accumulated familiarity, and runtime identity are confounded; it does not prove an architecture effect independent of autonomy. Its table reports 36.0→5.9 hours (83.6%, not the conclusion's 87%), descriptive n=4 workload scores, and uncertain evaluator blinding. Pretraining Curricula (2607.04846) and the original HN/GitHub signals remain to be primary-reviewed."
 triggers: ["architecture premium", "tooling architecture", "scaffold determines outcome", "autonomy level", "AI autonomy evaluation", "Kiro vs Copilot", "three-phase evaluation", "NASA-TLX", "cognitive workload AI", "frustration paradox", "pretraining curricula", "selective fine-tuning", "disentangled circuits", "imbalanced learning", "training order matters", "curriculum architecture", "safety fine-tuning", "mid-tier surge", "comprehension news ratio ATH", "scan 448", "architecture over model"]
-source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-07 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis)."
+source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-07 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis). Primary review on 2026-09-04 used the arXiv-served 2607.05125v1 PDF, SHA-256 4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe; the e-print endpoint returned the PDF rather than TeX source."
 </ai_context>
 
 # Scan #448: The Architecture Premium
@@ -12,15 +12,15 @@ source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretrain
 
 ## Theme
 
-The Composition Surface (#447) established that failure resides in how components compose, not in individual components. This scan reveals the **positive corollary**: the surrounding architecture — scaffold, curriculum, governance layer — determines outcomes more than the model or its autonomy level. Two uncovered arXiv papers converge with HN and GitHub signals on this finding.
+The surrounding architecture is a plausible outcome driver, but the evidence here does not rank it causally above model, autonomy, learning, or task effects. The two papers and HN/GitHub signals concern different interventions and need separate identification.
 
-1. **Three-Phase Evaluation** (2607.05125): Same developers, same application, three increasing levels of AI autonomy. Kiro (spec-driven architecture) outperforms Copilot (model-driven workflow) on most measured dimensions. The paper's key finding: "tooling architecture may influence outcomes independently of AI autonomy level." **The scaffold is the independent variable, not the model.**
+1. **Three-Phase Evaluation** (2607.05125): One team rebuilt the same application three times in a fixed order. Kiro's third-phase values are directionally better on several measures, but platform, workflow, order, accumulated familiarity, and unarchived runtime configuration move together. The scaffold is not an independently identified variable.
 
 2. **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846): Same model, different training order → dramatically different safety properties. Imbalanced curricula produce disentangled neural circuits, enabling precise safety fine-tuning. Balanced training creates shared pathways where removing one capability degrades another. **The curriculum is the architecture of learning, and it determines what can be governed post-hoc.**
 
 3. **HN + GitHub convergence**: The community invests in architecture over capability. Chat Control Explained (386pts, r=3.03) grows while Chat Control Passed (518pts, r=2.29) plateaus — understanding architecture outperforms reacting to news. GitHub's fastest-growing agent repos add governance layers (judgment, security, observation), not model capability.
 
-**The Architecture Premium**: Investing in the surrounding architecture (scaffold, curriculum, governance layer, composition structure) yields higher returns than investing in model capability or autonomy level. This completes the Attribution Error (#440) by providing its positive corollary: don't just stop blaming the model — actively invest in the architecture.
+**The Architecture Premium hypothesis**: Treat surrounding architecture as an explicit factor to test rather than attributing every result to model capability. This scan does not establish that architecture always yields higher returns than model capability or autonomy.
 
 This extends the five-scan structural arc:
 - **#444 Comprehension Dividend**: Invest in understanding
@@ -38,14 +38,16 @@ This extends the five-scan structural arc:
 **Core finding**: Four developers reimplemented the same full-stack web application across three sequential phases of increasing AI autonomy: (1) partial AI-assisted development using GitHub Copilot, (2) AI-exclusive workflow using GitHub Copilot, and (3) AI-exclusive workflow using AWS Kiro. Evaluation metrics included development effort (hours), requirement adherence (RITM score), AI-interaction efficiency, and NASA-TLX workload measures.
 
 **Key results**:
-- Higher AI autonomy was associated with **reduced development effort**, **improved requirement adherence**, and **lower self-reported mental workload**
-- Developer **frustration increased modestly** even as mental workload decreased — more autonomy reduces cognitive load but increases loss of control
-- AWS Kiro achieved the **strongest overall performance on most measured dimensions** — not because of a better model, but because of a spec-driven architecture
-- The paper's critical conclusion: "**tooling architecture may influence outcomes independently of AI autonomy level**"
+- Development hours were 36.0, 9.4, and 5.9; the table therefore implies an 83.6% first-to-third decline, while the conclusion says 87%
+- Requirement-traceability scores were 18/22, 19/22, and 20/22; this metric does not measure security, maintainability, defects, or technical debt
+- Mental demand was 12.75, 8.5, and 7.5; frustration was 6.25, 6.75, and 7.5. With four respondents, these are descriptive means without significance tests
+- Phase 2 versus Phase 3 holds nominal AI exclusivity constant, but changes platform and workflow after the same team has already implemented the application twice
 
-**Structural significance**: This is the Attribution Error (#440) measured experimentally. "Don't Blame the LLM" (#440) showed scaffold changes cause quality fluctuations when the model is fixed. This paper shows the converse: fixing the developers and varying the scaffold changes outcomes. The Configuration Layer (#425) thesis predicted exactly this — risk and optimization reside in configuration, not capability. Now measured with NASA-TLX (standardized cognitive workload instrument).
+**Identification limits**: The phases were neither randomized nor counterbalanced. The authors name accumulated familiarity as the primary confound; exact model versions, permissions, session parameters, and runtime configuration were not archived. Time was self-reported, prompt success was subjective, and the single external evaluator's blinding is internally inconsistent: the methods say the evaluator knew phase identity, while the appendix says the evaluator did not. These observations support a matched future experiment, not a causal architecture-over-model conclusion.
 
-**The Frustration Paradox**: Mental workload decreases but frustration increases. This is the Oversight Inversion at the human level — as production becomes more autonomous, the developer's role shifts from building to supervising, and supervision under reduced control is inherently frustrating. The Architecture Premium suggests the exit: invest in architectures that give developers meaningful verification leverage (Predicate Gates, composition-aware tools), not just more autonomy.
+**The workload pattern**: Self-reported mental demand decreased while frustration rose modestly across the fixed phase order. The study did not isolate whether autonomy, platform unfamiliarity, accumulated experience, or another phase effect caused either trend.
+
+Confidence is high in the table values and design limits, medium in the directional within-team observations, and low in causal attribution or transfer beyond one small greenfield application.
 
 Source: https://arxiv.org/abs/2607.05125
 
@@ -201,45 +203,32 @@ Five-Scan Exit Arc from the Oversight Inversion:
 #445 Restraint Premium        → Invest in producing less (supply-side)
 #446 Predicate Gate           → Gate at transitions (architecture-side)
 #447 Composition Surface      → Transitions = where failure lives (target)
-#448 Architecture Premium     → Architecture > Model (ROI principle)
+#448 Architecture Premium     → Test architecture as a factor
                                 ↓
-                         The exit from the Oversight Inversion is
-                         architectural investment, not capability investment.
+                         Architecture is a candidate intervention,
+                         not an identified universal ranking.
 ```
 
-### The Frustration Paradox as Oversight Inversion Marker
+### The workload pattern as an Oversight Inversion hypothesis
 
-2607.05125's finding — mental workload decreases but frustration increases with autonomy — is the Oversight Inversion experienced at the individual developer level:
+2607.05125 records lower mental-demand means and higher frustration means across its sequential phases. It does not identify autonomy as the cause, so the pattern is a hypothesis for an Oversight Inversion test rather than a confirmed individual-level mechanism:
 
-```
-┌─ Traditional Development ────────────────────┐
-│  Developer: builds and understands            │
-│  Cognitive load: HIGH (building)              │
-│  Frustration: LOW (control)                   │
-│  Oversight: implicit (you wrote it)           │
-└───────────────────────────────────────────────┘
+| Fixed-order phase | Mental demand | Frustration |
+|---|---:|---:|
+| Partial Copilot | 12.75 | 6.25 |
+| AI-exclusive Copilot | 8.5 | 6.75 |
+| AI-exclusive Kiro | 7.5 | 7.5 |
 
-┌─ AI-Assisted Development ────────────────────┐
-│  Developer: supervises and verifies           │
-│  Cognitive load: LOW (not building)           │
-│  Frustration: HIGH (no control)               │
-│  Oversight: explicit (you didn't write it)    │
-└───────────────────────────────────────────────┘
-
-Resolution: Architecture that restores meaningful verification 
-leverage without restoring production burden.
-Kiro > Copilot precisely because spec-driven architecture
-gives developers verification handles.
-```
+Test Kiro and Copilot under randomized or counterbalanced conditions before attributing either direction to architecture or autonomy.
 
 ### Curriculum Architecture Extends Oversight Inversion to Training
 
-2607.04846 proves the Architecture Premium applies *before deployment*:
+2607.04846 claims the Architecture Premium applies *before deployment*; that paper remains to be primary-reviewed:
 
 | Phase | Architecture Premium Manifestation |
 |-------|-----------------------------------|
 | **Training** | Curriculum design (04846) — imbalanced learning → governable circuits |
-| **Configuration** | Scaffold design (#425, #440) — tooling > model for outcomes |
+| **Configuration** | Scaffold design (#425, #440) — tooling is a candidate outcome factor |
 | **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
 | **Deployment** | Governance layers (fable-soul, sail-skill) — architecture > capability |
 
@@ -249,7 +238,7 @@ The Architecture Premium is fractal — it applies at every phase of the system 
 
 | Signal | Source | Architecture Premium Evidence |
 |--------|--------|------------------------------|
-| Kiro > Copilot at same autonomy | arXiv 2607.05125 | Spec-driven > model-driven architecture |
+| Kiro after Copilot at nominally equal autonomy | arXiv 2607.05125v1 | Directional pilot; platform, order, learning, and runtime identity are confounded |
 | Imbalanced curricula → precise safety | arXiv 2607.04846 | Training architecture → governance surface |
 | Chat Control Explained > Passed (ratio) | HN | Understanding architecture > reacting to news |
 | Comprehension:News = 0.81 (ATH) | HN | Community invests in structural understanding |

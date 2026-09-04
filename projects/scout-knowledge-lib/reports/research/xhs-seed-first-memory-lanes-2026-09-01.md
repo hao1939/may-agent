@@ -10496,6 +10496,46 @@ Reddit stays trigger-deferred, and static compaction ranks last. Select the
 paper and test its sample, interventions, outcomes, factor separation, and
 uncertainty before retaining architecture-over-model advice.
 
+## Cycle 313 checkpoint — architecture remains a hypothesis, not the estimate
+
+Seed-first `616365f105fdb4ec1693911566c1a09150278806` preceded all public
+reads. Anonymous arXiv access returned the `2607.05125v1` abstract at
+`2026-09-04T01:13:37Z` and a 419,344-byte PDF at `01:13:39Z`, SHA-256
+`4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe`.
+The e-print route redirected to `/src/2607.05125v1` but served the PDF rather
+than TeX. No raw spreadsheet, tool logs, application artifacts, exact runtime
+archive, or analysis code were available from the paper route.
+
+The single four-student team reimplemented one greenfield application in a
+fixed sequence: partial Copilot, AI-exclusive Copilot, then AI-exclusive Kiro.
+The exact table reports development hours `36.0/9.4/5.9`, RITM requirement
+traceability `18/19/20` of 22, mental demand `12.75/8.5/7.5`, and frustration
+`6.25/6.75/7.5`. NASA-TLX uses four descriptive responses with no inference;
+RITM excludes security, maintainability, defects, and technical debt.
+
+The paper names accumulated familiarity as its primary confound. Phases were
+neither randomized nor counterbalanced, platform/workflow/order move together,
+and exact models, permissions, and session parameters were not systematically
+archived. Two internal contradictions further limit confidence: the conclusion
+says hours fell `87%`, while `36.0` to `5.9` is `83.6%`; methods say the external
+evaluator knew phase identity, while the appendix says the evaluator did not.
+
+The two Scan 448 variants, Scan 467, index, and canonical Oversight Inversion
+now preserve the directional observations while rejecting an independently
+identified architecture effect or autonomy-caused frustration. Confidence is
+high in table values and design limits, medium in the within-team direction,
+and low in causality and transfer to professional, legacy, or longitudinal work.
+
+arXiv won on directness and contradiction value. GitHub made zero requests
+because no stable replication identity is linked; revisit on raw artifacts,
+runtime identities, or randomized replication. Reddit made zero requests and
+remains RSS-readable/JSON-403 until a relevant thread or access change.
+`RV-004` remains high/open because no query/rank-to-later-outcome join changed.
+
+Next begin seed-first and primary-review `2607.04846`. After this correction,
+its curriculum experiment carries the remaining substantive evidence for the
+Architecture Premium and outranks HN narrative checks or static compaction.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

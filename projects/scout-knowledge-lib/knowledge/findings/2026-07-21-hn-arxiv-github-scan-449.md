@@ -232,7 +232,7 @@ Scan #444: Comprehension Dividend  → Value of understanding
 Scan #445: Restraint Premium       → Value of producing less
 Scan #446: Predicate Gate          → Gate at transitions
 Scan #447: Composition Surface     → Failure at composition
-Scan #448: Architecture Premium    → Architecture > Model
+Scan #448: Architecture Premium    → Test architecture as a factor
 Scan #449: Subtraction Economy     → Market prices subtraction
            ↓
     The Oversight Inversion's exit is being
