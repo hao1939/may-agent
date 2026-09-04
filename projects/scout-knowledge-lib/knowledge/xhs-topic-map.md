@@ -4390,6 +4390,36 @@ those inputs; (4) other not-yet-sourced claims follow; (5) Reddit remains
 trigger-deferred; and (6) byte/line compaction is last because it creates no
 outcome or primary evidence. Select item 3 and preserve its narrower estimand.
 
+### Cycle 309 checkpoint — the public subset is a deterministic truncation test
+
+Seed-first `ef8cc8dffd5334bc471f8cb895aa72ee89a28832` preceded the
+offline run. No package was installed into either repository. The public vxdb
+0.5.1 wheel was downloaded and unpacked into goal-owned temporary space, pinned
+at SHA-256 `40640825…7ec41`; it maps to release
+`d6b8d516b091727dd5fc5fa417be6d57fe7d1101`. The current notebook is from
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`, exact SHA-256
+`26bb84c6…ba049`; post-release Python-wrapper differences are prose-only.
+
+Exact notebook cells using the dependency-free hashed embedder produced
+baseline 2/4 and memory 4/4 at `WINDOW=2`. One hundred repeats were identical.
+A matched `WINDOW=1..4` sweep produced baseline `1/4,2/4,3/4,4/4` while memory
+stayed `4/4`; at a full window both pass. The store path is real, but the result
+is determined by scaffold-driven writes/queries and visible-window truncation,
+not model memory policy or latency. A single 200-write/50-query timing run gave
+p50 28.3 µs embedding, 6.5 µs writing, and 15.9 µs querying.
+
+The first sweep wrapper omitted the notebook's `scratch` import and failed with
+`NameError`; adding that exact dependency made the bounded control pass. Pytest
+was unavailable and no install followed. Both goal-owned clones remain clean.
+Confidence is high for the deterministic mechanism and window sensitivity,
+low for transfer to the provider-backed paper result. `RV-004` remains
+high/open.
+
+Next begin seed-first, then return to the ranked unsourced-claim backlog rather
+than extending this demonstration into an invented paper artifact. Select the
+highest-impact active claim whose primary evidence is accessible and whose
+correction would change a durable synthesis.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

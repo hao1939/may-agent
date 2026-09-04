@@ -10288,6 +10288,58 @@ Select item 3. Use the notebook's exact public inputs and controls, pin the
 binary identity, and report the subset as a mechanism check rather than a paper
 replication.
 
+## Cycle 309 checkpoint — offline retrieval passes because the window drops facts
+
+Seed-first `ef8cc8dffd5334bc471f8cb895aa72ee89a28832` preceded this
+work. No library was installed into the standing worktree or either goal-owned
+clone. `pip download --only-binary --no-deps vxdb==0.5.1` retrieved
+`vxdb-0.5.1-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl`
+into isolated temporary space; its SHA-256 is
+`40640825f9a5866bd220f827f7ada0f5f276fd0bed9b959ab746770edcb7ec41`.
+The wheel's release commit is
+`d6b8d516b091727dd5fc5fa417be6d57fe7d1101`. Current vxdb head remains
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`; its later wrapper diff changes
+only explanatory prose, not behavior. The current notebook SHA-256 is
+`26bb84c604c671eca3981d11e470d88abe5ad4f0b029dd530383be9d9b9ba049`.
+
+Running the notebook's exact offline cells with its dependency-free hashed
+embedder produced:
+
+- documented `WINDOW=2`: baseline FAIL with 2/4 facts; memory PASS with 4/4;
+- 100 repeats: the same exact two result sets every time;
+- matched window sweep: baseline recovered `1/4, 2/4, 3/4, 4/4` at windows
+  1–4, while memory recovered 4/4 at every window;
+- at window 4, both conditions pass because no observation is truncated;
+- one 200-write/50-query run: p50 embed 28.3 µs, write 6.5 µs, query 15.9 µs.
+
+The memory condition uses real vxdb retrieval, so this is valid implementation
+evidence. It is also scaffolded: the harness writes every observation and
+queries each of the four known hops at answer time. The baseline sees only the
+last `WINDOW` observations. The matched sweep therefore supports a narrower
+conclusion than the notebook's slogan: store-backed retrieval preserves facts
+the harness deliberately removes from visible context, and the advantage
+vanishes when the full four-observation history remains visible. It does not
+measure a model's decision to remember or recall, any injected latency, the
+paper's 12 duplicate actions, or the reported five-seed probabilities.
+
+The first sweep-wrapper attempt omitted cell 3's `scratch` import and stopped
+with `NameError: name 'scratch' is not defined`; the corrected wrapper supplied
+that exact notebook dependency and passed. Python 3.12.3 was available, but
+pytest and a source-build Rust toolchain were not. Those conveniences were not
+needed for the exact notebook-cell check, so no install or human action was
+requested. Both goal-owned clones retained zero status records.
+
+This closes the accessible public-subset question with high confidence for the
+primitive and deterministic window result, and low confidence for transfer to
+the unreleased provider-backed experiment. GitHub/arXiv/Reddit continuity and
+revisit triggers stay as recorded in Cycle 308; no new public request was
+needed after the wheel download. `RV-004` remains high/open.
+
+Next begin a bounded seed-first cycle and rank the active not-yet-sourced claim
+backlog by synthesis impact. Pursue the highest item with accessible primary
+evidence rather than adding more byte/line compaction or treating this small
+demonstrator as the missing full artifact.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

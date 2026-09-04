@@ -303,6 +303,15 @@ contain the claimed full experiment scripts, frozen workloads, latency ladder,
 or per-run JSON. This supports mechanism plausibility, not independent
 reproduction of the reported outcome probabilities.
 
+The public notebook's offline subset does reproduce locally, but the matched
+control narrows what it means. At visible windows 1 through 4, its baseline
+recovers exactly 1/4 through 4/4 facts while scaffold-driven memory recovers
+4/4 throughout; at the full window both pass. One hundred repeats at the
+documented two-item window stayed exactly 2/4 versus 4/4. This supports the
+store and retrieval wiring while showing that the demonstration outcome is a
+deterministic truncation contrast, not evidence for model-level transfer or the
+paper's latency-dose probabilities.
+
 ## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |
