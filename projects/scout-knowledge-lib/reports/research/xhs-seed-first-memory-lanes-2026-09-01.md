@@ -14179,6 +14179,88 @@ reproducibility, retrieval, and synthesis gaps; (5) Reddit until its trigger;
 datasets/denominators, virtue definitions/tradeoffs, controls, uncertainty, and
 public artifacts.
 
+## Cycle 355 checkpoint — qualify typed-claim and virtue-tradeoff evidence
+
+Seed-ordering commit `65354b385a6e9c43e54994f5753e45d5e23aba4c`
+preceded discovery. At `2026-09-04T06:58:35.423Z`, arXiv `2607.06495v1`
+returned a 3,726-byte Atom record with SHA-256
+`b7c47b51da72bd60413cf2f1dd320f1feb5f4231738cfeed1bd24d065bf4dba9`.
+The 61,613-byte source archive has SHA-256
+`4920f8572aaa704e75cf71ae3028b6375c7fb3982c7c4f1f3ca9944c4128ac70`.
+
+Pitwall specifies ten claim classes and two extraction regimes. Its pattern
+extractor recovers only 0--2 of 4--15 asserted facts in free-form text; its LLM
+extractor recovers 8--15 but remains fallible. The 3,045-target fine-tuning
+corpus admits 2,494 model generations and substitutes 551 templates after two
+retries. The detailed admission rule requires at least one checkable claim and
+zero contradicted claims; it does not explicitly require zero unverifiable
+claims. Without the implementation or target verdicts, this does not prove the
+abstract's stronger claim that every target claim is state-supported.
+
+The deployment-shaped richness audit compares template and rich-target Qwen
+adapters on real dense and constructed sparse contexts, then repeats the rich
+recipe on Llama-1B, Phi-4-mini, and Mistral-7B. Qwen, Llama, and Mistral invent
+unsupported sparse detail; Phi emits generic non-checkable language. The paper
+reports no probe count, outputs, repeat count, interval, or matched score. This
+supports a sparse-context release gate but not a quantified prevalence claim
+or an isolated causal effect of instruction adherence.
+
+Austria and Britain support operational feasibility, not the language gate's
+coverage. Silverstone contributes 13 unique table rows after one duplicate
+lap-51 poll is removed. Locking onto the eventual winner from lap 42 is a
+prospective trace, but the paper calls all 14 raw polls anecdotal and does not
+include the named JSONL in the arXiv archive.
+
+The paper's cited companion, `2606.09376v2`, was retrieved at
+`2026-09-04T07:01:31.964Z`: 3,267 Atom bytes / SHA-256
+`e6bc260bce7b8d42b983d3b0265983db34074071d9e5dc3d5723eed941357dc9`
+and 48,433 source bytes /
+`b96e8e0d1439a9e870c52d26dca75d9658281c816c909fdd5047a6e425060665`.
+It explicitly reports an out-of-schema teammate/title-fight invention that
+receives a perfect supported fraction: entity and causal claims outside the
+ontology are invisible. This is direct contradictory evidence against an
+unqualified construction-wide faithfulness claim.
+
+An exact-title GitHub search resolved the related artifact
+`vectrayx/precision-is-not-faithfulness`; its current public head at
+`2026-09-04T07:02:31.513Z` is
+`a1caae7858f4152b3be616ba68d00334fc7bcdab` (tree
+`74b2ba13d3e41db0cb76ee00b335fe2dd7ebbc1d`). All six dependency-free
+verifier tests pass. Its ten strategy claim types and verifier are inspectable,
+but this is companion code, not attributable Pitwall code. The checked-in
+ablation table at SHA-256 `1d12ed2d…a913` differs materially from the arXiv v2
+archive: the archive reports mean recall falling 0.60→0.47, whereas the repo
+table says four of five models improve and Gemini falls 0.27→0.08. This is an
+artifact-version contradiction, not a basis for choosing one result silently.
+
+At `2026-09-04T07:00:10Z`, unauthenticated GitHub repository search for
+Pitwall plus Santillana returned HTTP 200 and zero matches. A broad name search
+was non-attributable. At `07:02:20Z`, the attributable `vectrayx` account
+exposed four public repositories—classifier, nano paper, the companion, and
+MCP—and none was Pitwall. HTTPS to `jsantillana.com` reset at `07:00:19Z`;
+HTTP returned 503 through the environment's web filter at `07:00:48Z`. The
+paper contains no repository URL. The claimed engine, verifier, tests,
+experiment logs, and live trace therefore remain unattributed and unavailable
+from this environment; this is a discovery/access boundary, not evidence that
+they do not exist.
+
+ArXiv supplied the selected primary text; GitHub supplied useful exact related-
+code provenance and the missing-Pitwall boundary. Revisit arXiv on
+`2607.06495v2+`, GitHub on an attributable Pitwall release or owner-list change,
+and Reddit on a relevant-thread or access change. Reddit made zero requests and
+retains its RSS-readable/JSON-403 boundary. Confidence is high for exact source
+and related-code observations, moderate for the qualitative sparse-audit
+direction, and absent for audit prevalence, full-system reproduction, complete
+claim coverage, or instruction-adherence causality.
+
+The finding, index, Oversight Inversion, topic map, and this report now state
+the conditional result: typed gates are useful, but they cover only extracted,
+modeled claims and authoritative state. `RV-004` remains high/open because no
+protected Scout query/rank -> selection -> later-outcome join changed. Next
+seed-first, primary-review Claimed or Attested `2607.06194`, the highest
+accessible unreviewed Scan #456 result; audit the commit population, signature
+parser, trust-tier evidence, denominator semantics, and public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

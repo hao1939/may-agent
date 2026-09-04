@@ -7265,6 +7265,60 @@ other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
 types, verifier authority, datasets and denominators, virtue definitions and
 tradeoffs, baselines/ablations, uncertainty, and public artifacts.
 
+### Cycle 355 checkpoint — typed gates cover only claims the system can see
+
+At `2026-09-04T06:58:35.423Z`, arXiv `2607.06495v1` supplied a
+3,726-byte Atom record (SHA-256 `b7c47b51…ba9`) and 61,613-byte source
+archive (`4920f857…c70`). Pitwall defines ten claim classes. Its pattern
+extractor sees only 0--2 of 4--15 asserted facts in free-form text; the LLM
+extractor sees 8--15 and is itself fallible. The 3,045-target corpus admits
+2,494 model generations and falls back to 551 templates. The method requires
+at least one checkable and zero contradicted claims, but does not explicitly
+say every unverifiable claim is rejected, so the abstract's stronger “every
+claim state-supported” wording remains unreconciled without the implementation
+or per-target verdicts.
+
+The richness/sparsity result is a qualitative deployment-shaped audit with no
+probe denominator or run uncertainty. Rich-target adapters on Qwen2.5-3B,
+Llama-3.2-1B, and Mistral-7B invent unsupported detail in sparse contexts;
+Phi-4-mini instead emits generic non-checkable language. This supports a
+sparse-context admission test, but does not measure instruction adherence as
+an isolated causal variable. The two live Grands Prix establish feasibility.
+The Silverstone table retains 13 unique two-minute rows from laps 39--52; the
+paper itself calls the 14 raw polls anecdotal rather than calibration evidence.
+
+The cited companion `2606.09376v2`, retrieved at
+`2026-09-04T07:01:31.964Z`, is 3,267 Atom bytes / `e6bc260b…7dc9` and
+48,433 source bytes / `b96e8e0d…0665`. It supplies the decisive limitation:
+out-of-schema entity or causal inventions can be unextracted and receive a
+perfect supported fraction. Its attributable public repository is
+`vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab`;
+six dependency-free verifier tests pass. That is related code, not the Pitwall
+implementation. Its checked-in prompt-ablation table also differs from the
+arXiv v2 archive: the archive reports mean recall 0.60→0.47, while the current
+repository reports four of five models improve and Gemini 0.27→0.08. Bind any
+claim to its exact artifact version.
+
+GitHub lookup at `07:00:10Z` found zero `Pitwall+Santillana` repositories. The
+attributable `vectrayx` account exposed four public repositories at
+`07:02:20Z`, none Pitwall. HTTPS to `jsantillana.com` reset and HTTP returned
+503 through the execution environment's filter. Thus the paper's claimed
+project repository, verifier tests, experiment logs, and live JSONL remain
+unattributed, not disproved. ArXiv plus the related exact GitHub artifact win
+the evidence rubric. Revisit arXiv on `2607.06495v2+`, GitHub on an attributable
+Pitwall release/account change, and Reddit only on a relevant-thread or access
+trigger; Reddit made zero requests.
+
+Confidence is high for source transcription, exact related-code behavior, and
+the coverage limitation; moderate for the qualitative sparse-audit direction;
+absent for probe prevalence, complete publication faithfulness, independent
+Pitwall reproduction, and causal instruction-adherence attribution. `RV-004`
+remains high/open because no protected Scout query/rank -> selection -> later-
+outcome join appears. Next seed-first, primary-review Claimed or Attested
+`2607.06194`, the highest accessible unreviewed Scan #456 claim: audit commit
+population, signature parsing/coverage, trust-tier evidence, and public
+artifacts rather than treating 17.59% as identity verification.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -871,6 +871,33 @@ diversity when correlated outcomes warrant it (independence condition)**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-455.md, https://arxiv.org/abs/2607.06001, https://arxiv.org/abs/2607.06503, https://arxiv.org/abs/2607.06283
 
+### Layer 28: The Claim-Verification Surface (Scan #456, 2026-07-09)
+
+Pitwall (`2607.06495v1`) makes claim typing an explicit architecture: ten claim
+classes are extracted from commentary and checked against structured race
+state, while the same checking surface gates training targets and publication.
+The 3,045-target corpus retains 2,494 model generations and substitutes 551
+templates. A qualitative sparse-context audit finds that rich-target adapters
+on Qwen, Llama-1B, and Mistral-7B invent unsupported detail, while Phi-4-mini
+uses generic non-checkable language.
+
+The stronger construction claim is conditional. The paper says its pattern
+extractor sees only 0--2 of 4--15 asserted facts and its LLM extractor sees
+8--15; the related `2606.09376v2` artifact explicitly shows that an out-of-
+schema entity/causal invention can score perfectly. The sparse audit reports no
+probe count or run uncertainty, and the claimed Pitwall repository, verifier,
+logs, and live JSONL were not attributable from the paper or author's public
+repositories. Two race-distance deployments and 13 unique Silverstone table
+rows support operational feasibility, not complete faithfulness or calibration.
+
+The durable condition is therefore: type claims and gate them, but measure
+extractor recall, ontology coverage, and substrate authority. Untyped or unseen
+claims pass no matter how strict the downstream checker is.
+
+Source: findings/2026-07-09-hn-arxiv-github-scan-456.md,
+https://arxiv.org/abs/2607.06495v1,
+https://arxiv.org/abs/2606.09376v2
+
 ### Layer 29: The Variance Signal (Scan #457, 2026-07-10)
 
 The thirteen-point exit arc (#444–#456) assumed that verification produces information. Layer 29 reveals the condition under which it does — and names the structural error that makes most current evaluation informationally vacuous.
