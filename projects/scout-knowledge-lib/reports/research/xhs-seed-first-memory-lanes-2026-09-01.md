@@ -10238,6 +10238,56 @@ seed-first cycle, then compare that notebook with the reported method and test
 only a faithful, decision-relevant subset without implying that it reproduces
 the missing provider-backed artifact.
 
+Exact Cycle 308 material
+`3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
+navigation v2 at 8/8, and all 296 tests / 1,484 assertions. The broad audit
+passes 1,540 Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T00:41:00.247Z` returns 26 facts, 16 wakes, and
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and the exact standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its short-status surface moved
+externally from Cycle 307's 916 records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`
+back to 386 /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`.
+The combined Scout scope remains unchanged at 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker wrote or tested neither surface.
+
+## Cycle 309 seed-first start — test the public subset, not a proxy full result
+
+At `2026-09-04T00:42:17.326Z`, Cycle 309 began from clean validated
+`3fb1bcbc5e74d2755aff14dac89daf7056369382`. The last XHS observation ended
+at `2026-09-03T22:59:03.253Z`, about 105 minutes earlier and inside the
+six-hour cadence. The bounded reconciliation therefore made zero XHS, GitHub,
+arXiv, or Reddit requests. Added/changed identities remain unknown, observed
+removals are `[]`, and all 132 seeds remain unavailable.
+
+Expected knowledge value ranks the complete queue as follows:
+
+1. RV-004's query/rank-to-later-outcome join could change maintenance policy,
+   but readable protected history still ends before any attributable later
+   outcome. More telemetry or prose cannot manufacture the missing join.
+2. A faithful reproduction of the paper's `0.0/12` and `7.2/12` result
+   would be highly valuable, but the full artifact, frozen workloads, delay
+   controls, per-run JSON, and authority-bearing model execution are absent.
+3. The public vxdb notebook's deterministic offline comparison is attributable
+   and executable with a pinned public binary. It can test the store primitive
+   and bounded-window mechanism while explicitly excluding the missing model
+   probability claim.
+4. Other not-yet-sourced scan claims are accessible but less directly tied to
+   the just-resolved contradiction.
+5. Reddit remains below its relevant-thread/access-change trigger.
+6. Further byte/line compaction is last because it adds neither retained
+   outcome evidence nor primary/reproducibility evidence.
+
+Select item 3. Use the notebook's exact public inputs and controls, pin the
+binary identity, and report the subset as a mechanism check rather than a paper
+replication.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

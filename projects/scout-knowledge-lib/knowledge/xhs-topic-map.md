@@ -4358,6 +4358,38 @@ reported method and identify the smallest reproducible subset that can be
 validated without provider authority; do not substitute a new result for the
 missing full artifact.
 
+Cycle 308 material `3fb1bcbc5e74d2755aff14dac89daf7056369382`
+passes the full exact-tip gate: syntax, TypeScript, formatting, Cycle 292
+projection, 90 scoped links, navigation v1 11/14, navigation v2 8/8, and 296
+tests / 1,484 assertions. The broad audit passes 1,540 documents / 1,728 local
+links; read-only health at `2026-09-04T00:41:00.247Z` returns 26 facts / 16
+wakes with `truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and the standing worktree is clean.
+
+Protected `/app` remains at HEAD `386b445c…41fec8`. Its externally owned
+short status moved from Cycle 307's transient 916 records /
+`f7080322…a93a` back to 386 / `7c285c09…1ca01b`; the protected Scout scope
+remains exact at 296 / `7e4d0937…26a8a`. This worker did not write or test it.
+
+## Cycle 309 seed-first start — reproduce only the public subset
+
+At `2026-09-04T00:42:17.326Z`, Cycle 309 began from clean validated
+`3fb1bcbc5e74d2755aff14dac89daf7056369382`. The latest XHS receipt ended at
+`2026-09-03T22:59:03.253Z`, about 105 minutes earlier and inside the six-hour
+cadence. No XHS or other public request ran: added/changed identities remain
+unknown, observed removals are `[]`, and all 132 durable seeds remain
+unavailable.
+
+The complete accessible queue ranks by expected knowledge value: (1) RV-004's
+retained outcome join has highest potential impact but readable protected
+history has no later outcome; (2) independent reproduction of Memory in the
+Loop's provider-backed probabilities is blocked by its missing full artifact
+and absent model authority; (3) the vxdb notebook's offline subset is public,
+directly attributable, and can test how much of the mechanism survives without
+those inputs; (4) other not-yet-sourced claims follow; (5) Reddit remains
+trigger-deferred; and (6) byte/line compaction is last because it creates no
+outcome or primary evidence. Select item 3 and preserve its narrower estimand.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
