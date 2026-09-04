@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 382 bounded reconciliation at 2026-09-04T12:41:36.521Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 382; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 382; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and RLSR selection/deployment evidence qualified in Cycle 382; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 383 bounded reconciliation at 2026-09-04T12:56:41.428Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 383; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 383; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, and aTTT competence/cost evidence qualified in Cycle 383; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9288,6 +9288,76 @@ RSS-readable/JSON-403 until a relevant thread or access change. `RV-004` and
 `RV-034` remain high/open. Next seed-first, audit arXiv `2607.03441` against
 its competence-preservation, repetition-detection, benchmark-control, 1.9×
 overhead, and released-artifact claims.
+
+### Cycle 383 seed-first start — preserve the supported surface
+
+Cycle 383 starts from clean validated tip
+`d7cca640660903036f7b1da37c9477afcdfcced2` at
+`2026-09-04T12:56:41.428Z`. Cycle 375 remains the last supported XHS
+observation through `2026-09-04T11:09:20.326Z`; the six-hour boundary is
+`2026-09-04T17:09:20.326Z` and no access or collection trigger fired. Make
+zero XHS requests. Added and changed identities remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, no
+account state changes, and the Cycle 375 browser receipt plus seed-ledger row
+375 remain the provenance.
+
+Re-rank the accessible queue after reconciliation: `RV-004` remains the
+highest-consequence gap but cannot move without the protected query/rank to
+later-outcome join; `RV-034` still requires an external runtime. The highest
+accessible primary gap is already-ranked arXiv `2607.03441`, because Scan
+#424 treats three-seed benchmark improvements as token-level competence
+preservation and generalizes a single throughput setup as cost. Select it
+before any source-lane work. Reddit remains lower value without a relevant
+thread or access change.
+
+### Cycle 383 checkpoint — adaptation gains do not isolate preservation
+
+Primary review retains aTTT as useful episode-local adaptation evidence while
+narrowing its mechanism. The method updates an episode-private LoRA every five
+steps. Its sequence filter uses maximum word-set Jaccard similarity; aTTT uses
+tokenized 3-gram history to downweight repeated token losses to a `0.05` floor.
+The authors themselves call repetition an operational signal rather than a
+cause of failure.
+
+On 140 ALFWorld tasks and three seeds, the headline Qwen3.5-9B Self result is
+`55.7±1.4%`: `+5.0` points over no TTT (`50.7±0.8%`) but only `+1.9` over the
+same-signal sequence filter (`53.8±1.7%`). Token weighting is not uniformly
+best; Qwen3.5-4B Env is `4.5±1.0%` versus the sequence filter's `5.5±0.5%`.
+On 150 SWE-bench Lite tasks, Summary aTTT reports `+2.9` and `+4.9` points for
+Qwen3.5-9B/27B, but that table has no qTTT, unfiltered, sequence-filter, or
+equal-update arm. It identifies the Summary-plus-adaptation bundle, not token
+weighting. Three-seed standard errors are reported without raw outcomes,
+paired contrasts, or inferential tests. The appendix's `51.4%` no-TTT value
+also disagrees with `50.7%` in the main table and control text.
+
+The concentration of gains in selected model/horizon cells and rescued
+trajectories is compatible with preservation, not causal evidence for it.
+There is no independent competence label, acquisition control, or held-out
+novel-skill task. The `1.9×` claim is likewise one wall-clock comparison:
+28.3 versus 14.6 minutes for 140 Qwen3.5-9B ALFWorld episodes. Accelerator
+models/counts, utilization, energy, and Summary-call cost are not disclosed.
+
+ArXiv `2607.03441v1` and current were read at
+`2026-09-04T12:57:19.837Z–12:57:21.878Z`; both are the same 281,726-byte
+archive with SHA-256
+`82e00d5b1b1cf807ce18663aa0967efb6280ec71d132e0ae34ff58090c11add1`.
+It contains manuscript/figures only: no code, data, configuration, checkpoint,
+raw result, or project URL. GitHub exact-title, arXiv-ID, method, and author
+repository searches through `2026-09-04T12:58:11.800Z` found no attributable
+release. `Yunbo-max/sp-attt@5befbf4206996d7e9073b0d255263ddbf1388162`
+is a later independent Selective Plasticity extension with its own single-seed
+results, not author code or a reproduction. Reddit made zero requests.
+
+Confidence is high in source identity, mechanism/table transcription,
+arithmetic, and release absence; moderate in the exact-setup mean gains; low
+in competence-preservation causality, token-weighting-specific SWE-bench
+effects, statistical transfer, or general cost. ArXiv/GitHub revisit on author
+code, raw per-seed results, paired uncertainty, matched SWE-bench controls,
+hardware accounting, or a preservation-versus-acquisition test. Reddit
+revisits on a relevant thread or access change. XHS remains due at its exact
+boundary. `RV-004` and `RV-034` remain high/open. Next seed-first, primary-
+audit arXiv `2607.03510`: distinguish CAGE-1's proposed Prebind Assurance
+vocabulary from implemented or empirically tested pre-consequence control.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

@@ -17065,6 +17065,153 @@ external drift, not attributed to this worker. This worker ran no test,
 generator, formatter, install, clean, or write in `/app` or a peer worktree;
 the same exact fingerprints are rechecked after commit.
 
+## Cycle 383 seed-first start — current receipt, no early observation
+
+Cycle 383 starts from clean validated tip
+`d7cca640660903036f7b1da37c9477afcdfcced2` at
+`2026-09-04T12:56:41.428Z`. The last supported XHS observation remains Cycle
+375 through `2026-09-04T11:09:20.326Z`. Its next scheduled boundary is
+`2026-09-04T17:09:20.326Z`; no cadence, collection, access, or account trigger
+fired, so this bounded reconciliation makes zero XHS requests. Additions and
+changes remain unknown, observed removals remain `[]`, all 132 durable
+identities remain unavailable, and no account state changes. Provenance is
+the Cycle 375 browser receipt and seed-ledger row 375; uncertainty is
+unchanged.
+
+`RV-004` remains the highest-consequence gap but cannot advance without the
+protected query/rank-to-later-outcome join. `RV-034` remains inaccessible
+without an external runtime. The highest-value accessible item is the already-
+ranked arXiv `2607.03441`: test whether the headline improvements isolate
+token-level repetition control, whether “preserves competence” is observed or
+inferred, what `1.9×` measures, and whether a released artifact reproduces the
+results. Finalize this selection after the seed reconciliation. Reddit remains
+deferred without a request because no relevant-thread or access trigger fired.
+
+## Cycle 383 checkpoint — qualify competence preservation and cost
+
+What was wrong: Scan #424 turned selected three-seed benchmark improvements
+into evidence that token-level repetition detection preserves existing
+competence over long horizons. It also called one concurrent wall-clock ratio
+the no-TTT “cost” without retaining its hardware or accounting boundary.
+
+What changes: aTTT remains useful evidence that episode-local adaptation can
+raise mean success in two reported settings. The library now separates the
+whole adaptation bundle from token weighting, reports nearby controls and
+counterexamples, treats competence preservation as an author interpretation,
+and limits `1.9×` to the exact throughput experiment.
+
+The paper defines two different repetition mechanisms. Sequence filtering
+skips an entire update when maximum word-set Jaccard novelty falls below
+`0.5`. aTTT keeps each update and weights token loss by the maximum count of a
+tokenized 3-gram containing that token in earlier update text, with weight
+floor `0.05`. The source explicitly says repetition is an operational stuck-
+regime signal and does not assume repetition causes failure.
+
+On 140 ALFWorld tasks and three seeds, Qwen3.5-9B with Self aTTT reports
+`55.7±1.4%`. This is `+5.0` points over no TTT (`50.7±0.8%`), `+3.3` over
+static qTTT (`52.4±1.4%`), `+2.6` over unfiltered online TTT (`53.1±1.9%`),
+and `+1.9` over same-signal sequence filtering (`53.8±1.7%`). Token weighting
+is not uniformly best: Qwen3.5-4B with Env aTTT is `4.5±1.0%`, below the
+sequence filter's `5.5±0.5%`; Qwen3.5-4B Summary aTTT is `4.8±0.2%`, only
+`0.3` over unfiltered online TTT and `0.5` over sequence filtering.
+
+On 150 SWE-bench Lite tasks and three seeds, Summary aTTT reports
+`38.4±0.6%` versus `35.6±0.4%` for Qwen3.5-9B and `62.7±1.0%` versus
+`57.8±0.6%` for Qwen3.5-27B. The table includes no qTTT, unfiltered online
+TTT, sequence-filter, or update-count-matched arm. It therefore supports the
+combined Summary generation plus repeated adapter-update treatment, not the
+increment from token weighting. ALFWorld has useful prompt-delivery, decoding-
+penalty, cadence, rank, n-gram, and random-drop controls, but random dropping
+is matched to the sequence filter's skip rate rather than to aTTT's effective
+gradient budget. No raw per-seed results, paired contrasts, significance
+tests, or confidence intervals are released. The appendix also says the
+in-context comparison's no-TTT value is `51.4%`, inconsistent with `50.7%` in
+the main table and control discussion.
+
+The reported pattern—larger gains in selected model/horizon cells, plus
+diagnostics on runs rescued by aTTT—is compatible with preserving competence.
+It does not identify that mechanism: there is no independent pre-update
+competence measure, held-out skill-acquisition task, or matched intervention
+that distinguishes retention from learning. The strongest supported claim is
+that episode-local adaptation improves the reported mean in some exact
+settings and repetition weighting sometimes improves nearby online controls.
+
+The throughput table covers 140 ALFWorld episodes with Qwen3.5-9B: concurrent
+aTTT takes 28.3 minutes versus 14.6 without TTT (`1.9×`) and 186 minutes for
+the sequential implementation (`12.7×`). It reports wall-clock, not compute,
+energy, accelerator-hours, or money. Accelerator models/counts, utilization,
+and Summary-call accounting are absent, so this is not a portable total-cost
+ratio.
+
+### Exact provenance and source-lane continuity
+
+At `2026-09-04T12:57:19.837Z–12:57:21.878Z`, the 3,003-byte Atom response
+for `2607.03441` had SHA-256
+`e38cce57ecbd1c46487f3dc00e7115689cd615a24e2b7f254d7001b9cc062436` and
+identified only `2607.03441v1`, published/updated
+`2026-07-03T15:54:41Z`. Explicit v1 and current retrievals both returned the
+same 281,726-byte archive, SHA-256
+`82e00d5b1b1cf807ce18663aa0967efb6280ec71d132e0ae34ff58090c11add1`.
+The archive contains one TeX manuscript, nine PDF figures, bibliography and
+style files. It contains no implementation, configuration, raw outcome,
+checkpoint, result bundle, or declared project URL.
+
+Eight read-only GitHub repository searches—exact title, arXiv ID, method
+terms, and four author-name combinations—completed through
+`2026-09-04T12:58:11.800Z` without an attributable author release. Three
+candidate repositories were inspected. Two were unrelated; the closest,
+`Yunbo-max/sp-attt`, is a later independent Selective Plasticity extension,
+created `2026-08-22`, whose observed main commit is
+`5befbf4206996d7e9073b0d255263ddbf1388162` (authored
+`2026-08-25T21:11:18Z`). It reports its own single-seed ALFWorld development
+results and explicitly says multi-seed matched-budget work remains. Similar
+method names and defaults do not establish authorship or reproduction of the
+paper. This is provenance-backed related GitHub evidence, not an aTTT release.
+
+ArXiv was the selected evidence lane; GitHub supplied the negative attributable-
+release boundary and a clearly separated independent extension. Reddit made
+zero requests and remains RSS-readable/JSON-403 until a relevant thread or
+access change. XHS remains due at its exact cadence boundary. Confidence is
+high in primary-source identity, table arithmetic, mechanism transcription,
+and artifact absence; moderate in the exact-setup mean gains; low in causal
+competence preservation, token-weighting-specific SWE-bench gains, statistical
+transfer, or generalized cost. Revisit on author code, raw per-seed outcomes,
+paired uncertainty, matched SWE-bench controls, hardware accounting, or a
+preservation-versus-acquisition experiment. `RV-004` and `RV-034` remain
+high/open.
+
+The next ranked accessible investigation is arXiv `2607.03510`: audit whether
+CAGE-1's Prebind Assurance is a terminology/framework proposal or an
+implemented and empirically evaluated pre-consequence control, while retaining
+its relation to the selected governance/oversight cluster.
+
+### Validation and preservation
+
+The reviewed four-file candidate passes `git diff --check`, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 current-state projection,
+94 scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 Scout tests
+/ 1,486 assertions with zero failures. The broad audit passes all 1,540
+tracked Markdown documents / 1,732 local prose links. Read-only health returns
+26 facts / 16 wake signals with `truncated:true`; application runtime state is
+empty.
+
+Accepted commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors, while unaccepted `d041c41b54` remains excluded.
+The reviewer branch contains only the already-dispositioned lifecycle cursor
+commits `8dca8f4576` and `9c52296961`, not a new accepted finite Scout result.
+
+Read-only protected-checkout observation at
+`2026-09-04T13:05:38.003Z` records HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 893 whole short-status records /
+SHA-256 `dcd3fd63d33f2039b0426941ce42c1b288fdab5383229013892604684ee0223d`,
+and 296 Scout-scope records / SHA-256
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This differs from the prior handoff fingerprint without a HEAD/count change
+and is recorded as externally observed drift, not attributed to this worker.
+This worker ran no test, generator, formatter, install, clean, or write in
+`/app` or any peer worktree; the exact fingerprints are rechecked after the
+standing commit.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
