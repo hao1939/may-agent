@@ -13027,6 +13027,29 @@ XHS request before cadence or access change, then primary-reviews AgentLens
 promotes trajectory-level diagnosis, formal verification, production use, and
 open-source availability without the same primary qualification.
 
+Exact material `f6bda60d6f8de99ebacbdc32536cb04f25384aeb` passes
+syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 95.95 seconds. The exact Scout-
+library audit passes 1,540 tracked Markdown documents / 1,728 local prose
+links with zero errors. An initial command included a sparse-checkout path that
+was tracked but absent; a second diagnostic intentionally widened to the whole
+monorepo and exposed pre-existing legacy links outside Scout. Neither was a
+current Scout-tip failure; the corrected project-scoped audit above is the
+applicable gate.
+
+Read-only health at `2026-09-04T05:08:49.484Z` returns 26 facts, 16 wakes, and
+`truncated:true`. Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314`
+and historical `f26bd4f3a590b59d241536326199e805777df1be` are ancestors;
+unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains excluded.
+Standing status, `.goal-runtime`, and App runtime state contain zero records.
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker did not write, test, clean, or mutate it.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

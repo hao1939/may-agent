@@ -6412,6 +6412,18 @@ and low in repeatability, transfer, and auditor-label accuracy. Next begin
 seed-first without an early XHS request, then primary-review AgentLens
 `2607.06624`, the highest accessible adjacent trajectory-evaluation claim.
 
+Exact material `f6bda60d6f8de99ebacbdc32536cb04f25384aeb` passes
+syntax, TypeScript, formatting, Cycle 341 projection, 90 scoped links,
+navigation at 11/14 and 8/8, and all 296 tests / 1,484 assertions with zero
+failures in 95.95 seconds. The exact Scout-library broad audit passes 1,540
+tracked Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T05:08:49.484Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` are contained; unaccepted
+`d041c41b54` remains excluded. Standing and runtime state are empty. Protected
+`/app` remains externally observed at `386b445c…1fec8`, 916 /
+`f7080322…c4a93a` overall and 296 / `7e4d0937…c26a8a` in Scout scope. This
+worker wrote or tested neither protected surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
