@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 400 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, and behavioral-gradient claims: the gradient certifies authored-oracle discrimination, not unconditional benignness."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 401 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, and feasibility claims: constructive pseudocode is not an executable admission certificate."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 400; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient evidence qualified through Cycle 400; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 401; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility evidence qualified through Cycle 401; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18851,6 +18851,82 @@ The four-document candidate from source
 TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
 navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
 1,486 assertions, zero failures in 110.00 seconds. After commit, bind broad
+links, read-only health, lineage, clean state, and protected fingerprints to
+the exact result.
+
+## Cycle 401 checkpoint — feasibility has a sketch, not replay evidence
+
+What was wrong: Cycle 400 correctly made benignness conditional on the authored
+oracle, but the library had not separated the source's constructive legal-walk
+sketch from an executable proof that all admitted scenarios are feasible and
+all traps reachable.
+
+What changes: the durable finding and topic map now retain the sketch as useful
+design evidence while naming the exact missing inputs and witness records.
+
+### Seed order and ranked selection
+
+Cycle 401 began from clean validated Cycle 400 result
+`72ccecf3b0d78f1fa37771d64d1aadb64f40d624`. At
+`2026-09-04T16:19:32.167Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`; no trigger had fired. Make zero account requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's receipt/ledger remain
+provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries. Select feasibility/legal-walk evidence as the highest accessible
+question and reuse the checksum-matching Cycle 393 package. GitHub, arXiv,
+Reddit, and every other public lane make zero requests; their evidence and
+triggers remain unchanged.
+
+### What is and is not executable
+
+The source provides a constructive mutation sketch. Its appendix starts with
+`topo_walk(G_legitimate)`, samples trap operations, and interleaves the
+legitimate walk, traps, and distractors while preserving strong-dependency
+order. This directly supports the intended design: begin with a legitimate
+completion sequence and make selected traps reachable in the generated
+candidate.
+
+The four-check admission implementation is not present. The main synthesis
+pseudocode calls only opaque `V(c)`, and prose gives feasibility and coverage
+one clause each. It does not specify how `C_done`, the fixture state, atom
+preconditions/postconditions, or weak and independent edges are evaluated
+during a legal walk. Nor does it state whether a later prompt/fixture mutation
+must replay the original legitimate witness.
+
+The retained source package has exactly 17 files: 10 TeX sources, four PDFs,
+one bibliography, one style file, and one build-metadata JSON file. It contains
+no generator, `generator/atom_registry.yaml`, scenario YAML, dependency graph,
+fixture, executable verifier, or per-check acceptance trace. Those are promised
+for a later artifact. The reported 500/505 acceptance total cannot substitute
+for the missing records because all five observed rejections occurred at the
+separate novelty gate.
+
+The supported conclusion is architecture-level: the pseudocode describes a
+credible constructive route to feasibility and trap reachability. It does not
+let an independent reader prove that a mutated walk satisfies the completion
+predicate, that every trap is reachable in its actual state, or that each of
+the 500 scenarios passed. Confidence is high in the file inventory and absent
+implementation, moderate in the intended constructive-witness reading, and low
+in current executable reproduction.
+
+The minimum discharge record binds the exact scenario, graph, fixture,
+predicates, and verifier revision to a completion witness plus one reachability
+witness per declared trap, including deterministic outputs and failing matched
+controls. `RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open.
+Revisit on a generator/scenario release or per-check traces. Next seed-first,
+test whether the consent-kept/stripped pair is actually byte-identical outside
+the declared block if that remains the highest accessible question.
+
+### Cycle 401 candidate validation
+
+The four-document candidate from source
+`72ccecf3b0d78f1fa37771d64d1aadb64f40d624` passed whitespace, syntax,
+TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
+1,486 assertions, zero failures in 124.21 seconds. After commit, bind broad
 links, read-only health, lineage, clean state, and protected fingerprints to
 the exact result.
 

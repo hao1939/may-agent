@@ -238,6 +238,26 @@ construction” as supported relative to the declared oracle; treat “benign by
 construction” as conditional until independently reviewed scope/prompt labels,
 per-check reject traces, and executable failing controls are released.
 
+There is **pseudocode support but no executable evidence for feasibility and
+legal-walk coverage**. The mutation appendix constructs a
+`topo_walk(G_legitimate)`, samples traps, and interleaves them while preserving
+strong-dependency order. That is a useful intended witness: the generator starts
+from a legitimate completion path and explicitly places selected trap actions.
+But the synthesis algorithm calls the four-check verifier only as opaque
+`V(c)`, while feasibility and coverage each receive a one-clause prose
+definition. The retained 17-file arXiv package contains TeX, figures,
+bibliography/style, and build metadata—not the promised generator, atom
+registry, scenario YAML, graphs, verifier, or per-check traces.
+
+An independent reader therefore cannot establish that the topological walk
+satisfies the completion predicate after every mutation, that every declared
+trap is reachable under the actual fixture state and pre/postconditions, or how
+weak and independent edges constrain legal execution. Preserve the pseudocode
+as architecture-level support, not accepted-set reproduction. The smallest
+discharge artifact is a versioned scenario/graph schema plus deterministic
+per-check reports containing success and trap witness paths, predicate outputs,
+and intentionally failing matched controls.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is

@@ -1263,6 +1263,16 @@ therefore conditional on a correct authored oracle; a released failing corpus
 and independently reviewed prompt/scope annotations are needed to discharge
 that condition.
 
+The source does supply a constructive sketch: mutation begins with a
+topological walk over a named legitimate subgraph, then interleaves sampled trap
+actions while preserving strong dependencies. That makes safe-path and trap-
+reachability checks plausible. It is not reproducible validation because the
+four-check verifier remains an opaque function and the retained paper package
+has no scenario graphs, state-transition semantics, fixtures, predicates, or
+per-check traces. A durable construction certificate should retain both a
+completion witness and one reachability witness per declared trap, bound to the
+exact scenario and verifier revision.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy
