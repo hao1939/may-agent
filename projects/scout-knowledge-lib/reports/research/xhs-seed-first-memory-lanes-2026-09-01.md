@@ -15405,6 +15405,40 @@ the next bounded seed reconciliation. GitHub and Reddit made zero requests;
 their recorded evidence and triggers remain unchanged. `RV-004` stays
 high/open and compaction remains last.
 
+## Cycle 370 seed-first start — instantiate the proof surface
+
+Exact Cycle 369 result `a8c39c4728f4b48f2eb59496bcdafb5220316def`
+contains `fe09d925575dac8be2ac4d714bb45192934460b5`. Syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and 296 tests / 1,484 assertions pass with zero failures in 105.54
+seconds. The broad audit passes 1,540 documents / 1,728 links. Read-only health
+at `2026-09-04T08:44:04.591Z` is 26 facts / 16 wakes with truncation. Accepted
+`ff923ccde4` and historical `f26bd4f3a5` remain ancestors; unaccepted
+`d041c41b54` remains excluded; runtime state and standing status are empty.
+Protected `/app` retains HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`.
+Its Scout scope remains exact at 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`;
+the wider dirty state advanced externally from 919 /
+`be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`
+to 920 / `5df9811112abfda3940664eecca0fabed23e131e8121bbddf1e24893bf5fe627`.
+No cause is inferred; this worker wrote or tested neither protected surface.
+
+At `2026-09-04T08:44:17.605Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside six-hour cadence. Make zero XHS
+requests. Added/changed identities remain unknown, observed removals are `[]`,
+all 132 durable identities remain unavailable, provenance stays the prior
+browser receipt plus ledger, and account state is unchanged.
+
+Re-rank: (1) high/open `RV-004`, inaccessible without the missing protected
+query/rank→selection→later-outcome join; (2) the unreleased Memory in the Loop
+provider result; (3) implementation-grounded comparison of CAGE-1's seven
+fields against the existing Mnemosyne/ATP evidence; (4) AGL-1 primary review;
+(5) other contradiction, reproducibility, retrieval, and synthesis gaps; (6)
+Reddit until a relevant thread/access trigger; (7) compaction. Select item 3.
+Use retained local evidence first, then retrieve only minimum primary paper and
+repository evidence needed to distinguish formal properties, live trials,
+logging, replay, and actual non-effect.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

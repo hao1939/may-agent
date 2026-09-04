@@ -8256,6 +8256,31 @@ effect as separate claims. AGL-1 remains the next unreviewed Scan 473 primary
 claim, but rank that implementation-grounded comparison against other open
 questions after the next seed-first pass.
 
+### Cycle 370 seed-first start — instantiate the proof surface
+
+Exact Cycle 369 result `a8c39c4728f4b48f2eb59496bcdafb5220316def`
+contains seed-ordering commit `fe09d92557` and passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions with zero failures in 105.54 seconds. The
+broad audit passes 1,540 documents / 1,728 links; health at
+`2026-09-04T08:44:04.591Z` is 26 facts / 16 wakes and truncated. Accepted
+lineage remains contained, unaccepted `d041c41b54` excluded, and runtime plus
+standing status empty. Protected Scout scope remains 296 records /
+`7e4d0937…c26a8a`; wider `/app` drifted externally from 919 /
+`be01f801…a42b6` to 920 / `5df98111…5fe627` at unchanged HEAD. No cause is
+inferred and this worker wrote or tested neither protected surface.
+
+At `2026-09-04T08:44:17.605Z`, the XHS receipt through
+`2026-09-04T05:00:03.241Z` remains inside cadence. Make zero XHS requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable identities remain unavailable, and account state is unchanged.
+`RV-004` and the unreleased provider result retain the top inaccessible ranks.
+Highest accessible is the implementation-grounded CAGE/Admission Boundary
+comparison: use retained Mnemosyne evidence first, then retrieve only the
+minimum primary paper/repository evidence needed to map all seven fields and
+separate formal properties, live trials, logging, replay, and actual non-
+effect. AGL-1 follows; Reddit remains trigger-deferred; compaction stays last.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
