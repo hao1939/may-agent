@@ -5480,6 +5480,38 @@ unavailable ablation; (6) other unsourced scans; (7) Reddit; and (8)
 compaction. Select StateFuse. Test the evaluated population, accuracy-tie and
 abstention claims, conflict interface, artifact, and causal scope.
 
+### Cycle 325 checkpoint — conflict visibility is external; safer action is synthetic
+
+At `2026-09-04T02:58:53.692Z`, arXiv `2607.05844v1` supplied a
+42,236-byte abstract page (`988b7b12…07e7`) and 21,796-byte source archive
+(`e443b915…1bb4`). On an official 282-case conflict-bearing MemoryAgentBench
+slice, aggressive StateFuse, multi-value, raw-log, and collapsed surfaces all
+reach 97.5% answer accuracy. StateFuse and multi-value public surfaces expose
+100% of conflicts; raw-log and collapsed surfaces expose 0%. Conservative
+conflict-preserving surfaces fall to 64.9% accuracy because the slice contains
+no gold-abstention cases. Confidence is high for conflict visibility, not an
+official-benchmark abstention benefit or unique accuracy gain.
+
+Safer action appears in a separate deterministic 50-task synthetic loop under
+uniform verification: StateFuse and every conservative non-collapsing surface
+reach 100% post-verification success with 0% false-confident action; collapse
+reaches 60% and 40%. A separate 13-case synthetic ablation makes semantic
+handles recover 13/13 deliberately ID-unavailable corrections versus 0/13 for
+exact IDs. These are mechanism checks, not natural multi-agent traces.
+
+GitHub main `b09d8a974bf5e64ac00ecdd3e5a2133f538ff720`, observed at
+`2026-09-04T02:59:14.896Z`, contains implementation and unit tests but no
+official-slice conversion, loop data/results, or correction benchmark. Three
+dependency-free examples execute. `/usr/bin/python3` lacks `pytest`; no
+install was made, so the implementation suite and paper results were not
+reproduced. Revisit GitHub on benchmark assets or a relevant revision; revisit
+arXiv on a version or natural-trace evaluation. Reddit made zero requests and
+remains trigger-deferred.
+
+`RV-004` stays high/open because no query-to-outcome join appeared. Next begin
+seed-first and review PatchOptic `2607.05483`, the highest accessible remaining
+claim in this synthesis, before Cortex, other scans, Reddit, or compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

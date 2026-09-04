@@ -11588,6 +11588,71 @@ StateFuse. Test the evaluated population, accuracy-tie and abstention claims,
 conflict interface, artifact, and whether preservation causes safer action or
 only exposes another interface.
 
+## Cycle 325 checkpoint — StateFuse exposes conflicts; its safety result is synthetic
+
+What was wrong was mixing two evidence surfaces. Scan 454 and Scan 462 made a
+282-question official benchmark carry the safer-abstention conclusion and
+treated StateFuse as uniquely preserving accuracy. The official slice supports
+conflict visibility, has no gold-abstention or correction cases, and does not
+separate StateFuse from a flat multi-value surface. The action result comes
+from a separate deterministic synthetic loop. The library now makes that
+boundary explicit.
+
+ArXiv observation began at `2026-09-04T02:58:53.692Z`.
+`2607.05844v1` returned a 42,236-byte abstract page with SHA-256
+`988b7b128b75d5819cd259cf4b6287c84cd283c1defbc2edf33d2dceffe907e7`
+and a 21,796-byte source archive with SHA-256
+`e443b915c14bd2e50d627b5e38fbaeb08f5430d6a40fbf752cfb2f3edbb61bb4`.
+StateFuse layers immutable operations, explicit conflict objects, exact and
+semantic correction handles, deterministic predicate contracts, and
+projection-bounded resolution over standard OpSet/CRDT merge. Projection can
+select or abstain but cannot rewrite base memory.
+
+The official 282-case MemoryAgentBench conflict-bearing slice yields 97.5%
+answer accuracy for aggressive StateFuse, multi-value, raw-log, and collapsed
+surfaces. StateFuse and multi-value surfaces expose 100% of conflicts; raw-log
+and collapsed public surfaces expose 0%. Conservative StateFuse, StateFuse
+core, multi-value, provenance, and raw-log surfaces all reach 64.9% accuracy
+and 2.1% false certainty because the slice contains no gold-abstention cases.
+This is strong source-reported evidence for public conflict visibility and
+against a unique answer-selection advantage. It cannot test abstention quality.
+
+The safer-action evidence is a separate deterministic 50-task synthetic loop
+with the same 2.40 average verification calls for every surface. StateFuse and
+all conservative non-collapsing surfaces reach 100% post-verification success
+and 0% false-confident actions, while collapse reaches 60% success and 40%
+false confidence. This supports preservation plus conservative policy on that
+task family, not StateFuse over strong flat alternatives. A separate 13-task
+synthetic correction ablation gives semantic `claim_ref` 13/13 recoverability
+and exact `claim_id` 0/13 when the exact IDs are deliberately unavailable;
+this establishes expressivity under the constructed missing-ID condition.
+
+The paper links `nZiben/statefuse`. GitHub observation at
+`2026-09-04T02:59:14.896Z` resolved main to
+`b09d8a974bf5e64ac00ecdd3e5a2133f538ff720`. Its four-commit history contains
+implementation, unit tests, integrations, and examples, but no
+MemoryAgentBench conversion, 50-task inputs/results, or 13-task correction
+benchmark. Three dependency-free examples executed successfully with no
+repository change. The available `/usr/bin/python3` lacks `pytest`
+(`No module named pytest`); no install was made. Therefore neither the shipped
+unit suite nor the empirical paper result is claimed reproduced.
+
+Confidence is high in the paper's explicit tables and low for naturalistic
+transfer. The paper itself says it has one official slice, no large naturally
+arising trace study, synthetic loop/handle evaluations, no live-LLM main
+comparison, and bounded rather than adversarial sync/compaction checks. ArXiv's
+next trigger is a revision or natural-trace study. GitHub's is benchmark assets
+or a relevant implementation advance. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because none of this supplies Scout's query/rank-to-
+selection-to-later-outcome join.
+
+Next begin seed-first and primary-review PatchOptic `2607.05483`, highest
+accessible because its write-contract claims remain categorical in the same
+synthesis. Test PatchBench's population and baselines, accepted-output and
+leakage definitions, enforcement scope, artifact, and whether blocked declared
+violations generalize beyond constructed contracts.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

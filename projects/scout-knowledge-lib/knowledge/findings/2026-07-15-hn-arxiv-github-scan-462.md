@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds process profiles without proving evidence destruction. AgentTether reports conditional repair gains with artifact limits. LogicHunter reports a high-precision agentic oracle on its own generated corpus, but the public artifact omits evaluation data and the unequal full-pipeline baseline does not establish necessity. StateFuse and PatchOptic remain pending primary review."
+summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds process profiles without proving evidence destruction. AgentTether reports conditional repair gains with artifact limits. LogicHunter reports a high-precision agentic oracle on its own generated corpus. StateFuse exposes conflict structure, but its official 282-case slice contains no gold abstention cases and its safer-action result comes from a deterministic 50-task synthetic loop. PatchOptic remains pending primary review."
 triggers: ["process erasure", "trajectory diagnostics", "TraceProbe", "StateFuse", "conflict-preserving memory", "PatchOptic", "verified patches", "AgentTether", "runtime repair", "LogicHunter", "agentic oracle", "PiSAs", "contextual integrity", "SICP overtakes Sol", "foundations turn 1000", "chat control 700", "scan 462", "resolve rate", "outcome metrics"]
 source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 48818311 (Chat Control 702pts), 48823557 (EU Car Camera 675pts), 48819608 (30papers 546pts), 48821576 (Kokoro 433pts), 48829312 (Uniqlo 340pts), 48821848 (Davit 322pts), 48756578 (Herdr 303pts), 48827858 (GitLost 250pts), 48825749 (Tenda 238pts), 48824826 (GAO 216pts), 48827325 (ZFS 216pts), 48825664 (SICP 204pts), 48819308 (Postgres 202pts), 48827402 (Sol 197pts), 48820119 (QR Font 189pts), 48819808 (Rowboat 168pts), 48821378 (l runtime 151pts). arXiv API: 2607.06184 (TraceProbe), 2607.05844 (StateFuse), 2607.05483 (PatchOptic), 2607.06273 (AgentTether), 2607.06195 (LogicHunter), 2607.05318 (PiSAs). GitHub API: omnigent 6,715★, Horizon 34★, memclaw-cross-fleet-gov 21★."
 </ai_context>
@@ -17,13 +17,17 @@ useful for governance. The reviewed TraceProbe evidence establishes added
 measurement detail, not systematic erasure or downstream governance benefit.
 
 Four arXiv papers are grouped under that hypothesis from different domains;
-TraceProbe, AgentTether, and LogicHunter have now been primary-reviewed:
+TraceProbe, StateFuse, AgentTether, and LogicHunter have now been primary-reviewed:
 
 - **TraceProbe** (2607.06184v1): Resolve rate omits trajectory measurements.
   Across 2,500 SWE-Bench Verified runs, deterministic process profiles and
   same-task comparisons add descriptive localization; they are not failure
   predictors or causal diagnostics.
-- **StateFuse** (2607.05844): Collapsed memory hides conflict structure — CRDT-based memory that preserves contradictions as explicit conflict objects enables safer abstention and correction than early collapse. 282-question MemoryAgentBench evaluation.
+- **StateFuse** (2607.05844v1): Conflict-preserving and collapsed surfaces tie
+  at 97.5% answer accuracy on a 282-case official slice, while only explicit
+  conflict surfaces report the contradictions. The slice has no gold
+  abstention or correction cases; safer action is tested separately in a
+  deterministic 50-task synthetic loop.
 - **PatchOptic** (2607.05483): Unconstrained writes hide authorization structure — an optic-inspired interface that declares projected read views, authorized write regions, and patch-source regions for each workflow step. 46-case PatchBench evaluation.
 - **AgentTether** (2607.06273v1): On model-specific Banking failure sets, full repair reaches 59.04% for Qwen3.7-max and 65.12% for GPT-5.4. Across all 123 initially failed Qwen tasks, it reaches 69.11% versus 43.09% blind retry. These are conditional repair rates, not full-task success rates or transferred guidance.
 
@@ -31,8 +35,9 @@ The scan proposes that these are four instances of one structural error. The
 reviewed TraceProbe evidence establishes additional measurement detail, not
 that a scalar outcome destroys source trajectories or that the detail changes
 governance outcomes. AgentTether establishes one matched repair result with
-auxiliary-model and artifact-access limits. StateFuse and PatchOptic require
-separate primary review.
+auxiliary-model and artifact-access limits. StateFuse supports a public-surface
+distinction, not a unique accuracy or naturalistic safety effect. PatchOptic
+requires separate primary review.
 
 On HN, the Foundations Turn crosses the **1,000pt milestone** (1,030pts) and SICP **overtakes** Sol's public launch — the convergence predicted in Scan #461 is confirmed. Chat Control crosses 700pts. The Accretive Signal (#461) is compounding.
 
@@ -167,15 +172,34 @@ Artifact: https://doi.org/10.5281/zenodo.20789918
 
 ### Paper 2: StateFuse — Conflict-Preserving Memory (2607.05844)
 
-**Core finding**: Agent systems accumulate conflicting observations across branches, retries, and replicas, yet practical memory layers collapse disagreement behind overwrite rules. StateFuse implements CRDT-based memory with immutable history, explicit conflict objects, exact and semantic correction handles, deterministic predicate contracts, and projection-time resolution that cannot rewrite replicated state.
+**Supported mechanism**: StateFuse layers immutable operations, explicit
+conflict objects, exact/semantic correction handles, deterministic predicate
+contracts, and projection-bounded resolution over standard OpSet/CRDT merge.
+Resolvers can select or abstain but cannot rewrite base memory.
 
-**Key results** (282-question MemoryAgentBench conflict-bearing slice):
-- Compared methods tie on answer accuracy — preserving conflict does not hurt performance
-- Conflict-preserving surfaces keep contradictions visible while collapsed surfaces do not
-- Under uniform verification, preserving ambiguity enables safer abstention and correction than early collapse
-- Semantic correction handles matter when exact prior identifiers are unavailable
+**Matched results and contradiction**: On the official 282-case
+MemoryAgentBench conflict-bearing slice, aggressive StateFuse, multi-value,
+raw-log, and collapsed surfaces all reach 97.5% answer accuracy. StateFuse and
+multi-value surfaces report 100% conflict recall; raw-log and collapsed public
+surfaces report 0%. Conservative conflict-preserving policies instead reach
+64.9% accuracy because this slice has no gold-abstention cases. Thus conflict
+visibility is supported, while the official slice neither rewards abstention
+nor shows a unique StateFuse accuracy advantage.
 
-**Structural significance**: Memory collapse is a form of process erasure — it destroys the history of how beliefs changed and why they conflict. StateFuse demonstrates that you can preserve this information without sacrificing accuracy. The claim is deliberately narrow: "a safer public memory contract for contradiction surfacing, abstention, and auditable correction, not a universal accuracy gain." This directly extends the Write Contract (#454): if writes to shared state must be governed, reads from shared state must preserve the conflict structure that governance needs to adjudicate.
+**Separate synthetic evidence**: In a deterministic 50-task loop with uniform
+verification, StateFuse and every conservative non-collapsing surface reach
+100% post-verification success and 0% false-confident action; collapsed memory
+reaches 60% and 40%. This supports the selected policy/surface combination on
+that task family, not StateFuse over strong flat baselines or naturally arising
+multi-agent traces. A 13-case synthetic ablation gives semantic handles 13/13
+recovery versus 0/13 for exact IDs when those IDs are deliberately unavailable.
+
+**Artifact boundary (2026-09-04)**: Repository main
+`b09d8a974bf5e64ac00ecdd3e5a2133f538ff720` contains implementation and unit
+tests but no MemoryAgentBench conversion, synthetic agent-loop inputs/results,
+or correction-handle benchmark. Three dependency-free examples execute; the
+Python environment lacks `pytest`, and no install was made. The paper's
+empirical results are therefore not locally reproduced.
 
 Source: https://arxiv.org/abs/2607.05844
 
@@ -279,7 +303,7 @@ The possible connections to preceding layers remain hypotheses:
 - The Variance Signal (#457) argues that distributional summaries can omit governance-relevant variance; TraceProbe supplies an analogous trajectory view without measuring governance benefit.
 - The Write Contract (#454) argues that shared-state mutations need governance; PatchOptic requires separate primary review here.
 - The Handoff Fallacy (#459) concerns inter-component failure; AgentTether uses transition-localized evidence but does not prove the handoff thesis.
-- The Dispersion Collapse (#455) concerns population convergence; StateFuse requires separate primary review here.
+- The Dispersion Collapse (#455) concerns population convergence; StateFuse does not test population convergence or natural multi-agent traces.
 
 **Seventeen-point exit arc**:
 1–16: (#444–#460)

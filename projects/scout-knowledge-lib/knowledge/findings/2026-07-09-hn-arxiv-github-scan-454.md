@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #454 (2026-07-09): The Write Contract. Three arXiv papers converge: when agents share mutable state, reads can be projected (partial views, progressive disclosure) but writes require explicit verified contracts against global state. StateFuse (2607.05844) introduces conflict-preserving CRDT memory where disagreements become first-class objects with immutable history — 'many practical memory layers collapse disagreement behind overwrite rules that are difficult to inspect or correct.' PatchOptic (2607.05483) names the structural gap: 'existing methods make the read side manageable, but they do not define when a locally proposed rewrite is valid after it is applied back to the full state' — projected reads + verified structured patches with 46-case benchmark. From Conversation to Contribution (2607.05677): 13,360 AI chat sessions across 1,356 OSS repositories; developers perceive others' AI-generated code as harder to maintain than their own (p=.029), confirming Knowledge Erosion (#450) at OSS scale. 26th layer of the Oversight Inversion. HN: 30papers ✅ crosses 400pts (419pts, prediction confirmed). Comprehension:News ratio sustains >1.0 (1.22). Chat Control Explained 496pts (4pts from 500). Sovereignty stack ~3,291pts. New: gym shorts knot video 485pts (highest new non-tech story). SICP lectures (75pts) = Foundations Turn deepening. GitHub: Rowboat 15,363★ (local-first sovereignty product). ECC 227,132★ (meta-harness). Shepherd 1,063★, local-llm 1,200★ (both plateau). Running accuracy: ~96.1% (70/73)."
+summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse defines conflict-preserving replicated memory and supports a public conflict-visibility distinction on a 282-case official slice, but that slice has no gold abstention cases and the safer-action result is a deterministic 50-task synthetic loop where all conservative non-collapsing surfaces tie. Its current public repository omits benchmark assets. PatchOptic and the OSS contribution study remain pending primary review; HN and repository counters are discovery signals."
 triggers: ["write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "optic-based state", "projected reads", "verified patches", "write verification", "local update global validity", "OSS AI contribution", "vibe-coding OSS", "maintenance asymmetry", "AI code maintainability", "SWE-Review", "agentic code review", "generate-review-revise", "conflict-aware memory", "immutable history", "projection-time resolution", "claim correction", "patch-read enforcement", "state contract", "scan 454"]
 source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOptic). arXiv cs.SE 2026-07-07 (2607.05677 Conversation to Contribution, 2607.06065 SWE-Review, 2607.05842 Beyond Refusal). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,363★, ECC 227,132★, shepherd 1,063★, local-llm 1,200★, security-audit-skill 2,338★, SkillSpector 12,348★). Cross-referenced with Execution Boundary (#453), Knowledge Erosion (#450), Memory Control Plane (#441), Oversight Inversion (thesis)."
 </ai_context>
@@ -14,7 +14,12 @@ source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOpt
 
 The ten-scan exit arc (#444–#453) established that the Oversight Inversion is solved by co-evolving verification harnesses that bind authority at the execution boundary. But the exit arc treats each agent action as discrete — one gate, one action, one verification. In practice, agents operate on **shared mutable state**: memory stores, codebases, knowledge graphs, tool registries. Three independent papers reveal that shared state has an asymmetric governance problem: reads can be projected (progressive disclosure, partial views, token budgets — the read side is manageable), but **writes require explicit verified contracts between local operations and global validity**, and the systems we have lack them.
 
-1. **StateFuse** (2607.05844): "Agent systems accumulate conflicting observations across branches, retries, and replicas, yet many practical memory layers still collapse disagreement behind overwrite rules that are difficult to inspect or correct." StateFuse introduces conflict-preserving replicated memory where conflicts become **first-class objects** with immutable history, explicit correction handles, deterministic predicate contracts, and projection-time resolution that cannot rewrite replicated state. The key insight: conflicts are valuable information that current systems destroy.
+1. **StateFuse** (2607.05844v1): StateFuse introduces conflict-preserving
+replicated memory where conflicts become first-class objects with immutable
+history, explicit correction handles, deterministic predicate contracts, and
+projection-time resolution that cannot rewrite replicated state. The official
+benchmark supports visibility, not the categorical claim that practical memory
+systems destroy information or that StateFuse uniquely improves decisions.
 
 2. **PatchOptic** (2607.05483): Names the structural gap directly: "existing methods make the read side manageable, but they do not define when a locally proposed rewrite is valid after it is applied back to the full state. **The missing piece is a contract between local updates and global validity.**" PatchOptic introduces optic-inspired projected reads + verified structured patches. Each workflow step declares a projected read view, an authorized write region, and a patch-source region. Results on 46-case benchmark: projected reads reduce reported leakage and token cost while preserving output quality; runtime verification blocks contract violations before commit.
 
@@ -33,18 +38,34 @@ The ten-scan exit arc (#444–#453) established that the Oversight Inversion is 
 
 ### 1. StateFuse: Deterministic Conflict-Preserving Memory for Multi-Agent Systems (2607.05844)
 
-**Core finding**: Agent memory layers that suppress conflicts lose valuable diagnostic information. StateFuse builds on standard OpSet/CRDT merge (it does not invent a new join algebra) but defines an agent-facing semantics layer with:
+**Supported mechanism**: StateFuse builds on standard OpSet/CRDT merge (it
+does not invent a new join algebra) and defines an agent-facing semantics layer
+with:
 - **Immutable history**: no observation can be retroactively deleted or modified
 - **Explicit conflict objects**: when two agents write contradictory claims, the conflict is preserved as a queryable object, not hidden by last-write-wins
 - **Exact and semantic correction handles**: `claim_id` for precise corrections, `claim_ref` for semantic-level corrections
 - **Deterministic predicate contracts**: agents declare predicates that determine how conflicts resolve
 - **Projection-time resolution**: conflicts are resolved at query time, not write time — different agents can see different resolutions of the same underlying data without modifying replicated state
 
-**Why this matters**: The Memory Control Plane (#441) identified that agent memory is transitioning from passive storage to active governance. StateFuse makes the governance mechanism concrete: conflicts are not errors to be eliminated but information to be preserved. The analogy to Git is direct — Git preserves merge conflicts for human resolution; StateFuse preserves observation conflicts for agent or human resolution.
+**Results and limits**: On an official 282-case conflict-bearing
+MemoryAgentBench slice, aggressive StateFuse, multi-value, raw-log, and
+collapsed surfaces all reach 97.5% answer accuracy. StateFuse and multi-value
+surfaces expose 100% of conflicts; raw-log and collapsed public surfaces expose
+none. Conservative conflict-preserving surfaces reach only 64.9% accuracy
+because the slice contains no gold-abstention cases. Safer action is shown
+separately in a deterministic 50-task synthetic loop: every conservative
+non-collapsing surface reaches 100% post-verification success, versus 60% for
+collapse. This does not distinguish StateFuse from strong flat baselines.
 
-**Connection to Knowledge Erosion (#450)**: When agent-generated code silently overwrites human-authored code, the human's process evidence (why they wrote it that way) is lost. StateFuse's immutable history preserves the trace of what was overwritten and by whom — the write contract includes provenance.
+**Artifact boundary**: Public repository commit
+`b09d8a974bf5e64ac00ecdd3e5a2133f538ff720` contains implementation and unit
+tests but no official-slice conversion, synthetic loop inputs/results, or
+13-case correction benchmark. Three dependency-free examples execute, but the
+paper's results are not locally reproduced.
 
-**Connection to Boundary Dissolution (#432)**: Trust boundaries erode when data from different trust domains is merged without tracking. StateFuse's claim-level provenance maintains trust-domain separation even after merge.
+**Proposed connection**: Immutable operations and provenance could retain
+evidence across overwrites, but the study does not test human-authored code,
+trust-domain separation, longitudinal knowledge, or natural multi-agent traces.
 
 Source: https://arxiv.org/abs/2607.05844
 
@@ -213,7 +234,9 @@ The ten-scan exit arc (#444–#453) and its extension to the execution boundary 
 - **Writes are ungoverned**: When an agent proposes a state change, no standard mechanism verifies that the change is valid against the full global state the agent cannot observe. "They do not define when a locally proposed rewrite is valid after it is applied back to the full state."
 
 **Three instances of the Write Contract gap**:
-1. **Memory writes** (StateFuse): Multiple agents write contradictory observations to shared memory. Current systems use last-write-wins, destroying the conflict information. StateFuse preserves conflicts as first-class objects.
+1. **Memory writes** (StateFuse): StateFuse preserves contradictory claims as
+   first-class objects; its benchmark compares public surfaces, not the
+   prevalence or downstream cost of last-write-wins in deployed systems.
 2. **Code writes** (From Conversation to Contribution): AI agents write code to shared repositories. Functional tests pass (the code "works"), but maintainers find it harder to maintain (p = .029). The write is syntactically valid but semantically ungoverned — it lacks the comprehension contract that human authorship provided.
 3. **Workflow writes** (PatchOptic): Agent workflow steps modify shared state. Progressive disclosure shows them a partial view. Nothing verifies their proposed changes are valid in the full context. PatchOptic introduces patch verification as the missing contract.
 
