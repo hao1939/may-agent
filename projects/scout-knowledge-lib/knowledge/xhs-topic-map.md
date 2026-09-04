@@ -8853,6 +8853,78 @@ observed at unchanged HEAD `386b445c23`, 386 porcelain-v1 records /
 `3afed0a6...ef5a`, and 296 Scout records / `59974094...f4b9f`; this worker ran
 no test or write there or in a peer worktree.
 
+### Cycle 377 seed-first start — preserve cadence; audit AtomicCommitBench
+
+Cycle 377 starts from clean validated tip
+`165db64db9dd3c0d355948ff33eb010e410e919e` at
+`2026-09-04T11:33:01.538Z`. Cycle 375's supported XHS observation is only 24
+minutes old and the scheduled boundary remains
+`2026-09-04T17:09:20.326Z`; no access-change trigger is present. This bounded
+reconciliation therefore makes zero browser or public XHS requests and reuses
+that exact provenance: additions and changes unknown, observed removals `[]`,
+all 132 durable identities unavailable, and no account mutation.
+
+Re-rank: high/open `RV-004` still lacks the protected selection-to-outcome
+join; high/open `RV-034` still needs external runtime evidence; Memory in the
+Loop remains unreleased; AtomicCommitBench `2607.03332` is the highest
+accessible primary-evidence gap. Select it before any source retrieval and test
+the PPAR and ARI definitions, natural-versus-synthetic comparison, baselines,
+uncertainty, and released artifacts. Reddit stays deferred at its unchanged
+RSS-readable/JSON-403 boundary.
+
+### Cycle 377 checkpoint — replay is saturated; grouping and bundles diverge
+
+ArXiv latest remained `2607.03332v1` during the
+`2026-09-04T11:33:28.154Z–11:33:44.271Z` read. Exact 633,655-byte source
+archive SHA-256 is `bbdab1c2...c95e`. Direct paper evidence is narrower than
+Scan #424's prior wording: 800 same-author, 2--8-commit episodes from 10 Python
+projects receive one run per heterogeneous model-agent setup. Non-random PPAR
+is at least .988, but manuscript ARI spans .03--.46 (Codex .459, GLM .425,
+FileSplit .340, MiniMax .306, Kimi .288). The +.333 synthetic advantage is
+only B5 Untangle on 799 synthetic versus 754 real episodes, not every agent.
+TCR is a partial 151-episode modified-test probe, and DACE's gains are confined
+to MiniMax (+.075) and Kimi (+.049) without component ablations.
+
+GitHub's last useful evidence is the public MIT repository
+`mathieu0905/AtomicCommit` at exact head
+`d01029eba493e36fcd9f42089307ad9440baf35f` (parent `255232f3...e9cda1e0dff`).
+All 22 split-part hashes, both reconstructed archive hashes, the exact 800-ID
+dataset inventory, and the dependency-free artifact checker pass. Contradictory
+released evidence is retained rather than resolved by inference: the paper and
+multimodel files use strict counts 798/712/550/652 for Codex/GLM/Kimi/MiniMax,
+while the active manifest and recommended reliable summary use
+798/703/623/585 and different non-Codex ARIs. This mismatch predates the
+sanitization head and has no documented authority rule.
+
+Conclusion: high confidence in archive identity, released inventories, replay
+saturation, the finite ARI values, and the bundle contradiction; moderate
+confidence that mechanical replay and one reference grouping measure different
+depths; low confidence in transfer to prospective authoring or maintenance
+benefit. The benchmark has no repeated runs, treats one human history as a
+reference rather than unique truth, has 2.3% lossy hunks, and is Python-only.
+This resolves the AtomicCommitBench wording gap but not the artifact conflict.
+
+Lane continuity: arXiv v1 and GitHub head `d01029e` are selected primary and
+artifact evidence; revisit on v2, a new repository head, or an explanation of
+the manifest/result divergence. Reddit made zero requests and remains deferred
+at RSS-readable/JSON-403 until a relevant thread or access change. XHS made
+zero requests, retains the 132-unavailable Cycle 375 surface, and is next due
+`2026-09-04T17:09:20.326Z`. `RV-004` and `RV-034` remain high/open. After this
+checkpoint the highest accessible primary-claim audit is hidden-computation
+paper `2607.03502`, specifically whether Scan #424's “80--95%” and “zero
+information” language survives exact task, metric, and control inspection.
+
+The reviewed candidate passes the complete Scout gate: syntax, TypeScript,
+formatting, Cycle 375 projection, 94 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,486 assertions. The broad offline audit passes 1,540 tracked
+Markdown documents / 1,732 local prose links. Read-only health at
+`2026-09-04T11:41:34.788Z` reports 26 facts / 16 wake signals with truncation
+and no runtime-state file. Accepted Cycle 371 reviewer commits remain
+ancestors; unaccepted `d041c41b54` remains excluded. Protected `/app` is
+externally observed at unchanged HEAD `386b445c23`, 386 records /
+`3afed0a6...ef5a`, and 296 Scout-scope records / `59974094...f4b9f`; no test or
+write ran there or in a peer worktree.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

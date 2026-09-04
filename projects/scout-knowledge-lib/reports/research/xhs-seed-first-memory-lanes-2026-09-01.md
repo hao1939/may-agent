@@ -16319,6 +16319,127 @@ protected-checkout inspection records unchanged HEAD `386b445c236e...1fec8`,
 `59974094...f4b9f`. This worker did not test, generate, format, install, or
 write in `/app` or any peer worktree.
 
+## Cycle 377 seed-first start — preserve cadence; audit AtomicCommitBench
+
+Cycle 377 starts from clean validated tip
+`165db64db9dd3c0d355948ff33eb010e410e919e` at
+`2026-09-04T11:33:01.538Z`. Cycle 375's supported XHS observation is only 24
+minutes old and the scheduled boundary remains
+`2026-09-04T17:09:20.326Z`; no access-change trigger is present. This bounded
+reconciliation therefore makes zero browser or public XHS requests and reuses
+that exact provenance: additions and changes unknown, observed removals `[]`,
+all 132 durable identities unavailable, and no account mutation.
+
+Re-rank: high/open `RV-004` still lacks the protected selection-to-outcome
+join; high/open `RV-034` still needs external runtime evidence; Memory in the
+Loop remains unreleased; AtomicCommitBench `2607.03332` is the highest
+accessible primary-evidence gap. Select it before any source retrieval and test
+the PPAR and ARI definitions, natural-versus-synthetic comparison, baselines,
+uncertainty, and released artifacts. Reddit stays deferred at its unchanged
+RSS-readable/JSON-403 boundary.
+
+## Cycle 377 checkpoint — AtomicCommitBench separates replay from grouping
+
+What was wrong: Scan #424 reduced AtomicCommitBench to “replay validity is
+trivial,” generalized one synthetic-baseline comparison to reconstruction as a
+whole, and did not expose a contradiction between the released result bundles.
+What changes: the library now reports the exact finite protocol and metrics,
+limits each comparison to what was tested, and preserves the unresolved bundle
+conflict as decision-relevant provenance.
+
+ArXiv latest resolved to `2607.03332v1` during the read from
+`2026-09-04T11:33:28.154Z` through `11:33:44.271Z`. The 633,655-byte source
+archive has SHA-256
+`bbdab1c2a389df2a0501d780ef990397cefb2b214ee8ef69609fbadfda9dc95e`.
+AtomicCommitBench constructs 800 same-author runs of 2--8 consecutive commits
+within 48 hours from 10 mature Python projects. Each episode/setup has one run,
+and the agent wrappers differ. All non-random methods reach patch-preservation
+applicability rate (PPAR) at least .988, while manuscript adjusted Rand index
+(ARI) values are Codex/GPT-5.4 .459, GLM-5 .425, FileSplit .340, MiniMax .306,
+and Kimi .288, within the reported .03--.46 range.
+
+The natural-versus-synthetic claim is now scoped correctly. Its +.332784 ARI
+difference is B5 Untangle alone on 799 synthetic and 754 real episodes
+(Mann--Whitney `p=3.60e-50`, Cliff's delta `.430`); it is not an agent-wide
+effect. Test Containment Ratio (TCR) uses only 151 modified-test episodes and
+is a partial diagnostic, not full `git revert` semantics. It reports Codex
+.917, GLM .871, MiniMax .827, Kimi .780, and developer .922. Dependency-Aware
+Commit Evidence (DACE) improves MiniMax by .075 and Kimi by .049 but not the
+higher setups, and no component ablation establishes which cue causes the
+gain.
+
+The GitHub lane adds independent artifact evidence. The paper-linked public
+MIT repository is `mathieu0905/AtomicCommit`, read at exact head
+`d01029eba493e36fcd9f42089307ad9440baf35f`, parent
+`255232f3b0977d1938e62a52cdaf2e9cda1e0dff`; the head is the 2026-06-29
+“Sanitize artifact traces and refresh split parts” commit. It has no tag or
+release. All 22 split-part hashes pass. The reconstructed dataset archive hash
+is `11f260a4eb04261cc6de8d50a582b9a6efaaf822a78289c08851a55cff309c3a` and
+the trace archive hash is
+`9a3e9466b21e6d41a5c0c9e5af1845e78a06d7ed186894a0e4767af138f76422`;
+the dataset contains exactly 800 episode IDs and 292,894,656 uncompressed
+bytes, while the trace archive includes complete base/tool roots. The no-dependency
+`scripts/check_artifact.py` check passes. Plain `python`, pytest, and scientific
+dependencies are absent in the evidence environment, so no dependency install
+or optional scoring-code rerun was attempted.
+
+One material contradiction remains. The manuscript plus
+`multimodel_results_{strict,repaired}.json` use strict-valid counts
+Codex/GLM/Kimi/MiniMax = 798/712/550/652. `active_manifest.json` and the
+repository-recommended `reliable_eval_summary.json` instead use
+798/703/623/585; the reliable summary also changes the manuscript's non-Codex
+ARIs from .425/.288/.306 to .398/.252/.300. Git history shows the discrepancy
+predates the sanitization head, and neither the paper nor repository states
+which population is authoritative. Reproduction assets are therefore strong
+for integrity and inspection but internally inconsistent for these headline
+comparisons.
+
+The qualified conclusion is moderate: mechanical replay and agreement with
+one human-maintained grouping are different evaluation depths in this finite
+retrospective benchmark. It does not show that replay itself is universally
+easy, that a human history is uniquely correct, or that higher ARI improves
+review or maintenance. Remaining limits are one run per setup, heterogeneous
+harnesses, 2.3% lossy hunk mappings, Python-only mature public projects,
+retrospective rather than prospective authoring, and no consumer-side outcome
+test. Confidence is high in source/repository identity, archive checks,
+displayed finite results, and the contradiction; moderate in the depth
+interpretation; absent for prospective or downstream benefit.
+
+Lane continuity is durable. ArXiv retains v1 as the selected primary source;
+revisit on v2 or clarified analysis populations. GitHub retains exact head
+`d01029e` as last useful evidence; revisit on head/tag/release change or an
+authoritative bundle correction. Reddit made zero requests and remains at the
+RSS-readable/JSON-403 boundary until a relevant thread or access change. XHS
+made zero requests and retains Cycle 375's provenance, 132 unavailable IDs,
+unknown additions/changes, observed removals `[]`, and the scheduled
+`2026-09-04T17:09:20.326Z` boundary. `RV-004` and `RV-034` remain high/open.
+Next ranked accessible work is primary inspection of hidden-computation paper
+`2607.03502`: test the task/metric/control scope behind Scan #424's 80--95%
+recovery and “zero information” claims before retaining the generalization.
+
+### Validation and preservation
+
+The exact reviewed candidate passes syntax, TypeScript, tracked-source
+formatting, Cycle 375 seed projection, 94 scoped links, navigation 11/14 and
+8/8, and the complete Scout gate at 296 tests / 1,486 assertions with zero
+failures. The broad offline audit passes 1,540 tracked Markdown documents and
+1,732 local prose links. Read-only health at
+`2026-09-04T11:41:34.788Z` reports 26 facts / 16 wake signals with
+`truncated:true`; the runtime-state file remains absent.
+
+Accepted reviewer commits `bb2daa3213161e1b43b0bd45b541f67de0b9adbc`,
+`e8b91a8963bf81d08fc54f3334c87fbe1026c6cf`,
+`b76d6c0737472565db26505d0b2b8e09777ba8eb`, and
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701` remain standing ancestors;
+unaccepted `d041c41b54` remains excluded. Protected `/app` remains externally
+observed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 386
+porcelain-v1 records /
+`3afed0a685447122af00548a840d143d5c1fa6ea61f4ff0d9608e1088857ef5a`,
+and 296 Scout-scope records /
+`59974094d30cf9d3947d4b96c7ac9a75dc4e0d70955ab479cfc4c85a93df4b9f`.
+Those fingerprints match the Cycle 376 baseline. This worker ran no test,
+generator, formatter, install, or write in `/app` or a peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
