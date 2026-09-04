@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through exact standing tip 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9 and landed local main 803240b27fa4b40373524a1ed42d0b9bee7e890c. Cycle 410's compact routes are useful, but their producer-authored post-hoc regression set is not protected held-out evidence; reviewer correction RV-046 is integration-ready and RV-004 remains high/open."
+summary: "Independent Scout review cursor through reviewed standing tip 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9, with RV-046 integrated patch-equivalently at standing integration 3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d. Cycle 411 material 3917ea3f709e2b524174a5564965641e7377b04d is the next independent-review boundary; RV-004 remains high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046"]
 last_updated: "2026-09-05"
-source_basis: "Exact Cycle 410 standing tip 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9 from reviewed Cycle 409 tip a76726f370dd77a8cf708d153e2016f7ab523443; exact route, fixture, report, and integration-status diffs; parent/candidate navigation replay; independent full clean-reviewer-tree gate, scoped and broad links, read-only health, patch-equivalence, and protected /app preservation; the producer worktree later began four uncommitted next-cycle records while its branch ref stayed exact; landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c remains unchanged."
+source_basis: "Exact reviewed Cycle 410 standing tip 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9 from reviewed Cycle 409 tip a76726f370dd77a8cf708d153e2016f7ab523443; exact route, fixture, report, integration-status, and RV-046 diffs; parent/candidate navigation replay; independent clean-reviewer-tree proof; producer Cycle 411 material 3917ea3f709e2b524174a5564965641e7377b04d and exact-tip 304-test validation; RV-046 standing integration 3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d at stable patch ID c747dd9eb230b526a6ef8f9f011b8a4dd27381f6; landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c remains unchanged."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -12,14 +12,18 @@ source_basis: "Exact Cycle 410 standing tip 73088d8c912fadb2fb6b3e6e1e721c854ce7
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
   `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9`
+- Current material/integration boundary before this ledger-only update:
+  `3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d` (Cycle 411 material
+  `3917ea3f709e2b524174a5564965641e7377b04d`, then patch-equivalent RV-046
+  integration; pending independent Cycle 411 review)
 - Last material standing commit reviewed:
   `1fe26fd6913041146b6540500c22192f1be4eb42` (Cycle 410 retrieval result; accepted after RV-046)
 - Last producer research material reviewed:
   `0073f95dedda211769971ba1bf451216ae044da6` (Cycle 410 route and regression-gate material)
 - Last integrated reviewer result:
-  `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` (patch-equivalent to reviewer
-  integration-status commit `9f92ab9d06ddef66fe5e7bc77bd2bd133bac014d`
-  at stable patch ID `af2732930413c3a37dd0b29aebe6ff238e836198`)
+  `3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d` (patch-equivalent to reviewer
+  `e1e1c25090d4b998bcfa94214d8ae5ca9f2481a6` at stable patch ID
+  `c747dd9eb230b526a6ef8f9f011b8a4dd27381f6`)
 - Current review date: `2026-09-05T06:11:11+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -3579,7 +3583,7 @@ material `0073f95dedda211769971ba1bf451216ae044da6`, Cycle 410 report
 | Novelty, decision value, related work, contradictions, duplication, contamination, and retrieval | **Accept narrowly after RV-046.** Fourteen compact identities add decision value and uniquely route four parent failures without deleting evidence. Existing v1 stays 11/14 and v2 stays 8/8. The routes are one derived navigation layer over three accepted files, not independent evidence; no protected fixture, account state, source body, or result is imported. The test says nothing about semantic search, detailed-ledger preservation, later reuse, or user outcome. |
 | Baselines and behavior improvement | **Accept only the matched static replay.** The exact parent is the simplest equal-query baseline. It proves improvement on the authored set, with unique top results and minimum score gap 20.961193, but adaptive co-authoring prevents protected promotion. No fresh route→selected file→later decision join appears, so RV-004 remains high/open. |
 | Cost, usability, batch coherence, and rollback | **Accept with RV-036 still medium/open.** The production change is 21 INDEX lines plus one package-script clause; the 134-line fixture is regression evidence. One material and one report commit form a coherent reversible unit. Revert report `1fe26fd691` first and route material `0073f95ded` second; if RV-046 is integrated, revert it before those two. No compaction or deletion is authorized until a separately reviewed virtual-removal/loss comparison exists. |
-| Validation and integration ledger | **Accept after reviewer correction.** Independent clean reviewer-tree validation passes the full 302-test / 1,512-assertion gate, syntax, TypeScript, formatting, Cycle 409 projection, 107 scoped links, navigation v1 11/14, v2 8/8, v3 14/14, the parent replay, a 1,546-document / 1,774-link broad audit, and read-only health at 38 facts / 16 wakes with `truncated:true`. Standing `73088d8c91` is patch-equivalent to reviewer status `9f92ab9d06` at stable patch ID `af2732930413c3a37dd0b29aebe6ff238e836198`; no accepted reviewer result is lost. The standing ref remains exact, while the producer worktree has since begun four uncommitted next-cycle records; those bytes are outside this review and are not endorsed as clean. |
+| Validation and integration ledger | **Accept after reviewer correction.** Independent clean reviewer-tree validation passes the full 302-test / 1,512-assertion gate, syntax, TypeScript, formatting, Cycle 409 projection, 107 scoped links, navigation v1 11/14, v2 8/8, v3 14/14, the parent replay, a 1,546-document / 1,774-link broad audit, and read-only health at 38 facts / 16 wakes with `truncated:true`. Standing `73088d8c91` is patch-equivalent to reviewer status `9f92ab9d06` at stable patch ID `af2732930413c3a37dd0b29aebe6ff238e836198`; no accepted reviewer result is lost. Producer Cycle 411 material is committed as `3917ea3f70` and remains outside this Cycle 410 review. |
 | Local-main landing, protected checkout, and cleanup | **Accept unchanged state; no landing or cleanup authorization.** Read-only `/app` remains exact main `803240b27fa4b40373524a1ed42d0b9bee7e890c`, has no staged changes, and reproduces default 72 / `c7398ad6…8de0`, expanded 492 / `f27a4816…a63c`, and Scout 23 / `b9d6fb9c…a12c` fingerprints. The route checkpoint changes no branch, worktree, protected byte, local-main revision, or cleanup disposition. |
 
 Disposition: **revise exact standing tip `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9`
@@ -3637,7 +3641,7 @@ authorize evidence compaction, or approve a local-main landing.
 | `RV-043` | High | Stale candidate `be902d03fc97da1998ebbb9492cf5393853d91c2`; landed candidate `803240b27fa4b40373524a1ed42d0b9bee7e890c`; Cycle 406 release report/manifest | Historical `be902d03fc` omitted two then-current canonical commits. The landed candidate instead has exact parents old main `8554a5718c` and canonical `1d25aaadd5`, its Scout tree equals canonical, and exact postflight proves the 23 ancestor-version files remain visible. | **Resolved; accept exact landed candidate.** Historical `be902d03fc` remains rejected. Any later canonical or main release requires a newly reviewed candidate. |
 | `RV-044` | Medium | Cycle 406 protected transition procedure, integrated `local-main-overlay-plan.ts`, and Cycle 408 material `ff9b60a4bcafb993836d861444a4f7980900d436` | Rename detection collapsed two preflight dirty records into one `R100`, and the first rollback handler passed candidate additions to an old-main restore, leaving 140 candidate paths behind until guarded repair. The integrated planner disables renames, compares worktree/tree bytes, rejects staged indexes, and emits distinct restore/remove sets. Cycle 408 independently replays a planner-driven mixed-index forward transition and rollback across rename, deletion, candidate-identical, human-divergent, clean restore/remove, and unrelated-dirty classes; it reaches the expected postflight and exactly reproduces preflight. | **Resolved for the isolated-use criterion; accept with recurring release guards.** The rehearsal closes the concrete planner-admission gap without erasing the historical failure. It does not authorize `/app`; every protected landing still requires fresh exact candidate review, fingerprints, object/byte guards, and rollback proof. Never reuse the failed bulk pathspec restore. |
 | `RV-045` | Low | Hermes/OpenClaw evidence table and Cycle 409 integration report at `a179a58bff62749a8be56f26ba9adab61ae61b7e` | The Hermes value `2026-09-02 10:43:27 -07:00` is the pinned object's author time, while its committer time is `10:55:57`; labeling it `Commit time` makes exact provenance ambiguous. The Cycle 409 report also records a 1,544-document/1,757-link audit taken before the final report and four integration links, while exact current standing contains 1,545 documents/1,759 links. Neither defect changes the research conclusion or link validity, but both weaken exact replay. | **Resolved on standing; accept exact integration `a76726f370`.** Standing is patch-equivalent to reviewer `07b3db591a` at stable patch ID `34ab393107aaf4e9d874a2afb3f471fcf4021f96`; both have parent `a179a58bff` and tree `9b67ed255694ae7ebeba8f56301b246fe5f9e67a`. |
-| `RV-046` | Medium | Cycle 410 fixture `scout-navigation-heldout-v3.json`, topic-map checkpoint, and retrieval report at exact standing `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` | Fixture and routes first appear together in `0073f95ded`; no earlier object contains the selected queries. The original `frozen_at` value `06:14:00+08:00` is later than the commit's exact `06:03:19+08:00` author/committer time and was still future-dated during independent review. Calling this protected or independently frozen evidence would let adaptive selection masquerade as promotion proof, although the parent replay itself is valid post-hoc regression evidence. | **Revise; resolved in the reviewer result, pending standing integration.** Use the exact commit time as the first durable freeze boundary and label fixture/report/map as producer-authored matched post-hoc evidence. Preserve the v3 regression gate and require genuinely protected selection before resolving RV-004 or authorizing compaction. |
+| `RV-046` | Medium | Cycle 410 fixture `scout-navigation-heldout-v3.json`, topic-map checkpoint, and retrieval report at exact standing `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` | Fixture and routes first appear together in `0073f95ded`; no earlier object contains the selected queries. The original `frozen_at` value `06:14:00+08:00` is later than the commit's exact `06:03:19+08:00` author/committer time and was still future-dated during independent review. Calling this protected or independently frozen evidence would let adaptive selection masquerade as promotion proof, although the parent replay itself is valid post-hoc regression evidence. | **Resolved on standing at `3fd5c82a84`.** Reviewer `e1e1c25090` is integrated patch-equivalently at stable patch ID `c747dd9eb230b526a6ef8f9f011b8a4dd27381f6`; the fixture/report/map now use the exact first durable commit boundary and label v3 producer-authored matched post-hoc evidence. Genuinely protected selection remains required before resolving RV-004 or authorizing compaction. |
 
 ## Reviewer source/result and integration status
 
@@ -3671,9 +3675,11 @@ authorize evidence compaction, or approve a local-main landing.
   Standing status `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` is patch-equivalent
   to reviewer status `9f92ab9d06ddef66fe5e7bc77bd2bd133bac014d` at stable patch ID
   `af2732930413c3a37dd0b29aebe6ff238e836198`; it neither supersedes nor
-  rejects the prior reviewer result. The RV-046 correction is pending producer
-  integration. Roll it back first, then revert report `1fe26fd691` and material
-  `0073f95ded` in reverse dependency order if the route checkpoint is removed.
+  rejects the prior reviewer result. Reviewer correction `e1e1c25090` is
+  integrated patch-equivalently as standing `3fd5c82a84` at stable patch ID
+  `c747dd9eb230b526a6ef8f9f011b8a4dd27381f6`. Roll it back first, then revert
+  report `1fe26fd691` and material `0073f95ded` in reverse dependency order if
+  the route checkpoint is removed.
 
 - Producer Cycle 408 material `ff9b60a4bcafb993836d861444a4f7980900d436`
   and validation tip `cf7be1162bee462671ba246f7eed58ecdac7a27f`
@@ -4214,12 +4220,15 @@ and the unreleased Memory in the Loop result.
 
 ## Next trigger
 
-Wait directly on producer pane `w1:p6C` and peer goal
-`g_c1b31972-1674-47cb-96d8-c797d768010d` for the first genuinely material
-producer checkpoint after exact standing
-`73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` after RV-046 integration;
-a fresh protected maintenance outcome that joins the route used to a later
-decision; evidence changing RV-004 or RV-034; a scoped
+The current independent-review trigger is exact material/integration boundary
+`3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d`: it contains Cycle 411 material
+`3917ea3f709e2b524174a5564965641e7377b04d` after reviewed baseline
+`73088d8c912fadb2fb6b3e6e1e721c854ce70ff9`, followed by the patch-equivalent
+RV-046 integration; this ledger-only successor records that boundary. After
+that review, wait directly on producer pane `w1:p6C` and peer goal
+`g_c1b31972-1674-47cb-96d8-c797d768010d` for a fresh protected maintenance
+outcome that joins the route used to a later decision; evidence changing
+RV-004 or RV-034; a scoped
 retrieval/cost comparison for RV-036; another same-artifact batching recurrence
 under RV-038; recurrence of a cursor regression under RV-039; a canonical/local-
 main landing or cleanup claim; or a concrete regression in the reviewed

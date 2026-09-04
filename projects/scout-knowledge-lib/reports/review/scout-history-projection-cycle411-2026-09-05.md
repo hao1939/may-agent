@@ -2,7 +2,7 @@
 summary: "Cycle 411 virtually removes the repeated Cycle 373-386 topic-map and detailed-ledger lines without changing repository content. Navigation and links survive, but unique chronology and provenance do not, so real compaction is rejected pending a smaller provenance replacement."
 triggers: ["Cycle 411", "RV-036", "history projection", "retrieval compaction", "provenance loss"]
 last_updated: "2026-09-05"
-source_basis: "Clean source 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9; exact Cycle 373-386 range 3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80; commit-scoped in-memory blame projection; frozen navigation fixtures v1-v3; broad relative-link audit."
+source_basis: "Clean source 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9; exact Cycle 373-386 range 3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80; commit-scoped in-memory blame projection; navigation fixtures v1-v3, with producer-authored post-hoc v3; broad relative-link audit."
 </ai_context>
 
 # Cycle 411 history projection
@@ -37,11 +37,14 @@ freshness, and revisit triggers.
 
 ## Matched virtual-removal result
 
-The fixture is frozen against source
+The fixture is versioned against source
 `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9`. It selects the fourteen commits
 in exact range
 `3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`
 and omits only current lines whose last blame origin is in that set.
+Its v3 cases were authored with the Cycle 410 routes and are post-hoc
+regression evidence, not protected selection; this projection does not promote
+their evidence class.
 
 | Projected file                                               | Current lines omitted | Bytes represented |
 | ------------------------------------------------------------ | --------------------: | ----------------: |
