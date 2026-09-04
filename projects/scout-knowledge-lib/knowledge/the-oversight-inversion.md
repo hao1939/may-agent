@@ -1316,15 +1316,18 @@ robustness.
 
 It also cannot carry the paper's broader claim that RQ1--RQ3 are preserved.
 RQ1's 76 paired consent scenarios, RQ2's availability-shaped 15-cell matrix,
-and RQ3's archetype/severity/rule-judge/human-label evidence are different
-analysis objects. The one-cell RQ4 rows publish no identities joining those
-objects to repeated runs, no repeated human labels or class mappings, and no
-full-matrix sensitivity. Six archetype rates move 10--20 points and severity
-totals move 386/350/356 across seeds, which is relevant contradictory evidence
-to a blanket invariance reading even though it does not refute any original
-conclusion. Treat preservation as unestablished until each RQ has a declared
-invariance criterion, joined content-addressed populations, scale sweeps, and
-dependence-aware uncertainty.
+and RQ3's archetype/severity/rule-judge evidence are different analysis
+objects. RQ4's generator-seed rows publish no identities joining those objects
+to repeated runs, no repeated class mappings, and no full-matrix sensitivity.
+The RQ4 discussion also cites the existing matrix and a phase-1 two-seed
+comparison, but neither closes those joins. Six archetype rates move 10--20
+points and severity totals move 386/350/356 across seeds, which is relevant
+contradictory evidence to a blanket invariance reading even though it does not
+refute any original conclusion. The separate two-annotator re-evaluation is
+RQ5 evidence; repeated human labels are required only if a transfer claim also
+extends to RQ5. Treat preservation as unestablished until each RQ has a
+declared invariance criterion, joined content-addressed populations, scale
+sweeps, and dependence-aware uncertainty.
 
 The same separation applies to the paper's “axis independence” wording. Its 20
 chi-square tests are outcome-versus-one-axis tests, not tests among the five

@@ -19349,18 +19349,25 @@ remains RSS-readable/JSON-403 until a relevant thread or access change.
 
 ### Claim-to-evidence audit
 
-RQ4's positive support is one product/model cell. Claude Code/GLM-4.6 reports
-64/500, 57/500, and 62/500 across generator seeds 42, 7, and 13. Their
+RQ4's generator-seed support is one product/model cell. Claude Code/GLM-4.6
+reports 64/500, 57/500, and 62/500 across generator seeds 42, 7, and 13. Their
 1.4-point aggregate range and pairwise Fisher values reproduce, conditional on
 the independent-sample assumption. Marginal balance, outcome-versus-axis
 tests, and descriptive two-axis ranges provide additional checks on that same
-generated design. None joins to every earlier analysis object:
+generated design. The RQ4 discussion also cites the existing 15-cell matrix
+and a phase-1 two-seed comparison; these broaden its stated evidence basis but
+do not repeat every earlier estimand under each changed factor. None joins to
+every earlier analysis object:
 
 | Earlier question | Evidence its conclusion uses | What RQ4 would need to preserve it | What is disclosed |
 | --- | --- | --- | --- |
 | RQ1 consent effect | 76 hand-curated scenarios paired as consent-kept/stripped under Claude Code; fixtures, predicates, and judge claimed fixed | Exact prompt-pair/component identities repeated or resampled under a declared target, paired effects and uncertainty at each sensitivity setting | No prompt bytes, component hashes, pair IDs, or join from the 76 pairs to generator-seed runs |
 | RQ2 product/model result | Availability-shaped 15-cell matrix, product-specific prompts/tools/adapters, timeout denominators, and shared scenario structure | Repeated full matrix or declared representative subset with exact counts, timeout policy, scenario overlap, cell ranks/effects, and clustered uncertainty | Detailed generator-seed and two-axis evidence only for Claude Code/GLM; the second rank cell and several exact denominators are absent |
-| RQ3 characterization/validation | Archetype allocation, severity, rule-judge outcomes, and a stratified two-annotator human check | Repeated scenario-to-archetype mappings, severity and judge tables, raw human labels/adjudication, coverage, and uncertainty under each changed factor | Only seed 13 has a per-archetype table; no raw assignments/labels; six non-zero archetypes move 10--20 points, severity totals 386/350/356, critical counts 39/31/28 |
+| RQ3 characterization | Archetype allocation, severity, and rule-judge outcomes | Repeated scenario-to-archetype mappings, severity and judge tables, coverage, and uncertainty under each changed factor | Only seed 13 has a per-archetype table; no raw assignments or repeated judge outputs; six non-zero archetypes move 10--20 points, severity totals 386/350/356, critical counts 39/31/28 |
+
+The stratified 50-run two-annotator re-evaluation belongs to RQ5. Raw human
+labels and adjudication would be required for an RQ5 sensitivity extension,
+not to establish RQ3's archetype/severity/rule-judge transfer.
 
 The missing scenario-scale arm prevents a bridge by sample size: the retained
 17-file archive has no scale sweep, tested sizes, repeated draws, or
@@ -19371,7 +19378,7 @@ analysis from public evidence.
 The strongest supported conclusion is therefore narrow: one cell's aggregate
 overeager rate is similar across three generator seeds under unknown overlap.
 It does not logically entail preservation of RQ1's paired effect, RQ2's
-full-matrix comparisons, or RQ3's class/severity/human-validation conclusions.
+full-matrix comparisons, or RQ3's class/severity/judge conclusions.
 The moving archetype and severity summaries are contradictory evidence to a
 blanket invariance reading, but they do not by themselves overturn any earlier
 result.
@@ -19381,8 +19388,9 @@ arithmetic; moderate that the manuscript intends RQ4 as a bridge to all three
 questions; and low in the unobserved sensitivity outcomes or whether the
 missing artifact would preserve them. Discharge requires a predeclared
 invariance criterion per RQ, content-addressed population joins, relevant
-full-matrix and archetype/severity/human-label outputs, the promised scale
-sweep, and dependence-aware uncertainty.
+full-matrix and archetype/severity/judge outputs, the promised scale sweep, and
+dependence-aware uncertainty. Human-label outputs are additionally needed only
+for an RQ5 extension.
 
 Next seed-first, inspect whether OverEager actually predeclares those
 RQ-specific invariance criteria or substitutes non-significance in one cell

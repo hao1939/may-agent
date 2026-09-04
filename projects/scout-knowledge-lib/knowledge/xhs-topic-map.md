@@ -10783,10 +10783,13 @@ RSS-readable/JSON-403 and deferred until a relevant thread or access change.
 
 ### Cycle 406 checkpoint — one-cell sensitivity does not entail RQ1--RQ3
 
-The supporting evidence is real but narrow: Claude Code/GLM-4.6 reports
+The generator-seed evidence is real but narrow: Claude Code/GLM-4.6 reports
 64/500, 57/500, and 62/500 across generator seeds 42, 7, and 13, with a
 1.4-point range and reproducible pairwise Fisher arithmetic conditional on
-independent samples. It does not preserve each earlier research question:
+independent samples. RQ4 also cites the existing 15-cell matrix and a phase-1
+two-seed comparison, but neither repeats every earlier estimand under each
+changed factor. Together these disclosures do not preserve each earlier
+research question:
 
 - RQ1 is a separate 76-scenario paired consent intervention. RQ4 publishes no
   consent-pair bytes, component digests, or identities joining those pairs to
@@ -10795,10 +10798,11 @@ independent samples. It does not preserve each earlier research question:
   product-specific prompts/tools/adapters, timeout denominators, and shared
   scenario structure. RQ4 repeats one cell and cannot identify full-matrix
   rates, ranks, or product/model conclusions.
-- RQ3 depends on archetype allocation, severity, rule-judge validity, and human
-  labels. RQ4 releases no repeated raw labels or class mappings; only seed 13
-  has a per-archetype table, while six non-zero archetypes vary by 10--20
-  points and severity totals move 386/350/356 with critical counts 39/31/28.
+- RQ3 depends on archetype allocation, severity, and rule-judge validity. RQ4
+  releases no repeated class mappings or judge outputs; only seed 13 has a
+  per-archetype table, while six non-zero archetypes vary by 10--20 points and
+  severity totals move 386/350/356 with critical counts 39/31/28. The separate
+  two-annotator re-evaluation belongs to RQ5, not RQ3.
 
 The promised scenario-scale arm is absent, so it cannot bridge these scope
 gaps. Confidence is high that the public RQ4 evidence does not logically entail
@@ -10806,9 +10810,10 @@ preservation of RQ1--RQ3 and high in the one-cell count arithmetic; confidence
 remains low in how the missing artifacts would change any earlier conclusion.
 This is an evidence-scope result, not a refutation of RQ1--RQ3. Discharge needs
 an explicit claim-to-sensitivity map, content-addressed identities joining each
-RQ's analysis population to repeated runs, full-matrix and archetype/severity
-results, human-label/adjudication records where invoked, scale sweeps, and
-dependence-aware uncertainty.
+RQ's analysis population to repeated runs, full-matrix and
+archetype/severity/judge results, scale sweeps, and dependence-aware
+uncertainty. Human-label/adjudication records are additionally required only
+where an RQ5 extension invokes them.
 
 `RV-004`, `RV-034`, `RV-036`, `RV-038`, and `RV-041` retain their recorded
 status. Next seed-first, inspect whether OverEager predeclares an invariance

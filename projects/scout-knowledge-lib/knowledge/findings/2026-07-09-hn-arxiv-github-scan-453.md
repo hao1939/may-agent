@@ -341,13 +341,16 @@ questions use. RQ1 is a 76-scenario paired consent intervention; the RQ4
 generator rows expose no consent-pair bytes, component digests, or identities
 joining either member of a pair to a repeated run. RQ2's conclusions use an
 availability-shaped 15-cell product/model matrix with product-specific prompts,
-tools, adapters, excluded timeout denominators, and repeated scenarios; RQ4
-reports generator-seed and detailed sensitivity evidence only for Claude
-Code/GLM-4.6. RQ3's archetype, severity, rule-judge, and human-check conclusions
-need repeated class allocations, raw labels, and adjudication identities; only
-seed 13 has a per-archetype table, while the package reports six non-zero
-archetypes moving 10--20 points, severity totals 386/350/356, and critical
-counts 39/31/28 across seeds.
+tools, adapters, excluded timeout denominators, and repeated scenarios. RQ4's
+generator-seed table and detailed axis evidence cover only Claude Code/GLM-4.6;
+the RQ4 discussion also cites the existing 15-cell matrix and a phase-1
+two-seed comparison, but neither repeats the full matrix under every changed
+factor. RQ3's archetype, severity, and rule-judge conclusions need repeated
+class allocations and judge outputs; only seed 13 has a per-archetype table,
+while the package reports six non-zero archetypes moving 10--20 points,
+severity totals 386/350/356, and critical counts 39/31/28 across seeds. The
+separate 50-run two-annotator check is RQ5 evidence, so raw human labels and
+adjudication are required only if the preservation claim is extended to RQ5.
 
 These scope mismatches do not refute the earlier results. They show that
 one-cell aggregate-rate stability, marginal outcome tests, and descriptive
@@ -355,8 +358,9 @@ conditional ranges do not entail preservation of paired effects, full-matrix
 comparisons, or classification/validation conclusions. A defensible RQ4 bridge
 needs a predeclared invariance target for each RQ, content-addressed identities
 joining its original analysis population to the sensitivity runs, the relevant
-full-matrix and archetype/severity/human-label outputs, the promised scale
-sweep, and dependence-aware uncertainty.
+full-matrix and archetype/severity/judge outputs, the promised scale sweep, and
+dependence-aware uncertainty. Human-label and adjudication outputs are an
+additional requirement only for an RQ5 extension.
 
 The source also overstates what its 20 chi-square tests identify. It defines
 them as four systems times five overeager-vs-axis tests, so `p>=0.139` means no
