@@ -4169,6 +4169,31 @@ Protected `/app` changed externally from 914 to 915 records at unchanged HEAD;
 its 296-record Scout fingerprint stayed `7e4d0937…26a8a`. Begin the claimed
 three-distinction preservation audit only after this ordering record.
 
+## Cycle 306 checkpoint — source-free duplicate no longer masks the canonical note
+
+Seed-first `2805a961eafa0ce333379312482603c475d0fed2` preceded the
+audit. The remaining 13-line / 659-byte finding at SHA-256
+`4b1a1db2…ee6fb8d` has no citations, source field, or evidence beyond one May 2
+internal commit. Canonical `multi-agent-coordination.md` stays byte-exact at
+`8d29c705…d0f` and retains all three claims: strict domain ownership,
+event/shared-state interaction, and metric-driven health signals.
+
+Material `6739b9805731923127398b92e19466cd18b6658c` preserves the raw
+file and changes only its INDEX disposition to provenance-only. The exact
+coordination query now selects the canonical note uniquely. Frozen v1 falls
+12/14→11/14 because its immutable expectation records the former two-way
+ambiguity; the 10-case floor still passes and the fixture was not rewritten
+after the result. V2 remains 8/8. Confidence is high for the local provenance,
+claim coverage, and retrieval change, but low for the original observation's
+unstated evidence basis. This resolves one active duplication, not RV-004's
+missing later-use outcome; RV-004 remains high/open.
+
+No public lane ran. GitHub, arXiv, and Reddit retain their exact evidence and
+triggers. The next ranked accessible question is a bounded INDEX-to-file scan
+for any other active target that explicitly declares mock, synthetic, or
+pending-source evidence. It must distinguish honest scoped synthetic research
+from an unsupported result before changing any disposition.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

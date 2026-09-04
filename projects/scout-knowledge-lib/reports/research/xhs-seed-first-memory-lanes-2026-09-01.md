@@ -10015,6 +10015,35 @@ replays the historical fixture through its pinned revision while leaving the
 current v1/v2 outcome gates on the current INDEX. The focused suite passes 7
 tests / 28 assertions and formatting; full exact-tip revalidation follows.
 
+## Cycle 306 checkpoint — one canonical coordination destination
+
+Seed-first `2805a961ea` followed clean validated Cycle 305 tip `4151805fea`
+and reused the 71-minute-old receipt without a browser or public request.
+Additions/changes remain unknown, removals are `[]`, and all 132 durable seeds
+remain unavailable. Protected `/app` gained one externally owned record while
+HEAD and its 296-record Scout fingerprint remained exact.
+
+The selected `knowledge/findings/multi-agent-coordination-patterns.md` is 13
+lines / 659 bytes at SHA-256 `4b1a1db2…ee6fb8d`. Its only content provenance is
+May 2 commit `ddd6a6f98f`; it has no source links, source field, observation
+time, or external evidence. Canonical `knowledge/multi-agent-coordination.md`
+at unchanged SHA-256 `8d29c705…d0f` preserves strict domain ownership at line
+170, shared-state/event interaction and metric signals at lines 31–45, and the
+same project-specific ownership/metric mapping at lines 274–280.
+
+Material `6739b98057` keeps the source file byte-exact and changes one INDEX
+line from active result to absorbed provenance. The current coordination query
+now returns the canonical note uniquely. V1 moves 12/14→11/14 because the
+frozen case honestly expects the old two-item ambiguity; its 10-case floor
+passes and the fixture remains unchanged. V2 remains 8/8. This contradictory
+test movement is retained rather than relabeled as a score gain. Confidence is
+high for file history, claim coverage, and deterministic retrieval, low for
+the original unsourced observation. RV-004 remains high/open.
+
+GitHub, arXiv, and Reddit made zero requests. Next run a bounded active-INDEX
+marker audit for other explicit mock/synthetic/pending-source targets, while
+keeping scoped synthetic experiments distinct from unsupported source claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
