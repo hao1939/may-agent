@@ -7199,6 +7199,45 @@ Select `2607.06283` and inspect corpus construction, graph/decomposition
 mechanism, matched baselines, task/model denominators, ablations, uncertainty,
 token/step accounting, and attributable artifacts.
 
+### Cycle 354 checkpoint — promising task means do not prove lower pipeline cost
+
+At `2026-09-04T06:52:18.351Z`, arXiv `2607.06283v1` supplied a 3,148-byte
+Atom record (SHA-256 `2fb1fc70…8b54`). The resolved source archive is
+1,864,302 bytes / `e3a30667…6d04`. SkillReranker recalls 30 candidates from an
+undated 67,884-skill skillsmp.com snapshot, uses DeepSeek-v4-Flash for task and
+skill-state parsing, and Qwen3-Reranker-0.6B to align candidates as task-state
+edges before interval-wise selection.
+
+Across ALFWorld 140/134 and ScienceWorld 194/211 seen/unseen instances and
+three agent models, the reported single means rank first in 11/12 reward cells
+and 11/12 step cells. No run count, seed dispersion, interval, or significance
+is reported. Each fixed baseline result averages top-1 and top-2 settings while
+the proposed method selects about 1.275--1.30 skills, so cardinality and method
+are not fully isolated. Component ablations usually favor the full method, but
+removing split detection improves Qwen3.6 ScienceWorld-unseen reward
+67.73→68.47.
+
+The token claim has a direct appendix counterexample: Qwen3.6 ScienceWorld-
+unseen uses 76,763 task-execution tokens versus Graph of Skills at 50,360,
+LLM-as-selector at 55,616, and SkillRouter at 76,143. The reported metric omits
+online task decomposition, cross-encoder work, offline parsing of 67,884
+skills, and latency, so it cannot establish lower end-to-end cost. At
+`2026-09-04T06:52:58.614Z`, an unauthenticated exact-name GitHub repository
+search returned HTTP 200, zero repositories, 55 bytes / `4af480b8…72a5f`;
+the source's code/data links remain commented placeholders and no corpus,
+per-task outputs, or code support independent reproduction.
+
+ArXiv wins as primary evidence; revisit on `2607.06283v2+`. GitHub should be
+revisited on an attributable code/data release. Reddit made zero requests and
+retains its relevant-thread/access trigger. `RV-004` remains high/open because
+this source review produces no protected query/rank -> selection -> later-
+outcome evidence. Confidence is high for method/table transcription, moderate
+for the descriptive benchmark ordering, and absent for repeated-run stability,
+matched-cardinality causality, or end-to-end savings. Next seed-first,
+primary-review Pitwall `2607.06495`, the highest accessible unreviewed claim in
+Scan #456: test whether typed claims make faithfulness architectural and what
+its virtue-tradeoff evidence actually measures.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

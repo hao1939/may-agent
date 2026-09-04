@@ -14094,6 +14094,62 @@ other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
 matched baselines, task/model denominators, ablations, uncertainty, accounting,
 and attributable public artifacts.
 
+## Cycle 354 checkpoint — qualify adaptive skill-reranking evidence
+
+Seed-ordering commit `d24c05275b54284ca77961ca603897182d241c1c`
+preceded discovery. At `2026-09-04T06:52:18.351Z`, arXiv `2607.06283v1`
+returned a 3,148-byte Atom record with SHA-256
+`2fb1fc70ed4783bbe16c2aef6ed7a8fb749447922df02d7ff179307685278b54`.
+The resolved 1,864,302-byte source archive has SHA-256
+`e3a30667bfce989d0a5e01c857bf4ee13a7194321eb379900c9f0c8b94626d04`.
+
+The method recalls `K=30` candidates from an undated, unreleased 67,884-skill
+skillsmp.com snapshot. It uses DeepSeek-v4-Flash for online task decomposition
+and offline skill-state parsing, then Qwen3-Reranker-0.6B to align candidate
+preconditions/completions with ordered task states. A fixed split rule creates
+intervals, and the highest combined task/interval score supplies one skill per
+interval before deduplication.
+
+The evaluation covers ALFWorld seen/unseen at 140/134 tasks and ScienceWorld
+validation/test, renamed seen/unseen, at 194/211 instances. Across those four
+cells and DeepSeek-v4-Flash, GPT-5.4-Mini, and Qwen3.6-27B agents, the proposed
+method has the highest reported reward/score mean in 11/12 cells and the lowest
+step mean in 11/12. Both exceptions are Qwen3.6 ScienceWorld: SkillRouter wins
+seen reward 72.85 vs 72.26 and unseen steps 12.88 vs 13.08. The paper gives no
+repeat count, seeds, dispersion, intervals, or significance tests.
+
+All baselines share the agent and skill pool, but LLM-as-selector uses Mimo-
+v2.5-Pro while the proposed pipeline adds DeepSeek parsing and a Qwen cross-
+encoder. More importantly, each baseline cell averages separate top-1 and
+top-2 settings because the proposed method selects about 1.275--1.30 skills.
+Those raw settings and task-matched cardinality are absent. Component ablations
+usually reduce the reported mean, but removing split detection improves
+Qwen3.6 ScienceWorld-unseen reward 67.73→68.47. The single means do not measure
+effect stability.
+
+The main token plot shows only two models. Appendix A supplies the contrary
+Qwen cell: on ScienceWorld-unseen, SkillReranker consumes 76,763 task-execution
+tokens versus Graph of Skills 50,360, LLM-as-selector 55,616, and SkillRouter
+76,143. Accounting excludes online task parsing, Qwen cross-encoding, offline
+skill parsing, and latency. The evidence therefore does not establish lower
+end-to-end tokens or serving cost.
+
+At `2026-09-04T06:52:58.614Z`, one unauthenticated exact-name GitHub repository
+search returned HTTP 200, zero repositories, 55 bytes, and SHA-256
+`4af480b8ee5b87b369a76c49bd22c9a783908272ebffbe97898f8ab0f0772a5f`.
+The source's code/data block remains commented placeholders; no corpus,
+per-task outputs, or code support independent reproduction. ArXiv should be
+revisited on v2; GitHub on an attributable release; Reddit made zero requests
+and retains its relevant-thread/access trigger.
+
+The finding, Oversight Inversion, index, topic map, and this report now retain
+the state-routing mechanism without claiming a retrieval attractor or universal
+cost reduction. Confidence is high for source/table transcription, moderate
+for descriptive benchmark ordering, and absent for repeated-run stability,
+matched-cardinality causality, or full-pipeline cost. `RV-004` remains high/open.
+Next seed-first, primary-review Pitwall `2607.06495`, the highest accessible
+unreviewed Scan #456 claim about typed claims and virtue tradeoffs.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -843,7 +843,7 @@ online systems cost, and independent post-selection recall certification remain
 open, so this is a practical candidate intervention rather than proof that
 internal state always determines an agent's outcome.
 
-**SkillReranker** (2607.06283): Flat skill retrieval collapses to "everything looks similar" as libraries grow. Structured task decomposition into directed acyclic execution graphs breaks the attractor by matching skills to task intervals via structure, not flat similarity.
+**SkillReranker** (2607.06283v1): State-aligned reranking reports the best reward and step means in 11/12 ALFWorld/ScienceWorld cells, but without repeated-run uncertainty. Fixed baselines average top-1/top-2 settings instead of matching adaptive cardinality, and execution-token accounting omits decomposition/reranking overhead; one Qwen ScienceWorld cell uses 76,763 tokens versus Graph of Skills at 50,360. This is a candidate routing mechanism, not evidence that flat retrieval collapses or that graph structure breaks an attractor.
 
 **The Dispersion Collapse, qualified**: Every “multiple agents check each
 other” proposal must demonstrate that N agents provide independent evidence:

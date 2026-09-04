@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #455 (2026-07-09), partly qualified. A pre-registered Claude Opus 4.8 toy niche economy (2607.06001) keeps all 72 grid runs below its frozen dispersion floor, but its verdict is CAP and it does not test verification independence. Doomed from the Start (2607.06503v2) finds cell-specific early failure signal and token savings in two in-distribution environments; first-round AUC is near chance in two WebShop cells, its behavior ablation is deliberately low-cost, and formal recall requires fresh certification data. SkillReranker remains pending primary review. HN and GitHub counters are discovery signals."
+summary: "HN/arXiv/GitHub Scan #455 (2026-07-09), partly qualified. A pre-registered Claude Opus 4.8 toy niche economy (2607.06001) keeps all 72 grid runs below its frozen dispersion floor, but its verdict is CAP and it does not test verification independence. Doomed from the Start (2607.06503v2) finds cell-specific early failure signal and token savings in two in-distribution environments. SkillReranker (2607.06283v1) reports 11/12 best reward and step cells, but without repeated-run uncertainty; its fixed baselines average top-1/top-2 results, execution-token accounting omits selection overhead, and one Qwen/ScienceWorld token cell reverses the broad claim. HN and GitHub counters are discovery signals."
 triggers: ["dispersion collapse", "attractor dynamics", "agent economy", "population convergence", "diversity collapse", "step function attractor", "bistable equilibrium", "multi-agent consensus failure", "noise-maintained dispersion", "mean-field failure", "agent trajectory lock", "doomed trajectory", "early abort", "probe cascade", "hidden state prediction", "skill retrieval", "task decomposition reranking", "SkillReranker", "pre-registered experiment", "gap law", "submodular coalition", "information-theoretic capacity", "wealth concentration", "scan 455"]
-source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). 2607.06001v1 source and macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73 primary-reviewed 2026-09-04; 2607.06503v2 source primary-reviewed 2026-09-04, with no public repository found in one exact-title GitHub repository search. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
+source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). 2607.06001v1 source and macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73 primary-reviewed 2026-09-04; 2607.06503v2 and 2607.06283v1 sources primary-reviewed 2026-09-04, with no public repository found in one exact-title GitHub repository search for either. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
 </ai_context>
 
 # Scan #455: The Dispersion Collapse
@@ -25,7 +25,7 @@ not convergent tests of one attractor mechanism.
 
 2. **Doomed from the Start** (2607.06503v2): Hidden activations carry useful early failure signal, but not uniformly from round one: round-one AUC spans 0.523--0.860 across six model/environment cells. At a nominal 90% recall target, cascade token savings span 24.7--60.2% across those cells. Its activation probe beats a deliberately cheap five-feature behavior scorer; stacking those features shows no consistent additional gain, not numerical equality in every cell or a comparison with richer trajectory monitors. The default result is empirical held-out recall; an exact guarantee requires freezing the selected cascade and certifying it on independent post-selection data.
 
-3. **SkillReranker** (2607.06283): Task decomposition-guided reranking for adaptive agent skill retrieval. Constructs a directed acyclic execution graph where intermediate task states are nodes and candidate skills are edges. Cross-encoder scoring over decomposed task intervals outperforms flat retrieval baselines, reducing environment interaction steps and token consumption across ALFWorld and ScienceWorld with three backbone LLMs.
+3. **SkillReranker** (2607.06283v1): A DeepSeek decomposition model and Qwen cross-encoder map 30 embedding-retrieved candidates into task-state edges, then choose one skill per detected interval. Single-mean ALFWorld/ScienceWorld results rank first in 11/12 reward and 11/12 step cells across three agent models. The paper reports no seeds, dispersion, or significance; averages each fixed baseline's top-1 and top-2 settings rather than matching adaptive set size; and counts task-execution tokens without decomposition/reranking overhead. Its appendix also shows Qwen3.6-27B ScienceWorld-unseen at 76,763 tokens versus Graph of Skills at 50,360, so lower tokens are not universal.
 
 **The 27th Layer of the Oversight Inversion, qualified**: The Dispersion
 Collapse remains a design risk and open hypothesis. The paper shows that one
@@ -34,7 +34,7 @@ the dispersion regime its mean-field test requires. It does not show that
 verification by multiple agents collapses, or that shared markets, state, and
 training have one universal attractor mechanism.
 
-**Connection to the exit arc**: Multi-agent verification is not inherently robust. The exit requires **architecturally imposed diversity** — not more agents, but structurally uncorrelated agents. SkillReranker's decomposition into task-interval graphs is a micro-version of the fix: match skills to sub-problems via structure, not flat similarity, to avoid the "all skills look the same" collapse.
+**Connection to the exit arc**: Multi-agent verification is not inherently robust. SkillReranker supplies a candidate structural routing mechanism—align skills to inferred task intervals rather than one flat score—but it does not measure verifier diversity, retrieval collapse, or error decorrelation. Its result motivates matched structural-routing tests rather than proving the exit.
 
 **Twelve-point exit arc**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
@@ -52,7 +52,7 @@ training have one universal attractor mechanism.
 
 ---
 
-## arXiv Papers (3 Convergent)
+## arXiv Papers (3 Distinct Evidence Paths)
 
 ### 1. Information Limits and Attractor Dynamics in Economies of Frontier LLM Agents (2607.06001)
 
@@ -188,26 +188,76 @@ Whether they share one structural mechanism remains an open synthesis question.
 
 Source: https://arxiv.org/abs/2607.06503v2
 
-### 3. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283)
+### 3. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283v1)
 
-**Core finding**: As agent skill libraries grow, accurate skill selection becomes the bottleneck. Flat semantic matching fails because of "ambiguous semantic matching between specific task requirements and multiple generic yet semantically similar candidate skills."
+**Method and population**: The paper embeds task metadata against an undated,
+unreleased 67,884-skill snapshot from skillsmp.com and recalls `K=30`. DeepSeek-
+v4-Flash decomposes each task online and parses each skill's precondition and
+completion state offline. Qwen3-Reranker-0.6B aligns those states to an ordered
+task-state sequence, turning candidates into directed edges. A deterministic
+split rule partitions the sequence, and one globally/locally scored skill wins
+each interval before deduplication. The agent backbones are DeepSeek-v4-Flash,
+GPT-5.4-Mini, and Qwen3.6-27B.
 
-SkillReranker addresses this by:
-1. **Decomposing** both task and skill sides into subtask/execution-state descriptions
-2. **Constructing** a directed acyclic execution graph (intermediate task states as nodes, candidate skills as edges)
-3. **Identifying** subtask intervals via split-condition detection at state nodes
-4. **Scoring** candidate skills per interval via cross-encoder for comprehensive selection
+The evaluation covers ALFWorld seen/unseen (140/134 tasks) and ScienceWorld
+validation/test, renamed seen/unseen (194/211 instances), with a 30-step cap.
+The paper reports one mean per cell and no repeated-run count, seed variation,
+confidence interval, or significance test. Temperature zero does not supply
+that missing uncertainty, especially for two hosted APIs.
 
-Results on ALFWorld and ScienceWorld with three backbone LLMs:
-- Improved task performance over existing skill selection baselines
-- Reduced environment interaction steps
-- Lower token consumption
+**Task and step results**: Across 12 model × benchmark/split cells,
+SkillReranker has the highest reported reward/score in 11 and the fewest mean
+environment steps in 11. The two exceptions are both Qwen3.6-27B on
+ScienceWorld: SkillRouter reward is 72.85 versus 72.26 on seen, and SkillRouter
+uses 12.88 steps versus 13.08 on unseen. These are descriptive cell means, not
+evidence that the gains reproduce across runs or transfer beyond the two text
+environments.
 
-**Why this matters**: The Skill Supply Chain (#375) and the Configuration Layer (#425) established that skills are the governance surface. SkillReranker addresses the retrieval problem: as skill libraries grow (SkillSpector 12,356★, Cognitive-Core-Skills 274★, self-learning-skills 857★), flat retrieval collapses into "everything looks similar." Structured decomposition into task-state graphs imposes the kind of architectural diversity that the Dispersion Collapse demands — match skills to sub-problems via structure, not flat similarity.
+**Control boundary**: All methods share the frozen agent and skill pool, but
+the LLM-as-selector uses Mimo-v2.5-Pro while SkillReranker adds DeepSeek parsing
+and a Qwen cross-encoder. Because the adaptive method selects about 1.275--1.30
+skills, each baseline cell is the arithmetic average of separate top-1 and
+top-2 settings. The paper does not report those settings separately or match
+each task's selected count, so selection cardinality and selection method are
+not fully isolated.
 
-**Connection to Dispersion Collapse**: Flat retrieval is the skill-selection analog of population attractor collapse — all skills "look the same" to flat similarity. Structured decomposition breaks the attractor by routing through a graph that respects task structure.
+The two-model ablation supports a weaker component claim: removing parsing,
+graph edges, or splitting usually lowers the reported mean. It is not uniform;
+on Qwen3.6-27B ScienceWorld-unseen, removing split detection raises reward
+67.73→68.47. With no run-level uncertainty, the ablation cannot establish the
+size or stability of each component effect.
 
-Source: https://arxiv.org/abs/2607.06283
+**Token contradiction and accounting**: The main token figure includes only
+DeepSeek and GPT, where the method is lowest in eight cells. Appendix A adds
+Qwen and directly contradicts the broad “lower token consumption” reading:
+Qwen3.6-27B ScienceWorld-unseen consumes 76,763 execution tokens versus 50,360
+for Graph of Skills, 55,616 for LLM-as-selector, and 76,143 for SkillRouter.
+The metric counts tokens during task execution; it excludes online DeepSeek
+task decomposition, Qwen cross-encoding, offline parsing of 67,884 skills, and
+latency. Therefore it does not establish lower end-to-end token or serving
+cost.
+
+**Artifact boundary**: The source's code/data link block remains commented with
+placeholders, and it supplies neither the skill snapshot nor task outputs. At
+2026-09-04T06:52:58.614Z, one unauthenticated exact-name GitHub repository
+search returned HTTP 200 and zero repositories. The method, prompts, and tables
+are inspectable, but no artifact supports corpus audit, baseline reconstruction,
+run-level analysis, or independent reproduction.
+
+**Why this matters**: The paper offers a concrete state-alignment/routing
+design and promising descriptive task/step results. It does not show that flat
+retrieval itself collapses, that graph structure uniquely causes the gains, or
+that its extra selection pipeline reduces end-to-end cost. A decisive test
+would publish the corpus and per-task outputs, match selected cardinality and
+model budget, repeat hosted runs, and include the whole selection pipeline in
+cost accounting.
+
+**Connection to Dispersion Collapse**: Skill routing and population dispersion
+are separate estimands. This paper tests task-conditioned selection in two
+benchmarks; it does not test population attractors, verifier independence, or
+architectural diversity.
+
+Source: https://arxiv.org/abs/2607.06283v1
 
 ---
 
@@ -325,9 +375,9 @@ keeps 72/72 runs below its frozen dispersion floor. Its overall verdict is CAP,
 P6 is inconclusive, and the boundary-sensitive attractor interpretation is
 partly descriptive/exploratory.
 
-2. **Trajectory coupling** (2607.06503): Individual agents commit to doomed trajectories from the first round. Internal state predicts doom before behavior reveals it. But the agent continues — the trajectory lock is structural, not deliberative.
+2. **Trajectory coupling candidate** (2607.06503v2): Activation probes carry cell-specific early failure signal, but two WebShop cells begin near chance at round one; the paper does not identify a universal structural lock.
 
-3. **Skill coupling** (2607.06283): As skill libraries grow, flat similarity retrieval collapses into "everything looks the same." Structured decomposition breaks the attractor by matching through task-state graphs.
+3. **Skill-routing candidate** (2607.06283v1): Task-state decomposition reports promising task/step means, but does not measure a retrieval attractor or isolate graph structure from model, cardinality, and pipeline-cost differences.
 
 **Why this matters for the Oversight Inversion**: Agent count alone cannot
 establish independent verification. The needed evidence is a matched
@@ -337,7 +387,7 @@ this paper:
 
 - Different substrates (not just different prompts on the same model)
 - Different information access (the confirmed gap law shows information determines outcomes)
-- Different evaluation criteria (SkillReranker's interval-level scoring vs. flat scoring)
+- Different evaluation criteria (SkillReranker's interval-level scoring is a candidate mechanism, pending matched-cardinality and full-cost controls)
 - Structural decorrelation (the Correlated Blindness exit: orthogonal verification instruments)
 
 **Twelve-point exit arc**:
@@ -375,15 +425,16 @@ Running accuracy: **~96.0% (72/75)** (+2 confirmations: Chat Control Explained >
 
 ---
 
-## Cross-Source Convergence Summary
+## Cross-Source Comparison Summary
 
-The Dispersion Collapse is a three-layer convergent finding:
+The three papers measure different populations, outcomes, and mechanisms;
+their juxtaposition generates hypotheses rather than a convergent finding:
 
 | Layer | Source | Signal | Mechanism |
 |-------|--------|--------|-----------|
 | Population | arXiv (cs.MA) | 2607.06001 | Coupled agent economies collapse to step-function attractors; diversity is not maintained |
-| Individual | arXiv (cs.AI) | 2607.06503 | Individual agents lock into doomed trajectories from the first round; hidden states predict what behavior cannot |
-| Skill | arXiv (cs.AI) | 2607.06283 | Flat skill retrieval collapses to "everything looks similar"; structured decomposition breaks the attractor |
+| Individual | arXiv (cs.AI) | 2607.06503v2 | Early activation signal and token savings vary materially by model/environment; exact recall and online cost remain open |
+| Skill | arXiv (cs.AI) | 2607.06283v1 | State-aligned reranking leads 11/12 task and step cells, without repeated-run uncertainty or matched full-pipeline cost |
 | Community | HN | GPT-5.6 Sol at 62pts | Community attention has collapsed toward sovereignty/comprehension; model announcements are in a different attractor |
 | Community | HN | Foundations Turn 754pts | TAOCP + 30papers + SICP = community investment in foundational understanding spans 60 years |
 | Ecosystem | GitHub | 1K★ plateau | Growth above 1K★ has collapsed to <1% per scan; ecosystem has converged to its current structure |
