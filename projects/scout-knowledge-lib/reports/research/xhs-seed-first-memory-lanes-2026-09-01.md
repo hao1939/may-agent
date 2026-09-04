@@ -12385,6 +12385,44 @@ query/rank/selection/outcome join appeared. Next begin seed-first and rank the
 remaining primary contradiction, artifact-reproducibility, and synthesis gaps
 above byte/line compaction.
 
+Exact material `61e797b31c7389b6abb75403030882806baf9bc8` passes syntax,
+TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 102.53 seconds. The broad
+offline audit passes 1,540 tracked Markdown documents / 1,728 local prose links
+with zero errors. Read-only health at `2026-09-04T04:04:47.365Z` returns 26
+facts, 16 wake signals, and `truncated:true`.
+
+Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314` and requested
+historical checkpoint `f26bd4f3a590b59d241536326199e805777df1be` are ancestors;
+unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` is excluded. Standing
+porcelain-v2 and `.goal-runtime` are empty. Protected `/app` remains externally
+observed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 whole-tree
+records / `8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+and 296 Scout-scope records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not write, test, clean, or otherwise mutate that checkout.
+
+## Cycle 334 seed-first start — test performance-benchmark significance
+
+At `2026-09-04T04:04:47.365Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` remains inside its six-hour cadence. This bounded
+reconciliation makes zero XHS requests: additions and changes remain unknown,
+observed removals are `[]`, all 132 seeds remain unavailable, and account state
+is unchanged.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible because the protected post-August-31
+query/rank/selection/outcome join is absent; (2) the unreleased Memory in the
+Loop provider result; (3) `2607.07619`, highest accessible because its
+unreviewed “94% evaporates” and multi-agent generated-test gains support the
+Verification Hierarchy; (4) the remaining recursive-survey, physics-audit,
+primary-contradiction, artifact, and synthesis gaps; (5) Reddit until a
+relevant thread or access change; and (6) byte/line compaction. Select
+`2607.07619`. Test exact denominators, significance definition, 30-run design,
+benchmark/task controls, generated-test attribution, artifact retention,
+contradictory evidence, and transfer limits.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

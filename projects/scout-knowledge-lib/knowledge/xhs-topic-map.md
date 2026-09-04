@@ -5990,6 +5990,32 @@ remains high/open because this source correction supplies no protected
 query/rank/selection/outcome join. Next begin seed-first and rank the remaining
 primary-evidence and reproducibility gaps above compaction.
 
+Exact Cycle 333 material `61e797b31c7389b6abb75403030882806baf9bc8`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and 296 tests / 1,484 assertions
+with zero failures in 102.53 seconds. The broad audit passes 1,540 documents /
+1,728 links with zero errors; read-only health at
+`2026-09-04T04:04:47.365Z` is 26 facts / 16 wakes, truncated. Accepted
+`ff923ccde4` and historical `f26bd4f3a5` are contained; unaccepted
+`d041c41b54` remains excluded. Standing and runtime state are empty. Protected
+`/app` remains at `386b445c…1fec8`, with 916 records / `8e3558f4…848a36`
+overall and 296 / `a430d0c9…32d7e` in Scout scope.
+
+### Cycle 334 seed-first start — test performance-benchmark significance
+
+At `2026-09-04T04:04:47.365Z`, the XHS observation remains inside its
+six-hour cadence. Make zero XHS requests: additions/changes remain unknown,
+removals are `[]`, all 132 seeds remain unavailable, and account state is
+unchanged. Rank (1) high/open `RV-004`, inaccessible without the protected
+query/rank/selection/outcome join; (2) the unreleased Memory in the Loop
+provider result; (3) the unreviewed `2607.07619` performance-benchmark claim,
+highest accessible because its “94% evaporates” and multi-agent-test gains
+anchor the Verification Hierarchy; (4) the remaining survey, physics-audit,
+contradiction, and reproducibility gaps; (5) Reddit until a relevant trigger;
+and (6) compaction. Select `2607.07619`; inspect denominators, significance
+definition, repeated-run design, benchmark controls, generated-test
+attribution, artifacts, contradictions, and transfer limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
