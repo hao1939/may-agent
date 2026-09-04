@@ -5707,6 +5707,43 @@ access change; and (8) compaction. Select Aria. Test task denominators,
 baselines, model/scaffold differences, proof soundness versus coverage,
 intervention attribution, uncertainty, and attributable artifacts.
 
+### Cycle 329 checkpoint — proof admission is strong; harness causality is unmeasured
+
+ArXiv observation through `2026-09-04T03:25:45.191Z` returned 3,463 abstract
+bytes (`0df4a7a5…edd439`) and 103,644 source bytes
+(`a6a238cc…6e404e`) for v1. The reported populations total 4,864 existing
+lemmas: 4,257 Iris, 217 RustBelt, 318 reglang, and 72 iris-lean. Iris alone
+used 379.7 model-hours, up to 30 retries per lemma, 79.2% first-attempt
+success, and 0.51 mean retries. Kernel checks support validity under retained
+statements; coverage/lint hooks separately guard missing or weakened targets.
+
+The reported 100% campaign is supporting evidence for the complete
+Opus-agent-harness-retry system, not a matched intervention. There is no
+no-feedback, fixed-strategy, or alternate-harness control and no repeated
+campaign. The reglang “one in eight” baseline changes system, model, context,
+and budget. On an easier 40-lemma subset both Opus 4.7 and Kimi K2.6 reach
+40/40, while retries and time differ sharply; longer-proof open-model failures
+are described without a complete denominator. This contradicts the library's
+claim that the 8× contrast comes entirely from the loop rather than model
+capability.
+
+The named anonymous repository returned HTTP 401 at
+`2026-09-04T03:25:32Z`. A complete GitHub repository search at
+`2026-09-04T03:25:45.191Z` returned zero matches in a 73-byte response
+(`08c082fd…600b2`), so implementation, logs, produced proofs, and result
+deduplication remain unavailable. Confidence is high for the paper's declared
+denominators, protocol, aggregate results, and missing matched control; medium
+for campaign completeness without the artifact; low for harness-only or
+strategy-freedom causality. No independent reproduction is claimed.
+
+Lane continuity: arXiv supplied v1/source and is revisited on revision or
+control disclosure. GitHub supplied an exact no-match boundary and is revisited
+on an attributable artifact. Reddit made zero requests and remains deferred
+until a relevant thread/access change. `RV-004` remains high/open because this
+paper contains no Scout outcome join. Next begin seed-first and primary-review
+CXI's distinct deterministic-admission contract, now the highest accessible
+unqualified convergence claim, before compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

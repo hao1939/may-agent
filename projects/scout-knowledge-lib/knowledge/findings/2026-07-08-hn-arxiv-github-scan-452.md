@@ -12,7 +12,7 @@ source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 
 
 ## Theme
 
-The Verification Harness Hypothesis (#451) established that when a verification kernel wraps agent production, soundness becomes a construction property — the harness provides guarantees that eroded human knowledge can no longer supply. Aria proved all 4,647 lemmas with zero expert intervention. The exit arc was declared complete.
+The Verification Harness Hypothesis (#451) proposed that kernel-backed admission can make the checked proof-validity property constructive. Aria reports all 4,864 existing target lemmas proved with zero expert intervention during its campaign. Primary review later found no matched control that isolates harness design, strategy freedom, model capability, or retry budget, so the full-system coverage result does not by itself close the causal architecture question.
 
 This scan reveals **the assumption that arc rested on**: that the harness is designed once and applied thereafter. Three independent arXiv papers converge from reinforcement learning, scientific replication, and theoretical computer science to demonstrate that **a fixed harness degrades as the system it governs evolves**:
 

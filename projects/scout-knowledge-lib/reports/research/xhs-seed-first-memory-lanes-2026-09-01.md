@@ -11975,6 +11975,53 @@ change; and (8) compaction. Select Aria. Test task denominators, baselines,
 model/scaffold differences, proof soundness versus coverage, intervention
 attribution, repeated-run uncertainty, and attributable artifacts.
 
+## Cycle 329 checkpoint — the kernel verifies proofs, not the causal story
+
+What was wrong: the library attributed Aria's 100% reported coverage and an
+“8× improvement” entirely to the harness rather than the model. The paper
+does not run the matched intervention needed for that conclusion. What changes
+for the user: the library now retains the strong machine-checkable admission
+result while separating it from unmeasured harness and strategy-freedom
+causality.
+
+ArXiv observation through `2026-09-04T03:25:45.191Z` returned 3,463 abstract
+bytes with SHA-256
+`0df4a7a5fa76e0e811812f803119f952eba8473c3a6dda9f906642da1eedd439`
+and 103,644 source bytes with
+`a6a238cca9abebc8e428a352a8c1e9ebddcf008e563ab7dab9972ed3aa6e404e`.
+The four declared populations total 4,864 existing lemmas: 4,257 Iris, 217
+RustBelt, 318 reglang, and 72 iris-lean. Iris reports 4,257/4,257 proved,
+79.2% first-attempt success, 0.51 mean retries, a 30-retry cap, and 379.7
+model-hours. Kernel checking verifies produced proofs under retained
+statements; separate coverage and lint hooks check that target obligations
+remain present and unweakened.
+
+The missing decision-relevant control is explicit. No matched no-feedback,
+fixed-strategy, or alternate-harness campaign isolates architecture, and no
+repeated campaign estimates variance. The reglang “barely one in eight”
+comparison changes the proving system, model, context, and budget. On an easier
+40-lemma subset, Opus 4.7 and Kimi K2.6 both prove 40/40, but Opus needs fewer
+retries and about one-seventh the time; qualitative longer-proof failures lack
+a complete denominator. The full system result is supported; harness-only
+causality is not.
+
+Artifact access is also bounded. The named anonymous repository returned HTTP
+401 at `2026-09-04T03:25:32Z`. A complete GitHub repository search at
+`2026-09-04T03:25:45.191Z` returned zero matches; its 73-byte response hashes
+to `08c082fdf7ca87ba911a2aabb0f0cf2d3e482a6feeaac9713e4578c20b2600b2`.
+Implementation, logs, generated proofs, and result deduplication therefore
+cannot be independently checked, and no reproduction is claimed.
+
+Confidence is high for the primary text's protocol, denominators, aggregates,
+and lack of a matched control; medium for complete campaign execution without
+the artifact; low for harness-only or strategy-freedom causality. ArXiv is
+revisited on revision/control disclosure; GitHub on an attributable artifact;
+Reddit made zero requests and remains deferred until relevant-thread/access
+change. `RV-004` remains high/open because no Scout outcome join is present.
+Next begin seed-first and primary-review CXI's distinct deterministic-admission
+contract, now the highest accessible unqualified convergence claim, before
+compaction.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
