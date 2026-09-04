@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 405's observation and Cycles 406-407's no-request reconciliations qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but no predeclared RQ-specific invariance rule makes that stability preserve the paired consent pilot, full 15-cell matrix, or archetype/severity/judge conclusions."
+summary: "Seed-first Scout continuity through Cycle 409: a scheduled observational pass preserves the login-class XHS boundary, and accepted Hermes Agent/OpenClaw evidence reaches canonical Scout with exact source-to-standing provenance."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405. Cycles 406-407 reused this receipt without another request because the cadence had not elapsed."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycles 406-407; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 409 observational reconciliation through 2026-09-04T21:36:26.369Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 409. Only the response-body hash changed from Cycle 405."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 409 at 2026-09-04T21:36:26.369Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19485,6 +19485,48 @@ The next cycle should re-rank away from the now-exhausted OverEager manuscript
 and prefer a retained primary or contradictory claim with a released
 denominator or executable artifact. Do not observe XHS again before
 `2026-09-04T23:12:00.404Z` unless a material access trigger arrives.
+
+## Cycle 409 checkpoint — accepted Hermes/OpenClaw evidence is canonical
+
+The scheduled observational pass ran once at
+`2026-09-04T21:36:26.358Z–21:36:26.369Z`. Direct localhost 9222 failed for
+worker UID 1000 (`hao`) with curl exit 7 / HTTP 000. Passwordless
+`sudo nsenter`, effective UID 0 in root-owned Chrome PID 2136's network
+namespace, supported exactly one public `status` and one non-navigating
+`saved-status` under Node v22.19.0. Explore remained ready with 30 notes. The
+saved surface returned HTTP 200, final class `login`, 46,763 bytes, target SHA
+`e860da46506d774eced62830a670ea284f5150429482f8003c706bc6b006906e`,
+access fingerprint
+`3dab1b6d4f615fb77d6fbf76e82c4015937a83f3b18fc85d6a93f931d08af420`,
+body SHA
+`2298cf68bd7a65bb4025270e931dc168ca5ad3cc585538103be0c825069a4399`,
+zero attributable items, and the empty-set ID fingerprint. Only the body hash
+changed from Cycle 405. Added/changed identities remain unknown, removals are
+`[]`, and all 132 durable seeds remain unavailable rather than removed. No
+representative saved post was supported, and no account state changed.
+
+The lane rubric selected GitHub/local accepted-output integration: accepted
+finite source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5` maps to standing
+`d1a443c6408014aaf83cea0664ac9b336e8b44ef` at patch ID
+`bc781e065970f508a9b9bd73c373cd03098fc9a8`, then correction
+`737179618e6ff117fad814b35b5a5132e0c3bdc7` maps to standing
+`a76092b3186e6bc0124b0ec4c7ae7d16216d0e46` at patch ID
+`930e6bb2fff7d3a80bef2fdb119ecb98bfb7b7cd`. The final finding and research
+report establish adaptation machinery in both projects, distinguish Hermes'
+direct memory/skill mutation from OpenClaw's governed proposal/revision path,
+and keep external Atropos training separate from runtime self-review. Neither
+project proves retained held-out improvement.
+
+ArXiv and Reddit made zero requests because no version, access, or
+decision-bearing trigger changed. They retain their prior exact versions,
+RSS/JSON boundary, and revisit triggers. `RV-004` remains high/open because no
+protected query/rank-to-later-outcome join appeared; `RV-034` remains
+inaccessible without the external runtime. The compact source/result,
+validation, and rollback ledger is the
+[Cycle 409 accepted-output report](../review/scout-accepted-output-integration-cycle409-2026-09-05.md).
+Next seed-first, inventory remaining accepted finite outputs absent from
+canonical Scout before making a public request; if none is material, prefer a
+substantive contradiction or reproducibility gap with a released artifact.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
