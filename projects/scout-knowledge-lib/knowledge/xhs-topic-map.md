@@ -6240,6 +6240,15 @@ moderate in the literature characterization, and low in completeness or gap
 size. `RV-004` remains high/open. Next audit the highest-impact remaining
 promoted Scan #479 claim with a released denominator or contradiction.
 
+Exact material `222053fc3164d689ab434a9d35af0365a67288ee` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 90 scoped links, navigation at
+11/14 and 8/8, and 296 tests / 1,484 assertions in 97.48 seconds. Broad links
+pass 1,540 documents / 1,728 links; health is 26 facts / 16 wakes. Accepted
+`ff923ccde4` and `f26bd4f3a5` are contained, unaccepted `d041c41b54` is
+excluded, and runtime state is empty. Protected `/app` remains
+`386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
+`a430d0c9…32d7e` in Scout scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
