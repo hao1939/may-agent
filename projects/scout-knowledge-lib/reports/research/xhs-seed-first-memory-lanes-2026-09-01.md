@@ -9970,6 +9970,40 @@ No source or account request ran; the report retains the full source text.
 RV-004 remains high/open. Next is Cycle 261's 8-line / 566-byte accepted-cursor
 seed boundary.
 
+## Cycle 305 checkpoint — remove a mock-source result from active retrieval
+
+Exact source `f26bd4f3a590b59d241536326199e805777df1be` first passed the
+complete gate: 296 tests / 1,483 assertions, 1,540 documents / 1,726 links,
+read-only health at 26 facts / 16 wakes, accepted `ff923ccde4` contained,
+unaccepted `d041c41b54` excluded, and a clean worktree. Protected `/app`
+remained externally observed at HEAD `386b445c…41fec8`, 914 records /
+`5b4816ba…2f4`, with Scout scope 296 / `7e4d0937…26a8a`.
+
+Seed-first `2f2ca443aa` reused the 64-minute-old Cycle 292 receipt with zero
+browser or public requests: additions/changes remain unknown, removals are
+`[]`, and all 132 seeds remain unavailable. It explicitly ranked RV-004 first
+but inaccessible because the read-only event history ends August 31 and has no
+query/rank→selected-file→later-outcome join. New telemetry, frozen-verifier
+replay, public refreshes without triggers, and further line compaction all
+ranked below the active INDEX credibility defect.
+
+The selected finding, `knowledge/findings/multi-agent-patterns-2024.md`, is 10
+lines / 1,161 bytes at SHA-256 `bf6459b…bae4` and explicitly declares mock
+sources. Canonical `knowledge/multi-agent-coordination.md` is unchanged at
+SHA-256 `8d29c705…d0f`; it cites the finding and preserves marketplace,
+shared-state/event-driven coordination, artifact handoffs, context failure,
+and evaluator-agent claims. Material `95a986c240` changes one INDEX line so
+the source remains retrievable as provenance but is no longer an active
+independent result.
+
+The exact matched control changes v1 from 11/14 to 12/14: the coordination
+query returns its intended two entries rather than the mock-source third.
+Caller-bound ranking and the generic-token negative control remain honest
+failures. V2 remains 8/8. No fixture, scorer, note body, source lane, or account
+changed. RV-004 stays high/open. Next audit the other early internal
+coordination observation's three claims against the canonical note before any
+disposition; do not remove unique provenance merely to improve a frozen score.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

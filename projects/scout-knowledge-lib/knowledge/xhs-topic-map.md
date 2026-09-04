@@ -4125,6 +4125,30 @@ names and absorbs it. Audit that exact provenance and preservation boundary
 before changing the index. Remaining byte/line compaction ranks last because
 it adds neither a decision nor outcome.
 
+## Cycle 305 checkpoint — mock synthesis is no longer an active result
+
+Seed-first `2f2ca443aa27b92c25c0d9e4db0f6f5f22e47c58` preceded the
+audit. The 10-line source finding at SHA-256 `bf6459b…bae4` explicitly says its
+data came from mock sources. The canonical coordination note at SHA-256
+`8d29c705…d0f` cites that exact finding and retains all five distinctions:
+marketplace topology, shared-state/event-driven coordination, artifact
+handoffs, context failure, and evaluator agents.
+
+Material `95a986c24060c47a224e10ac0d3d40ac762d0a2f` leaves both source
+files byte-exact and changes only their INDEX disposition from an active
+independent result to a provenance-only absorbed note. The frozen v1
+navigation control improves 11/14→12/14: the exact coordination query now
+returns the intended two-way canonical/early-observation ambiguity instead of
+including the mock-source third entry. V2 remains 8/8. This is direct local
+retrieval and source-quality evidence, not human/model use or RV-004 outcome
+evidence; RV-004 remains high/open.
+
+GitHub, arXiv, and Reddit made zero requests and retain their exact heads,
+paper versions, RSS/JSON boundary, and change-bearing triggers. Next audit the
+remaining active 13-line early internal coordination observation against the
+canonical note. Preserve any unique provenance; retire it only if the canonical
+note demonstrably retains its domain, event, and health-signal distinctions.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
