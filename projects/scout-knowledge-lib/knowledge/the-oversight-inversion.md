@@ -760,7 +760,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 
 **aiAuthZ** (2607.05518): Off-host, identity-bound authorization gateway. Tests 15 models against 8 attack scenarios — refusal ranges from 100% down to 38%. With gateway: **0% residual attack success for all 15 models** at ≤0.03ms added latency. Key quote: "The gateway does not prevent a model from being deceived; it prevents a deceived model from acting beyond the verified user's authority."
 
-**Doomed from the Start** (2607.06503): Per-round probes on hidden activations predict episode failure from the first interaction round (behavioral scorers barely better than chance). Probe cascade saves **47.1%** of inference compute at 90% recall. Adding behavioral features yields **no further gain** — hidden states already capture what behavior reveals. Extends the Latent Horizon (#433) from diagnostic observation to practical intervention.
+**Doomed from the Start** (2607.06503v2): Activation probes carry early failure signal, but round-one AUC spans 0.523--0.860 across six cells and two WebShop cells begin near chance. At a nominal 90% recall target, cascade generated-token savings span 24.7--60.2% by cell. Activations beat one deliberately cheap five-feature behavior scorer; stacking those features has no consistent added value, not literal equality or superiority to richer trace monitors. The default held-out result is empirical; exact recall requires a frozen cascade and independent certification data, while online latency and dollar cost remain unmeasured.
 
 **The Execution Boundary**: Verification deployed at any layer above the execution boundary provides approval-confidence, not execution-confidence. Three instances:
 1. **Encoding gap**: Human approval renders one encoding; model tokenizer processes another (2607.05744)
@@ -833,7 +833,15 @@ fails. The study uses one provider/model, N=20, 16 niches, and 18 rounds; it
 does not measure verification error independence or general coupled
 populations.
 
-**Doomed from the Start** (2607.06503): Per-round hidden-state probes predict episode failure from the **first interaction round** (behavioral scorers barely better than chance). Cascade saves **47.1%** of compute at 90% recall. Adding behavioral features yields **zero further gain** — hidden states capture everything behavior reveals and more. The Latent Horizon (#433) validated and made actionable.
+**Doomed from the Start** (2607.06503v2): The activation-probe advantage is
+conditional rather than universal. Round-one AUC ranges from 0.523 to 0.860;
+two WebShop cells begin near chance, while later gates become informative.
+Nominal 90%-recall cascade token savings range from 24.7% to 60.2% across the
+six cells. One cheap hand-engineered behavior baseline is weaker, and stacking
+its five features adds no consistent value. Rich trace monitors, shifted tasks,
+online systems cost, and independent post-selection recall certification remain
+open, so this is a practical candidate intervention rather than proof that
+internal state always determines an agent's outcome.
 
 **SkillReranker** (2607.06283): Flat skill retrieval collapses to "everything looks similar" as libraries grow. Structured task decomposition into directed acyclic execution graphs breaks the attractor by matching skills to task intervals via structure, not flat similarity.
 

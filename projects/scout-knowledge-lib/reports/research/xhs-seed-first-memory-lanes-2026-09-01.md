@@ -14000,6 +14000,62 @@ compaction. Select `2607.06503` and inspect task/model populations, split and
 calibration rules, first-round denominators, compute accounting, behavioral
 baseline/ablation, uncertainty, and public artifacts.
 
+## Cycle 353 checkpoint — qualify early-abort evidence
+
+Seed-ordering commit `cb8e8d4183fd2c0951fb2902c370f74dca518c73`
+preceded discovery. At `2026-09-04T06:36:51.950Z`, arXiv `2607.06503v2`
+returned a 3,428-byte Atom record with SHA-256
+`adef4dd46a17161607e986f833c630ec7bf843344c3bed9a832844fe8a3f69b4`
+and a 45,823-byte source archive with SHA-256
+`9a4b51a5a65b62194a0f33f35e62dee405dbd959722f683874642231b3d6ee93`.
+
+The main matrix contains TextCraft and WebShop crossed with Qwen-2.5-7B,
+Llama-3.2-3B, and Qwen3-1.7B. Every cell contains 800 episodes, with 100
+TextCraft tasks × 8 rollouts or 200 WebShop tasks × 4, repeated across 20
+grouped task-split seeds. Round-one activation-probe AUC is
+0.860/0.698/0.811 on TextCraft and 0.699/0.523/0.591 on WebShop. Two WebShop
+cells therefore begin near chance; early latent prediction is cell-specific,
+not a uniform round-one result.
+
+At nominal 0.90 recall, searched-cascade generated-token savings are
+60.2/34.7/47.3% on TextCraft and 35.9/24.7/54.9% on WebShop. The old 47.1%
+single summary is not a v2 full-matrix result. At 0.95, probe-only versus
+surface-only versus stacked savings are 42.2/24.8/45.0, 20.0/12.3/17.2,
+26.3/19.3/26.8, 18.7/10.3/20.6, 11.4/7.6/13.6, and 41.6/9.9/41.5%.
+The surface comparator is deliberately cheap: action log-probability,
+generated-token and prefix counts, plus error-keyword counts. This supports no
+consistent added value from those five features after activations; it does not
+establish equality or compare a richer structured trajectory monitor.
+
+Default margin-based selection yields empirical held-out recall, not a formal
+post-selection promise. At a strict 0.97 target in one TextCraft cell, the
+logistic probe meets the floor in 17/20 seeds and stacking in 16/20. An exact
+distribution-free guarantee requires an independently certified frozen policy;
+about 114 successful certification episodes cap a 95%-confidence target near
+0.974. Token savings omit one-time data/replay/fitting cost, online extraction
+overhead, latency, dollars, and downstream use of saved compute. ALFWorld is
+recalibrated in-domain rather than zero-shot: 477 rollouts contain 250
+Qwen-2.5 and 106 Qwen3 successes, and Qwen-2.5's nominal-0.90 recall averages
+0.891 ± 0.047.
+
+The source says code will be released soon. At
+`2026-09-04T06:38:36.233Z`, one unauthenticated exact-title GitHub repository
+search returned HTTP 200, zero repositories, 55 bytes, and SHA-256
+`4af480b8ee5b87b369a76c49bd22c9a783908272ebffbe97898f8ab0f0772a5f`.
+No result bundle, code, or split identities support independent reproduction.
+ArXiv was the primary-evidence lane and should be revisited on v3. GitHub
+should be revisited on an attributable code-release trigger. Reddit made zero
+requests and retains its relevant-thread/RSS-access trigger.
+
+The knowledge note, Oversight Inversion, index, topic map, and this report now
+carry the qualified cell-specific conclusion. Confidence is high for source
+method/table transcription, moderate for in-distribution transfer, and absent
+for shifted tasks, richer behavior monitors, online cost, or independent
+reproduction. `RV-004` remains high/open: this cycle produces source evidence,
+not a protected query/rank-to-outcome join. Next seed-first, primary-review
+SkillReranker `2607.06283`; its task-graph mechanism and savings claims are the
+highest accessible unresolved Scan #455 evidence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

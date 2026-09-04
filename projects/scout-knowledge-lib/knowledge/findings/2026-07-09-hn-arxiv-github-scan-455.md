@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #455 (2026-07-09), partly qualified. A pre-registered Claude Opus 4.8 toy niche economy (2607.06001) keeps all 72 grid runs below its frozen dispersion floor and shows boundary-sensitive concentration, while its overall verdict is CAP, its direction test is inconclusive, and it does not test verification independence or general agent populations. Its separate information-law tests pass five primary bands, while clone equality fails. Doomed from the Start and SkillReranker remain pending primary review. HN and GitHub counters are discovery signals."
+summary: "HN/arXiv/GitHub Scan #455 (2026-07-09), partly qualified. A pre-registered Claude Opus 4.8 toy niche economy (2607.06001) keeps all 72 grid runs below its frozen dispersion floor, but its verdict is CAP and it does not test verification independence. Doomed from the Start (2607.06503v2) finds cell-specific early failure signal and token savings in two in-distribution environments; first-round AUC is near chance in two WebShop cells, its behavior ablation is deliberately low-cost, and formal recall requires fresh certification data. SkillReranker remains pending primary review. HN and GitHub counters are discovery signals."
 triggers: ["dispersion collapse", "attractor dynamics", "agent economy", "population convergence", "diversity collapse", "step function attractor", "bistable equilibrium", "multi-agent consensus failure", "noise-maintained dispersion", "mean-field failure", "agent trajectory lock", "doomed trajectory", "early abort", "probe cascade", "hidden state prediction", "skill retrieval", "task decomposition reranking", "SkillReranker", "pre-registered experiment", "gap law", "submodular coalition", "information-theoretic capacity", "wealth concentration", "scan 455"]
-source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). 2607.06001v1 source and macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73 primary-reviewed 2026-09-04. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
+source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). 2607.06001v1 source and macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73 primary-reviewed 2026-09-04; 2607.06503v2 source primary-reviewed 2026-09-04, with no public repository found in one exact-title GitHub repository search. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
 </ai_context>
 
 # Scan #455: The Dispersion Collapse
@@ -23,7 +23,7 @@ not convergent tests of one attractor mechanism.
 
 1. **Information Limits and Attractor Dynamics in Economies of Frontier LLM Agents** (2607.06001v1): Its separate information-law experiment passes P1--P3 and P4a under frozen bands; P4b clone equality fails. In the 3×3 niche grid, all 72 runs remain below the preregistered dispersion floor (median 0, maximum 4.85 versus 5.31). The preregistered P5 verdict is therefore `CAP` (cannot answer: zero in-regime conditions), and P6 is inconclusive. Boundary-sensitive concentration and seed variation are useful descriptive evidence for this prompt economy, not proof about general agent populations.
 
-2. **Doomed from the Start** (2607.06503): Per-round probes on hidden activations predict episode failure as early as the **first interaction round**, where behavioral scorers are barely better than chance. Cascade saves **47.1% ± 10.3%** of inference compute at 90% recall (Qwen-2.5-7B). Critical finding: adding behavioral features to the hidden-state probe yields **no further gain** — the hidden states capture everything behavior reveals. Episode failure is knowable from internal state before it's visible in external action.
+2. **Doomed from the Start** (2607.06503v2): Hidden activations carry useful early failure signal, but not uniformly from round one: round-one AUC spans 0.523--0.860 across six model/environment cells. At a nominal 90% recall target, cascade token savings span 24.7--60.2% across those cells. Its activation probe beats a deliberately cheap five-feature behavior scorer; stacking those features shows no consistent additional gain, not numerical equality in every cell or a comparison with richer trajectory monitors. The default result is empirical held-out recall; an exact guarantee requires freezing the selected cascade and certifying it on independent post-selection data.
 
 3. **SkillReranker** (2607.06283): Task decomposition-guided reranking for adaptive agent skill retrieval. Constructs a directed acyclic execution graph where intermediate task states are nodes and candidate skills are edges. Cross-encoder scoring over decomposed task intervals outperforms flat retrieval baselines, reducing environment interaction steps and token consumption across ALFWorld and ScienceWorld with three backbone LLMs.
 
@@ -128,17 +128,57 @@ all information metrics.
 Source: https://arxiv.org/abs/2607.06001;
 https://github.com/macrokit/value/tree/34405681799a0ca7a82c1f0a8f614e3198b19a73
 
-### 2. Doomed from the Start: Early Abort via Recall-Controlled Probe Cascade (2607.06503)
+### 2. Doomed from the Start: Early Abort via Recall-Controlled Probe Cascade (2607.06503v2)
 
-**Core finding**: LLM agents commit to doomed trajectories and continue consuming inference compute before failure becomes observable. But failure is predictable early from internal representations.
+**Population and protocol**: The main matrix contains TextCraft and WebShop
+with Qwen-2.5-7B, Llama-3.2-3B, and Qwen3-1.7B. Each cell has 800 episodes:
+TextCraft uses 100 tasks × 8 rollouts and WebShop 200 × 4. Twenty grouped
+task-split seeds separate training/cross-fitting, calibration, budget search,
+and held-out testing. Gates operate at rounds 1--6. The results remain
+in-distribution; category-held-out and distribution-shift tests are open.
 
-Key results:
-- **Per-round hidden-state probes** anticipate eventual episode failure from the **first interaction round**, where behavioral scorers are barely better than chance
-- **Probe cascade**: one distribution-free calibrated gate per round, with per-round recall budgets jointly searched for episode-level recall guarantee. At 90% recall target: **47.1% ± 10.3% compute savings** (Qwen-2.5-7B), **37.2% ± 8.8%** (Llama-3.2-3B) — 1.6–1.7× the best single-gate policy
-- **Behavioral features add zero gain**: An otherwise-identical cascade reading only behavior saves roughly half as much, and adding behavioral features to the probe yields no further improvement. The hidden states capture what behavior reveals — and more.
-- **Sample complexity characterization**: Practitioners can determine which recall promises their data can (and provably cannot) back
+**Early signal, qualified**: Round-one activation-probe AUC is 0.860, 0.698,
+and 0.811 on the three TextCraft cells, but 0.699, 0.523, and 0.591 on the
+WebShop cells. Thus a latent signal can precede cheap behavior in this matrix,
+but “predicts failure from the first round” is not uniformly strong: two
+WebShop cells begin near chance, and the strongest WebShop Qwen3 signal appears
+at round 3 (AUC 0.896).
 
-**Why this matters**: The Latent Horizon (#433) showed agents' internal representations diverge from their external behavior. "Doomed from the Start" makes this actionable: use the divergence to abort doomed episodes before they waste compute and produce unreliable output. The finding that behavioral features add zero gain over hidden states is the Latent Horizon's strongest validation — the internal trajectory is the real trajectory; behavior is a lossy projection.
+**Savings and controls**: At the nominal 0.90 recall target, cascade generated-
+token savings are 60.2%, 34.7%, and 47.3% for TextCraft and 35.9%, 24.7%, and
+54.9% for WebShop. These are six cell results, not one 47.1% overall effect.
+At 0.95, probe-only versus surface-only versus stacked cascade savings are,
+respectively, 42.2/24.8/45.0, 20.0/12.3/17.2, 26.3/19.3/26.8,
+18.7/10.3/20.6, 11.4/7.6/13.6, and 41.6/9.9/41.5%. The surface baseline is a
+deliberately cheap logistic model over action log-probability, token/prefix
+counts, and error-keyword counts. The evidence supports no consistent added
+value from those five features after activations; it does not establish
+numerical equality or dominate richer structured-trajectory monitors.
+
+**Recall and cost boundaries**: Default margin-based selection is empirical.
+The reported means stay within one seed-level standard deviation of target,
+but this is not a per-seed guarantee: at a strict 0.97 target on one TextCraft
+cell, the logistic probe meets the floor in 17/20 seeds and stacking in 16/20.
+An exact distribution-free guarantee requires a frozen policy and independent
+post-selection certification set; about 114 successful certification episodes
+can support at most roughly 0.974 at 95% confidence. Savings count generated
+tokens, excluding one-time trajectory/replay/fitting cost, online extraction
+overhead, latency, dollars, and the downstream value of saved compute.
+
+**Artifact boundary**: The v2 source says code “will be released soon.” At
+2026-09-04T06:38:36.233Z, one unauthenticated exact-title GitHub repository
+search returned HTTP 200 and zero repositories. The paper supplies tables and
+method details but no result bundle, split identities, or executable code for
+independent reproduction. ALFWorld is an in-domain recalibration boundary, not
+zero-shot transfer: 477 rollouts yield 250 Qwen-2.5 successes and 106 Qwen3
+successes; nominal 0.90 recall for Qwen-2.5 averages 0.891 ± 0.047.
+
+**Why this matters**: The study gives a concrete architecture for spending a
+recall budget across early gates and evidence that selected-layer activations
+can outperform one cheap behavior baseline. It does not establish that an
+agent's internal state is “the real trajectory,” that failure is universally
+knowable at round one, or that token savings become end-to-end deployment
+savings without an online cost and post-selection certification study.
 
 **Connection to the Dispersion Collapse**: Early trajectory prediction and
 below-floor niche dispersion are different measurements on different tasks.
@@ -146,7 +186,7 @@ Whether they share one structural mechanism remains an open synthesis question.
 
 **Connection to the Abstention Decay**: The Action Compulsion (#401) showed agents prefer acting over stopping. "Doomed from the Start" provides the intervention: a probe cascade that *can* stop the agent when internal state predicts doom, even when behavior looks normal.
 
-Source: https://arxiv.org/abs/2607.06503
+Source: https://arxiv.org/abs/2607.06503v2
 
 ### 3. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283)
 

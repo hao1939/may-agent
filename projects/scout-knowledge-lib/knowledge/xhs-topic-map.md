@@ -7124,6 +7124,47 @@ reproducibility gaps; (5) Reddit until trigger; (6) compaction. Select
 `2607.06503` and inspect dataset splits, calibration, baselines, round-one
 denominators, compute accounting, behavior ablation, and artifact support.
 
+### Cycle 353 checkpoint — early latent warning is cell-specific, not universal
+
+At `2026-09-04T06:36:51.950Z`, arXiv `2607.06503v2` supplied a 3,428-byte
+Atom record (SHA-256 `adef4dd4…9b4c`) and a 45,823-byte source archive
+(`9a4b51a5…6ee93`). The primary experiment is six cells: TextCraft and
+WebShop crossed with Qwen-2.5-7B, Llama-3.2-3B, and Qwen3-1.7B, 800 episodes
+per cell and 20 grouped task-split seeds. Round-one activation-probe AUC is
+0.860/0.698/0.811 on TextCraft and 0.699/0.523/0.591 on WebShop. The latent
+signal can arrive early, but two WebShop cells begin near chance; “predicts
+failure from the first round” is not uniformly strong.
+
+At nominal 0.90 recall, cascade generated-token savings are
+60.2/34.7/47.3% on TextCraft and 35.9/24.7/54.9% on WebShop, not one 47.1%
+overall effect. At 0.95, activation-only beats the paper's deliberately cheap
+five-feature behavior scorer in each cell, while stacking gives mixed small
+changes rather than literal equality. This supports no consistent incremental
+value from those tested surface features; it does not compare richer structured
+trajectory monitors. Default margin-selected recall is empirical: exact recall
+requires a frozen policy and independent post-selection certification data.
+Generated-token savings omit collection/replay/fitting cost, extraction
+overhead, latency, dollars, and downstream value.
+
+The source says code will be released soon. At
+`2026-09-04T06:38:36.233Z`, one unauthenticated exact-title GitHub repository
+search returned HTTP 200, zero repositories, a 55-byte response, and SHA-256
+`4af480b8…72a5f`; no executable artifact, split identities, or result bundle is
+available for independent reproduction. ArXiv wins as primary evidence and
+should be revisited on `2607.06503v3+`. GitHub should be revisited on the
+paper's code-release or attributable-repository trigger. Reddit made zero
+requests and retains its relevant-thread/RSS-access trigger. `RV-004` remains
+high/open because no protected query/rank -> selection -> later-outcome join
+appeared.
+
+Confidence is high for the paper's method, table values, and stated limits;
+moderate for transfer even within these tasks because results vary by split;
+absent for shifted tasks, richer behavioral monitors, online cost, and
+independent reproduction. Next seed-first, primary-review SkillReranker
+`2607.06283`, the highest accessible remaining Scan #455 claim: test whether
+its execution graph, baselines, and savings establish decomposition-driven
+retrieval rather than a task-specific reranker result.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
