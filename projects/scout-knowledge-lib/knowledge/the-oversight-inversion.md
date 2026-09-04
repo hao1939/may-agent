@@ -1050,30 +1050,29 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-478.md, arXiv 2607.07436, 2607.
 
 ### Layer 37: The Verification Hierarchy (Scan #479, 2026-07-09)
 
-Layer 36 showed governance mechanisms fail silently — producing positive signals even when structurally disabled. The Verification Hierarchy identifies *why*: verification mechanisms exist in a strict ordering of strength, and operating at any level below what the domain requires produces systematically misleading *positive* results.
+Layer 36 showed governance mechanisms can fail silently. Scan #479 initially interpreted its sources as one strict hierarchy, but primary review now supports a coverage map instead: verification mechanisms answer different predicates, and a valid answer about error can remain silent about causality, correctness, or authority. The evidence does not establish a universal total ordering or systematic positive error at every purported lower level.
 
 Five arXiv papers from different domains converge:
 
 - **Recursive Self-Improvement survey** (2607.07663v1, 1,250 papers surveyed): Derives a verification hierarchy from formal verifiers (strongest) through process reward models, external judges, and rubrics to intrinsic self-assessment (weakest). Self-improvement strength *tracks this hierarchy exactly*. Governance-grade measurement identified as "the field's most underpopulated niche." Self-confirming loops, model collapse, and diversity collapse all occur when verification is performed at a level below what the system requires.
-- **Physics-Audited Agentic SciML** (2607.07379v1): Error metrics (weak verification) select surrogates that violate causality (strong verification) — a model with low error responds to *future* loading history. The error metric reports success; physics auditing reveals the result is physically impossible. The best-performing model under weak verification is systematically the worst-performing under strong verification.
+- **Physics-Audited Agentic SciML** (2607.07379v1, primary-reviewed 2026-09-04): A common post-run contract finds normalized causality violations of 12.62 sampled and 2750.62 under bounded search for one earlier error-only transient surrogate, while the causal surrogate reports zero. But the audit-enabled surrogate also has lower mean error (`2.629e-3` versus `2.724e-3`), causality was soft during live search, both runs are single-seed, and the workflow changes verification, probes, and proposal feedback together. This supports predicate-specific output evidence, not a systematic weak-versus-strong selection reversal.
 - **Rethinking Code Performance Benchmarks** (2607.07619v1, primary-reviewed 2026-09-04): Only **94/1,538 (6.11%)** benchmark-labeled performant implementations pass the study's combined original-test correctness, one-sided significance, and effect-size gate. This does not prove that the 1,444-task complement is noise or false: released CSVs contain 1,400 `p >= .05` cases, 44 other gate failures, and 529 implementations that pass fewer tests than canonical. The authors' generated stress tests detect 23.94–25.43% in the released artifact, but its COFFE spreadsheets disagree with the paper's comparison table. Repeated measurement helps; correctness, workload selection, and artifact consistency remain separate verification requirements.
 - **EvoSOP** (2607.07321v1): Agents self-evolve through lifecycle governance (construct→merge→evaluate→prune), not static toolsets. The pruning step IS the verification gate — without it, the toolset accumulates false-pass artifacts. Governance loop IS the improvement mechanism.
 - **Towards Agentic AI Governance** (2607.07612v1): Systematic review identifies that agentic AI requires targeted governance mechanisms distinct from pre-existing AI frameworks. Self-describes as "preliminary" — the field is pre-paradigmatic while deployment accelerates.
 
-The hierarchy:
-1. Formal verifiers (Coq/Lean) → sound but domain-limited
-2. Deterministic gates → strong but domain-specific
-3. Domain constraints (physics, policy) → incomplete but catches what metrics miss
-4. Statistical testing (30+ runs, significance) → reveals what single runs hide
-5. Multi-agent review → diversity-dependent, collapses with coupled agents
-6. Automated judges (LLM-as-judge) → correlated with subject's blind spots
-7. Intrinsic self-assessment → highest confidence, lowest validity
-
-Each lower level produces *more confident* results with *less validity*. This is the mechanism: the Governance Silence isn't random — it's structural. Weak verification selects artifacts that strong verification rejects. The misleading positive is not noise; it's a systematic consequence of operating at the wrong level.
+The revised coverage map keeps the mechanisms but removes ordinal claims:
+formal verifiers cover encoded statements; deterministic gates cover named
+conditions; physics contracts cover specified output properties; statistical
+tests cover distributions under selected workloads; multi-agent review covers
+one reviewer/oracle configuration; automated judges cover their rubrics; and
+self-assessment covers an internal evaluation. None alone establishes the
+others. A misleading positive arises when a decision silently substitutes one
+covered predicate for an uncovered claim, not because every mechanism has a
+fixed position on a universal ladder.
 
 **Twenty-four-point exit arc**:
 1–21: (#444–#478)
-22. **Verification Hierarchy (#479): Before trusting any verification result, identify the verification level applied and the verification level required. If there is a gap, the result is not "unverified" — it is *misleadingly positive*. Audit the verification hierarchy itself: formal verifiers > deterministic gates > domain constraints > statistical testing > multi-agent review > automated judges > self-assessment. Each level produces confident results that levels above would reject (the hierarchy audit condition)**
+22. **Verification Coverage (#479): Before trusting any result, name the claim, predicate, domain, tolerance, sampling or search budget, and authority actually covered. Do not infer causality from predictive error, correctness from timing, or external authority from local checks. There is no evidence here for one universal ordering across these predicates (the coverage declaration condition).**
 23. **Commodity Proof (#482): Invest in harness-level verification infrastructure proportional to harness-level economic impact. When the harness moves cost more than the model menu (41% cost reduction, model-invariant across 6 models, r=0.99 quality-leverage correlation), verification of the harness — not the model — is the binding constraint. Evaluate trajectories, not just outputs. Benchmark harnesses, not just models. The developer IS the harness evaluator; LLM Burnout (323pts) is the physiological signal that this load is unsustainable (the harness verification condition)**
 24. **Skill Paradox (#483): Measure skill impact, not just skill provenance. When skills fill the harness at industrial scale (216,938 in SkillCenter, 20K+ GitHub stars) but controlled ablation proves generated skills ≈ random tokens of equal length (7,560 runs, p ≥ 0.396, 1.2pp total spread), the skill ecosystem optimizes for the wrong metric. SkillGate verifies provenance; nothing verifies impact. Controlled ablation MUST precede deployment-at-scale. Extend to rules: Institutional Red-Teaming (2607.07695) proves rules move safety 22-58pp while models are held constant — red-team the deployment substrate, not just the model (the skill impact condition)**
 
@@ -1083,7 +1082,7 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-483.md, arXiv 2607.07676, 2607.
 
 ### Layer 38: The Commodity Proof (Scan #482, 2026-07-09)
 
-Layer 37 showed verification mechanisms exist in a strict hierarchy. The Commodity Proof asks: *verified at which layer?* The Harness Effect (2607.06906) runs the first controlled experiment isolating harness from model — 22 tasks, six foundation models, changing only the orchestration layer. The harness cuts cost 41%, wall-clock 44%, tokens 38% — **all model-invariant** (33-61% range). Quality gains correlate almost perfectly with baseline model strength (r=0.99, "harness leverage"). On this workload, the orchestration layer moved cost more than the full spread of the model menu.
+Layer 37 showed that verification claims need explicit predicate coverage. The Commodity Proof asks: *verified for which claim and under which contract?* The Harness Effect (2607.06906) runs the first controlled experiment isolating harness from model — 22 tasks, six foundation models, changing only the orchestration layer. The harness cuts cost 41%, wall-clock 44%, tokens 38% — **all model-invariant** (33-61% range). Quality gains correlate almost perfectly with baseline model strength (r=0.99, "harness leverage"). On this workload, the orchestration layer moved cost more than the full spread of the model menu.
 
 This is the mathematical proof of what the Substrate Inversion hypothesized: when the harness IS the economic lever, verification must target the harness, not the model. But harness-level verification has near-zero infrastructure: no benchmarks, no leaderboards, no red-teaming community, no standardized evaluation framework.
 

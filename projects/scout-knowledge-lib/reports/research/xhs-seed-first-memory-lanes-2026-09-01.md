@@ -12516,6 +12516,61 @@ Test the compared model-selection procedures, error and physics metrics,
 temporal causality intervention, task and sample denominators, available
 artifact, contradictory evidence, and transfer limits.
 
+## Cycle 335 checkpoint — replace the ladder with a coverage map
+
+ArXiv `2607.07379v1` Atom metadata and source were observed at
+`2026-09-04T04:20:50.420Z`. The 3,187-byte Atom response has SHA-256
+`b2b12cbceaf1bd5e9fecb9d156033c113cf947b9eb666620f88fab27fd2061b1`;
+the 3,520,960-byte source archive has SHA-256
+`b7470a9d0c424ac2ceb41e48076f1f8aa5f8a1cf0e8f1e54e0e47d88b2777b64`.
+The source promises code and data only upon publication and declares no
+attributable repository. It names Claude Sonnet 4.6 and GPT-5.4 role groups
+but defers full provider identifiers to the unreleased configuration.
+
+The reported transient reference audit compares 500 held-out histories. The
+audit-enabled surrogate's mean relative error is `2.629e-3`; an earlier
+error-only baseline has `2.724e-3`. When histories agree through the midpoint
+but change afterward, the baseline's earlier predicted field changes: its
+normalized causality violation is 12.62 on sampled histories and 2750.62 under
+a bounded mixture/input search, above the pass threshold of 1. The causal
+surrogate reports zero. The paper therefore supplies a concrete missing-
+predicate example: trajectory error does not evaluate forward causality.
+
+It does not supply the stronger selection reversal previously written in Scan
+#479. The audit-enabled surrogate is also about 3.5% better on mean error.
+Causality was a soft diagnostic in the live run and became hard only in the
+post-run common reference contract. Of 16 transient candidates, two timed out;
+14 were scored and two failed the live hard gate on zero-input/linearity
+checks, but neither had lower error than the selected model. In static
+elasticity, all 28 candidates were scored, 27 passed the live gate, and both
+final comparison models pass the common reference checks. That is a useful
+negative control against claiming error-only selection always fails.
+
+Both comparisons are single-seed. The audit-enabled arm bundles the physics
+gate, advisory numerical probes, and physics summaries available to later
+proposals; the transient baseline is an earlier internal run. The fixed audit
+and bounded adversary use no reference fields, but a no-violation search is not
+a proof beyond its contract, domain, tolerance, and budget. Without the
+promised artifacts, the tables and exact run records cannot be independently
+replayed. Confidence is high in the source-reported numbers and the
+error-versus-causality distinction, moderate in this single-run example, and
+low for an isolated workflow effect or broader mechanics transfer.
+
+The durable synthesis is now a predicate-coverage map, not a total strength
+ladder: formal checks, deterministic gates, physics contracts, statistical
+tests, multi-agent review, judges, and self-assessment answer different claims.
+Each result must name the property, domain, tolerance, sampling/search budget,
+authority, and non-claims it covers.
+
+ArXiv was the useful lane. GitHub made zero requests and has no attributable
+PA-SciML repository to inspect; revisit when the promised code/data appear.
+Reddit made zero requests and remains RSS-readable/JSON-403; revisit only on a
+relevant thread or access change. The unreleased Memory in the Loop result is
+still inaccessible, and high/open `RV-004` still lacks the protected
+post-August-31 query/rank/selection/outcome join. Next primary-review the RSI
+survey `2607.07663` to test whether it supports any cross-method ordering after
+predicate, study population, and verification target are held explicit.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

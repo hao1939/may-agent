@@ -6073,6 +6073,34 @@ gaps; (5) Reddit until a relevant trigger; and (6) compaction. Select
 `2607.07379`; test the compared models, error and physics metrics, temporal
 causality intervention, denominators, artifact support, and transfer limits.
 
+### Cycle 335 checkpoint — physics checks cover predicates, not a global level
+
+Primary review of arXiv `2607.07379v1` changes the Verification Hierarchy into
+a coverage map. In the 500-history transient example, an earlier error-only
+baseline has mean relative error `2.724e-3` and fails a post-run causality
+contract at 12.62 normalized sampled violation and 2750.62 under bounded input
+search; the audit-enabled causal surrogate reports zero and has slightly lower
+error, `2.629e-3`. Causality was only soft during live search and became hard
+in the common post-run contract. This is direct evidence that error does not
+test causality, not evidence that the error metric selected a better-looking
+but worse winner.
+
+The static comparison is a negative control: both selected models pass the
+common linear-physics checks. Each problem uses one audit-enabled and one
+error-only run at one seed; verification, advisory probes, and feedback to
+later proposals change together. Code, data, exact provider identifiers,
+budgets, and run records are promised only upon publication. Confidence is
+high in the paper's stated tables and coverage distinction, moderate in the
+single-run causality example, and low for workflow attribution or transfer.
+
+ArXiv is the useful lane. GitHub made zero requests and no attributable
+PA-SciML repository is declared; revisit on the promised release. Reddit made
+zero requests and remains deferred at RSS-readable/JSON-403 until a relevant
+thread or access change. `RV-004` remains high/open at the same protected-data
+boundary. Next primary-review `2607.07663` to determine whether its survey
+actually derives a cross-method verification ordering or instead compares
+different predicates and study populations.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #479: The Verification Hierarchy, with PerformanceBench qualified. Five arXiv papers concern verification strength, but their evidence is domain-specific. Primary review of 2607.07619 finds that only 94/1,538 benchmark-labeled performant implementations pass the authors' combined correctness, one-sided significance, and effect-size gate under original tests; this does not show that the other optimizations are false or noise. The released artifact also disagrees with the paper's COFFE comparison table, so the reported 24–25% generated-test result is retained only for the authors' own stress-input approach and setting."
+summary: "Scan #479: The Verification Hierarchy, with PA-SciML and PerformanceBench qualified. The evidence supports matching verification predicates to claims, not a universal total ordering. PA-SciML's post-run reference audit exposes one acausal error-only surrogate, but the audit-enabled surrogate also has lower error, causality was soft during live search, and the comparison is single-seed and bundled. PerformanceBench finds only 94/1,538 benchmark-labeled implementations pass a compound original-test gate, not that the other optimizations are false; its released COFFE spreadsheets also disagree with the paper's comparison table."
 triggers: ["verification hierarchy", "verification gradient", "recursive self-improvement", "self-improvement survey", "governance-grade measurement", "verification strength", "formal verifiers", "self-assessment", "physics-audited", "PA-SciML", "error metrics misleading", "causal violation", "benchmark validity", "performance benchmark", "statistical significance", "EvoSOP", "standard operating procedures", "tool evolution", "lifecycle governance", "construct merge evaluate prune", "agentic AI governance", "governance mechanisms", "verification level", "misleading positive signal", "self-confirming loops", "model collapse", "diversity collapse", "harness leverage", "LLM burnout", "developer fatigue", "infrastructure sovereignty", "Cloudflare Drop", "Cloudflare Meerkat", "FAANG Simulator", "scan 479"]
 </ai_context>
 
@@ -7,27 +7,34 @@ triggers: ["verification hierarchy", "verification gradient", "recursive self-im
 
 **Date**: 2026-07-09
 **Sources**: arXiv API, Hacker News Algolia API, GitHub API
-**Theme**: Verification has a strict gradient of strength. Choosing any level below the required one produces systematically misleading *positive* signals — not noise, not silence, but confident green lights that higher-level verification would reject.
+**Theme**: Verification evidence is claim- and predicate-specific. A valid score can remain silent about a required property; no universal ordering follows across unrelated claims.
 
 ---
 
 ## Convergence Theme
 
-Five uncovered arXiv papers from different domains independently demonstrate the same structural pattern: verification mechanisms exist in a hierarchy, and weak verification doesn't just miss problems — it *produces confident positive results* that create false assurance. This is the mechanism underlying the Governance Silence (#478): governance doesn't fail because it reports failure; it fails because it reports *success* at the wrong verification level.
+The scan originally arranged five papers as a strict hierarchy. Primary review
+of PA-SciML and PerformanceBench does not support that total ordering. Their
+durable common pattern is missing predicate coverage: an error metric can be a
+valid error measurement without testing causality, and a repeated timing test
+can be valid for one workload without testing correctness or representative
+usage. Calling either mechanism globally weaker obscures which claim failed.
 
-The hierarchy, synthesized across papers:
+A claim-coverage map is the safer synthesis:
 
-| Level | Verification Type | Domain Example | Failure Mode When Misapplied |
-|-------|------------------|----------------|-------------------------------|
-| 1 (Strongest) | Formal verifiers (Coq/Lean kernels) | Aria (#475): 100% proof coverage | Sound but narrow — domain must be formalizable |
-| 2 | Deterministic gates | CXI (#475): zero escapes | Strong but domain-specific |
-| 3 | Physics/domain constraints | PA-SciML: causality, boundary conditions | Incomplete but meaningful — catches what metrics miss |
-| 4 | Statistical testing (30+ runs, significance tests) | Rethinking Benchmarks: 6.11% significant | Reveals what single runs hide |
-| 5 | Multi-agent review or coordinated testing | SWE-Review (#475); CREAD (#472) is an environment-dependent testing-role proxy | Independence, coordination effect, and oracle authority are configuration-specific; CREAD wins one environment and loses the other |
-| 6 | Automated judges (LLM-as-judge) | Blind Curator (#478): false-pass bias | Correlated with subject's own blind spots |
-| 7 (Weakest) | Intrinsic self-assessment | RSI survey: self-confirming loops | Produces highest confidence with lowest validity |
+| Verification type | Domain example | Claim it can support | What remains separate |
+|---|---|---|---|
+| Formal verifier | Aria (#475) | A formal statement under a kernel and encoding | Domain adequacy and omitted behavior |
+| Deterministic gate | CXI (#475) | A specified condition at mediated sinks | Unreviewed sinks, policy/runtime compromise, task success |
+| Physics contract | PA-SciML | Named output properties under one contract, tolerance, and input domain | Predictive accuracy, omitted physics, search completeness |
+| Repeated statistical test | PerformanceBench | A distributional contrast under selected tests and decision thresholds | Functional correctness, workload representativeness, multiplicity |
+| Multi-agent review/testing | SWE-Review; CREAD (#472) | Outcomes of a stated reviewer/oracle configuration | Independence, coordination attribution, external authority |
+| Automated judge | Blind Curator (#478) | Agreement with the judge's rubric | Ground truth outside that rubric |
+| Intrinsic self-assessment | RSI survey | The system's own assessment | Independent validity |
 
-**The key finding**: self-improvement strength, benchmark validity, and governance effectiveness all degrade along this same hierarchy. Each lower level produces *more confident* results with *less validity*.
+**The key finding**: verification is stronger or weaker only relative to a
+declared claim. Every result should name its predicate, domain, tolerance,
+sampling or search budget, authority, and explicit non-claims.
 
 ---
 
@@ -51,19 +58,21 @@ The hierarchy, synthesized across papers:
 
 ---
 
-### 2. Physics-Audited Agentic Discovery in Scientific Machine Learning (2607.07379v1) — VERIFICATION [UNCOVERED]
+### 2. Physics-Audited Agentic Discovery in Scientific Machine Learning (2607.07379v1) — VERIFICATION [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07379
 
 **Abstract**: In agentic SciML, LLM agents discover surrogate models and select one by an automated score (typically an error metric). A low error does not establish that predicted fields satisfy the physics. Introduces PA-SciML: a verification-first workflow that fixes a scoring evaluator before search, derives machine-checkable physics requirements, and checks each candidate on its outputs.
 
 **Key findings**:
-- **Causal violation invisible to error metrics**: In transient elastodynamics, an error-only baseline with similar mean error **fails a causality check** — it responds to future parts of the loading history. The error metric reports success; physics auditing reveals the result is physically impossible.
-- **Verification-first workflow**: Fix the evaluator *before* search (not after). Derive reviewable, machine-checkable physics requirements. Check each candidate individually, not just the best one.
-- **Per-candidate physics evidence**: The key distinction is not a richer score but evidence *on the predicted fields themselves* — process information, not outcome metrics.
-- **Constraint hierarchy matters**: Physics constraints (Level 3) catch what error metrics (Level 4-7) miss. The surrogate that looks best under weak verification is the one that violates the strongest constraints.
+- **A post-run audit exposes one acausal baseline**: In the 500-history transient example, the audit-enabled surrogate has mean relative error `2.629e-3` versus `2.724e-3` for an earlier error-only baseline. When rechecked under a common reference contract, the baseline's early response changes when only later loading changes: normalized causality violation 12.62 on sampled histories and 2750.62 under bounded input search, against a pass threshold of 1. The selected causal architecture reports zero on that check.
+- **This is property evidence, not a selection reversal**: The audit-enabled model is also about 3.5% better on the error metric, so the experiment does not show the weak metric choosing a more accurate but physically worse winner. Causality was a soft diagnostic during the live search and became hard only in the post-run reference audit. Of 14 scored live transient candidates, two failed hard zero-input/linearity checks, but neither beat the selected model's error.
+- **The static example is a negative control**: Both selected static-elasticity surrogates pass the common linearity, scaling, and boundary checks. The audit adds evidence there without changing the outcome. Across both examples, a physics audit can distinguish properties that error does not measure; error-only selection is not shown to fail systematically.
+- **The method comparison is bundled and single-seed**: Each problem compares one audit-enabled run with one error-only run. Verification, advisory probes, and physics summaries available to later proposals change together; the transient baseline is an earlier run. The search produced 28 static candidates and 16 transient candidates, two of which timed out. Code, data, exact provider identifiers, budgets, and run records are promised only upon publication and are not currently available.
 
-**Implication**: This is the Process Erasure (#462) in the scientific domain. Error metrics erase the physics information governance requires. When verification is applied at the wrong level, the best-performing model under weak evaluation is systematically the worst-performing model under strong evaluation — not randomly worse, but structurally worse.
+**Primary-review provenance and limits (2026-09-04)**: arXiv `2607.07379v1` Atom metadata and source were observed at `2026-09-04T04:20:50.420Z` (3,187 bytes, SHA-256 `b2b12cbc…2061b1`; 3,520,960 bytes, SHA-256 `b7470a9d…77b64`). The source names Claude Sonnet 4.6 and GPT-5.4 role groups but defers full provider identifiers to future configuration files. No attributable public repository or result artifact is provided. Confidence is high that the reported tables and stated contract distinguish error from causality, moderate in the single-run example, and low for a causal workflow effect or transfer beyond the two linear-mechanics problems.
+
+**Implication**: Verification mechanisms are not a single strength ladder independent of the claim. Prediction error and causality checks answer different questions; a stronger conclusion requires declaring the target property, contract, tolerance, input domain, and search budget. PA-SciML supports predicate-specific evidence and reviewable contracts, not a systematic inversion between weak and strong verification.
 
 **Connections**: Extends Process Erasure (#462), Variance Signal (#457), Verification Loop (#475), Diagnostic Deficit (#476).
 
@@ -197,20 +206,20 @@ LLM Burnout at **241pts** (+25.5%, highest growth rate) with high comment-to-poi
 
 The five uncovered papers converge on a structural insight that extends the Oversight Inversion:
 
-**Layer 37: The Verification Hierarchy** — Verification mechanisms exist in a strict ordering of strength. When verification is applied at any level below what the domain requires, it produces *systematically misleading positive results* — not random errors, not silence, but confident success signals from mechanisms that higher-level verification would reject.
+**Layer 37: The Verification Coverage Map** — Verification mechanisms cover different predicates. A score can be valid for predictive error while saying nothing about causality, correctness, authority, or another required property. Primary review does not establish one strict cross-domain total ordering or systematic positive error at every lower level; it establishes that evidence must name the claim it can and cannot test.
 
-The Governance Silence (#478, Layer 36) identified that governance fails without producing failure signal. The Verification Hierarchy identifies *why*: because the verification mechanism operates at the wrong level in a strict hierarchy, and lower levels produce *positive* signals even when higher levels would reject.
+The Governance Silence (#478, Layer 36) identified that governance can fail without producing a failure signal. The coverage map identifies one mechanism: an instrument may truthfully report its own predicate while leaving the property required for a decision untested.
 
 **Evidence across papers**:
 - RSI Survey: self-improvement with self-assessment (Level 7) produces self-confirming loops. With formal verifiers (Level 1), it converges reliably. The failure mode is not "sometimes wrong" but "always confident."
-- PA-SciML: error metrics (Level 4-7) select surrogates that violate causality (Level 3). The error-only baseline *reports lower error* than the physics-audited selection.
+- PA-SciML: one error-only baseline fails a post-run causality contract, but the audit-enabled selection also has lower error and causality was soft during live search. This is missing-predicate evidence, not an ordering reversal.
 - Benchmarks: benchmark labels call all 1,538 implementations performant, while only 94 pass this study's correctness, one-sided significance, and effect-size gate under original tests; the complement is not a measured false-positive rate.
 - EvoSOP: static evaluation (Level 6-7) of tool compositions fails. Lifecycle governance with pruning (Level 2-3) succeeds.
 - Governance survey: pre-existing AI governance (general Level 7) is insufficient for agentic AI (requires Level 2-4 targeted mechanisms).
 
 **Twenty-two-point exit arc**:
 1–21: (Layers #444–#478)
-22. **Verification Hierarchy (#479): Before trusting any verification result, identify the verification level applied and the verification level required. If there is a gap, the result is not "unverified" — it is *misleadingly positive*. Audit the verification hierarchy itself: formal verifiers > deterministic gates > domain constraints > statistical testing > multi-agent review > automated judges > self-assessment. Each level produces confident results that levels above would reject.**
+22. **Verification Coverage (#479): Before trusting a result, name the claim, predicate, domain, tolerance, sampling or search budget, and authority that the verifier actually covers. Do not infer causality from error, correctness from timing, or external authority from local checks. Different mechanisms may be stronger for different claims; require explicit coverage and preserve unknowns rather than projecting a universal ladder.**
 
 ---
 
@@ -255,9 +264,13 @@ The Verification Hierarchy is the structural mechanism unifying the last four la
 - **Layer 34 (Balkanization Problem)**: Governance knowledge is fragmented — researchers at different verification levels don't cite each other.
 - **Layer 35 (Verification Loop)**: When verification IS execution, reliability becomes a construction property — verification at the right level.
 - **Layer 36 (Governance Silence)**: Governance fails silently — because verification at the wrong level produces positive signals.
-- **Layer 37 (Verification Hierarchy)**: The underlying structure — verification has a strict ordering, and every level produces confident results that higher levels reject.
+- **Layer 37 (Verification Coverage)**: The underlying structure — results become misleading when their measured predicate is silently substituted for the claim a decision actually needs.
 
-The RSI survey's identification of governance-grade measurement as "the field's most underpopulated niche" is the strongest single statement of the Oversight Inversion's core claim: the gap between deployment velocity and verification adequacy is structural, not accidental, and it's widening because verification infrastructure is built from the extremes (formal proofs at Level 1, self-assessment at Level 7) while the middle — governance-grade verification (Levels 3-5) — remains empty.
+The RSI survey calls governance-grade measurement "the field's most
+underpopulated niche" and proposes an ordering from formal verification to
+self-assessment. That ordering remains an attributed source claim pending
+primary review; PA-SciML and PerformanceBench cannot independently establish
+it because they study different predicates, systems, and populations.
 
 The HN signal confirms: the community is exhausted (LLM Burnout), comparing models rather than celebrating them (Grok/GPT/Claude comparison), and investing in infrastructure sovereignty (Cloudflare double) rather than capability frontiers. The skill library explosion on GitHub (3,553★ for BuilderIO/skills) shows the community building governance-level artifacts (structured, verified, reusable) rather than capability-level artifacts (model wrappers, prompt chains).
 
