@@ -57,7 +57,7 @@ official GitHub repositories on 2026-09-02 UTC. The local authoring clock was
 already 2026-09-03 in Asia/Shanghai, but this report uses the UTC observation
 date so its filename and metadata match the review boundary.
 
-| Project | Official identity and default | Inspected revision | Commit time | Latest release observed |
+| Project | Official identity and default | Inspected revision | Author time | Latest release observed |
 |---|---|---|---|---|
 | Hermes Agent | [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent), `main`, not archived | [`1cb3ab617363ffab9e55239a7d2ab0d6f9c10473`](https://github.com/NousResearch/hermes-agent/commit/1cb3ab617363ffab9e55239a7d2ab0d6f9c10473) | 2026-09-02 10:43:27 -07:00 | [`v2026.8.31`](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.8.31), “Hermes Agent v0.21.0,” published 2026-08-31 19:29:49 UTC, target `main` |
 | OpenClaw | [openclaw/openclaw](https://github.com/openclaw/openclaw), `main`, not archived | [`1212f991db46ad4ffe8c11198c175a5736392a15`](https://github.com/openclaw/openclaw/commit/1212f991db46ad4ffe8c11198c175a5736392a15) | 2026-09-02 10:57:05 -07:00 | [`v2026.8.2`](https://github.com/openclaw/openclaw/releases/tag/v2026.8.2), “openclaw 2026.8.2,” published 2026-09-01 16:00:56 UTC, target `main` |

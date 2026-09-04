@@ -85,8 +85,8 @@ appeared. `RV-034` remains inaccessible without external runtime evidence.
 
 ## Validation and next ranked work
 
-On the exact Cycle 409 candidate rooted at `a76092b318` and containing this
-four-file documentation delta:
+On exact Cycle 409 standing result
+`a179a58bff62749a8be56f26ba9adab61ae61b7e`:
 
 - the full Scout gate passes 302 tests / 1,512 assertions, syntax, TypeScript,
   source formatting, Cycle 409 projection, 106 scoped links, and navigation
@@ -94,8 +94,8 @@ four-file documentation delta:
 - all four accepted Hermes/OpenClaw artifacts have exactly one complete
   `<ai_context>` preamble with summary, triggers, date, and source basis, and
   the source ledger contains exactly 28 Hermes/OpenClaw lead rows;
-- whitespace passes, and the broad audit covers 1,544 Markdown documents /
-  1,757 local prose links with zero errors;
+- whitespace passes, and the broad audit covers 1,545 Markdown documents /
+  1,759 local prose links with zero errors;
 - read-only health at `2026-09-04T21:45:00.000Z` reports 36 facts / 16 wakes
   with `truncated:true`; the two additional facts relative to Cycle 408 are
   the UTC-future filename/date observations for this local-date report, not a
