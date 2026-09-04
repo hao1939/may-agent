@@ -7099,6 +7099,31 @@ RSS-readable/JSON-403 until its trigger. `RV-004` remains high/open. Next
 seed-first, primary-review `2607.06503` because its first-round/zero-behavior-
 gain claims remain the highest accessible causal evidence in the same thesis.
 
+Exact Cycle 352 material
+`7cb650bd50e1faac5c9a9cbd7bfee10db59a61ca` passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions with zero failures in 103.50 seconds. The broad
+audit passes 1,540 documents / 1,728 links; health at
+`2026-09-04T06:35:59.449Z` is 26 facts / 16 wakes and truncated. Accepted
+lineage through `ff923ccde4` and Cycle 351 material `b6bf4292de` is contained;
+unaccepted `d041c41b54` is excluded. The tree is clean, and protected `/app`
+remains exact at `386b445c…1fec8`, 918 / `0d1ab91f…a932` overall and 296 /
+`7e4d0937…6a8a` in Scout scope.
+
+### Cycle 353 seed-first start — test the first-round latent advantage
+
+At the post-validation boundary, reuse Cycle 341's XHS observation through
+`2026-09-04T05:00:03.241Z`; it remains inside cadence. Make zero XHS requests:
+added/changed identities remain unknown, removals `[]`, and all 132 seeds
+remain unavailable. Rank (1) inaccessible high/open `RV-004`; (2) Memory in
+the Loop's missing provider result; (3) Doomed from the Start `2607.06503`,
+highest accessible because its first-round prediction, 47.1% compute-saving,
+and zero-added-behavior claims are still unreviewed and carried into the
+Oversight Inversion; (4) SkillReranker and other primary/contradiction/
+reproducibility gaps; (5) Reddit until trigger; (6) compaction. Select
+`2607.06503` and inspect dataset splits, calibration, baselines, round-one
+denominators, compute accounting, behavior ablation, and artifact support.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

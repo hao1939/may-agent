@@ -13965,6 +13965,41 @@ seed-first, primary-review `2607.06503`; its first-round prediction and claimed
 zero incremental behavioral value are the highest accessible causal claims in
 the same thesis.
 
+Exact Cycle 352 material `7cb650bd50e1faac5c9a9cbd7bfee10db59a61ca`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 11/14, navigation v2 8/8, and 296 tests / 1,484 assertions
+with zero failures in 103.50 seconds. The broad audit passes 1,540 documents /
+1,728 links / zero errors. Read-only health at
+`2026-09-04T06:35:59.449Z` returns 26 facts / 16 wakes and is truncated.
+Historical `f26bd4f3…f1be`, accepted `ff923ccde4`, and Cycle 351 material
+`b6bf4292de` are ancestors; unaccepted `d041c41b54` is excluded. The standing
+tree is clean.
+
+Protected `/app` remains unchanged at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 918 all-file records /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`,
+and 296 Scout records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+No protected checkout was written or tested.
+
+## Cycle 353 seed-first start — test latent versus behavioral early warning
+
+At the post-validation boundary, Cycle 341's supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all 132
+seeds remain unavailable, and account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected query/rank -> selection -> later-outcome join; (2) Memory in the
+Loop's missing provider result; (3) Doomed from the Start `2607.06503`, highest
+accessible because first-round prediction, 47.1% compute-saving, and “behavior
+adds zero” remain causal-sounding unreviewed claims in the Oversight Inversion;
+(4) SkillReranker and other primary, contradiction, reproducibility, retrieval,
+and synthesis gaps; (5) Reddit until its relevant-thread/access trigger; (6)
+compaction. Select `2607.06503` and inspect task/model populations, split and
+calibration rules, first-round denominators, compute accounting, behavioral
+baseline/ablation, uncertainty, and public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
