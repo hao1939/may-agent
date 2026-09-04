@@ -4584,6 +4584,37 @@ the consent paper. Check whether `F = sigma(1+epsilon)/(1+alpha)` is derived or
 posited, which statements Lean checks, and what evidence supports the claimed
 dynamical attractor and real-system stability implications.
 
+### Cycle 312 checkpoint — formal algebra does not validate a friction law
+
+Anonymous arXiv reads at `2026-09-04T01:04:48Z–01:05:13Z` returned the
+13-file v3 source (`135c54fd…e37785`) and newer 12-file v4 source
+(`aa7e71b3…cdd0a`). V4 calls the ratio a phenomenological ansatz, reports that
+it loses to independent effects in the exploratory proxy design, and records
+an opposite-direction interaction. Its surviving claim is authorization and
+measurement discipline, not a universal friction law.
+
+The paper-linked GitHub repository `dissensus-ai/lean-formalizations` resolved
+read-only at `2026-09-04T01:07:26.624Z` to `8e113333bf461b0396ba44267f64320ef9f974bb`.
+That commit retracts the formula-to-coordination mapping while retaining valid
+algebraic declarations, and public Lean Action CI run `32805920785` succeeded.
+No independent local Lean build ran because this environment exposes neither
+`lake` nor `lean`. ROM proves only conditional persistence for a finite,
+static, density-independent positive operator with a stipulated bridge; it
+does not derive authorization or an empirical attractor.
+
+Confidence is high in the scope correction from matching latest paper and
+repository text, medium in algebraic checking because only same-repository CI
+was available, and low in empirical transfer. GitHub and arXiv supplied the
+selected evidence. Revisit arXiv on v5, independent replication, or a measured
+authorization/outcome link; revisit GitHub on a new exact head or independent
+Lean reproduction. Reddit made zero requests and remains RSS-readable/JSON-403
+until a relevant thread or access change. `RV-004` remains high/open: this
+corrects a durable claim but supplies no retained navigation-to-outcome join.
+
+Next begin seed-first and audit the highest-impact remaining unsourced Scan
+467 claim. Rank direct primary contradictions or corrections above another
+historical attention narrative and keep static compaction last.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

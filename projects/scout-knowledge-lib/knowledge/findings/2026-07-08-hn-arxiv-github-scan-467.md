@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #467 (2026-07-08): The Delegation Reckoning. Three uncovered arXiv papers connect expanded production to open comprehension and verification questions and to limits on iterative repair. Agentic Delegation (2605.25438v2) reports an event-time increase of 2.53 active languages at adoption against a 0.90 pre-adoption mean; first uses concentrate among developers with narrower observed public portfolios, but the paper explicitly measures a production frontier rather than skill or comprehension and treats the estimates as associations. Is Three the Magic Number? (2607.05197v1) reports diminishing completion-rate returns across six tested tool/dataset configurations and three low-cost models; most gains occur early, but its 3–4-step boundary and workflow-over-model ranking are not universal or causally isolated. The Axiom of Consent (2601.06692v3) derives F = σ(1+ε)/(1+α) with Lean 4 proofs: friction rises in stakes and entropy, falls in alignment; consent-respecting arrangements are dynamical attractors, formalizing why the Oversight Inversion is structurally stable. On HN: ✅ SICP-Sol COMPREHENSION DIVERGENCE CONFIRMED — gap explodes from 11pts to 50pts (SICP 273 vs Sol 223, prediction threshold was 15pts). Uniqlo at 918pts (+14.6%). Chat Control crosses 800pts (830pts). Major new entries: GLM 5.2/AI margin collapse (677pts), '98% isn't much' (513pts), Slopfix $10k/week to delete AI code (284pts), Learning to code still worthwhile (312pts). Expanded sovereignty stack crosses 5,000pts across 11 domains. Foundations Turn at ~1,129pts (5.06× Sol). Running accuracy: ~96.8% (92/95)."
+summary: "HN/arXiv/GitHub Scan #467 (2026-07-08): The Delegation Reckoning, primary-qualified. Agentic Delegation (2605.25438v2) reports an additive event-time increase of 2.53 active languages against a 0.90 pre-adoption mean, but measures production rather than comprehension and treats the estimates as associations. Is Three the Magic Number? (2607.05197v1) reports diminishing completion-rate returns in six tested configurations, not a universal 3–4 cutoff or isolated workflow-over-model effect. The latest Axiom of Consent revision (2601.06692v4) calls F = σ(1+ε)/(1+α) a phenomenological ansatz; its proxy experiment rejects the composite, Lean checks properties of the selected formula rather than empirical adequacy, and ROM persistence is conditional rather than a proof that consent-respecting systems are real-world attractors. On HN: the SICP-Sol attention gap reached 50pts (273 vs 223), while Uniqlo reached 918pts and Chat Control 830pts."
 triggers: ["delegation reckoning", "agentic delegation", "language frontier", "2605.25438", "repair loop ceiling", "three the magic number", "2607.05197", "axiom of consent", "friction dynamics", "2601.06692", "SICP comprehension divergence", "50pt gap", "margin collapse", "GLM 5.2", "98% isn't much", "slopfix", "10k delete AI code", "scan 467"]
-source_basis: "HN front page + best stories 2026-07-08 via Firebase API (30+ stories). HN items: 48829312 (Uniqlo 918pts), 48818311 (Chat Control 830pts), 48808482 (OpenWrt One 814pts), 48816883 (StreetComplete 794pts), 48808928 (CoMaps 778pts), 48823557 (EU Car Camera 722pts), 48809877 (GLM 5.2 margin collapse 677pts), 48819244 (Microsoft fires idTech 634pts), 48811591 (Riddle reMarkable 624pts), 48819008 (Chat Control EU Parliament 600pts), 48819608 (30papers 596pts), 48816959 (98% isn't much 513pts), 48821576 (Kokoro 475pts), 48808002 (Anthropic Global Workspace 454pts), 48827858 (GitLost 390pts), 48812156 (DNA Sequencing 375pts), 48821848 (Davit 362pts), 48756578 (Herdr 361pts), 48815196 (Microsoft Device ID 343pts), 48818963 (Amazon No Knockoffs 323pts), 48811644 (Ternlight 323pts), 48816003 (Researchers Leave USA 316pts), 48810439 (Learning to Code 312pts), 48817017 (Dua Lipa Banned Books 299pts), 48825749 (Tenda 295pts), 48823359 (Slopfix $10k/week 284pts), 48827325 (ZFS 279pts), 48825664 (SICP 273pts), 48824826 (GAO 248pts), 48780387 (EVE Online 241pts), 48827402 (Sol 223pts), 48820119 (QR Font 205pts), 48819808 (Rowboat 205pts), 48786789 (Watchmaking 199pts), 48830565 (Apple/Broadcom 194pts), 48826329 (LineageOS 165pts), 48831785 (PFAS/FDA 162pts), 48821441 (Notes on Quality 150pts), 48827092 (Floppy 139pts), 48832212 (Robostral 135pts), 48793805 (Homemade GPU 125pts), 48761868 (Accretive Work 110pts), 48831658 (OpenBSD CVE 100pts), 48831565 (Cloudflare Meerkat 86pts). GitHub API: ponytail 77,721★, rowboat 15,668★, T3MP3ST 3,733★, superlog 998★, guard-skills 975★, open-connector 975★, kastor 9★. arXiv: 2605.25438v2 (Agentic Delegation), 2607.05197v1 (Repair Loops), 2601.06692v3 (Axiom of Consent), 2607.05125v1 (Three-Phase Evaluation). Primary review on 2026-09-04 used https://arxiv.org/abs/2605.25438v2 and its 46-file TeX source archive, SHA-256 1b3e7968697bcb306f7c96fbdb60e93d8c49eb805afb15ce00271084da24a296; it also used https://arxiv.org/abs/2607.05197v1 and its 7-file TeX source archive, SHA-256 997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d."
+source_basis: "HN front page + best stories 2026-07-08 via Firebase API (30+ stories). HN items: 48829312 (Uniqlo 918pts), 48818311 (Chat Control 830pts), 48808482 (OpenWrt One 814pts), 48816883 (StreetComplete 794pts), 48808928 (CoMaps 778pts), 48823557 (EU Car Camera 722pts), 48809877 (GLM 5.2 margin collapse 677pts), 48819244 (Microsoft fires idTech 634pts), 48811591 (Riddle reMarkable 624pts), 48819008 (Chat Control EU Parliament 600pts), 48819608 (30papers 596pts), 48816959 (98% isn't much 513pts), 48821576 (Kokoro 475pts), 48808002 (Anthropic Global Workspace 454pts), 48827858 (GitLost 390pts), 48812156 (DNA Sequencing 375pts), 48821848 (Davit 362pts), 48756578 (Herdr 361pts), 48815196 (Microsoft Device ID 343pts), 48818963 (Amazon No Knockoffs 323pts), 48811644 (Ternlight 323pts), 48816003 (Researchers Leave USA 316pts), 48810439 (Learning to Code 312pts), 48817017 (Dua Lipa Banned Books 299pts), 48825749 (Tenda 295pts), 48823359 (Slopfix $10k/week 284pts), 48827325 (ZFS 279pts), 48825664 (SICP 273pts), 48824826 (GAO 248pts), 48780387 (EVE Online 241pts), 48827402 (Sol 223pts), 48820119 (QR Font 205pts), 48819808 (Rowboat 205pts), 48786789 (Watchmaking 199pts), 48830565 (Apple/Broadcom 194pts), 48826329 (LineageOS 165pts), 48831785 (PFAS/FDA 162pts), 48821441 (Notes on Quality 150pts), 48827092 (Floppy 139pts), 48832212 (Robostral 135pts), 48793805 (Homemade GPU 125pts), 48761868 (Accretive Work 110pts), 48831658 (OpenBSD CVE 100pts), 48831565 (Cloudflare Meerkat 86pts). GitHub API: ponytail 77,721★, rowboat 15,668★, T3MP3ST 3,733★, superlog 998★, guard-skills 975★, open-connector 975★, kastor 9★. arXiv: 2605.25438v2 (Agentic Delegation), 2607.05197v1 (Repair Loops), 2601.06692v3/v4 (Axiom of Consent), 2607.05125v1 (Three-Phase Evaluation). Primary review on 2026-09-04 used the 46-file 2605.25438v2 source archive (SHA-256 1b3e7968697bcb306f7c96fbdb60e93d8c49eb805afb15ce00271084da24a296), the 7-file 2607.05197v1 archive (SHA-256 997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d), the 13-file 2601.06692v3 archive (SHA-256 135c54fd3a8021837752f3f16d0afc4d9615ed8ea3d90c8e48e4413099e37785), and the latest 12-file 2601.06692v4 archive (SHA-256 aa7e71b3db2104b1303e1547a5cab231f9cbfe794a968febc4e87da7003cdd0a). The v4-linked public repository dissensus-ai/lean-formalizations was read at exact commit 8e113333bf461b0396ba44267f64320ef9f974bb; its Lean Action CI run 32805920785 succeeded."
 </ai_context>
 
 # Scan #467: The Delegation Reckoning
@@ -14,7 +14,7 @@ source_basis: "HN front page + best stories 2026-07-08 via Firebase API (30+ sto
 
 The delegation reckoning.
 
-Agent delegation works. It expands what developers can produce, broadens the languages they write in, accelerates output. But three uncovered arXiv papers — converging with striking HN signals — reveal that delegation creates a structural debt that can't be repaired by iteration, and that the friction of governing delegated work is not an implementation problem but a mathematical inevitability.
+The three papers address different pieces of delegated work. One measures broader public production, one measures diminishing repair returns in six configurations, and one proposes an authorization architecture while rejecting its own friction composite in an exploratory proxy design. They motivate explicit verification, repair-budget, and authorization measurements; they do not jointly prove an inevitable structural debt or one governance law.
 
 ### Paper 1: Agentic Delegation and the Language Frontier (2605.25438v2)
 
@@ -50,23 +50,31 @@ The v1 abstract page and 7-file TeX source were read directly (archive SHA-256 `
 
 Confidence is medium that diminishing returns recur in these tested automated-validation workflows. Confidence is low in an exact universal cutoff, a causal workflow-over-model ordering, or transfer to frontier models and open-ended agent tasks. A reusable decision rule needs absolute marginal benefit, inference/runtime cost, and uncertainty on the target workflow rather than the paper title's number.
 
-### Paper 3: The Axiom of Consent (2601.06692v3)
+### Paper 3: The Axiom of Consent (2601.06692v3, latest v4)
 
-**The study**: A formal framework for multi-agent coordination friction, derived from a single axiom: actions affecting agents require authorization in proportion to stakes. Machine-checked Lean 4 proofs. 94 pages.
+**The study**: An authorization architecture built around a stake-weighted unanimity principle, with majority and supermajority thresholds treated as explicit relaxations. The latest revision separates authorization, modeled friction, operative control, and observed outcomes instead of deriving them from one another.
 
-**The core formula**: F = σ(1+ε)/(1+α) — friction rises in stakes (σ) and entropy (ε), falls in alignment (α). The Replicator-Optimization Mechanism governs selection over strategies: lower-friction configurations persist longer, making consent-respecting arrangements **dynamical attractors** rather than normative ideals.
+**The formula**: F = σ(1+ε)/(1+α) is a **phenomenological ansatz**, chosen to encode directional desiderata; it is not derived from the authorization axiom. In the paper's exploratory proxy design, the composite loses to an independent-effects model and one feasible-centred interaction runs in the opposite direction.
 
-**What this means for oversight**: The Oversight Inversion is a high-σ (high-stakes decisions), high-ε (high-entropy agent behavior), low-α (low alignment between agent vocabulary and oversight vocabulary — the Vocabulary Problem, #466) configuration. By the friction formula, this means governance friction is *structurally high*, not accidentally high. Reducing it requires increasing alignment (shared vocabulary, shared mutation taxonomy, shared semantic grounding) or reducing stakes (limiting scope of delegation) or reducing entropy (constraining agent behavior). There are no free lunches. The paper proves — with Lean 4 verification — that consent-respecting configurations are the attractors toward which systems evolve. Configurations that bypass oversight for speed are high-friction and ultimately unstable.
+**What this means for oversight**: Alignment, stakes, and information deficit remain useful measurement prompts, but the formula does not establish that oversight friction is structurally high in a real system. Lean proves algebraic properties of the selected expression, not its empirical adequacy, the correctness of an authorization classification, or ROM's survival bridge. ROM supplies a conditional persistence result for a finite, static, density-independent positive operator; it neither derives authorization nor proves that consent-respecting systems are real-world attractors. The durable contribution is the insistence on locating affected parties, authorization acts, scope, expiry, revocation, and outcome measures separately.
+
+#### Cycle 312 primary-source and formalization correction (2026-09-04)
+
+Anonymous read-only arXiv access returned v3 and the newer v4 source. V3's 13-file archive hashes to `135c54fd3a8021837752f3f16d0afc4d9615ed8ea3d90c8e48e4413099e37785`; v4's 12-file archive hashes to `aa7e71b3db2104b1303e1547a5cab231f9cbfe794a968febc4e87da7003cdd0a`. V4 expressly records the failed composite comparison, the opposite proxy interaction, and the narrower authorization/measurement contribution.
+
+The linked public Lean repository resolves to `dissensus-ai/lean-formalizations` commit `8e113333bf461b0396ba44267f64320ef9f974bb` (2026-08-25). Its AxiomOfConsent module marks the functional mapping retracted: declarations about the chosen formula remain valid algebra, while their mapping to coordination claims and the previous “12/12 match” claim are withdrawn. Public Lean Action CI run `32805920785` succeeded on that commit. This environment has neither `lake` nor `lean`, so no independent local elaboration was run; public CI is repository evidence, not an independent reproduction.
+
+Confidence is high that the latest paper and repository reject the earlier derivation, universal-friction, and unconditional-attractor reading. Confidence is medium in the formal algebra because source and same-repository CI agree but were not independently rebuilt here. Empirical transfer remains low pending preregistered independent measures of authorization, alignment, information deficit, outcomes, survival mapping, and dynamics.
 
 ### The Convergence
 
-These three papers triangulate the same structural reality from different angles:
+These papers constrain three distinct claims rather than triangulating one causal law:
 
 | Paper | What it proves | The cost |
 |-------|---------------|----------|
-| Agentic Delegation | Agents expand what you can do | You don't understand what was done |
+| Agentic Delegation | Observed public language use broadens at adoption | Causality and comprehension are unmeasured |
 | Three the Magic Number | Tested repair curves flatten at different rates | Budget from measured marginal benefit and cost |
-| Axiom of Consent | Governance friction is F = σ(1+ε)/(1+α) | The oversight cost of delegation is structural, not accidental |
+| Axiom of Consent | Authorization, modeled friction, control, and outcomes need separate evidence | The proposed composite fails its exploratory proxy comparison; Lean algebra does not rescue empirical fit |
 
 HN is pricing this reckoning independently:
 
@@ -219,17 +227,16 @@ The transition from ±7pts oscillation to a 50pt gap in two scans is not gradual
 - Repair budgets should be treated as an explicit experimental variable
 - Connection: Supports explicit repair-budget measurement and workflow-specific stopping. It does not establish that correction becomes impossible after round 4, that later iterations add noise, or that compounding errors cause the observed flattening.
 
-### 2601.06692v3: The Axiom of Consent: Friction Dynamics in Multi-Agent Coordination
+### 2601.06692v3/v4: The Axiom of Consent: Friction Dynamics in Multi-Agent Coordination
 
 **Key findings**:
-- Single axiom: actions affecting agents require authorization in proportion to stakes
-- Kernel triple (α, σ, ε): alignment, stake, entropy
-- **Friction functional**: F = σ(1+ε)/(1+α) — phenomenological ansatz, not theorem
-- Replicator-Optimization Mechanism: lower-friction configurations persist longer
-- Consent-respecting arrangements are **dynamical attractors**, not normative ideals
-- Machine-checked Lean 4 proofs of core comparative-statics
-- 94 pages; applications to cryptocurrency governance and political legitimacy
-- Connection: Formalizes the Oversight Inversion as a high-friction configuration (high σ, high ε, low α). The Vocabulary Problem (#466) maps directly to low α — when agent and oversight don't share vocabulary, alignment is low, friction is high. The Coordination Tax (the-coordination-tax.md) is a special case of F. The paper proves oversight bypass is structurally unstable — configurations that skip consent are high-friction and don't persist, even if they're locally faster.
+- Stake-weighted unanimity is the normative axiom; lesser thresholds are explicit relaxations
+- Alignment, calibrated stakes, and information deficit are candidate measurements, not authorization itself
+- **Friction functional**: F = σ(1+ε)/(1+α) is a phenomenological ansatz, not a derivation
+- The proxy experiment favors independent effects and gives an opposite interaction direction
+- Lean checks properties of the expression; the linked repository retracts their mapping to coordination claims
+- ROM persistence requires a finite, static, density-independent positive operator and a stipulated survival bridge
+- Connection: Supplies a useful authorization protocol and evidence-separation discipline for the Oversight Inversion. It does not prove the Vocabulary Problem is low α, that the Coordination Tax follows this formula, or that bypassing oversight is dynamically unstable.
 
 ### 2607.05125v1: Three-Phase Evaluation of AI-Assisted Software Development (supporting)
 
@@ -285,7 +292,7 @@ From #466: ~96.7% (91/94)
 - **SHIELD / Knowledge Debt (#461)**: The +2.53-language association is evidence about a possible production benefit; the paper does not measure the proposed knowledge-debt cost.
 - **Session Floor (the-session-floor.md)**: The tested curves support diminishing marginal returns, not one structural iteration floor across workflows.
 - **Compounding Gap (#465)**: Compounding error is a possible mechanism, but `2607.05197v1` measures completion curves and does not identify that mechanism.
-- **Vocabulary Problem (#466)**: Low alignment (α) in the friction formula maps directly to the Vocabulary Problem — shared words with divergent meanings reduce α, increasing governance friction.
-- **Coordination Tax (the-coordination-tax.md)**: F = σ(1+ε)/(1+α) is the formal generalization of the Coordination Tax.
+- **Vocabulary Problem (#466)**: Terminology divergence is a candidate alignment measure, not evidence that the paper's α coordinate or friction ansatz applies.
+- **Coordination Tax (the-coordination-tax.md)**: The authorization checklist can discipline measurement of coordination costs; the rejected composite is not a formal generalization of that thesis.
 - **Comprehension Dividend (#444)**: SICP > Sol at 273pts vs 223pts is the Comprehension Dividend at maximum clarity. The community's intuitive pricing of comprehension over capability is now structurally confirmed.
 - **Damage Gradient (the-damage-gradient.md)**: Slopfix at $10k/week is the Damage Gradient made economically concrete — the cost of cleaning up delegation without comprehension.

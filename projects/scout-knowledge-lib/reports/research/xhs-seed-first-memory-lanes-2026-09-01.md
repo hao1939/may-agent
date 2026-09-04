@@ -10416,6 +10416,52 @@ compaction is last. Select the primary paper and separate its posited friction
 functional, Lean-checked propositions, replicator dynamics, and real-world
 stability inference.
 
+## Cycle 312 checkpoint — an authorization architecture, not a universal law
+
+Seed-first commit `d3ae19af8f16e9aefe4045ea9be77d4eaae970fb` preceded every
+public read. Anonymous arXiv access returned HTTP-readable v3 metadata at
+`2026-09-04T01:04:48Z`, its 13-file source at `01:04:49Z`, v4 metadata at
+`01:05:12Z`, and its 12-file source at `01:05:13Z`. The archives hash to
+`135c54fd3a8021837752f3f16d0afc4d9615ed8ea3d90c8e48e4413099e37785`
+and `aa7e71b3db2104b1303e1547a5cab231f9cbfe794a968febc4e87da7003cdd0a`.
+
+The latest paper distinguishes four objects: authorization, modeled friction,
+operative control, and observed outcomes. It calls
+`F = sigma(1+epsilon)/(1+alpha)` a phenomenological ansatz rather than an
+axiom-derived law. Its exploratory proxy experiment favors independent effects
+and one feasible-centred interaction runs opposite the ansatz. ROM contributes
+a conditional persistence interface under finite, static, density-independent
+dynamics and a stipulated survival bridge; persistence does not establish
+authorization or legitimacy.
+
+At `2026-09-04T01:07:26.624Z`, anonymous GitHub reads resolved the paper-linked
+`dissensus-ai/lean-formalizations` repository to exact head
+`8e113333bf461b0396ba44267f64320ef9f974bb`. Its AxiomOfConsent module and
+PaperMap retract the formula-to-coordination mapping while retaining algebraic
+statements about the chosen expression. Public Lean Action CI run
+`32805920785` succeeded at that commit. The execution environment has neither
+`lake` nor `lean`; therefore no independent local elaboration was attempted,
+and repository CI is supporting provenance rather than independent proof.
+
+The finding and index now reject the earlier claims that the ratio was derived,
+that Lean validated empirical adequacy, or that consent-respecting systems were
+proved to be real-world attractors. Confidence is high in this scope correction,
+medium in the algebraic check without independent execution, and low in
+empirical transfer. Useful remaining evidence would measure authorization acts,
+alignment, information deficit, outcomes, survival mapping, and dynamics under
+a preregistered independent design.
+
+arXiv and GitHub won on directness and contradiction value. Revisit arXiv on a
+new revision or independent empirical replication; revisit GitHub on a changed
+head or an environment with a compatible Lean toolchain. Reddit made zero
+requests and remains deferred at RSS-readable/JSON-403 until a relevant thread
+or access change. `RV-004` stays high/open because this is claim-quality work,
+not a retained query/rank-to-later-outcome join.
+
+Next begin seed-first and select the highest-impact remaining unsourced Scan 467
+claim, prioritizing a primary contradiction or decision-changing correction.
+Static byte/line compaction remains last.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
