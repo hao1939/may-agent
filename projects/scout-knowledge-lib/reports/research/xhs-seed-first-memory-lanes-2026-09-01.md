@@ -12861,6 +12861,65 @@ Test its task/sample denominator, matching or randomization, cost definition,
 per-model range, correlation calculation, uncertainty, released artifacts,
 and transfer limits before retaining those promoted conclusions.
 
+## Cycle 340 checkpoint — reported savings, unresolved generality
+
+The arXiv metadata and source for Harness Effect `2607.06906v1` were observed
+at `2026-09-04T04:52:06.224Z`. The 5,154-byte Atom response has SHA-256
+`2277c4499d17f9aa8eff1416cc07c6738b5192743d618dcbe87bc7a823e53fa2`;
+the 81,932-byte source archive has SHA-256
+`c087133fbc7927f08aae68394c171bfe78012634cef212ad3e06c9935fe5e83c`.
+
+The paper crosses 22 locked prompts with six models while holding task prompts,
+model identifiers, judges, and one price table fixed. It changes the complete
+orchestration bundle from a frozen Writer production loop to Writer's harness,
+then reports blended cost `$0.21 -> $0.12` (-41%), median latency `48s -> 27s`
+(-44%), tokens `14.2k -> 8.8k` (-38%), and quality `0.78 -> 0.81`, treated as
+parity. Each model-level cost aggregate falls by 33–61%. That same direction
+is useful on the six named models, but the wide range is heterogeneity and no
+interaction or transfer test establishes “model invariance.”
+
+The quality relationship is also narrower than the promoted synthesis. It is
+a correlation between only six baseline model means and their changes, with no
+interval or independent replication. Recomputing the source script's exact
+hard-coded 8-by-6 capability matrix gives `r=0.998807`; this reproduces the
+arithmetic, not the underlying judgments. The 22 are unique prompts, not 22
+independent repetitions. The baseline ran once, run-to-run variance is
+unmeasured, and only four prompts are printed. The six mechanism families are
+described as one bundle and never ablated separately. The authors disclose
+employment by Writer, which develops the evaluated harness and Palmyra model.
+
+The archive contains TeX, seven figure PDFs, and a plotting script with
+hard-coded aggregates. It does not contain the locked prompts, per-turn traces,
+pinned price table, judge configuration, or baseline/harness manifests that
+its checklist says are to accompany release. At
+`2026-09-04T04:52:50.514Z`, complete unauthenticated GitHub repository searches
+returned HTTP 200: the exact-ID query found one secondary Chinese slide deck;
+the exact-title query found that deck and one unattributed same-title project.
+No author- or paper-linked implementation, raw evaluation, or reproduction was
+observed. Response provenance is 6,737 bytes /
+`1168fcab7e1444978a0874df18d0146e1a153e306251825fc0b143cb812108fa`
+and 13,532 bytes /
+`485e9aeb1aa9f48d129a7e0a61a0f58740098d0496936d5e47a3106827af3f8c`.
+
+The supported conclusion is that one harness replacement can materially alter
+reported token economics on this one enterprise-assistant workload. It does
+not prove that every model benefits similarly, that any harness move dominates
+model choice, that one mechanism caused the result, or that harness
+verification is the binding governance constraint. Scan #482, Scan #492, the
+Oversight Inversion, Token Economics Trap, the arXiv triage, Scan #495, and one
+remaining Scan #479 social-comparison row are qualified accordingly.
+
+ArXiv and GitHub were useful; Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. Confidence is
+high in the paper's declared tables, the six-point arithmetic, and the missing
+release artifacts; moderate in the paired workload result; and low in model
+transfer, mechanism attribution, or a general harness-over-model ordering.
+`RV-004` remains high/open because this paper contains no retained Scout
+query/rank-to-outcome join. Next begin seed-first and primary-review AgentEval
+`2607.06873`, the highest-impact accessible claim promoted alongside Harness
+Effect: test its boundary denominator, ground truth, duplicate/false-alarm
+labels, baselines, uncertainty, artifacts, and transfer.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

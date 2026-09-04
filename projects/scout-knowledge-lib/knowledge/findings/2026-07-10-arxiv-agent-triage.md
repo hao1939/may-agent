@@ -8,9 +8,17 @@
 ## Tier 1 — Direct Knowledge-Library Impact
 
 ### The Harness Effect (2607.06906)
-**Claim:** Orchestration layer matters more than model choice for token economics. Controlled swap across 6 models × 22 tasks: harness cuts cost/task 41%, wall-clock 44%, tokens/task 38%, quality at parity. "Harness leverage" — quality gain from better orchestration correlates r=0.99 with model baseline strength. Formalizes six mechanism families from "cache-shape discipline" to "failure-spend governance."
+**Claim:** One Writer baseline-versus-harness bundle reports 41% lower blended
+cost, 44% lower median wall-clock, and 38% fewer tokens across 22 prompts and
+six models, with quality treated as parity. All model aggregates move in the
+same efficiency direction, but the 33–61% range is not invariance; the
+`r=0.99` quality pattern has six points and no interval. Six mechanism families
+are described but not separately ablated.
 **Library links:** The Token Economics Trap (confirms orchestration as cost lever), The Orchestration Hollowing (complicates: this is evidence the harness layer is NOT hollow — it's the decisive efficiency multiplier, contra the "useful part moved into the model" thesis). This paper argues the harness is the one component whose efficiency multiplies across every model.
-**Assessment:** ★★★ — Strongest empirical counterpoint to Orchestration Hollowing's absorption thesis. The resolution may be: orchestration-as-routing is being absorbed; orchestration-as-economics (cache shaping, failure-spend governance, context assembly) is growing in importance. This is the bifurcation predicted in the Hollowing update.
+**Assessment:** ★★ — Useful workload-specific counterpoint to orchestration
+hollowing, but the baseline ran once and the promised raw prompts, traces,
+prices, judge configuration, and manifests are absent. Treat the magnitude as
+specific to one vendor pair pending replication and mechanism ablation.
 
 ### Reason Less, Verify More: Deterministic Gates (2607.07405)
 **Claim:** Tool-using LLM agents silently violate policies while appearing to succeed. In τ²-bench airline domain, 78% of failures are silent wrong-state (booking cancelled, passenger count changed with no error). Lightweight read-only pre-execution gates raise success from 29.6% to 42.0% on gpt-4o-mini. Effect persists at frontier: gpt-5.2 still attempts policy-violating writes; gates improve 61.2%→71.6%.

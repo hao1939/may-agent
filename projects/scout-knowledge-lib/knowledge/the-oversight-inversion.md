@@ -1089,7 +1089,14 @@ fixed position on a universal ladder.
 **Twenty-four-point exit arc**:
 1–21: (#444–#478)
 22. **Verification Coverage (#479): Before trusting any result, name the claim, predicate, domain, tolerance, sampling or search budget, and authority actually covered. Do not infer causality from predictive error, correctness from timing, or external authority from local checks. There is no evidence here for one universal ordering across these predicates (the coverage declaration condition).**
-23. **Commodity Proof (#482): Invest in harness-level verification infrastructure proportional to harness-level economic impact. When the harness moves cost more than the model menu (41% cost reduction, model-invariant across 6 models, r=0.99 quality-leverage correlation), verification of the harness — not the model — is the binding constraint. Evaluate trajectories, not just outputs. Benchmark harnesses, not just models. The developer IS the harness evaluator; LLM Burnout (323pts) is the physiological signal that this load is unsustainable (the harness verification condition)**
+23. **Harness comparison (#482): Evaluate model–harness configurations, not
+just model outputs. One Writer baseline-versus-harness bundle reports lower
+aggregate cost, latency, and tokens across six model aggregates on 22 prompts,
+but the 33–61% range is heterogeneity, `r=0.99` has six points and no interval,
+and raw artifacts/repeated-run uncertainty are absent. This motivates
+harness-level measurement; it does not establish that harness verification is
+the binding constraint or that HN burnout attention measures verification
+load (the harness evidence-coverage condition).**
 24. **Skill Paradox (#483): Measure skill impact, not just skill provenance. When skills fill the harness at industrial scale (216,938 in SkillCenter, 20K+ GitHub stars) but controlled ablation proves generated skills ≈ random tokens of equal length (7,560 runs, p ≥ 0.396, 1.2pp total spread), the skill ecosystem optimizes for the wrong metric. SkillGate verifies provenance; nothing verifies impact. Controlled ablation MUST precede deployment-at-scale. Extend to rules: Institutional Red-Teaming (2607.07695) proves rules move safety 22-58pp while models are held constant — red-team the deployment substrate, not just the model (the skill impact condition)**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-479.md, arXiv 2607.07663, 2607.07379, 2607.07619, 2607.07321, 2607.07612
@@ -1098,13 +1105,27 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-483.md, arXiv 2607.07676, 2607.
 
 ### Layer 38: The Commodity Proof (Scan #482, 2026-07-09)
 
-Layer 37 showed that verification claims need explicit predicate coverage. The Commodity Proof asks: *verified for which claim and under which contract?* The Harness Effect (2607.06906) runs the first controlled experiment isolating harness from model — 22 tasks, six foundation models, changing only the orchestration layer. The harness cuts cost 41%, wall-clock 44%, tokens 38% — **all model-invariant** (33-61% range). Quality gains correlate almost perfectly with baseline model strength (r=0.99, "harness leverage"). On this workload, the orchestration layer moved cost more than the full spread of the model menu.
+Layer 37 showed that verification claims need explicit predicate coverage. The
+Harness Effect (2607.06906) compares 22 locked prompts across six foundation
+models under one frozen Writer production loop and one Writer harness bundle.
+It reports 41% lower blended cost, 44% lower median wall-clock, and 38% fewer
+tokens, with quality treated as parity. Every model aggregate is cheaper, but
+33–61% is same-direction heterogeneity rather than demonstrated invariance.
+The quality-change correlation is `r=0.99` over six model-level means without
+an interval.
 
-This is the mathematical proof of what the Substrate Inversion hypothesized: when the harness IS the economic lever, verification must target the harness, not the model. But harness-level verification has near-zero infrastructure: no benchmarks, no leaderboards, no red-teaming community, no standardized evaluation framework.
+This is workload-specific reported evidence that orchestration can materially
+alter token economics, not mathematical proof of a general ordering. The
+baseline ran once, raw prompts/traces/prices/configurations are only promised,
+and individual mechanisms are not ablated. Harness-level verification is a
+useful target alongside model evaluation; this paper does not inventory or
+prove near-zero infrastructure.
 
 AgentEval (2607.06873) and AgentLens (2607.06624) represent the first responses: AgentEval discovers hidden governance boundaries via mined workflow graphs (23-38 boundaries per agent vs 12 with prompting); AgentLens evaluates entire trajectories instead of binary pass/fail, recovering the process information that Process Erasure (#462) destroys.
 
-HN confirms the attention market verdict: frontier combined (GPT-Live 693pts + Grok 4.5 611pts = 1,304pts) still trails a decoded bash script (Uniqlo 1,372pts). LLM Burnout at 323pts (P-70 CONFIRMED) names the physiological cost of the verification vacuum at the harness-human interface.
+HN point totals record attention to the named stories. They do not confirm a
+market verdict or measure physiological cost, a verification vacuum, or its
+cause.
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-482.md, arXiv 2607.06906, 2607.06873, 2607.06624
 
@@ -1120,7 +1141,7 @@ Layer 38 showed the harness moves economics more than the model. The Skill Parad
 
 The paradox: SkillGate filters for *provenance quality* (is the claim traceable?) but not *impact quality* (does the agent perform better?). The community optimizes for skill count while the evidence suggests the count dimension is irrelevant. GitHub stars measure demand; nothing measures efficacy.
 
-Two companion papers extend the paradox to adjacent layers. Institutional Red-Teaming (2607.07695) proves deployment rules causally move safety by 22–58 percentage points within every model population (33,924 games, 228 contexts, 7 populations), extending the Commodity Proof from economics to safety — rules > model for safety outcomes, just as harness > model for cost outcomes. The Action-Graded Severity Scale (2607.07474) proves binary attack-success rate hides critical failures: a defense reporting zero ASR still permits cross-scope leaks; a seven-level ordinal scale (L0–L6, reversibility × scope × privilege) recovers the governance signal that binary metrics destroy.
+Two companion papers extend the paradox to adjacent layers. Institutional Red-Teaming (2607.07695) reports that deployment rules move safety by 22–58 percentage points within every model population (33,924 games, 228 contexts, 7 populations). That is separate rule-design evidence; it does not inherit or prove a general harness-over-model cost ordering from the Harness Effect. The Action-Graded Severity Scale (2607.07474) reports that binary attack-success rate can hide cross-scope leaks; a seven-level ordinal scale (L0–L6, reversibility × scope × privilege) recovers distinctions the binary metric omits.
 
 RLVP (2607.07435) provides the constructive complement: separate cheap path verification (constraint violations are detectable) from expensive outcome verification (correctness is hard). This asymmetry — cheap to detect bad, expensive to confirm good — mirrors the Skill Paradox: cheap to verify provenance, expensive to verify impact.
 

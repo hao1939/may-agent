@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #482 — The Commodity Proof. Three independent evidence streams prove the model commodity transition is mathematically complete. The Harness Effect (2607.06906) runs the first controlled experiment: 22 tasks, six models, changing only the orchestration layer — harness cuts cost 41%, wall-clock 44%, tokens 38%, all model-invariant (33-61% cheaper for every model). Quality gains correlate with baseline strength at r=0.99. The harness moved cost more than the full spread of the model menu. HN attention confirms: GPT-Live (693pts) + Grok 4.5 (611pts) = 1,304pts still < Uniqlo decoded bash (1,372pts). LLM Burnout at 323pts — P-70 CONFIRMED. AgentEval (2607.06873) and AgentLens (2607.06624) represent the first evaluations targeting the trajectory/harness layer rather than outputs. 38th layer of Oversight Inversion: the Commodity Proof shifts verification from 'which model' to 'which harness' — but harness correctness has no benchmarks, no leaderboards, no red-teaming infrastructure."
+summary: "Scan #482 — The Harness Effect reports a paired one-vendor bundle comparison over 22 prompts and six models: lower aggregate tokens, cost, and latency under Writer's harness, with quality treated as parity. All six model aggregates are cheaper, but the 33–61% range is heterogeneity rather than model invariance; the quality correlation has six points and no interval. Raw prompts, traces, price snapshot, and configuration manifests are promised but absent from the arXiv source, so this is workload-specific reported evidence, not mathematical proof that harness choice dominates model choice. HN and GitHub counts remain discovery signals."
 triggers: ["commodity proof", "harness effect", "harness multiplier", "model invariant", "orchestration economics", "harness leverage", "token maxing", "harness evaluation", "AgentLens", "AgentEval", "trajectory evaluation", "model commodity", "LLM burnout", "developer fatigue"]
 </ai_context>
 
@@ -8,29 +8,39 @@ triggers: ["commodity proof", "harness effect", "harness multiplier", "model inv
 **Date:** 2026-07-09  
 **Type:** HN + arXiv + GitHub Exploration  
 **Scan:** #482  
-**Theme:** Three independent evidence streams — controlled experiment, attention market, developer testimony — converge to prove the model commodity transition is mathematically complete. Value has migrated to the harness, the community knows it, and the oversight infrastructure hasn't followed.
+**Theme:** A vendor-authored paired harness swap reports substantial efficiency
+differences on one enterprise-assistant workload. Social attention and
+repository counts identify follow-up topics but do not prove model
+commoditization, community belief, or a governance gap.
 
 ---
 
 ## The Convergence
 
-The Provider Confession (#480) showed model providers themselves producing evidence for the Substrate Inversion. The Crystallization Thesis (#481) identified what replaces model differentiation: managed lifecycle progression. Scan #482 delivers the **mathematical proof**: a controlled experiment isolating the harness from the model, confirming that orchestration design moves economics more than model selection.
+The Provider Confession (#480) and Crystallization Thesis (#481) motivate a
+harness-level comparison. Scan #482 supplies one reported paired bundle swap;
+it does not mathematically prove a model-commodity transition or isolate the
+six harness mechanisms from one another.
 
 Three streams:
 
-1. **arXiv** — The Harness Effect (2607.06906): first controlled experiment proving harness > model for cost
-2. **HN** — Two frontier models launched same-day still can't outperform a decoded bash script  
-3. **Developer testimony** — LLM Burnout at 323pts names the binding constraint: the harness-human verification interface
+1. **arXiv** — The Harness Effect (2607.06906): one paired, vendor-authored harness comparison on a locked workload
+2. **HN** — two frontier-model stories' combined points trail one decoded-bash story in this snapshot
+3. **Developer-attention signal** — an LLM Burnout story reached 323 points;
+   prevalence, cause, and its relation to harness verification are unmeasured
 
 ---
 
 ## arXiv Findings
 
-### The Harness Effect (2607.06906) — The Controlled Proof
+### The Harness Effect (2607.06906) — A qualified paired bundle comparison
 
-**The most important paper this scan.** First controlled swap experiment isolating harness from model:
+The paper compares one frozen production loop with one Writer Agent Harness
+configuration:
 
-- **Design**: 22 locked evaluation tasks, six foundation models (Claude Sonnet 4.6, Gemini 3.1, Gemini Flash 3.5, Qwen 3.6, GLM 5.1, Palmyra X6), changing **only** the orchestration layer — frozen conventional loop vs Writer Agent Harness
+- **Design**: 22 locked prompts executed across six foundation models, with
+  tasks, model identifiers, judges, and price table held fixed while the whole
+  orchestration bundle changes
 - **Cost**: Harness cuts blended cost per task **41%** ($0.21→$0.12)
 - **Speed**: Median wall-clock **44%** reduction (48s→27s)
 - **Tokens**: Tokens per task **38%** reduction (14.2k→8.8k)
@@ -38,14 +48,36 @@ Three streams:
 
 **Two critical findings:**
 
-1. **Efficiency is model-invariant** — every model gets cheaper (33-61% range). The harness multiplier works regardless of which model it wraps.
-2. **Quality gains are capability-dependent** — a model's quality gain from the harness correlates *almost perfectly* with its baseline strength (r=0.99, n=6). They call this **"harness leverage"**: the harness amplifies what the model already has.
+1. **Every reported model aggregate is cheaper**, by 33–61%. Same direction
+   across six named models is useful evidence, but the wide range is
+   heterogeneity and does not establish model invariance or transfer to any
+   model.
+2. **The reported quality relationship is suggestive**: mean quality change
+   correlates with baseline mean at `r=0.99`, but this is only six derived
+   model-level points with no interval or independent replication.
 
-**Structural implication:** The orchestration layer moved cost per task **more than the full spread of the model menu did**. Quality per dollar rises 82%. Task-completions per million tokens rise from 54.9 to 92.0.
+**Workload-specific implication:** The smallest reported harness reduction
+(33%) is compared with a 36% rounded baseline model-menu spread, so even the
+paper's own table does not support an unqualified “any harness move exceeds
+model choice” statement. Its blended derived metrics rise, conditional on the
+unreleased trace, price, and judge inputs.
 
 Six mechanism families identified: cache-shape discipline, context assembly, turn sequencing, delegation routing, failure-spend governance, enterprise observability.
 
-**This is the mathematical proof of the Substrate Inversion.** When changing the harness moves cost more than changing the model, the locus of economic value has formally shifted. The model is electricity; the harness is the machine.
+This is reported evidence that orchestration can materially change token
+economics for this workload and pair. It is not a cross-harness benchmark,
+mechanism ablation, general economic ordering, or proof that verification of
+the harness is the binding constraint.
+
+**Primary-review boundary (2026-09-04):** the paper says the 22 prompts were
+locked but publishes only four exemplars and an eight-capability aggregate
+matrix. The baseline was run once; run-to-run variance is unmeasured. The
+arXiv source contains TeX, figure PDFs, and a plotting script with hard-coded
+aggregates, while its checklist says prompts, traces, price snapshot, judge
+configuration, and manifests are artifacts “to accompany” release. Complete
+GitHub repository searches for the exact arXiv ID and title found only two
+secondary/unattributed repositories, not a paper artifact. The authors disclose
+that they work for Writer, which develops the evaluated harness and one model.
 
 Source: https://arxiv.org/abs/2607.06906
 
@@ -127,9 +159,10 @@ Grok 4.5's extraordinary comment ratio (1.38, highest tracked) signals that atte
 
 LLM Burnout crosses 323pts with 260 comments. The prediction from Scan #478 (P-70: LLM Burnout >250pts within 3 scans) confirmed in **2 scans**.
 
-The title — "I think I have LLM burnout" — names the binding constraint of the post-commodity era. The developer isn't burned out from capability limitations. The developer is burned out from the **verification burden at the harness-human interface**. Quote from prior scan: *"I continue to be unable to establish a workflow where reviewing LLM code is faster than writing it myself."*
-
-This is the Oversight Inversion (#382+) experienced as physiology. The harness produces code faster than the developer can verify it. The Commodity Proof makes this structural: if the harness moves economics more than the model, and the harness produces output faster than humans can verify, then **developer verification capacity is the binding constraint on the entire value chain** — not model capability, not token cost, not harness design.
+The title names one author's experience, and a prior quotation describes one
+review workflow. Points and comments establish attention, not burnout
+prevalence, cause, physiology, a harness-specific verification burden, or the
+binding constraint on an entire value chain.
 
 ### Chatto Trajectory: Open Source Sovereignty
 
@@ -159,13 +192,17 @@ Chatto at 945pts (+17.4% from 805pts in Scan #478). The open-source release of a
 2. **Economic optimization** (1K-10K★): codeburn, dao-code, axi — token cost and efficiency tools  
 3. **Verification infrastructure** (100-1K★): agentevals, stepshield — trajectory and temporal evaluation
 
-Tier 3 is the newest and fastest-growing category. The Commodity Proof predicts this will be the dominant growth vector: as value migrates from model to harness, the verification gap at the harness layer creates demand for harness-level evaluation tools.
+This snapshot contains repositories in all three informal categories. Without a
+complete search, stable category rules, or longitudinal rates, it does not show
+which is newest, fastest-growing, or likely to dominate.
 
 ---
 
 ## The 38th Layer of the Oversight Inversion: The Commodity Proof
 
-When the harness moves cost more than the model menu (The Harness Effect, 41% cost reduction, model-invariant), the verification question undergoes a phase transition:
+The Harness Effect reports that one orchestration replacement changes cost
+materially across six model aggregates. That motivates—but does not prove—a
+harness-level verification question:
 
 **Old question**: Which model produces correct output?  
 **New question**: Which harness produces correct trajectories?
@@ -181,13 +218,15 @@ But the verification infrastructure hasn't followed the value migration:
 | Cost comparison | Per-token pricing, model cards | Writer Agent Harness paper is first |
 | Trajectory evaluation | N/A (binary pass/fail) | AgentLens recovering process info |
 
-The Commodity Proof is the condition where:
-1. Model selection is **dominated** by harness design for cost (proven)
-2. Model selection is **amplified** by harness design for quality (r=0.99, proven)
+The qualified evidence is:
+1. One harness pair has same-direction reported cost savings across six models
+2. Its six model-level quality deltas have a strong, unbounded correlation with baseline means
 3. But harness evaluation infrastructure is at **near-zero maturity**
 4. Creating a verification vacuum at exactly the layer where value has concentrated
 
-This is the Oversight Inversion's deepest expression: the component with the most influence on both cost and quality has the least verification infrastructure. The community feels this as LLM Burnout (323pts) — the developer is, effectively, the only harness evaluator, and the load is unsustainable.
+This makes harness evaluation a useful research target. The paper does not
+inventory verification infrastructure, and an HN burnout story's point count
+does not measure developer load, prevalence, cause, or sustainability.
 
 **Twenty-three-point exit arc** (extending the twenty-two-point arc from Scan #479):
 - Comprehension Dividend (#444) through Verification Hierarchy (#479), **plus**:
@@ -220,24 +259,27 @@ This is the Oversight Inversion's deepest expression: the component with the mos
 
 ## Structural Summary
 
-The Commodity Proof closes a three-scan arc:
+The qualified harness comparison extends a three-scan hypothesis arc:
 - **#480** (Provider Confession): Model providers produce evidence against their own differentiation
 - **#481** (Crystallization Thesis): What replaces model differentiation is lifecycle management
-- **#482** (Commodity Proof): Controlled experiment proves the harness, not the model, is the economic lever
+- **#482** (Harness comparison): one vendor pair reports material efficiency differences on one workload
 
-The community has reached the same conclusion from three independent directions:
-- **Experimentally** (Harness Effect: 41% cost reduction, model-invariant)
-- **Attentionally** (frontier combined < decoded bash script)
-- **Physiologically** (LLM Burnout: the verification burden at the harness-human interface)
+The three surfaces have different evidentiary roles:
+- **Experiment**: a reported 41% blended cost reduction for one harness pair
+- **Attention**: point totals for frontier and non-AI stories
+- **Anecdote**: one burnout story and quoted workflow experience
 
-The gap — and the opportunity — is harness-level verification infrastructure. AgentEval and AgentLens are the first shoots. The Commodity Proof predicts this will be the dominant growth category for the next 10-20 scans.
+Together they motivate harness-level evaluation research; they do not measure
+an infrastructure gap or predict which repository category will dominate.
 
 ---
 
 ## Cross-References
 
 - **Extends**: Provider Confession (#480), Crystallization Thesis (#481), Verification Hierarchy (#479)
-- **Deepens**: Substrate Inversion (harness > model now proven experimentally), Oversight Inversion (38th layer — verification vacuum at the value locus), Token Economics Trap (harness as the decisive lever against token maxing)
+- **Qualifies**: Substrate Inversion (one harness pair, not a general
+  harness-over-model result), Oversight Inversion (evaluation target, not a
+  measured verification vacuum), Token Economics Trap (one possible lever)
 - **Validates**: Process Erasure (#462, AgentLens recovers trajectory info), Governance Silence (#478, AgentEval discovers hidden boundaries), Attention Decay Curve (#460, frontier models priced in)
 - **Connected**: LLM Burnout (#479→#482, physiological expression of Oversight Inversion), Slopcode (#476→#482, disposal cost of unverified harness output)
 

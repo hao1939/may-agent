@@ -19,7 +19,10 @@ Three independent evidence streams from the same 48-hour window converge on a si
 
 2. **HN Front Page Signal**: GPT-5.6 launches at **580pts/393c** (r=0.68) — structurally the **lowest-contestation frontier launch** tracked (Scan #493 predicted ≤500pts; actual overshoots but contest ratio is the lowest ever for a frontier model). "What's slowing down the AI buildout" at **48pts/100c** (r=**2.08**) is the **most contested story per point on the entire front page**. The community knows: better models don't generate new solutions to the buildout problem.
 
-3. **Harness Effect confirmation** (arXiv 2607.06906, covered #492): Changing ONLY the orchestration layer cuts cost 41%, time 44% — but this is still selection/routing optimization. The Harness Effect paper explicitly measures that harness improvements plateau once the underlying generation diversity is exhausted. "Token maxing" is the default because the harness can only optimize what the model generates.
+3. **Harness Effect comparison** (arXiv 2607.06906, covered #492): one
+   Writer orchestration-bundle swap reports lower cost and time. The paper does
+   not measure candidate-generation diversity, selection capture, or a plateau;
+   it therefore cannot confirm this scan's generation-ceiling claim.
 
 ---
 
@@ -37,7 +40,7 @@ The ARC-AGI study provides the sharpest proof: unbiased pass@k analysis shows se
 |----------|-------------------|-------------------|-----|
 | ARC-AGI (2607.06764) | ~95% captured | 57.50% pass@2 (pipeline) | Orchestrator adds +9.81pp via exploration |
 | Skill Ablation (#483, 2607.07504) | Skills ≈ random tokens (p≥0.396) | Bare prompting is the ceiling | Skills don't generate; they fill space |
-| Harness Effect (#492, 2607.06906) | Harness cuts 41% cost | Quality at parity — no lift | Harness selects; doesn't create |
+| Harness Effect (#492, 2607.06906) | Reports 41% lower blended cost for one bundle | Quality treated as parity; one task regresses | Does not measure selection or candidate generation |
 | Verification Hierarchy (#479) | Formal verification strongest | Only verifies what exists | Cannot verify what was never generated |
 
 **The structural default is to invest in selection** (better evals, judges, ranking, verification) because selection is measurable and shows progress. But past the ~95% capture rate, selection investment has diminishing returns approaching zero.

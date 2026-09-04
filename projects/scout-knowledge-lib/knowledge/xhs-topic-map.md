@@ -6314,6 +6314,30 @@ primary paper rather than compaction. Verify its task/sample denominator,
 design, cost definition, per-model range, correlation, uncertainty, artifacts,
 and transfer limits.
 
+### Cycle 340 checkpoint — same-direction savings are not model invariance
+
+Primary review of Harness Effect `2607.06906v1` finds 22 locked prompts
+crossed with six models under one frozen Writer baseline and one Writer
+harness bundle. The paper reports 41% lower blended cost, 44% lower median
+latency, 38% fewer tokens, and quality parity. All six model aggregates are
+cheaper, but their 33–61% range is heterogeneity, not an invariance test. The
+reported `r=0.99` is only six derived model means; the source's hard-coded
+matrix reproduces `r=0.998807`, with no interval or independent sample.
+
+The baseline ran once, repeated-run variance is unknown, and only four of 22
+prompts are printed. The arXiv archive has TeX, figure PDFs, and a hard-coded
+plot script, but not its promised prompts, traces, price snapshot, judges, or
+configuration manifests. Exact-ID/title GitHub searches were complete and
+found only one slide deck plus one unattributed same-title project, not an
+author-linked artifact. Qualify Scan #482, Scan #492, two canonical syntheses,
+the triage note, and Scan #495's unsupported generation-plateau attribution.
+Confidence is high in the paper's declared aggregates and artifact absence,
+moderate in the paired workload result, and low in model transfer, mechanism
+attribution, or general harness-over-model ordering. Reddit made zero requests
+and remains trigger-deferred. `RV-004` remains high/open. Next begin seed-first,
+then primary-review AgentEval `2607.06873` because Scan #482 promotes its
+boundary counts and “first response” status without a primary qualification.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

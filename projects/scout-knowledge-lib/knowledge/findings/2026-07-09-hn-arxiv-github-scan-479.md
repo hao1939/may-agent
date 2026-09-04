@@ -167,7 +167,7 @@ sampling or search budget, authority, and explicit non-claims.
 | **FAANG Simulator** | 354pts | 137c | Gamified tech industry critique. Escapism from velocity treadmill. |
 | **Cloudflare Drop** | 341pts | 166c | File transfer infrastructure. Sovereignty product. |
 | **Cloudflare Meerkat** | 238pts | 47c | Distributed consensus. Infrastructure sovereignty. |
-| **Grok/GPT/Claude comparison** | 118pts | 58c | Community performs *controlled comparison* — task fixed, model varied. Echoes Harness Effect methodology. |
+| **Grok/GPT/Claude comparison** | 118pts | 58c | Title and attention suggest a comparison topic; design controls require the underlying experiment. |
 | **DocuBrowser** | 105pts | 23c | Documents → searchable knowledge base. Knowledge infrastructure. |
 | **Left-handed bug** | 101pts | 54c | Edge case discovery narrative. |
 | **OpenMandriva sabotage** | 88pts | 16c | Open-source supply chain attack attempt. Real-world Balkanization Problem. |
