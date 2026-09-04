@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 386 bounded reconciliation at 2026-09-04T13:34:39Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 386; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 386; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, and VERITAS evaluation/artifact evidence qualified in Cycle 386; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 395 bounded reconciliation at 2026-09-04T15:30:55.685Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 395; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label evidence qualified through Cycle 395; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10107,6 +10107,57 @@ is run. Next seed-first, audit the paper's 50-run human re-annotation claim—
 especially its stratification, majority-vote construction with two annotators,
 and concentration of all six false positives—if it remains the highest
 accessible reliability gap.
+
+### Cycle 395 seed-first start — reuse the package; audit the human check
+
+Cycle 395 starts from clean Cycle 394 result
+`40ee1824ee903ea2d1ff4d9d5184bcc5d93303b7`. At
+`2026-09-04T15:30:55.685Z`, the next XHS observation remained
+`2026-09-04T17:09:20.326Z`; no trigger had fired. Make zero account requests:
+additions/changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's exact browser receipt
+and ledger remain provenance. `RV-004` and `RV-034` remain higher-value but
+inaccessible at their protected-outcome and external-runtime boundaries.
+Reuse Cycle 393's checksum-matching `2605.18583v1` package and select the human
+re-annotation reliability gap without another public request.
+
+### Cycle 395 checkpoint — sample agreement is not a two-person majority
+
+The published marginals are self-consistent. Annotators 1 and 2 call 15 and 19
+of 50 runs overeager and agree on 44, uniquely giving 14 both-positive, 30
+both-negative, one annotator-1-only positive, and five annotator-2-only
+positives. Those counts reproduce `kappa=0.734513...` and observed agreement
+0.88. The rule table's TP=19, FP=6, FN=0, TN=25 likewise reproduces precision
+0.76, recall 1.00, F1 0.864, and accuracy 0.88 for its final 19-positive human
+label set.
+
+What remains unsupported is how that label set became ground truth. With two
+annotators, all six disagreements are ties; the reported 19 positives require
+five ties to become positive and one negative, but the paper names no
+adjudicator or tie policy. Annotators were blind to one another but saw the
+rule verdict, severity, triggered predicate IDs, task-completion bit, and only
+the first 200 prompt characters, so this is not a judge-blind independent
+review of full trajectories. The stated cell allocation is 45 samples from
+nine rate-at-least-5% cells and five combined from two near-zero cells; that
+implies 2--3 samples in each low cell, not the adjacent claim that every cell
+contributes 4--5, and no weighting is reported.
+
+The source says all six rule false positives are `toctou-race` while the other
+23 archetypes agree 100%. It publishes neither raw labels nor per-archetype
+sample counts, so concentration is a source claim and coverage of all 23
+others is unknown. The correct conclusion is high confidence in the published
+aggregate arithmetic, moderate confidence in agreement for this selected
+50-run sample, and low confidence in independent gold-standard status,
+benchmark-wide recall, archetype-complete fidelity, or reproducibility.
+
+GitHub and arXiv retain Cycle 393's exact evidence and access boundary; Reddit
+makes zero requests and stays RSS-readable/JSON-403 until its existing trigger.
+`RV-004` and `RV-034` stay high/open; `RV-036` stays medium/open. Revisit on raw
+annotation CSVs, the sampling seed/frame, tie adjudication, per-archetype
+coverage, judge-blind re-labeling from complete traces, or artifact release.
+Next seed-first, test whether the paper's “all other 23 archetypes agree 100%”
+can be bounded from any released per-archetype count or whether the next
+highest accessible question should move to its zero-touch blindspot classes.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

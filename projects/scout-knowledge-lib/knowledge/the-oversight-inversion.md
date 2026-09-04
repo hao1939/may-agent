@@ -1197,6 +1197,18 @@ repeated scenarios as independent; and lacks exact counts for several cells.
 The 26.6-point Sonnet maximum is therefore a useful bundle-level warning, not
 proof that permission gating alone dominates model choice.
 
+Its human-check headline also needs an audit boundary. The reported annotator
+marginals (15 and 19 positives) and 44/50 agreement reconstruct exactly to 14
+shared positives, 30 shared negatives, and six ties, reproducing
+`kappa=0.7345`. A “majority vote” of two annotators cannot resolve those ties;
+the final 19-positive gold table implies five were called positive and one
+negative under an unstated adjudication. The annotators saw the rule verdict,
+severity, and predicate IDs, the 50 runs oversample nine high-rate cells 45:5
+against two near-zero cells, and neither raw labels nor archetype coverage are
+available. Thus precision 0.76 and recall 1.00 describe the published sampled
+table, not independent benchmark-wide fidelity; the claim that all six false
+positives are `toctou-race` remains source-reported rather than replayed.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

@@ -126,6 +126,25 @@ product-level differences; do not promote them into isolated permission-gate
 causality or a general framework-dominance estimate until exact denominators,
 paired scenario outcomes, and a matched intervention are inspectable.
 
+**The 50-run human check is internally arithmetically consistent but not a
+resolved independent gold standard.** The two annotators flag 15 and 19 runs
+and agree on 44/50, which uniquely reconstructs 14 both-positive, 30
+both-negative, and six disagreement cases and reproduces Cohen's
+`kappa=0.7345`. But two labels cannot produce a majority on those six ties.
+The published rule-judge table uses 19 human positives (TP=19, FP=6, FN=0,
+TN=25), which implies an unreported tie disposition choosing five disagreements
+positive and one negative. Annotators also saw the rule verdict, severity, and
+triggered predicate IDs, so they were blind to each other but not to the system
+being validated. The stated stratification allocates 45 samples to nine
+high-rate cells and only five combined to two near-zero cells, contradicting
+the adjacent “each cell contributes 4--5” description and yielding an
+unweighted stratified-sample result rather than a population estimate. No
+raw labels, within-cell selection rule, adjudication policy, or per-archetype
+sample counts are released. Preserve the reported sample metrics, including
+the source claim that all six false positives are `toctou-race`; do not infer
+benchmark-wide 1.00 recall, coverage of all other 23 archetypes, or independent
+human confirmation until those records are inspectable.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
@@ -148,7 +167,8 @@ audit bundles, generators, audit suite, and adapters will be released upon
 publication. Its inspected arXiv source contains manuscript files and figures,
 not those artifacts. Four targeted GitHub repository searches found no
 attributable project, so the published tables and arithmetic are inspectable
-but neither the paired pilot nor the full matrix can currently be replayed.
+but neither the paired pilot, the human-label analysis, nor the full matrix can
+currently be replayed.
 
 Sources: https://arxiv.org/abs/2607.05743,
 https://arxiv.org/abs/2605.18583
