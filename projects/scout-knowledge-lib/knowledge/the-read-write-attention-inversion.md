@@ -293,6 +293,16 @@ resolution requires a matched factorial comparison on the same benchmark.
 Confidence is high for this scope separation and each reported local result,
 and low for transfer to general proactive behavior.
 
+Artifact review sharpens the reproducibility limit. The paper uses
+`getmykhan/vxdb` (public head
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`) as its measurement instrument;
+`Egoist-Machines/LodeDB` is only a comparative latency citation. vxdb publishes
+the memory primitive, tests, and a smaller demonstration notebook, but the
+inspected repository, public paper source archive, and release surfaces do not
+contain the claimed full experiment scripts, frozen workloads, latency ladder,
+or per-run JSON. This supports mechanism plausibility, not independent
+reproduction of the reported outcome probabilities.
+
 ## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |

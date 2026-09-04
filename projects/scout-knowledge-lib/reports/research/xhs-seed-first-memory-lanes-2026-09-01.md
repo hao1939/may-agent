@@ -10169,6 +10169,75 @@ is therefore GitHub provenance and reproducibility for the primary-paper-linked
 `Egoist-Machines/LodeDB`: pin its public revision and inspect whether paper
 experiments, frozen inputs, and latency controls are actually present.
 
+## Cycle 308 checkpoint — the public primitive is not the full paper artifact
+
+Seed-first commit `09666b2058d95b0b400c22b8f07b48fbd2b92bf0`
+preceded all Cycle 308 network reads. From `2026-09-04T00:30:51Z` through
+`00:35:37.773Z`, anonymous read-only arXiv and GitHub access was available;
+no credential or account mutation was used.
+
+The initial artifact attribution was wrong. Memory in the Loop names vxdb as
+the measured in-process store, while its `Egoist-Machines/LodeDB` citation
+supports only a comparative embedded-store latency. The paper's disclosure
+identifies first author Yusuf Khan as vxdb's developer. Exact repository search
+resolved `getmykhan/vxdb`, pinned in a clean goal-owned clone at
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`. Commits
+`af5c48ae82f8485097e9dcd4294d69c88ce7fdf2` and
+`802d200fec3237f7cce5850232f02275f3b07ece` add the `WorkingMemory`
+implementation/tests and notebook respectively.
+
+The vxdb evidence supports the store primitive and a limited demonstration.
+Its 97-file current Git tree contains `python/vxdb/agent/memory.py`, unit tests,
+a generic Dockerfile, and `examples/agent_working_memory.ipynb`. The notebook
+has a deterministic four-hop bounded-window comparison, optional
+provider-backed write selection, dedup, and store timings. It is not the
+reported experiment: exact current-tree search found no arXiv ID, five seeded
+alert workloads, `5/15/30/50/110` ms latency ladder, 12-duplicate result table,
+or per-run JSON. The only two JSON files configure documentation.
+
+The LodeDB control was clean at public main/tag `v2.2.0`, exact commit
+`67405f5eaac698bb8613eeb8a0be8a56f12f958e`. Its current 700-file tree and
+the complete GitHub tree responses for `v1.3.0` (582 files), `v1.3.1` (596),
+`v1.3.2` (616), and `v2.0.0` (692), bracketing the July 6 and July 19 paper
+revisions, contain no paper-result path. All apparent artifact-name matches are
+generic ONNX or cloud artifact-store code. GitHub exposed eight current public
+branches and 26 tags/releases; the releases carry normal wheels, source distributions,
+attestations, and Swift artifacts. The historical `memory_integrations` suite
+contains repeatable store-performance inputs/results, but not the paper's
+agent loop guard or decision outcomes.
+
+The primary arXiv v2 source archive has 13 entries: manuscript metadata, TeX,
+bibliography/style, and figures. It includes neither the method's claimed
+Docker build nor experiment scripts, prompts, frozen workloads, or per-run
+JSON. The paper still states that this full artifact accompanies the public
+release and is available from the authors. Public repository search for the
+exact arXiv ID returned zero repositories; exact title search returned vxdb and
+one unrelated assistant. Deleted branches, private files, and author-held
+material are not observable, so absence confidence is medium rather than
+absolute.
+
+This separates three evidence classes that the earlier queue conflated:
+
+- LodeDB is comparative store-implementation and generic benchmark evidence.
+- vxdb is the actual instrument plus a small demonstrator.
+- the paper's Docker/scripts/frozen inputs/per-run JSON remain unavailable, so
+  the `0.0/12` versus `7.2/12` probabilities are source claims, not an
+  independently reproduced result.
+
+GitHub won the cycle by resolving identities and the artifact boundary. Revisit
+vxdb on a head/release change or a direct paper-artifact publication. arXiv's
+last useful evidence is v2's source/disclosure; revisit on v3 or a code/data
+link. Reddit made zero requests and remains deferred at the recorded
+RSS-readable/JSON-403 boundary until a relevant discussion or access change.
+`RV-004` stays high/open because no retained query/rank-to-later-outcome join
+was created.
+
+The next ranked accessible question is what portion of the paper's method the
+public vxdb notebook can actually reproduce offline. Begin a new bounded
+seed-first cycle, then compare that notebook with the reported method and test
+only a faithful, decision-relevant subset without implying that it reproduces
+the missing provider-backed artifact.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

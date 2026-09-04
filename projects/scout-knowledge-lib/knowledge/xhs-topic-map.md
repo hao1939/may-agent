@@ -4318,6 +4318,46 @@ then determine whether it contains the paper's experiment, frozen inputs, and
 latency controls. This primary-linked reproducibility check ranks above another
 claim summary or byte/line compaction.
 
+### Cycle 308 checkpoint — store code is public; the reported experiment is not
+
+Seed-first `09666b2058d95b0b400c22b8f07b48fbd2b92bf0` preceded every
+Cycle 308 public request. Primary source corrects the starting attribution:
+Memory in the Loop uses **vxdb** as its instrument and cites
+`Egoist-Machines/LodeDB` only for a comparative embedded-store latency. The
+paper disclosure names first author Yusuf Khan as vxdb's developer.
+
+GitHub resolved the actual implementation to `getmykhan/vxdb` at
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`. Its `WorkingMemory` code, tests,
+and 97-file current tree support the primitive, while its notebook demonstrates
+a smaller four-hop bounded-window comparison, optional model-selected writes,
+dedup, and live timings. It does not contain the paper ID, five seeded
+loop-guard workloads, delay ladder, 12-duplicate result table, or per-run JSON.
+The LodeDB control was pinned at
+`67405f5eaac698bb8613eeb8a0be8a56f12f958e`; its current tree, complete public
+tag trees around both paper revisions, 26 tags/releases, and package assets do
+not contain the paper experiment either. Its `memory_integrations` benchmark is
+a store comparison, not the loop-guard study.
+
+The arXiv v2 source archive has 13 manuscript/figure members and no promised
+Docker build, experiment scripts, prompts, workloads, or result JSON. Thus
+implementation availability is high-confidence, but independent reproduction
+of the paper's reported probabilities remains blocked on the claimed full
+artifact. Confidence is medium that it is not publicly discoverable and low
+for deleted/private branches or author-held material.
+
+Lane continuity: GitHub supplied the selected direct evidence; revisit vxdb on
+a head/release change or a direct artifact publication. arXiv supplied the
+instrument/disclosure correction; revisit on v3 or an added code/data link.
+Reddit made zero requests and stays deferred at its RSS-readable/JSON-403
+boundary until a relevant thread or access change. `RV-004` remains high/open:
+this resolves a reproducibility gap, not retained user-outcome evidence.
+
+Next rank the accessible queue after a bounded seed-first pass. A direct author
+artifact is unavailable, so compare the paper's public notebook against the
+reported method and identify the smallest reproducible subset that can be
+validated without provider authority; do not substitute a new result for the
+missing full artifact.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
