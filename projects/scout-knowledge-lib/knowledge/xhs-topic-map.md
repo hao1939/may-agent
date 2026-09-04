@@ -8142,6 +8142,32 @@ over another counter narrative: audit Scan 473's unsourced Balkanization paper
 method, five claimed cross-cutting gaps, and whether “TOCTOU ≡ MCP” is source
 result or Scout synthesis.
 
+Exact Cycle 367 result
+`7388fc0bd9f8fba0fcc8337d96736ac31ac77e8a` contains seed-ordering commit
+`04457d4af89052f379f047a9bb5f4363acbf0fbf`. It passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions with zero failures in 105.55 seconds. The
+broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:32:23.203Z` returns 26 facts / 16 wakes and is truncated.
+Containment and exclusion match Cycle 366; the standing tree is clean.
+Protected `/app` remains at unchanged HEAD with 919 records /
+`be01f801ac63…c2a744a42b6` overall and 296 /
+`7e4d09379a93…b3ea3e60fe` in Scout scope.
+
+### Cycle 368 seed-first start — audit Balkanization at the primary source
+
+At `2026-09-04T08:32:23.203Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+identities remain unavailable, and account state is unchanged. `RV-004` and
+the unreleased provider result retain ranks one and two at their exact missing-
+evidence boundaries. Primary review of `2607.05743v1` ranks highest accessible
+because Scan 473 currently presents corpus size, category structure, citation
+fragmentation, five gaps, CVE verification, and a TOCTOU/MCP equivalence as
+facts without a source qualification. Retrieve the exact version, distinguish
+paper results from Scout synthesis, inspect search/corpus and artifact limits,
+and retain only decision-relevant supported claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

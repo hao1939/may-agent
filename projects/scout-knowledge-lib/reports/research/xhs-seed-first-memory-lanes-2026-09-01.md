@@ -15262,6 +15262,39 @@ unsourced `2607.05743v1` claims about 39 papers, 17 categories, citation
 fragmentation, five gaps, and whether “TOCTOU ≡ MCP” is reported evidence or
 Scout synthesis. Compaction remains last.
 
+Exact Cycle 367 result
+`7388fc0bd9f8fba0fcc8337d96736ac31ac77e8a` contains seed-ordering commit
+`04457d4af89052f379f047a9bb5f4363acbf0fbf`. Syntax, TypeScript, formatting,
+Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8, and all 296
+tests / 1,484 assertions pass with zero failures in 105.55 seconds. The broad
+audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:32:23.203Z` returns 26 facts / 16 wakes with truncation.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` remain ancestors;
+unaccepted `d041c41b54` is excluded; the tree is clean. Protected `/app`
+retains unchanged HEAD with 919 records /
+`be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a` in
+Scout scope.
+
+## Cycle 368 seed-first start — audit Balkanization at the primary source
+
+At `2026-09-04T08:32:23.203Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable identities remain unavailable, provenance stays the prior browser
+receipt and ledger, and account state is unchanged.
+
+High/open `RV-004` and the unreleased provider result remain first and second
+at their exact missing-evidence boundaries. Primary review of
+`2607.05743v1` is highest accessible: Scan 473 currently states corpus size,
+17 categories, citation fragmentation, five cross-cutting gaps, CVE checks,
+and TOCTOU/MCP equivalence without distinguishing paper evidence from Scout
+synthesis. Retrieve the exact paper version, inspect search and corpus methods,
+artifact availability, denominators, and wording, and retain only supported
+decision-relevant claims. Other causal/reproducibility/retrieval gaps follow;
+public source lanes stay trigger-bounded and compaction remains last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
