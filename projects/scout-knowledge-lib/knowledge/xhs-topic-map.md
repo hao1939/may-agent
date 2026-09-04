@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 405. Cycles 406-407 reused this receipt without another request because the cadence had not elapsed."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycles 406-407; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 405. Cycles 406-408 reused this receipt without another request because the cadence had not elapsed."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 405 read-only XHS boundary through 2026-09-04T17:12:00.404Z."
 </ai_context>
 
@@ -10890,6 +10890,55 @@ away from the now-exhausted OverEager manuscript: prefer a retained primary or
 contradictory claim with a released denominator or executable artifact over
 another narrative metric, and make the scheduled XHS observation only after
 `2026-09-04T23:12:00.404Z` or a material access trigger.
+
+### Cycle 408 seed-first start — reuse cadence; exercise the planner in isolation
+
+Cycle 408 begins from exact clean accepted integration tip
+`3d92dd6ea61d608b5eefb55bfa9415e992f23af4`. At
+`2026-09-04T21:18:59.936Z`, Cycle 405's observation through
+`17:12:00.404Z` was 4 hours 6 minutes 59.532 seconds old, inside the six-hour
+cadence ending `23:12:00.404Z`. No access or collection trigger fired. The
+bounded reconciliation therefore made zero XHS requests: added and changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+identities remain unavailable, and Cycle 405 remains the exact provenance.
+No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at the protected
+outcome-join and external-runtime boundaries. The now-integrated RV-044 planner
+had a concrete accessible criterion: drive one fresh forward/rollback
+transition in a disposable repository before relying on it for another
+protected release. GitHub, arXiv, and Reddit made zero requests and retain
+their last evidence, access limits, and change-bearing revisit triggers.
+
+### Cycle 408 checkpoint — planner classifications drive an addition-safe rehearsal
+
+The isolated regression builds one base/candidate pair with a same-byte rename,
+an already-deleted candidate deletion, a candidate-identical dirty overlap, a
+human-divergent overlap, a clean tracked replacement, a clean candidate
+addition, and an unrelated dirty file. The planner reports seven candidate
+paths, five overlaps, one unrelated dirty path, four overlaps that become
+clean, one retained overlap, and distinct one-path rollback restore/remove
+sets.
+
+A matched naive `git reset --mixed` changes only HEAD/index and leaves four
+dirty records, not the planned two: the absent candidate addition and old
+clean tracked bytes become extra drift. Restoring the base reproduces the
+exact six-record preflight. The planner-driven path first materializes only
+its two preflight-clean paths, then performs the mixed reset. It reaches the
+candidate with exactly the human-divergent and unrelated records, preserves
+both human byte strings, restores the one base path, removes the one candidate
+addition, resets back to base, and reproduces the exact preflight status.
+
+This is high-confidence evidence for the tested disposable topology and the
+addition-safe distinction that the failed Cycle 406 rollback lacked. It does
+not authorize a `/app` transition, prove crash atomicity, cover submodules or
+all filesystem races, or replace fresh exact-boundary review. Full evidence,
+rollback, and integration dispositions are in the
+[Cycle 408 isolated rehearsal](../reports/review/scout-overlay-planner-cycle408-2026-09-05.md).
+`RV-044` meets its isolated-use criterion in the producer candidate but remains
+review-pending; `RV-004` and `RV-034` remain open. Next, await independent
+review before any local-main movement; after the XHS cadence boundary, perform
+one scheduled seed reconciliation and re-rank the substantive queue.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

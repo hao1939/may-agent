@@ -42,6 +42,161 @@ afterEach(async () => {
 });
 
 describe("local-main overlay plan", () => {
+  it("drives a reversible mixed-index transition without changing overlay bytes", async () => {
+    const { root, base } = await repo({
+      "already-deleted.md": "base deletion\n",
+      "candidate-clean.md": "base candidate clean\n",
+      "divergent.md": "base divergent\n",
+      "rename-old.md": "same rename bytes\n",
+      "restore.md": "base restore\n",
+      "unrelated.md": "base unrelated\n",
+    });
+    await unlink(join(root, "already-deleted.md"));
+    await writeFile(join(root, "candidate-clean.md"), "candidate clean\n");
+    await writeFile(join(root, "divergent.md"), "candidate divergent\n");
+    git(root, "mv", "rename-old.md", "rename-new.md");
+    await writeFile(join(root, "restore.md"), "candidate restore\n");
+    await writeFile(join(root, "added.md"), "candidate addition\n");
+    git(root, "add", ".");
+    git(root, "commit", "--quiet", "-m", "candidate");
+    const candidate = git(root, "rev-parse", "HEAD");
+    git(root, "checkout", "--quiet", "--detach", base);
+
+    await unlink(join(root, "already-deleted.md"));
+    await writeFile(join(root, "candidate-clean.md"), "candidate clean\n");
+    await writeFile(join(root, "divergent.md"), "human divergent\n");
+    await unlink(join(root, "rename-old.md"));
+    await writeFile(join(root, "rename-new.md"), "same rename bytes\n");
+    await writeFile(join(root, "unrelated.md"), "human unrelated\n");
+    const preflight = git(
+      root,
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all",
+      "--no-renames",
+    );
+
+    const plan = inspectLocalMainOverlay(root, base, candidate);
+
+    expect(plan).toMatchObject({
+      preflightStatusCount: 6,
+      noRenameCandidatePathCount: 7,
+      overlapCount: 5,
+      unrelatedDirtyCount: 1,
+      expectedPostflightStatusCount: 2,
+      rollbackRestoreCount: 1,
+      rollbackRemoveCount: 1,
+    });
+    expect(plan.overlapBecomesClean.map(({ path }) => path).sort()).toEqual([
+      "already-deleted.md",
+      "candidate-clean.md",
+      "rename-new.md",
+      "rename-old.md",
+    ]);
+    expect(plan.overlapRetained).toEqual([
+      { path: "divergent.md", status: "M" },
+    ]);
+    expect(plan.cleanMaterialization).toEqual([
+      { path: "added.md", rollback: "remove" },
+      { path: "restore.md", rollback: "restore" },
+    ]);
+
+    // Changing only HEAD/index is the matched unsafe baseline: clean candidate
+    // paths remain at base bytes and become two extra dirty records.
+    git(root, "reset", "--mixed", "--quiet", candidate);
+    expect(
+      git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--no-renames",
+      )
+        .split("\n")
+        .filter(Boolean)
+        .sort(),
+    ).toEqual([
+      " M divergent.md",
+      " M restore.md",
+      " M unrelated.md",
+      "D added.md",
+    ]);
+    git(root, "reset", "--mixed", "--quiet", base);
+    expect(
+      git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--no-renames",
+      ),
+    ).toBe(preflight);
+
+    // The planner's clean-materialization set supplies only paths that were
+    // clean at preflight; the mixed reset then advances HEAD/index while all
+    // dirty overlay bytes remain untouched.
+    git(
+      root,
+      "checkout",
+      candidate,
+      "--",
+      ...plan.cleanMaterialization.map(({ path }) => path),
+    );
+    git(root, "reset", "--mixed", "--quiet", candidate);
+    expect(git(root, "rev-parse", "HEAD")).toBe(candidate);
+    expect(
+      git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--no-renames",
+      )
+        .split("\n")
+        .filter(Boolean)
+        .sort(),
+    ).toEqual([" M unrelated.md", "M divergent.md"]);
+    expect(await Bun.file(join(root, "divergent.md")).text()).toBe(
+      "human divergent\n",
+    );
+    expect(await Bun.file(join(root, "unrelated.md")).text()).toBe(
+      "human unrelated\n",
+    );
+
+    const restorePaths = plan.cleanMaterialization
+      .filter(({ rollback }) => rollback === "restore")
+      .map(({ path }) => path);
+    git(root, "checkout", base, "--", ...restorePaths);
+    for (const { path } of plan.cleanMaterialization.filter(
+      ({ rollback }) => rollback === "remove",
+    )) {
+      await unlink(join(root, path));
+    }
+    git(root, "reset", "--mixed", "--quiet", base);
+    expect(git(root, "rev-parse", "HEAD")).toBe(base);
+    expect(
+      git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--no-renames",
+      ),
+    ).toBe(preflight);
+    expect(await Bun.file(join(root, "candidate-clean.md")).text()).toBe(
+      "candidate clean\n",
+    );
+    expect(await Bun.file(join(root, "divergent.md")).text()).toBe(
+      "human divergent\n",
+    );
+    expect(await Bun.file(join(root, "rename-new.md")).text()).toBe(
+      "same rename bytes\n",
+    );
+    expect(await Bun.file(join(root, "unrelated.md")).text()).toBe(
+      "human unrelated\n",
+    );
+  });
+
   it("counts both dirty sides of a content-identical rename", async () => {
     const { root, base } = await repo({ "old.md": "same\n" });
     git(root, "mv", "old.md", "new.md");
