@@ -13262,6 +13262,29 @@ overall and 296 /
 `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
 in Scout scope. This worker did not write, test, clean, or mutate it.
 
+## Cycle 344 seed-first start — pursue AIM result provenance
+
+Cycle 344 begins from clean validation handoff
+`e8253e7d9713d219b168be94d5f86dd1a26ea2c3`. At
+`2026-09-04T05:26:14.864Z`, the supported Cycle 341 XHS observation through
+`05:00:03.241Z` is under 27 minutes old and remains inside the six-hour
+cadence. This bounded reconciliation makes zero XHS requests. Added/changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+seeds remain unavailable, and exact ledger row 341 remains provenance. No
+account state changes.
+
+Re-rank the complete queue by expected knowledge value: (1) high/open
+`RV-004`, inaccessible without a retained protected query/rank -> selection
+-> later-outcome join; (2) Memory in the Loop's unreleased authority-bearing
+result; (3) the uncited AIM LoCoMo gains in `2607.07397`, highest accessible
+because they support the capability-amplification half of the selected
+architecture yet omit experiment identity, model/configuration controls, and
+an attributable artifact; (4) other primary, contradiction, reproducibility,
+retrieval, and synthesis gaps; (5) Reddit until a relevant thread/access
+change; and (6) compaction. GitHub, arXiv, Reddit, and accepted refs make zero
+requests/checks in this seed record. Commit it before searching for AIM
+evidence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

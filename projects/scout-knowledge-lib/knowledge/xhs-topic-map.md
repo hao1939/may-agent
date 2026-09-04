@@ -6575,6 +6575,26 @@ empty. Protected `/app` remains externally observed at `386b445c…1fec8`, 916
 / `8e3558f4…e8a36` overall and 296 / `a430d0c9…2f7e` in Scout scope. This
 worker wrote or tested neither protected surface.
 
+### Cycle 344 seed-first start — test the uncited AIM gains
+
+Cycle 344 begins from clean validation handoff `e8253e7d97`. At
+`2026-09-04T05:26:14.864Z`, the supported Cycle 341 XHS observation through
+`05:00:03.241Z` is under 27 minutes old and remains inside the six-hour
+cadence. Make zero XHS requests: additions/changes remain unknown, observed
+removals remain `[]`, all 132 durable seeds remain unavailable, and ledger row
+341 remains exact provenance. No account state changes.
+
+Re-ranked expected value remains: (1) high/open `RV-004`, inaccessible without
+a retained protected query/rank -> selection -> later-outcome join; (2) Memory
+in the Loop's unreleased authority-bearing result; (3) the uncited AIM LoCoMo
+gains in `2607.07397`, highest accessible because they support the capability-
+amplification half of the selected architecture yet lack experiment identity,
+model/configuration controls, or a public artifact; (4) other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit
+until its relevant-thread/access trigger changes; and (6) compaction. GitHub,
+arXiv, Reddit, and accepted refs make zero requests/checks in this seed record.
+Commit it before searching for the AIM evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
