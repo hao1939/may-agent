@@ -6047,6 +6047,32 @@ Next, primary-review `2607.07379` to test whether the physics-audit example
 supports the current cross-domain verification ordering and whether an
 artifact exposes contradictory controls.
 
+Exact material `7940a37c631eb871528b199f8e475cf10f40c4b0` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 90 scoped links, navigation v1
+at 11/14, navigation v2 at 8/8, and 296 tests / 1,484 assertions with zero
+failures in 97.77 seconds. The broad audit passes 1,540 documents / 1,728
+links. Read-only health at `2026-09-04T04:19:58.936Z` returns 26 facts / 16
+wakes, truncated. Accepted `ff923ccde4` and historical `f26bd4f3a5` are
+contained; unaccepted `d041c41b54` is excluded. Standing status and runtime
+state are empty. Protected `/app` remains at `386b445c…1fec8`, with 916
+records / `8e3558f4…848a36` overall and 296 / `a430d0c9…32d7e` in Scout
+scope.
+
+### Cycle 335 seed-first start — test the physics-audit ordering
+
+At `2026-09-04T04:19:58.936Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` remains inside its six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 seeds remain unavailable, and account state is unchanged. Rank (1)
+high/open `RV-004`, inaccessible without the protected post-August-31
+query/rank/selection/outcome join; (2) Memory in the Loop's unreleased
+provider result; (3) `2607.07379`, highest accessible because its unreviewed
+causality example anchors the cross-domain Verification Hierarchy; (4) the RSI
+survey, EvoSOP, agentic-governance, and other contradiction/reproducibility
+gaps; (5) Reddit until a relevant trigger; and (6) compaction. Select
+`2607.07379`; test the compared models, error and physics metrics, temporal
+causality intervention, denominators, artifact support, and transfer limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
