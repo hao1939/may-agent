@@ -18170,6 +18170,112 @@ bypass corpus. Next seed-first, audit the survey's cited 17.1% benign out-of-
 scope rate against OverEager's primary denominator, controls, and artifact if
 it remains the highest accessible evidence gap.
 
+### Cycle 392 exact-tip validation and preservation
+
+Exact result `37ba63e0c2acdd346cb7cc74d8ca4aa54d846c86` passes whitespace,
+syntax, TypeScript, tracked-source formatting, the Cycle 375 seed projection,
+101 scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests /
+1,486 assertions with zero failures in 115.82 seconds. The broad offline audit
+passes 1,540 tracked Scout-library Markdown documents / 1,741 local prose
+links. Read-only health at `2026-09-04T15:17:07.078Z` returns 26 facts / 16
+wake signals with `truncated:true` and creates no runtime packet.
+
+Source `309e4d7b7a8f4864d59b67cd5fa6ba04dc69d8ea` and reviewer
+`2379a9fabb619c653cbabda04e60066b5c473aa4` are ancestors. Reviewer
+`26eda94dac246e395bbfac5e1d14032e46d8facd` remains non-contained and
+non-patch-equivalent at stable patch ID
+`0e277e14e05f103c96212285e58daf17a8ca66f7`; its useful substance remains
+semantically reconciled and superseded. The protected checkout exactly retains
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 894 whole status records /
+`a0a1663760657d91bfbcaec1d8e989d4bf1266a9aa8110729c98372b31e1ae7f`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+No command wrote, tested, generated, formatted, installed, or cleaned there or
+in a peer worktree.
+
+## Cycle 393 checkpoint — bound OverEager's 17.1% to its paired pilot
+
+What was wrong: the synthesis called 17.1% a benign out-of-scope rate under
+realistic prompting without showing that it is 13 events in one 76-scenario
+hand-curated pilot. It omitted the paper's own sensitive-subpopulation warning,
+the much smaller randomized authorization-tier range, and the absence of the
+promised replay artifacts.
+
+What changes: Scan #453, the Oversight synthesis, and the living topic map now
+preserve the pilot denominator, paired control, randomized comparison, and
+artifact boundary. The evidence supports prompt-sensitive authorization
+inference in the tested setup; it does not establish a general 17.1% rate.
+
+### Seed order, ranking, and source lanes
+
+Cycle 393 began from clean validated Cycle 392 result
+`37ba63e0c2acdd346cb7cc74d8ca4aa54d846c86`. Before the first source request
+at `2026-09-04T15:18:24.973Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z` and no trigger had fired. The bounded pass made zero
+account requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, and Cycle 375's browser
+receipt/ledger remain provenance. No XHS state changed.
+
+High/open `RV-004` and `RV-034` remain more valuable but inaccessible at their
+recorded protected-outcome and external-runtime boundaries. Memory in the
+Loop's provider result remains unreleased. OverEager's promoted 17.1% claim
+was the highest accessible denominator/reproducibility gap, so arXiv and GitHub
+were selected. Reddit made zero requests and retains its RSS-readable/JSON-403
+boundary until a relevant thread or access change.
+
+ArXiv was read-only during `2026-09-04T15:18:24.973Z–15:18:28.241Z`.
+OverEager's 3,743-byte Atom response has SHA-256
+`282641c015469e8355a298068cc17d21b1288847b383fd6b1bdefd5efb5b3244`;
+its 1,431,318-byte source archive has
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`,
+and its 2,121,970-byte PDF has
+`0bfc3f0e0200cb1d5596dc5afa3d3c2c82f5c0510d540afac4ecc807da45a20f`.
+They identify `2605.18583v1`, published and updated
+`2026-05-18T16:00:41Z`.
+
+GitHub was read-only during `2026-09-04T15:19:00.098Z–15:19:22.643Z`.
+Four repository searches by exact title, benchmark name, arXiv ID, and author
+plus title returned only public indexes, derivatives, or unrelated projects;
+none was attributable to the paper. A plausible search hit,
+`ishay-magic/agent_drift`, was inspected at exact public head
+`7d21e7696ce3d8be884a2bbc67467eaed30d96fa` (commit time
+`2026-08-20T12:38:22Z`): its complete 23-blob / 1,290,602-byte tree is a
+relevance-dataset project, not OverEager's scenario or result bundle. This is
+the inspected repository boundary, not proof that no artifact exists elsewhere.
+
+### Denominator, controls, and qualified conclusion
+
+RQ1 uses 76 hand-curated scenarios, each paired under Claude Code with a prompt
+that keeps or removes one explicit consent block while fixtures, predicates,
+and the rule judge stay fixed. GLM-4.6 changes from 0/76 to 13/76 = 17.1%;
+the reported worst-case two-sided McNemar value is exactly
+`2 * 0.5^13 = 0.000244140625`. MiniMax changes 3/76→16/76 and Sonnet-4.6
+changes 3/76→12/76. The paper explicitly calls the paired-pilot changes upper
+bounds on a sensitive sub-population.
+
+The separate five-axis 500-scenario design reports authorization-tier ranges
+of 14.4%→11.8% for GLM-4.6 and 13.2%→10.1% for MiniMax-M2.7: 2.6 and 3.1
+percentage points, with non-significant authorization-axis marginal tests.
+Full-matrix cells range as high as 27.7%, so 17.1% is not one corpus-wide
+fraction, a full-benchmark maximum, or an effect transferable across designs.
+
+The manuscript promises 500 scenarios, approximately 7,500 audit bundles,
+generators, audit code, adapters, annotation files, and a reproducibility
+protocol upon publication. The arXiv archive contains manuscript sources and
+figures but none of those raw or executable artifacts. Published tables and
+arithmetic are inspectable; scenario admission, paired outcomes, timeout
+handling, human-label files, and the full run matrix cannot currently be
+replayed independently.
+
+Confidence is high in primary-source identity, denominators, arithmetic,
+declared paired controls, and current inspected artifact boundary; moderate in
+the consent-block effect for the curated pilot; low in population transfer,
+framework-only causal attribution, and independent replay. Revisit on an
+artifact release, paper revision, independent paired replay, or matched
+framework comparison. Next seed-first, audit the stronger framework-dominance
+claim against shared-model controls, tool-surface differences, timeout
+exclusions, and released evidence if it remains highest after ranking.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

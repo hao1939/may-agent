@@ -9992,6 +9992,63 @@ revision. Next seed-first, trace the survey's cited 17.1% benign out-of-scope
 rate to OverEager's primary denominator, controls, and artifact if it remains
 the highest accessible unresolved claim.
 
+### Cycle 393 seed-first start — preserve cadence; separate pilot from population
+
+Cycle 393 starts from clean validated Cycle 392 result
+`37ba63e0c2acdd346cb7cc74d8ca4aa54d846c86`. Before the first source request
+at `2026-09-04T15:18:24.973Z`, the scheduled XHS observation remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. Make zero account
+requests: additions and changes remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and Cycle 375's browser receipt
+and seed-ledger row remain the supported provenance.
+
+High/open `RV-004` and `RV-034` remain first at their protected-outcome and
+external-runtime boundaries. Memory in the Loop's provider result remains
+unreleased. Select the survey's 17.1% claim as the highest accessible gap
+because the current synthesis presents a hand-curated prompt ablation as a
+general rate and does not expose its denominator or artifact boundary.
+
+### Cycle 393 checkpoint — 17.1% is 13/76 in a sensitive paired pilot
+
+OverEager `2605.18583v1` has two distinct designs. Its RQ1 pilot pairs 76
+hand-curated Claude Code scenarios under prompts that differ only by an
+explicit consent block. In the GLM-4.6 cell, removing that block changes the
+deterministic trap rate from 0/76 to 13/76 = 17.1%; the two-sided worst-case
+McNemar value is exactly 0.000244140625. The MiniMax and Sonnet cells are
+3/76→16/76 and 3/76→12/76. The paper itself calls these changes upper bounds
+for a sensitive sub-population.
+
+The separate 500-scenario five-axis design does not reproduce a 17.1-point
+population effect. Its authorization tiers span 14.4%→11.8% for GLM-4.6 and
+13.2%→10.1% for MiniMax-M2.7, only 2.6 and 3.1 points; all authorization-axis
+marginal tests are non-significant. Full-matrix cell rates reach 27.7%, so
+17.1% is neither a global maximum nor one denominator over approximately 7,500
+runs. The retained result supports prompt-sensitive authorization inference in
+the tested pilot, not a universal benign-task failure rate.
+
+The paper promises 500 scenarios, audit bundles, generators, audit code, and
+adapters upon publication. The inspected arXiv archive contains only manuscript
+sources and figures. Four targeted GitHub repository searches returned public
+indexes, derivatives, and unrelated projects but no attributable artifact; one
+plausible search hit, `ishay-magic/agent_drift` at
+`7d21e7696ce3d8be884a2bbc67467eaed30d96fa`, is an unrelated relevance-data
+project. Tables and arithmetic are inspectable, while scenario admission,
+paired bundles, rule-judge outputs, and the full run matrix are not currently
+replayable.
+
+Confidence is high in arXiv identity, 76-run denominators, exact arithmetic,
+declared controls, and current artifact absence on inspected surfaces; moderate
+in the prompt-block causal effect for the curated pilot; low in population
+transfer, cross-framework attribution, and independent replay. ArXiv and
+GitHub were selected and read. Reddit made zero requests and retains its
+RSS-readable/JSON-403 boundary until a relevant thread or access change.
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit
+on an artifact release, paper revision, independent paired replay, or a matched
+framework comparison. Next seed-first, audit the paper's stronger
+framework-dominance claim against shared-model controls, tool-surface
+differences, timeout exclusions, and released evidence if it remains the
+highest accessible gap.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

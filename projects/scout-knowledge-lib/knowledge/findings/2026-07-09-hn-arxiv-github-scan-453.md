@@ -97,7 +97,13 @@ Five proposed cross-cutting gaps within the selected corpus:
 2. **No adversarial co-evaluation**: No isolation paper reuses ShellSieve's named seven-operation setting, whose per-operation incomplete-block rates span 69.0–98.6%
 3. **TOCTOU/MCP analogy**: The paper interprets both as state-validation problems; it does not test one mitigation across both
 4. **Honest-author assumption**: Reviewed mechanisms do not measure policy-authoring error
-5. **Benign out-of-scope**: No selected access-control/capability paper addresses the cited result of up to 17.1%
+5. **Benign out-of-scope**: No selected access-control/capability paper
+   addresses OverEager's cited consent-ablation result. Its 17.1% is 13/76
+   Claude Code + GLM-4.6 runs in a hand-curated paired pilot after removing an
+   explicit scope block, versus 0/76 with the block. The primary paper calls
+   that effect an upper bound on a sensitive sub-population; under its separate
+   five-axis randomized 500-scenario design, the authorization-tier range is
+   2.6--3.1 percentage points.
 
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
@@ -111,13 +117,20 @@ study. It motivates the **Correlated Blindness** analogy; it does not measure
 field-wide citation fragmentation or prove that the five absences hold outside
 its non-exhaustive corpus.
 
-**Reproducibility boundary**: The inspected v1 source contains generated
+**Reproducibility boundary**: The inspected survey v1 source contains generated
 tables/macros, bibliography, figures, and all 39 appendix rows, but not the
 claimed machine-readable corpus or independent verifier. Counts and wording
 are inspectable; search completeness, classifications, citation assertions,
 and regeneration are not independently reproducible from that archive.
+OverEager `2605.18583v1` likewise says its 500 scenarios, approximately 7,500
+audit bundles, generators, audit suite, and adapters will be released upon
+publication. Its inspected arXiv source contains manuscript files and figures,
+not those artifacts. Four targeted GitHub repository searches found no
+attributable project, so the published tables and arithmetic are inspectable
+but neither the paired pilot nor the full matrix can currently be replayed.
 
-Source: https://arxiv.org/abs/2607.05743
+Sources: https://arxiv.org/abs/2607.05743,
+https://arxiv.org/abs/2605.18583
 
 ### 4. aiAuthZ: Off-Host, Identity-Bound Authorization for AI Agents (2607.05518) [SUPPORTING]
 
