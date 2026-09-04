@@ -13785,6 +13785,43 @@ high/open: this is evidence correction, not a protected later-outcome join.
 Next seed-first, primary-review Conversation to Contribution and test whether
 its session-to-OSS contribution inference is outcome-backed.
 
+Exact material `97e1016479ea0ae5a762ecdc636b5209525bfb78` passes the full
+Scout gate: syntax, TypeScript, formatting, Cycle 341 projection, 90 durable
+links, navigation v1 11/14, navigation v2 8/8, and 296 tests / 1,484
+assertions with zero failures in 106.91 seconds. The broad read-only audit
+passes 1,540 Markdown documents / 1,728 links / zero errors. Health at
+`2026-09-04T06:18:30.884Z` returns 26 facts / 16 wakes and is truncated.
+Historical `f26bd4f3a590b59d241536326199e805777df1be` and accepted
+`ff923ccde4` are ancestors; unaccepted `d041c41b54` is excluded. The standing
+worktree is clean.
+
+Protected `/app` remained read-only at
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its comparable all-file status is
+now externally observed at 918 records / SHA-256
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`,
+and Scout scope at 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+These differ from the prior receipts and are external drift, not a worker
+mutation. The goal-owned worktree registry fingerprint was
+`1044d285…34a1e` after validation.
+
+## Cycle 351 seed-first start — test the conversation/outcome join
+
+At `2026-09-04T06:18:59.246Z`, Cycle 341's supported observation through
+`05:00:03.241Z` remains inside the six-hour XHS cadence. Make zero XHS
+requests: additions and changes remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. Re-rank the complete queue by expected
+knowledge value: (1) high/open `RV-004`, inaccessible because protected
+history still lacks query/rank -> selection -> later outcome; (2) Memory in
+the Loop's unreleased provider result, unchanged in Cycle 350; (3) Scan #476's
+unreviewed Conversation to Contribution claim, highest accessible because
+primary cohort/outcome/control evidence can change a current causal-sounding
+synthesis; (4) other primary, contradiction, reproducibility, retrieval, and
+synthesis gaps; (5) Reddit at its unchanged RSS-readable/JSON-403 trigger; and
+(6) compaction. Select arXiv `2607.05677` and inspect dataset provenance,
+session/contribution linkage, outcome denominators, comparisons, causal limits,
+and artifact availability before any maintenance work.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

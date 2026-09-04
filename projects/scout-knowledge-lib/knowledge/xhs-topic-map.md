@@ -6981,6 +6981,30 @@ because this corrects evidence quality rather than producing a protected
 query-to-later-outcome join. Next seed-first, primary-review Conversation to
 Contribution's session-to-contribution outcome claims and artifact boundary.
 
+Exact material `97e1016479ea0ae5a762ecdc636b5209525bfb78` passes syntax,
+TypeScript, formatting, Cycle 341 projection, 90 scoped links, navigation
+11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
+106.91 seconds. The broad audit passes 1,540 documents / 1,728 links; health at
+`2026-09-04T06:18:30.884Z` is 26 facts / 16 wakes with truncation. Historical
+`f26bd4f3a5` and accepted `ff923ccde4` are contained; unaccepted `d041c41b54`
+is excluded. The standing tree is clean. Protected `/app` remains read-only at
+`386b445c…1fec8`; comparable all-file status advanced externally to 918 records
+/ `0d1ab91f…a932`, and Scout scope to 296 / `7e4d0937…6a8a`.
+
+### Cycle 351 seed-first start — bind conversation to contribution outcomes
+
+At `2026-09-04T06:18:59.246Z`, reuse Cycle 341's supported XHS observation
+through `05:00:03.241Z`; it is inside cadence, so make no XHS request.
+Additions/changes remain unknown, removals `[]`, and all 132 seeds unavailable.
+Rank (1) inaccessible high/open `RV-004`; (2) Memory in the Loop's missing
+provider result, unchanged on the just-completed bounded check; (3) Scan #476's
+Conversation to Contribution outcome inference, highest accessible because the
+paper and any artifact can distinguish observed association from contribution
+effect; (4) other primary/contradiction/reproducibility/synthesis gaps; (5)
+Reddit until its relevant-thread/access trigger; (6) compaction. Select
+`2607.05677` and inspect cohort construction, outcome definition, controls,
+causal language, and public artifact before any lower-value maintenance.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
