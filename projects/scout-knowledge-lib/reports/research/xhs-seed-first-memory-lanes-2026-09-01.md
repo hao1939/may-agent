@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 403 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, paired-input, generator-seed, and axis-independence claims: aggregate Fisher comparisons reproduce, but the public package cannot establish same-scenario stability or mutual independence among mutation axes."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 404 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, paired-input, generator-seed, axis-independence, and interaction claims: aggregate Fisher arithmetic reproduces, while scenario identity, mutual-axis independence, interaction identification, and population transfer remain unsupported."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 403; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence evidence qualified through Cycle 403; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 404; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction evidence qualified through Cycle 404; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19125,6 +19125,90 @@ matched interaction estimand.
 
 The four-document candidate follows exact source
 `199c757b40f97143cdb3242e5c699986569898b7`. Run whitespace, syntax,
+TypeScript, formatting, Cycle 375 projection, scoped links, both navigation
+fixtures, and the full Scout gate before committing; then bind broad links,
+read-only health, lineage, clean state, and protected fingerprints to the exact
+result.
+
+## Cycle 404 checkpoint — a conditional range is not an interaction effect
+
+What was wrong: OverEager calls its fixed-`A`, varied-`B` mean/max ranges a
+measure of residual two-axis interaction. That metric can be large when only
+`B` has a main effect, so the existing summary could overstate what the public
+sensitivity evidence identifies.
+
+What changes: the topic map and canonical summaries retain the published
+conditional heterogeneity while separating it from an interaction estimand,
+population representativeness, cross-cell generator robustness, and valid
+dependence-aware inference.
+
+### Seed order and ranked selection
+
+Cycle 404 begins from exact clean validated tip
+`397e214f1c1565703446dad20a99151cbf120de5`. At
+`2026-09-04T17:02:08.943Z`, the scheduled XHS boundary
+`2026-09-04T17:09:20.326Z` had not arrived and no trigger fired. Make zero
+account requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, and Cycle 375 remains
+the access receipt. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible. Continue the
+checksum-bound OverEager sensitivity audit as the highest accessible question.
+GitHub, arXiv, Reddit, and other public lanes make zero requests and retain
+their last useful evidence, access boundaries, and change-bearing triggers.
+
+### Identification test and scope audit
+
+The source defines its two-axis statistic as the mean and maximum “overeager
+range when fixing `A` and varying `B`.” For its CC/GLM seed-42 cell, it prints
+ten axis-pair summaries with maxima from 3.8 to 14.4 points. These are valid
+descriptions of conditional rate spread, but the calculation does not remove
+`B`'s main effect and therefore cannot identify interaction.
+
+A deterministic matched control makes the problem concrete. Give every level
+of `A` the same three rates `[0.10,0.20,0.30]`. Outcome depends only on `B`,
+so all four reference-level differences of differences are exactly zero. The
+paper's metric nevertheless returns mean and maximum ranges of 0.20. The
+metric therefore admits a 20-point value under a zero-interaction additive
+table. No provider or public request was used for this control.
+
+The retained manuscript publishes only the ten mean/max summaries—not the
+nine cell counts, standard errors, per-scenario axis assignments, or fitted
+interaction terms. Its comparison of 14.4-point conditional ranges with
+2.4--5.4-point marginal main effects mixes different estimands and cannot show
+that two-axis interaction exceeds every main effect.
+
+The “population-mean unbiasedness” wording is also unsupported at the target-
+population boundary. Counts of 162--169 per level show near-uniform marginal
+balance across five authored mutation axes in one accepted synthetic set.
+They do not define a deployment population, sampling probabilities, weights,
+or how diversity/verifier admission preserves representativeness. Latin-
+hypercube balance can improve coverage of a declared design space without
+making its unweighted mean unbiased for an unspecified external population.
+
+Finally, sensitivity scope is one product/model cell: the three-seed table is
+Claude Code/GLM, and the two-axis summaries are its canonical seed-42 run.
+They do not establish generator robustness across the full 15-cell matrix.
+The reproduced pairwise Fisher p-values also assume independent aggregate
+observations; if generator samples share scenarios, unreported clustering or
+pairing invalidates that inference model even though the count arithmetic is
+correct.
+
+Confidence is high in the metric counterexample and published scope, and low
+in the actual interaction sizes, target-population transfer, or cross-seed
+dependence because raw assignments are absent. Discharge requires the 3-by-3
+counts, a declared difference-of-differences or fitted interaction with
+uncertainty, target-population/weight definitions, scenario overlap and cluster
+identities, and sensitivity runs across the claimed product/model scope.
+
+Next seed-first, test whether the nine “zero-touch” archetypes' all-seed zero
+is behavioral stability or a stable measurement blindspot under the paper's
+own missing-sink taxonomy.
+
+### Cycle 404 candidate validation
+
+The four-document candidate follows exact source
+`397e214f1c1565703446dad20a99151cbf120de5`. Run whitespace, syntax,
 TypeScript, formatting, Cycle 375 projection, scoped links, both navigation
 fixtures, and the full Scout gate before committing; then bind broad links,
 read-only health, lineage, clean state, and protected fingerprints to the exact

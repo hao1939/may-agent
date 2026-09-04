@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 403 bounded reconciliation at 2026-09-04T16:53:05.307Z reused it before the scheduled 17:09:20.326Z boundary and made zero requests: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 403; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence evidence qualified through Cycle 403; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 404 bounded reconciliation at 2026-09-04T17:02:08.943Z reused it before the scheduled 17:09:20.326Z boundary and made zero requests: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 404; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction evidence qualified through Cycle 404; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10616,6 +10616,67 @@ axis-pair tables, a declared joint-balance criterion, and effect-size bounds.
 Next seed-first, audit whether the published two-axis “range” calculation
 identifies interactions or is only a descriptive conditional range without a
 matched interaction estimand.
+
+### Cycle 404 seed-first start — preserve cadence; audit the sensitivity estimand
+
+Cycle 404 begins from clean validated Cycle 403 tip
+`397e214f1c1565703446dad20a99151cbf120de5`. At
+`2026-09-04T17:02:08.943Z`, the scheduled XHS boundary
+`2026-09-04T17:09:20.326Z` was still seven minutes away and no access,
+collection, or account trigger had fired. Make zero account requests:
+additions/changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375 remains the exact access
+receipt. No account state changed.
+
+`RV-004` and `RV-034` remain high/open and inaccessible. Continue the same
+checksum-bound OverEager sensitivity audit because its two-axis metric is the
+highest accessible unresolved question. GitHub, arXiv, Reddit, and other
+public lanes make zero requests; their evidence and revisit triggers remain
+unchanged.
+
+### Cycle 404 checkpoint — conditional range does not identify interaction
+
+The appendix reports, for each axis pair `(A,B)`, the mean and maximum range of
+overeager rates obtained by fixing `A` and varying `B`. Those ten summaries do
+show descriptive conditional heterogeneity: for the disclosed CC/GLM seed-42
+cell, some slices differ by as much as 14.4 points. They do not isolate a
+two-axis interaction because the calculation never subtracts `B`'s main
+effect.
+
+An exact matched control demonstrates the identification failure. In a 3-by-3
+table whose three rows are all `[0.10,0.20,0.30]`, outcome depends only on `B`.
+Every difference-of-differences interaction is zero, yet the paper's range
+metric returns mean `0.20` and maximum `0.20`. Thus a large reported range can
+exist with no interaction. Conversely, without the nine cell counts and
+uncertainty, the ten printed mean/max summaries cannot distinguish main
+effects, interactions, imbalance, or sampling noise.
+
+The sensitivity evidence is narrower in two further ways. Marginal Latin-
+hypercube counts of 162--169 support near-uniform balance across the five
+declared axes in this generated accepted set; they do not establish an
+undefined real-world “population-mean unbiasedness” target, sampling weights,
+or post-verifier representativeness. And the three-seed table is only
+Claude Code/GLM, while the detailed main/interaction summaries are only its
+seed-42 run. They cannot show that all 15 product/model cells survive generator
+freedom.
+
+Finally, the reproduced Fisher p-values are conditionally valid as unpaired
+aggregate arithmetic. If scenario identities overlap across generator seeds,
+outcomes are clustered or paired and ordinary Fisher inference ignores that
+dependence. Because the public package omits the overlap map, it cannot justify
+the independent-sample model or select a paired/clustered alternative.
+
+Confidence is high that the printed metric is descriptive rather than an
+interaction estimand and high that the scope is one sensitivity cell; low in
+the actual interaction magnitudes, target-population bias, and cross-seed
+dependence. Discharge requires scenario-level 3-by-3 counts, a declared
+difference-of-differences or fitted interaction with uncertainty, target-
+population and weighting definitions, per-seed overlap/cluster identities,
+and repeated sensitivity across the claimed product/model scope.
+
+Next seed-first, test whether the nine “zero-touch” archetypes' all-seed zero
+is behavioral stability or a stable measurement blindspot under the paper's
+own missing-sink taxonomy.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

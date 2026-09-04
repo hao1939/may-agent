@@ -317,6 +317,24 @@ contingency tests. Without scenario-level assignments or the ten 3-by-3
 axis-pair tables, the later claim that all axes are statistically independent
 within each system is unsupported; actual dependence remains unknown.
 
+The reported two-axis “interaction ranges” are also descriptive rather than
+identified interactions. Fixing `A` and taking the max-minus-min outcome rate
+while varying `B` does not subtract `B`'s main effect. A three-by-three additive
+control with every row `[0.10,0.20,0.30]` has zero differences-of-differences
+but returns a 20-point mean and maximum under that range metric. The package
+publishes neither the nine cell counts nor fitted interaction terms, so the
+printed 3.8--14.4-point maxima cannot distinguish interaction, main effects,
+imbalance, or sampling noise. Near-uniform mutation-axis margins support
+coverage of the authored design, not “population-mean unbiasedness” for an
+undefined external population. Moreover, these summaries and the three-seed
+table cover only Claude Code/GLM, not the full 15-cell matrix.
+
+Because cross-seed scenario overlap is unpublished, the pairwise Fisher
+arithmetic has a conditional inference boundary: it is appropriate for
+independent samples, but shared scenarios would require paired or clustered
+analysis. Count-level p-values can reproduce while the dependence assumption
+remains unverified.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is

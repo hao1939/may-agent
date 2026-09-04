@@ -1312,6 +1312,17 @@ ranges do not supply the missing ten axis-pair joint distributions. Until
 scenario-level assignments or those contingency tables are released, actual
 inter-axis dependence is unknown.
 
+Nor does the paper's fixed-`A`, varied-`B` range identify interaction. If all
+three `A` rows equal `[0.10,0.20,0.30]`, every difference of differences is
+zero while its mean/max range is 20 points. The published 3.8--14.4-point
+summaries therefore show conditional heterogeneity, not an interaction effect;
+the absent cell counts and uncertainty prevent decomposition into main effect,
+interaction, imbalance, and noise. Marginal Latin-hypercube balance covers the
+authored axes but does not make an unweighted mean unbiased for an undefined
+deployment population. These sensitivity summaries cover only Claude Code/GLM,
+and unknown cross-seed scenario overlap also leaves the unpaired Fisher
+inference assumption unverified.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy
