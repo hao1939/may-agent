@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through exact standing integration 91fba0440e131bf4f2b53a7e2d89d0d02abb54ac and isolated local-main candidate 283f723fd1b88c237b99af330495d7dae8296cb3: Cycle 405 is accepted after exact RV-040 integration, while 295 dirty-checkout overlaps block any main move under RV-041; RV-004/RV-034 remain high/open."
+summary: "Independent Scout review cursor through exact standing integration 672f2f38fb6833a15569f0732d2ed915f3f8dacf: Cycle 405 and its RV-040 correction are accepted, while isolated candidate 283f723fd1b88c237b99af330495d7dae8296cb3 is now historical preservation evidence and 295 dirty-checkout overlaps block any main move under RV-041; RV-004/RV-034 remain high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041"]
 last_updated: "2026-09-05"
-source_basis: "Exact Cycle 405 producer 041a4791001214b1f0b5dc93babb451c9fb3d61f, exact reviewer correction 0665ae54ee5072634feda0fd650ee13aa5461411, standing integration 91fba0440e131bf4f2b53a7e2d89d0d02abb54ac, and isolated main candidate 283f723fd1b88c237b99af330495d7dae8296cb3; exact ancestry, patch equivalence, source claims, full current-candidate gate, scoped and broad links, navigation, health, diff diagnostics, dirty-overlap fingerprints, protected-checkout preservation, integration, rollback, and full-rubric dispositions independently reviewed."
+source_basis: "Exact Cycle 405 producer 041a4791001214b1f0b5dc93babb451c9fb3d61f, RV-040 reviewer correction 0665ae54ee5072634feda0fd650ee13aa5461411, standing status 91fba0440e131bf4f2b53a7e2d89d0d02abb54ac, exact integrated local-main review 672f2f38fb6833a15569f0732d2ed915f3f8dacf, and isolated historical candidate 283f723fd1b88c237b99af330495d7dae8296cb3; exact ancestry, patch equivalence, non-containment, source claims, validation, diff diagnostics, dirty-overlap fingerprints, protected-checkout preservation, integration, rollback, and full-rubric dispositions independently reviewed."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,12 +11,12 @@ source_basis: "Exact Cycle 405 producer 041a4791001214b1f0b5dc93babb451c9fb3d61f
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `91fba0440e131bf4f2b53a7e2d89d0d02abb54ac`
+  `672f2f38fb6833a15569f0732d2ed915f3f8dacf`
 - Last material standing commit reviewed:
   `041a4791001214b1f0b5dc93babb451c9fb3d61f` (Cycle 405 rank/scale qualification)
 - Last producer research material reviewed:
   `041a4791001214b1f0b5dc93babb451c9fb3d61f`
-- Current review date: `2026-09-05T01:56:19+08:00`
+- Current review date: `2026-09-05T01:58:37+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -3064,6 +3064,13 @@ The standing owner then created isolated merge candidate
 independently tested report-free merge tree
 `8d3109102ecd6f50ee2ce20096c3ada15c9ff71b` is the 114-line candidate-only
 preservation report. `main` and the protected dirty checkout did not move.
+Standing subsequently fast-forwarded exactly to reviewer result
+`672f2f38fb6833a15569f0732d2ed915f3f8dacf`, whose parent is `91fba0440e`
+and whose stable patch ID is
+`9d4c55c25bc2baab704b9b84eb15152264098963`. The isolated candidate does not
+contain that commit. It remains valid preservation evidence for the reviewed
+tree, but is superseded as a current canonical landing candidate and must not
+be used to move `main`.
 
 Independent full validation of the report-free tree and its first report-only
 candidate revision passed syntax, TypeScript, tracked-source formatting, Cycle
@@ -3104,8 +3111,8 @@ claim and not authority to rewrite accepted overlapping history.
 | Claim provenance, novelty, uncertainty, and contamination | **Accept Cycle 405 after RV-040.** The one published OverEager cell, missing second-system rows, absent scale/interaction artifacts, local recomputation, and producer validation remain distinct. No repository gate or alias is promoted into external experiment evidence. RV-004 and RV-034 remain high/open. |
 | Usability, cost, and batching | **Accept the narrowed rank/scale decision; revise prospectively under RV-036/RV-038.** The corrected claim is retrievable and reversible, but duplicated narration and four same-artifact commits remain review cost rather than productivity. Preserve history and apply one coherent future checkpoint absent an external dependency. |
 | Current-revision validation | **Accept.** Producer and independent reviewer checks agree on the exact merge candidate, while the inherited full-diff diagnostics are disclosed rather than hidden. These checks establish repository integrity, not OverEager outcome validity or Scout productivity. |
-| Canonical integration | **Accept exactly.** `0665ae54ee` is an ancestor of standing `91fba0440e`; `018d008074` remains patch-equivalent to ancestor `a4f21ce386` at the recorded stable patch ID. No accepted reviewer correction is pending. |
-| Local-main landing | **Revise/block under RV-041.** The isolated candidate and its report are acceptable preparation, but a conflict-free committed merge does not preserve 295 overlapping dirty paths. Do not move `main` until a clean human checkout or explicit isolated overlay reconciliation proves every overlap and preserves unrelated work. |
+| Canonical integration | **Accept exactly through `672f2f38fb`.** `0665ae54ee` and the local-main review are exact ancestors of standing; `018d008074` remains patch-equivalent to ancestor `a4f21ce386` at the recorded stable patch ID. No accepted reviewer correction is pending. |
+| Local-main landing | **Revise/block under RV-041.** The isolated candidate and its report are acceptable historical preparation, but a conflict-free committed merge does not preserve 295 overlapping dirty paths and candidate `283f723fd1` stops before current standing `672f2f38fb`. Do not move `main` until a current isolated candidate plus clean checkout or explicit overlay reconciliation proves every overlap and preserves unrelated work. |
 | Cleanup and rollback | **Accept preservation; defer cleanup.** No checkout, branch, worktree, or history cleanup is authorized or claimed. Candidate rollback is to retain source commits and remove the isolated candidate only after no active goal references it; after any eventual landing, revert the merge commit. Cycle 405 research rollback remains reverse-order ordinary reverts beginning with `0665ae54ee`. |
 
 ## Findings and dispositions
@@ -3152,10 +3159,17 @@ claim and not authority to rewrite accepted overlapping history.
 | `RV-038` | Medium | OverEager sequences `1bcf880009..54ed4b11e6` and `f926a1d842..041a479100`; recurring durable surfaces | The earlier six commits in 36 minutes added +1,040/-9 from one retained package. Cycles 402-405 recur with four evidence commits over 39 minutes and +837/-15 across the same canonical/detailed pattern, without a recorded external dependency. The facts are useful, but fragmented same-artifact review increases integration, validation, and maintenance cost; commit/cycle count is not productivity. | **Accept existing history; revise prospectively; medium/open.** Do not rewrite or squash accepted history. Apply the convention now: consolidate the next retained-artifact evidence into one coherent material checkpoint unless a concrete external dependency requires separation. |
 | `RV-039` | Medium | Standing integration-status commit `8d0a2fa7634213bd698c5a3bbbf559f310e78cd5`; durable review cursor | The commit correctly records exact RV-037 integration `ee0f288d90` but rewinds the last reviewed and material commits from independently reviewed Cycle 401 `cc65a3fbde` to Cycle 400 `72ccecf3b0`, calls Cycle 401 pending, and routes the next trigger back to already-completed work. Its patch ID `e116ab5e0c13e3eafbf792a73768e8aa0f6033d0` differs from the reviewer cursor repair. Readers and automation would repeat review and lose the current evidence boundary. | **Resolved on standing; accept `f485e287e7`.** Conflict-resolved reconciliation `f485e287e738e338768312d3ff9ac64007b372b0` preserves the truthful exact-integration statement, restores Cycle 401 evidence and validation, and records reviewer `254e52441e` as reconciled rather than exactly contained or patch-equivalent. This reviewer cursor advances through that resolution and keeps RV-004/RV-034/RV-036/RV-038 visible. |
 | `RV-040` | Medium | Cycle 403 paragraph in `knowledge/xhs-topic-map.md` at exact producer tip `041a4791001214b1f0b5dc93babb451c9fb3d61f` | The paragraph says the three published aggregate rows show “stable high/low ordering across the two reported systems.” The checksum-matched source table names only Claude Code/GLM-4.6, and Cycle 405 correctly demonstrates that no second system's seed-7/13 values are published. The stale sentence contradicts the same current artifact and can restore an unsupported rank claim through retrieval. | **Resolved on standing by exact reviewer result `0665ae54ee5072634feda0fd650ee13aa5461411`.** The topic map now names the one published cell, limits the 1.4-point range to one-cell generator robustness, and explicitly withholds between-system rank stability. No research, source access, or arithmetic was repeated. |
-| `RV-041` | High | Protected dirty `/app` at `8554a5718cfa051bf4fb827c974423380614e5a7` and isolated merge candidate `283f723fd1b88c237b99af330495d7dae8296cb3` | The committed merge is conflict-free and fully validated, but 295 of the canonical range's 433 paths overlap the 344-record human-owned dirty checkout. Plain patch preservation fails across 260 paths; three-way checking yields 103 clean applications, 17 conflicts, and 140 paths absent from the merged index. Advancing `main` would change the base beneath unresolved human edits and could silently lose or misattribute work. The full merge diff also retains 130 disclosed whitespace/EOF findings, so it must not be represented as diff-clean. | **Accept candidate-only report; block landing; high/open.** Keep `main` and protected worktrees unchanged. Unblock only with a clean human checkout or explicit overlay reconciliation in a separate goal-owned worktree, exact per-overlap dispositions, current-tip validation, unchanged unrelated-state fingerprints, and a reviewed rollback. Do not bulk-format overlapping history as a substitute for preservation proof. |
+| `RV-041` | High | Protected dirty `/app` at `8554a5718cfa051bf4fb827c974423380614e5a7` and isolated merge candidate `283f723fd1b88c237b99af330495d7dae8296cb3` | The committed merge is conflict-free and fully validated, but 295 of the canonical range's 433 paths overlap the 344-record human-owned dirty checkout. Plain patch preservation fails across 260 paths; three-way checking yields 103 clean applications, 17 conflicts, and 140 paths absent from the merged index. Advancing `main` would change the base beneath unresolved human edits and could silently lose or misattribute work. The full merge diff also retains 130 disclosed whitespace/EOF findings, so it must not be represented as diff-clean. After exact reviewer integration, the candidate also stops at second parent `91fba0440e` and does not contain current standing `672f2f38fb`. | **Accept candidate-only report as historical evidence; supersede it for landing; block landing; high/open.** Keep `main` and protected worktrees unchanged. Unblock only with a current isolated candidate plus clean human checkout or explicit overlay reconciliation in a separate goal-owned worktree, exact per-overlap dispositions, current-tip validation, unchanged unrelated-state fingerprints, and a reviewed rollback. Do not bulk-format overlapping history as a substitute for preservation proof. |
 
 ## Reviewer source/result and integration status
 
+- Reviewer result `672f2f38fb6833a15569f0732d2ed915f3f8dacf`, based on exact
+  standing source `91fba0440e131bf4f2b53a7e2d89d0d02abb54ac`, is **integrated
+  exactly**: both standing and reviewer refs resolve to the same commit, and
+  the one-file result retains stable patch ID
+  `9d4c55c25bc2baab704b9b84eb15152264098963`. It accepts Cycle 405 and the
+  isolated candidate report while blocking main landing under RV-041.
+  Rollback is one ordinary revert before any dependent standing status.
 - Reviewer result `2379a9fabb619c653cbabda04e60066b5c473aa4` is
   **integrated exactly** as the direct child of reviewed standing
   `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`; every later commit through
@@ -3624,16 +3638,15 @@ and the unreleased Memory in the Loop result.
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the first genuinely material,
 clean producer checkpoint after exact reviewed standing tip
-`91fba0440e131bf4f2b53a7e2d89d0d02abb54ac`; integration, reviewed
-reconciliation, or explicit rejection of this local-main review result; a clean
-checkout or isolated overlay-reconciliation candidate that can advance RV-041;
+`672f2f38fb6833a15569f0732d2ed915f3f8dacf`; a current isolated candidate plus
+clean checkout or overlay-reconciliation result that can advance RV-041;
 a fresh protected maintenance outcome that joins the route used to a later
 decision; evidence changing RV-004 or RV-034; a scoped
 retrieval/cost comparison for RV-036; another same-artifact batching recurrence
 under RV-038; recurrence of a cursor regression under RV-039; a canonical/local-
 main landing or cleanup claim; or a concrete regression in the reviewed
 claims. If no material trigger arrives, the next periodic audit is no earlier
-than `2026-09-06T01:56:19+08:00`. Do not poll unchanged state.
+than `2026-09-06T01:58:37+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
