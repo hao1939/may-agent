@@ -10150,6 +10150,25 @@ accessible instead: Memory in the Loop v2 links
 frozen inputs, and latency controls ranks above another unsourced summary or
 line compaction. Begin that work only after the next bounded seed-first record.
 
+## Cycle 308 seed-first start — pursue the linked implementation artifact
+
+At `2026-09-04T00:28:30.584Z`, Cycle 308 began from clean exact tip
+`18cb8ed923f7f6b72a660baa07cd302d421b701c`. Its full gate passes 296 tests /
+1,484 assertions; the broad audit passes 1,540 tracked Markdown documents /
+1,728 local links; health returns 26 facts / 16 wakes; accepted `ff923ccde4` is
+contained and unaccepted `d041c41b54` excluded.
+
+The latest XHS receipt was about 89 minutes old and still inside cadence, so no
+browser or account request ran. Added/changed identities remain unknown,
+removals are `[]`, and all 132 seeds remain unavailable. `RV-004` remains the
+highest-impact missing evidence but cannot advance without a protected
+query/rank-to-later-outcome join. The ideal PROBE memory-factorial reproduction
+is inaccessible because its artifact link is anonymized and no authority-
+bearing model execution is available. The highest-value accessible next path
+is therefore GitHub provenance and reproducibility for the primary-paper-linked
+`Egoist-Machines/LodeDB`: pin its public revision and inspect whether paper
+experiments, frozen inputs, and latency controls are actually present.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

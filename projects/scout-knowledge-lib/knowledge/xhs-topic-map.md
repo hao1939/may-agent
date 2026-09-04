@@ -4299,6 +4299,25 @@ Memory in the Loop v2 does link the stable public repository
 artifact for experiment code, frozen inputs, and latency-control
 reproducibility before considering a new local harness or design.
 
+## Cycle 308 seed-first start — current receipt reused before artifact inspection
+
+Cycle 308 began from clean validated
+`18cb8ed923f7f6b72a660baa07cd302d421b701c` at
+`2026-09-04T00:28:30.584Z`. The Cycle 292 receipt was about 89 minutes old,
+inside the six-hour cadence, so this bounded reconciliation made zero XHS or
+other public requests. Added/changed identities remain unknown, removals are
+`[]`, and all 132 durable seeds remain unavailable. No account state changed.
+
+The exact source passes 296 tests / 1,484 assertions, 1,540 tracked documents /
+1,728 local links, and read-only health at 26 facts / 16 wakes. `RV-004` remains
+highest impact but cannot move without the missing protected later-outcome
+join. The matched PROBE factorial is also blocked by its anonymized artifact
+and absent authority-bearing model execution. Select the newly attributable
+`Egoist-Machines/LodeDB` artifact next: verify repository identity and revision,
+then determine whether it contains the paper's experiment, frozen inputs, and
+latency controls. This primary-linked reproducibility check ranks above another
+claim summary or byte/line compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
