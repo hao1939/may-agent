@@ -6483,6 +6483,21 @@ diagnostic evidence than a bit; low in judge validity, neutrality, external
 transfer, and production outcome. Next seed-first, then primary-review the
 adjacent Agentic Data Environments claim `2607.07397` if it remains highest.
 
+Exact result `30b6e1f35af2c0e678c3a99f542fc3e40cd7a511` passes syntax,
+TypeScript, formatting, Cycle 341 projection, 90 scoped links, navigation at
+11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
+100.25 seconds. The broad audit passes 1,540 tracked Markdown documents /
+1,728 local prose links. Read-only health at `2026-09-04T05:17:43.575Z`
+returns 26 facts / 16 wakes and is truncated. Accepted `ff923ccde4` and
+historical `f26bd4f3a5` are ancestors; unaccepted `d041c41b54` is excluded.
+Standing status and both runtime-state surfaces are empty.
+
+Protected `/app` is externally observed at `386b445c…1fec8`, with 916
+porcelain-v2 records / `8e3558f4…e8a36` overall and 296 /
+`a430d0c9…2f7e` in Scout scope. These fingerprints differ from Cycle 341's
+recorded protected state but were only read here; this worker did not write,
+test, clean, or mutate either protected surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

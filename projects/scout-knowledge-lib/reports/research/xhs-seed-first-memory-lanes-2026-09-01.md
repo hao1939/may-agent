@@ -13128,6 +13128,26 @@ protected query/rank -> selection -> later-outcome join changed. Next start
 seed-first, then primary-review Agentic Data Environments `2607.07397` if its
 specification/relative-measurement claims remain highest accessible.
 
+Exact result `30b6e1f35af2c0e678c3a99f542fc3e40cd7a511` passes syntax,
+TypeScript, source formatting, Cycle 341 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 100.25 seconds. The broad audit
+passes 1,540 tracked Markdown documents / 1,728 local prose links with zero
+errors. Read-only health at `2026-09-04T05:17:43.575Z` returns 26 facts, 16
+wakes, and `truncated:true`.
+
+Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314` and requested
+historical checkpoint `f26bd4f3a590b59d241536326199e805777df1be` are ancestors;
+unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains excluded.
+Standing status, `.goal-runtime`, and App runtime state contain zero records.
+Protected `/app` is externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+overall and 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
+in Scout scope. This externally changed from the Cycle 341 fingerprint; this
+worker only observed it and did not write, test, clean, or mutate it.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
