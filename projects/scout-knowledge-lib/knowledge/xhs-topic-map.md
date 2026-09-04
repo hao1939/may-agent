@@ -4095,15 +4095,35 @@ zero requests and retain their evidence and triggers. RV-004 remains high/open.
 Next is Cycle 258's 19-line / 1,120-byte historical-target boundary; preserve
 its missing query and contemporaneous-index uncertainty.
 
-## Cycle 304 seed-first start — completed checkpoint rolled forward
+## Cycle 305 seed-first start — current receipt reused before ranking
 
-Cycles 296–303 retain their seed ordering and results in the detailed report.
-At `2026-09-03T23:55:14.350Z`, the Cycle 292 receipt was 57 minutes old; no XHS
-cadence, access, seed, source-lane, or accepted-result trigger changed. This
-bounded reconciliation made zero browser or public requests: additions and
-changes remain unknown, removals are `[]`, and all 132 seeds remain unavailable.
-Clean `62cb84ee84` contains accepted `ff923ccde4`, excludes unaccepted
-`d041c41b54`, and passed 296 tests / 1,483 assertions. Audit the next batch.
+Cycles 296–304 retain their seed ordering and results in the detailed report.
+At `2026-09-04T00:02:52.643Z`, Cycle 292's exact receipt through
+`2026-09-03T22:59:03.253Z` was about 64 minutes old, inside the six-hour
+cadence. This bounded reconciliation made zero browser or public requests:
+additions and changes remain unknown, removals are `[]`, and all 132 durable
+seeds remain unavailable. No elapsed-time, access, or source trigger changed.
+
+Exact clean source `f26bd4f3a590b59d241536326199e805777df1be` passes
+296 tests / 1,483 assertions, 1,540 tracked documents / 1,726 links, and
+read-only health at 26 facts / 16 wakes. Accepted `ff923ccde4` is contained and
+unaccepted `d041c41b54` excluded. Protected `/app` is externally observed at
+HEAD `386b445c…41fec8`, 914 records / `5b4816ba…2f4`, with Scout scope
+296 / `7e4d0937…26a8a`; this worker did not write or test it.
+
+The complete accessible queue ranks as follows. RV-004's missing retained
+query/rank → selected file → later decision/outcome join remains highest in
+expected impact, but the readable protected history ends on August 31 and
+another metric or narrative cannot create the missing outcome. Fresh public
+primary/repository evidence and XHS are trigger-deferred; retained archives
+already lack measured drift, price, or provider behavior. Re-running frozen
+verification cannot reduce real-model/provider uncertainty without new
+authority-bearing evidence. The next actionable item is therefore retrieval
+and deduplication: the active INDEX still presents a finding that explicitly
+declares mock-source synthesis even though the canonical coordination note
+names and absorbs it. Audit that exact provenance and preservation boundary
+before changing the index. Remaining byte/line compaction ranks last because
+it adds neither a decision nor outcome.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
