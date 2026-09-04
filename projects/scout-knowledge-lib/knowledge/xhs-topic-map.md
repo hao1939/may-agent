@@ -8117,6 +8117,31 @@ follow; public-lane refreshes remain trigger-gated and compaction last. Select
 the SICP/Sol claim and compare item ages, final ratios, snapshot dependence,
 non-independent increments, and the absent comprehension outcome.
 
+### Cycle 367 checkpoint — cumulative counters are not exponential comprehension
+
+Seed-ordering commit `04457d4af89052f379f047a9bb5f4363acbf0fbf`
+preceded both HN reads. At `2026-09-04T08:29:12.365Z`, Firebase pinned SICP
+item `48825664` to submission `2026-07-07T23:57:29Z`, 355 points / 48
+descendants, 469 bytes / `da3cb0b8…dae1a`. At `08:29:12.823Z`, Sol item
+`48827402` was the next-day availability notice submitted 4h15m later, 235 /
+210, 478 bytes / `a8f3818e…3d20`. Their final gap is 120 points and ratio
+1.51×, falsifying Scan 472's 2×-within-four-scans prediction.
+
+The six retained rows repeatedly read the same two cumulative counters; they
+are not independent and have no fitted time axis. Item age, exposure, source,
+title, event semantics, submitter, and audience are unmatched. Points are not
+a comprehension outcome. Confidence is high in item identities, final ratio,
+age difference, and forecast falsification; low in any growth-law,
+comprehension-premium, or causal reallocation inference.
+
+HN supplied the evidence. GitHub/arXiv retain Cycles 362/361 without requests;
+Reddit remains trigger-deferred without a request. `RV-004` stays high/open at
+its absent protected outcome join. Next seed-first, promote primary evidence
+over another counter narrative: audit Scan 473's unsourced Balkanization paper
+`2607.05743v1`, testing its 39-paper/17-category corpus, citation-fragmentation
+method, five claimed cross-cutting gaps, and whether “TOCTOU ≡ MCP” is source
+result or Scout synthesis.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

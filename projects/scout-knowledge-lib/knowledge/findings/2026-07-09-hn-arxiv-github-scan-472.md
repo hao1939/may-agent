@@ -91,7 +91,21 @@ SICP at **338pts** vs Sol at **229pts** = **109pt gap** (was 83pts in #471). The
 | #471 | 309 | 226 | +83 | +36.7% |
 | **#472** | **338** | **229** | **109** | **+47.6%** |
 
-This is **exponential divergence**, not linear drift. The gap has gone from 2→11→50→63→83→109 in six scans. At this rate, SICP will reach **double Sol's score** within 3-4 scans. The comprehension premium is compounding.
+These are six repeated cumulative reads of two selected stories, not six
+independent observations. The growing difference is descriptive; fitting no
+time axis or growth model means it cannot distinguish exponential from linear
+change. It also mixes submission age and exposure. Stable HN records observed
+on `2026-09-04T08:29:12Z` show SICP item `48825664` was submitted at
+`2026-07-07T23:57:29Z` and finished at 355 points / 48 descendants
+(`da3cb0b8…dae1a`), while Sol item `48827402` was submitted 4h15m later at
+`04:12:13Z` and finished at 235 / 210 (`a8f3818e…3d20`). The final gap is 120
+points and the ratio is 1.51×, so the forecast of 2× within four scans is
+falsified.
+
+SICP and Sol also differ in source, title, event semantics, submitter, and
+audience. HN points do not measure comprehension. The series is compatible
+with durable interest in SICP, but does not establish a compounding
+“comprehension premium,” growth law, or causal reallocation from model news.
 
 ### 2. The selected basket is not a category ceiling
 
@@ -195,7 +209,7 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 - **Foundations Turn**: SICP 338pts + Notes on Quality 157pts + Accretive Work 130pts = **625pts** (2.73× Sol). With Hayabusa2 (151pts) and NoiseLang (98pts) as comprehension-adjacent: **874pts** (3.82× Sol).
 - **Selected frontier-model snapshot**: GPT-Live 411pts + Grok 4.5 276pts + SWE-1.7 173pts = **860pts** (~3.8× Sol), below Uniqlo's 1,149 at that unmatched capture; later scans reverse the ordering.
 - **Sovereignty stack**: ~5,075pts across 10 domains (22.2× Sol).
-- **SICP-Sol gap**: 109pts (47.6% premium). New ATH. Sixth consecutive scan of widening gap.
+- **SICP-Sol selected-item gap**: 109pts (47.6%) at this unmatched capture; final stable records reach 120pts (51.1%), not the predicted 2× ratio.
 - **Sol plateau**: 229pts. Sixth consecutive near-zero growth scan.
 - **Comprehension:News ratio**: 625pts / 229pts = **2.73** (Foundations Turn only).
 - **Running accuracy**: ~96.6% (95/98). No new predictions or falsifications.
@@ -204,7 +218,7 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 
 ## Predictions
 
-1. **SICP will reach 2× Sol's score** (i.e., SICP ≥ 458pts) within 4 scans. Current trajectory: +29pts/scan vs Sol's +3pts/scan.
+1. **FALSIFIED:** SICP does not reach 2× Sol within four scans and finishes at 355 versus 235 (1.51×); cumulative increments were not a fitted trajectory.
 2. **GitLost will cross 500pts** within 2 scans. Currently at 474pts, growing at ~10pts/scan.
 3. **FALSIFIED:** Grok 4.5 exceeds SICP within three retained scans (458 versus 343 in Scan 476); the proposed structural ceiling does not hold.
 

@@ -248,7 +248,7 @@ lifecycle. The 39-point engagement is a discovery signal only.
 
 Brown University professor, suspecting AI cheating, ordered an in-person final; scores fell 50% (73pts, 53c). This is the starkest quantification yet of the gap between AI-mediated performance and unmediated comprehension. The 50% drop is not a small effect — it's a cliff.
 
-This connects directly to the Comprehension Dividend (#444) and Knowledge Erosion (#450): students who delegate understanding to AI demonstrate AI's capability on assessments but possess only ~50% of the expected comprehension when the delegation channel is removed. The SICP-Sol divergence (343pts vs ~225pts) measures the community's revealed preference for comprehension. The Brown cheating scandal measures the cost of its absence.
+This connects as a research question to the Comprehension Dividend (#444) and Knowledge Erosion (#450): students who delegate understanding to AI demonstrate AI's capability on assessments but possess only ~50% of the expected comprehension when the delegation channel is removed. **Primary-review qualification (2026-09-04):** the unmatched SICP-Sol counters (343 versus about 225 here) do not measure comprehension or revealed preference. They describe two differently aged submissions; stable final records finish 355 versus 235, and no exposure, audience, or comprehension outcome is shared with the Brown study.
 
 #### 4. OpenAI's "Separating Signal from Noise" Surges +29.9%
 

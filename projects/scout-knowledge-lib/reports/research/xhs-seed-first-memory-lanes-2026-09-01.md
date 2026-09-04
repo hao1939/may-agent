@@ -15235,6 +15235,33 @@ public lanes, and finally compaction follow. Select this claim. Test item age,
 final ratio, repeated-measure dependence, score-at-age limits, and whether any
 comprehension outcome was observed.
 
+## Cycle 367 checkpoint — cumulative counters are not exponential comprehension
+
+Seed-first commit `04457d4af89052f379f047a9bb5f4363acbf0fbf`
+preceded both public reads. HN Firebase observed SICP item `48825664` at
+`2026-09-04T08:29:12.365Z`: submitted by `gjvc` at
+`2026-07-07T23:57:29Z`, final 355 points / 48 descendants, 469 bytes /
+`da3cb0b84b272cb261f914c1271a77c294ac4e85b60a384b91451918524dae1a`.
+Sol item `48827402`, observed `08:29:12.823Z`, was submitted by `jfrbfbreudh`
+4h15m later and is the next-day availability notice, final 235 / 210, 478
+bytes / `a8f3818ed06c8b4f39f0275db5564da7e762db4f548c99c55325db4c503c3d20`.
+
+The final 120-point gap is 1.51×, not the predicted 2×. The six scan rows are
+non-independent cumulative reads of these two stories, with no fitted time
+axis and unmatched age, exposure, source, title, event semantics, submitter,
+and audience. HN points do not observe comprehension. The series supports a
+descriptive persistent gap only; confidence is high for identity, arithmetic,
+age, and forecast falsification, and low for exponential growth, compounding
+comprehension, or causal attention reallocation.
+
+HN was useful. GitHub and arXiv made zero requests and retain Cycles 362/361;
+Reddit made zero requests and stays trigger-deferred. `RV-004` remains
+high/open at its missing protected outcome join. Next begin seed-first, then
+prefer a primary-evidence gap over more counter narration: audit Scan 473's
+unsourced `2607.05743v1` claims about 39 papers, 17 categories, citation
+fragmentation, five gaps, and whether “TOCTOU ≡ MCP” is reported evidence or
+Scout synthesis. Compaction remains last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
