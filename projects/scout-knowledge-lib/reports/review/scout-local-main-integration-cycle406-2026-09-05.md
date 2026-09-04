@@ -1,18 +1,19 @@
 <ai_context>
-summary: "Cycle 406 local-main preparation now has a current-tip candidate and independently validated overlay transition. Regenerated candidate 803240b27fa4b40373524a1ed42d0b9bee7e890c merges exact main 8554a5718cfa051bf4fb827c974423380614e5a7 with exact canonical 1d25aaadd544e89c74666a888771b4c9b49d4638; all 295 overlaps are accounted for, exactly 23 ancestor-version files remain visibly modified, and rollback reconstructs the original state. Independent review accepts a guarded landing at this unchanged boundary; main remains unlanded and RV-041 stays open through postflight proof."
+summary: "Cycle 406 landed exact reviewed candidate 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with the protected overlay preserved. Exact postflight keeps all 23 intended ancestor-version files visibly modified and every unrelated dirty byte intact. A no-renames audit corrects one reviewer-model omission: an already-deleted source of a detected R100 rename also became clean, so postflight has 492 rather than 493 expanded records. RV-041 and RV-043 are resolved for this landing; the inherited 127 whitespace and three EOF findings remain disclosed."
 triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "RV-043", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Read-only protected-checkout observations through 2026-09-05T04:32:59+08:00; exact main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, regenerated merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, tree, status, overlap, blob, ancestor, worktree-registry, and retained-commit identities; mechanically verified 295-row manifest; producer forward/rollback exercise; independent 765-path state model and full candidate validation."
+source_basis: "Protected-checkout preflight and guarded landing through 2026-09-05T04:42:25+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, reviewer acceptance 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9, tree, status, overlap, blob, ancestor, worktree-registry, and retained-commit identities; mechanically verified manifest plus no-renames correction; producer and independent forward/rollback evidence; full candidate validation."
 </ai_context>
 
 # Cycle 406 isolated local-main preparation
 
 ## Outcome
 
-The current canonical Scout result merges conflict-free with current local
-`main` in a goal-owned isolated worktree. The merge is retained only as a
-candidate: protected `/app` was not edited, cleaned, tested, stashed, reset, or
-moved, and local `main` remains at its original commit.
+The current canonical Scout result first merged conflict-free with local
+`main` in a goal-owned isolated worktree. After exact independent review, the
+guarded mixed-index transition advanced local `main` to that merge while
+preserving the human-owned overlay. No test, cleanup, stash, hard reset, or
+bulk rewrite ran in protected `/app`.
 
 The earlier 295-path overlap count did not mean 295 unresolved content
 conflicts. Exact current classification is:
@@ -169,11 +170,56 @@ Integrate the reviewer documentation only after landing `803240b27f` while
 standing remains `1d25aaadd5`; integrating it first would change canonical and
 stale the approved candidate. Local main has not moved at this review point.
 
-Because the candidate is not landed, rollback is to retain both source commits
-and remove the isolated candidate worktree/branch only after no active or saved
-goal references them. If a reviewed merge is eventually landed, rollback is
-an ordinary mainline revert of that exact merge commit; it must not discard or
-clean the protected overlay.
+At the independent-review boundary the candidate was not yet landed, so the
+pre-execution disposition was to retain both source commits. The actual
+postflight and applicable rollback boundary follow.
+
+### Guarded landing postflight
+
+The ordered transition completed at `2026-09-05T04:42:25+08:00`. Exact local
+`main` moved from `8554a5718cfa051bf4fb827c974423380614e5a7` to reviewed merge
+`803240b27fa4b40373524a1ed42d0b9bee7e890c`; its parents and tree remain the
+identities recorded above. Standing remained at `1d25aaadd5` during the move,
+then fast-forwarded to reviewer acceptance
+`915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` at stable patch ID
+`940c67c59d572e019af61cc19b392ef509e71a31`.
+
+Preflight reproduced 345 default records at `f4686edb…7642`, 765 expanded
+records at `267eb6a6…da0537`, and 296 Scout records at `7e4d0937…26a8`. The
+operation changed only 140 paths proven clean and outside the accepted
+manifest, then moved HEAD and the index without rewriting protected overlay
+bytes. Postflight has 72 default records at `c7398ad6…8de0`, 492 expanded
+records at `f27a4816…63c0`, and 23 Scout records at `b9d6fb9c…c0c5`. All 295
+manifest rows still reproduce byte digest `16ba67cc…1025`; exactly the 23
+`retained-canonical-ancestor` rows remain visible as modifications, and the
+index has no staged changes.
+
+Two verifier attempts stopped before writing when their byte snapshot did not
+handle an unrelated directory and symlink. The first transition attempt then
+reached the candidate but rejected the modeled 493-record expectation. Its
+bounded rollback returned HEAD to old main but initially left only the 140
+preflight-clean candidate paths materialized because 63 candidate additions
+were absent from old-main pathspecs. Repair restored 77 tracked paths and
+removed those 63 exact candidate blobs; all three original fingerprints then
+reproduced before the successful transition. No manifest or unrelated dirty
+byte was used as a repair target.
+
+The expected 493-record estimate was one high. Rename detection counted
+`projects/scout-knowledge-lib/knowledge/findings/2026-06-25-hn-scan-151.md`
+only as the old side of an `R100` rename to
+`2026-06-25-escapability-hierarchy.md`, so the 295-row manifest omitted that
+already-deleted source. A no-renames audit reports 436 candidate paths and 296
+preflight overlaps. The source was absent before and remains absent after the
+candidate adopted the same deletion; the other 469 unrelated status records
+are unchanged. This corrects the accounting without weakening preservation.
+
+RV-041 is **resolved for this exact landing**: both parents are contained,
+protected bytes and the intended 23 divergences survive, and the historical
+main commit remains the rollback anchor. RV-043 remains resolved. Rollback, if
+required, is the reviewed inverse mixed-index transition to
+`8554a5718cfa051bf4fb827c974423380614e5a7`, restoring only the 140 paths that
+were clean at preflight and requiring the original three fingerprints before
+acceptance; never clean, stash, checkout, or hard-reset the protected overlay.
 
 ## Release-maintenance inventory and cleanup
 
@@ -200,8 +246,9 @@ worktree were excluded from cleanup.
 
 ## Next release boundary
 
-Independent review should verify the exact candidate, the 295-row manifest,
-the 23 ancestor-blob claims, and the externally changed non-Scout status
-fingerprint. Do not move local `main` from this preparation alone. After review,
-repeat the protected fingerprints immediately before any landing; if they
-differ, update the map and stop rather than inferring preservation.
+Local `main` now contains exact reviewed canonical source `1d25aaadd5` through
+merge `803240b27f`. Later canonical documentation begins with reviewer result
+`915b8b8c11`; it is not silently claimed as landed. The next release candidate
+must start from exact main `803240b27f`, include the then-current canonical tip,
+and repeat overlay preflight. Historical candidates `283f723fd1` and
+`be902d03fc` remain superseded for landing.
