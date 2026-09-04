@@ -1,7 +1,7 @@
 <ai_context>
-summary: "Scan #476: The Diagnostic Deficit, qualified. Observability-Aware Code (2607.05785v1) reports low diagnostic-content recovery and 4.95–13.99% explicit fault-signal rates under its oracle, but does not test application correctness or connect the static and runtime populations causally. Only 136–154 of 200 generated services per model were runnable, no human-written runtime control is reported, and the advertised artifact is unavailable. Hidden Amplifiers and Conversation to Contribution remain separate claims pending primary review."
+summary: "Scan #476: The Diagnostic Deficit, qualified. Observability-Aware Code reports low diagnostic-content recovery and low explicit fault-signal rates under its oracle. Hidden Amplifiers identifies 12 author-defined high-fan-in micro-dependencies in a curated 50-package corpus, but measures structural exposure rather than exploitability; its cross-level ranking does not beat code-only ranking on reported within-root precision. Conversation to Contribution remains pending primary review."
 triggers: ["diagnostic deficit", "observability gap", "diagnostically silent", "observability-aware code", "hidden amplifiers", "micro-dependencies", "supply chain risk", "conversation to contribution", "OSS AI contribution", "slopcode", "agent code abandoned", "frontier parity uniqlo", "Brown AI cheating", "50% score drop", "Bun Rust rewrite", "Cloudflare Drop", "Cloudflare Meerkat", "scan 476"]
-source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
+source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). Hidden Amplifiers source archive and public OSCAR repositories primary-reviewed 2026-09-04: fabgonzalez-dev/oscar-dependency-observatory@a2bc492b, oscar-method-observatory@26a89fd7, oscar-frontend@1801fa69, oscar-research-data@c12df4fd. HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
 </ai_context>
 
 # Scan #476: The Diagnostic Deficit
@@ -19,10 +19,10 @@ longitudinal production lifecycle.
 
 The three papers address different evidence surfaces rather than one established
 causal mechanism. The observability paper shows that runnable services can
-lack fault-specific log strings under its oracle. It does not test whether the
-same services pass application tests or whether a verifier has only a binary
-outcome. Hidden Amplifiers and Conversation to Contribution remain pending
-primary review.
+lack fault-specific log strings under its oracle. Hidden Amplifiers measures a
+curated package corpus's structural exposure and author-defined risk score; it
+does not demonstrate exploitability or systematically compare current SCA
+tools. Conversation to Contribution remains pending primary review.
 
 Meanwhile, on HN: frontier models combined (1,298pts from GPT-Live + Grok 4.5 + SWE-1.7) BARELY cross Uniqlo (1,291pts) for the first time — three major model launches combined produce 0.5% more attention than a decoded bash script on a t-shirt. The parity itself is the signal: raw capability announcement is no longer an attention advantage even in aggregate. And "slopcode" enters vocabulary (39pts) — the community names the category of agent-generated code that is abandoned and deleted within months.
 
@@ -68,11 +68,43 @@ The paper states five repeats but reports no dispersion or public run outputs.
 
 Modern supply chains comprise hundreds of transitive dependencies, but analysis tools operate at either ecosystem level (dependency graphs) or code level (static analysis within packages). This separation creates two failure modes: false-positive CVE alerts for unreachable code, and blind spots for structurally critical micro-dependencies.
 
-**Key concept — Cross-Level Risk Propagation**: A unified framework bridging code-level risk metrics with ecosystem-level dependency exposure through a single risk formula.
+**Key concept — Cross-Level Risk Propagation**: The paper multiplies a
+method-level code-risk score by compressed ecosystem fan-in. In its deliberately
+curated corpus of 35 npm and 15 PyPI packages, 12 meet its configurable
+definition of fewer than 50 extracted methods and more than 50,000 dependents.
+That is an observed structural-exposure class, not a demonstrated exploitability
+class or representative 24% ecosystem prevalence estimate; the authors say the
+selection inflates prevalence.
 
-**Key finding — Hidden Amplifiers**: Micro-dependencies with fewer than 50 methods but over 50,000 dependents carry outsized supply-chain risk that is invisible to ALL current SCA (Software Composition Analysis) tools. These are structurally critical nodes that provide no risk signal under current analysis paradigms.
+**Ranking result, qualified**: On 10 CVE-bearing roots, cross-level precision
+at K=3/5/10 is 0.43/0.44/0.38, code-only is 0.50/0.44/0.42, and fan-in-only is
+0.20/0.20/0.23. Code awareness beats fan-in-only, but cross-level scoring does
+not outperform code-only scoring on this within-root metric. The paper argues
+that the extra score instead makes methods comparable across packages; it does
+not validate that claimed benefit against later vulnerability outcomes.
 
-**Why this matters**: Agents routinely select dependencies based on functional fit, not structural risk. When an agent generates a dependency tree, it doesn't see (and can't see) the Hidden Amplifier pattern: a tiny library that technically works but is a single point of failure for 50K+ downstream dependents. The cross-level gap is a Diagnostic Deficit at ecosystem scale — the information needed for governance exists at a different level of analysis than the tools operate.
+**Tool-comparison boundary**: “Invisible to all current SCA tools” is the
+authors' claim, not the result of a systematic tool experiment. The paper gives
+a conceptual feature table and one `npm audit` example. No tested tool/version
+matrix or negative-result corpus establishes universal invisibility. The 2017
+`ms` case also uses a proportional historical fan-in estimate because deps.dev
+has no historical snapshots, so it is a retrospective plausibility example,
+not prospective validation.
+
+**Artifact review**: The public research-data revision `c12df4fd` contains the
+50-package corpus and exported tables. Its exact offline analysis command fails
+because the script searches for timestamp-suffixed CSVs while the repository
+ships unsuffixed names. A compatibility-only filename fallback regenerates the
+reported corpus, ranking, function-level, and sensitivity tables byte-for-byte
+apart from the generated timestamp. This reproduces analysis over the supplied
+exports, not the services, package ingestion, historical inputs, or external
+API acquisition. The bundled 20-item patch-mining spot check reports 16/20
+correct (80%), or 16/19 (84%) after excluding one minified case; it is a
+hard-coded author assessment rather than an independent labeled evaluation.
+
+**Why this matters**: The evidence supports inspecting small, high-reach
+dependencies and combining code and ecosystem views. It does not show that
+every qualifying package is dangerous, exploitable, or missed by every scanner.
 
 **Connection to Handoff Fallacy (#459)**: Components pass individually; handoffs between levels fail. The ecosystem-code analysis gap IS a handoff failure — code-level tools hand off to ecosystem-level tools without transmitting risk context.
 
@@ -207,7 +239,11 @@ The Verification Loop (#475) proved that closed-loop architectures — generate,
 
 1. **At code level** (Observability-Aware Code, 2607.05785v1): Separate static and runtime benchmarks show weak lexical restoration and low explicit fault-signal rates. Application correctness, a cross-stage causal link, and binary-only verification are not tested.
 
-2. **At ecosystem level** (Hidden Amplifiers, 2607.05894): Micro-dependencies with <50 methods but 50K+ dependents are invisible to all SCA tools. Risk analysis operates at the wrong abstraction level — code tools miss ecosystem exposure, ecosystem tools miss code-level risk.
+2. **At ecosystem level** (Hidden Amplifiers, 2607.05894v1): A curated corpus
+contains 12 packages below 50 extracted methods and above 50K dependents. The
+paper's cross-level score exposes that structure, but does not establish
+exploitability or universal scanner blindness, and does not beat code-only
+ranking on its reported within-root precision metric.
 
 3. **At interaction level** (Conversation to Contribution, 2607.05677): 13K AI coding sessions across 1.3K OSS repos — the empirical surface where developer-AI interaction either preserves or erases incidental learning. The diagnostic information about *how code was generated* is trapped in ephemeral conversation sessions.
 
@@ -244,7 +280,7 @@ Running accuracy: **~96.6% (96/99)** — one new confirmation (GitLost >500pts).
 | Paper/Story | Extends | Connection |
 |-------------|---------|------------|
 | Observability-Aware Code (2607.05785v1) | Verification Loop (#475), Process Erasure (#462) | Low explicit fault-signal rates motivate a separate observability gate; correctness and binary-only verification untested |
-| Hidden Amplifiers (2607.05894) | Handoff Fallacy (#459), Composition Surface (#447) | Cross-level analysis gap IS a handoff failure at ecosystem scale |
+| Hidden Amplifiers (2607.05894v1) | Handoff Fallacy (#459), Composition Surface (#447) | Structural exposure motivates joining package and method views; exploitability, universal tool blindness, and outcome benefit remain unvalidated |
 | Conversation to Contribution (2607.05677) | Knowledge Erosion (#450), Delegation Reckoning (#467), Knowledge Debt (#461) | Empirical data for the developer-AI interaction surface |
 | Slopcode (HN, 39pts) | Subtraction Economy (#449), Knowledge Erosion (#450) | Naming the lifecycle of diagnostically silent agent-generated code |
 | Brown AI cheating (HN, 73pts) | Comprehension Dividend (#444), Knowledge Erosion (#450) | 50% score drop quantifies the comprehension-delegation gap |

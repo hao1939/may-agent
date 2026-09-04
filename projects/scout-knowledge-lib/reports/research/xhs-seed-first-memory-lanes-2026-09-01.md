@@ -13729,6 +13729,62 @@ relevant trigger; and (5) compaction. Commit this ordering before any public
 request, then check only arXiv revision and the attributable vxdb release/head
 surfaces for a newly published experiment.
 
+## Cycle 350 checkpoint — Hidden Amplifiers is exposure, not demonstrated harm
+
+Seed commit `c0332301b875592dcb5d252a21209e4352f2a120` preserves ordering.
+At `2026-09-04T06:12:57.449Z`, arXiv still exposed Memory in the Loop as
+`2607.05690v2`, and `getmykhan/vxdb` still exposed exact head
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f` and release `v0.5.1` without
+the promised Docker, workload, scripts, or per-run result artifact. With the
+higher-ranked artifact unavailable, the next accessible primary gap was
+Hidden Amplifiers `2607.05894v1` in Scan #476.
+
+The 18,436-byte arXiv source archive has SHA-256
+`ceb8b6f954563f1147417cf7ef7c1612817fe2ec047be2ebea284db6f1cc89e8`.
+The preliminary ICSME visions-track paper studies a curated 50-package corpus
+(35 npm, 15 PyPI). Its supplied export confirms 12 author-defined hidden
+amplifiers under `<50 methods` and `>50,000 dependents`; the paper explicitly
+warns that selection inflates the 24% corpus rate. This is direct structural-
+exposure evidence, not exploitability or population prevalence.
+
+The reported within-root precision is CLR `.43/.44/.38`, code-only
+`.50/.44/.42`, and fan-in-only `.20/.20/.23` at K=3/5/10. Code awareness
+improves on fan-in, but CLR does not outperform code-only on this metric.
+The 24.5% rank movement has no validated vulnerability-outcome correlation.
+The historical `ms` fan-in is proportional scaling because deps.dev lacks old
+snapshots. Universal SCA invisibility is not experimentally compared: the
+paper has a conceptual feature table and one `npm audit` example.
+
+Read-only GitHub inspection pinned four public repositories:
+
+- `fabgonzalez-dev/oscar-dependency-observatory@a2bc492b743e48722060e64409258b17986bd5ef`
+- `fabgonzalez-dev/oscar-method-observatory@26a89fd7f20b90b93e24ca3bf0bc38e49b1f3c09`
+- `fabgonzalez-dev/oscar-frontend@1801fa69e08a2e129ff65b0413c8ce074ac4cf56`
+- `fabgonzalez-dev/oscar-research-data@c12df4fd31d552bbec69f4412499dcdb3d0bd7b8`
+
+The exact offline analysis exits 1 because it searches
+`corpus_summary_*.csv` while the revision ships `corpus_summary.csv` (and the
+same mismatch for four other inputs). In a separate goal-owned compatibility
+worktree, a four-line unsuffixed fallback makes the command exit 0 and
+regenerate the committed ranking/function/sensitivity CSVs byte-for-byte; only
+the summary timestamp changes. This verifies calculations over supplied
+exports, not service deployment, database ingestion, source acquisition, or
+the external API history. The bundled deterministic patch-mining spot check
+reports 16/20 correct (80%), 19/20 including tangential, or 16/19 (84%) after
+excluding one minified name; its labels are hard-coded author judgments.
+
+Lane continuity: GitHub was high-value and accessible for exact code/data
+provenance; revisit on any of the four repository heads or a correction to the
+offline entry point. ArXiv was high-value for the paper/source boundary;
+revisit on `2607.05894v2+`. Reddit remains RSS-readable but JSON-403 and made
+zero requests because no relevant-thread/access trigger changed. Confidence is
+high in exported-table reproduction and numeric qualification, moderate in the
+structural heuristic's usefulness, and low in vulnerability prediction,
+population prevalence, or universal scanner blindness. `RV-004` remains
+high/open: this is evidence correction, not a protected later-outcome join.
+Next seed-first, primary-review Conversation to Contribution and test whether
+its session-to-OSS contribution inference is outcome-backed.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

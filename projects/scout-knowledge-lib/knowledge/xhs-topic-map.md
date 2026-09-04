@@ -6942,6 +6942,45 @@ reproducibility; (3) other non-AIM primary/synthesis gaps; (4) Reddit until a
 relevant trigger; (5) compaction. Commit before checking exact arXiv and vxdb
 publication surfaces.
 
+### Cycle 350 checkpoint — structural exposure reproduces, vulnerability does not
+
+Seed commit `c0332301b875592dcb5d252a21209e4352f2a120` preceded public
+inspection. Memory in the Loop remains `2607.05690v2`; attributable
+`getmykhan/vxdb` remains `d720fd3e67e2331144d7486e0642fe62c24ffd0f`
+with release `v0.5.1`, and still exposes no promised Docker, workloads,
+scripts, or per-run provider result. This made Scan #476's unreviewed Hidden
+Amplifiers claim the next accessible primary gap.
+
+ArXiv `2607.05894v1` is a preliminary ICSME visions-track study. Its exact
+exported 50-package corpus does contain 12 packages below 50 methods and above
+50,000 dependents, but the authors admit that their high-fan-in selection
+inflates prevalence. On 10 CVE-bearing roots, CLR precision at 3/5/10 is
+0.43/0.44/0.38 versus code-only 0.50/0.44/0.42 and fan-in-only
+0.20/0.20/0.23. Thus code awareness beats fan-in, while cross-level scoring
+does not beat code-only on the reported within-root outcome. Rank movement and
+the `ms` reconstruction do not validate future vulnerabilities.
+
+The four public OSCAR repositories were pinned at dependency
+`a2bc492b743e48722060e64409258b17986bd5ef`, method
+`26a89fd7f20b90b93e24ca3bf0bc38e49b1f3c09`, frontend
+`1801fa69e08a2e129ff65b0413c8ce074ac4cf56`, and research data
+`c12df4fd31d552bbec69f4412499dcdb3d0bd7b8`. The research command fails
+exactly because it searches timestamped CSV names while shipping unsuffixed
+ones. A compatibility-only fallback regenerates all reported tables from the
+exports; that is not end-to-end ingestion or independent outcome validation.
+The manual 20-item spot check yields 80% raw precision, or 84% after excluding
+one minified item. “Invisible to all current SCA tools” remains an author
+inference from a conceptual comparison plus one `npm audit` example.
+
+Confidence is high in corpus/table reproduction and the ranking comparison,
+moderate in the structural class's usefulness, and low in exploitability,
+universal tool blindness, or ecosystem prevalence. GitHub supplied the exact
+implementation/data provenance; arXiv supplied the claim and limitations;
+Reddit remains trigger-deferred with no request. `RV-004` remains high/open
+because this corrects evidence quality rather than producing a protected
+query-to-later-outcome join. Next seed-first, primary-review Conversation to
+Contribution's session-to-contribution outcome claims and artifact boundary.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
