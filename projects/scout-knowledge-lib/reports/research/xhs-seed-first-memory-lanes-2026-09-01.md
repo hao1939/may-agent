@@ -10634,6 +10634,43 @@ attention/popularity observations from causal investment claims, and retract
 comparisons whose original denominator is not reproducible. This outranks
 static compaction.
 
+Cycle 314 seed/source `b769559a2dbf5ef7242ad5ab9d2cbe6444b979fe`
+produced material `e7c25db7c366532fd02dbf0fc2ab9b1ab44f74b0`. The exact
+material tip passes syntax, TypeScript, source formatting, Cycle 292
+projection, 90 scoped links, navigation 11/14 and 8/8, and the full 296-test /
+1,484-assertion gate. The broad audit passes 1,540 documents / 1,728 local
+links. Read-only health at `2026-09-04T01:32:16.310Z` returns 26 facts / 16
+wakes with `truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` is excluded, and the standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`, and
+296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+## Cycle 315 seed-first start — audit cross-source convergence provenance
+
+At `2026-09-04T01:32:25.041Z`, the current receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour XHS cadence. The
+bounded reconciliation made zero XHS, GitHub, arXiv, or Reddit requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance remains the last observational browser
+receipt plus the durable ledger, and no account state changed.
+
+Expected knowledge value ranks the complete queue as follows: (1) `RV-004`'s
+missing protected query/rank-to-selected-file-to-later-outcome join, still
+inaccessible because readable protected history ends August 31; (2) the
+unreleased Memory in the Loop provider artifact and authority-bearing run;
+(3) Scan 448's accessible HN/GitHub convergence claim; (4) other unsourced
+high-impact scans; (5) Reddit until a relevant-thread/access trigger; and (6)
+static compaction. Select item 3 because it still converts popularity and
+attention observations into a causal investment conclusion. Start with local
+provenance, recover stable item/repository identities and denominators where
+possible, and separate direct observations from preference or outcome
+inference before any bounded public read.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

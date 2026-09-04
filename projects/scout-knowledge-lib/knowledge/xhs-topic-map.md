@@ -4755,6 +4755,40 @@ convergence claim: recover stable item/repository identities where possible,
 separate attention and popularity observations from causal investment claims,
 and retract any comparison whose original denominator cannot be reproduced.
 
+Cycle 314 seed/source `b769559a2dbf5ef7242ad5ab9d2cbe6444b979fe`
+produced material `e7c25db7c366532fd02dbf0fc2ab9b1ab44f74b0`. The exact
+material tip passes syntax, TypeScript, source formatting, Cycle 292
+projection, 90 scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484
+assertions. The broad audit passes 1,540 documents / 1,728 links. Read-only
+health at `2026-09-04T01:32:16.310Z` returns 26 facts / 16 wakes with
+`truncated:true`; accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+is excluded, and the standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`, and
+296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+### Cycle 315 seed-first start — test the claimed cross-source convergence
+
+At `2026-09-04T01:32:25.041Z`, the receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour XHS cadence. No XHS or
+public-source request ran during reconciliation: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and the observational account was not mutated.
+
+The complete queue still ranks `RV-004` first, but the protected history lacks
+the required query/rank-to-selected-file-to-later-outcome join. The missing
+Memory in the Loop provider artifact remains second and unavailable. Scan 448's
+HN/GitHub convergence claim is now the highest-value accessible gap because it
+still turns popularity observations into an architecture-over-capability
+investment conclusion. Select it ahead of other unsourced scans, Reddit, and
+static compaction. Start with local provenance: recover stable item/repository
+identities, reconstruct denominators, and distinguish observation from causal
+or preference inference before issuing any necessary bounded read.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
