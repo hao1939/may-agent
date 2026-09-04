@@ -8379,6 +8379,15 @@ supported enterprise deployment model. GitHub and Reddit make zero requests
 until their recorded triggers fire; arXiv is selected only after this ordering
 record.
 
+#### Cycle 371 interrupted — retrieval receipt only
+
+The human stopped Cycle 371 before synthesis. Before that stop, the committed
+seed-first ordering was followed by one bounded arXiv metadata request and one
+PDF/e-print pair for `2607.03516v1`; no GitHub, Reddit, XHS, or other source
+request followed. The exact receipt is retained in the detailed lane report.
+No AGL-1 conclusion or library claim is admitted, Cycle 371 remains incomplete,
+and normal research is paused.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

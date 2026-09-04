@@ -15606,6 +15606,20 @@ an architecture proposal, or an evidence-backed deployment model. GitHub and
 Reddit make zero requests; arXiv retrieval begins only after this seed-first
 record is committed.
 
+#### Cycle 371 interrupted — preserve only completed retrieval
+
+The human stopped Cycle 371 before synthesis. Before the stop, arXiv metadata
+was fetched at `2026-09-04T09:29:53.661Z–09:29:54.166Z` (3,456 bytes,
+SHA-256 `90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47`).
+The v1 PDF was fetched at `09:29:54.167Z–09:29:54.555Z` (401,365 bytes,
+SHA-256 `11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba`),
+and the e-print endpoint at `09:29:54.557Z–09:29:55.275Z` returned the exact
+same PDF bytes. Local text extraction produced 713 lines / 6,343 words /
+54,164 bytes. No further AGL-1, arXiv, GitHub, Reddit, XHS, or other source
+request was made; no primary-review synthesis or conclusion was finalized.
+The seed-first commit remains intact, Cycle 371 is explicitly incomplete, and
+normal research is paused.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
