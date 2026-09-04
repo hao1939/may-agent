@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
+summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. HexStrike's released row-level logs reproduce a 154/258 versus 72/258 DeepSeek client contrast, but client-specific defaults, a rolling model alias, and an undocumented execution schedule prevent clean client-only causality. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, and CONTRA primary-reviewed 2026-09-04; HexStrike-AI and SkillOpt-Lite remain pending separate primary review. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, and HexStrike-AI primary-reviewed 2026-09-04; SkillOpt-Lite remains pending separate primary review. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -16,12 +16,12 @@ The original scan grouped five sources under a structural hypothesis: **model
 configuration can materially affect risk and performance**. They do not share
 one task, intervention, comparator, or outcome, so they do not by themselves
 show that configuration universally dominates model choice or determines
-economic value. AGL-1, CAGE-1, and CONTRA have now been primary-reviewed;
-HexStrike-AI and SkillOpt-Lite remain scan-reported claims pending separate
+economic value. AGL-1, CAGE-1, CONTRA, and HexStrike-AI have now been
+primary-reviewed; SkillOpt-Lite remains a scan-reported claim pending separate
 review.
 
 - **CONTRA** (2607.03220): 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged search. This is a skill-level search yield, not configuration or incident prevalence.
-- **HexStrike-AI** (2607.02873): The driving client produces a reported **2.1× gap** for a fixed model in the paper's evaluated cells. Orchestrator configuration is therefore a material factor in that task, not evidence that it generally dominates model capability.
+- **HexStrike-AI** (2607.02873): Released row-level logs reproduce a **154/258 versus 72/258** DeepSeek client contrast (2.139×) over matched challenge/regime cells. This is strong client-associated evidence in the study, not clean client-only causality or evidence of general client dominance.
 - **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. In the reported cells, a nano model with an optimized skill or harness outperforms a larger sibling under a standard pipeline; this is a task-specific comparison, not a general ordering of configuration over parameters.
 - **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
 - **self-learning-skills** (843★): Agents that configure *themselves*. Recognizes golden paths in sessions and harvests them as reusable skills.
@@ -139,14 +139,47 @@ real harm therefore remain unknown.
 
 Source: https://arxiv.org/abs/2607.03220
 
-### HIGH: HexStrike-AI — Driving Client as First-Order Factor (2607.02873)
+### HIGH: HexStrike-AI — A Strong, Qualified Client Contrast (2607.02873)
 
-**Finding**: Using HexStrikeAI (150+ tools, 86 picoCTF challenges, 774 trials), the driving client creates a **2.1× performance gap** for a fixed model (DeepSeek). Three tool-access regimes and three model/client configurations tested. Overall solve rate rises from 55.4% to 72.0% with targeted corrections. Residual failures are reasoning- or environment-bound, not missing-tool.
+**Primary-reviewed result:** The released baseline logs contain 86 RooCode and
+86 5ire transcript files, each with the same three challenge/regime verdicts.
+Across the 258 matched cells, DeepSeek/RooCode succeeds in 154 (59.7%) and
+DeepSeek/5ire in 72 (27.9%), reproducing the paper's 2.139× aggregate
+contrast. Pairing the cells gives 50 both-success, 104 RooCode-only, 22
+5ire-only, and 82 neither; an exact two-sided McNemar test on the 126
+discordant cells gives `p = 6.07e-14`. The direction holds in every regime,
+but the ratio varies: 51/86 versus 26/86 free (1.962×), 51/86 versus 17/86
+ranked (3.000×), and 52/86 versus 29/86 strict (1.793×). This supports a
+large client-associated contrast for this DeepSeek/picoCTF setup and shows why
+benchmark results should name the driving client.
 
-**Original scan interpretation, pending primary review**: The reported 2.1×
-contrast makes the driving client a plausible first-order factor in this task.
-It does not yet establish that harness configuration dominates model choice
-outside the paper's specific cells or against matched model-to-model controls.
+**What the comparison does not isolate:** The clients use the same
+`deepseek-chat` alias and prompt matrix, but the alias was rolling over the
+multi-week study, sampling used client defaults with temperature and top-p
+unpinned, and no randomized or interleaved execution schedule is documented.
+Only one model runs on both clients, baseline cells are single runs, and the
+60-run stability study is post-fix and free-regime only. The authors manually
+assigned verdicts, while the three regimes reuse each challenge. These facts
+do not reverse the observed direction, but they prevent attributing the full
+magnitude to the client alone or generalizing it to other models, benchmarks,
+or live security work.
+
+**Artifact boundary:** The paper-linked public repository
+`BreadyBred/hexstrike-eval` at
+`83290b00c8fdd748f468072d903f4c0d0ff02c71` exposes the row-level transcripts,
+prompt generator, analysis narrative, and MIT-licensed fork. A manifest over
+the 172 DeepSeek transcript files is SHA-256
+`941502aa515564ac1ec14736866849e63b74d8566042ca0838550386aae6869a`; the
+derived 258-row paired-verdict matrix is SHA-256
+`672ca57d3587176f10f1966bf94b0be9e8b1a538486f0fad06a1b3da3f8c1917`.
+The figure script redraws hard-coded aggregates rather than recomputing the
+logs, the large challenge artifacts were not needed for this audit, and the
+repository does not provide a fully self-contained reproduction package.
+
+The paper separately reports that its bundled, same-challenge intervention
+raises all-configuration solve rate from 55.4% to 72.0%. That post-fix result
+does not identify the causal contribution of client choice and should not be
+folded into the baseline client contrast.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning effort > tool access. Verification Stack (#412) — architecture layer. Oversight Inversion (#382) — harness design as verification substrate.
 

@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 372 bounded reconciliation at 2026-09-04T10:24:38.968Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 372; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, and CONTRA primary evidence resolved in Cycle 372; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 373 bounded reconciliation at 2026-09-04T10:39:25.749Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 373; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, and HexStrike-AI primary evidence resolved in Cycle 373; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -8523,6 +8523,91 @@ passes 1,540 tracked Markdown documents / 1,732 local prose links with zero
 errors. Read-only health at `2026-09-04T10:31:43.574Z` returns 26 facts / 16
 wakes with `truncated:true`; those retained signals are health evidence rather
 than new CONTRA evidence.
+
+### Cycle 373 seed-first start — isolate HexStrike's client contrast
+
+Cycle 373 begins from clean reconciled tip
+`3ea02c3c767a77a1fb5fae7b176210edf6156ff6`. At
+`2026-09-04T10:39:25.749Z`, Cycle 341's exact XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions and changes remain unknown, observed removals are `[]`,
+all 132 durable identities remain unavailable, no representative saved post
+is supported, and account state is unchanged. The next scheduled observation
+remains no earlier than `2026-09-04T11:00:03.241Z` absent a material access
+trigger. Reviewer source `e66632eec7` is already reconciled at the standing
+tip, and its ref has not advanced.
+
+Re-rank the complete queue: (1) high/open `RV-004` remains decision-relevant
+but inaccessible without the protected query/rank-to-selection-to-later-
+outcome join; (2) high/open `RV-034` remains at the pinned external runtime
+boundary; (3) the Memory in the Loop provider result remains unreleased; (4)
+HexStrike-AI `2607.02873` is the highest accessible gap because Scan #425's
+reported 2.1× driving-client contrast remains primary-unreviewed; (5)
+SkillOpt-Lite follows; (6) Reddit remains trigger-deferred; and (7) compaction
+remains last. Select HexStrike-AI and test whether the contrast holds model,
+task, tools, budget, scoring, and client implementation fixed, what denominator
+supports 2.1×, and whether code or row-level results permit reproduction.
+
+### Cycle 373 checkpoint — HexStrike's direction reproduces, causality does not
+
+Primary arXiv reads at `2026-09-04T10:39:59.611Z–10:40:00.728Z` identify
+`2607.02873v1`: the 3,384-byte Atom record is SHA-256
+`1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d`
+and the 765,419-byte source archive is SHA-256
+`5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f`.
+Its extracted `main.tex` is SHA-256
+`2a4bdabb2bf90ecd56cedb6e95146aed2494c0a033f77575552b351bbe35d9e1`.
+The paper claims a 2.1× DeepSeek driving-client gap and links the public MIT
+repository `BreadyBred/hexstrike-eval`.
+
+GitHub observations at `2026-09-04T10:40:38.080Z–10:40:45.133Z` pin that
+repository to `83290b00c8fdd748f468072d903f4c0d0ff02c71` on `master`. Its recursive
+tree has 1,489 entries and is not truncated (response SHA-256
+`d9253ca10e6e481c1cfc4acf6700e057bf733f8fe1ee54b256a7a5e20d8243f9`).
+The release contains 86 RooCode and 86 5ire baseline transcript files; their
+1,569,980-byte manifest is SHA-256
+`941502aa515564ac1ec14736866849e63b74d8566042ca0838550386aae6869a`.
+No repository code or challenge artifact was executed.
+
+A local read-only derivation from those transcripts produces 258 paired
+challenge/regime rows (matrix SHA-256
+`672ca57d3587176f10f1966bf94b0be9e8b1a538486f0fad06a1b3da3f8c1917`):
+RooCode succeeds in 154/258 (59.7%) and 5ire in 72/258 (27.9%), a 2.139×
+ratio. The matched table is 50 both-success, 104 RooCode-only, 22 5ire-only,
+and 82 neither; exact two-sided McNemar `p = 6.07e-14`. Direction is stable by
+regime but magnitude is not: free 51/86 vs 26/86 (1.962×), ranked 51/86 vs
+17/86 (3.000×), and strict 52/86 vs 29/86 (1.793×).
+
+Confidence is high that the released rows support a large client-associated
+contrast in this DeepSeek/picoCTF setup. Confidence is low in the paper's
+stronger client-alone wording: `deepseek-chat` was a rolling alias, clients
+used unpinned sampling defaults, no randomized/interleaved schedule is
+documented, baseline cells were not repeated, manual author verdicts were
+used, and only one model crossed both clients. The 60-run stability sample is
+post-fix and free-regime only. The three regimes also reuse each challenge,
+so the paper's independent-proportion test ignores pairing; the paired result
+preserves the direction but does not remove execution-order or client-default
+confounding. The figure script redraws hard-coded aggregates rather than
+recomputing logs, and no self-contained reproduction package is present.
+
+Lane continuity: arXiv last useful evidence is v1 source and should revisit on
+v2; GitHub last useful evidence is the exact public repository/head and should
+revisit on a new attributable commit or a reproducible analysis release;
+Reddit made zero requests and remains RSS-readable/JSON-403, deferred until a
+relevant-thread or access-change trigger. XHS made zero requests in this cycle.
+`RV-004` remains high/open because no protected query/rank-to-selection-to-
+later-outcome join appeared, and `RV-034` remains high/open at its pinned
+external runtime boundary. Next seed-first, primary-review SkillOpt-Lite
+`2607.03451`, checking whether its smaller-model advantage survives matched
+pipeline, budget, data-reuse, and validation comparisons.
+
+The reviewed candidate passes syntax, TypeScript, source formatting, Cycle 341
+projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests /
+1,486 assertions. The broad offline audit passes 1,540 tracked Markdown
+documents / 1,732 local prose links with zero errors. Read-only health at
+`2026-09-04T10:50:33.654Z` returns 26 facts / 16 wakes with
+`truncated:true`; these retained signals are health evidence, not HexStrike
+evidence.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
