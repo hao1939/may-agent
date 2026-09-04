@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #457 (2026-07-10), partly qualified. Experimental Design for Agentic AI (2607.06413) proposes treating coding agents as stochastic model-discovery operators, but its 144-run factorial executes each configuration once and therefore does not estimate same-configuration stochastic variance. Its retained data reproduce all eight negative effort-to-utility slopes under one prespecified equal-weight utility; primary-metric effort effects do not survive multiplicity correction, leading canonical directions are weakly identified, and utility-weight sensitivity is untested. Monitoring Agentic Systems Before They're Reliable (2606.02494) remains primary-unreviewed. The original HN and GitHub counters remain discovery signals."
+summary: "HN/arXiv/GitHub Scan #457 (2026-07-10), qualified. Experimental Design for Agentic AI (2607.06413) has no repeated configuration, so it does not estimate same-input stochastic variance; retained data reproduce negative slopes only under one fixed utility. Monitoring Agentic Systems (2606.02494) studies one synthetic, deliberately zero-signal system with two known integration defects and releases no reusable artifact. Its table routes 97.68% of findings automatically and 2.32% to humans, but 2.10% are one invariant simulator artifact and only 0.22% are variable L2 findings. The masking result has no reported comparison statistic and follows from the constructed zero-signal system. Both papers motivate variance-aware evaluation; neither establishes the scan's broad variance-governance claim."
 triggers: ["variance signal", "distributional characterization", "stochastic operator", "agent as operator", "variance as signal", "CV monitoring", "structural defect", "task-level masking", "utility-aligned decomposition", "reasoning effort direction", "point estimate failure", "distributional governance", "maturity staging", "experimental design agentic", "monitoring before reliable", "variance-blind evaluation", "quality inversion", "scan 457"]
-source_basis: "arXiv cs.AI 2026-07-07 (2607.06413 Experimental Design for Agentic AI; source primary-reviewed 2026-09-04) and exact public data/code at haohe13/starf-anagram-game-model-discovery-data-collection@15063eb31135226f41e4352dc80a17b70f877310. arXiv cs.SE 2026-06-05 (2606.02494 Monitoring Agentic Systems Before They're Reliable; not yet primary-reviewed). Original HN front page and GitHub counters are discovery signals. Cross-referenced with Claim-Verification Surface (#456), Dispersion Collapse (#455), Evaluation Mirage (thesis), Oversight Inversion (thesis)."
+source_basis: "arXiv 2607.06413v1 plus exact public data/code at haohe13/starf-anagram-game-model-discovery-data-collection@15063eb31135226f41e4352dc80a17b70f877310, and arXiv 2606.02494v1 source; both primary-reviewed 2026-09-04. 2606.02494 explicitly releases no reusable artifact; bounded GitHub repository search returned none. Original HN and GitHub counters remain discovery signals. Cross-referenced with Claim-Verification Surface (#456), Dispersion Collapse (#455), Evaluation Mirage (thesis), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #457: The Variance Signal
@@ -12,17 +12,17 @@ source_basis: "arXiv cs.AI 2026-07-07 (2607.06413 Experimental Design for Agenti
 
 ## Theme
 
-The Claim-Verification Surface (#456) showed that governance must target typed claims verified against independent substrates. But how should the verification itself be interpreted? Two uncovered papers converge from opposite ends — one from statistical experimental design, one from production monitoring — to name the same structural error in current agent evaluation:
+The Claim-Verification Surface (#456) showed that governance must target typed claims verified against independent substrates. But how should the verification itself be interpreted? The original scan read two papers from statistical experimental design and production monitoring as converging on one structural error. Primary review supports this as a research direction, not as a demonstrated general result:
 
 **Variance is not noise to be averaged out. It is the primary diagnostic signal.**
 
-Current evaluation practice compresses stochastic agent behavior into point estimates (resolve rate, benchmark score, leaderboard position). Both papers independently prove this compression destroys exactly the information needed for governance: the distributional structure that distinguishes reliable agents from fragile ones that happen to produce the same mean.
+Current evaluation practice often compresses stochastic agent behavior into point estimates (resolve rate, benchmark score, leaderboard position). Both papers motivate retaining richer structure; neither independently proves that compression destroys the information needed for governance.
 
 1. **An Experimental Design Approach to Evaluating Agentic AI's Autonomous Model Discovery** (2607.06413): Treats coding agents (Codex, Claude Code) as **stochastic model-discovery operators** — not tools that produce answers, but random operators that map (data, optimization target) → fitted model. Uses formal experimental design with controlled factors (reasoning effort, task, metric, data composition) and develops **utility-aligned canonical decomposition** to find the dominant direction of reasoning-effort effects in performance-cost space. A single benchmark run cannot detect this direction — it requires replicated experimental designs.
 
-2. **Monitoring Agentic Systems Before They're Reliable** (2606.02494): Uses **coefficient of variation (CV) as a characterization signal** across three monitoring scopes: within-run (CV=0.02, deterministic stage defects), cross-run (CV=1.25, stochastic integration consequences), and structural (CV=0.00, integration gaps). Critical finding: **injected task-level errors are indistinguishable from clean baselines** because structural defects mask them. Deterministic triage routes 97% of findings to automation; only the 2% reflecting variable behavior need human investigation.
+2. **Monitoring Agentic Systems Before They're Reliable** (2606.02494): Reports **coefficient of variation (CV) as a characterization signal** across different evaluators in one synthetic zero-signal system. The three scope-associated CVs are descriptive and confounded with evaluator and defect. Its severity rule routes 97.68% automatically, but the 2.32% human set is mostly an invariant simulator artifact, not variable behavior.
 
-**The 29th Layer of the Oversight Inversion**: The Variance Signal — when evaluation compresses stochastic behavior into point estimates, it destroys the distributional structure that governance needs. The thirteen-point exit arc (#456) assumed verification produces information; this layer names the condition under which it does: **report distributions, not means; characterize variance, not average it away.**
+**The 29th Layer of the Oversight Inversion**: The Variance Signal — point estimates can hide distributional structure that governance may need. The thirteen-point exit arc (#456) assumed verification produces information; this layer proposes a condition worth testing: **report distributions with means and qualify what the observed variance identifies.**
 
 **Fourteen-point exit arc**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
@@ -125,7 +125,7 @@ family, same-configuration variance, a stable canonical direction, or other
 utility weights. Revisit on a replicated revision, released repeated-run data,
 or utility-weight sensitivity results.
 
-### 2. Monitoring Agentic Systems Before They're Reliable (2606.02494) [UNCOVERED]
+### 2. Monitoring Agentic Systems Before They're Reliable (2606.02494) [PRIMARY-REVIEWED, QUALIFIED]
 
 **Setting**: Agentic systems entering production as "partially integrated assemblies" where structural defects dominate the failure landscape.
 
@@ -137,7 +137,13 @@ or utility-weight sensitivity results.
 | Cross-run | 1.25 | Stochastic integration consequences | Integration failures vary wildly between runs |
 | Structural | 0.00 | Integration gaps with perfect consistency | A component is missing entirely |
 
-**Critical experimental result**: Injected task-level errors are **indistinguishable from clean baselines**. When structural defects are present, task-level monitoring cannot surface task-level errors because the structural noise floor is higher than the task-level signal. This is not a sensitivity problem — it's a structural masking problem.
+**Reported masking result**: The studied system emits no actionable
+task-detection signal by construction: its business resolver always says “no
+findings” and its cross-document validator always says “pass,” because one
+stage uses the wrong schema and another receives zero related documents. The
+paper calls 100 paired clean/error runs indistinguishable but reports no test,
+effect size, interval, or paired table. This demonstrates a deliberately
+zero-signal structural failure, not a general structural noise floor.
 
 **Maturity-staging model**: Monitoring transitions through three stages:
 1. **Stage 1 (Structural characterization)**: Find integration defects via variance characterization
@@ -146,15 +152,70 @@ or utility-weight sensitivity results.
 
 "Deploy monitoring early: the first thing it finds is the most important thing to fix."
 
-**Triage efficiency**: Deterministic triage routes **97%** of findings to automated tracking. Only the **2%** reflecting variable behavior warrant human investigation. This inverts the oversight cost model: instead of humans reviewing everything, variance identifies the 2% that needs human attention.
+**Triage accounting**: Deterministic severity rules route 10,210/10,453
+findings (97.68%) to automated tracking and 243 (2.32%) to humans. Of the human
+set, 220 (2.10% of all findings) come from an invariant macOS resource-fork
+simulator artifact. Only 23 (0.22%) are variable cross-run L2 findings. The
+abstract's “2% reflecting variable behavior” merges these distinct classes.
 
 **Why this matters for the Oversight Inversion**:
 
-This paper provides the operational instantiation of the Variance Signal thesis. The Oversight Inversion arises because oversight cost scales linearly with output volume. But if variance characterization routes 97% of findings to automation, the oversight cost for 98% of output drops to near-zero. The remaining 2% — the variable behavior — is where human oversight is both necessary and sufficient.
+This paper provides a bounded synthetic example for the Variance Signal thesis.
+Its deterministic severity mapping reduces this run's human-routed finding
+count, but it neither measures review cost nor shows that variance selected the
+human set. The dominant human-routed class is invariant and artifactual.
 
 The maturity-staging model also connects to the Co-Evolution Imperative (#452): the monitoring system must evolve as structural defects resolve and new failure modes emerge. A fixed monitoring strategy degrades as the system matures.
 
 Source: https://arxiv.org/abs/2606.02494
+
+#### Cycle 359 primary review (2026-09-04)
+
+The experiment covers 220 runs derived from 120 synthetic audit bundles: 100
+companies have matched clean/error runs and 20 have clean-only runs. One system
+with two known integration defects processes five injected error subtypes at
+four difficulty levels. All evaluators are rules or statistics; no language-
+model evaluator is used. This is a bounded Stage-1 diagnostic case, not a
+production sample or comparison across agentic systems.
+
+The reported CVs are arithmetically consistent with the rounded counts:
+DM-095 produces 10,057 findings over 220 runs (`45.714/run`, reported
+`45.7±1.0`, CV `.02`); the grouped cross-run class produces 97/220
+(`.441/run`, reported `.44±.55`, CV `1.25`); and DM-100 deterministically
+produces 220/220 (CV `0`). But monitor scope, evaluator identity, defect, and
+severity change together, so these three numbers do not isolate a causal
+scope effect or define portable CV ranges. The evaluator table also labels
+DM-170 “Within” while the results classify all 74 of its findings as
+“Cross-run.”
+
+The exact routing table sums cleanly: 10,136 within-run, 97 cross-run, and 220
+structural findings total 10,453. Automated tracking receives 10,210
+(`97.6753%`); human investigation receives 243 (`2.3247%`). Variable cross-run
+findings are 97 (`0.9280%`) in total, of which only 23 L2 findings (`0.2200%`)
+go to humans. DM-100 contributes the other 220 human-routed findings
+(`2.1047%`) even though the paper identifies it as an invariant simulator
+artifact, not a system failure. Thus the table supports deterministic routing
+for this chosen severity mapping, but not “only the 2% reflecting variable
+behavior need human investigation.”
+
+The source archive explicitly says the contribution is a design methodology
+and “no reusable artifact is released.” It provides no run-level data,
+evaluator implementation, ground-truth checker, or reproducible analysis.
+Bounded unauthenticated GitHub repository search at
+`2026-09-04T07:36:20.473Z` found zero title matches; this is supporting absence
+evidence, not proof that no artifact exists elsewhere. The 65,561-byte v1
+source archive has SHA-256 `dbb13040…a5f5`; `main.tex` is
+`c06db560…9b30` and the two result tables are `4a5a2041…59f9` and
+`556bacaf…cf1e`.
+
+Confidence is high for source transcription, table arithmetic, the internal
+scope-label mismatch, and absence from the released source; moderate that the
+constructed defects fully mask these five injected-error types; low for other
+defects, systems, real audit data, language-model evaluators, later maturity
+stages, portable CV thresholds, or the claimed review-reduction mechanism.
+Revisit on a revision with raw paired outputs, a declared statistical
+comparison, reusable code/data, repaired-system longitudinal results, or
+independent replication.
 
 ---
 
@@ -164,10 +225,13 @@ These two papers arrive at the same conclusion from opposite directions:
 
 | Paper | Starting point | Conclusion |
 |-------|---------------|------------|
-| Experimental Design (2607.06413) | Evaluation methodology | Single benchmark runs are insufficient; experimental design with controlled factors and replicated runs needed |
-| Monitoring (2606.02494) | Production deployment | Point-estimate monitoring misses structural defects; variance characterization across scopes needed |
+| Experimental Design (2607.06413) | Evaluation methodology | Motivates controlled, replicated designs, but its own factorial has one execution per configuration |
+| Monitoring (2606.02494) | Synthetic Stage-1 diagnosis | One zero-signal system yields scope-associated CVs and deterministic severity routing; no portable threshold or artifact is supplied |
 
-Both papers say: **the information that matters for governance lives in the variance, not the mean**.
+Together the papers motivate preserving variance alongside means. They do not
+show that governance information generally lives in variance: one has no
+within-configuration repeats, while the other changes evaluator and defect
+with scope in a single synthetic system.
 
 **Connection chain**:
 - **Evaluation Mirage** (thesis): Evaluation is hollow (3 bits of entropy across 14,345 evaluations)

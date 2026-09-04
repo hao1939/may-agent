@@ -14607,6 +14607,67 @@ other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
 `2606.02494`. Inspect its units, denominators, repeat design, baseline/error
 comparison, triage categories, uncertainty, and attributable public artifacts.
 
+## Cycle 359 checkpoint — 2% human does not mean 2% variable
+
+Seed-ordering commit `61001844c5ecd3c089836834a5ba8b7b54d2d511`
+precedes all source work. At `2026-09-04T07:35:45.516Z`, arXiv
+`2606.02494v1` returned a 3,697-byte Atom record (SHA-256
+`f026fa41…3b74`) and 65,561-byte source archive (`dbb13040…a5f5`). Its
+`main.tex` is `c06db560…9b30`; the scope and routing tables are
+`4a5a2041…59f9` and `556bacaf…cf1e`.
+
+The paper evaluates one synthetic audit system with two known integration
+defects over 220 executions derived from 120 bundles: 100 companies have
+matched clean/error runs and 20 have clean-only runs. Five injected-error
+subtypes each have four difficulty levels. The system is deliberately unable
+to emit task-level signal: its business resolver always reports no findings,
+and its cross-document validator always passes because it receives zero
+related documents. The paper calls clean and error conditions statistically
+indistinguishable but reports no test, effect size, interval, paired table, or
+run-level data. This supports complete masking for the constructed defects,
+not a general structural-noise threshold.
+
+The reported CV values reconcile with rounded counts. DM-095 yields
+10,057/220 = 45.714 findings/run (`45.7±1.0`, CV `.02`); the grouped
+cross-run monitors yield 97/220 = `.441` (`.44±.55`, CV `1.25`); DM-100
+fires exactly 220/220 (CV `0`). But scope, evaluator, defect, and severity are
+not independently varied. The evaluator table also calls DM-170 “Within,”
+while the result text counts all 74 of its findings as “Cross-run.” The CVs are
+descriptive profiles of this system, not causal scope effects or portable
+calibrations.
+
+The exact table routes 10,210/10,453 findings (`97.6753%`) to automated
+tracking and 243 (`2.3247%`) to humans, a 43.0165× count reduction. Variable
+cross-run findings are 97 (`0.9280%`) total; only 23 L2 findings (`0.2200%`)
+enter the human set. The other 220 human-routed findings (`2.1047%`) are
+invariant DM-100 events caused by macOS resource-fork files in the simulator,
+which the paper calls an artifact rather than a system failure. Therefore the
+abstract's “2% reflecting variable behavior” is contradicted by its own table.
+The severity routing is reproducible arithmetic, but neither review cost nor
+missed-failure cost is measured. Maturity Stages 2 and 3 are explicit
+predictions; only Stage 1 is observed.
+
+The source explicitly says this is a design methodology and “no reusable
+artifact is released.” There is no public run-level dataset, evaluator,
+ground-truth checker, or analysis implementation in the archive. One bounded
+unauthenticated GitHub repository search at
+`2026-09-04T07:36:20.473Z` returned zero title matches and
+`incomplete_results:false`; this supports the documented boundary but cannot
+prove absence elsewhere.
+
+ArXiv supplied the primary source. GitHub supplied only bounded absence
+evidence; revisit on a code/data link, title/repository trigger, or paper
+revision. Reddit made zero requests and remains deferred until a relevant-
+thread/access trigger. Confidence is high for source transcription, count
+arithmetic, and the internal label/summary contradictions; moderate for
+complete masking in this constructed system; low for other defects, real audit
+data, language-model evaluators, portable CV thresholds, later stages, or
+review-cost reduction. `RV-004` remains high/open because no protected
+query/rank -> selection -> later-outcome evidence changed. Next seed-first,
+primary-review `2607.05775`: test the review protocol, corpus counts, evidence
+coding, nonlinear-compounding basis, and traceability of component-to-system
+failure claims before retaining Scan #459's broad synthesis.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

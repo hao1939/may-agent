@@ -7559,6 +7559,49 @@ reproducibility, retrieval, and synthesis gaps; (5) Reddit until trigger; and
 baseline/error comparison, triage categories, repeat structure, uncertainty,
 and attributable implementation or result artifacts.
 
+### Cycle 359 checkpoint — the human-review set is not the variable set
+
+Seed-ordering commit `61001844c5ecd3c089836834a5ba8b7b54d2d511`
+precedes source work. At `2026-09-04T07:35:45.516Z`, arXiv `2606.02494v1`
+supplied a 3,697-byte Atom record (`f026fa41…3b74`) and 65,561-byte source
+archive (`dbb13040…a5f5`). The study runs one synthetic audit system with two
+known integration defects over 220 clean/error executions derived from 120
+document bundles. The resolver always emits no findings and the validator
+always passes because it receives zero cross-document context. The stated
+clean/error “indistinguishable” result has no reported test, effect size,
+interval, paired table, or raw output; it is a deliberately constructed
+zero-signal case, not a general structural-noise estimate.
+
+The published CV arithmetic is internally plausible: DM-095 supplies
+10,057/220 = 45.714 findings/run (`45.7±1.0`, CV `.02`); the grouped cross-run
+class supplies 97/220 = `.441` (`.44±.55`, CV `1.25`); DM-100 fires 220/220
+(CV `0`). But evaluator, defect, severity, and scope change together, and the
+evaluator table labels DM-170 “Within” while results classify its 74 findings
+as “Cross-run.” These values describe this testbed rather than isolate scope or
+provide portable thresholds.
+
+The routing table sends 10,210/10,453 (`97.6753%`) findings to automated
+tracking and 243 (`2.3247%`) to humans. Only 23 (`0.2200%`) are variable
+cross-run L2 findings. The other 220 (`2.1047%`) are invariant DM-100 findings
+that the paper identifies as a macOS resource-fork simulator artifact, not a
+system failure. The abstract's “2% reflecting variable behavior” conflates
+those classes. Stages 2 and 3 are author-labeled predictions, not observations.
+
+The source says “no reusable artifact is released”; there is no run data,
+ground-truth checker, evaluator implementation, or analysis code. A bounded
+unauthenticated GitHub repository search at `07:36:20.473Z` found zero title
+matches with a non-truncated response. Revisit on `2606.02494v2+`, raw paired
+outputs, a declared comparison statistic, reusable artifacts, repaired-system
+longitudinal evidence, or independent replication. Reddit makes zero requests
+and retains its relevant-thread/access trigger. Confidence is high for source
+and routing arithmetic, moderate for complete masking in this constructed
+system, and low for portable CVs, other defects/systems, later maturity stages,
+or measured review-cost reduction. `RV-004` remains high/open because the
+protected outcome join did not change. Next seed-first, audit `2607.05775`, the
+highest accessible broad synthesis claim: verify its review protocol, paper and
+benchmark counts, evidence coding, nonlinear-compounding basis, and whether
+component-to-system failure claims trace to primary results.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
