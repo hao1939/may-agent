@@ -4677,6 +4677,43 @@ remains high/open because this correction is not a retained later-outcome join.
 Next begin seed-first and primary-review `2607.04846`, whose causal curriculum
 claim now carries the remaining substantive weight in the Architecture Premium.
 
+Exact Cycle 313 material `a18828cef0706de76159fa0a2613b68be69f4683`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and the full 296-test / 1,484-assertion gate. The
+broad audit passes 1,540 Markdown documents / 1,728 local links. Read-only
+health at `2026-09-04T01:22:41.565Z` returns 26 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+is excluded, and the standing worktree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`, and
+296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+### Cycle 314 seed-first start — audit the remaining curriculum evidence
+
+At `2026-09-04T01:24:14.266Z`, the latest XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation therefore made zero XHS, GitHub, arXiv, or Reddit requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance stays the last observational
+browser receipt plus the durable ledger, and no account state changed.
+
+Expected knowledge value ranks the complete accessible queue as: (1)
+`RV-004`'s missing protected query/rank-to-selected-file-to-later-outcome join,
+which could change maintenance policy but cannot move because readable
+protected history ends August 31 without that join; (2) the unreleased Memory
+in the Loop provider artifact and authority-bearing run, unavailable without
+frozen inputs and execution authority; (3) primary review of `2607.04846`, now
+the highest-value accessible evidence behind the Architecture Premium; (4)
+remaining unsourced HN/GitHub architecture narratives and cross-paper
+synthesis; (5) Reddit, deferred until a relevant thread or access change; and
+(6) byte/line compaction, last because it supplies neither outcome nor primary
+evidence. Select item 3 and test its intervention, controls, estimand,
+replication artifacts, and causal scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

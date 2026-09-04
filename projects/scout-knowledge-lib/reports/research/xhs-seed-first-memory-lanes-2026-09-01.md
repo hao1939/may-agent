@@ -10536,6 +10536,46 @@ Next begin seed-first and primary-review `2607.04846`. After this correction,
 its curriculum experiment carries the remaining substantive evidence for the
 Architecture Premium and outranks HN narrative checks or static compaction.
 
+Exact Cycle 313 material `a18828cef0706de76159fa0a2613b68be69f4683`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions. The broad audit
+passes 1,540 Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T01:22:41.565Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` is excluded, and
+the standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`, and
+296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+## Cycle 314 seed-first start — primary-check the curriculum comparison
+
+At `2026-09-04T01:24:14.266Z`, the current XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. No XHS,
+GitHub, arXiv, or Reddit request ran during reconciliation. Added/changed
+identities remain unknown, observed removals are `[]`, all 132 durable seeds
+remain unavailable, provenance remains the last observational browser receipt
+and durable ledger, and no account state changed.
+
+The complete queue ranks `RV-004`'s missing protected
+query/rank-to-selected-file-to-later-outcome join first because it could change
+maintenance policy. It cannot move: readable protected history ends August 31
+without the required join, and more local prose or telemetry cannot create it.
+The unreleased Memory in the Loop provider experiment is second but lacks its
+frozen artifact and authority-bearing execution. The highest-value accessible
+gap is therefore primary review of `2607.04846`, which now carries the remaining
+substantive basis for the Architecture Premium. Unsourced HN/GitHub narratives
+and synthesis follow; Reddit stays below its relevant-thread/access-change
+trigger; byte/line compaction ranks last because it adds neither retained
+outcome evidence nor primary or reproducibility evidence.
+
+Select `2607.04846`. Test its intervention, controls, estimand, factor
+separation, replication surface, and causal scope before retaining any claim
+that curriculum architecture lowers later oversight cost.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
