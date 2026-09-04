@@ -15173,6 +15173,35 @@ Select item 3. Test the named final items and later crossing, then distinguish
 a selected cumulative basket from a denominator, exposure study, preference
 measure, or causal category-reallocation result.
 
+## Cycle 366 checkpoint — the selected basket crosses its claimed ceiling
+
+Seed-first commit `757ede92f039220832a6c358d1ba37f9d0a8d55d`
+preceded all new public reads. At `2026-09-04T08:24:51.509Z`, an exact-title
+HN Algolia query resolved SWE-1.7 to item `48833866`; the 1,395-byte response
+hashes to `f9abcc56a2bf696e4fda38701035e78769c4bf081f7d1bc00dde591b7d59857c`.
+Firebase observed SWE-1.7 at `08:25:00.782Z`, 272 points / 140 descendants,
+509 bytes / `5116d04bd472c8f5e791771293885604318f6d8d4d2901cd75e8d56fc41ffa57`.
+Uniqlo item `48829312`, observed `08:25:01.238Z`, finishes at 1,489 / 233,
+1,074 bytes / `2dd018f568691a433861ab3e4d047adf7ac9aab9518a70f743eb27829106a25d`.
+
+Together with Cycle 365's stable Grok 776 and GPT-Live 750, the exact final
+three-model basket is 1,798, 309 points (20.8%) above Uniqlo after Scan 472's
+860-versus-1,149 snapshot. Scan 476 already records a 1,298-versus-1,291
+crossing and falsifies the predicted Grok ceiling at 458 versus SICP 343.
+This refutes the structural-ceiling label, not in the opposite direction:
+model items are 7.5–9.2 hours younger, the stories and exposure are unmatched,
+and there is no complete denominator, impression/rank history, coded
+preference, or evaluation-work outcome. Confidence is high in stable identity,
+timing, arithmetic, and the contradiction; low in category reallocation.
+
+HN was useful. GitHub and arXiv made zero requests and retain Cycles 362/361;
+Reddit made zero requests and retains its relevant-thread/access trigger.
+`RV-004` remains high/open because its protected query/rank→selection→later-
+outcome join is absent. Next begin seed-first without an early XHS request,
+then audit the adjacent “exponential” SICP/Sol divergence and compounding-
+comprehension claim using stable item identities, score-at-age limits, and the
+non-independence of cumulative snapshots. Compaction remains last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

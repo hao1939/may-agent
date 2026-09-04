@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #472: The Frozen Frontier, with RuBench and CREAD qualified. SICP-Sol attention crosses a 100-point gap and three frontier-model stories total less attention than one decoded shirt. RuBench supports configuration reporting and executing-model checks under routing. CREAD's one 50-iteration run per arm finds a collaboration gain in Highway but not Roundabout; it does not establish a general 2.1x effect or an orthogonal-LLM-agent mechanism."
+summary: "Scan #472: The Frozen Frontier, qualified. At one unmatched snapshot, three selected frontier-model stories total fewer cumulative HN points than one decoded-shirt story; they cross it within later scans and finish above it, so the basket does not establish a structural attention ceiling or category-wide preference. RuBench supports configuration reporting and executing-model checks under routing. CREAD's one 50-iteration run per arm finds a collaboration gain in Highway but not Roundabout; it does not establish a general 2.1x effect or an orthogonal-LLM-agent mechanism."
 triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier models", "RuBench model substitution", "CREAD collaborative testing", "comprehension premium", "skill ecosystem GitHub", "sovereignty stack EU", "digital deletion PlayStation"]
 </ai_context>
 
@@ -7,7 +7,7 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.MA), GitHub
-**Theme:** The frontier is frozen — not in capability, but in attention. Three frontier model announcements coexist on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) totaling 860pts — **less than a decoded bash script on a t-shirt** (Uniqlo 1,149pts). SICP-Sol gap crosses the 100pt threshold for the first time (338 vs 229pts, 48% premium). RuBench supplies a narrower measurement warning: routed products require configuration reporting plus executing-model checks. The community has priced in capability and is demanding understanding, governance, and sovereignty.
+**Theme:** At this unmatched snapshot, three selected frontier-model announcements (GPT-Live 411 points, Grok 4.5 276, SWE-1.7 173) total 860 cumulative HN points, fewer than one decoded-shirt story at 1,149. Later scans reverse the ordering. The comparison describes selected counters; it does not establish a frozen frontier, category-wide attention reallocation, or community preference. RuBench supplies a separate measurement warning: routed products require configuration reporting plus executing-model checks.
 
 ---
 
@@ -93,7 +93,7 @@ SICP at **338pts** vs Sol at **229pts** = **109pt gap** (was 83pts in #471). The
 
 This is **exponential divergence**, not linear drift. The gap has gone from 2→11→50→63→83→109 in six scans. At this rate, SICP will reach **double Sol's score** within 3-4 scans. The comprehension premium is compounding.
 
-### 2. The Frozen Frontier: Three Models, One Ceiling
+### 2. The selected basket is not a category ceiling
 
 Three frontier model stories coexist on the HN front page:
 - **GPT-Live**: 411pts (OpenAI)
@@ -107,16 +107,33 @@ For comparison, single non-AI stories:
 - **Chat Control original**: 1,102pts
 - **StreetComplete**: 802pts
 
-The frontier is frozen: three competing vendors' model announcements collectively generate less attention than a decoded bash script, an EU privacy policy, or a map editing app. The community has not stopped evaluating AI — it has priced in model capability as a category and reallocated attention to governance, sovereignty, and comprehension.
+The arithmetic is correct for that selected snapshot. The inference is not.
+The stories differ in age, submitter, title, source, event semantics, audience,
+and front-page exposure; the scan does not preserve an observation timestamp,
+impressions, rank history, or a denominator for all model and non-model
+stories. Points are cumulative engagement counters, not coded preference,
+evaluation effort, or attention allocation.
 
-**The attention decay function across vendors:**
-- Sol Preview: 1,137pts → Sol Ultra: 413pts → GPT-Live: 411pts → Grok 4.5: 276pts → Sol Launch: 229pts → SWE-1.7: 173pts
+Later retained scans reverse the comparison: the three-model basket crosses
+Uniqlo at 1,298 versus 1,291 in Scan 476. Stable HN records observed on
+2026-09-04 finish at Grok 776, GPT-Live 750, SWE-1.7 272, and Uniqlo 1,489.
+The model basket is then **1,798**, 309 points (20.8%) above Uniqlo. SWE-1.7
+item `48833866` was submitted at `2026-07-08T16:19:36Z` and hashes to
+`5116d04b…ffa57` at observation `08:25:00.782Z`; Uniqlo item `48829312` was
+submitted at `08:46:06Z` and hashes to `2dd018f5…6a25d` at
+`08:25:01.238Z`. The model items were roughly 7.5–9.2 hours younger than the
+comparator, reinforcing the exposure mismatch.
 
-The decay is **monotonically decreasing** regardless of vendor, model capability, or announcement timing. The ceiling is structural, not per-vendor.
+The reversal does not show that model attention is structurally advantaged
+either. It shows that the “one ceiling” conclusion depends on capture time and
+selection. A defensible category claim needs a predeclared sampling frame,
+matched exposure or score-at-age, comparison distributions rather than one
+hand-picked story, and an explicit outcome such as impressions or coded
+evaluation work. Audience saturation remains possible but unmeasured.
 
 ### 3. The Measurement Unit Problem
 
-RuBench (2607.06411) reports model substitution on 20% of one hors-concours task set and directly exposes one public rejection event. This is a conditional mechanism behind the Frozen Frontier:
+RuBench (2607.06411) reports model substitution on 20% of one hors-concours task set and directly exposes one public rejection event. This is a separate measurement-unit warning, not a demonstrated mechanism behind the HN counters:
 
 - **What's announced**: "Model X with capability Y"
 - **What's deployed**: Product Z, which may route to models A, B, or C depending on safeguards
@@ -176,7 +193,7 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 ## Tracked Metrics
 
 - **Foundations Turn**: SICP 338pts + Notes on Quality 157pts + Accretive Work 130pts = **625pts** (2.73× Sol). With Hayabusa2 (151pts) and NoiseLang (98pts) as comprehension-adjacent: **874pts** (3.82× Sol).
-- **Frontier models combined**: GPT-Live 411pts + Grok 4.5 276pts + SWE-1.7 173pts = **860pts** (~3.8× Sol). Less than Uniqlo alone (1,149pts).
+- **Selected frontier-model snapshot**: GPT-Live 411pts + Grok 4.5 276pts + SWE-1.7 173pts = **860pts** (~3.8× Sol), below Uniqlo's 1,149 at that unmatched capture; later scans reverse the ordering.
 - **Sovereignty stack**: ~5,075pts across 10 domains (22.2× Sol).
 - **SICP-Sol gap**: 109pts (47.6% premium). New ATH. Sixth consecutive scan of widening gap.
 - **Sol plateau**: 229pts. Sixth consecutive near-zero growth scan.
@@ -189,7 +206,7 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 
 1. **SICP will reach 2× Sol's score** (i.e., SICP ≥ 458pts) within 4 scans. Current trajectory: +29pts/scan vs Sol's +3pts/scan.
 2. **GitLost will cross 500pts** within 2 scans. Currently at 474pts, growing at ~10pts/scan.
-3. **Grok 4.5 will not exceed SICP** within 3 scans. Despite +103pt surge, structural ceiling below comprehension content.
+3. **FALSIFIED:** Grok 4.5 exceeds SICP within three retained scans (458 versus 343 in Scan 476); the proposed structural ceiling does not hold.
 
 ---
 

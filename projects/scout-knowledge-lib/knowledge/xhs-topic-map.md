@@ -8060,6 +8060,35 @@ and (7) byte/line compaction last. Select item 3 and test final item identities,
 the later crossing, denominator/selection limits, and alternative exposure
 explanations before retaining a category-wide conclusion.
 
+### Cycle 366 checkpoint — the selected basket crosses its claimed ceiling
+
+Seed-ordering commit `757ede92f039220832a6c358d1ba37f9d0a8d55d`
+preceded public retrieval. An exact-title HN Algolia lookup at
+`2026-09-04T08:24:51.509Z` resolved SWE-1.7 to item `48833866`; the 1,395-byte
+response hashes to `f9abcc56…59857c`. Firebase then pinned SWE-1.7 to 272
+points / 140 descendants (`5116d04b…ffa57`, `08:25:00.782Z`) and Uniqlo item
+`48829312` to 1,489 / 233 (`2dd018f5…6a25d`, `08:25:01.238Z`). Reusing the
+Cycle 365 Grok/GPT stable records gives a final selected model basket of
+776+750+272 = **1,798**, 309 points (20.8%) above Uniqlo after Scan 472 had
+reported 860 versus 1,149. Scan 476 already records the crossing at 1,298
+versus 1,291 and Grok exceeding SICP 458 to 343.
+
+The reversal falsifies the “one structural ceiling” and Grok-below-SICP
+prediction, but it does not prove a model-attention advantage. The model items
+were 7.5–9.2 hours younger than Uniqlo; capture time, selection, title/source,
+front-page exposure, and audience are unmatched. There is no category
+denominator, impression/rank history, coded preference, or evaluation-effort
+outcome. Confidence is high in identities, arithmetic, chronology, and the
+contradiction; low in category preference or reallocation inference.
+
+HN supplied the useful evidence. GitHub and arXiv made zero requests and retain
+Cycles 362/361; Reddit made zero requests and retains its trigger boundary.
+`RV-004` remains high/open at the absent protected outcome join. Next
+seed-first, audit Scan 472's adjacent claim that six cumulative SICP/Sol
+snapshots show “exponential divergence” and compounding comprehension: test
+stable identities, score-at-age and non-independence before preserving any
+growth-law or comprehension interpretation.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

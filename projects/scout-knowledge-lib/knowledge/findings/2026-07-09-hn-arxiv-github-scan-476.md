@@ -228,7 +228,7 @@ cannot supply the mechanism behind that result.
 
 Three frontier model announcements combined (GPT-Live 588pts + Grok 4.5 458pts + SWE-1.7 252pts = **1,298pts**) BARELY cross Uniqlo (1,291pts) for the first time: **+7pts (0.5%)**. This crossing is noise-level — within one scan's natural variance. The structural signal is that it took **three major model launches** to achieve approximate parity with a single craft/comprehension story.
 
-In Scan #472 (Frozen Frontier), frontier combined was 860pts vs Uniqlo 1,149pts (289pt deficit). The gap closed primarily through Grok 4.5 growth (+229pts across scans). But the *mechanism* of closing — requiring a third entrant (Grok) to achieve parity — confirms the Attention Decay Curve (#460): each individual model announcement arrives with diminishing attention, and only aggregation achieves what a single craft story achieves alone.
+In Scan #472 (Frozen Frontier), frontier combined was 860pts vs Uniqlo 1,149pts (289pt deficit). The gap closed primarily through Grok 4.5 growth (+229pts across scans). **Primary-review qualification (2026-09-04):** the reversal shows that the selected comparison is capture-time sensitive; it does not identify a closing mechanism or confirm an Attention Decay Curve. The stories have unmatched ages and exposure, and the basket has no predeclared category denominator or evaluation-effort outcome. Stable final records put the same three-model basket at 1,798 versus Uniqlo at 1,489, which likewise does not establish a model-attention advantage.
 
 **Prediction update**: Frontier combined will re-cross BELOW Uniqlo within 2 scans as individual models plateau and Uniqlo continues slow growth. The crossing is unstable.
 
