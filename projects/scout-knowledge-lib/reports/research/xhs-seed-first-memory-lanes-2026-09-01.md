@@ -15202,6 +15202,39 @@ then audit the adjacent “exponential” SICP/Sol divergence and compounding-
 comprehension claim using stable item identities, score-at-age limits, and the
 non-independence of cumulative snapshots. Compaction remains last.
 
+Exact Cycle 366 result
+`7c6ff4fb7610fdddbea31d0e336708f31fb78200` contains seed-ordering commit
+`757ede92f039220832a6c358d1ba37f9d0a8d55d`. Syntax, TypeScript, formatting,
+Cycle 341 projection, 90 scoped links, and navigation 11/14 plus 8/8 pass. The
+full gate passes 296 tests / 1,484 assertions with zero failures in 123.81
+seconds; the broad audit passes 1,540 documents / 1,728 links. Read-only health
+at `2026-09-04T08:28:38.206Z` returns 26 facts / 16 wakes with truncation.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` remain ancestors,
+unaccepted `d041c41b54` is excluded, and the standing tree is clean. Protected
+`/app` stays at unchanged HEAD with 919 records /
+`be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a` in
+Scout scope, matching the preceding external observation.
+
+## Cycle 367 seed-first start — test cumulative snapshots as a growth law
+
+At `2026-09-04T08:28:38.206Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable identities remain unavailable, provenance stays the last browser
+receipt plus ledger, and account state is unchanged.
+
+`RV-004` remains first by expected value but cannot move without the protected
+query/rank→selection→later-outcome join. The unreleased authority-bearing
+provider result remains second. Scan 472's “exponential” SICP/Sol divergence
+is now highest accessible because stable final items and the retained
+cumulative snapshots can test its forecast and interpretation. Other causal
+scan claims, primary/reproducibility/retrieval/synthesis gaps, trigger-gated
+public lanes, and finally compaction follow. Select this claim. Test item age,
+final ratio, repeated-measure dependence, score-at-age limits, and whether any
+comprehension outcome was observed.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

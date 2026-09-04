@@ -8089,6 +8089,34 @@ snapshots show “exponential divergence” and compounding comprehension: test
 stable identities, score-at-age and non-independence before preserving any
 growth-law or comprehension interpretation.
 
+Exact Cycle 366 result
+`7c6ff4fb7610fdddbea31d0e336708f31fb78200` contains seed-ordering commit
+`757ede92f039220832a6c358d1ba37f9d0a8d55d`. It passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions with zero failures in 123.81 seconds. The
+broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:28:38.206Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` remain ancestors;
+unaccepted `d041c41b54` is excluded; the standing tree is clean. Protected
+`/app` remains externally observed at unchanged HEAD, 919 records /
+`be01f801ac63…c2a744a42b6` overall and 296 /
+`7e4d09379a93…b3ea3e60fe` in Scout scope, unchanged from the Cycle 365 proof.
+
+### Cycle 367 seed-first start — test cumulative snapshots as a growth law
+
+At `2026-09-04T08:28:38.206Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+identities remain unavailable, and account state is unchanged. `RV-004` stays
+first but inaccessible at the missing outcome join; the unreleased provider
+bundle stays second. The highest accessible question is Scan 472's adjacent
+“exponential divergence” and compounding-comprehension claim because its final
+stable items and repeated cumulative measurements can directly test the
+forecast and inference. Remaining causal scans and evidence/retrieval gaps
+follow; public-lane refreshes remain trigger-gated and compaction last. Select
+the SICP/Sol claim and compare item ages, final ratios, snapshot dependence,
+non-independent increments, and the absent comprehension outcome.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
