@@ -953,23 +953,34 @@ Source: findings/2026-07-10-hn-arxiv-github-scan-457.md, https://arxiv.org/abs/2
 
 ### Layer 30: The Handoff Fallacy (Scan #459, 2026-07-10)
 
-The fourteen-point exit arc (#444–#457) provided conditions for governance at the component level. Layer 30 reveals that component-level governance, however sophisticated, misses the structural site of failure: the handoff between components.
+The fourteen-point exit arc (#444–#457) provided conditions for governance at
+the component level. Layer 30 adds the handoff between components as a
+candidate failure surface that component outcomes alone cannot rule out.
 
-**The handoff mechanism**: Two uncovered papers converge from opposite ends (meta-analysis and experimental robotics) to the same conclusion: verification of components in isolation systematically misses the transition states where failure actually occurs.
+**The handoff hypothesis**: Two papers motivate transition-state evaluation
+from a narrative synthesis and a small robotics pilot. They do not establish
+that component verification systematically misses where failure occurs.
 
 - **Beyond the Leaderboard: A Synthesis of Tool-Use, Planning, and Reasoning Failures in Large Language Model Agents** (2607.05775, primary-reviewed): Reports a narrative 27-paper/19-benchmark synthesis and six-cluster taxonomy, but no reproducible search, corpus manifest, independent coding, or pooled analysis. The authors label nonlinear compounding, non-composability, and uneven scaffolding returns as candidate structural properties and do not reverify source results. It is a useful retrieval map, not proof that handoffs are the primary failure site or a quantified failure law.
 
-- **Diagnosing Semantic Handoff Failures in Agent-Orchestrated Vision-Language-Action Skill Composition** (2607.06256): Studies the boundary between consecutive skills in long-horizon robotic tasks (BEHAVIOR-1K). Skills achieve **77–100% success** from clean skill-boundary snapshots but composed rollouts from **chained states** (the terminal state of the previous skill) frequently stall. Execution traces attribute failures to next-skill readiness, target grounding, and low-level control — the handoff, not the component. Key structural insight: **clean demonstrations systematically underrepresent the messy chained-state distribution** where production operates.
+- **Diagnosing Semantic Handoff Failures in Agent-Orchestrated Vision-Language-Action Skill Composition** (2607.06256, primary-reviewed): Reports 90/104 clean-snapshot successes across seven measured skills and 19.5% mean reference-plan progress over 30 composed rollouts. It does not report matched chained per-skill success. Its 130 verifier-labeled failures come from one representative round; an arm-reach verifier recovers 1/10 tasks versus 0/10 while also inducing 25 more navigation attempts. This is preliminary evidence that readiness-aware recovery can help one rollout, not an estimate that handoffs dominate failure.
 
-**The Handoff Fallacy**: The assumption that if each component works in isolation, the system works in composition. The fallacy is structural: training and evaluation systematically exclude the transition states where failure occurs. Component-level verification creates component-confidence, but the system needs **handoff-confidence** — verification that the terminal state of component N meets the preconditions of component N+1.
+**The Handoff Fallacy**: The unsupported assumption that component success
+guarantees system success. The retained engineering condition is to measure
+whether component N's terminal state meets component N+1's preconditions,
+using matched endpoints rather than inferring the effect from component and
+task metrics with different denominators.
 
-**Connection to the Composition Surface (#447)**: The Composition Surface identified that risk lives in the composition between actions. The Handoff Fallacy provides the mechanism (postcondition-precondition mismatch) and the evaluation failure (clean-snapshot bias). Together: the Composition Surface says *where* to look; the Handoff Fallacy says *what you'll find when you look there* and *why current evaluation can't see it*.
+**Connection to the Composition Surface (#447)**: The Composition Surface
+identifies composition as a risk surface. The Handoff Fallacy supplies a testable
+postcondition-precondition hypothesis, not proof of what every evaluation will
+find or why it missed it.
 
 **Connection to the Comprehension Compound (#458)**: HN's Foundations Turn (856pts) vs GPT-5.6 Sol (178pts) — a 4.8× ratio — can be read as the community's intuitive recognition that understanding how components connect (comprehension) matters more than acquiring new components (novelty). The GitLost surge (+131.6%) shows what happens when the handoff between approval and execution is exploited in production.
 
 **Fifteen-point exit arc**:
 1–14: (#444–#457)
-15. **Handoff Fallacy (#459): Verify transition states between components, not just component outcomes; evaluate from chained states, not clean snapshots (handoff condition)**
+15. **Handoff Fallacy (#459): Verify transition states as well as component and system outcomes; compare matched clean/chained endpoints before attributing a gap (handoff condition)**
 
 Source: findings/2026-07-10-hn-arxiv-github-scan-459.md, https://arxiv.org/abs/2607.05775, https://arxiv.org/abs/2607.06256
 

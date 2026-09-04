@@ -14796,6 +14796,60 @@ compaction. Select `2607.06256`. Audit clean and chained denominators,
 per-skill success, readiness labels, controls, uncertainty, and attributable
 public artifacts before retaining the mechanism.
 
+## Cycle 361 checkpoint — good components and weak tasks do not identify the gap
+
+Seed-ordering commit `5f0dcb77a1038c81b54f5ee43963d1b2482ba046`
+precedes source work. At `2026-09-04T07:49:27.013Z`, arXiv supplied current
+`2607.06256v2` metadata and PDF. Table I has 90/104 clean-snapshot successes
+across seven measured skills; `press` is unmeasured and the selected 77–100%
+abstract range omits `close_door` at 4/6. The composed result uses different
+endpoints: single-annotator reference-plan progress over 30 task rollouts
+(mean 19.5%) and a near-zero but unenumerated official task outcome. Although
+the paper says checkpoint groups, scenes, and instances are held fixed, no
+reported table exposes chained success for the same skills, per-instance
+clean/chained pairs, or uncertainty for that contrast. It demonstrates a
+skill-to-task gap; it does not estimate the initial-state-distribution effect.
+
+One representative ten-rollout round contains 232 attempts, 100 successes,
+132 failures, and 196 verifier calls. Two verifier-side cases are excluded;
+the other 130 are labeled control/commit 58, target grounding 37, and readiness
+35 from structured verifier reasons. Those categories are model-derived
+diagnostics, not human-ground-truth causes or population rates. A matched
+arm-reach verifier comparison changes tasks solved from 0/10 to 1/10 and mean
+task score from 0.01 to 0.10, while navigation attempts rise from 74 to 99 and
+failed attempts from 115 to 130. This is directional evidence that a stricter
+readiness condition plus its induced re-navigation can recover one radio
+rollout, but one round gives no repeated-run uncertainty and cannot separate
+the readiness rule from extra retry exposure. Postcondition-only versus an
+explicit next-skill predicate, no-recovery versus replanning, cadence, and an
+oracle boundary reset remain proposed rather than run.
+
+Two authors independently assessed sampled verifier-declared failures. They
+agreed on 90% of non-unclear items and confirmed 20/21 consensus-adjudicated
+failures. The paper omits the selection denominator, and this audit covers the
+binary failure call rather than the cause labels. It supports a useful check,
+not the stronger “almost never” claim or calibrated taxonomy rates.
+
+The 3,226-byte Atom record is `d9f8f225…997b`; the 4,342,666-byte PDF is
+`ffdc76ce…22df`; and the 3,538,398-byte source archive is
+`333619ef…32b`. The source tree is byte-identical to v1 (`8dc811dc…f167`)
+and contains manuscript tables/figures but no raw traces, videos, code,
+checkpoints, annotations, or analysis. A complete GitHub title search at
+`2026-09-04T07:50:24.231Z` returned four bibliography/feed repositories and
+no attributable companion (`cf160aaf…b0ff`). ArXiv supplied the useful primary
+evidence; GitHub supplied bounded absence evidence. Reddit makes zero requests
+and retains its relevant-thread/access trigger. Confidence is high for table
+transcription, moderate that chained-state robustness contributes in this
+harness, and low for the effect size, causal share, prevalence, or generality.
+Revisit on raw traces/annotations, chained per-skill pairs, repeated matched
+ablations, an explicit next-skill predicate, or an attributable repository.
+
+`RV-004` remains high/open because no protected query/rank -> selection ->
+later-outcome join changed. Next seed-first, audit Scan #458's GitLost primary
+incident evidence: distinguish a GitHub-hosted repository/MCP attack from a
+breach of GitHub's own agent, identify demonstrated authority and data flow,
+and retain only supported production claims.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

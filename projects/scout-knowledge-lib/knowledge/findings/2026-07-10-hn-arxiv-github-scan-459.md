@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #459 (2026-07-10), partly qualified. Beyond the Leaderboard (2607.05775) reports a 27-paper/19-benchmark narrative synthesis and six-cluster taxonomy, but supplies no reproducible search, corpus manifest, independent coding, or pooled analysis. It labels nonlinear compounding, non-composability, and uneven scaffolding returns as candidate structural properties and does not independently verify source results. It supports a useful organizing frame, not proof that handoffs are the primary failure site or a quantified multiplicative law. Semantic Handoff (2607.06256) remains primary-unreviewed. HN and GitHub counters remain discovery signals."
+summary: "HN/arXiv/GitHub Scan #459 (2026-07-10), qualified. Beyond the Leaderboard (2607.05775) is a narrative synthesis without a reproducible corpus or pooled analysis. Semantic Handoff (2607.06256) reports strong clean-snapshot skill scores beside weak composed-task progress, but does not publish a matched clean-versus-chained per-skill result table. Its 30-rollout progress summary and one representative-round failure taxonomy support a preliminary handoff hypothesis, not an effect size or proof that handoffs dominate. Neither paper establishes a universal failure law; HN and GitHub counters remain discovery signals."
 triggers: ["handoff fallacy", "composition failure", "component success end-to-end failure", "handoff gap", "transition state", "chained state failure", "clean snapshot bias", "beyond the leaderboard", "failure taxonomy", "failure clusters", "nonlinear failure compounding", "semantic handoff", "skill composition failure", "postcondition precondition mismatch", "VLA composition", "component-level evaluation", "scan 459"]
-source_basis: "arXiv 2607.05775v1 PDF primary-reviewed 2026-09-04; bounded GitHub repository search found no title match or companion artifact. arXiv 2607.06256 remains primary-unreviewed. Original HN and GitHub counters are discovery signals. Cross-referenced with Comprehension Compound (#458), Composition Surface (#447), Execution Boundary (#453), Oversight Inversion (thesis)."
+source_basis: "arXiv 2607.05775v1 PDF and 2607.06256v2 PDF/source archive primary-reviewed 2026-09-04. Bounded GitHub repository searches located no attributable companion implementation or raw result artifact. Original HN and GitHub counters are discovery signals. Cross-referenced with Comprehension Compound (#458), Composition Surface (#447), Execution Boundary (#453), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #459: The Handoff Fallacy
@@ -12,13 +12,14 @@ source_basis: "arXiv 2607.05775v1 PDF primary-reviewed 2026-09-04; bounded GitHu
 
 ## Theme
 
-Components pass. Handoffs fail. And current evaluation is blind to the difference.
+Components can pass while composed systems fail; the location and cause of the
+gap require matched evidence.
 
 The original scan read two arXiv papers as converging on a structural finding
-that extends the Composition Surface (#447). Primary review of the first paper
-supports a candidate cross-literature pattern, not the claim that handoffs are
-the **primary site of failure** or that existing evaluation is categorically
-incapable of detecting it.
+that extends the Composition Surface (#447). Primary review of both papers
+supports a candidate pattern and a small robotic pilot, not the claim that
+handoffs are the **primary site of failure** or that existing evaluation is
+categorically incapable of detecting it.
 
 ### Paper 1: Beyond the Leaderboard (2607.05775) — The Failure Taxonomy [PRIMARY-REVIEWED, QUALIFIED]
 
@@ -91,32 +92,103 @@ universal nonlinear law, handoff primacy, or intervention-general scaffolding
 effect. Revisit on a protocol/corpus artifact, independent recoding, formal
 meta-analysis, or a revised source with study-level traceability.
 
-### Paper 2: Semantic Handoff Failures (2607.06256) — The Mechanism
+### Paper 2: Semantic Handoff Failures (2607.06256) — The Pilot Mechanism [PRIMARY-REVIEWED, QUALIFIED]
 
-Where "Beyond the Leaderboard" names the pattern, Semantic Handoff provides the **mechanism**. In long-horizon robotic tasks (BEHAVIOR-1K), the boundary between consecutive skills is rarely explicit:
+Where "Beyond the Leaderboard" names a pattern, Semantic Handoff proposes and
+instruments one **candidate mechanism** in long-horizon BEHAVIOR-1K robotic
+tasks:
 
 - A skill satisfies its own postcondition while leaving the system in a state from which the **next skill cannot reliably start**
-- Selected navigation, grasping, placement, and door-opening skills achieve **77–100% success** from clean skill-boundary snapshots
-- But composed rollouts from **chained states** (the terminal state of the previous skill) frequently stall
-- Execution traces attribute failures to: **next-skill readiness** (precondition not met), **target grounding** (object not where expected), and **low-level control** (accumulated drift)
+- Selected navigation, grasping, placement, and door-opening skills achieve **77–100% success** from clean skill-boundary snapshots; all seven measured skills total 90/104, while `close_door` is below the selected range at 4/6
+- Thirty composed rollouts average 19.5% of a reference plan, but the paper does not report chained per-skill success or a paired clean/chained effect
+- One representative ten-rollout round attributes 130 failed attempts to **next-skill readiness**, **target grounding**, and **control execution** using verifier-generated labels
 
-The key structural insight: **clean demonstrations systematically underrepresent the messy chained-state distribution.** Training data shows skills starting from ideal states. Production shows skills starting from whatever the last skill left behind.
+The supported insight is narrower: clean-snapshot skill scores did not predict
+strong composed-task performance in this pilot, and chained starts are a
+plausible contributor. The released tables do not isolate initial-state
+distribution from different endpoints, agent recovery, budgets, verification,
+or task composition.
 
-This is the Handoff Fallacy: the assumption that if each component works in isolation, the system works in composition. The fallacy is structural, not incidental — training and evaluation systematically exclude the transition states where failure actually occurs.
+This is evidence against assuming that component success guarantees system
+success. It does not establish that training and evaluation generally exclude
+transition states or that the observed failures are structurally dominated by
+handoffs.
 
 Source: https://arxiv.org/abs/2607.06256
 
+#### Cycle 361 primary review (2026-09-04)
+
+Table I reports clean-snapshot outcomes for seven measured skills: 90/104
+successes overall, with individual denominators from 6 to 35. `press` is not
+tested, and the abstract's selected 77–100% range omits `close_door` at 4/6.
+The paper says scenes, instances, and checkpoint groups are held fixed, but
+the reported composed endpoint is different: Table II gives single-annotator
+reference-plan progress for three instances of each of ten tasks (30 rollouts,
+mean 19.5%), while official task-predicate success is described only as “near
+zero.” No table exposes chained success for the same skills, per-instance
+clean/chained pairs, or an uncertainty interval for that contrast. The
+released evidence therefore shows a skill-to-task gap, not the magnitude of a
+clean-to-chained initial-state effect.
+
+The detailed taxonomy covers one representative round: 232 attempts across
+ten task rollouts, 100 successful attempts, 132 failed attempts, and 196 VLM
+verifier calls. Two verifier-side failures are excluded; the remaining 130 are
+labeled control/commit 58, target grounding 37, and readiness 35. These are
+verifier-derived diagnostic labels rather than human-ground-truth causes, and
+the paper does not map them back to clean/chained outcomes for each skill.
+
+The only reported matched intervention changes the navigation verifier from
+reached-area to arm-reach on the same ten tasks, instances, and checkpoints.
+It changes solved tasks from 0/10 to 1/10 and mean task score from 0.01 to 0.10,
+while navigation attempts rise from 74 to 99 and total failed attempts from
+115 to 130. This is useful directional evidence that a stricter readiness
+condition can trigger productive re-navigation in one radio rollout, but one
+round supplies no repeated-run uncertainty and does not separate the criterion
+from its extra retry/recovery exposure. Postcondition-only versus an explicit
+next-skill predicate, no-recovery versus replanning, verifier cadence, and an
+oracle boundary reset are all future work.
+
+Two authors reviewed a sample of verifier-declared failures: 20/21 consensus-
+adjudicated cases were real failures with 90% agreement on non-unclear items.
+The selection denominator is not reported; the sample is small and audits the
+binary failure decision, not the three cause labels. It cannot justify the
+paper's stronger “almost never” phrasing or calibrated cause rates.
+
+At `2026-09-04T07:49:27.013Z`, arXiv supplied a 3,226-byte v2 Atom record
+(`d9f8f225…997b`) and a 4,342,666-byte PDF (`ffdc76ce…22df`). The 3,538,398-
+byte v2 source archive (`333619ef…32b`) contains manuscript tables and figures
+but no raw traces, videos, code, checkpoints, annotation records, or analysis.
+Its complete file tree is byte-identical to v1 (`8dc811dc…f167`). A bounded,
+non-truncated GitHub title search at `07:50:24.231Z` returned four bibliography
+or feed repositories and no author-attributable companion artifact
+(`cf160aaf…b0ff`). Confidence is high for reported-table transcription,
+moderate that chained-state robustness is one contributor in this harness,
+and low for its effect size, causal share, prevalence, or generality. Revisit
+on raw traces and annotations, chained per-skill pairs, repeated matched
+ablations, an explicit readiness predicate, or an attributable repository.
+
 ### Convergence: The 30th Layer of the Oversight Inversion
 
-The Composition Surface (#447) identified that risk lives in the composition between actions. The Handoff Fallacy extends this with the mechanism and the evaluation failure:
+The Composition Surface (#447) identified that risk can live in composition
+between actions. The two papers extend this with hypotheses and a preliminary
+instrumented case, not a general mechanism estimate:
 
-**The Handoff Fallacy** — Verification that examines components in isolation (benchmarks, unit tests, skill evaluations) operates on the clean-snapshot distribution. But production operates on the chained-state distribution. The gap between these distributions is where failure occurs, and current evaluation is structurally blind to it because it evaluates components from clean initial states.
+**The Handoff Fallacy, qualified** — Verification that examines components in
+isolation can miss composition and transition-state failures. This pilot shows
+that good clean-snapshot scores can coexist with weak composed outcomes; it
+does not quantify the clean/chained gap or prove that current evaluation is
+structurally blind to it.
 
-This is the 30th layer of the Oversight Inversion: **component-level verification creates confidence that does not transfer to system-level behavior, because the handoff between components is the unverified gap between verified pieces.**
+The retained 30th layer of the Oversight Inversion is narrower:
+**component-level verification does not by itself establish system behavior,
+and handoffs are one additional surface that needs explicit evidence.**
 
 **Fifteen-point exit arc**: Comprehension (#444) + Restraint (#445) + Predicate Gate (#446) + Composition Surface (#447) + Architecture Premium (#448) + Subtraction Economy (#449) + Knowledge Erosion (#450) + Verification Harness (#451) + Co-Evolution Imperative (#452) + Execution Boundary (#453) + Write Contract (#454) + Dispersion Collapse (#455) + Claim-Verification Surface (#456) + Variance Signal (#457) + **Handoff Fallacy (#459)**.
 
-**Handoff condition**: Verify transition states between components, not just component outcomes. Evaluate from chained states, not clean snapshots. The unit of verification is the handoff, not the component.
+**Handoff condition**: Evaluate transition states as well as component
+outcomes, and report matched clean/chained endpoints before attributing the
+gap. The handoff is an additional unit of verification, not a replacement for
+component and system outcomes.
 
 ---
 
@@ -212,13 +284,17 @@ This is the 30th layer of the Oversight Inversion: **component-level verificatio
 
 ## Synthesis: Why the Handoff Fallacy Matters
 
-The Handoff Fallacy is not just an academic finding — it's the structural explanation for why agent systems fail in production despite passing benchmarks:
+The Handoff Fallacy is a useful hypothesis for why some agent systems fail in
+composition despite passing component benchmarks:
 
-1. **Clean snapshots may miss chained-state failures**. This mechanism is
-attributed to Semantic Handoff, not demonstrated by Beyond the Leaderboard;
-its prevalence remains pending primary review of `2607.06256`.
+1. **Clean snapshots may miss chained-state failures**. Semantic Handoff
+supports this as a plausible mechanism in one pilot, but reports no matched
+per-skill chained denominator or clean/chained effect size.
 
-2. **Production runs from chained states** (Semantic Handoff). Each component receives the messy output of the previous component, not the clean input the benchmark used. A 77–100% skill becomes a near-zero skill when started from a non-ideal state.
+2. **Composed execution includes chained states** (Semantic Handoff). The
+paper's 77–100% selected clean skills and near-zero task outcome use different
+units and success criteria; it does not show that an individual skill becomes
+near-zero solely because its start state changed.
 
 3. **Nonlinear compounding is a candidate pattern** (Beyond the Leaderboard).
 The narrative synthesis joins heterogeneous results but does not estimate an

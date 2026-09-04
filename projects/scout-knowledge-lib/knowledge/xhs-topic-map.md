@@ -7708,6 +7708,46 @@ compaction. Select `2607.06256`. Audit clean and chained denominators,
 per-skill success, readiness labels, controls, uncertainty, and attributable
 public artifacts before retaining the mechanism.
 
+### Cycle 361 checkpoint — the pilot does not expose a chained-skill effect
+
+Seed-ordering commit `5f0dcb77a1038c81b54f5ee43963d1b2482ba046`
+precedes source work. At `2026-09-04T07:49:27.013Z`, arXiv supplied current
+`2607.06256v2` metadata and PDF. Table I has 90/104 clean-snapshot successes
+across seven measured skills; `press` is unmeasured and the selected 77–100%
+abstract range omits `close_door` at 4/6. The composed result uses different
+endpoints: single-annotator reference-plan progress over 30 task rollouts
+(mean 19.5%) and a near-zero but unenumerated official task outcome. There is
+no reported chained per-skill denominator, paired clean/chained table, or
+uncertainty interval for that contrast. The evidence supports a skill-to-task
+gap and a plausible chained-state mechanism, not its isolated effect size.
+
+One representative ten-rollout round contains 232 attempts, 100 successes,
+132 failures, and 196 verifier calls. After excluding two verifier-side cases,
+the model-derived taxonomy counts control/commit 58, target grounding 37, and
+readiness 35; it is diagnostic rather than human-ground-truth attribution. A
+same-task arm-reach comparison moves solved tasks from 0/10 to 1/10 while
+navigation attempts rise 74 to 99 and failures 115 to 130. It shows one useful
+readiness-aware recovery but has no repeated-run uncertainty and does not
+separate the criterion from extra retry exposure. The 20/21 human audit covers
+binary failure calls, not cause labels, with no reported sampling denominator.
+
+The 3,226-byte Atom record is `d9f8f225…997b`; the 4,342,666-byte PDF is
+`ffdc76ce…22df`; and the 3,538,398-byte source archive is
+`333619ef…32b`. The source tree is byte-identical to v1 (`8dc811dc…f167`)
+and contains manuscript tables/figures but no raw traces, videos, code,
+checkpoints, annotations, or analysis. A complete GitHub title search at
+`2026-09-04T07:50:24.231Z` returned four bibliography/feed repositories and
+no attributable companion (`cf160aaf…b0ff`). Reddit makes zero requests and
+retains its relevant-thread/access trigger. Confidence is high for table
+transcription, moderate that chained-state robustness contributes in this
+harness, and low for the effect size, causal share, prevalence, or generality.
+Revisit on raw traces/annotations, chained per-skill pairs, repeated matched
+ablations, an explicit next-skill predicate, or an attributable repository.
+`RV-004` remains high/open. Next seed-first, audit Scan #458's GitLost primary
+incident evidence: distinguish a GitHub-hosted repository/MCP attack from a
+breach of GitHub's own agent, identify demonstrated authority and data flow,
+and retain only supported production claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
