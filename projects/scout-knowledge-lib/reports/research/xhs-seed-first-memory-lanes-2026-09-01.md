@@ -13490,6 +13490,44 @@ query/rank -> selection -> later-outcome join. Next seed-first, then choose the
 highest-ranked remaining claim with an identifiable cross-system metric or
 released output rather than another unbound author comparison.
 
+Exact Cycle 346 material `13e864209adb8bd9f3bfc3583e931af868608ef5`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at
+296 tests / 1,484 assertions with zero failures in 107.17 seconds. The broad
+audit passes 1,540 tracked Markdown documents / 1,728 local prose links with
+zero errors. Read-only health at `2026-09-04T05:48:07.216Z` returns 26 facts,
+16 wakes, and `truncated:true`. Accepted
+`ff923ccde428270db699aefe4c38c2a9a51e3314` and historical
+`f26bd4f3a590b59d241536326199e805777df1be` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains excluded. Standing
+status, `.goal-runtime`, and App runtime state are empty.
+
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 NUL records /
+`00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`
+overall and an unchanged 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
+in Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 347 seed-first start — match AIM's Mem0 comparison
+
+At `2026-09-04T05:48:14.641Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 48 minutes old and remains inside the six-hour
+cadence. This bounded reconciliation makes zero XHS requests. Added/changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+seeds remain unavailable, exact ledger row 341 remains provenance, and no
+account state changes.
+
+Re-rank the complete queue: (1) high/open `RV-004`, inaccessible without a
+protected query/rank -> selection -> later-outcome join; (2) Memory in the
+Loop's unreleased authority-bearing result; (3) AIM-to-Mem0 benchmark
+comparability, highest accessible because cited primary `2504.19413` may expose
+the LoCoMo score, model, judge, and artifact identity hidden by AIM's 49.8%
+claim; (4) other primary, contradiction, reproducibility, retrieval, and
+synthesis gaps; (5) Reddit until a relevant-thread/access trigger; and (6)
+compaction. Public lanes and accepted refs make zero requests/checks in this
+seed record. Commit this ordering before retrieving Mem0 evidence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -6774,6 +6774,36 @@ this evidence correction has no protected query/rank -> selection -> later-
 outcome join. Next seed-first, then test the highest-ranked remaining promoted
 claim with an identifiable cross-system metric or released output.
 
+Exact Cycle 346 material `13e864209adb8bd9f3bfc3583e931af868608ef5`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 107.17 seconds. The broad audit passes 1,540
+tracked Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T05:48:07.216Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` are ancestors; unaccepted
+`d041c41b54` remains excluded. Standing status and both runtime surfaces are
+empty. Protected `/app` remains externally observed at `386b445c…1fec8`, 386
+/ `00bcc281…c5ed4` overall and an unchanged 296 / `a430d0c9…2f7e` in Scout
+scope. This worker wrote or tested neither protected surface.
+
+### Cycle 347 seed-first start — match AIM's Mem0 comparison
+
+At `2026-09-04T05:48:14.641Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 48 minutes old and remains inside the six-hour
+cadence. Make zero XHS requests: additions/changes remain unknown, observed
+removals remain `[]`, all 132 durable seeds remain unavailable, exact ledger
+row 341 remains provenance, and no account state changes.
+
+Expected knowledge value now ranks (1) high/open `RV-004`, inaccessible
+without a protected query/rank -> selection -> later-outcome join; (2) Memory
+in the Loop's unreleased authority-bearing result; (3) AIM-to-Mem0 benchmark
+comparability, highest accessible because cited primary `2504.19413` may expose
+the LoCoMo score, model, judge, and artifact identity hidden by AIM's 49.8%
+claim; (4) other primary, contradiction, reproducibility, retrieval, and
+synthesis gaps; (5) Reddit until a relevant-thread/access trigger; and (6)
+compaction. Public lanes and accepted refs make zero requests/checks in this
+seed record. Commit this ordering before retrieving Mem0 evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
