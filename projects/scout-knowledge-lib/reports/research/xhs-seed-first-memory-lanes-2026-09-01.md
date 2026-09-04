@@ -13594,6 +13594,31 @@ this worker. The combined Scout scope remains unchanged at 296 records /
 `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
 This worker wrote or tested neither protected surface.
 
+## Cycle 348 seed-first start — identify AIM's full-dialogue comparator
+
+Cycle 348 begins from clean validated checkpoint
+`55920657a9112c42529896a5b6be1c31774812d3`. At
+`2026-09-04T05:58:45.576Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 59 minutes old and remains inside the six-hour
+cadence. This bounded reconciliation makes zero XHS requests: added and changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+seeds remain unavailable, exact ledger row 341 remains provenance, and no
+account state changes.
+
+Expected knowledge value ranks the complete accessible queue: (1) high/open
+`RV-004`, still inaccessible because the protected post-August-31 record lacks
+the query/rank -> selection -> later-outcome join needed for retained outcome
+evidence; (2) Memory in the Loop's unreleased authority-bearing result, blocked
+at the missing provider artifact; (3) AIM's “full dialogue” comparator, highest
+accessible because the retained paper and public LoCoMo baselines may identify
+or refute the comparison class behind a promoted capability claim; (4) other
+primary-evidence, contradiction, reproducibility, retrieval, and synthesis
+gaps; (5) Reddit until a relevant-thread or access trigger; and (6) byte/line
+compaction. Select item 3 because it can qualify a user-facing claim with
+primary evidence, while compaction cannot advance RV-004 or benchmark truth.
+GitHub, arXiv, Reddit, and accepted refs make zero requests/checks in this seed
+record. Commit this ordering before retrieving comparator evidence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

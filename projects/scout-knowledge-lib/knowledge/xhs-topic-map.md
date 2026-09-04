@@ -6851,6 +6851,26 @@ runtime state are empty. Protected `/app` remains externally observed at
 `a430d0c9…2f7e` in Scout scope. This worker wrote or tested neither protected
 surface.
 
+### Cycle 348 seed-first start — identify AIM's full-dialogue comparator
+
+Cycle 348 begins from clean validated checkpoint `55920657a9`. At
+`2026-09-04T05:58:45.576Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, exact ledger row 341 remains provenance, and
+no account state changes.
+
+Re-rank the complete queue: (1) high/open `RV-004`, inaccessible without the
+protected query/rank -> selection -> later-outcome join; (2) Memory in the
+Loop's unreleased provider artifact; (3) AIM's “full dialogue” comparator,
+highest accessible because retained/public primary evidence may identify the
+comparison class behind a promoted claim; (4) other primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until a relevant
+trigger; and (6) compaction. Select item 3: qualifying benchmark truth has more
+expected knowledge value than another byte/line reduction. Public lanes and
+accepted refs make zero requests/checks in this seed record. Commit this
+ordering before retrieval.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
