@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through post-disposition Cycle 370 tip 71356a70df5b54813a96f6f78827a3555cd47bb2: Cycles 334-369 narrow research and attention claims; Cycle 370 correctly exposes incomplete ATP principal binding, RV-034 remains high/open at the external artifact boundary, and RV-004 remains high/open."
+summary: "Independent Scout review cursor through interrupted Cycle 371 receipt tip 3ab181efae8a9130bcd92b280d1b750c0116407d: the receipt truthfully quarantines retrieval without synthesis, the ordered Cycle 370 reviewer chain is integrated exactly, and RV-004/RV-034 remain high/open."
 triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "repair budget", "discrete concavity", "architecture premium", "market estimate", "feedback loop", "causal identification", "observability erosion", "fault signal rate", "TraceProbe", "Knowledge Debt", "AgentTether", "LogicHunter", "StateFuse", "PatchOptic", "PatchBench", "maintenance asymmetry", "benchmark boundary", "CXI", "fixed-policy admission", "mediated sink", "safe task completion", "RuBench", "model substitution", "runtime contamination", "executing-model validation", "Danus", "fact graph", "informal LLM verifier", "dangling predecessor", "PerformanceBench", "AIM", "AgentEval", "AgentLens", "SkillReranker", "Pitwall", "GitLost", "CAGE-1", "ATP", "principal binding", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022", "RV-023", "RV-024", "RV-025", "RV-026", "RV-027", "RV-028", "RV-029", "RV-030", "RV-031", "RV-032", "RV-033", "RV-034"]
 last_updated: "2026-09-04"
-source_basis: "Exact 81-commit standing range 6e74f365b07131e473881f7b66212b0762257470..71356a70df5b54813a96f6f78827a3555cd47bb2 and every changed Scout document; material/seed/validation ordering for Cycles 334-370; independent pinned-source spot checks including Mnemosyne ATP runtime adapter/repository paths; exact post-disposition successor and historical reviewer-range patch/tree comparison; claim/source, comparison, uncertainty, contamination, duplication, usability, access, cost, rollback, productivity, RV-004, and RV-024-RV-034 review; independent current-tip syntax, types, formatting, projection, scoped links, navigation, full test gate, health, final diff, and protected-worktree preservation checks. Earlier cursor evidence remains retained below."
+source_basis: "Exact two-commit standing range b76d6c0737472565db26505d0b2b8e09777ba8eb..3ab181efae8a9130bcd92b280d1b750c0116407d and both changed Scout documents; ordered exact-ancestor proof for reviewer commits bb2daa3213161e1b43b0bd45b541f67de0b9adbc, e8b91a8963bf81d08fc54f3334c87fbe1026c6cf, and b76d6c0737472565db26505d0b2b8e09777ba8eb; independent retained-artifact hash, size, byte-identity, and extraction-count verification; full standing-rubric review of the quarantined receipt; independent current-tip diff, scoped links, navigation, read-only health, and worktree-preservation checks. Earlier cursor evidence remains retained below."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact 81-commit standing range 6e74f365b07131e473881f7b66212b0762
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `71356a70df5b54813a96f6f78827a3555cd47bb2`
+  `3ab181efae8a9130bcd92b280d1b750c0116407d`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -160,13 +160,29 @@ source_basis: "Exact 81-commit standing range 6e74f365b07131e473881f7b66212b0762
   `6e74f365b07131e473881f7b66212b0762257470` (Cycle 333 validation and Cycle 334 seed),
   `0dabc5636352ee0f40f78fdf43b98adbd15445d1` (Cycle 369 validation and Cycle 370 seed),
   `6b07f569b38d1644a7044683a51c86efe84bd4e7` (Cycle 370 material), and
-  `71356a70df5b54813a96f6f78827a3555cd47bb2` (Cycle 370 validation and reviewer-range disposition).
+  `71356a70df5b54813a96f6f78827a3555cd47bb2` (Cycle 370 validation and reviewer-range disposition),
+  `bb2daa3213161e1b43b0bd45b541f67de0b9adbc` (reconciled Cycle 370 reviewer material),
+  `e8b91a8963bf81d08fc54f3334c87fbe1026c6cf` (Cycle 333 carry-forward review status),
+  `b76d6c0737472565db26505d0b2b8e09777ba8eb` (Cycle 370 reviewer disposition),
+  `1b48ab164ff637cab35f99dd4d307b9490efe674` (Cycle 371 seed), and
+  `3ab181efae8a9130bcd92b280d1b750c0116407d` (Cycle 371 interrupted retrieval receipt).
 - Newly reviewed exact standing span:
-  `6e74f365b07131e473881f7b66212b0762257470..71356a70df5b54813a96f6f78827a3555cd47bb2`
-  (81 linear commits, Cycles 334-370, 31 Scout documentation files,
-  +7,976/-708 lines).
-- Review date: `2026-09-04T17:05:36+08:00`
-- Overall disposition: **accept Cycles 334-369 as bounded evidence corrections; accept Cycle 370's documentation and exact-child validation; revise the producer's blanket supersession of the historical reviewer material because RV-024-RV-033 still contain applicable corrections; keep RV-034 high/open against the external ATP runtime and RV-004 high/open. Production may resume after integrating the current reviewer correction range.**
+  `b76d6c0737472565db26505d0b2b8e09777ba8eb..3ab181efae8a9130bcd92b280d1b750c0116407d`
+  (2 linear commits, Cycle 371 seed plus interrupted receipt, 2 Scout
+  documentation files, +76/-0 lines).
+- Review date: `2026-09-04T17:39:02+08:00`
+- Overall disposition: **accept the Cycle 371 interrupted receipt. It records
+  only bounded retrieval, reproduces against the retained artifacts, admits no
+  AGL-1 synthesis or behavior/productivity claim, and keeps normal research
+  paused for independent review. The ordered Cycle 370 reviewer chain is now
+  integrated exactly. RV-004 and RV-034 remain high/open; neither is changed
+  by a retrieval-only receipt. Production may resume from exact clean tip
+  `3ab181efae8a9130bcd92b280d1b750c0116407d`.**
+
+  The prior Cycle 334-370 disposition remains retained below: those bounded
+  evidence corrections and Cycle 370 documentation are accepted, while the
+  historical blanket-supersession error was corrected by the now-integrated
+  reviewer chain.
   The span improves correctness by replacing causal, universal, or population
   claims with study-specific evidence and explicit non-claims. It does not
   change Scout behavior, a frozen evaluator, authority, or protected outcomes.
@@ -2275,7 +2291,76 @@ source_basis: "Exact 81-commit standing range 6e74f365b07131e473881f7b66212b0762
   reversible in reverse commit order; the reviewer corrections are a separate
   three-commit ordinary-revert boundary.
 
+### Cycle 371 interrupted receipt exact review
+
+- Exact producer source `b76d6c0737472565db26505d0b2b8e09777ba8eb`
+  advances through seed `1b48ab164ff637cab35f99dd4d307b9490efe674`
+  to receipt `3ab181efae8a9130bcd92b280d1b750c0116407d`.
+  The range contains two linear commits and only 76 added documentation lines
+  across the topic map and detailed research ledger. It changes no code,
+  evaluator, fixture, schema, authority, protected state, or canonical AGL-1
+  conclusion.
+- The seed truthfully ranks inaccessible high/open `RV-004`, reproduced but
+  externally owned high/open `RV-034`, and the unreleased provider result
+  above accessible AGL-1. It records zero XHS, GitHub, or Reddit requests and
+  selects arXiv only after the queue record. The receipt then states that the
+  human interrupted the cycle before synthesis and that no AGL-1 or library
+  claim was admitted.
+- Independent retained-artifact checks reproduce the receipt exactly:
+  metadata is 3,456 bytes with SHA-256
+  `90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47`;
+  both the 401,365-byte PDF and e-print have SHA-256
+  `11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba`
+  and compare byte-for-byte equal; extracted text is 713 lines, 6,343 words,
+  and 54,164 bytes. These observations validate the retrieval receipt only,
+  not the paper's claims or an AGL-1 synthesis.
+- **Accept.** The receipt is truthful, explicitly quarantined, cheap to roll
+  back, and does not turn source activity into novelty, correctness,
+  productivity, or behavioral evidence. It introduces no contamination or
+  duplicated conclusion because there is no admitted conclusion. A matched-
+  budget baseline, observed regression set, frozen candidate selection, and
+  protected promotion comparison are not applicable to this retrieval-only
+  receipt; they remain required before any future Scout behavior-improvement
+  claim.
+
+| Rubric dimension | Cycle 371 disposition |
+| --- | --- |
+| Lead completeness and disposition | **Accept.** The complete ranked queue, access boundaries, selected AGL-1 lead, interrupted state, and next action are explicit. No partial synthesis is presented as closure. |
+| Provenance and claim/source separation | **Accept.** Seed, retrieval receipt, retained bytes, extraction counts, future source review, and independent review remain separate evidence classes. |
+| Novelty and decision value | **Accept narrowly.** The receipt preserves recoverable work and prevents duplicate retrieval; it establishes no research novelty or user outcome. |
+| Related-work comparison | **Not yet applicable.** No AGL-1 conclusion was admitted. Comparisons belong to the resumed primary review, not this receipt. |
+| Contradictions and uncertainty | **Accept.** Governance-layer status remains an open question; no proposal, implementation, or deployment classification is asserted. |
+| Duplication and contamination | **Accept with limit.** The map and ledger repeat the interruption boundary for navigation, not as independent support. No extracted text is promoted into canonical knowledge. |
+| Usability and retrieval value | **Accept narrowly.** Exact hashes and counts make the completed retrieval replayable and avoid refetching, while the explicit incomplete marker prevents accidental reuse as a conclusion. |
+| Access boundaries | **Accept.** The receipt declares only bounded public arXiv access and zero requests to the other lanes; no account or content state changed. |
+| Validation quality | **Accept for the claimed scope.** Independent hashes, sizes, byte identity, extraction counts, exact diff review, scoped links, navigation, and read-only health validate the receipt. They do not validate AGL-1 claims. |
+| Cost and productivity | **Accept as bounded cost evidence only.** One metadata fetch and one PDF/e-print pair are recorded; request counts and bytes are not treated as research success or RV-004 evidence. |
+| Rollback safety | **Accept.** Revert receipt `3ab181efae` and then seed `1b48ab164f` to remove Cycle 371; both are documentation-only and have no migration or external-state rollback. |
+
+- `RV-004` remains **high/open**. Cycle 371 adds no incumbent/candidate/simple
+  matched-budget Scout comparison, observed regression set, frozen selection,
+  fresh protected promotion evidence, query/rank-to-selection-to-later-outcome
+  join, measured saving, later reuse, rollback outcome, or user result.
+- `RV-034` remains **high/open and externally deferred**. The receipt neither
+  changes nor contradicts the reproduced Mnemosyne principal-binding defect;
+  no authorized Scout-only reviewer refinement can advance its runtime repair.
+  No new reviewer finding is opened by this checkpoint.
+
 ### Current-revision validation
+
+- Exact clean producer tip
+  `3ab181efae8a9130bcd92b280d1b750c0116407d` independently passes
+  `git diff --check`, all 94 Scout-scoped relative links, navigation v1 11/14
+  and v2 8/8 with the same pass/fail outcomes, and read-only health at
+  `2026-09-04T09:38:47.008Z` with 26 facts / 16 wakes and
+  `truncated:true`. The producer worktree was clean at that exact tip. A full
+  code test gate is not repeated for a two-file documentation-only receipt;
+  no monorepo-wide link audit is run.
+- The reviewer cursor candidate independently passes `git diff --check`, the
+  same 94 scoped links, the same navigation 11/14 and 8/8 outcomes, and
+  read-only health at `2026-09-04T09:40:42.042Z` with 26 facts / 16 wakes and
+  `truncated:true`. The cursor adds review evidence only and changes no
+  producer claim, runtime, fixture, or protected state.
 
 - Exact post-disposition producer source
   `71356a70df5b54813a96f6f78827a3555cd47bb2` independently passes syntax,
@@ -2469,38 +2554,34 @@ source_basis: "Exact 81-commit standing range 6e74f365b07131e473881f7b66212b0762
 | `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries said material `f40b09a2da` dropped the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved on standing.** Reviewer `c3400f8c77` is standing `15e30e50ea` at stable patch ID `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`; both summaries now say 333. |
 | `RV-022` | Low | Cycle 282 result `7c8abbb30e`, topic map and detailed lane report | Both summaries published nonexistent full seed and material commit IDs, preventing exact provenance replay without changing the compaction. | **Resolved on standing.** Reviewer `1f611b69aa` corrects all four occurrences and has stable patch ID `a9802f0c97d01134674240b452cc3ae33e50db03`, equal to earlier reviewer `827c13d0a4`. |
 | `RV-023` | Low | Cycle 283 result `9d17987de7`, topic map, detailed lane report, and review cursor | Both summaries published nonexistent full seed and material IDs, and their integration note stopped at reviewer `641bc7088b`, omitting its later RV-022 branch state. Exact replay and pending-work status were therefore wrong, without changing the compaction. | **Resolved on standing.** Reviewer `48adada0af` corrects both identities, distinguishes the superseded replay from later RV-022 work, and updates the durable cursor; RV-022 is now integrated exactly as its parent `1f611b69aa`. |
-| `RV-024` | Low | Cycle 285 result `47574d326c`, topic map and detailed lane report | Both reports publish nonexistent seed `ab67f6bdd606e4e740696ba682b61b76ae0120e3` and material `d27fe00e55f061e33f0a10d82a98d625d610b443`. The actual direct line is seed `ab67f6bdd69afabaeb921abe862056e3b03bf983`, material `d27fe00e551fb138d3cadc13b03dfab39963c042`, and result `47574d326c9752b3852343afb5b628b54bd0d82c`. The wrong IDs prevent exact replay but do not alter the byte-identical source blocks or safe compaction. | **Revise in this reviewer range.** Replace all four bad occurrences with the actual commit objects; retain the compaction, links, and RV-004 limit. |
-| `RV-025` | Medium | Cycle 288-291 materials `1eb3fe8fd3` / `a5c62bf6ff` / `d391befc30` / `40bc4a7157`, compact Cycle 256/252/257/251 map sections and Scout maintenance prompt | Four consecutive materials moved evidence behind unchanged reports without exact point-of-use links. At `f26bd4f3a5`, later producer compactions independently supply the Cycle 251/252 links, but Cycle 256/257 and the prospective maintenance rule remain absent. | **Revise in this reviewer range.** Carry only the two still-missing links plus the durable/prompt rule and its two assertions; do not duplicate the already reconciled Cycle 251/252 routes. This is process-compliance evidence, not observed use or RV-004 resolution. |
-| `RV-026` | Low | Consolidation `e9450d7b76`, Cycles 292-295 topic-map handoff | The map labels its link “detailed checkpoint report” but targets the preceding Cycle 292 seed-reconciliation heading, while the retained checkpoint is the next `Cycles 292–295 checkpoint` heading. The sentence also claims exact rollback proof that the target does not state. The file exists and adjacent evidence remains, so no evidence is lost, but readers land at the wrong boundary and receive an overstated retention claim. | **Revised in this reviewer range.** Link the actual consolidated checkpoint heading and limit the claim to source/result identities, current validation, protected-state evidence, and retained decisions. |
-| `RV-027` | Low | Cycle 310 material/validation `fa7255fc70` / `e84546bbf9`; topic map and detailed lane report | Three durable references publish seed `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d`, which `git cat-file` confirms is not a commit. The actual direct parent is `7dd3965ef86c6bee02ee6660931bcb43ab65640f`. The bad identity prevents exact replay but does not change the primary-paper correction, app tree, or validation outcome. | **Revised in this reviewer range.** Replace all three occurrences with the actual commit object and retain the Cycle 310 evidence limits. |
-| `RV-028` | Low | Cycle 311 material `9eacb75f9f`; Scan 467, topic map, and detailed lane report | Three statements call all six completion curves concave. Primary Table 2 has local marginal reversals, including Basic 11.5%→12.7%, INTERVENOR 1.2%→1.9%, and later 0→positive steps, so strict discrete concavity is false even though every curve flattens overall. The distinction affects mathematical precision, not the accepted diminishing-returns conclusion. | **Revised in this reviewer range.** Say overall flattening, retain the exact local reversals, and keep the universal-cutoff and causal-ranking rejections. |
-| `RV-029` | Medium | Cycle 313-315 materials `a18828cef0` / `e7c25db7c36` / `bf3e0551d6`; both Scan 448 aliases and `the-oversight-inversion.md` | Cycles 313-314 left causal/ranking remnants after rejecting identification. Cycle 315 now pins HN/GitHub identities, corrects growth arithmetic, identifies the mixed sample and missing denominators, and removes almost all preference/return claims. Two alias prompts still say frustration increased with autonomy and ask whether incomparable 0.71/0.81 baskets show continuing investment; these can reinstate the rejected inference for readers. | **Mostly resolved on standing; residual revised in this reviewer range.** Preserve Cycle 315's identity-pinned observations, require a frozen basket/denominator before ratio comparison, describe the workload pattern as fixed-order, and require matched tests before any cross-phase premium, autonomy effect, governance-cost transfer, or return ranking. |
-| `RV-030` | Medium | Cycles 316-319 materials `43f474dc2a` / `d87008f144` / `976f343ca6` / `f4f76e5792`; both Scan 449 aliases, INDEX, and `the-oversight-inversion.md` | Cycles 316-317 reject market pricing and unmeasured loop/audit claims; Cycle 318 narrows Cortex from action-space subtraction to a bundled 32-label interface; Cycle 319 narrows HeRo from sub-linear verification to conditional keyed disclosure with unmatched implementation latency. The reviewer range removes five residual economic-validation labels and keeps OptiAgent's mechanism limits. | **Resolved across standing and reviewer range.** Accept the primary-source Cortex/HeRo replacements and retain the reviewer economic/OptiAgent corrections. No market effect, loop/taxonomy causality, authorization system, audit saving, or Scout outcome is promoted. Reopen only on contradictory primary evidence or a residual overclaim. |
-| `RV-031` | Low | Cycles 320-333; Scan 450 aliases plus Scan 453/454/462/475 `source_basis` metadata | Standing still lacks the earlier metadata corrections. Cycles 329-330 correctly update the Aria/CXI bodies, but Scan 475 metadata names neither CXI's exact source/access review nor its checksum; Scan 453 also retains only the abstract-era source list. Readers using context preambles can miss the actual evidence class and artifact boundary even when the body is scoped correctly. CREAD's point-of-use and durable surfaces do retain its exact source/repository evidence and do not add a stale `source_basis` claim. | **Revised in this reviewer range; no CREAD recurrence.** Name every checksum-verified primary-review class and date, extending Scan 453/475 through CXI, Scan 454 through SWE-Review, and Scan 462 through PatchOptic; retain every artifact/reproduction limit and do not convert source review into independent outcome evidence. |
-| `RV-032` | Medium | Cycle 330 material `07836ad009`; INDEX Scan 453, Scan 453 context/body, verified-enforcement §2.44, Oversight Inversion Layer 25, and Scans 478/479/497 | Cycle 330 correctly narrows the latest Scan 475 synthesis, but older high-retrieval surfaces still call CXI an architectural fix or immune, collapse 199/720 and 231/400 into one utility count, claim equal task quality with/without CXI, or imply implementation equivalence and a shared deployment gradient. The primary source reports fixed-policy mediated-sink admission, separate utility, trusted-policy/runtime assumptions, and no matched end-to-end architecture comparison. Readers can otherwise recover the rejected broad claim through canonical cross-links. | **Revised in this reviewer range.** Propagate the exact denominators and admission boundary, remove immunity/equivalence/architecture-only claims, and preserve the zero-observed-escape result only at mediated sinks. Reopen on a contradictory primary revision or released matched artifact evidence. |
-| `RV-033` | Medium | Cycle 331 material `bee1114e84`; two Scan 451 aliases, INDEX Scan 451/472, Scan 472, and Cycle 331 map/ledger | The material calls 20 retained Fable traces “clean” while the primary source and retained AIOH5 trace disclose current-upstream gold-fix retrieval in one passing Fable cell. The paper also flags two Opus and one GPT-5.5 ranked passes. All 1,585 Fable model-bearing messages match the requested model, so identity cleanliness is valid; outcome-contamination cleanliness is not. Unqualified wording obscures the 17/20→16/20 Fable and 78.7%→76.0% / 66.7%→65.3% ranked sensitivity results, though ranks and the identity-gate finding survive. | **Revised in this reviewer range.** Say model-identity-clean, disclose the contaminated cells and exact sensitivity outcomes, retain the one directly reproduced mismatch and author-reported five-task boundary, and preserve the executing-model validation rule. Reopen on a released rejected-trace receipt or contradictory source revision. |
+| `RV-024` | Low | Cycle 285 result `47574d326c`, topic map and detailed lane report | Both reports publish nonexistent seed `ab67f6bdd606e4e740696ba682b61b76ae0120e3` and material `d27fe00e55f061e33f0a10d82a98d625d610b443`. The actual direct line is seed `ab67f6bdd69afabaeb921abe862056e3b03bf983`, material `d27fe00e551fb138d3cadc13b03dfab39963c042`, and result `47574d326c9752b3852343afb5b628b54bd0d82c`. The wrong IDs prevent exact replay but do not alter the byte-identical source blocks or safe compaction. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` replaces all four bad occurrences with the actual commit objects while retaining the compaction, links, and RV-004 limit. |
+| `RV-025` | Medium | Cycle 288-291 materials `1eb3fe8fd3` / `a5c62bf6ff` / `d391befc30` / `40bc4a7157`, compact Cycle 256/252/257/251 map sections and Scout maintenance prompt | Four consecutive materials moved evidence behind unchanged reports without exact point-of-use links. At `f26bd4f3a5`, later producer compactions independently supply the Cycle 251/252 links, but Cycle 256/257 and the prospective maintenance rule remain absent. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` carries only the two missing links plus the durable/prompt rule and two assertions without duplicating the already reconciled routes. This is process-compliance evidence, not observed use or RV-004 resolution. |
+| `RV-026` | Low | Consolidation `e9450d7b76`, Cycles 292-295 topic-map handoff | The map labels its link “detailed checkpoint report” but targets the preceding Cycle 292 seed-reconciliation heading, while the retained checkpoint is the next `Cycles 292–295 checkpoint` heading. The sentence also claims exact rollback proof that the target does not state. The file exists and adjacent evidence remains, so no evidence is lost, but readers land at the wrong boundary and receive an overstated retention claim. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` links the actual consolidated checkpoint and limits the claim to source/result identities, current validation, protected-state evidence, and retained decisions. |
+| `RV-027` | Low | Cycle 310 material/validation `fa7255fc70` / `e84546bbf9`; topic map and detailed lane report | Three durable references publish seed `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d`, which `git cat-file` confirms is not a commit. The actual direct parent is `7dd3965ef86c6bee02ee6660931bcb43ab65640f`. The bad identity prevents exact replay but does not change the primary-paper correction, app tree, or validation outcome. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` replaces all three occurrences with the actual commit object and retains the Cycle 310 evidence limits. |
+| `RV-028` | Low | Cycle 311 material `9eacb75f9f`; Scan 467, topic map, and detailed lane report | Three statements call all six completion curves concave. Primary Table 2 has local marginal reversals, including Basic 11.5%→12.7%, INTERVENOR 1.2%→1.9%, and later 0→positive steps, so strict discrete concavity is false even though every curve flattens overall. The distinction affects mathematical precision, not the accepted diminishing-returns conclusion. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` says overall flattening, retains the exact local reversals, and keeps the universal-cutoff and causal-ranking rejections. |
+| `RV-029` | Medium | Cycle 313-315 materials `a18828cef0` / `e7c25db7c36` / `bf3e0551d6`; both Scan 448 aliases and `the-oversight-inversion.md` | Cycles 313-314 left causal/ranking remnants after rejecting identification. Cycle 315 now pins HN/GitHub identities, corrects growth arithmetic, identifies the mixed sample and missing denominators, and removes almost all preference/return claims. Two alias prompts still say frustration increased with autonomy and ask whether incomparable 0.71/0.81 baskets show continuing investment; these can reinstate the rejected inference for readers. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` preserves the identity-pinned observations, requires frozen baskets/denominators and matched tests, and removes the remaining cross-phase and autonomy inference. |
+| `RV-030` | Medium | Cycles 316-319 materials `43f474dc2a` / `d87008f144` / `976f343ca6` / `f4f76e5792`; both Scan 449 aliases, INDEX, and `the-oversight-inversion.md` | Cycles 316-317 reject market pricing and unmeasured loop/audit claims; Cycle 318 narrows Cortex from action-space subtraction to a bundled 32-label interface; Cycle 319 narrows HeRo from sub-linear verification to conditional keyed disclosure with unmatched implementation latency. The reviewer range removes five residual economic-validation labels and keeps OptiAgent's mechanism limits. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` retains the primary-source Cortex/HeRo replacements and economic/OptiAgent corrections. No market effect, loop/taxonomy causality, authorization system, audit saving, or Scout outcome is promoted. |
+| `RV-031` | Low | Cycles 320-333; Scan 450 aliases plus Scan 453/454/462/475 `source_basis` metadata | Standing lacked the earlier metadata corrections. Cycles 329-330 correctly updated the Aria/CXI bodies, but Scan 475 metadata named neither CXI's exact source/access review nor its checksum; Scan 453 retained only the abstract-era source list. CREAD's point-of-use and durable surfaces retained its exact source/repository evidence and did not add a stale `source_basis` claim. | **Resolved on standing; no CREAD or Cycle 371 recurrence.** Exact integrated reviewer `bb2daa3213` names every checksum-verified primary-review class and date while retaining artifact/reproduction limits. Cycle 371 keeps receipt bytes separate from future source conclusions. |
+| `RV-032` | Medium | Cycle 330 material `07836ad009`; INDEX Scan 453, Scan 453 context/body, verified-enforcement §2.44, Oversight Inversion Layer 25, and Scans 478/479/497 | Cycle 330 correctly narrows the latest Scan 475 synthesis, but older high-retrieval surfaces called CXI an architectural fix or immune, collapsed 199/720 and 231/400 into one utility count, claimed equal task quality with/without CXI, or implied implementation equivalence and a shared deployment gradient. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` propagates the separate denominators and mediated-sink admission boundary, removes immunity/equivalence claims, and preserves only the bounded zero-observed-escape result. |
+| `RV-033` | Medium | Cycle 331 material `bee1114e84`; two Scan 451 aliases, INDEX Scan 451/472, Scan 472, and Cycle 331 map/ledger | The material called 20 retained Fable traces “clean” while one passing Fable cell retrieved a current-upstream gold fix; two Opus and one GPT-5.5 ranked passes were also flagged. All 1,585 Fable model-bearing messages match the requested model, so identity cleanliness is valid while outcome-contamination cleanliness is not. | **Resolved on standing.** Exact integrated reviewer `bb2daa3213` says model-identity-clean, discloses the contaminated cells and sensitivity outcomes, and preserves the executing-model validation rule. |
 | `RV-034` | High | Cycle 370 material `6b07f569b3`; Mnemosyne ATP tag `7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`, `runtime/kernel_admission.py` and `runtime/sqlite_repository.py` | The runtime adapter constructs `KernelCommitRequest` with the decision caller's `agent_id` but does not load or compare the stored proposal owner; the repository records the decision identity without enforcing equality. A same-tenant Alice proposal can therefore be admitted by Bob. Constraint-relative validation still runs, but application-level principal binding is absent. | **Accept Scout's correction; defer external repair; high/open.** Require proposal-owner/decision-principal equality (or an explicit delegated-authority rule) at admission with matched allow/deny tests before treating ATP separation as an identity boundary. No authorized independent Scout-only edit can repair the pinned external runtime. |
 
 ## Reviewer source/result and integration status
 
-- Current reviewer source
-  `71356a70df5b54813a96f6f78827a3555cd47bb2` has direct-child material result
-  `bb2daa3213161e1b43b0bd45b541f67de0b9adbc`, stable patch ID
-  `8de334fb9b10ab05755c1c7b6befe603d9d95722`, tree
-  `9c0eac42b76a7a3450aa36eadfcc93015d9a2c35`, app subtree
-  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
-  `ba50785107c08559cd9ab9b0e0c0cc8610b6c2f2`. The material commit preserves
-  the still-applicable RV-024-RV-033 corrections while retaining Cycle 339's
-  newer Scan 479 map and Cycle 363-368 attention qualifications. Carry-forward
-  status `e8b91a8963bf81d08fc54f3334c87fbe1026c6cf` preserves the Cycle 332-333
-  review evidence, and this following cursor checkpoint advances independent
-  review through exact post-disposition tip `71356a70df`, accepts its Cycle 370
-  validation, records RV-034, and revises its over-broad supersession decision.
-  The source and reviewer candidate share the same app subtree except for the
-  previously reviewed prospective maintenance rule and two assertions; they
-  change no evaluator, frozen fixture, protected state, schema, or authority.
-  Integrate `bb2daa3213`, then `e8b91a8963`, then this cursor checkpoint; roll
-  back in the reverse order with ordinary reverts.
+- Reviewer material `bb2daa3213161e1b43b0bd45b541f67de0b9adbc`,
+  carry-forward status `e8b91a8963bf81d08fc54f3334c87fbe1026c6cf`, and
+  Cycle 370 disposition `b76d6c0737472565db26505d0b2b8e09777ba8eb`
+  are **integrated exactly and in order** on standing tip
+  `3ab181efae8a9130bcd92b280d1b750c0116407d`. All three ancestor checks
+  succeed; the parent chain is `71356a70df` → `bb2daa3213` →
+  `e8b91a8963` → `b76d6c0737` → Cycle 371 seed `1b48ab164f` →
+  receipt `3ab181efae`. This is exact containment, not patch equivalence or a
+  prose-only disposition. The material result's stable patch ID remains
+  `8de334fb9b10ab05755c1c7b6befe603d9d95722`; its accepted RV-024-RV-033
+  corrections and the carry-forward Cycle 332-333 evidence are retained.
+  Roll back the reviewer chain only in reverse order with ordinary reverts
+  after first reverting dependent Cycle 371 commits. The following cursor-only
+  review checkpoint is the sole new integration handoff.
 - Historical reviewer commits
   `5720963c1157fcfcb4c7f6149d47ab3d0b6c0b9b` and
   `a0a1b2f52b25339360fe21fe51e1d36c6405a9d2` remain preserved on
@@ -2865,24 +2946,24 @@ patch-equivalent to the Cycle 370 standing tip.
 | Instruction to integrate `5720963c11` followed by `a0a1b2f52b` | **Supersede.** Blind import would replace later compact cursor and Cycle 370 producer history with a stale Cycle 333/334 view. This compact disposition retains the useful findings without silently importing the excluded material base. |
 | Rejected findings | **None.** Scope and current-status claims are revised or superseded; the substantive evidence limits are retained. |
 
-The bounded producer handoff is the clean standing commit carrying this
-disposition. Independent review of that exact tip is now complete: accept the
-Cycle 370 evidence and validation, revise the blanket supersession as recorded
-above, and integrate the reconciled reviewer range before resuming production.
-Ranked work remains `RV-004` first but inaccessible at the missing retained-
-outcome join, then the unreleased Memory in the Loop result, then accessible
-AGL-1 `2607.03516v1`.
+The bounded producer handoff was the clean standing commit carrying this
+disposition. Independent review through Cycle 371 now confirms the reconciled
+reviewer range is integrated exactly, accepts the truthful interrupted receipt,
+and permits production to resume from `3ab181efae`. Ranked work remains
+`RV-004` first but inaccessible at the missing retained-outcome join, then
+`RV-034` at the external runtime boundary, the unreleased Memory in the Loop
+result, and accessible AGL-1 `2607.03516v1`.
 
 ## Next trigger
 
-Review the first clean material/result standing commit after exact reviewed tip
-`71356a70df5b54813a96f6f78827a3555cd47bb2`; an integration, rejection, or
-patch-equivalent reconciliation of reviewer range `bb2daa3213` through this
-following cursor checkpoint; a fresh protected maintenance outcome that joins
-the route used to a later decision; new evidence changing RV-004, RV-034, or
-the retained RV-024-RV-033 correction boundaries; or a concrete regression in
-the reviewed claims. If none arrives, the next periodic audit is no earlier
-than `2026-09-05T17:05:36+08:00`. Do not poll unchanged state.
+Wait directly on producer pane `w1:p6C` for the first clean material/result
+standing commit after exact reviewed tip
+`3ab181efae8a9130bcd92b280d1b750c0116407d`; a fresh protected maintenance
+outcome that joins the route used to a later decision; new evidence changing
+RV-004 or RV-034; or a concrete regression in the reviewed claims. The ordered
+Cycle 370 reviewer chain is already integrated and is no longer a wait
+condition. If no material trigger arrives, the next periodic audit is no
+earlier than `2026-09-05T17:39:02+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
