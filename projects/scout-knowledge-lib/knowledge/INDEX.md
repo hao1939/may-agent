@@ -27,6 +27,27 @@ topic. Prefer in-place updates and contradiction notes over duplicate files.
 - [obsidian-second-brain Patterns](./obsidian-second-brain-patterns.md)
 - ~~[Scout Research Ideas](./temp-ideas.md)~~ → archived: ideas covered by existing notes
 
+### Primary-evidence audit routes
+
+These compact routes point to the accepted project-owned entry files for the
+fourteen Cycle 373–386 audits. They are navigation identities, not independent
+evidence or substitutes for the detailed source records.
+
+- [HexStrike-AI client-contrast audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — client-associated result; the paper does not isolate a client-only causal effect.
+- [SkillOpt-Lite scale audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — matched-method rows retain a model-scale advantage while released artifacts omit the headline results.
+- [Anchored Self-Play transfer audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — function-repair gain bundles two interventions and transfers only narrowly without retraining.
+- [GameEngineBench runtime audit](./findings/2026-07-07-arxiv-scan-424.md) — integration failures in 31 environments do not establish runtime impossibility.
+- [AtomicCommitBench replay audit](./findings/2026-07-07-arxiv-scan-424.md) — replay saturation, commit grouping, and released bundle coverage remain distinct claims.
+- [Hidden-computation monitorability audit](./findings/2026-07-07-arxiv-scan-424.md) — filler-token probes recover selected intermediates in constructed tasks, not general monitorability.
+- [Single-prover verification audit](./findings/2026-07-07-arxiv-scan-424.md) — guarantees require bound circuits, robust computation, and shared oracle access.
+- [DSCC compositional-security audit](./findings/2026-07-07-arxiv-scan-424.md) — authored-catalog rejection rates are not violation-recall measurements.
+- [CodeRabbit reply-selection audit](./findings/2026-07-07-arxiv-scan-424.md) — developer replies cover a selected minority and do not measure silent-review validity.
+- [RLSR selective-prediction audit](./findings/2026-07-07-arxiv-scan-424.md) — post-hoc answer ranking is not a learned stop action or finite-sample deployment guarantee.
+- [Agentic test-time-training audit](./findings/2026-07-07-arxiv-scan-424.md) — reported competence and cost comparisons do not isolate token weighting or preservation.
+- [Aggregate policy-repair misranking audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — one simulator supports multi-resolution audit, not general temporal harness evolution.
+- [HASE harness-co-evolution audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — cross-system rows do not isolate harness quality from model and policy changes.
+- [VERITAS replication-bundle audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — current public artifacts omit the paper result bundle and changed a grader.
+
 Migration and project-operation artifacts live outside `knowledge/`:
 
 - [Initial library inventory](../reports/migration/library-inventory-2026-06-12.md)

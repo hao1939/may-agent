@@ -1,0 +1,134 @@
+{
+  "schema": "scout.navigation-heldout/v1",
+  "frozen_at": "2026-09-05T06:14:00+08:00",
+  "frozen_against_tip": "a76726f370dd77a8cf708d153e2016f7ab523443",
+  "source_basis": "Fourteen decision-relevant paraphrases for the Cycle 373-386 primary-evidence audits, frozen after the accepted RV-045 integration and before adding compact index routes. The fixture tests accepted project-owned entry files, not detailed-ledger preservation or user outcome.",
+  "cases": [
+    {
+      "id": "hexstrike-client-contrast",
+      "query": "HexStrike client contrast causal isolation",
+      "expected": {
+        "kind": "available",
+        "title": "HexStrike-AI client-contrast audit",
+        "target": "./findings/2026-07-07-hn-arxiv-github-scan-425.md"
+      }
+    },
+    {
+      "id": "skillopt-scale",
+      "query": "SkillOpt Lite smaller model scale artifact results",
+      "expected": {
+        "kind": "available",
+        "title": "SkillOpt-Lite scale audit",
+        "target": "./findings/2026-07-07-hn-arxiv-github-scan-425.md"
+      }
+    },
+    {
+      "id": "anchored-self-play-transfer",
+      "query": "Anchored Self Play function repair transfer without retraining",
+      "expected": {
+        "kind": "available",
+        "title": "Anchored Self-Play transfer audit",
+        "target": "./findings/2026-07-07-hn-arxiv-github-scan-425.md"
+      }
+    },
+    {
+      "id": "gameengine-runtime",
+      "query": "GameEngineBench runtime integration impossibility",
+      "expected": {
+        "kind": "available",
+        "title": "GameEngineBench runtime audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "atomic-replay",
+      "query": "AtomicCommitBench replay grouping released bundle",
+      "expected": {
+        "kind": "available",
+        "title": "AtomicCommitBench replay audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "hidden-computation",
+      "query": "filler token hidden computation general monitorability",
+      "expected": {
+        "kind": "available",
+        "title": "Hidden-computation monitorability audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "single-prover",
+      "query": "single prover robust computation shared oracle circuit",
+      "expected": {
+        "kind": "available",
+        "title": "Single-prover verification audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "dscc-composition",
+      "query": "DSCC compositional security catalog rejection violation recall",
+      "expected": {
+        "kind": "available",
+        "title": "DSCC compositional-security audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "coderabbit-selection",
+      "query": "CodeRabbit developer reply selection silent review validity",
+      "expected": {
+        "kind": "available",
+        "title": "CodeRabbit reply-selection audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "rlsr-abstention",
+      "query": "RLSR selective prediction abstention learned stop finite sample",
+      "expected": {
+        "kind": "available",
+        "title": "RLSR selective-prediction audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "agentic-ttt",
+      "query": "agentic test time training competence preservation cost token weighting",
+      "expected": {
+        "kind": "available",
+        "title": "Agentic test-time-training audit",
+        "target": "./findings/2026-07-07-arxiv-scan-424.md"
+      }
+    },
+    {
+      "id": "aggregate-repair",
+      "query": "aggregate policy repair misranking simulator temporal harness evolution",
+      "expected": {
+        "kind": "available",
+        "title": "Aggregate policy-repair misranking audit",
+        "target": "./findings/2026-07-08-hn-arxiv-github-scan-452.md"
+      }
+    },
+    {
+      "id": "hase-coevolution",
+      "query": "HASE harness co evolution model policy ablation",
+      "expected": {
+        "kind": "available",
+        "title": "HASE harness-co-evolution audit",
+        "target": "./findings/2026-07-08-hn-arxiv-github-scan-452.md"
+      }
+    },
+    {
+      "id": "veritas-bundle",
+      "query": "VERITAS replication result bundle changed grader",
+      "expected": {
+        "kind": "available",
+        "title": "VERITAS replication-bundle audit",
+        "target": "./findings/2026-07-08-hn-arxiv-github-scan-452.md"
+      }
+    }
+  ]
+}
