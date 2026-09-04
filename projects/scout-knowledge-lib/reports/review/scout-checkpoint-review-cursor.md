@@ -2687,7 +2687,7 @@ source_basis: "Exact linear standing range 08f7d1f8984fbb5cedb90b7b4ff1ac69d83ad
 | Cost and productivity | **Defer outcome claims under RV-004.** The source checks correct high-value claims, while six micro-checkpoints and repeated narration impose review cost. Tests, links, cycles, notes, and commits are not productivity outcomes. |
 | Rollback safety | **Accept.** The producer range, status commit, and reviewer repair are documentation-only and can be reverted in reverse order; no migration, schema, authority, external state, or protected evaluation changes. |
 | Batch coherence | **Revise prospectively under RV-038.** Existing history remains intact, but future evidence from one retained source should be reviewed as a unified checkpoint unless a real external dependency requires separation. |
-| Canonical integration status | **Accept.** Reviewers `2379a9fabb` and `ee0f288d90` are integrated exactly. Standing `f485e287e7` conflict-resolves reviewer cursor `254e52441e` with `8d0a2fa763`; only this direct-child cursor/status review remains pending standing-owner reconciliation. |
+| Canonical integration status | **Accept.** Reviewers `2379a9fabb` and `ee0f288d90` are integrated exactly. Standing `f485e287e7` conflict-resolves reviewer cursor `254e52441e` with `8d0a2fa763`. Reviewer cursor `018d008074` is integrated patch-equivalently as standing `a4f21ce386` (stable patch ID `381cd97cc8c8ecbe99856422dfb4fa4a907f2de4`). Its review scope ends at `f485e287e7`; later Cycle 402 `f926a1d842` is contained beneath the standing result but remains independently unreviewed. |
 | Local-main landing safety | **Defer.** Local main `/app` advanced independently to `8554a5718cfa051bf4fb827c974423380614e5a7`, but the commit is unrelated Herdr checkout maintenance and contains neither standing tip nor this reviewer result. No Scout landing is reported. |
 | Repository-cleanup safety | **Defer with retained-history evidence.** Main commit `8554a5718c` removes 16 tracked Herdr files while ignoring the standalone checkout and `/worktrees/`; parent `386b445c23` retains all deleted blobs, and the standalone repo remains present at `06ba7a5dc8` with one untracked file. Its tree is not asserted byte-equivalent and no Herdr validation was run. The unchanged Scout-scope fingerprint proves preservation, not resource-reclamation success. |
 
@@ -3043,10 +3043,16 @@ source_basis: "Exact linear standing range 08f7d1f8984fbb5cedb90b7b4ff1ac69d83ad
   `7dabdbe126f1023a6eefe33b64b259e6ff3ed280` correctly differs from both the
   intermediate status and reviewer patches. It restores Cycle 401 evidence and
   records fresh producer validation without claiming exact containment or
-  patch equivalence. The current direct-child cursor-only reviewer result is
-  pending standing-owner integration. Integrate the exact one-commit range
-  reported in the reviewer handoff; rollback is one ordinary revert. It changes
-  no producer research, tests, fixtures, evaluator policy, authority, protected
+  patch equivalence. Direct-child reviewer cursor
+  `018d008074d9f16988b1fe93125b12a4bd5d287e`, whose parent is exact reviewed
+  source `f485e287e738e338768312d3ff9ac64007b372b0`, is **integrated
+  patch-equivalently** as standing `a4f21ce386d6ce78701ffae0e8b3dcbd656256df`.
+  Both commits have stable patch ID
+  `381cd97cc8c8ecbe99856422dfb4fa4a907f2de4`; the standing result applies the
+  cursor repair after Cycle 402 `f926a1d842948ec585692cbcafa33d9740a8649a`,
+  which remains outside this review's scope and independently unreviewed.
+  Rollback is one ordinary revert of `a4f21ce386`. The integration changes no
+  producer research, tests, fixtures, evaluator policy, authority, protected
   state, local-main landing, or cleanup evidence.
 - Standing integration `3ea02c3c767a77a1fb5fae7b176210edf6156ff6`
   is the exact child of producer CONTRA material
@@ -3481,10 +3487,10 @@ and the unreleased Memory in the Loop result.
 
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the first genuinely material,
-clean producer checkpoint after exact reviewed tip
-`f485e287e738e338768312d3ff9ac64007b372b0`; integration, reviewed
-patch-equivalent reconciliation, or explicit rejection of this cursor-only
-status result; a fresh protected maintenance outcome that joins the route
+clean producer checkpoint after patch-equivalent standing integration
+`a4f21ce386d6ce78701ffae0e8b3dcbd656256df`; independent review of contained
+Cycle 402 `f926a1d842948ec585692cbcafa33d9740a8649a`; a fresh protected maintenance
+outcome that joins the route
 used to a later decision; evidence changing RV-004 or RV-034; a scoped
 retrieval/cost comparison for RV-036; a prospective batching recurrence under
 RV-038; recurrence of a cursor regression under RV-039; a canonical/local-main
