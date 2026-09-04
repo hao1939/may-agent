@@ -10996,6 +10996,31 @@ otherwise prefer a substantive contradiction or reproducibility gap with a
 released artifact. The compact integration evidence and rollback are in the
 [Cycle 409 report](../reports/review/scout-accepted-output-integration-cycle409-2026-09-05.md).
 
+### Cycle 410 checkpoint — stable routes precede any evidence compaction
+
+Cycle 410 reused Cycle 409's fresh XHS receipt without another browser request.
+Added/changed identities remain unknown, removals remain `[]`, and all 132
+durable seeds remain unavailable at the login-class saved surface. GitHub,
+arXiv, and Reddit also made zero requests because no recorded trigger fired.
+
+RV-004 and RV-034 remain higher severity but cannot move without protected
+later-outcome or external-runtime evidence. The highest-value accessible item
+was therefore RV-036. Exact Cycles 373–386 added 1,087 topic-map lines and
+1,775 detailed-ledger lines while the accepted detailed evidence lives in
+project-owned findings. A fourteen-case navigation set frozen before the
+change found zero exact audit identities and only ten correct accepted files at
+rank one. Material `0073f95dedda211769971ba1bf451216ae044da6` adds fourteen
+compact INDEX routes to three accepted files and makes all fourteen exact
+identities and files unique rank-one results.
+
+No historical evidence was removed. RV-036 is mitigated but remains
+medium/open because this local deterministic comparison does not prove human
+retrieval, later reuse, or lossless deletion. The [Cycle 410 retrieval report](../reports/review/scout-retrieval-routes-cycle410-2026-09-05.md)
+records the matched result and rollback. Next, build an isolated virtual
+projection that removes only the repeated Cycle 373–386 topic/ledger additions,
+then compare all navigation fixtures, links, and distinctions before considering
+any real compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
