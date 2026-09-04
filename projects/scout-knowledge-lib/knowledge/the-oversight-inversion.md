@@ -1241,6 +1241,16 @@ unobserved read/sink. Retention permits reinterpretation of captured evidence;
 it cannot manufacture evidence that capture discarded. Treat “any new
 predicate” as a bounded schema claim, not arbitrary retroactive auditability.
 
+Retroactive audit also needs identity, not only retained bytes. OverEager names
+cell IDs, product versions, model labels, timeouts, and a run ID, but its cited
+configuration appendix publishes no audit-bundle IDs/hashes, container digest,
+scenario-manifest digest, adapter/schema revision, predicate/judge digest, or
+model endpoint snapshot. Even the claimed SHA-256 equality check exposes no
+hash values. Without one manifest joining those inputs to original and revised
+verdicts, a deterministic “re-judgment” cannot prove it used the same evidence.
+The temporal discharge condition is therefore content-addressed, append-only
+reinterpretation—not merely retaining an opaque directory called a bundle.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

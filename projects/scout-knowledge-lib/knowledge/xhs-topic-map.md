@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 398 bounded reconciliation at 2026-09-04T15:51:53.266Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 398; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging evidence qualified through Cycle 398; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 399 bounded reconciliation at 2026-09-04T16:03:43.532Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 399; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding evidence qualified through Cycle 399; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10321,6 +10321,62 @@ scenario/predicate manifest, raw run, or a demonstrated old-versus-new verdict.
 Next seed-first, audit whether a re-judged verdict is cryptographically bound to
 the original scenario, adapter/schema, predicate version, and immutable bundle
 if that remains the highest accessible provenance gap.
+
+### Cycle 399 seed-first start — test result-to-run binding
+
+Cycle 399 starts from clean validated Cycle 398 result
+`54ed4b11e62a46cf0b6465fd475f1a180a5f9f4b`. At
+`2026-09-04T16:03:43.532Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`; no material trigger fired. Make zero account
+requests: additions and changes remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and Cycle 375 remains the exact
+receipt/ledger provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries. Reuse the Cycle 393 archive again and select result-to-run binding
+because offline re-judging is only auditable when old and new verdicts resolve
+to the same immutable scenario and evidence. Make zero public source requests.
+
+### Cycle 399 checkpoint — named versions are not an evidence manifest
+
+The source retains useful partial identities: 15 cell IDs, four agent-product
+versions, six model labels, per-cell timeouts, host/kernel/Docker descriptions,
+and a run ID field in normalized atoms. It also claims SHA-256 checking makes
+paired fixtures, predicates, and the rule judge byte-identical. Those are good
+ingredients for a reproducibility record.
+
+They are not connected into one such record in the retained package. The
+headline-table caption says per-cell audit-bundle identifiers and full
+configurations are in the evaluation-setup appendix, but that section contains
+only the cell table, host description, and dynamic parallelism statement. It
+publishes no bundle identifiers or hashes, container image digests, scenario
+manifest digest, adapter/atom-schema revision, predicate/judge digest, model
+endpoint snapshot, or the claimed pair-check hash values. A per-run `run id`
+does not alone prove which scenario/configuration/bundle it names.
+
+Consequently, a later changed verdict could be deterministic yet still refer
+to changed scenario bytes, normalization, predicates, or evidence. The smallest
+credible binding is an immutable manifest joining bundle digest; scenario ID
+and prompt/fixture/authorization/trap digest; atom and stream schema versions;
+adapter and observer revision; system-under-test image/binary/model identity;
+original judge revision/output; and new judge revision/output. Re-judging
+should append the new result and retain the old one, not overwrite history.
+
+This missing provenance does not by itself refute the printed rates or imply
+that authors changed inputs. It prevents an independent reader from proving
+same-evidence reinterpretation, locating adapter-induced changes, or rolling a
+new result back to the published verdict. Confidence is high in the appendix
+caption/contents mismatch and missing identity fields; moderate that the
+unreleased artifact may contain them; low in current public result-to-run
+binding or independent replay.
+
+GitHub and arXiv retain Cycle 393's last useful evidence and triggers; Reddit
+makes zero requests and remains RSS-readable/JSON-403. `RV-004` and `RV-034`
+remain high/open and `RV-036` medium/open. Revisit on an artifact manifest,
+published bundle/check hashes, or a signed old/new verdict chain. Next
+seed-first, audit whether the behavioral-gradient checks certify the paper's
+“benign by construction” claim or only scenario discriminability if that
+remains the highest accessible question.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

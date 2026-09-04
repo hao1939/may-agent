@@ -202,6 +202,20 @@ sinks. The narrow supported claim is that a new function of already captured
 fields can be evaluated without another agent run; “any new predicate” is not
 supported across information the observer or bundle never retained.
 
+The same release boundary prevents **result-to-run provenance binding**. The
+source names 15 cell IDs, agent versions, model labels, timeouts, a host setup,
+and a normalized run ID. It says SHA-256 verifies that paired fixtures,
+predicates, and the judge are byte-identical. But the headline caption's claimed
+per-cell bundle identifiers and full configurations do not appear in the cited
+evaluation-setup section, which contains only the cell table, host description,
+and dynamic scheduling. No bundle or pair-check hashes, container image digest,
+scenario-manifest digest, adapter/schema revision, predicate/judge digest, or
+model endpoint snapshot is published. A later deterministic verdict therefore
+cannot currently prove it reinterpreted the same run rather than changed
+scenario, normalization, evidence, or rules. A credible manifest must bind all
+of those inputs and append old/new verdicts; their absence limits provenance
+and rollback, not the truth of the printed table by itself.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is

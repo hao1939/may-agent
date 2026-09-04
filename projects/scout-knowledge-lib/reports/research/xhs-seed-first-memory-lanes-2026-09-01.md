@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 398 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, and offline-rejudging claims: retained views can support recomputation, not recovery of uncaptured facts."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 399 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, and provenance claims: retained views support bounded recomputation only when immutable inputs and old/new results are joined."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 398; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging evidence qualified through Cycle 398; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 399; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding evidence qualified through Cycle 399; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18698,6 +18698,82 @@ SHA-256 `59974094…84b9f`. These equal the pre-cycle handoff fingerprints. No
 test, generator, formatter, install, clean, or write ran in `/app` or any peer
 worktree. This evidence does not promote the absent audit artifact into replay
 proof.
+
+## Cycle 399 checkpoint — bind a revised verdict to one immutable run
+
+What was wrong: Cycle 398 established that retained facts can be recomputed,
+but the synthesis still did not ask how an old and a new result prove they used
+the same scenario, normalization, and evidence.
+
+What changes: the durable finding and topic map now distinguish descriptive
+version labels from a content-addressed, append-only result manifest.
+
+### Seed order and lane decision
+
+Cycle 399 began from clean validated Cycle 398 result
+`54ed4b11e62a46cf0b6465fd475f1a180a5f9f4b`. At
+`2026-09-04T16:03:43.532Z`, the next XHS observation remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. Make zero account requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's receipt/ledger remain
+provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible. Result-to-run
+binding was highest accessible because it controls whether an offline verdict
+change is auditable. Reuse Cycle 393's checksum-matching source package. GitHub,
+arXiv, Reddit, and every other public lane make zero requests; last useful
+evidence, access boundaries, and triggers remain unchanged.
+
+### Identity inventory and missing join
+
+The manuscript provides partial reproducibility fields: 15 cell IDs; versions
+for Claude Code, OpenHands, Codex CLI, and Gemini CLI; six model labels; per-cell
+timeouts; a Linux/Docker/host description; dynamically varied parallelism; and
+a run ID in each normalized atom. It also says paired fixtures, predicates, and
+the rule judge are verified byte-identical with SHA-256. These identities are
+useful and should be retained.
+
+The documented join is missing. The headline-table caption says per-cell
+audit-bundle identifiers and full configurations are in the evaluation-setup
+appendix. Direct inspection of that section finds only the cell table, host
+description, and scheduling sentence—no bundle IDs. The archive also contains
+no published bundle digest, pair-check digest, container image digest, scenario
+manifest hash, adapter/atom-schema version, predicate/judge digest, model
+endpoint revision, or immutable mapping from a per-run ID to those objects.
+
+Calling the rules pinned or the product binary versioned does not fill those
+joins. A later result can be deterministic while using changed scenario bytes,
+adapter normalization, predicates, post-checks, or evidence. The minimum
+credible rejudging record should bind:
+
+- immutable bundle and scenario/prompt/fixture/authorization/trap digests;
+- atom/stream schemas plus observer and adapter revisions;
+- system-under-test image, binary, model endpoint, and run identity; and
+- original judge revision/output plus new judge revision/output and change
+  rationale.
+
+The revised result should be appended beside the original so rollback and
+comparison remain possible. This is a design requirement inferred from the
+missing join, not evidence that the authors altered any input. It limits public
+reproducibility and causal diagnosis, not the printed table's truth by itself.
+
+Confidence is high in the retained identity inventory, the caption/section
+mismatch, and absent published binding fields; moderate that the promised
+artifact may implement them; low in current public result-to-run binding and
+independent rollback. `RV-004` and `RV-034` remain high/open; `RV-036` remains
+medium/open. Revisit on a bundle manifest, published hash set, or signed
+old/new verdict chain. Next seed-first, audit whether behavioral-gradient
+admission establishes “benign by construction” or only discriminative power.
+
+### Cycle 399 candidate validation
+
+The four-document candidate from source
+`54ed4b11e62a46cf0b6465fd475f1a180a5f9f4b` passed whitespace, syntax,
+TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
+1,486 assertions, zero failures in 125.07 seconds. After commit, bind broad
+links, read-only health, lineage, clean state, and protected fingerprints to
+the exact result.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
