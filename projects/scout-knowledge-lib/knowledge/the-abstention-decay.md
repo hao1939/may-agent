@@ -229,15 +229,34 @@ This paper transforms our internal production observation into a measured, cross
 
 ## External Validation (2026-07-07): Training-Depth Fix
 
-**RLSR — Reinforcement Learning for Selection Reward (arXiv 2607.03528, ICML 2026 Workshop)** provides the first training-depth solution to Abstention Decay: align LLMs for **selective prediction** rather than correctness or calibration.
+**RLSR — Reinforcement Learning for Selection Reward (arXiv 2607.03528,
+ICML 2026 Workshop)** is evidence for a narrower training-depth intervention:
+align the ordering of verbalized confidence for **selective prediction** rather
+than optimizing correctness or calibration alone.
 
-- Standard alignment optimizes for correctness — abstention is never rewarded, so it decays.
-- RLSR targets the **Area Under the Risk-Coverage Curve (AURC)** as alignment objective — directly rewarding the model for knowing when to predict and when to flag for human review.
-- Substantially better risk-coverage trade-off compared to correctness-aligned and calibration-aligned baselines, on both in-domain **and** out-of-domain tasks.
+- RLSR's batch-ranked reward targets the **Area Under the Risk-Coverage Curve
+  (AURC)** and improves the paper's aggregate risk-coverage results over RLVR
+  and RLCR.
+- It does not train an explicit stop action. The model answers every item and a
+  post-hoc confidence threshold decides which answers to retain; “flagging for
+  human review” is a proposed downstream use.
+- The transfer result is not uniform per benchmark: RLSR is best against every
+  baseline on 4/6 HotPotQA-trained OOD datasets and 2/5 BigMath-trained OOD
+  datasets. “OOD” means different benchmark datasets rather than controlled
+  within-population shifts.
+- The MedQA result retains 38/1,273 test cases with 30 correct. Its 78.9% point
+  estimate exceeds the 75% target, but the computed 95% Wilson interval is
+  about 63.7–88.9%, and no finite-sample error-control guarantee is supplied.
 
-This validates the Depth Mismatch thesis (Scan #424): Abstention Decay is caused by training at the wrong depth (correctness) rather than the right depth (risk-coverage). CONVOLVE (#401) showed context engineering can partially fix abstention without parameter updates; RLSR shows post-training alignment can build abstention capacity into the model's weights directly.
+This supports the Depth Mismatch thesis as a design hypothesis, not a causal
+account of the production time series. CONVOLVE (#401) changes agent stopping
+through context; RLSR changes answer-confidence ranking through post-training.
+Whether the latter restores action-level abstention or prevents longitudinal
+Abstention Decay remains untested.
 
-Source: https://arxiv.org/abs/2607.03528, findings/2026-07-07-arxiv-scan-424.md
+Source: https://arxiv.org/abs/2607.03528,
+https://github.com/sun-umn/RLSR/tree/d972f1716a76745f098320980d9a0d58cab94e6e,
+findings/2026-07-07-arxiv-scan-424.md
 
 ## External Validation (2026-07-14): Fabrication as Verbalization Failure
 
@@ -246,9 +265,16 @@ Source: https://arxiv.org/abs/2607.03528, findings/2026-07-07-arxiv-scan-424.md
 Key implications for Abstention Decay:
 - The model "knows" it cannot solve a problem (knowledge representation) but still outputs a confident answer (verbalization representation). Abstention failure is a **routing problem** — knowledge correctly encodes uncertainty but verbalization overrides it.
 - Prompting with unsolvability cues reduces fabrication primarily by shifting verbalization, not knowledge — consistent with CONVOLVE's context engineering success (#401).
-- Activation steering can **mechanistically manipulate** knowledge and verbalization representations independently — opening a third fix pathway (alongside context engineering/CONVOLVE and training alignment/RLSR): direct representational intervention at the knowledge-verbalization interface.
+- Activation steering can **mechanistically manipulate** knowledge and verbalization representations independently — opening a third fix pathway (alongside context engineering/CONVOLVE and RLSR-style selection-ranking alignment): direct representational intervention at the knowledge-verbalization interface.
 - The knowledge probe detects internal uncertainty even when output is maximally confident — meaning the information needed for correct abstention is already present and accessible in the model's hidden states, it's simply not being routed to output.
 
-This is the deepest validation yet: Abstention Decay is not about missing capability (the knowledge is there) or insufficient training signal (RLSR showed training can help) or context deficiency (CONVOLVE showed context can help). It is about a **structural routing failure** between an internal representation that correctly encodes uncertainty and an output channel that defaults to confidence. The fix hierarchy: (1) activation steering at knowledge-verbalization boundary, (2) training alignment targeting risk-coverage, (3) context engineering to shift verbalization.
+This is evidence for a routing-failure hypothesis: on these tasks, uncertainty
+information can exist internally while the output remains confident. RLSR shows
+that selection-ranking training can help on its benchmarks, and CONVOLVE shows
+that context can change action-level stopping on its own tasks; neither result
+alone identifies the cause of the production time series. Candidate
+interventions remain (1) activation steering at the knowledge-verbalization
+boundary, (2) training alignment targeting risk-coverage, and (3) context
+engineering to shift verbalization.
 
 Source: https://arxiv.org/abs/2607.05013, findings/2026-07-14-hn-arxiv-github-scan-438.md

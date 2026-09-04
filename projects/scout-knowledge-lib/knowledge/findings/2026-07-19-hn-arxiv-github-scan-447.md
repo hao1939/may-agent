@@ -76,7 +76,12 @@ Source: https://arxiv.org/abs/2607.02911
 - Does not require retraining the base model — works as an external layer
 - Argues this property (knowing when NOT to act) is essential to production reliability
 
-**Structural significance**: The IDK Filter is the Predicate Gate (#446) applied to tool composition — a gate that prevents the agent from entering a composition it cannot reliably execute. The Abstention Decay thesis predicted that capability training erodes abstention; this paper provides an external mechanism to restore it without the training-depth conflict identified in RLSR (#424). The filter sits between the agent and the tool interface — exactly at the composition boundary where MOSAIC proves attacks concentrate.
+**Structural significance**: The IDK Filter is the Predicate Gate (#446)
+applied to tool composition — a gate that prevents the agent from entering a
+composition it cannot reliably execute. Unlike RLSR's post-hoc answer-
+confidence ranking (#424), the filter sits between the agent and tool interface
+at the composition boundary where MOSAIC reports attacks concentrate. Whether
+it restores longitudinal production abstention remains untested.
 
 **Connection**: Completes a reliability trifecta with CoACT and MOSAIC. MOSAIC shows composition is the attack surface. CoACT shows composition is the cost surface. IDK shows composition is the reliability surface. All three converge: **the composition interface is where governance must concentrate.**
 

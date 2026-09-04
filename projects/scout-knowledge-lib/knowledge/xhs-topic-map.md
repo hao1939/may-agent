@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces the login-class collection boundary; exact access evidence, wrapper correction, and uncertainty are in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 381; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, and agentic-code-review sampling and predictor evidence qualified in Cycle 381; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 382 bounded reconciliation at 2026-09-04T12:41:36.521Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 382; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 382; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and RLSR selection/deployment evidence qualified in Cycle 382; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9209,6 +9209,85 @@ its relevant-thread/access trigger. XHS retains the scheduled boundary above.
 `RV-004` and `RV-034` remain high/open. Next seed-first, primary-audit arXiv
 `2607.03528`: verify the risk-coverage objective, baselines, out-of-distribution
 claim, abstention semantics, uncertainty, and released-artifact coverage.
+
+### Cycle 382 seed-first start — reuse the current access receipt
+
+Cycle 382 starts from clean validated tip
+`2a50934903820fb996a6dde046b27f5202fd3c24` at
+`2026-09-04T12:41:36.521Z`. Cycle 375 remains the supported XHS observation
+through `2026-09-04T11:09:20.326Z`, only about 92 minutes earlier. No account,
+collection, cadence, or access trigger is present, so this bounded
+reconciliation makes zero XHS requests. Added and changed identities remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and no account state changes. Provenance is the Cycle 375 browser
+receipt plus seed-ledger row 375; uncertainty is unchanged. The next scheduled
+boundary remains `2026-09-04T17:09:20.326Z`.
+
+`RV-004` and `RV-034` remain higher-consequence but inaccessible at their
+recorded protected query-to-outcome and external-runtime boundaries. Select
+the already-ranked arXiv `2607.03528` as the highest accessible primary gap:
+test whether it trains abstention or ranks completed answers, whether OOD gains
+are per-dataset or aggregate, whether the high-stakes operating point controls
+risk, and what its project release can reproduce. This selection was finalized
+only after the seed reconciliation. Reddit remains deferred without a request.
+
+### Cycle 382 checkpoint — better ranking is not a learned stop guarantee
+
+Primary review supports RLSR's central aggregate result and narrows its
+operational meaning. The method pools generated answers across a batch and
+rewards correctness with confidence-rank weights. At evaluation it generates
+one answer plus verbalized confidence for every question; a post-hoc threshold
+retains high-confidence answers. It does not learn an explicit stop/refusal
+action or observe human routing outcomes. This supports confidence-ranking
+alignment, not the prior causal claim that correctness training causes
+longitudinal Abstention Decay or that RLSR preserves an agent's ability to stop.
+
+Aggregate Qwen2.5-7B AURC favors RLSR: HotPotQA-trained OOD is `0.41` versus
+BASE/RLVR/RLCR `0.44/0.47/0.46`; BigMath-trained OOD is `0.45` versus
+`0.49/0.53/0.47`. Per-benchmark evidence contradicts “uniform” transfer. RLSR
+is best against all baselines on 4/6 HotPotQA-trained OOD datasets and 2/5
+BigMath-trained OOD datasets. It loses, for example, HotPotQA-trained
+CommonsenseQA to BASE/RLCR (`0.09` versus `0.08`) and GPQA to BASE (`0.58`
+versus `0.55`), and BigMath-trained MATH-500 to RLCR (`0.36` versus `0.33`)
+and HotPotQA-Vanilla to RLCR (`0.49` versus `0.47`). “OOD” is a cross-dataset
+grouping rather than an isolated distribution-shift experiment.
+
+The MedQA deployment table retains only 3.0% of 1,273 test cases. Its rounded
+figures uniquely map to 38 selected and 30 correct for RLSR; the computed 95%
+Wilson interval is approximately 63.7–88.9%. RLCR maps to 18 selected and 13
+correct (72.2%; approximately 49.1–87.5%). RLSR's validation and test point
+estimates are both 30/38, but the paper gives no confidence bound, multiple-
+threshold correction, conformal procedure, or other finite-sample guarantee
+for its 75% target. Five-seed evidence covers HotPotQA-trained Qwen at
+temperature `0.3`, not training-seed variation, every dataset, or this MedQA
+operating point.
+
+Exact arXiv provenance is `2607.03528v1`, observed at
+`2026-09-04T12:41:37Z`: the 3,093-byte Atom response has SHA-256
+`3d94db2de71e519cd089a74f877b0e67b3669fc0a04c1ba3865cab47633510dc`,
+and the 1,792,579-byte source archive has SHA-256
+`30e5f8899d17a4bd75f6c7311a75c5cbd0773ff36b8429d37432f6e743e1aae6`.
+The 77-byte project page redirected to author repository `sun-umn/RLSR`.
+Read-only GitHub observations through `2026-09-04T12:43:09Z` pin main commit
+`d972f1716a76745f098320980d9a0d58cab94e6e` (authored
+`2026-08-28T21:02:58Z`). The release includes a trainer, configs, evaluation
+runner, lockfile, and RLCR submodule, but no checkpoints, reported outputs, or
+tests. Its MedQA helper builds only the test split; the paper's validation-to-
+test threshold procedure is absent. Its AURC helper uses trapezoidal
+integration rather than the manuscript's mean of prefix risks and gives no
+tie policy for repeated confidence values. This is attributable implementation
+evidence, not an independent reproduction.
+
+Confidence is high in selection semantics, table arithmetic, interval inputs,
+repository identity, and release contents; moderate for aggregate transfer;
+low for per-domain robustness, action-level abstention, and deployment risk
+control. ArXiv/GitHub revisit on checkpoints/results, a reproducible MedQA
+pipeline, per-dataset or repeated-training uncertainty, finite-sample risk
+control, or a controlled shift study. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004` and
+`RV-034` remain high/open. Next seed-first, audit arXiv `2607.03441` against
+its competence-preservation, repetition-detection, benchmark-control, 1.9×
+overhead, and released-artifact claims.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

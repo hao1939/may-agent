@@ -309,7 +309,13 @@ Key evidence:
   class (58%); intent/practice misalignment is 42%. This supports separate
   technical and depth-mismatch failure modes, not attribution of the aggregate
   rejection rate to intent depth.
-- **Selective prediction** (2607.03528, ICML 2026): Training for correctness (wrong depth) causes abstention to decay. Training for risk-coverage AURC (correct depth) preserves the ability to stop.
+- **Selective prediction** (2607.03528, ICML 2026): Batch-ranked AURC reward
+  improves aggregate confidence ordering, but evaluation still generates every
+  answer and thresholds verbalized confidence afterward. Per-dataset transfer
+  is mixed, and the MedQA claim retains 38/1,273 test cases without a finite-
+  sample risk guarantee. This supports a ranking-depth intervention, not the
+  stronger claims that correctness training caused production abstention decay
+  or that the model learned an action-level stop.
 
 **The Depth Mismatch unifies five layers of the Oversight Inversion**:
 - Economic: monitoring output volume (wrong) vs. monitoring at production depth (right)

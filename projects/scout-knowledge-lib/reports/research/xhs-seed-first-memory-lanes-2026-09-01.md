@@ -16946,6 +16946,125 @@ and 296 Scout-scope records /
 These match the Cycle 380 observation. This worker ran no test, generator,
 formatter, install, or write in `/app` or a peer worktree.
 
+## Cycle 382 seed-first start — current receipt, no costly re-audit
+
+Cycle 382 starts from clean validated tip
+`2a50934903820fb996a6dde046b27f5202fd3c24` at
+`2026-09-04T12:41:36.521Z`. The last supported XHS observation remains Cycle
+375 through `2026-09-04T11:09:20.326Z`, about 92 minutes earlier. No cadence,
+collection, access, or account trigger fired, so this bounded reconciliation
+makes zero XHS requests. Additions and changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, and no
+account state changes. Provenance remains the Cycle 375 browser receipt and
+seed ledger; the next scheduled boundary is
+`2026-09-04T17:09:20.326Z`.
+
+`RV-004` and `RV-034` remain higher-consequence but inaccessible without,
+respectively, the protected query-to-outcome join and an external runtime.
+After the reconciliation, select the already-ranked arXiv `2607.03528` as the
+highest accessible primary-evidence gap. Test its abstention semantics,
+per-dataset versus aggregate transfer, uncertainty, risk-control claim, and
+released implementation. Reddit remains deferred without a request.
+
+## Cycle 382 checkpoint — qualify selective prediction and deployment control
+
+What was wrong: the library turned a confidence-ranking paper into evidence
+that correctness training causes action-level Abstention Decay and that AURC
+training preserves a model's ability to stop. It also repeated the paper's
+uniform out-of-distribution and high-stakes deployment language without the
+per-dataset counterexamples, selected denominator, or uncertainty.
+
+What changes: RLSR is now retained as useful evidence that direct selection-
+metric training can improve aggregate answer-confidence ranking. The library
+no longer treats post-hoc thresholding as a learned stop action or a guaranteed
+risk-control procedure.
+
+ArXiv `2607.03528v1` was observed at `2026-09-04T12:41:37Z`. Its 3,093-byte
+Atom response has SHA-256
+`3d94db2de71e519cd089a74f877b0e67b3669fc0a04c1ba3865cab47633510dc`;
+the 1,792,579-byte source archive has SHA-256
+`30e5f8899d17a4bd75f6c7311a75c5cbd0773ff36b8429d37432f6e743e1aae6`;
+the 541,386-byte HTML representation has SHA-256
+`36717db8de48851eddf904c20752dde2c3ba40a7ddcf75318fc459fad6fb5944`.
+The method trains batch-ranked rewards from correctness and verbalized
+confidence. Evaluation still generates an answer for every question and then
+applies a threshold; downstream human review is proposed, not observed.
+
+The aggregate Qwen2.5-7B AURC advantage is supported: RLSR reports `0.41`
+after HotPotQA training versus BASE/RLVR/RLCR `0.44/0.47/0.46`, and `0.45`
+after BigMath training versus `0.49/0.53/0.47`, on the paper's OOD groupings.
+Per-dataset results contradict uniformity. RLSR is best against all baselines
+on only 4/6 HotPotQA-trained OOD datasets and 2/5 BigMath-trained OOD datasets.
+Examples include CommonsenseQA `0.09` versus BASE/RLCR `0.08`, GPQA `0.58`
+versus BASE `0.55`, MATH-500 `0.36` versus RLCR `0.33`, and HotPotQA-Vanilla
+`0.49` versus RLCR `0.47`. These are different benchmark datasets, not
+controlled shifts that identify a distributional factor.
+
+The MedQA table's rounded figures uniquely imply that RLSR selected 38 of
+1,273 test cases and got 30 correct. Its 78.9% estimate has a computed 95%
+Wilson interval of about 63.7–88.9%. RLCR selected 18 and got 13 correct,
+72.2%, with an interval of about 49.1–87.5%. Identical RLSR validation and test
+point estimates (`30/38`) are encouraging but do not guarantee a 75% accuracy
+target. The paper gives no confidence bound, correction for threshold search,
+conformal method, or other finite-sample risk-control procedure. Its five-seed
+table covers HotPotQA-trained Qwen at temperature `0.3`, not training-seed
+variation, all datasets, or the MedQA operating point.
+
+The 77-byte project page, observed at `2026-09-04T12:42:46Z`, redirects to
+`sun-umn/RLSR`. GitHub observations through `12:43:09Z` pin author commit
+`d972f1716a76745f098320980d9a0d58cab94e6e`, authored
+`2026-08-28T21:02:58Z`. The public tree includes the batch trainer, reward
+registration, configs, evaluation runner, dependency lock, and RLCR submodule.
+It includes no trained checkpoints, reported result files, or tests. Its MedQA
+helper constructs only the 1,273-item test split, so it cannot run the paper's
+1,272-item validation-to-test threshold transfer as released. Its AURC helper
+uses trapezoidal integration rather than the manuscript's mean of prefix risks
+and does not state how evaluation ties are ordered. The repository is strong
+attributable implementation evidence, not a reproduction of the tables.
+
+Confidence is high in the primary source, exact table arithmetic, inferred
+integer denominators, immutable repository identity, and release inventory;
+moderate for aggregate transfer; low for action-level abstention, per-domain
+robustness, and high-stakes error control. ArXiv/GitHub now revisit on released
+checkpoints/results, a complete MedQA validation pipeline, repeated-training or
+per-dataset uncertainty, finite-sample risk guarantees, or a controlled shift
+study. Reddit made zero requests and remains RSS-readable/JSON-403 until a
+relevant thread or access change. XHS remains due at the recorded boundary.
+`RV-004` and `RV-034` remain high/open.
+
+The next ranked accessible work is arXiv `2607.03441`: audit whether its
+token-level repetition detector preserves competence under matched controls,
+what the reported 1.9× overhead includes, and whether its artifacts reproduce
+the ALFWorld and SWE-bench Lite gains.
+
+### Validation and preservation
+
+The reviewed seven-file candidate passes whitespace review, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 current-state projection,
+94 scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 Scout tests
+/ 1,486 assertions with zero failures. The broad audit passes 1,540 tracked
+Markdown documents / 1,732 local prose links. Read-only health at
+`2026-09-04T12:50:12.937Z` returns 26 facts / 16 wake signals with
+`truncated:true`; application runtime state is empty.
+
+Accepted Cycle 371 commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors; unaccepted `d041c41b54` remains excluded. The
+reviewer branch's later `8dca8f4576` and `9c52296961` are stabilization-
+lifecycle cursor changes, not a newly accepted finite Scout result, so this
+batch does not manufacture a producer integration wrapper.
+
+Read-only protected-checkout observation at
+`2026-09-04T12:51:37.738Z` records unchanged HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its current whole short-status
+surface is 893 records / SHA-256
+`1bbf77b3c02e7892da7c28a451176e144421662616758f40f74fc44e441c5c90`;
+the Scout-project scope is 296 records / SHA-256
+`59974094d30cf9d3947d4b96c7ac9a75dc4e0d70955ab479cfc4c85a93df4b9f`.
+The whole surface differs from the handoff observation and is recorded as
+external drift, not attributed to this worker. This worker ran no test,
+generator, formatter, install, clean, or write in `/app` or a peer worktree;
+the same exact fingerprints are rechecked after commit.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
