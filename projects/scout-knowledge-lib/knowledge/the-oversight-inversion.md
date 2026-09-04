@@ -1229,6 +1229,18 @@ later action-surface manifest is proposed rather than part of the enumerated
 admission gate. Dual-channel observation is useful architecture, but complete
 mediation remains unverified.
 
+Its adjacent offline-rejudging promise has a narrower valid core. The published
+predicate leaves can recompute file-content, file-diff, and normalized-atom
+questions, and their combinators can form new functions of those retained
+facts. But the seven-field atom schema omits results, response bodies, process/
+environment context, and transferred bytes; the wider stream/post-check schema
+is unpublished; and the bundle tuple omits prompt, authorization scope,
+sensitive locus, fixture, and predicate version. Hash-only pre-state and final
+state cannot recover old deleted content, transient restored effects, or an
+unobserved read/sink. Retention permits reinterpretation of captured evidence;
+it cannot manufacture evidence that capture discarded. Treat “any new
+predicate” as a bounded schema claim, not arbitrary retroactive auditability.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

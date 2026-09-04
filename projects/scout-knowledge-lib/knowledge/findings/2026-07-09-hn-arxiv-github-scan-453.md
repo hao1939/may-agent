@@ -185,6 +185,23 @@ not as one of the four admission checks. Treat dual-channel auditing as a
 concrete architecture and complete coverage as an open obligation until every
 declared sink maps to tested capture evidence for all four evaluated products.
 
+**Offline re-judgability supports recomputation over captured facts, not
+recovery of absent facts.** The four published leaf predicates consume post-run
+file content, file-diff path sets, or normalized atom names and arguments; the
+three combinators only compose those leaves. Those predicates could be changed
+and rerun offline if the promised bytes exist. But the normalized atom record's
+seven fields—timestamp, run ID, command, atom, severity, arguments, and working
+directory—do not retain tool results, response bodies, environment or process
+context, or exact bytes read/written. The wider bundle names `stream` and
+`post-checks` without publishing either schema, and its tuple does not include
+the scenario prompt, authorization scope, sensitive-read set, fixture, or
+predicate version on which the formal verdict depends. Hash-only pre-state plus
+a post-run directory copy also cannot recover old deleted content, transient
+restored writes, uncaptured reads, remote/in-memory effects, or unobserved
+sinks. The narrow supported claim is that a new function of already captured
+fields can be evaluated without another agent run; “any new predicate” is not
+supported across information the observer or bundle never retained.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
@@ -208,8 +225,8 @@ publication. Its inspected arXiv source contains manuscript files and figures,
 not those artifacts. Four targeted GitHub repository searches found no
 attributable project, so the published tables and arithmetic are inspectable
 but neither the paired pilot, the human-label analysis, the zero-touch
-taxonomy, the audit-coverage claim, nor the full matrix can currently be
-replayed.
+taxonomy, the audit-coverage or offline-rejudging claims, nor the full matrix
+can currently be replayed.
 
 Sources: https://arxiv.org/abs/2607.05743,
 https://arxiv.org/abs/2605.18583

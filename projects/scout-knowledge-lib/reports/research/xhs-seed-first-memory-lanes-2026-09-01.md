@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 397 qualifies OverEager's pilot, product, human-label, zero-touch, and audit-coverage claims: dual-channel architecture is concrete, while complete mediation remains untested."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 398 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, and offline-rejudging claims: retained views can support recomputation, not recovery of uncaptured facts."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 397; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage evidence qualified through Cycle 397; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 398; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging evidence qualified through Cycle 398; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18590,6 +18590,114 @@ links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
 assertions with zero failures in 116.05 seconds. The committed exact-tip audit
 binds broad links, read-only health, lineage, clean state, and protected
 fingerprints without promoting the source's missing runtime evidence.
+
+## Cycle 398 checkpoint — bound offline re-judging to retained facts
+
+What was wrong: “any new predicate” could be read as a promise that the audit
+bundle can answer future safety questions even when the original observer or
+record schema did not retain the needed fact. No offline computation can cross
+that information boundary.
+
+What changes: the finding, Oversight synthesis, and topic map now separate
+recomputing a new function of captured evidence from recovering an action,
+context, or state that was never captured.
+
+### Seed order, ranking, and source lanes
+
+Cycle 398 began from clean validated Cycle 397 result
+`b2e68a7392a72dc24723c2ca9ea3ff26dc0ca000`. At
+`2026-09-04T15:51:53.266Z`, the next XHS boundary remained
+`2026-09-04T17:09:20.326Z`; no trigger had fired. The bounded reconciliation
+made zero account requests: additions and changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, and Cycle
+375's browser receipt/seed ledger remain exact provenance. No account state
+changed.
+
+High/open `RV-004` and `RV-034` remain more valuable but inaccessible at their
+protected-outcome and external-runtime boundaries. The highest accessible gap
+was OverEager's offline-rejudging claim. The audit reused Cycle 393's retained
+source archive at SHA-256 `eb6ca423…408f`. GitHub, arXiv, Reddit, and every
+other public lane made zero requests; their last useful evidence, boundaries,
+and revisit triggers remain unchanged.
+
+### Exact field and predicate audit
+
+The source's executable-looking pseudocode publishes three combinators and four
+leaf predicate types:
+
+- `file_content_pattern` and `file_content_missing_pattern` read bytes from the
+  claimed full post-run directory copy;
+- `atom_invoked` reads normalized atom name and argument fields;
+- `fs_diff_includes` reads added/deleted/modified path sets derived from pre/post
+  snapshots; and
+- `all_of`, `any_of`, and `not_of` recombine those Boolean results.
+
+If those claimed bundle bytes are retained, later investigators can change a
+regular expression, path glob, severity threshold, or Boolean combination and
+recompute the verdict without another agent run. This is meaningful offline
+re-judging of existing captured facts. The source archive itself contains only
+manuscript files and figures, so the path is specified but not demonstrated on
+an independently available bundle.
+
+The normalized atom tuple is exactly timestamp, run ID, command, atom,
+severity, arguments, and working directory. It does not itself retain tool
+results, response bodies, environment/PATH resolution, process ancestry,
+network responses, or exact bytes read or written. The wider audit tuple names
+`stream` and `post-checks`, but publishes no schema showing which event result,
+exit-code, timing, or provider-specific fields survive. Normalization may be
+useful; its information loss cannot be audited from this package.
+
+The formal decision also needs facts outside the named bundle tuple. Whether
+an operation is outside authorization depends on scenario prompt `P` and scope
+`A`; sensitive-read classification depends on `R_sensitive`; interpretation of
+the state depends on the fixture and predicate version. None is enumerated in
+`B=(atoms, fs_before, fs_after, stream, post-checks)`. Scenario objects may be
+stored separately in the promised release, but that cannot be inferred from an
+unreleased artifact.
+
+Finally, a SHA-256 pre-state snapshot can show that a path changed but cannot
+recover the prior contents of a deleted file. A final directory copy cannot
+reconstruct a transient write later restored, an uncaptured sensitive read, a
+remote response, in-memory state, or an undeclared sink. A future predicate
+over these facts needs a new observation, not merely a new rule.
+
+The supported conclusion is narrow and useful: persisted views permit new
+deterministic functions of already captured evidence. They do not guarantee
+arbitrary future predicates, changed authorization semantics, or recovery of
+facts absent from the observer and bundle. Confidence is high in the published
+field/predicate inventory and information-boundary conclusion; moderate in the
+potential reach of the named raw stream and post-checks; low in actual artifact
+completeness, schema stability, and independent replay. `RV-004` and `RV-034`
+remain high/open; `RV-036` remains medium/open. Revisit on a released bundle
+schema, scenario/predicate manifest, raw run, or demonstrated old/new verdict.
+Next seed-first, test provenance binding among scenario, adapter/schema,
+predicate version, immutable bundle, and a later re-judged result if it remains
+the highest accessible question.
+
+### Cycle 398 candidate validation
+
+The four-document candidate from source
+`b2e68a7392a72dc24723c2ca9ea3ff26dc0ca000` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 projection, 101 scoped
+links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 105.08 seconds. The committed tree repeats the
+full gate at 296 tests / 1,486 assertions in 105.89 seconds; its broad audit
+passes 1,540 Markdown documents / 1,741 local prose links. Read-only health at
+`2026-09-04T16:00:07.990Z` returns 26 facts / 16 wakes with `truncated:true`,
+and `.goal-runtime` remains empty.
+
+The result is a direct child of source `b2e68a7392`; reviewer
+`2379a9fabb619c653cbabda04e60066b5c473aa4` remains an ancestor. Reviewer
+`26eda94dac246e395bbfac5e1d14032e46d8facd` remains non-contained and
+non-patch-equivalent at patch ID
+`0e277e14e05f103c96212285e58daf17a8ca66f7`, with its useful substance
+semantically reconciled and superseded. Protected `/app` remains at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`: its full-file status surface
+is 895 records / SHA-256 `59212dbd…03b0c` and its Scout scope is 296 records /
+SHA-256 `59974094…84b9f`. These equal the pre-cycle handoff fingerprints. No
+test, generator, formatter, install, clean, or write ran in `/app` or any peer
+worktree. This evidence does not promote the absent audit artifact into replay
+proof.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

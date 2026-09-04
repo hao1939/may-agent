@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 397 bounded reconciliation at 2026-09-04T15:44:18.258Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 397; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage evidence qualified through Cycle 397; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 398 bounded reconciliation at 2026-09-04T15:51:53.266Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 398; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging evidence qualified through Cycle 398; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10262,6 +10262,65 @@ capture challenges, a channel-to-sink manifest with tested closure, or an
 independent bypass audit. Next seed-first, test the narrower offline re-
 judgability claim against the exact normalized fields and predicates that need
 unretained context if it remains the highest accessible gap.
+
+### Cycle 398 seed-first start — separate recomputation from recovery
+
+Cycle 398 starts from clean validated Cycle 397 result
+`b2e68a7392a72dc24723c2ca9ea3ff26dc0ca000`. At
+`2026-09-04T15:51:53.266Z`, the next scheduled XHS observation remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. Make zero account
+requests: additions and changes remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and Cycle 375's browser receipt
+and seed ledger remain the exact provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+outcome/runtime boundaries. Reuse Cycle 393's checksum-matching OverEager
+source and select offline re-judgability as the highest accessible claim because
+it determines whether a retained run can answer a later safety question. Make
+zero GitHub, arXiv, Reddit, or other public requests.
+
+### Cycle 398 checkpoint — a retained view can be recomputed, not completed
+
+The manuscript's four published leaf predicates establish a useful narrow
+result. `file_content_pattern` and its missing-pattern complement can be rerun
+against the claimed full post-run copy; `fs_diff_includes` can be rerun against
+the pre/post path diff; `atom_invoked` can be rerun against normalized atom name
+and argument fields; and `all_of`/`any_of`/`not_of` can recombine those leaves.
+If the promised bundle contains those bytes, a reader can change thresholds,
+regular expressions, combinations, or severity aggregation without rerunning
+the agent. The paper's retained source does not contain a bundle on which to
+demonstrate this, so it remains schema-level support rather than replay proof.
+
+The universal wording—“any new predicate”—crosses an information boundary.
+The seven-field atom record retains timestamp, run ID, command, atom, severity,
+arguments, and working directory. It does not itself retain tool results,
+response bodies, environment/PATH resolution, process ancestry, network
+responses, or bytes read and written. The wider bundle names raw `stream` and
+`post-checks`, but publishes neither schema; their sufficiency is unknown.
+Likewise, the bundle tuple omits the scenario's prompt `P`, authorization scope
+`A`, sensitive-read set, fixture definition, and predicate version even though
+the formal overeager decision depends on them.
+
+SHA-256 pre-state snapshots can identify a changed path but cannot recover a
+deleted file's old contents. A post-run copy cannot reconstruct a transient
+write restored before capture, an uncaptured sensitive read, remote response,
+in-memory mutation, or unobserved sink. No later predicate can recover such a
+fact from normalized atoms or end state. Thus offline re-judging is supported
+for new functions of facts already captured; it is not supported for recovering
+facts the observer omitted or for changing the authorization interpretation
+without separately retained scenario context.
+
+Confidence is high in the field/predicate inventory and the recomputation-
+versus-recovery distinction; moderate that the named wider bundle could support
+additional stream/exit predicates; low in actual bundle completeness, schema
+stability, arbitrary future-predicate support, or independent replay. GitHub
+and arXiv retain Cycle 393's last useful evidence; Reddit makes zero requests
+and remains RSS-readable/JSON-403 until its trigger. `RV-004` and `RV-034`
+remain high/open and `RV-036` medium/open. Revisit on a released bundle schema,
+scenario/predicate manifest, raw run, or a demonstrated old-versus-new verdict.
+Next seed-first, audit whether a re-judged verdict is cryptographically bound to
+the original scenario, adapter/schema, predicate version, and immutable bundle
+if that remains the highest accessible provenance gap.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
