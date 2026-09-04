@@ -95,20 +95,32 @@ safe release boundary.
 | Item | Disposition |
 | --- | --- |
 | Reviewer ledger source `cfea84eca8a9a91eabc54f6959edd33ce368c8a4` → result `3d92dd6ea61d608b5eefb55bfa9415e992f23af4` | **Integrated exactly.** The result is the clean Cycle 408 source and contains Cycle 407 `c77597de6c`, planner `d83ab7ec90`, reconciliation merge `4e2f73507f`, and cursor `cfea84eca8`. Rollback is one ordinary revert of `3d92dd6ea6`. |
-| Cycle 408 producer source `3d92dd6ea61d608b5eefb55bfa9415e992f23af4` → material result | **Pending exact commit binding and independent review.** The implementation is one regression fixture plus this report and the compact topic-map link; it changes no production transition code. |
+| Cycle 408 producer source `3d92dd6ea61d608b5eefb55bfa9415e992f23af4` → material result `ff9b60a4bcafb993836d861444a4f7980900d436` | **Committed and exact-tip validated; independent review pending.** The implementation is one regression fixture plus this report and the compact topic-map link; it changes no production transition code. |
 | RV-044 | **Producer criterion met; review pending.** Keep it medium/open until independent review accepts the exact committed fixture and validation. |
 | RV-004 / RV-034 | **Unchanged: high/open.** This repository-preservation evidence supplies no Scout outcome join and no external runtime repair. |
 
-Rollback of this candidate is an ordinary revert of the eventual Cycle 408
-material commit. That removes only the regression and its evidence; it does
-not move local main or alter the already integrated planner.
+Rollback of this batch is reverse-order ordinary reverts: first this validation
+record, then `ff9b60a4bcafb993836d861444a4f7980900d436`. That removes only
+the regression and its evidence; it does not move local main or alter the
+already integrated planner.
 
 ## Validation and next ranked work
 
-Focused validation passes six tests and 26 assertions, including the new
-forward/baseline/rollback fixture. Full exact-tip validation, broad links,
-read-only health, lineage, clean state, and protected fingerprints will be
-bound in the validation child after the material commit.
+On exact material commit `ff9b60a4bcafb993836d861444a4f7980900d436`:
+
+- the focused overlay suite passes six tests / 26 assertions;
+- the full Scout gate passes 302 tests / 1,512 assertions, syntax, TypeScript,
+  formatting, Cycle 405 projection, 102 scoped links, and navigation 11/14 and
+  8/8;
+- the broad audit passes 1,542 tracked Markdown documents / 1,744 local links;
+- read-only health reports 34 facts / 16 wakes with `truncated:true`;
+- accepted Cycle 407 `c77597de6c`, planner `d83ab7ec90`, reconciliation
+  `4e2f73507f`, accepted cursor `cfea84eca8`, and ledger `3d92dd6ea6` are all
+  ancestors;
+- the standing worktree and runtime state are clean; and
+- read-only protected `/app` remains main `803240b27f`, with default 72 /
+  `c7398ad6…8de0`, expanded 492 / `f27a4816…a63c`, and Scout 23 /
+  `b9d6fb9c…a12c` status records/fingerprints.
 
 No further local-main movement is permitted before independent review and a
 new declared safe release boundary. After the scheduled XHS boundary

@@ -10935,10 +10935,13 @@ not authorize a `/app` transition, prove crash atomicity, cover submodules or
 all filesystem races, or replace fresh exact-boundary review. Full evidence,
 rollback, and integration dispositions are in the
 [Cycle 408 isolated rehearsal](../reports/review/scout-overlay-planner-cycle408-2026-09-05.md).
-`RV-044` meets its isolated-use criterion in the producer candidate but remains
-review-pending; `RV-004` and `RV-034` remain open. Next, await independent
-review before any local-main movement; after the XHS cadence boundary, perform
-one scheduled seed reconciliation and re-rank the substantive queue.
+Exact material `ff9b60a4bcafb993836d861444a4f7980900d436` passes 302 tests /
+1,512 assertions and the current structural, navigation, link, health,
+lineage, cleanliness, and protected-fingerprint checks. `RV-044` meets its
+isolated-use criterion in the producer checkpoint but remains review-pending;
+`RV-004` and `RV-034` remain open. Next, await independent review before any
+local-main movement; after the XHS cadence boundary, perform one scheduled seed
+reconciliation and re-rank the substantive queue.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
