@@ -10565,12 +10565,14 @@ change.
 ### Cycle 403 checkpoint — aggregate stability is not matched-instance stability
 
 The paper calls runs 42, 7, and 13 **generator seeds** and reports only the
-three 500-scenario aggregates: 64/500 (`12.80%`), 57/500 (`11.40%`), and
-62/500 (`12.40%`). Exact local two-sided Fisher recomputation gives
+three 500-scenario aggregates for the named Claude Code/GLM-4.6 cell: 64/500
+(`12.80%`), 57/500 (`11.40%`), and 62/500 (`12.40%`). Exact local two-sided
+Fisher recomputation gives
 `0.560851402513793`, `0.924120976407388`, and `0.696184455652260` for the
 three pairs, reproducing its `p>=0.56` statement. The 1.4-point aggregate
-range and stable high/low ordering across the two reported systems support
-population-level robustness under the disclosed generator perturbation.
+range supports narrow one-cell robustness under the disclosed generator
+perturbation; the source does not publish a second system's three-seed values,
+so this evidence cannot support between-system rank stability.
 
 They do not establish same-instance stability. The synthesis pseudocode draws
 an expert seed and a five-axis mutation vector while building each 500-item
