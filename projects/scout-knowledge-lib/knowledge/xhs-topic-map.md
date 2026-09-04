@@ -7996,6 +7996,33 @@ compare whether one selected point supplies a matched release arc, exposure,
 or measured evaluation outcome. GitHub/arXiv retain Cycles 362/361 and Reddit
 remains trigger-deferred.
 
+### Cycle 365 checkpoint — one Grok point is not cross-vendor replication
+
+Seed-ordering commit `d434eec0a1dc99ebf00824e8441b6bb61c705472`
+preceded both public reads. HN Firebase observations at
+`2026-09-04T08:18:05.280Z` and `08:18:05.756Z` resolve Grok 4.5 item
+`48835111` to 776 points / 1,502 descendants (`72c47ed8…7577a`) and same-day
+GPT-Live item `48834405` to 750 / 528 (`0770657e…1c503`). They were submitted
+57 minutes apart by different users. Retained Scans 472–473 show Grok
+173→276→329 and GPT-Live 358→411→479; the initial ordering was not a stable
+ceiling, and Grok ultimately finished above GPT-Live.
+
+This contradicts Scan 471's “confirmed” label, not the possibility of audience
+saturation. The selected counters mix vendor, event, title, source, age, and
+release-arc position; HN exposes neither matched impressions/rank history nor
+measured evaluation effort. Cross-vendor attention decay remains unreplicated.
+Confidence is high in identity, chronology, final metadata, and the retained
+trajectory; low in causal attention or market-preference inference.
+
+HN supplied the useful evidence. GitHub and arXiv made zero requests and retain
+Cycles 362/361 as their last useful evidence; Reddit made zero requests and
+remains deferred until a relevant thread or access change. `RV-004` remains
+high/open because the protected query/rank→selection→later-outcome join is not
+retained. Next seed-first, audit Scan 472's broader “Frozen Frontier” inference:
+test whether a selected cumulative story basket and one Uniqlo comparator can
+support category-wide attention reallocation, preserving later crossings and
+alternative selection/exposure explanations.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

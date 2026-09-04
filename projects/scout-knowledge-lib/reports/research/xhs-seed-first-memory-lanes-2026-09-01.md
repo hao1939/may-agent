@@ -15103,6 +15103,36 @@ compare whether one selected point supplies a matched release arc, exposure,
 or measured evaluation outcome. GitHub/arXiv retain Cycles 362/361 and Reddit
 remains trigger-deferred.
 
+## Cycle 365 checkpoint — one Grok point is not cross-vendor replication
+
+Exact seed-first commit `d434eec0a1dc99ebf00824e8441b6bb61c705472`
+was clean before either source read. HN Firebase item `48835111`, observed
+`2026-09-04T08:18:05.280Z`, is “Grok 4.5,” submitted by `BoumTAC` at
+`2026-07-08T18:00:32Z`, and finishes at 776 points / 1,502 descendants; its
+1,106-byte JSON hashes to `72c47ed8ac758f0e7dda8448fb6e5bb61261c494c726b6532a33e94eabd7577a`.
+Item `48834405`, observed `08:18:05.756Z`, is “GPT-Live,” submitted by
+`logickkk1` at `17:03:19Z`, and finishes at 750 / 528; its 1,251-byte JSON
+hashes to `0770657e0584b3768ddef2bad8c17bdcd447544dfa41bdfac4bea7a80031c503`.
+
+Scan 471 selected the earlier 173-point Grok snapshot and called it
+cross-vendor confirmation. Scans 472–473 themselves record Grok
+173→276→329 and GPT-Live 358→411→479. The stable records show Grok ultimately
+above GPT-Live, so that first ordering was not a stable ceiling. More
+importantly, this is neither a replication nor a decay experiment: the
+comparison lacks matched event semantics, exposure/rank history, audience,
+submission age, and direct evaluation effort. It leaves audience saturation
+possible but unmeasured. Confidence is high for identity, timing, metadata,
+and the contradiction; low for causal market or oversight claims.
+
+HN was the selected primary lane. GitHub and arXiv made zero requests and keep
+Cycles 362/361 as their last useful evidence; Reddit made zero requests and
+stays deferred at its recorded boundary until a relevant thread or access
+change. `RV-004` remains high/open: no protected query/rank-to-selection-to-
+later-outcome join is retained. Next begin seed-first without an early XHS
+request, then test Scan 472's category-wide “Frozen Frontier” inference
+against its selected basket, later crossings, and alternative exposure and
+selection explanations. Static compaction remains lower value.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

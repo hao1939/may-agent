@@ -1006,6 +1006,13 @@ quality, submitter, timing, and competing stories remain alternative causes.
 The selected foundation basket is likewise cumulative and unmatched, so it
 does not establish that comprehension compounds while novelty decays.
 
+Scan #471's separate-vendor extension does not supply replication. Its first
+Grok 4.5 snapshot was 173 points, but stable HN item `48835111` later finished
+at 776; same-day GPT-Live item `48834405` finished at 750. The initial ordering
+therefore was not a stable ceiling, and neither item supplies a matched release
+arc or evaluation-effort measure. Cross-vendor attention decay remains a test
+candidate rather than an established layer.
+
 **Sixteen-point exit arc**:
 1–15: (#444–#459)
 16. **Attention-decay test (#460): distinguish release-arc position, exposure,
