@@ -7486,6 +7486,50 @@ compaction. Select `2607.06413` and audit experimental units, replication,
 utility construction, model/task coverage, uncertainty, comparisons, and
 artifacts.
 
+### Cycle 358 checkpoint — the design does not observe fixed-configuration variance
+
+At `2026-09-04T07:25:45.434Z`, arXiv `2607.06413v1` supplied a 3,127-byte
+Atom record (`d68bbd29…1c06`) and 415,090-byte source archive
+(`65b2037f…2aaa`). The paper schedules 144 factorial cells across two agents,
+two tasks, two metrics, three effort levels, three folds, and two data regimes,
+but executes each cell once. Four `a-DLD` runs fail its declared 90%
+simulation-validity screen, leaving 140. The authors explicitly defer
+replication. The stochastic-operator framing is therefore a design proposal;
+this experiment cannot estimate same-configuration output variance.
+
+The assigned primary metric changes weakly with effort: one of four condition
+tests is uncorrected-significant (`a-DLD`, `p=.029`) and none passes the stated
+Bonferroni `.0125` threshold. Under the single prespecified standardized
+utility `(½,½,−½,−½,0,0,0,0)`, all eight effort slopes are negative and seven
+pass Holm correction. An independent ordinary-least-squares calculation from
+cleaned blob `c55c623b…d596` reproduces all eight slopes to six decimals. That
+supports the arithmetic for these weights, not untested alternative utility
+tradeoffs. Four of eight omnibus tests are uncorrected-significant and none
+passes `.05/8`; leading canonical directions are author-qualified as weakly
+identified. Their eight-negative sign result assumes approximate independence
+despite shared agents, tasks, and folds.
+
+GitHub resolves the project to
+`haohe13/starf-anagram-game-model-discovery-data-collection@15063eb31135226f41e4352dc80a17b70f877310`.
+Its non-truncated 3,903-entry tree and exact 144-row analysis, 1,404-row result,
+144-row metadata, aggregation, and validation blobs are readable. Raw counts,
+four excluded run identities, and all eight utility slopes reproduce. Codex
+cost is imputed while Claude Code cost is metered; the cross-agent cost ratio
+is descriptive. Eighteen Codex Task-1 full runs use different prompt wording,
+so that full/partial slice is not causal.
+
+ArXiv supplies the primary argument and GitHub the exact retained data/code.
+Revisit on `2607.06413v2+`, repeated-configuration data, or utility-sensitivity
+artifacts. Reddit makes zero requests and retains its relevant-thread/access
+trigger. Confidence is high for counts and fixed-utility reproduction,
+moderate for the negative trend under stated weights, and low for same-input
+variance, stable canonical direction, utility transfer, or broader agents and
+domains. `RV-004` stays high/open: the protected query/rank -> selection ->
+later-outcome join remains unavailable. Next seed-first, primary-review
+`2606.02494`, the highest accessible Scan #457 gap: test whether its CV values,
+masking claim, and 97%/2% triage split have attributable observations and
+whether they justify the scan's general monitoring inference.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

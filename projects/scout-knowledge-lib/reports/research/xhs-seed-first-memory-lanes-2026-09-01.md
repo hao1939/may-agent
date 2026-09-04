@@ -14513,6 +14513,64 @@ thread/access trigger; and (6) compaction. Select `2607.06413`. Audit the
 experimental unit, replication, tasks/models, utility construction, dominant-
 direction calculation, uncertainty, comparisons, and attributable artifacts.
 
+## Cycle 358 checkpoint — fixed-utility evidence is not replicated variance
+
+The problem was that Scan #457 treated a methodological proposal as if its
+demonstration had measured repeated stochastic behavior. At
+`2026-09-04T07:25:45.434Z`, arXiv `2607.06413v1` returned a 3,127-byte Atom
+record (SHA-256 `d68bbd29…1c06`) and 415,090-byte source archive
+(`65b2037f…2aaa`). It schedules 144 factorial cells across two agents, two
+tasks, two metrics, three effort levels, three folds, and two discovery-data
+regimes. Every fully specified cell runs once. Four `a-DLD` cells fail the
+declared 90% simulation-validity screen, leaving 140. The paper says directly
+that inference uses factorial structure rather than replicated executions and
+leaves replication to future work.
+
+The assigned primary-metric effort effect is uncorrected-significant only for
+`a-DLD` (`p=.029`) and none of four conditions passes Bonferroni `.0125`. The
+stronger result uses one prespecified equal-weight direction over standardized
+performance and cost. All eight linear-effort slopes are negative, and seven
+pass Holm correction. From retained cleaned blob `c55c623b…d596`, an
+independent ordinary-least-squares calculation reproduces `−0.817236`,
+`−0.950971`, `−0.575862`, `−0.948869`, `−0.967437`, `−0.817621`,
+`−1.081605`, and `−0.463348`. The fixed-utility calculation is reproducible;
+weight sensitivity is not present. Only four of eight omnibus effort tests are
+uncorrected-significant and none passes `.05/8`. Canonical shares are
+`.84–.99`, but the authors call the leading directions weakly identified, and
+their all-negative sign test depends on approximate independence despite
+shared agents, tasks, and folds.
+
+At `07:25:45Z`, GitHub resolved the project to
+`haohe13/starf-anagram-game-model-discovery-data-collection@15063eb31135226f41e4352dc80a17b70f877310`.
+The non-truncated tree has 3,903 entries, 2,895 blobs, and 561,652,524 declared
+bytes. Exact inspected artifacts are the 144-row `analysis_master.csv`
+(`a1292879…0308`), 1,404-row `master_results.csv` (`faf81118…b326`), 144-row
+`runs_metadata.csv` (`2700e911…215`), cleaned analysis blob `c55c623b…d596`,
+aggregation script `babc34ab…0c12`, and validation script `077b21ec…027e`.
+The raw analysis independently confirms 72 scheduled rows per agent, 36 per
+metric, 48 per fold, 72 per data regime, and the four excluded stable IDs.
+Codex dollar costs are imputed; Claude Code costs are metered. Eighteen Codex
+Task-1 full-data runs use different prompt text. Cross-agent cost and that
+full/partial slice are descriptive rather than controlled causal contrasts.
+
+This changes the user-facing conclusion: the paper supports factorial,
+multi-outcome evaluation and a reproducible negative effort trend under one
+utility, but it does not supply repeated-configuration variance or a stable
+general direction. Confidence is high for source transcription, counts,
+exclusions, and slope reproduction; moderate for the stated-weight trend; low
+for utility transfer, same-input stochastic variance, canonical-direction
+stability, or generalization beyond two agents and one task family.
+
+ArXiv was selected, and GitHub provided exact public code/data provenance.
+Revisit on `2607.06413v2+`, released repeats, or utility-weight sensitivity.
+Reddit made zero requests and remains deferred until a relevant-thread/access
+trigger. `RV-004` remains high/open because the protected query/rank ->
+selection -> later-outcome join did not change. No XHS request followed the
+seed-first boundary, and account state was not mutated. Next seed-first,
+primary-review `2606.02494`: verify the denominators and provenance behind its
+CV, masking, and triage claims before retaining the scan's broad monitoring
+inference.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
