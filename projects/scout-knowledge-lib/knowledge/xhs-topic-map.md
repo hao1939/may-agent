@@ -5676,6 +5676,37 @@ query/rank-to-selection-to-outcome join. Next begin seed-first and rank the
 remaining primary-review gaps; prefer a claim with an accessible artifact or
 contradiction over compaction.
 
+Exact Cycle 328 material `80695da018873aaa3453134c36ec55cbc0215130`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 102.77 seconds. The broad audit passes 1,540
+documents / 1,728 links. Read-only health at
+`2026-09-04T03:23:59.487Z` returns 26 facts / 16 wakes with
+`truncated:true`. Historical `f26bd4f3a5` and accepted `ff923ccde4` are
+contained; unaccepted `d041c41b54` is excluded. The standing tree and runtime
+state are empty. Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 records /
+`8e3558f4…848a36` overall and 296 / `a430d0c9…32d7e` for Scout scope.
+
+### Cycle 329 seed-first start — test proof-harness attribution
+
+At `2026-09-04T03:24:25.466Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence. This bounded
+reconciliation makes zero XHS or public requests: additions/changes remain
+unknown, removals `[]`, all 132 seeds unavailable, provenance remains the last
+browser receipt plus ledger, and account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected outcome join; (2) Memory in the Loop's unreleased
+authority-bearing result; (3) Aria `2607.06341`, highest accessible because
+the synthesis attributes its 100% proof result and claimed 8× contrast
+entirely to the loop rather than model/scaffold/task differences; (4) CXI's
+cross-contract convergence claim; (5) inaccessible Cortex ablation; (6) other
+primary/reproduction/contradiction gaps; (7) Reddit until a relevant-thread or
+access change; and (8) compaction. Select Aria. Test task denominators,
+baselines, model/scaffold differences, proof soundness versus coverage,
+intervention attribution, uncertainty, and attributable artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

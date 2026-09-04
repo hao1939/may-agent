@@ -11933,6 +11933,48 @@ thread/access change. No source provides the protected outcome join needed for
 primary, contradiction, reproducibility, retrieval, and synthesis gaps before
 choosing another artifact-backed claim; do not default to compaction.
 
+Exact Cycle 328 material `80695da018873aaa3453134c36ec55cbc0215130`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 102.77 seconds. The broad
+existing-file audit passes 1,540 tracked Scout Markdown documents / 1,728
+local prose links with zero errors. Read-only health at
+`2026-09-04T03:23:59.487Z` returns 26 facts / 16 wakes and `truncated:true`.
+Historical `f26bd4f3a590b59d241536326199e805777df1be` and accepted
+`ff923ccde4` are contained; unaccepted `d041c41b54` is excluded. Standing
+porcelain and runtime state are empty.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its NUL-delimited porcelain-v2
+surface is 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+the combined Scout scope is 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not write, test, clean, or otherwise mutate either protected
+surface.
+
+## Cycle 329 seed-first start — test proof-harness attribution
+
+At `2026-09-04T03:24:25.466Z`, the observational XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence. This bounded
+reconciliation makes zero XHS, GitHub, arXiv, Reddit, or other public requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and account state is unchanged.
+
+Expected knowledge value ranks the complete accessible queue: (1) high/open
+`RV-004`, inaccessible because the protected post-August-31 query/rank-to-
+selection-to-outcome join is absent; (2) Memory in the Loop's unreleased
+authority-bearing provider result; (3) Aria `2607.06341`, highest accessible
+because the current Verification Loop synthesis says its 100% proof result and
+8× contrast come entirely from loop architecture rather than model capability;
+(4) CXI's different-contract convergence claim; (5) Cortex's unavailable
+taxonomy-size ablation; (6) other primary, contradiction, reproducibility,
+retrieval, and synthesis gaps; (7) Reddit until a relevant-thread/access
+change; and (8) compaction. Select Aria. Test task denominators, baselines,
+model/scaffold differences, proof soundness versus coverage, intervention
+attribution, repeated-run uncertainty, and attributable artifacts.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
