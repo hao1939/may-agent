@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 405."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale evidence qualified through Cycle 405; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 405. Cycle 406 reused this receipt without another request because the cadence had not elapsed."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycle 406; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer evidence qualified through Cycle 406; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 405 read-only XHS boundary through 2026-09-04T17:12:00.404Z."
 </ai_context>
 
@@ -10756,6 +10756,65 @@ RSS-readable/JSON-403. `RV-004` and `RV-034` remain high/open; `RV-036` and
 `RV-038` remain visible. Next seed-first, audit whether the claimed RQ4
 preservation of RQ1--RQ3 is logically supported by the disclosed one-cell
 sensitivity probes, rather than opening another isolated metric check.
+
+### Cycle 406 seed-first start — reuse the fresh boundary; test RQ4 transfer
+
+Cycle 406 begins from exact clean reviewed tip
+`3746ae005f51d3f204b2a305c2fa00e20ffbdda1`. At
+`2026-09-04T18:14:36.740Z`, Cycle 405's exact XHS observation was only
+1 hour 2 minutes 36.336 seconds old, inside the six-hour cadence ending at
+`2026-09-04T23:12:00.404Z`; no collection, access, or account trigger fired.
+Make zero browser or public requests. Added and changed identities remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and Cycle 405 stays the exact access provenance. No account state
+changed.
+
+Re-rank the complete queue: high/open `RV-004` and `RV-034` remain first but
+cannot move without the protected outcome join and external runtime;
+Memory in the Loop remains unreleased. The highest accessible evidence gap is
+therefore OverEager's claim that RQ4 sensitivity preserves RQ1--RQ3. Reuse the
+checksum-matched archive without another source request. GitHub's last useful
+evidence remains four unattributable searches plus
+`ishay-magic/agent_drift@7d21e7696ce3d8be884a2bbc67467eaed30d96fa`, which is a
+relevance dataset rather than the paper artifact; revisit on an attributable
+repository or changed head. ArXiv retains `2605.18583v1` source SHA-256
+`eb6ca423…8408f`; revisit on a revision or artifact release. Reddit remains
+RSS-readable/JSON-403 and deferred until a relevant thread or access change.
+
+### Cycle 406 checkpoint — one-cell sensitivity does not entail RQ1--RQ3
+
+The supporting evidence is real but narrow: Claude Code/GLM-4.6 reports
+64/500, 57/500, and 62/500 across generator seeds 42, 7, and 13, with a
+1.4-point range and reproducible pairwise Fisher arithmetic conditional on
+independent samples. It does not preserve each earlier research question:
+
+- RQ1 is a separate 76-scenario paired consent intervention. RQ4 publishes no
+  consent-pair bytes, component digests, or identities joining those pairs to
+  any generator-seed run.
+- RQ2 depends on the availability-shaped 15-cell product/model matrix,
+  product-specific prompts/tools/adapters, timeout denominators, and shared
+  scenario structure. RQ4 repeats one cell and cannot identify full-matrix
+  rates, ranks, or product/model conclusions.
+- RQ3 depends on archetype allocation, severity, rule-judge validity, and human
+  labels. RQ4 releases no repeated raw labels or class mappings; only seed 13
+  has a per-archetype table, while six non-zero archetypes vary by 10--20
+  points and severity totals move 386/350/356 with critical counts 39/31/28.
+
+The promised scenario-scale arm is absent, so it cannot bridge these scope
+gaps. Confidence is high that the public RQ4 evidence does not logically entail
+preservation of RQ1--RQ3 and high in the one-cell count arithmetic; confidence
+remains low in how the missing artifacts would change any earlier conclusion.
+This is an evidence-scope result, not a refutation of RQ1--RQ3. Discharge needs
+an explicit claim-to-sensitivity map, content-addressed identities joining each
+RQ's analysis population to repeated runs, full-matrix and archetype/severity
+results, human-label/adjudication records where invoked, scale sweeps, and
+dependence-aware uncertainty.
+
+`RV-004`, `RV-034`, `RV-036`, `RV-038`, and `RV-041` retain their recorded
+status. Next seed-first, inspect whether OverEager predeclares an invariance
+criterion for each RQ or merely interprets non-significant one-cell probes as
+global preservation; keep that as one claim-to-evidence audit rather than a
+new metric micro-cycle.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

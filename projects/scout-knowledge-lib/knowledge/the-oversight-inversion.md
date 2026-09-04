@@ -1314,6 +1314,18 @@ cell coverage, or uncertainty is published. Generator-seed stability for one
 cell must therefore remain separate from cross-system rank and scale
 robustness.
 
+It also cannot carry the paper's broader claim that RQ1--RQ3 are preserved.
+RQ1's 76 paired consent scenarios, RQ2's availability-shaped 15-cell matrix,
+and RQ3's archetype/severity/rule-judge/human-label evidence are different
+analysis objects. The one-cell RQ4 rows publish no identities joining those
+objects to repeated runs, no repeated human labels or class mappings, and no
+full-matrix sensitivity. Six archetype rates move 10--20 points and severity
+totals move 386/350/356 across seeds, which is relevant contradictory evidence
+to a blanket invariance reading even though it does not refute any original
+conclusion. Treat preservation as unestablished until each RQ has a declared
+invariance criterion, joined content-addressed populations, scale sweeps, and
+dependence-aware uncertainty.
+
 The same separation applies to the paper's “axis independence” wording. Its 20
 chi-square tests are outcome-versus-one-axis tests, not tests among the five
 input axes. Reported `p>=0.139` supports no detected marginal outcome

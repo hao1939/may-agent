@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 405 retains the login-class collection boundary and qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but a second SUT, scenario-scale evidence, matched identities, mutual-axis independence, interaction identification, and population transfer remain unsupported."
+summary: "Seed-first Scout continuity through Cycle 405's observation and Cycle 406's no-request reconciliation qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but it does not entail preservation of the paired consent pilot, full 15-cell matrix, or archetype/severity/human-label conclusions."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale evidence qualified through Cycle 405; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405. Cycle 406 reused this receipt without another request because the cadence had not elapsed."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycle 406; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer evidence qualified through Cycle 406; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19309,6 +19309,95 @@ TypeScript, formatting, the latest seed projection, scoped links, both
 navigation fixtures, and the full Scout gate before committing; then bind
 broad links, read-only health, lineage, clean state, and protected fingerprints
 to the exact result.
+
+## Cycle 406 checkpoint — RQ4 does not transfer without joined evidence
+
+What was wrong: the manuscript asks whether RQ1--RQ3 survive its sensitivity
+analysis, while the library had qualified individual RQ4 metrics without yet
+testing whether those metrics measure the same populations and conclusions as
+the earlier questions. The wording could make one stable product/model cell
+look like preservation of the whole study.
+
+What changes: this checkpoint retains the reproduced one-cell aggregate result
+and maps every earlier RQ to the evidence RQ4 would need. The result is a scope
+qualification, not a claim that RQ1--RQ3 are false.
+
+### Seed-first reconciliation and source continuity
+
+Cycle 406 begins from exact clean reviewed source
+`3746ae005f51d3f204b2a305c2fa00e20ffbdda1`. At
+`2026-09-04T18:14:36.740Z`, Cycle 405's observation through
+`17:12:00.404Z` was 1:02:36.336 old, inside its six-hour cadence ending
+`23:12:00.404Z`, and no access, collection, or account trigger had fired. The
+bounded reconciliation therefore made zero browser or public requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 405 remains exact access
+provenance. No account state changed.
+
+High/open `RV-004` and `RV-034` remain higher-value but inaccessible at the
+protected-outcome and external-runtime boundaries; Memory in the Loop remains
+unreleased. OverEager's RQ4 transfer claim was the highest accessible synthesis
+gap and could be tested from retained checksum-matched evidence. GitHub's last
+useful paper-artifact evidence remains four unattributable searches and the
+inspected non-artifact relevance dataset
+`ishay-magic/agent_drift@7d21e7696ce3d8be884a2bbc67467eaed30d96fa`;
+revisit on an attributable repository or changed head. ArXiv retains exact
+`2605.18583v1` source SHA-256
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`;
+revisit on a revision or artifact release. Reddit made zero requests and
+remains RSS-readable/JSON-403 until a relevant thread or access change.
+
+### Claim-to-evidence audit
+
+RQ4's positive support is one product/model cell. Claude Code/GLM-4.6 reports
+64/500, 57/500, and 62/500 across generator seeds 42, 7, and 13. Their
+1.4-point aggregate range and pairwise Fisher values reproduce, conditional on
+the independent-sample assumption. Marginal balance, outcome-versus-axis
+tests, and descriptive two-axis ranges provide additional checks on that same
+generated design. None joins to every earlier analysis object:
+
+| Earlier question | Evidence its conclusion uses | What RQ4 would need to preserve it | What is disclosed |
+| --- | --- | --- | --- |
+| RQ1 consent effect | 76 hand-curated scenarios paired as consent-kept/stripped under Claude Code; fixtures, predicates, and judge claimed fixed | Exact prompt-pair/component identities repeated or resampled under a declared target, paired effects and uncertainty at each sensitivity setting | No prompt bytes, component hashes, pair IDs, or join from the 76 pairs to generator-seed runs |
+| RQ2 product/model result | Availability-shaped 15-cell matrix, product-specific prompts/tools/adapters, timeout denominators, and shared scenario structure | Repeated full matrix or declared representative subset with exact counts, timeout policy, scenario overlap, cell ranks/effects, and clustered uncertainty | Detailed generator-seed and two-axis evidence only for Claude Code/GLM; the second rank cell and several exact denominators are absent |
+| RQ3 characterization/validation | Archetype allocation, severity, rule-judge outcomes, and a stratified two-annotator human check | Repeated scenario-to-archetype mappings, severity and judge tables, raw human labels/adjudication, coverage, and uncertainty under each changed factor | Only seed 13 has a per-archetype table; no raw assignments/labels; six non-zero archetypes move 10--20 points, severity totals 386/350/356, critical counts 39/31/28 |
+
+The missing scenario-scale arm prevents a bridge by sample size: the retained
+17-file archive has no scale sweep, tested sizes, repeated draws, or
+uncertainty. The aggregate rates also omit cross-seed overlap, so even their
+Fisher inference cannot choose between independent, paired, or clustered
+analysis from public evidence.
+
+The strongest supported conclusion is therefore narrow: one cell's aggregate
+overeager rate is similar across three generator seeds under unknown overlap.
+It does not logically entail preservation of RQ1's paired effect, RQ2's
+full-matrix comparisons, or RQ3's class/severity/human-validation conclusions.
+The moving archetype and severity summaries are contradictory evidence to a
+blanket invariance reading, but they do not by themselves overturn any earlier
+result.
+
+Confidence is high in this scope mapping, archive boundary, and one-cell count
+arithmetic; moderate that the manuscript intends RQ4 as a bridge to all three
+questions; and low in the unobserved sensitivity outcomes or whether the
+missing artifact would preserve them. Discharge requires a predeclared
+invariance criterion per RQ, content-addressed population joins, relevant
+full-matrix and archetype/severity/human-label outputs, the promised scale
+sweep, and dependence-aware uncertainty.
+
+Next seed-first, inspect whether OverEager actually predeclares those
+RQ-specific invariance criteria or substitutes non-significance in one cell
+for global preservation. Keep that work as one claim-to-evidence audit, not a
+new isolated metric micro-cycle. `RV-004`, `RV-034`, `RV-036`, `RV-038`, and
+`RV-041` retain their recorded status.
+
+### Cycle 406 candidate validation
+
+The four-document candidate follows exact reviewed source
+`3746ae005f51d3f204b2a305c2fa00e20ffbdda1`. Run whitespace, syntax,
+TypeScript, source formatting, the latest seed projection, scoped links, both
+navigation fixtures, and the full Scout gate before committing; then bind
+broad links, read-only health, review lineage, clean state, and protected
+fingerprints to the exact result.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
