@@ -354,7 +354,7 @@ Superseded (generic patterns already in canonical notes):
 - [Hacker News Trends: AI Agents](./findings/hn-ai-agent-trends.md) — failure-dominated discourse, guardrail/harness tooling build-out, Harness Engineering as emerging discipline (consolidated to 2026-06-19)
 - [HackerNews Trends: Agent Memory Patterns](./findings/hn-memory-patterns.md) — back-to-SQL movement, multi-agent memory consistency, dual-mode memory (vector + relational)
 - [Multi-Agent Coordination Patterns](./findings/multi-agent-coordination-patterns.md) — domain accountability, event-driven interaction, metrics-as-health-signals (early internal observations)
-- [Multi-Agent Coordination Patterns: Updates & Trends](./findings/multi-agent-patterns-2024.md) — marketplace over hierarchy, event-driven blackboards, artifact-centric handoffs, evaluator agents
+- ~~[Multi-Agent Coordination Patterns: Updates & Trends](./findings/multi-agent-patterns-2024.md)~~ → mock-source note absorbed into [Multi-Agent Coordination Patterns](./multi-agent-coordination.md); retained only for provenance
 - [Multi-Agent Coordination Failures: Synthesis & XHS Trends](./findings/multi-agent-failures-2026-synthesis.md) — consensus trap / Yes Man evaluator, swarm communication overhead, context stigmergy as escape route
 - [XHS Chinese AI Community — June 2026 Findings](./findings/xhs-chinese-ai-trends-june2026.md) — raw findings companion to synthesis note
 - [XHS Library Health Assessment — June 15, 2026](./findings/2026-06-15-xhs-library-health-assessment.md) — consolidation audit: active XHS files reduced from 8→3, prediction checkpoint (3 confirmed, 3 entering forecast window), canonical note size warning (620 lines)
