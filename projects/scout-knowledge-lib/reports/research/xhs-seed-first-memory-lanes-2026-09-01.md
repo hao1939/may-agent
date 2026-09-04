@@ -18078,6 +18078,98 @@ assertions with zero failures in 95.22 seconds. The broad offline audit passes
 Read-only health at `2026-09-04T15:00:05.007Z` returns 26 facts / 16 wake
 signals with `truncated:true` and creates no runtime packet.
 
+## Cycle 392 checkpoint — separate ShellSieve's rates from YoloFS's reports
+
+What was wrong: the library treated 69.0–98.6% as one corpus-wide fragility
+rate, attributed unmeasured Unix-composition and semantic-gap explanations to
+the result, and let the survey's combined ShellSieve/YoloFS citation obscure
+that the two papers measure different things. That made a useful warning sound
+more general and more reproducible than its current evidence.
+
+What changes: the canonical security log, both executable-turn retrieval
+surfaces, Scan #95, Scan #453, the Oversight synthesis, and the index now keep
+the rate's operation-specific denominator, primary artifact boundary, tested
+environment, and remaining uncertainty. YoloFS remains related evidence, but
+its 290-report corpus is no longer implied to produce ShellSieve's percentage.
+
+### Seed order, ranking, and source lanes
+
+Cycle 392 began from clean validated Cycle 391 result
+`309e4d7b7a8f4864d59b67cd5fa6ba04dc69d8ea`. At
+`2026-09-04T15:04:28.784Z`, the next XHS observation remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. The bounded pass made zero
+account requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, and Cycle 375's exact
+browser receipt and seed ledger remain provenance. No XHS state changed.
+
+High/open `RV-004` and `RV-034` remain higher-value but inaccessible at their
+recorded protected-outcome and external-runtime boundaries. Memory in the
+Loop's provider result remains unreleased. The survey's joined enforcement-
+fragility claim was the highest accessible gap, so arXiv and GitHub were
+selected. Reddit made zero requests and retains its RSS-readable/JSON-403
+boundary until a relevant thread or access change.
+
+At `2026-09-04T15:05:23.235Z–15:07:53.713Z`, arXiv returned ShellSieve
+`2606.15549v2` and YoloFS `2604.13536v4`. ShellSieve's 3,176-byte Atom response
+has SHA-256 `f26c1b2f2ac888e0133fc51d715fc21f4de9af03a7aa04bb14de088ae26a0ad6`;
+its 3,618,778-byte source archive has
+`d0bcea61bdb4dbcf775faae42e1b75c669bb51cac29f3087ffdfb5427f67745d`,
+and its 1,827,528-byte PDF has
+`0ed8f40d70946dc787d802fbdfdf6b2bbd64d496a0f39ef60fda696801b682c4`.
+YoloFS's 3,131-byte Atom response has
+`cc6f680f010e26cb34b016e40ce17b95eca57fe3c4cbe08e344260962347ae63`;
+its 309,749-byte source archive has
+`3edae7032d16687a787eab47d15ad6d3fad2c5258d9edd2be6f027dbd15f08f7`,
+and its 911,179-byte PDF has
+`c71efeb22266ecfaf98c32c73165fdf6ef3db795776bb6d4c32e6c426e36b2c6`.
+
+### Denominators, artifacts, and qualified conclusion
+
+ShellSieve's abstract, evaluation, and dataset table agree on 1,709 GitHub
+denylists containing 13,332 rules; one introduction paragraph instead says
+1,731. Claude Code contributes a 1,000-repository random cap, with 136 Codex
+and 573 OpenCode configurations in the final table. For each of seven
+filesystem-operation classes, the primary metric is the number of denylists
+that incompletely block that operation divided by the number that block it at
+all. The seven results span 69.0–98.6%. They are not a single numerator over
+all 1,709 configurations and do not cover network, process, or other shell
+effects. The experiment uses a Debian 13.5 default-GNU command universe,
+Claude Sonnet 4.6 candidate generation, sandbox execution oracles, and a
+five-round repair limit.
+
+Exact per-operation integer numerators and denominators appear only as plotted
+bars. The source says code and data will be released upon publication; the
+cited anonymous file endpoint returned HTTP 401 and the stable 25-byte body
+`{"error":"not_connected"}` (SHA-256
+`e9635ca18a865befc8be46485fb75ee4a33030472a4baceda124dc0f4e3d67eb`).
+The plot and aggregate cannot currently be regenerated. The supported result
+is strong open-world bypass evidence for negative command lists in the tested
+environment. Less-popular and multi-operation commands correlate with more
+bypasses; the paper rejects, rather than confirms, its semantic-gap hypothesis.
+
+YoloFS reports 290 public misuse records from 13 harnesses: 205 GitHub issues,
+31 social posts, 25 product-forum posts, 18 blogs, and 11 National
+Vulnerability Database records. Its source includes a generated bibliography
+with exactly 290 report descriptions and links, but not the raw label table,
+reviewer-agreement record, or generation scripts. Public repository
+`YoloFS/YoloFS` was at exact head
+`77fd8966e90c61c739b00920da8cb295279c7678` (commit time
+`2026-08-18T13:16:39Z`): its complete 239-entry / 219-blob / 1,677,067-byte
+tree contains implementation and tests but no report corpus or study-result
+path. YoloFS documents related filesystem failures and evaluates staging,
+snapshots, and progressive permissions; it supplies neither ShellSieve's rate
+denominator nor a matched reuse of its bypass corpus.
+
+Confidence is high in versions, archive identities, rate definition, repeated
+totals, access error, generated report-reference count, and repository tree;
+moderate in the plotted operation-level range; low in exact operation counts,
+sample reconstruction, labeling agreement, and independent replay. Revisit
+when ShellSieve's artifact becomes readable, either paper releases raw study
+data, a revision resolves 1,709 versus 1,731, or a defense actually runs the
+bypass corpus. Next seed-first, audit the survey's cited 17.1% benign out-of-
+scope rate against OverEager's primary denominator, controls, and artifact if
+it remains the highest accessible evidence gap.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

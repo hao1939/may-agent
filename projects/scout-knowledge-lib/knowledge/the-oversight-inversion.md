@@ -1176,7 +1176,7 @@ not independently reproducible.
 
 **Five cross-cutting gaps that no single paper addresses:**
 1. Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark
-2. Policy enforcement studies report failure rates (69–98% of real denylists), yet no isolation paper re-evaluates under that adversarial setting
+2. ShellSieve reports per-operation incomplete-block rates of 69.0–98.6% among real denylists targeting seven filesystem operations; no selected isolation paper re-evaluates under that specific adversarial setting
 3. TOCTOU and MCP threats are analyzed as separate literatures despite both being instances of the **same state-validation problem**
 4. Every enforcement mechanism assumes an **honest policy author**, leaving policy-authoring error unaddressed
 5. Benign but out-of-scope agent actions at rates up to **17.1%** under realistic prompting are addressed by **no** paper in the corpus

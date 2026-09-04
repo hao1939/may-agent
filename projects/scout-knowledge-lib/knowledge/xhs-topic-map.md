@@ -9936,6 +9936,62 @@ mechanism evaluation. Next seed-first, trace the survey's “69–98%” enforce
 fragility range to ShellSieve and YoloFS primary denominators and artifacts if
 it remains the highest accessible unresolved evidence gap.
 
+### Cycle 392 seed-first start — preserve cadence; trace the fragility denominator
+
+Cycle 392 starts from clean validated Cycle 391 result
+`309e4d7b7a8f4864d59b67cd5fa6ba04dc69d8ea`. At
+`2026-09-04T15:04:28.784Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`; no access or collection trigger had fired. Make
+zero account requests: additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and Cycle 375's
+browser receipt/ledger remain the exact provenance.
+
+High/open `RV-004` and `RV-034` remain first at their protected-outcome and
+external-runtime boundaries, and Memory in the Loop's provider result remains
+unreleased. The survey's 69–98% claim is the highest accessible evidence gap
+because it joins two papers without preserving which denominator and artifact
+support the percentage. Select the primary ShellSieve and YoloFS sources.
+
+### Cycle 392 checkpoint — one operation-specific range, two distinct studies
+
+ShellSieve `2606.15549v2` reports 1,709 GitHub denylists / 13,332 rules in its
+abstract, evaluation, and dataset table, while one introduction paragraph says
+1,731. Its 69.0–98.6% range comprises seven separate fractions: for each tested
+filesystem operation, incompletely blocking denylists divided by denylists
+that target that operation. It is not one result over all configurations. The
+experiment is bounded to a Debian 13.5 default-GNU command universe, filesystem
+effects, model-proposed candidates, execution oracles, and a five-round repair
+cap. Exact per-operation integer counts are plotted rather than tabulated.
+
+The paper says code and data will be released upon publication. Its cited
+anonymous `shpunct-6BEF` file endpoint returned HTTP 401 with
+`{"error":"not_connected"}` at `2026-09-04T15:07:53.713Z`; the exact plot
+and aggregate are therefore not independently regenerable. The primary paper
+supports open-world negative-list fragility and correlates bypasses with less-
+popular and multi-operation commands; it rejects its semantic-gap hypothesis.
+
+YoloFS `2604.13536v4` is a separate study of 290 public filesystem-misuse
+reports across 13 harnesses. Its source contains 290 generated report
+descriptions/links but no raw coding table, agreement record, or regenerating
+study scripts. Public `YoloFS/YoloFS` head
+`77fd8966e90c61c739b00920da8cb295279c7678` has 239 tree entries / 219 blobs /
+1,677,067 blob bytes and no report-corpus or paper-evaluation path. YoloFS
+neither supplies the 69.0–98.6% denominator nor validates ShellSieve's bypass
+set; it supplies qualitative failure patterns and a separately evaluated
+filesystem design.
+
+Confidence is high in paper versions, rate definition, repeated totals,
+artifact responses, report-link count, and public repository tree; moderate in
+the plotted operation-level result; low in exact per-operation counts, corpus
+selection, labeling agreement, and independent regeneration. ArXiv and GitHub
+were selected and read; Reddit made zero requests and retains its RSS-readable/
+JSON-403 boundary until a relevant thread or access change. `RV-004` and
+`RV-034` remain high/open; `RV-036` remains medium/open. Revisit on ShellSieve
+artifact access, tabulated counts, YoloFS study-data release, or either paper's
+revision. Next seed-first, trace the survey's cited 17.1% benign out-of-scope
+rate to OverEager's primary denominator, controls, and artifact if it remains
+the highest accessible unresolved claim.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

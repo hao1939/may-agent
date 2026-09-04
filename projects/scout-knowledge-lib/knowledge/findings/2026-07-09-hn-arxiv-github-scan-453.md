@@ -94,7 +94,7 @@ therefore unknown.
 
 Five proposed cross-cutting gaps within the selected corpus:
 1. **No shared benchmark**: No isolation/access-control head-to-head comparison
-2. **No adversarial co-evaluation**: No isolation paper reuses the named 69–98% enforcement-fragility setting
+2. **No adversarial co-evaluation**: No isolation paper reuses ShellSieve's named seven-operation setting, whose per-operation incomplete-block rates span 69.0–98.6%
 3. **TOCTOU/MCP analogy**: The paper interprets both as state-validation problems; it does not test one mitigation across both
 4. **Honest-author assumption**: Reviewed mechanisms do not measure policy-authoring error
 5. **Benign out-of-scope**: No selected access-control/capability paper addresses the cited result of up to 17.1%
