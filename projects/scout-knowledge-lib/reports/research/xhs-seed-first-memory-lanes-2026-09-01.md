@@ -10864,6 +10864,18 @@ thread or access change. `RV-004` remains high/open. Next begin seed-first and
 primary-review Cortex `2607.05377`, separating its 32-primitives description
 from action-space, baseline, zero-shot, and causal “subtraction” claims.
 
+Exact Cycle 317 material `d87008f144c0a2ddd57d179de10931aac59554bf`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions. The broad audit
+passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T01:51:53.775Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing tree is clean. Protected `/app` fingerprints remain 386 records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`
+overall and 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+for Scout scope.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

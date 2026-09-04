@@ -4950,6 +4950,15 @@ JSON-403 boundary. `RV-004` remains high/open. Next begin seed-first and
 primary-review Cortex `2607.05377`, separating its 32-primitives description
 from action-space, baseline, zero-shot, and causal “subtraction” claims.
 
+Exact Cycle 317 material `d87008f144c0a2ddd57d179de10931aac59554bf`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad audit
+passes 1,540 documents / 1,728 links; read-only health at
+`2026-09-04T01:51:53.775Z` returns 26 facts / 16 wakes. Accepted `ff923ccde4`
+is contained, unaccepted `d041c41b54` excluded, and the standing tree is clean.
+Protected fingerprints remain 386 / `7c285c09…ca01b` overall and 296 /
+`7e4d0937…26a8a` for Scout scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
