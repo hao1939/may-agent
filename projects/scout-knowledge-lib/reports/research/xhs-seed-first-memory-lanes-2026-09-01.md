@@ -10826,6 +10826,44 @@ Scan 449 uses its four loops, 3/4-benchmark ranking, and auditability as a
 governance mechanism. Select its primary paper and attributable artifact
 surface ahead of Cortex, HeRo, other unsourced scans, Reddit, and compaction.
 
+## Cycle 317 checkpoint — the loop mechanism is still unisolated
+
+Seed-first `d6f2320cbf2cab4a607cf862bd048fbde947c6de` preceded anonymous
+arXiv reads from `2026-09-04T01:47:45Z` through `01:49:06.921Z`. The
+166,470-byte `2607.05346v1` archive has SHA-256
+`71f685356b02e0752640c420322851139bcdcd1b64462a92b5a1ffef99e7fb39`
+and contains only TeX, one image, bibliography, and build metadata.
+
+The paper directly supports a six-agent pipeline, four correction routes
+bounded to three iterations, and one worked correction trace. Its GPT-5.4
+OptiAgent row has the highest solving accuracy on IndustryOR, LogiOR, and
+ComplexOR but not NLP4LP. It does not isolate why: each configuration has one
+run, no variability measure is reported, and baseline rows combine values
+copied from prior work with current executions under different systems and
+models. The dataset table says NLP4LP has 262 cases while runtime prose says
+263.
+
+Most importantly, component and feedback-loop ablations are explicitly future
+work. So are multi-run evaluation, interpretability metrics, and expert and
+non-expert human evaluation. Inspectable intermediate text is a design
+property, not measured audit success. Feedback adds correction calls;
+“subtraction” describes intended error removal but is not an observed compute,
+token, output, or oversight-cost reduction. The arXiv record exposes no author
+repository, so no independent execution was available.
+
+The two Scan 449 variants, index, and Oversight Inversion now preserve the
+single-run 3/4 table observation while rejecting feedback-loop causality,
+measured auditability, sub-linear verification cost, and economic confirmation.
+Confidence is high in source/table extraction, medium in the unreplicated
+ranking, and low in mechanism, robustness, audit, or governance effects.
+
+arXiv supplied the selected evidence. GitHub made zero requests because no
+attributable code link exists; revisit on author code or artifact release.
+Reddit made zero requests and remains RSS-readable/JSON-403 until a relevant
+thread or access change. `RV-004` remains high/open. Next begin seed-first and
+primary-review Cortex `2607.05377`, separating its 32-primitives description
+from action-space, baseline, zero-shot, and causal “subtraction” claims.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

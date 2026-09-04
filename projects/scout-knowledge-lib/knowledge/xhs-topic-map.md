@@ -4918,6 +4918,38 @@ evidence boundaries. OptiAgent `2607.05346` is now the highest-value accessible
 gap; select its primary paper and artifact surface ahead of Cortex, HeRo,
 other unsourced scans, Reddit, and compaction.
 
+### Cycle 317 checkpoint — four feedback routes are not an ablated effect
+
+Seed-first `d6f2320cbf2cab4a607cf862bd048fbde947c6de` preceded anonymous
+arXiv reads from `2026-09-04T01:47:45Z` through `01:49:06.921Z`. The
+`2607.05346v1` source archive contains four files, is 166,470 bytes, and has
+SHA-256 `71f685356b02e0752640c420322851139bcdcd1b64462a92b5a1ffef99e7fb39`.
+
+The paper directly describes six agents, four correction routes bounded to
+three iterations, and one worked correction trace. Its GPT-5.4 OptiAgent row
+is highest on IndustryOR, LogiOR, and ComplexOR but not NLP4LP. Headline
+results are one run per configuration with no variability measures, and
+baseline rows mix values copied from prior papers with current executions.
+The paper explicitly leaves component/loop ablation, multi-run evaluation,
+interpretability metrics, and expert/non-expert human evaluation to future
+work. It reports 262 NLP4LP cases in the dataset table but 263 in runtime text.
+The arXiv record links no author code; its archive contains TeX, one image,
+bibliography, and build metadata only.
+
+Therefore the 3/4 table ranking is supported as a single-run observation,
+while feedback-loop causality, audit success, transparency benefit, robustness,
+and sub-linear oversight cost are not. Feedback adds correction calls; calling
+it “subtractive” is a library metaphor about intended error removal, not a
+measured reduction. Confidence is high in architecture/table extraction,
+medium in the unreplicated ranking, and low in mechanism or governance effects.
+
+arXiv supplied the selected primary evidence. GitHub made zero requests
+because the paper exposes no attributable repository; revisit on author code
+or an artifact link. Reddit made zero requests and retains its RSS-readable /
+JSON-403 boundary. `RV-004` remains high/open. Next begin seed-first and
+primary-review Cortex `2607.05377`, separating its 32-primitives description
+from action-space, baseline, zero-shot, and causal “subtraction” claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
