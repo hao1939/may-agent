@@ -4420,6 +4420,30 @@ than extending this demonstration into an invented paper artifact. Select the
 highest-impact active claim whose primary evidence is accessible and whose
 correction would change a durable synthesis.
 
+## Cycle 310 seed-first start — audit delegation claims against primary evidence
+
+At `2026-09-04T00:48:44.379Z`, Cycle 310 began from clean validated
+`ba7b76ab04fe52ec9cdd56426612e39be5da1abc`. The latest XHS observation
+ended at `2026-09-03T22:59:03.253Z`, about 110 minutes earlier and inside the
+six-hour cadence. This bounded reconciliation therefore made zero XHS,
+GitHub, arXiv, or Reddit requests. Added/changed identities remain unknown,
+observed removals are `[]`, and all 132 durable seeds remain unavailable; no
+account state changed.
+
+The complete accessible queue ranks by expected knowledge value: (1)
+`RV-004`'s retained query/rank-to-later-outcome join could change maintenance
+policy, but readable protected history still ends before an attributable later
+outcome; (2) the missing Memory in the Loop experiment artifact could test its
+provider-backed probabilities, but frozen workloads, delay controls, per-run
+JSON, and model authority remain unavailable; (3) Scan 467's unsourced
+`2605.25438v2` synthesis makes durable quantitative and comprehension claims
+whose primary paper is accessible; (4) other unsourced scan claims follow;
+(5) Reddit remains below its relevant-thread/access-change trigger; and (6)
+further byte/line compaction ranks last because it creates neither outcome nor
+primary evidence. Select item 3: test the exact meaning of the reported
+language-frontier coefficient and whether the study measures comprehension or
+only repository behavior, retaining supporting and contradictory evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

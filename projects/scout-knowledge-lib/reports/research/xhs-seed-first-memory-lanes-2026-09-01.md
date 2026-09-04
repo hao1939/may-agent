@@ -10238,6 +10238,36 @@ seed-first cycle, then compare that notebook with the reported method and test
 only a faithful, decision-relevant subset without implying that it reproduces
 the missing provider-backed artifact.
 
+## Cycle 310 seed-first start — primary-check the delegation synthesis
+
+At `2026-09-04T00:48:44.379Z`, Cycle 310 began from clean validated
+`ba7b76ab04fe52ec9cdd56426612e39be5da1abc`. The last XHS observation ended
+at `2026-09-03T22:59:03.253Z`, about 110 minutes earlier and inside the
+six-hour cadence. The bounded reconciliation made zero XHS, GitHub, arXiv, or
+Reddit requests. Added/changed identities remain unknown, observed removals
+are `[]`, and all 132 durable seeds remain unavailable. No account state was
+mutated.
+
+Expected knowledge value ranks the complete queue as follows:
+
+1. `RV-004`'s query/rank-to-later-outcome join could change maintenance
+   policy, but readable protected history has no attributable later outcome.
+2. The missing Memory in the Loop artifact could test the paper probabilities,
+   but its frozen workloads, delay controls, per-run JSON, and authority-bearing
+   model execution remain unavailable.
+3. Scan 467's unsourced `2605.25438v2` section asserts both a quantitative
+   `2.5x` expansion and that agents substitute for comprehension. The primary
+   paper is accessible, so separating its measured repository behavior from
+   the synthesis's inference can materially correct durable knowledge.
+4. Other unsourced scan claims follow.
+5. Reddit remains below its relevant-thread/access-change trigger.
+6. More byte/line compaction ranks last because it creates neither protected
+   outcome evidence nor primary/reproducibility evidence.
+
+Select item 3. Read the primary method and estimates, test the coefficient's
+units and comparison, and distinguish direct measures of language use from
+unmeasured comprehension or skill.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
