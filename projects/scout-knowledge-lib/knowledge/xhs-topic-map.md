@@ -6284,6 +6284,18 @@ or prevalence. `RV-004` remains high/open. Next primary-review Harness Effect
 `2607.06906`: verify its 22-task denominator, cost definition, claimed model
 invariance, `r=0.99`, uncertainty, artifacts, and transfer.
 
+Exact material `12de8f479a26a6d5baf520bd748145b09d80f2aa` passes
+syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation at 11/14 and 8/8, and 296 tests / 1,484 assertions with zero
+failures in 103.65 seconds. The broad audit passes 1,540 documents / 1,728
+links; read-only health at `2026-09-04T04:48:30.000Z` returns 26 facts / 16
+wakes and is truncated. Accepted `ff923ccde4` and historical `f26bd4f3a5`
+are contained, unaccepted `d041c41b54` is excluded, and runtime state is
+empty. Protected `/app` retains HEAD `386b445c…1fec8` and 916/296 records;
+its externally observed status fingerprints changed since Cycle 338 to
+`f7080322…c4a93a` overall and `7e4d0937…c26a8a` in Scout scope. No protected
+surface was written or tested, and no cause is inferred.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

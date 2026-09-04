@@ -12816,6 +12816,27 @@ highest-impact accessible promoted claim in the following Scan #482. Test its
 model-invariance range, `r=0.99` calculation, uncertainty, artifacts, and
 transfer before retaining “harness moves cost more than the model menu.”
 
+Exact material `12de8f479a26a6d5baf520bd748145b09d80f2aa` passes
+syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 103.65 seconds. The broad audit
+passes 1,540 tracked Markdown documents / 1,728 local prose links. Read-only
+health at `2026-09-04T04:48:30.000Z` returns 26 facts, 16 wakes, and
+`truncated:true`.
+
+Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314` and historical
+`f26bd4f3a590b59d241536326199e805777df1be` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains excluded. Standing
+status, `.goal-runtime`, and App runtime state are empty. Protected `/app`
+retains HEAD `386b445c236e4609cd8870d22cc773cc4641fec8` and the same 916
+overall / 296 Scout-scope record counts. Its read-only status fingerprints
+changed externally since Cycle 338 to
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`
+overall and
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker wrote or tested neither protected surface and
+does not attribute the drift.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
