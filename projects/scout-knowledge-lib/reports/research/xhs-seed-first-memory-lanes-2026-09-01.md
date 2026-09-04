@@ -14756,7 +14756,7 @@ because no protected outcome join changed. Next seed-first, primary-review
 labels, matched controls, uncertainty, and attributable public artifacts.
 
 Exact Cycle 360 result
-`22999cc813b53805afe63a74fcf0e73bc96de927` contains seed-ordering commit
+`22999cc8136fe38846e11b9e06dcba5ca5923f03` contains seed-ordering commit
 `3c21454306e59aa3ece8120f1621b1e8ee13de35`. It passes syntax, TypeScript,
 tracked-source formatting, Cycle 341 projection, 90 scoped links, navigation
 11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
@@ -14798,7 +14798,7 @@ public artifacts before retaining the mechanism.
 
 ## Cycle 361 checkpoint — good components and weak tasks do not identify the gap
 
-Seed-ordering commit `5f0dcb77a1038c81b54f5ee43963d1b2482ba046`
+Seed-ordering commit `5f0dcb77a13c78d31bc181edd65539f0495ed2a4`
 precedes source work. At `2026-09-04T07:49:27.013Z`, arXiv supplied current
 `2607.06256v2` metadata and PDF. Table I has 90/104 clean-snapshot successes
 across seven measured skills; `press` is unmeasured and the selected 77–100%
@@ -14849,6 +14849,43 @@ later-outcome join changed. Next seed-first, audit Scan #458's GitLost primary
 incident evidence: distinguish a GitHub-hosted repository/MCP attack from a
 breach of GitHub's own agent, identify demonstrated authority and data flow,
 and retain only supported production claims.
+
+Exact Cycle 361 result
+`8d33085f6876aae7d2063527b5bb6fc7ea7d0393` contains seed-ordering commit
+`5f0dcb77a13c78d31bc181edd65539f0495ed2a4`. It passes syntax, TypeScript,
+tracked-source formatting, Cycle 341 projection, 90 scoped links, navigation
+11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
+117.27 seconds. The broad audit passes 1,540 tracked Markdown documents /
+1,728 local prose links. Read-only health at `2026-09-04T07:55:06.521Z`
+returns 26 facts / 16 wakes and is truncated. Cycle 360 result `22999cc813`,
+accepted `ff923ccde4`, and historical `f26bd4f3a5` are ancestors; unaccepted
+`d041c41b54` remains excluded.
+
+Protected `/app` HEAD and Scout scope remain
+`386b445c236e4609cd8870d22cc773cc4641fec8` and 296 records /
+`a430d0c9f657…e4628684322f7e`. The wider externally observed dirty state
+advanced during validation to 920 records / `81178906d675…263c3032f4643`;
+do not attribute that drift to this worker. This worker wrote or tested neither
+protected surface.
+
+## Cycle 362 seed-first start — test the claimed GitHub-scale incident
+
+At the post-validation boundary, reuse the supported XHS observation through
+`2026-09-04T05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable seeds remain unavailable, and account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected query/rank -> selection -> later-outcome join and evaluation
+authority; (2) Memory in the Loop's missing frozen-provider result,
+inaccessible without that result and authority; (3) Scan #458's GitLost claim,
+highest accessible because it promotes a linked primary incident into a breach
+of “GitHub's own AI agent” and GitHub-scale production confirmation; (4) other
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until a relevant-thread/access trigger; and (6) compaction. Select the
+GitLost claim. Inspect the primary incident's tested product, effective token
+authority, injection/data-flow path, demonstrated disclosure, scope, vendor
+response, and limits before retaining the production analogy.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
