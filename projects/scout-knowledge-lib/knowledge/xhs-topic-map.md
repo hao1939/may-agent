@@ -6897,6 +6897,22 @@ trigger-deferred boundary warranted zero new requests. `RV-004` remains
 high/open. Next seed-first, test whether temporal/open-domain gains survive one
 exact public category mapping.
 
+Exact Cycle 348 material `7417c5b341329258eb944a28bb554288cfcffa73`
+passes the full gate at 296 tests / 1,484 assertions, syntax, TypeScript,
+formatting, projection, 90 scoped links, and navigation 11/14 plus 8/8. The
+1,540-document / 1,728-link broad audit passes; health remains 26/16. Accepted
+and historical lineage is contained, unaccepted lineage excluded, and
+protected Scout scope remains 296 / `a430d0c9…2f7e`.
+
+### Cycle 349 seed-first start — bind AIM's category gains
+
+At `2026-09-04T06:06:09.762Z`, reuse fresh Cycle 341 XHS provenance without a
+request: additions/changes unknown, removals `[]`, 132 seeds unavailable.
+`RV-004` and Memory in the Loop remain higher-value but inaccessible. Select
+the highest accessible question: whether AIM's 11.53% temporal and 24% open-
+domain gains identify one denominator and category mapping. Public lanes and
+accepted refs make zero requests in this ordering record.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

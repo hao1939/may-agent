@@ -13664,6 +13664,28 @@ run. Next seed-first, then test whether the reported temporal/open-domain gains
 can be bound to one public category ordering without inheriting Mem0/GAM's
 known label permutation.
 
+Exact Cycle 348 material `7417c5b341329258eb944a28bb554288cfcffa73`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 108.94 seconds. The broad audit passes 1,540
+documents / 1,728 links. Read-only health at `2026-09-04T06:05:58.529Z`
+returns 26 facts / 16 wakes with truncation. Accepted `ff923ccde4` and
+historical `f26bd4f3a5` are contained; unaccepted `d041c41b54` is excluded.
+The standing tree is clean. Protected `/app` remains externally observed at
+`386b445c…1fec8`, 917 records / `90006815…3f70` overall and unchanged at 296 /
+`a430d0c9…2f7e` in Scout scope.
+
+## Cycle 349 seed-first start — bind AIM's category gains
+
+At `2026-09-04T06:06:09.762Z`, the supported Cycle 341 XHS observation is
+about 66 minutes old and still inside cadence. Make zero XHS requests:
+added/changed identities remain unknown, removals `[]`, and all 132 durable
+seeds unavailable. `RV-004` and the unreleased Memory in the Loop result remain
+higher-value but inaccessible at their recorded evidence boundaries. Select
+the highest accessible question: determine whether AIM's 11.53% temporal and
+24% open-domain claims identify a denominator and category mapping. Public
+lanes and accepted refs make zero requests in this ordering record.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
