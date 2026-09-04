@@ -1303,6 +1303,17 @@ and phase-1 MiniMax terse varies 6.6%--21.1% across two seeds. Governance
 should therefore preserve aggregate sampling robustness separately from
 scenario-level repeatability.
 
+It also cannot support the adjacent all-seed rank claim. The manuscript says
+“both SUTs” retain high/low ordering, but its sole three-seed table identifies
+only Claude Code/GLM-4.6; the second system is unnamed and has no seed-7/13
+rates or counts. Compatible missing values can preserve or reverse the
+seed-42 ordering, so one cell's stable aggregate is not evidence of a
+between-system invariant. RQ4's promised scenario-set scaling curves are also
+absent from the 17-file source archive: no size sweep, resampling protocol,
+cell coverage, or uncertainty is published. Generator-seed stability for one
+cell must therefore remain separate from cross-system rank and scale
+robustness.
+
 The same separation applies to the paper's “axis independence” wording. Its 20
 chi-square tests are outcome-versus-one-axis tests, not tests among the five
 input axes. Reported `p>=0.139` supports no detected marginal outcome

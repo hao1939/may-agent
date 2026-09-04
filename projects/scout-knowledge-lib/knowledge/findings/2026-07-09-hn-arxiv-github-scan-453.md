@@ -308,6 +308,33 @@ Discharge requires content-addressed per-seed scenario/pair manifests,
 cross-seed overlap, separated generator/model randomness, and same-scenario
 reruns.
 
+The adjacent statement that the rank ordering of “both SUTs (high vs. low)” is
+consistent across all three seeds has no published two-system comparison. The
+only three-seed table and main-body sensitivity sentence identify one cell,
+Claude Code/GLM-4.6, at 12.8%, 11.4%, and 12.4%. Elsewhere “SUT” covers four
+product/model cells in the axis tests, while the immediately preceding
+auth-tier table uses two Claude Code cells; the rank sentence does not say
+which pair it means. Even under the charitable interpretation that the second
+cell is Claude Code/MiniMax, only its canonical seed-42 rate (11.8%) is
+published. Missing seed-7/13 values of 11.0%/12.0% preserve GLM's lead, while
+12.0%/13.0% reverse it twice; both completions preserve every published rate.
+Thus the package supports stability of one cell's aggregate rate, not a
+between-SUT rank invariant. That stronger claim needs two named cell rates and
+integer counts at every seed, plus the same scenario/cluster identities needed
+for dependence-aware comparison.
+
+RQ4's scenario-set-scale arm is absent too. The main text promises
+“scenario-set scaling curves” in the sensitivity appendix, but that appendix
+contains balance counts, marginal tests, one auth-tier table, descriptive
+two-axis ranges, and the one-cell seed table only. The checksum-matched
+17-file source archive contains ten TeX files, four PDFs, one bibliography,
+one style file, and one metadata JSON; no scaling figure, table, result file,
+subsample sizes, repeated-draw protocol, or uncertainty appears. The fixed
+500-scenario result therefore cannot show that RQ1--RQ3 survive scenario-set
+scale. Preserve scale robustness as an unsupported source claim until a
+content-addressed size sweep reports sampling, repeated draws, cell coverage,
+effect/rank estimates, and uncertainty.
+
 The source also overstates what its 20 chi-square tests identify. It defines
 them as four systems times five overeager-vs-axis tests, so `p>=0.139` means no
 marginal outcome association was detected in those samples. Those tests do not

@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 404 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, paired-input, generator-seed, axis-independence, and interaction claims: aggregate Fisher arithmetic reproduces, while scenario identity, mutual-axis independence, interaction identification, and population transfer remain unsupported."
+summary: "Seed-first Scout continuity through Cycle 405 retains the login-class collection boundary and qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but a second SUT, scenario-scale evidence, matched identities, mutual-axis independence, interaction identification, and population transfer remain unsupported."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 404; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction evidence qualified through Cycle 404; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale evidence qualified through Cycle 405; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19214,6 +19214,102 @@ fixtures, and the full Scout gate before committing; then bind broad links,
 read-only health, lineage, clean state, and protected fingerprints to the exact
 result.
 
+## Cycle 405 checkpoint — one-cell stability does not prove rank or scale
+
+What was wrong: Cycle 404 routed the next pass back to the zero-touch question
+already resolved in Cycle 396. The adjacent OverEager text also claimed stable
+rank ordering for “both SUTs” across three seeds and scenario-set-scale
+robustness without publishing the second system or the promised scale curves.
+
+What changes: this checkpoint advances the due seed receipt, removes the stale
+queue edge, preserves the supported one-cell generator result, and separates
+it from unidentifiable between-system rank and absent scale evidence.
+
+### Seed-first reconciliation and lane decision
+
+Cycle 405 begins from exact clean validated source
+`1b0f32152041acec7ff396a23f846cfd3f5c47ab`. The scheduled six-hour XHS
+boundary elapsed before source selection. At
+`2026-09-04T17:11:58.967Z–17:12:00.404Z`, worker UID 1000 (`hao`) observed
+direct localhost 9222 refuse with curl exit 7 / HTTP 000, then used
+passwordless `sudo nsenter` as effective UID 0 in root-owned Chrome PID 2136's
+network namespace. Explicit Node v22.19.0 ran exactly one supported public
+`status` and one non-navigating `saved-status`.
+
+Explore remained readable with 30 notes and no login wall. The saved target
+remained HTTP 200, final class `login`, 46,763 bytes, target fingerprint
+`e860da4650…906e`, semantic access `3dab1b6d…af420`, zero attributable items,
+empty identity fingerprint `e3b0c442…b855`, and `ready:false`. Only body SHA
+changed `9d1169da…3186d`→`378bc2f8…800ea`; that is volatile response provenance,
+not a seed change. Added and changed identities remain unknown, observed
+removals remain `[]`, and all 132 durable seeds remain unavailable rather than
+removed. No representative saved-post read was supported or attempted and no
+account state changed.
+
+The complete queue remains `RV-004` first and `RV-034` second, both inaccessible
+at their recorded protected-outcome and external-runtime boundaries, followed
+by the unreleased Memory in the Loop result. The retained OverEager all-seed
+rank statement was the highest accessible contradiction after Cycle 396
+deduplicated the stale zero-touch edge. GitHub and arXiv retain Cycle 393's
+last useful evidence and change-bearing triggers. Reddit made zero requests
+and stays RSS-readable/JSON-403 until a relevant thread or access change.
+
+### Published scope and matched completions
+
+The checksum-matching OverEager source archive
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`
+publishes one three-seed table: Claude Code/GLM-4.6 at 12.8%, 11.4%, and
+12.4% for generator seeds 42, 7, and 13. It then says “both SUTs (high vs.
+low)” retain rank across all three seeds. No second SUT is named in that
+paragraph or table. “SUT” refers to four product/model cells in the preceding
+axis-test section, while the immediately preceding auth-tier table contains
+two Claude Code cells, so context cannot bind the phrase to one pair.
+
+Use the most charitable available pair, Claude Code/GLM versus Claude
+Code/MiniMax. Only MiniMax's canonical seed-42 rate, 11.8%, is published. Two
+deterministic completions preserve every source value:
+
+- missing MiniMax seed-7/13 rates 11.0%/12.0% leave GLM higher three times;
+- missing rates 12.0%/13.0% reverse the seed-7 and seed-13 ordering.
+
+The all-seed between-SUT rank is therefore not identified. This does not
+weaken the exact one-cell counts 64/500, 57/500, and 62/500, their 1.4-point
+range, or Cycle 403's reproduced aggregate Fisher arithmetic; those remain
+conditional on unknown cross-seed dependence.
+
+### Missing scenario-scale arm
+
+RQ4 explicitly asks whether RQ1--RQ3 survive scenario-set scale, and the main
+text says the sensitivity appendix supplies scenario-set scaling curves. That
+appendix instead contains marginal balance, outcome-versus-axis tests, one
+auth-tier table, descriptive two-axis ranges, and the one-cell seed table.
+The retained archive contains exactly 17 top-level files—ten TeX, four PDF,
+one bibliography, one style file, and one metadata JSON—and no scaling curve,
+scale table, result data, tested sizes, repeated-subsample protocol, cell or
+archetype coverage by size, or uncertainty. A single fixed 500-scenario design
+cannot establish robustness to scenario-set scale.
+
+Confidence is high in source identity, the printed values, the missing second
+row set, and absent scale artifact; low in which second SUT the authors meant,
+its true replicate ordering, or behavior at other corpus sizes. Rank discharge
+requires two named cells with integer counts for every seed. Scale discharge
+requires a content-addressed size sweep with sampling and repeated-draw rules,
+cell/archetype coverage, effect and rank estimates, and uncertainty.
+
+Next seed-first, test the broader RQ4 conclusion directly: determine whether
+the disclosed one-cell sensitivity probes can logically preserve RQ1--RQ3
+across the 15-cell matrix. Keep this as a synthesis question rather than
+opening another isolated metric micro-cycle.
+
+### Cycle 405 candidate validation
+
+The five-document candidate follows exact source
+`1b0f32152041acec7ff396a23f846cfd3f5c47ab`. Run whitespace, syntax,
+TypeScript, formatting, the latest seed projection, scoped links, both
+navigation fixtures, and the full Scout gate before committing; then bind
+broad links, read-only health, lineage, clean state, and protected fingerprints
+to the exact result.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
@@ -22809,7 +22905,7 @@ separately parsed freeze manifest.
 
 ## Supervision
 
-- Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, and traceable until the human explicitly stops or replaces this goal.
+- Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, traceable, and safely integrated into local main at reviewed release boundaries until the human explicitly stops or replaces this goal.
 - Goal ID: "g_c1b31972-1674-47cb-96d8-c797d768010d"
 - Worker: "goal-a2acd0ab0579d04f3d163e5db9a"
 - Codex session: "01a05c5f-cb03-7760-9c42-893d669f7762"
