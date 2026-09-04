@@ -4143,6 +4143,14 @@ including the mock-source third entry. V2 remains 8/8. This is direct local
 retrieval and source-quality evidence, not human/model use or RV-004 outcome
 evidence; RV-004 remains high/open.
 
+The first full gate correctly exposed that Cycle 252's exact diagnostic scores
+were being replayed against the mutable current INDEX: removing one entry
+shifted inverse-document-frequency values while preserving both ranked
+identities, token matches, and order. Exact `2ddb394e174d4ebc1d6780336e29705df0ac42a4`
+now replays those historical scores against the fixture's already-pinned
+`d4a9208…a4444c` index revision; the current outcome gate still evaluates the
+current INDEX. Focused validation passes 7 tests / 28 assertions.
+
 GitHub, arXiv, and Reddit made zero requests and retain their exact heads,
 paper versions, RSS/JSON boundary, and change-bearing triggers. Next audit the
 remaining active 13-line early internal coordination observation against the

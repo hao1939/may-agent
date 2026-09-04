@@ -10004,6 +10004,17 @@ changed. RV-004 stays high/open. Next audit the other early internal
 coordination observation's three claims against the canonical note before any
 disposition; do not remove unique provenance merely to improve a frozen score.
 
+The first full gate returned 295 pass / 1 fail / 1,482 assertions. The only
+failure was the Cycle 252 diagnostic fixture: removing one INDEX entry changed
+inverse-document-frequency scores from `44.894763` / `37.831620` to
+`44.878859` / `37.821039`, while both identities, matched tokens, coverage,
+and order stayed fixed. Those scores were frozen against
+`d4a9208af8b70c9419efe8e2d8d4774506a4444c`, but the test incorrectly used
+the mutable current INDEX. Exact fix `2ddb394e174d4ebc1d6780336e29705df0ac42a4`
+replays the historical fixture through its pinned revision while leaving the
+current v1/v2 outcome gates on the current INDEX. The focused suite passes 7
+tests / 28 assertions and formatting; full exact-tip revalidation follows.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
