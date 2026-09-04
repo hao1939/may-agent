@@ -15580,6 +15580,32 @@ integrated. Ranked work remains the inaccessible `RV-004` outcome join, the
 unreleased Memory in the Loop provider result, and then accessible AGL-1
 `2607.03516v1`.
 
+### Cycle 371 seed-first start — bounded reuse before AGL-1
+
+Clean reviewed standing tip
+`b76d6c0737472565db26505d0b2b8e09777ba8eb` contains the ordered Cycle 370
+review chain and precedes all Cycle 371 source access. At
+`2026-09-04T09:28:58.720Z`, Cycle 341's exact XHS observation through
+`2026-09-04T05:00:03.241Z` remains within the six-hour cadence. This
+reconciliation makes zero XHS requests: additions and changes remain unknown,
+observed removals are `[]`, all 132 durable identities remain unavailable, no
+representative saved-post read is supported, and no account state changes.
+The next scheduled observation is no earlier than
+`2026-09-04T11:00:03.241Z` absent a material access trigger.
+
+The complete ranked queue is: high/open `RV-004` first but inaccessible at its
+missing protected query/rank-to-selection-to-later-outcome join; high/open
+`RV-034` next but already reproduced against the pinned external Mnemosyne
+runtime, with repair outside Scout's authorized documentation surface and no
+source-change trigger; the unreleased Memory in the Loop provider result;
+then AGL-1 `2607.03516v1`, the highest accessible primary-evidence gap; then
+other contradiction, reproducibility, retrieval, and synthesis work; Reddit
+until a relevant-thread/access trigger; and compaction last. Select AGL-1 and
+test whether its seven governance domains are an implemented control plane,
+an architecture proposal, or an evidence-backed deployment model. GitHub and
+Reddit make zero requests; arXiv retrieval begins only after this seed-first
+record is committed.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

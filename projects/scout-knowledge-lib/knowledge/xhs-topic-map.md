@@ -8352,6 +8352,33 @@ revises blanket supersession of the older material review. Production may
 resume after the reconciled reviewer range in the durable cursor is integrated.
 AGL-1 remains the next accessible investigation after that boundary.
 
+### Cycle 371 seed-first start — review integrated, cadence preserved
+
+Cycle 371 begins from clean reviewed tip
+`b76d6c0737472565db26505d0b2b8e09777ba8eb`. At
+`2026-09-04T09:28:58.720Z`, the latest bounded XHS observation through
+`2026-09-04T05:00:03.241Z` is about four hours and 29 minutes old and remains
+inside the six-hour cadence. Make zero XHS requests: added and changed
+identities remain unknown, observed removals are `[]`, all 132 durable
+identities remain unavailable, and no account mutation occurred. The next
+scheduled observation is no earlier than `2026-09-04T11:00:03.241Z` unless a
+material access trigger arrives first.
+
+Re-rank the complete queue after reconciliation: (1) high/open `RV-004` has
+the highest decision value but cannot move without the missing protected
+query/rank → selection → later-outcome join; (2) high/open `RV-034` is
+reproduced at the pinned Mnemosyne runtime but its repair is outside Scout's
+authorized documentation surface and no source-change trigger fired; (3) the
+Memory in the Loop provider result remains unreleased; (4) AGL-1
+`2607.03516v1` is therefore the highest-value accessible evidence gap; (5)
+other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
+(6) Reddit until a relevant thread or access change; and (7) compaction. Use
+the AGL-1 primary artifact to determine whether its seven-domain governance
+layer is implemented control-plane evidence, an architecture proposal, or a
+supported enterprise deployment model. GitHub and Reddit make zero requests
+until their recorded triggers fire; arXiv is selected only after this ordering
+record.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
