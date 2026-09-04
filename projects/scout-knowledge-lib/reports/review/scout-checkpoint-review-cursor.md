@@ -3297,6 +3297,13 @@ producer gate or the unchanged broad-link audit would add no scoped evidence.
   [Cycle 406 release-preparation report](./scout-local-main-integration-cycle406-2026-09-05.md).
   Rollback before landing is to retain the source commits and remove
   the candidate only after no active or saved goal references it.
+- Release-boundary maintenance removed only clean detached checkouts at
+  `c19307f9237a95ed822c6734bcf1fad4c831928b` and
+  `83a35e8e0f66c46f3e1c66a54132991ba311cf14`, reclaiming approximately
+  439 MB. Both commits remain exact ancestors of standing and candidate; no
+  branch was deleted. The `ec317f8456` detached baseline remains because two
+  goal records reference it, and both historical/current integration
+  candidates remain for this active release boundary.
 - Standing gate record `3746ae005f51d3f204b2a305c2fa00e20ffbdda1`
   is **accepted** as the direct child of `e44006e4e9`; it advances no research
   claim and truthfully records the independently verified Cycle 405 gate,

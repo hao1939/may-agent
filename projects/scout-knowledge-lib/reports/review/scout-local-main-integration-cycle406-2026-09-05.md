@@ -106,6 +106,29 @@ goal references them. If a reviewed merge is eventually landed, rollback is
 an ordinary mainline revert of that exact merge commit; it must not discard or
 clean the protected overlay.
 
+## Release-maintenance inventory and cleanup
+
+The release-boundary inventory found seven goal-owned checkouts before
+cleanup. Two detached checkouts were clean, unreferenced by every current goal
+JSON, and already contained in both standing and candidate history:
+
+| Removed checkout | Exact retained commit | Before |
+| --- | --- | ---: |
+| `g-c1b31972-cycle231-baseline` | `c19307f9237a95ed822c6734bcf1fad4c831928b` | 219 MB |
+| `g-c1b31972-cycle384-validate-pjMOnG` | `83a35e8e0f66c46f3e1c66a54132991ba311cf14` | 220 MB |
+
+Only those two clean worktree checkouts were removed. No commit or branch was
+deleted; both exact commits remain objects and ancestors of standing
+`8d28565893a474e65e975d85a3728696d421fc30` and candidate `be902d03fc`.
+The operation reclaimed approximately 439 MB.
+
+Five goal-owned checkouts remain at approximately 1.1 GB total. Historical
+candidate `283f723fd1`, current candidate `be902d03fc`, its clean overlay
+probe, and the standing worktree remain because they support this active
+release boundary. Detached baseline `ec317f8456` remains because two goal
+records still reference its exact commit. Protected `/app` and every peer
+worktree were excluded from cleanup.
+
 ## Next release boundary
 
 Independent review should verify the exact candidate, the 295-row manifest,
