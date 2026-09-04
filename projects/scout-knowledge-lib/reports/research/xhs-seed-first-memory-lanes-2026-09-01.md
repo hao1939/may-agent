@@ -12837,6 +12837,30 @@ overall and
 in Scout scope. This worker wrote or tested neither protected surface and
 does not attribute the drift.
 
+## Cycle 340 seed-first start — test the Harness Effect denominator
+
+Cycle 340 starts from clean validation handoff
+`9d0efec55d617b5d738c992654716a2a390fe5a8` at
+`2026-09-04T04:51:35.000Z`. The XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside its six-hour cadence, whose next
+boundary is `2026-09-04T04:59:03.253Z`. This bounded reconciliation therefore
+makes zero XHS requests. Added and changed identities remain unknown, observed
+removals are `[]`, all 132 durable seeds remain unavailable, provenance is the
+last browser receipt plus the durable ledger, and account state is unchanged.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+which could alter Scout maintenance policy but cannot move without the missing
+protected post-August-31 query/rank -> selection -> later-outcome join; (2)
+Memory in the Loop's unreleased provider result; (3) Harness Effect
+`2607.06906`, highest accessible because Scan #482 and canonical syntheses
+promote its 22-task, model-invariance, `r=0.99`, and harness-over-model claims
+to general proof; (4) other primary-evidence, contradiction, reproducibility,
+retrieval, and synthesis gaps; (5) Reddit until a relevant thread or access
+change; and (6) byte/line compaction. Select the paper rather than compaction.
+Test its task/sample denominator, matching or randomization, cost definition,
+per-model range, correlation calculation, uncertainty, released artifacts,
+and transfer limits before retaining those promoted conclusions.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

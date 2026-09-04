@@ -6296,6 +6296,24 @@ its externally observed status fingerprints changed since Cycle 338 to
 `f7080322…c4a93a` overall and `7e4d0937…c26a8a` in Scout scope. No protected
 surface was written or tested, and no cause is inferred.
 
+### Cycle 340 seed-first start — test the Harness Effect denominator
+
+Cycle 340 starts from clean `9d0efec55d` at
+`2026-09-04T04:51:35.000Z`, still before the six-hour XHS boundary at
+`04:59:03.253Z`. Make zero XHS requests: added/changed identities remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and the last browser receipt plus ledger remain the provenance. Rank the
+complete queue by expected knowledge value: (1) high/open `RV-004`, still
+inaccessible at the missing protected query/rank -> selection -> later-outcome
+join; (2) Memory in the Loop's unreleased provider result; (3) Harness Effect
+`2607.06906`, highest accessible because several canonical notes promote its
+22-task, model-invariance, and `r=0.99` claims to general proof; (4) other
+primary-evidence, contradiction, reproducibility, retrieval, and synthesis
+gaps; (5) Reddit until its trigger; and (6) byte/line compaction. Select the
+primary paper rather than compaction. Verify its task/sample denominator,
+design, cost definition, per-model range, correlation, uncertainty, artifacts,
+and transfer limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
