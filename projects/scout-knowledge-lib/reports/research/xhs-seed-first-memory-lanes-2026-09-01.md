@@ -15077,6 +15077,32 @@ Scan #471's downstream “cross-vendor confirmation” from one Grok item: requi
 a stable item, matched release-arc controls, and actual evaluation evidence
 before treating a second selected point as replication.
 
+Exact Cycle 364 result
+`f013ef46f8a15319046682824eca16053e9b26a6` contains seed-ordering commit
+`af194ca682e08e9ef4c41448e512875cdccb17d7`. It passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions with zero failures in 111.81 seconds. The
+broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:16:08.983Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` are contained; unaccepted
+`d041c41b54` remains excluded. The standing tree is clean. Protected `/app`
+remains externally observed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`,
+920 records / `81178906d675…263c3032f4643` overall and 296 /
+`a430d0c9f657…e4628684322f7e` in Scout scope.
+
+## Cycle 365 seed-first start — test the cross-vendor replication claim
+
+At the post-validation boundary, reuse the XHS observation through
+`2026-09-04T05:00:03.241Z`, still inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+identities remain unavailable, and account state is unchanged. `RV-004` stays
+high/open at its missing protected-outcome boundary. Select Scan #471's
+cross-vendor Attention Decay claim as the highest accessible contradiction.
+Use the local scan first, then resolve only the named Grok HN identity and
+compare whether one selected point supplies a matched release arc, exposure,
+or measured evaluation outcome. GitHub/arXiv retain Cycles 362/361 and Reddit
+remains trigger-deferred.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
