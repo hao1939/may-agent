@@ -6194,6 +6194,15 @@ reproducibility. `RV-004` remains high/open. Next primary-review agentic-
 governance survey `2607.07612`, especially its corpus denominator, evidence
 grading, deployed-mechanism counts, and deployment/maturity-gap inference.
 
+Exact material `72899c34db081f8c6d4f39b101663685e55bb406` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 90 scoped links, navigation at
+11/14 and 8/8, and 296 tests / 1,484 assertions in 96.34 seconds. Broad links
+pass 1,540 documents / 1,728 links; read-only health is 26 facts / 16 wakes.
+Accepted `ff923ccde4` and `f26bd4f3a5` are contained, unaccepted `d041c41b54`
+is excluded, and standing runtime state is empty. Protected `/app` remains
+`386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
+`a430d0c9…32d7e` in Scout scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
