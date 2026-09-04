@@ -15019,6 +15019,33 @@ model-depreciation claim against Scan #460's own three distinct Sol-linked HN
 items—especially the 1,137-point preview—and separate item selection, story
 age, and cumulative score before retaining any category-wide conclusion.
 
+Exact Cycle 363 result
+`2e2c2c08c96f8dfea99f48b509643644879adba7` contains seed-ordering commit
+`e69add00753169094fec789f485689b82bd0b5db`. It passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and all 296 tests / 1,484 assertions with zero failures in 109.43 seconds. The
+broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:10:02.862Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` remain ancestors;
+unaccepted `d041c41b54` remains excluded. The standing tree is clean.
+Protected `/app` remains externally observed at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`,
+920 records / `81178906d675…263c3032f4643` overall and 296 /
+`a430d0c9f657…e4628684322f7e` in Scout scope, unchanged from Cycle 362.
+
+## Cycle 364 seed-first start — distinguish announcement selection from decay
+
+At `2026-09-04T08:10:16.061Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+identities remain unavailable, and account state is unchanged. `RV-004` and
+the missing provider result remain higher-value but inaccessible at their
+recorded authority boundaries. Select the highest accessible contradiction:
+Scan #460 calls three distinct Sol-related HN submissions one temporal decay
+curve. Inspect stable item identities, titles, URLs, creation times, final
+scores, exposure ages, and whether the event semantics and submission authors
+support a matched within-release sequence. Retain GitHub Cycle 362 and arXiv
+Cycle 361; make no Reddit request without a relevant-thread trigger.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
