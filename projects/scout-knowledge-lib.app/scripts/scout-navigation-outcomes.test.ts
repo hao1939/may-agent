@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -162,7 +163,7 @@ describe("Scout navigation outcome evaluation", () => {
     ).toHaveLength(14);
   });
 
-  it("replays the exact caller-bound diagnostic controls", () => {
+  it("replays the exact caller-bound controls against their frozen index", () => {
     const fixtureBytes = readFileSync(
       resolve(
         import.meta.dir,
@@ -175,6 +176,7 @@ describe("Scout navigation outcome evaluation", () => {
     );
     const fixture = JSON.parse(fixtureBytes) as {
       schema: string;
+      frozen_against_tip: string;
       cases: Array<{
         query: string;
         expected_ranks: Array<{
@@ -185,11 +187,19 @@ describe("Scout navigation outcome evaluation", () => {
         }>;
       }>;
     };
-    const index = readFileSync(
-      resolve(import.meta.dir, "../../scout-knowledge-lib/knowledge/INDEX.md"),
-      "utf8",
+    const frozenIndex = spawnSync(
+      "git",
+      [
+        "show",
+        `${fixture.frozen_against_tip}:projects/scout-knowledge-lib/knowledge/INDEX.md`,
+      ],
+      {
+        cwd: resolve(import.meta.dir, "../../.."),
+        encoding: "utf8",
+      },
     );
-    const entries = parseNavigationEntries(index);
+    expect(frozenIndex.status).toBe(0);
+    const entries = parseNavigationEntries(frozenIndex.stdout);
 
     expect(fixture.schema).toBe("scout.navigation-diagnostic-controls/v1");
     for (const testCase of fixture.cases) {
