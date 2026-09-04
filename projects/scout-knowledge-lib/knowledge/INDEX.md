@@ -47,6 +47,7 @@ evidence or substitutes for the detailed source records.
 - [Aggregate policy-repair misranking audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — one simulator supports multi-resolution audit, not general temporal harness evolution.
 - [HASE harness-co-evolution audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — cross-system rows do not isolate harness quality from model and policy changes.
 - [VERITAS replication-bundle audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — current public artifacts omit the paper result bundle and changed a grader.
+- [Cycles 373-386 compact provenance replacement design](../reports/review/scout-provenance-replacement-design-cycle412-2026-09-05.md) — exact producer/reviewer lineage, normalized seed receipts, accepted evidence anchors, limitations, and rollback required before any historical compaction.
 
 Migration and project-operation artifacts live outside `knowledge/`:
 

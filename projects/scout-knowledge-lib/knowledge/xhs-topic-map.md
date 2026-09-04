@@ -11054,6 +11054,28 @@ same projection must then show that only explicitly non-decision operational
 timestamps disappear. Next, design that replacement schema against the
 fourteen accepted entries before changing either historical narrative.
 
+### Cycle 412 checkpoint — design the provenance replacement before deletion
+
+Cycle 412 reused Cycle 409's XHS receipt through
+`2026-09-04T21:36:26.369Z`; at `2026-09-04T22:45:39.279Z` it was inside the
+six-hour cadence. The bounded reconciliation made zero XHS or public-source
+requests: additions/changes remain unknown, removals remain `[]`, all 132
+durable identities remain login-class unavailable, and no account state
+changed.
+
+RV-004 and RV-034 remain inaccessible at their protected-outcome and external-
+runtime boundaries, so RV-036 remained the highest-value accessible item. The
+[Cycle 412 replacement design](../reports/review/scout-provenance-replacement-design-cycle412-2026-09-05.md)
+maps all fourteen accepted Cycles 373-386 entries to exact producer parent and
+result commits, one range review, two normalized seed receipts, project-owned
+evidence anchors, decision-changing limits, integration, and rollback. It
+copies no source narrative and changes no historical evidence.
+
+This is a schema audit, not losslessness proof. RV-036 remains medium/open and
+real compaction remains rejected. Next, implement the schema only in an
+isolated candidate record, reject missing/ambiguous fields, and rerun the
+source-bound loss projection before considering any deletion.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
