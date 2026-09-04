@@ -4498,6 +4498,26 @@ surface changed from the preceding observation's 386 records /
 `7c285c09…1ca01b` to 916 / `f7080322…a93a`, while its 296-record Scout scope
 remains exact at `7e4d0937…26a8a`. This worker wrote or tested neither surface.
 
+## Cycle 311 seed-first start — test the claimed repair-loop ceiling
+
+At `2026-09-04T00:56:38.365Z`, Cycle 311 began from clean validated
+`e84546bbf919db571054e105eeef25243bd105f2`. The latest XHS observation
+through `2026-09-03T22:59:03.253Z` was about 118 minutes old, still inside the
+six-hour cadence. The bounded reconciliation made zero XHS or other public
+requests: added/changed identities remain unknown, observed removals are `[]`,
+all 132 durable seeds remain unavailable, and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) `RV-004`'s protected
+later-outcome join remains highest impact but absent from readable history;
+(2) Memory in the Loop's full provider experiment remains blocked on its
+unpublished artifact and model authority; (3) Scan 467's universal-sounding
+repair-loop ceiling and “workflow > model” claim is unsourced while primary
+`2607.05197v1` is accessible; (4) its consent-paper claims and other unsourced
+scan statements follow; (5) Reddit stays trigger-deferred; and (6) static
+compaction is last. Select item 3. Check tasks, models, stopping criterion,
+iteration effect sizes, and whether the paper supports a universal ceiling or
+only tested-setting diminishing returns.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

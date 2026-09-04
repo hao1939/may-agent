@@ -10326,6 +10326,25 @@ changed externally from 386 records / `7c285c09…1ca01b` to 916 /
 `f7080322…a93a`; the 296-record Scout scope remains exact at
 `7e4d0937…26a8a`. This worker did not write or test the protected checkout.
 
+## Cycle 311 seed-first start — primary-check the repair-loop generalization
+
+At `2026-09-04T00:56:38.365Z`, Cycle 311 began from clean validated
+`e84546bbf919db571054e105eeef25243bd105f2`. The current XHS receipt through
+`2026-09-03T22:59:03.253Z` was about 118 minutes old and inside the six-hour
+cadence. No XHS, GitHub, arXiv, or Reddit request ran during reconciliation.
+Added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, and account state was not mutated.
+
+The complete queue ranks `RV-004`'s missing protected outcome first, but no
+readable later join exists. The missing Memory in the Loop provider artifact
+is second and remains blocked on frozen inputs and authority. The highest-value
+accessible item is therefore Scan 467's unsourced `2607.05197v1` claim: a
+universal three-to-four-iteration repair ceiling and workflow-over-model
+ordering would influence durable workflow advice if accurate. The consent
+paper and other unsourced claims follow; Reddit stays trigger-deferred; static
+compaction remains last. Select the repair-loop audit and bind any conclusion
+to the paper's exact tasks, models, iteration budget, metric, and uncertainty.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
