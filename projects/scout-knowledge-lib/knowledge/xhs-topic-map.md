@@ -7005,6 +7005,43 @@ Reddit until its relevant-thread/access trigger; (6) compaction. Select
 `2607.05677` and inspect cohort construction, outcome definition, controls,
 causal language, and public artifact before any lower-value maintenance.
 
+### Cycle 351 checkpoint — the linked commit is not a future outcome
+
+At `2026-09-04T06:19:39.343Z`, arXiv `2607.05677v1` supplied a
+3,657-byte Atom record (SHA-256 `d434b4b2…5581`) and 5,656,550-byte source
+archive (`e7c8d3d8…5581`). Discovery finds 13,360 publicly committed SpecStory
+sessions / 79,172 messages / 1,356 repositories and analysis retains 12,108 /
+1,240. This selected surface excludes repositories without committed chat
+artifacts; 90% of its repositories were created in 2025 or later.
+
+The reported 98.9% subsequent activity is the chat-associated commit linked
+from the artifact's GitHub blob reference, not a separately observed future
+outcome; 96.1% of those associated commits touch a development file. RQ2's 608
+post-publication repositories and 114-repository older validation cohort have
+no non-adopter counterfactual. Commit activity declines after observed
+adoption, contributor broadening reverses in validation, and communication
+concentration remains unchanged. Quality claims use activity proxies. The
+`p=.029` maintenance asymmetry is a perception comparison among 25 respondents
+(4.2%), not measured maintenance cost. Confidence is high in this estimand and
+cohort qualification, moderate in the descriptive repository associations,
+and low in causal contribution, comprehension, or maintenance effects.
+
+At `2026-09-04T06:20:51.599Z`, GitHub exposed
+`littlehousezh-commits/vibe_coding_oss@e4bda0e643b1dbb24be5b667226106c396ca7518`.
+It contains collection/analysis code, notebook, and questionnaire, but omits
+the cleaned cohorts, repository tables, and survey responses. The anonymous
+4open target returned HTTP 401. Local analysis first lacks `numpy`, but an
+install would not supply the missing study inputs; no metric is reproduced.
+
+Lane continuity: arXiv supplied the highest-value primary correction; revisit
+on `2607.05677v2+`. GitHub supplied exact public-code provenance; revisit when
+that repository head or the replication-package access/data surface changes.
+Reddit made zero requests and remains RSS-readable/JSON-403 until a relevant
+thread or access change. `RV-004` remains high/open because no protected
+query/rank -> selection -> later-outcome join appeared. Next seed-first,
+re-rank substantive primary, contradiction, reproducibility, retrieval, and
+synthesis gaps ahead of compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

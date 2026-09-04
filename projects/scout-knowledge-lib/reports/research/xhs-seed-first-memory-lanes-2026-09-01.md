@@ -13822,6 +13822,61 @@ synthesis gaps; (5) Reddit at its unchanged RSS-readable/JSON-403 trigger; and
 session/contribution linkage, outcome denominators, comparisons, causal limits,
 and artifact availability before any maintenance work.
 
+## Cycle 351 checkpoint — observed association is not contribution causality
+
+Seed-ordering commit `952d2a47973697e02b63fd77301a74e291b5d011`
+preceded every Cycle 351 source operation. At
+`2026-09-04T06:19:39.343Z`, arXiv `2607.05677v1` returned a 3,657-byte Atom
+record with SHA-256 `d434b4b21d2b9d2d69cdd963aa9180a0aeb18447cebc40a331b6cae1152ca586`
+and a 5,656,550-byte source archive with SHA-256
+`e7c8d3d8b17d64ca4a8398e5a964be6456145f67aa08a2481f5fd17ddfbb5581`.
+
+The paper discovers 13,360 publicly committed SpecStory sessions, 79,172 user
+messages, and 1,356 repositories; screening retains 12,108 sessions and 1,240
+repositories. Repositories enter through committed chat-history artifacts, and
+90% were created in 2025 or later. Its 98.9% subsequent-activity statistic is
+the chat-associated commit linked from the artifact's GitHub blob reference,
+not an independent future-outcome join; 96.1% of those associated commits touch
+a development file. This is strong evidence for the linkage procedure and
+weak evidence for an additional contribution caused by chat.
+
+RQ2's main cohort is 608 repositories whose first observed chat follows GitHub
+publication; validation uses 114 older repositories. Interrupted time series
+controls repository fixed effects and age, but has no non-adopter comparison.
+Commit activity declines after observed adoption, with no reliable immediate
+jump and a negative post trend. Contributor broadening reverses in validation,
+while communication/review concentration does not significantly change. “No
+broad quality deterioration” is based on bug/fix language, test-file touches,
+and continuous-integration status rather than correctness or maintainability.
+The maintenance result (`p=.029`) compares perceptions of others' and one's own
+AI code among 25 respondents from 589 delivered invitations (4.2%); it is not
+measured maintenance cost. The authors explicitly retain an association, not
+causality, interpretation.
+
+The anonymous 4open replication target returned HTTP 401. A public search
+identified `littlehousezh-commits/vibe_coding_oss` at exact head
+`e4bda0e643b1dbb24be5b667226106c396ca7518` at
+`2026-09-04T06:20:51.599Z`; its downloaded archive has SHA-256
+`8c1fab0164b2a480cd8440a5868fcc7d79459c1c4cb1d70fdfe4592fdc74d1c0`.
+It includes collection and analysis scripts, a notebook, and the questionnaire,
+but no cleaned cohort CSVs, repository tables, or survey responses required by
+the analysis. The exact analysis command stops first with
+`ModuleNotFoundError: No module named 'numpy'`; no install was attempted because
+dependencies cannot restore missing data. Collection help runs and shows that
+recollection needs GitHub Code Search/API credentials; recreating a current
+population would not reproduce the frozen study cohort.
+
+ArXiv was accessible and highest-value; revisit on `2607.05677v2+`. GitHub was
+accessible for exact code provenance; revisit on head or replication-data
+change. Reddit made zero requests and remains at its RSS-readable/JSON-403
+boundary until a relevant-thread or access trigger. Confidence is high in the
+sample/linkage and causal-boundary correction, moderate in the descriptive
+repository associations, and low in chat-caused contribution, comprehension,
+or maintenance effects. `RV-004` remains high/open because this study supplies
+no protected query/rank-to-later-outcome join. Next seed-first, rank the
+remaining substantive primary, contradiction, reproducibility, retrieval, and
+synthesis gaps above optional compaction.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

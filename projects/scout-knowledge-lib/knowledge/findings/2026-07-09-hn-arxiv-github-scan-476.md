@@ -1,7 +1,7 @@
 <ai_context>
-summary: "Scan #476: The Diagnostic Deficit, qualified. Observability-Aware Code reports low diagnostic-content recovery and low explicit fault-signal rates under its oracle. Hidden Amplifiers identifies 12 author-defined high-fan-in micro-dependencies in a curated 50-package corpus, but measures structural exposure rather than exploitability; its cross-level ranking does not beat code-only ranking on reported within-root precision. Conversation to Contribution remains pending primary review."
+summary: "Scan #476: The Diagnostic Deficit, qualified. Observability-Aware Code reports low diagnostic-content recovery and low explicit fault-signal rates under its oracle. Hidden Amplifiers identifies 12 author-defined high-fan-in micro-dependencies in a curated 50-package corpus, but measures structural exposure rather than exploitability; its cross-level ranking does not beat code-only ranking on reported within-root precision. Conversation to Contribution observes a selected public-artifact cohort and repository proxies, not a chat-caused contribution effect."
 triggers: ["diagnostic deficit", "observability gap", "diagnostically silent", "observability-aware code", "hidden amplifiers", "micro-dependencies", "supply chain risk", "conversation to contribution", "OSS AI contribution", "slopcode", "agent code abandoned", "frontier parity uniqlo", "Brown AI cheating", "50% score drop", "Bun Rust rewrite", "Cloudflare Drop", "Cloudflare Meerkat", "scan 476"]
-source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). Hidden Amplifiers source archive and public OSCAR repositories primary-reviewed 2026-09-04: fabgonzalez-dev/oscar-dependency-observatory@a2bc492b, oscar-method-observatory@26a89fd7, oscar-frontend@1801fa69, oscar-research-data@c12df4fd. HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
+source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). Hidden Amplifiers source archive and public OSCAR repositories primary-reviewed 2026-09-04: fabgonzalez-dev/oscar-dependency-observatory@a2bc492b, oscar-method-observatory@26a89fd7, oscar-frontend@1801fa69, oscar-research-data@c12df4fd. Conversation to Contribution source and public littlehousezh-commits/vibe_coding_oss@e4bda0e6 primary-reviewed 2026-09-04. HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
 </ai_context>
 
 # Scan #476: The Diagnostic Deficit
@@ -22,7 +22,9 @@ causal mechanism. The observability paper shows that runnable services can
 lack fault-specific log strings under its oracle. Hidden Amplifiers measures a
 curated package corpus's structural exposure and author-defined risk score; it
 does not demonstrate exploitability or systematically compare current SCA
-tools. Conversation to Contribution remains pending primary review.
+tools. Conversation to Contribution observes repositories selected because
+developers publicly committed chat artifacts; its linked commit and
+repository proxies do not establish that chat caused a contribution.
 
 Meanwhile, on HN: frontier models combined (1,298pts from GPT-Live + Grok 4.5 + SWE-1.7) BARELY cross Uniqlo (1,291pts) for the first time — three major model launches combined produce 0.5% more attention than a decoded bash script on a t-shirt. The parity itself is the signal: raw capability announcement is no longer an attention advantage even in aggregate. And "slopcode" enters vocabulary (39pts) — the community names the category of agent-generated code that is abandoned and deleted within months.
 
@@ -108,17 +110,60 @@ every qualifying package is dangerous, exploitable, or missed by every scanner.
 
 **Connection to Handoff Fallacy (#459)**: Components pass individually; handoffs between levels fail. The ecosystem-code analysis gap IS a handoff failure — code-level tools hand off to ecosystem-level tools without transmitting risk context.
 
-### 3. From Conversation to Contribution: Characterizing Coding Agent in Open-Source Software (2607.05677v1) [NEW — UNCOVERED]
+### 3. From Conversation to Contribution: Characterizing Coding Agent in Open-Source Software (2607.05677v1) [QUALIFIED]
 
 **Categories**: cs.SE
 
-Collected 13,360 AI conversation sessions comprising 79,172 user messages from 1,356 OSS repositories, linked to subsequent development and collaboration patterns.
+The discovery corpus has 13,360 publicly committed SpecStory sessions (79,172
+user messages) from 1,356 repositories; filtering retains 12,108 sessions from
+1,240 repositories. This is a selected observable-artifact population: 90% of
+repositories were created in 2025 or later, and repositories without committed
+chat histories are outside the sampling frame.
 
-**Key contribution**: The first large-scale empirical characterization of how developer-AI coding conversations relate to OSS contribution patterns — the interaction surface between vibe-coding workflows and open-source development.
+**Outcome-link qualification**: The paper's 98.9% “subsequent activity” result
+is not an independent future-outcome join. Its analysis defines subsequent
+activity from the chat-associated commit matched through the committed chat
+artifact's GitHub blob reference; 96.1% of those associated commits touch a
+development file. This shows that the discovery/linkage procedure usually
+finds a code-changing associated commit. It does not establish that the chat
+caused an otherwise absent contribution.
 
-**Why this matters**: Knowledge Erosion (#450) identified the developer deskilling risk from agent delegation. SHIELD/Knowledge Debt (#461) introduced the concept of lost incidental learning. This paper provides the empirical data: 13K sessions across 1.3K repos enables studying whether AI-mediated conversations produce contributions that differ structurally from direct human contributions — and what diagnostic information is preserved or lost in the conversation-to-code pipeline.
+**Repository results and controls**: RQ2 uses 608 repositories whose first
+observed chat follows GitHub publication, with a 114-repository older
+validation cohort. Interrupted-time-series models control repository fixed
+effects and age, but have no matched non-adopter counterfactual. Monthly commit
+activity declines after observed adoption, with no reliable immediate jump and
+a negative post-adoption trend. Contributor broadening in the main cohort
+reverses in the validation cohort; communication/review concentration is
+unchanged. “No broad quality deterioration” refers to proxies such as bug/fix
+messages, test-file touches, and continuous-integration status, not measured
+correctness or maintainability.
 
-**Connection to Delegation Reckoning (#467)**: The 5,346-developer study in #467 showed agent adoption expands language frontier 2.5× but concentrates expansion among developers with the thinnest prior knowledge. This paper provides the conversational mechanism: the developer-AI session is where knowledge transfer either happens or doesn't.
+**Survey boundary**: 25 responses from 589 delivered invitations (4.2%) support
+only self-selected perceptions. The raw `p=.029` maintenance result compares
+respondents' perceptions of other developers' AI code with their own; it is not
+an observed maintenance-cost result. The authors explicitly describe the
+repository analysis as association rather than causality.
+
+**Artifact boundary**: The anonymous 4open package returned HTTP 401. Public
+repository `littlehousezh-commits/vibe_coding_oss@e4bda0e643b1dbb24be5b667226106c396ca7518`
+contains collection/analysis scripts, a notebook, and survey questionnaire,
+but no cleaned cohort tables, repository records, or survey responses required
+by the analysis. The exact analysis command first stops on absent local
+`numpy`; installing it would not supply the missing inputs. Collection help is
+locally readable, but rebuilding the population would require fresh GitHub API
+collection and would not reproduce the frozen study cohort. No metric
+reproduction is claimed.
+
+**Why this matters**: The study provides a large descriptive surface for
+publicly committed coding-agent artifacts and repository activity. It does not
+measure developer comprehension, compare adopter and non-adopter outcomes, or
+demonstrate that preserving a conversation changes code quality or maintenance.
+
+**Connection to Delegation Reckoning (#467)**: The 5,346-developer study in
+#467 reports language-frontier expansion. This paper describes a different,
+selected public-chat surface; it does not measure knowledge transfer, so it
+cannot supply the mechanism behind that result.
 
 ---
 
@@ -245,7 +290,11 @@ paper's cross-level score exposes that structure, but does not establish
 exploitability or universal scanner blindness, and does not beat code-only
 ranking on its reported within-root precision metric.
 
-3. **At interaction level** (Conversation to Contribution, 2607.05677): 13K AI coding sessions across 1.3K OSS repos — the empirical surface where developer-AI interaction either preserves or erases incidental learning. The diagnostic information about *how code was generated* is trapped in ephemeral conversation sessions.
+3. **At interaction level** (Conversation to Contribution, 2607.05677v1):
+13,360 committed sessions expose a descriptive interaction surface, but the
+sample is conditioned on public chat artifacts and the associated commit is
+not an independent later outcome. The study does not measure incidental
+learning or show that conversation retention improves contribution quality.
 
 4. **At community level** (HN): “Slopcode” enters vocabulary at 39 points, but this supplies discourse provenance rather than code-quality or lifecycle evidence.
 
@@ -281,7 +330,7 @@ Running accuracy: **~96.6% (96/99)** — one new confirmation (GitLost >500pts).
 |-------------|---------|------------|
 | Observability-Aware Code (2607.05785v1) | Verification Loop (#475), Process Erasure (#462) | Low explicit fault-signal rates motivate a separate observability gate; correctness and binary-only verification untested |
 | Hidden Amplifiers (2607.05894v1) | Handoff Fallacy (#459), Composition Surface (#447) | Structural exposure motivates joining package and method views; exploitability, universal tool blindness, and outcome benefit remain unvalidated |
-| Conversation to Contribution (2607.05677) | Knowledge Erosion (#450), Delegation Reckoning (#467), Knowledge Debt (#461) | Empirical data for the developer-AI interaction surface |
+| Conversation to Contribution (2607.05677v1) | Knowledge Erosion (#450), Delegation Reckoning (#467), Knowledge Debt (#461) | Selected public-artifact cohort and repository associations; no independent later-outcome or comprehension effect |
 | Slopcode (HN, 39pts) | Subtraction Economy (#449), Knowledge Erosion (#450) | Naming the lifecycle of diagnostically silent agent-generated code |
 | Brown AI cheating (HN, 73pts) | Comprehension Dividend (#444), Knowledge Erosion (#450) | 50% score drop quantifies the comprehension-delegation gap |
 | Frontier parity with Uniqlo | Attention Decay Curve (#460), Frozen Frontier (#472) | Three models needed to match one craft story — aggregate parity is structural weakness |

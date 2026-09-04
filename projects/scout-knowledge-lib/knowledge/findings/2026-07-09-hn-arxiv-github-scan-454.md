@@ -181,14 +181,18 @@ and estimands, so their difference cannot identify a hidden degradation.
 and statistically unchanged; contributor broadening does not reproduce in the
 validation cohort. The study itself reports no sustained production gain.
 
-**Artifact boundary**: The v1 arXiv package contains the paper and figures, not
-the underlying chat/repository records, survey instrument/responses, analysis
-tables, or scripts. Its named anonymous replication package returned HTTP 401
-`{"error":"not_connected"}` on 2026-09-04. Complete public repository searches
-found no attributable mirror, so no metric reproduction is claimed.
+**Artifact boundary**: The named anonymous package returned HTTP 401
+`{"error":"not_connected"}` on 2026-09-04. Public repository
+`littlehousezh-commits/vibe_coding_oss@e4bda0e643b1dbb24be5b667226106c396ca7518`
+contains the collection/analysis scripts, notebook, and questionnaire, but not
+the cleaned cohort tables, repository records, or survey responses required to
+run the analysis. The exact command first encounters a missing local `numpy`
+dependency, but installing packages would not restore those absent inputs. No
+metric reproduction is claimed.
 
 Source: https://arxiv.org/abs/2607.05677 (v1 source primary-reviewed
-2026-09-04); https://anonymous.4open.science/r/vibe_coding_oss-CFE4/
+2026-09-04); https://anonymous.4open.science/r/vibe_coding_oss-CFE4/;
+https://github.com/littlehousezh-commits/vibe_coding_oss/tree/e4bda0e643b1dbb24be5b667226106c396ca7518
 
 ### 4. SWE-Review: Closing the Loop on Issue Resolution with Agentic Code Review (2607.06065) [SUPPORTING]
 
