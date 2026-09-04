@@ -7423,6 +7423,43 @@ Reddit until a relevant-thread/access trigger; (6) byte/line compaction. Select
 VAORA and audit visual-state authority, reward equations, training/evaluation
 separation, baselines, denominators, uncertainty, and attributable artifacts.
 
+### Cycle 357 checkpoint — simulator rewards are not independent adjudicators
+
+At `2026-09-04T07:17:50.174Z`, arXiv `2607.06522v1` supplied a 3,056-byte
+Atom record (SHA-256 `81237c1b…2aab`) and 1,572,441-byte source archive
+(`3371ca29…ed0`). VAORA parses tagged scene, placement, collision, and action
+tuples. It scores them from privileged PHYRE simulator state; a frozen DQN
+success proxy gates action-linked rewards. This is outcome-derived structured
+supervision, not an independent visual observer or coverage of unparsed prose.
+
+The full reward beats matched `+EG` in all nine reported PHYRE Pass@1/3/5
+cells. Set 2 moves 0.178→0.198, 0.312→0.390, and 0.362→0.472 across 500 tasks.
+But each of three overlapping test splits is one independent training, chosen
+from ten of 25 templates compatible with the first-collision reward; no
+training-seed variance or paired uncertainty is reported. The alignment table
+reuses training rewards rather than an independent hallucination label.
+
+Transfer is qualified. Virtual Tool changes colors and action protocol; on 18
+tasks VAORA wins Pass@1 3/18 vs Gemini-3.1-Pro 2/18 but loses Pass@3 4/18 vs
+5/18 and Pass@5 6/18 vs 7/18. CRAFT gains 44.56→46.06 overall over `+EG` but
+Prevent falls 51.50→50.50. Neither has repeated-run uncertainty.
+
+At `07:18:34Z`, the project resolved to
+`vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76`; public dataset
+`4f061967…dae7` and checkpoint/result `1729df5d…16c2` trees were readable.
+One retained VAORA Set 2 CSV exactly matches 0.198/0.390/0.472, and three
+500-task DQN JSONs match all nine DQN cells. Equivalent result artifacts for
+VAORA Sets 1/3, `+EG`, Virtual Tool, and CRAFT are absent, so reproduction is
+partial. ArXiv/GitHub/Hugging Face win; revisit on v2, a result-tree expansion,
+or independent repeated runs. Reddit made zero requests and retains its
+relevant-thread/access trigger. Confidence is high for source tables, mechanism,
+and retained-file matches; moderate for the reported matched effect; low for
+hallucination suppression or broad transfer. `RV-004` remains high/open because
+no protected outcome join changed. Next seed-first, primary-review
+`2607.06413`, the highest accessible Scan #457 claim: test whether its design
+actually supports treating agents as stochastic model-discovery operators and
+variance as governance evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

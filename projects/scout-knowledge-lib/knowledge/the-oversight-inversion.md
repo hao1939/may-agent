@@ -904,10 +904,24 @@ promised data and replication package remain unavailable behind a TODO locator.
 Signature marker, key possession, account/email binding, person identity, and
 content correctness are separate claims.
 
+VAORA (`2607.06522v1`) shows a narrower outcome-grounding result. Its parsed
+scene, placement, and collision tuples are scored against privileged PHYRE
+simulator state, while a frozen DQN success proxy gates action-linked reward.
+The full reward improves all nine PHYRE Pass@k cells over a matched `+EG`
+baseline, but the “alignment” analysis reuses the optimized reward functions
+rather than independent hallucination labels. Ten of 25 templates are selected
+for first-collision compatibility, no repeated-training uncertainty is
+reported, and adapted Virtual Tool/CRAFT results are mixed. Public code, data,
+and checkpoints support partial result reproduction, including exact Set 2
+VAORA and all three DQN summaries. The durable distinction is reward proxy
+versus independent behavioral outcome, not pre/post vision versus text alone.
+
 Source: findings/2026-07-09-hn-arxiv-github-scan-456.md,
 https://arxiv.org/abs/2607.06495v1,
 https://arxiv.org/abs/2606.09376v2,
-https://arxiv.org/abs/2607.06194v1
+https://arxiv.org/abs/2607.06194v1,
+https://arxiv.org/abs/2607.06522v1,
+https://github.com/vaora-proj/VAORA/tree/4995736af63206e60504a3d3452bf7371f11fb76
 
 ### Layer 29: The Variance Signal (Scan #457, 2026-07-10)
 

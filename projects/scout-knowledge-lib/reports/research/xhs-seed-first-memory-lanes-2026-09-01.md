@@ -14414,6 +14414,71 @@ reward definitions, pre/post visual authority, training/evaluation separation,
 models and benchmark denominators, baselines, uncertainty, and public artifacts
 before retaining any hallucination-suppression or verification claim.
 
+## Cycle 357 checkpoint — qualify visual outcome rewards
+
+Seed-ordering commit `2d69cc7650` preceded source work. At
+`2026-09-04T07:17:50.174Z`, arXiv `2607.06522v1` returned a 3,056-byte Atom
+record with SHA-256
+`81237c1b3f0e315d733e0ed3e930f1a8e65fdc91ba03064afa8b56e244da2aab`.
+Its 1,572,441-byte source archive has SHA-256
+`3371ca29ffdce18103edbf68455c3e25315a7d28fa91710916b9e2ff3ad52ed0`.
+
+VAORA parses tagged scene, placement, collision, and action tuples. Scene
+objects, first-frame placement, and collision events are derived from PHYRE
+simulator state; a frozen DQN success-probability proxy gates placement and
+collision rewards. This is privileged structured supervision. It is neither an
+independent visual observer nor a verifier for free-form reasoning outside the
+parsed vocabulary.
+
+The full reward exceeds matched `+EG` in all nine reported PHYRE Pass@1/3/5
+cells. Set 2 moves 0.178→0.198, 0.312→0.390, and 0.362→0.472 across 500 tasks.
+Marginal Wilson 95% intervals are respectively 0.147--0.214 vs 0.165--0.235,
+0.273--0.354 vs 0.348--0.433, and 0.321--0.405 vs 0.429--0.516; they are
+orientation only, not paired causal intervals. Each split has one independent
+training and best-checkpoint selection from the training curve, with no
+training-seed variance. The test splits overlap and draw only from ten of 25
+templates selected because the reward models the first collision.
+
+The alignment analysis reports the same rewards optimized during training, so
+higher scores are not independent hallucination adjudication. The component
+table is non-monotone: adding placement to grounding reduces Pass@3/5, and
+adding collision reduces Pass@5; only the full combination leads all three.
+Virtual Tool removes tool selection, permits repeated trials with every tool,
+and remaps colors. On its 18 tasks VAORA wins Pass@1 3/18 vs Gemini-3.1-Pro
+2/18 but loses Pass@3 4/18 vs 5/18 and Pass@5 6/18 vs 7/18. CRAFT samples
+1,000 questions per category and moves 44.56→46.06 overall over `+EG`, while
+Prevent falls 51.50→50.50. These are mixed adapted-transfer results without
+reported repeated-run uncertainty.
+
+At `2026-09-04T07:18:34.265Z`, the public project page resolved to
+`vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76`. Its archive is
+30,810,916 bytes / `12c95194…6610` and contains the VAORA `verl` fork, PHYRE,
+batch inference, and Virtual Tool code. At `07:19:10.289Z`, unauthenticated
+Hugging Face reads found public dataset revision
+`4f0619673adc4d840eb853e07b55eafac362dae7` and checkpoint/result revision
+`1729df5d285c68721da30769b42ef1c0ade316c2`. One retained Set 2 VAORA CSV
+(105 bytes / `14d262e5…dac`) exactly reproduces 0.198/0.390/0.472. Three
+500-task DQN JSON summaries exactly reproduce all nine DQN table cells.
+
+The checkpoint tree exposes no equivalent retained result for VAORA Sets 1/3,
+`+EG`, Virtual Tool, or CRAFT, and evaluation scripts retain machine-specific
+default paths. Full training needs the public large artifacts, a PHYRE build,
+and the reported two H200 GPUs; it was not attempted. This is partial retained-
+result reproduction, not a failed capability or credential boundary.
+
+ArXiv was selected; GitHub and Hugging Face supplied exact code, data,
+checkpoint, and partial result provenance. Revisit on `2607.06522v2+`, an
+expanded result tree, or independent repeated runs. Reddit made zero requests
+and remains deferred until a relevant-thread/access trigger. Confidence is
+high for source transcription, simulator/reward semantics, and exact retained
+matches; moderate for the matched PHYRE effect; low for independent
+hallucination suppression or broad environment transfer. `RV-004` remains
+high/open because no protected Scout query/rank -> selection -> later-outcome
+join changed. Next seed-first, primary-review `2607.06413`, the highest
+accessible Scan #457 claim: audit its operator definition, experimental units,
+replication, utility decomposition, uncertainty, and artifacts before treating
+variance as governance evidence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

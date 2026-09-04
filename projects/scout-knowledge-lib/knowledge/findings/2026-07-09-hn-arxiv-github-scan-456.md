@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #456 (2026-07-09), partly qualified. Pitwall's typed gates are extraction/ontology bounded. Claimed or Attested (2607.06194v1) counts 1.032B/5.867B commits with signature markers, not verified identities: two platform keys carry 95.9% of author-key associations, only 0.74% of canonical authors reach the person-key tier, and 39/398 sampled person keys yield a retrievable matching email. The paper's raw co-signature 'gold' is confounded by shared keys; only 9,036/32,192 fan-out-two disagreements have another corroborating signal. Its claimed bundle/code are absent behind a TODO locator. VAORA remains pending primary review. HN/GitHub counters remain discovery signals."
+summary: "HN/arXiv/GitHub Scan #456 (2026-07-09), partly qualified. Pitwall's typed gates are extraction/ontology bounded. Claimed or Attested counts signature markers, not verified identities. VAORA's full reward improves all nine reported PHYRE Pass@k cells over the matched expert-guided baseline, but its alignment scores reuse training rewards rather than independent hallucination labels; its held-out templates are selected for first-collision compatibility, training has no repeated-seed uncertainty, and adapted Virtual Tool/CRAFT results do not support environment-agnostic or uniformly improved reasoning. Public VAORA code, data, checkpoints, one Set 2 result CSV, and three DQN summaries are attributable; most paper result surfaces are not retained. HN counters remain discovery signals."
 triggers: ["claim verification surface", "typed claims", "faithfulness as construction", "faithfulness by architecture", "claim decomposition", "virtue tradeoff", "Pitwall", "grounding engine", "calibrated verification", "claimed vs attested", "commit signatures", "identity attestation", "trust tiers", "unsigned signed attested", "precision anchor", "VAORA", "visual action outcome", "reasoning action alignment", "hallucinated CoT", "dual reward grounding", "vividness hallucination tradeoff", "sparse context audit", "claim typing", "agent multiplexer", "Herdr", "terminal multiplexer agent", "scan 456"]
-source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). Pitwall 2607.06495v1, related 2606.09376v2, and Claimed or Attested 2607.06194v1 sources primary-reviewed 2026-09-04. Related artifact vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab inspected; Pitwall's repository and Claimed or Attested's promised bundle/code were not attributable. HN front page and GitHub counters are historical discovery observations. Cross-referenced with Dispersion Collapse (#455), Write Contract (#454), Verification Harness (#451), Authority Gap (#434), Announcement Gap (#428)."
+source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). All three v1 sources primary-reviewed 2026-09-04. Related artifact vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab and VAORA artifact vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76 inspected; public VAORA Hugging Face dataset 4f0619673adc4d840eb853e07b55eafac362dae7 and checkpoint/result tree 1729df5d285c68721da30769b42ef1c0ade316c2 inventoried. Pitwall's repository and Claimed or Attested's promised bundle/code were not attributable. HN front page and other GitHub counters are historical discovery observations."
 </ai_context>
 
 # Scan #456: The Claim-Verification Surface
@@ -41,7 +41,13 @@ question in each domain.
    the axis as provenance evidence with explicit trust levels, not a binary
    identity attestation.
 
-3. **VAORA: Visual Action Outcome Reasoning Alignment** (2607.06522): Addresses the claim-action gap in embodied agents. Two key failure modes: hallucinated chain-of-thought reasoning that contradicts physical reality, and misalignment between reasoning and actions. VAORA introduces dual rewards: Visual Alignment Reward (anchors reasoning to visual context independent of action) and Visual-Action Alignment Reward (grounds reasoning in the visual outcome of the action). Together, these suppress hallucinated CoT and close the gap between what the agent claims (its reasoning) and what it does (its actions).
+3. **VAORA** (2607.06522v1): Adds scene, placement, and collision rewards
+   derived from privileged simulator state. The full reward improves all nine
+   reported PHYRE Pass@1/3/5 cells over a matched expert-guided baseline, but
+   “hallucination suppression” is not independently adjudicated: the alignment
+   analysis reports the same rewards used for optimization. Template selection,
+   adapted transfer protocols, and absent repeated-training uncertainty bound
+   the generalization claim.
 
 **The 28th Layer of the Oversight Inversion, qualified**: Claim typing reduces
 an opaque output into mechanically checkable units. It does not close
@@ -203,34 +209,92 @@ correctness.
 
 Source: https://arxiv.org/abs/2607.06194v1
 
-### 3. VAORA: Visual Action Outcome Reasoning Alignment (2607.06522)
+### 3. VAORA: Visual Action Outcome Reasoning Alignment (2607.06522v1)
 
-**Problem**: Vision-language models (VLMs) in interactive physical reasoning fail via two mechanisms: (1) hallucinated chain-of-thought reasoning that contradicts physical reality, and (2) misalignment between the model's reasoning and its actions.
+**What the mechanism actually sees**: VAORA asks Qwen3-VL-8B to emit tagged
+scene, placement, collision, and action tuples. Scene object coordinates and
+sizes, the first post-action ball placement, and collision events are compared
+with states extracted from the PHYRE simulator. A frozen DQN expert estimates
+action-success probability and gates placement/collision reward; scene
+grounding remains outside that gate. This is useful privileged simulator
+supervision. It is not an independent visual observer, generic environment
+verifier, or correctness proof for the free-form chain of thought outside the
+parsed tuple vocabulary.
 
-**Architecture — dual reward grounding**:
-- **Visual Alignment Reward**: Anchors VLM reasoning to the visual context *independent of the agent's action*. The reasoning must match what the scene shows, regardless of what the agent plans to do.
-- **Visual-Action Alignment Reward**: Grounds reasoning in the visual outcome *induced by the model's action*. The reasoning must predict what actually happened after the action.
+**Matched result and uncertainty**: The full reward beats the matched `+EG`
+baseline in all nine PHYRE Pass@1/3/5 cells across three independently trained
+held-out splits. Set 2 changes are 0.178→0.198, 0.312→0.390, and 0.362→0.472.
+Each split contains 500 tasks, but the paper reports one training per split,
+chooses the best checkpoint from the training curve, and provides no training-
+seed variance or paired uncertainty. For orientation only, marginal Wilson 95%
+intervals in Set 2 are 0.165--0.235 versus 0.147--0.214 at Pass@1,
+0.348--0.433 versus 0.273--0.354 at Pass@3, and 0.429--0.516 versus
+0.321--0.405 at Pass@5. These are not paired causal intervals.
 
-Together, these dual rewards suppress hallucinated CoT and reduce the reasoning-behavior gap.
+**Selection boundary**: PHYRE has 25 templates, but the collision reward models
+only the first object the action ball hits. The authors select ten compatible
+templates and draw each five-template test split from those ten. The three
+splits overlap, so they test variation within an intentionally compatible task
+family rather than representative cross-template generalization across PHYRE.
+The 36,000 split-specific SFT traces are generated from simulator information
+by Gemini-3.1-Flash; the matched `+EG` comparison shares that SFT base and is
+the useful local control.
 
-**Why this matters**: VAORA addresses the claim-verification gap at the reasoning level. The agent's chain-of-thought is a *claim* about the world. The visual state is the *verification substrate*. Dual rewards enforce that claims (reasoning) align with both the pre-action state and the post-action outcome — closing the loop that the Latent Horizon (#433) showed was structurally open.
+**Alignment is not an independent outcome**: The alignment table re-reports
+grounding, placement, and collision rewards—the same functions optimized by
+VAORA. Higher scores establish optimization of those structured proxies, not
+independent suppression of hallucinated reasoning. Simulator Pass@k is the
+separate behavioral outcome. The component table also is not monotonically
+additive: adding placement to grounding lowers Pass@3 and Pass@5, while adding
+collision lowers Pass@5; only the full three-reward combination is best in all
+three cells.
 
-**Connection to the Dispersion Collapse (#455)**: Without grounding, agents' reasoning converges to plausible-sounding but unverified patterns (attractor dynamics in reasoning space). VAORA's dual rewards are a form of architectural diversity imposition — they force the reasoning to engage with two independent verification surfaces rather than converging to a single internal attractor.
+**Transfer is adapted and mixed**: Virtual Tool removes tool selection, lets a
+model try every tool repeatedly, and remaps colors to PHYRE. On its 18-task
+Original Split, VAORA wins Pass@1 (3/18 versus Gemini-3.1-Pro's 2/18) but loses
+Pass@3 (4/18 versus 5/18) and Pass@5 (6/18 versus 7/18). This supports some
+transfer under an adapted protocol, not environment-agnostic understanding.
+CRAFT samples 1,000 questions from each of five types and moves overall
+accuracy from 44.56 for `+EG` to 46.06, but “consistent across all five” is
+false: Prevent falls 51.50→50.50. No confidence intervals or repeated runs are
+reported for either transfer benchmark.
 
-Source: https://arxiv.org/abs/2607.06522
+**Artifacts and retained reproduction**: At `2026-09-04T07:18:34Z`, the
+project page resolved to `vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76`.
+The repository contains the VAORA `verl` fork, PHYRE, batch inference, and
+Virtual Tool code. Public Hugging Face trees expose dataset revision
+`4f0619673adc4d840eb853e07b55eafac362dae7` and checkpoint/result revision
+`1729df5d285c68721da30769b42ef1c0ade316c2`. One retained VAORA Set 2 CSV
+exactly reproduces 0.198/0.390/0.472, and three 500-task DQN JSON summaries
+exactly reproduce all nine DQN table cells. The checkpoint tree contains no
+equivalent retained result for VAORA Sets 1/3, `+EG`, Virtual Tool, or CRAFT;
+the evaluation scripts retain machine-specific default paths. Full training
+requires the public large artifacts, PHYRE build, and the reported two H200
+GPUs and was not attempted here. Artifact availability is therefore material,
+but result-level reproduction remains partial.
+
+**Durable governance lesson**: outcome-derived structured rewards can be a
+useful training signal, but proxy coverage, substrate privilege, selection,
+and independent behavioral evaluation must remain separate. Do not call a
+training reward a verifier merely because it reads post-action state.
+
+Sources: https://arxiv.org/abs/2607.06522v1,
+https://github.com/vaora-proj/VAORA/tree/4995736af63206e60504a3d3452bf7371f11fb76,
+https://huggingface.co/datasets/vaora-proj/vaora-dataset/tree/4f0619673adc4d840eb853e07b55eafac362dae7,
+https://huggingface.co/vaora-proj/vaora-checkpoints/tree/1729df5d285c68721da30769b42ef1c0ade316c2
 
 ---
 
 ## The Claim-Verification Surface — Structural Synthesis
 
 The three papers suggest a shared architectural pattern from different domains;
-only Pitwall and its related artifact were primary-reviewed in this cycle:
+all three and the attributable related artifacts are now primary-reviewed:
 
 | Paper | Domain | Claim Type | Verification Substrate | Surface |
 |-------|--------|-----------|----------------------|---------|
 | Pitwall | NLG | Ten typed factual classes | Structured race state / probabilistic engine | Sentence → extracted claims → checked claims; extraction and ontology remain coverage limits |
 | Claimed/Attested | Code provenance | Author strings | Signature marker → key/account evidence | Free text → marker present → candidate key → qualified binding |
-| VAORA | Embodied Reasoning | Chain-of-thought | Visual state (pre/post action) | Reasoning → dual visual alignment |
+| VAORA | Embodied reasoning | Parsed scene/action tuples | Privileged simulator state plus DQN proxy | Reasoning → training rewards → separately measured task success |
 
 **The pattern**: Decompose output into typed claims, verify each extracted claim
 against an authority-bearing substrate, and gate composition. The gate covers
@@ -337,7 +401,7 @@ need claim-specific evidence rather than a generic “signed” label.
 
 The twelve-point exit arc (#444–#455) identified necessary conditions for escaping the Oversight Inversion. Layer 28 identifies the **granularity at which those conditions should operate**: the typed claim.
 
-**Three candidate surfaces; only Pitwall primary-reviewed here**:
+**Three candidate surfaces, all primary-reviewed**:
 
 1. **Pitwall** — ten typed classes are checked against structured race state;
 81.9% of generated targets are admitted and 18.1% use templates. The gate is
@@ -348,7 +412,9 @@ faithfulness.
 platform keys dominate and only 0.74% of canonical authors reach the candidate
 person-key tier. Marker, key, account, and person bindings must remain separate.
 
-3. **VAORA** — reasoning claims (chain-of-thought) vs. reasoning attestations (visual pre/post state). Dual rewards suppress hallucinated reasoning.
+3. **VAORA** — parsed reasoning tuples receive rewards from privileged
+simulator state; task success improves in the matched PHYRE cells, while
+independent hallucination adjudication is absent.
 
 **The structural pattern**: The Oversight Inversion operates on undifferentiated output. Every previous exit condition (Predicate Gate, Composition Surface, Verification Harness, etc.) works better when claims are typed:
 - Predicate gates gate at *typed* transitions (not generic checkpoints)
@@ -399,7 +465,7 @@ evidence strengths:
 |-------|--------|--------|-----------|
 | Production | arXiv (cs.CL) | 2607.06495v1 Pitwall | Typed gates plus live feasibility; extraction and ontology bound coverage |
 | Provenance | arXiv (cs.CR/cs.SE) | 2607.06194v1 Claimed/Attested | 17.59% signature-marker presence; person/account binding is sparse and heuristic |
-| Reasoning | arXiv (cs.AI) | 2607.06522 VAORA | CoT claims verified against visual state → dual rewards suppress hallucinated reasoning |
+| Reasoning | arXiv/code/Hugging Face | 2607.06522v1 VAORA | Simulator-derived rewards improve reported task success; independent hallucination evidence is absent |
 | Community | HN | Herdr 232pts/13,749★ | Agent multiplexer validates oversight burden → developers build review tooling immediately |
 | Ecosystem | GitHub | trace-spec 5★, bootproof 6★ | Small historical discovery signals for attestation-adjacent infrastructure; no adoption inference |
 
