@@ -40,19 +40,21 @@ sampling or search budget, authority, and explicit non-claims.
 
 ## Uncovered arXiv Papers
 
-### 1. Recursive Self-Improvement in AI: From Bounded Self-Refinement to Autonomous Research Loops (2607.07663v1) — SURVEY [UNCOVERED]
+### 1. Recursive Self-Improvement in AI: From Bounded Self-Refinement to Autonomous Research Loops (2607.07663v1) — SURVEY [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07663
 
-**Abstract**: Surveys 1,250 arXiv papers (2024–2026) along two axes: what the system improves (behavior, policy, evaluator, research process) and the degree of loop closure (human-in-the-loop to fully closed). Separates bounded self-refinement (convergent, evaluable, industrial practice) from open-ended recursive self-improvement (RSI), which remains bounded by grounding requirements, collapse dynamics, and compute constraints on every measured axis.
+**Abstract**: Organizes a 1,250-paper arXiv sample (2024–2026) along two axes: what the system improves (deployment behavior, training policy, evaluator, or research process) and degree of loop closure. The authors distinguish bounded self-refinement from open-ended recursive self-improvement (RSI).
 
 **Key findings**:
-- **Verification hierarchy derived from data**: A strict ordering from formal verifiers (strongest) through process reward models, external judges, and rubrics to intrinsic self-assessment (weakest). Self-improvement strength *tracks this hierarchy* — systems verified by stronger mechanisms achieve more reliable improvement.
-- **Failure modes map to hierarchy violations**: Self-confirming loops, model collapse, and diversity collapse all occur when verification is performed at a level below the system's actual requirements. The "research direction-setting" bottleneck sits at the top of the hierarchy — it's the task that no current mechanism can verify automatically.
-- **Governance-grade measurement is the field's "most underpopulated niche"**: The survey identifies that measuring whether self-improvement is actually occurring (vs. overfitting to weak evaluators) is under-studied relative to achieving self-improvement.
-- **Vocabulary conflation**: "Self-refine," "self-reward," "self-play," "self-evolve" describe fundamentally different ambitions. The shared "self-" prefix creates an illusion of a unified field.
+- **The hierarchy is an author synthesis, not a measured law**: Section 5.2 orders formal verifiers, execution feedback, learned judges, and intrinsic signals, then explicitly calls the proposed relationship between verification and demonstrated improvement a “qualitative pattern we observe throughout the corpus, not a measured law.” No common outcome, effect estimate, or controlled cross-level comparison is reported.
+- **The corpus supports a useful taxonomy under important sampling limits**: The 1,250 records combine an 871-paper seven-thread seed harvest with a targeted 379-paper supplement. Seventy-four percent were posted in 2026; capped queries and the supplement favor recent work; about 54/379 supplemental records are acknowledged peripheral bleed. One annotator applied keyword rules and manual correction (89 rule moves plus three explicit corrections).
+- **The governance gap is an inference, not a direct category count**: “Governance-grade measurement” is called the most underpopulated niche because the broad foundations/limits/safety family is smallest at 60/1,250 and the authors find little technical infrastructure behind slowdown measurement. The corpus does not expose a separately coded governance-measurement denominator in the paper.
+- **The vocabulary and loop-closure distinctions remain useful**: Deployment-time refinement, training-time self-iteration, self-evaluation, and automated research are different improvement objects. The paper says nearly all surveyed systems remain bounded and human-on-the-loop; those are survey judgments rather than measured causal effects.
 
-**Implication for our system**: The RSI survey validates the Oversight Inversion at survey scale. Every improvement loop is a *claim* that some signal can substitute for human judgment. When the signal is a formal verifier, the claim is strong. When the signal is self-assessment, the claim is circular. The governance gap is structural, not accidental.
+**Primary-review provenance and access boundary (2026-09-04)**: arXiv `2607.07663v1` Atom metadata and source were observed at `2026-09-04T04:26:13.283Z` (3,378 bytes, SHA-256 `a7b210e2…b5ef7`; 5,287,732 bytes, SHA-256 `8178b7e0…cec2d`). At `2026-09-04T04:26:29.867Z`, unauthenticated Git from the goal-owned worktree attempted the paper-declared `bamboodrift/recursive_self_improvement` repository and GitHub returned `Repository not found`. The promised corpus, assignments, query scripts, and figure sources therefore could not be checked. Confidence is high in what the paper claims about its own method, moderate in the taxonomy, and low in corpus counts beyond the PDF or in the proposed ordering.
+
+**Implication for our system**: The taxonomy is a useful map and the survey itself reinforces the need to declare evaluator coverage. It does not validate a universal verification hierarchy at survey scale. Treat formal checks, execution feedback, judges, and intrinsic signals as different evidence types whose relative adequacy depends on the claim.
 
 **Connections**: Extends Governance Silence (#478, Level 7 self-assessment), Verification Loop (#475, Level 1-2 formal/deterministic), Blind Curator (#478, Level 6 judge corruption), Dispersion Collapse (#455, Level 5 diversity loss).
 
@@ -204,7 +206,8 @@ LLM Burnout at **241pts** (+25.5%, highest growth rate) with high comment-to-poi
 
 ## The Verification Hierarchy — 37th Layer of the Oversight Inversion
 
-The five uncovered papers converge on a structural insight that extends the Oversight Inversion:
+The five papers motivated a structural insight, but the three now
+primary-reviewed papers support a qualified version:
 
 **Layer 37: The Verification Coverage Map** — Verification mechanisms cover different predicates. A score can be valid for predictive error while saying nothing about causality, correctness, authority, or another required property. Primary review does not establish one strict cross-domain total ordering or systematic positive error at every lower level; it establishes that evidence must name the claim it can and cannot test.
 

@@ -12609,6 +12609,49 @@ construction, screening and coding, the verification taxonomy, measured
 variables behind any ordering, causal language, artifacts, contradictions,
 and transfer limits.
 
+## Cycle 336 checkpoint — the hierarchy is not a measured survey result
+
+ArXiv `2607.07663v1` Atom metadata and source were observed at
+`2026-09-04T04:26:13.283Z`. The 3,378-byte Atom response has SHA-256
+`a7b210e2aae58b76c760a8baffd991b526744ded885cfb8bce851b479a5b5ef7`;
+the 5,287,732-byte source archive has SHA-256
+`8178b7e06698faa748bd02dcac18b226c2f32cf8da8df64a1573310bf7bcec2d`.
+
+The advertised 1,250-paper corpus is a sample, not a census. It combines an
+871-paper seed harvest across seven query threads with 379 targeted additions
+for self-evaluation, test-time training, and zero-data self-play. The paper
+reports that 74% were posted in 2026, capped queries and supplementation are
+recency-biased, and about 54/379 supplemental records are peripheral bleed.
+One annotator performed rule-based classification, moving 89 seed papers from
+thread defaults and manually correcting three further misfires. These limits
+make the category counts useful mapping evidence, not population estimates.
+
+Most importantly, section 5.2 says its ordering of formal verifiers, execution
+feedback, learned judges, and intrinsic signals is a “qualitative pattern we
+observe throughout the corpus, not a measured law.” It reports no common
+outcome, effect estimate, or controlled comparison across those mechanisms.
+The statement that demonstrated improvement tracks the hierarchy is therefore
+an author synthesis, not a result derived from 1,250 comparable measurements.
+Likewise, “governance-grade measurement” is named the most underpopulated
+niche partly because the broad foundations/limits/safety family is smallest at
+60/1,250; the paper provides no separately coded governance-measurement count.
+
+The paper says its corpus, assignments, query scripts, and figure sources are
+available at `bamboodrift/recursive_self_improvement`. At
+`2026-09-04T04:26:29.867Z`, unauthenticated Git from the goal-owned worktree
+attempted that exact target and GitHub returned `Repository not found`. This is
+an artifact-access boundary, not evidence against the taxonomy. Confidence is
+high in the paper's account of its method, moderate in the taxonomy, and low
+in the unverified corpus data or universal ordering.
+
+ArXiv and the paper-attributable GitHub target were the useful lanes. Reddit
+made zero requests and remains RSS-readable/JSON-403, with a revisit only on a
+relevant thread or access change. The Memory in the Loop result remains
+unreleased; `RV-004` remains high/open because the protected post-August-31
+query/rank/selection/outcome join is absent. Next primary-review EvoSOP
+`2607.07321` to test whether the construct/merge/evaluate/prune lifecycle is
+isolated as the improvement mechanism or only described as a bundled system.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

@@ -6125,6 +6125,28 @@ compaction. Select `2607.07663`; inspect its corpus construction, verification
 taxonomy, measured variables, ordering evidence, causal language, artifacts,
 and limits.
 
+### Cycle 336 checkpoint — the survey calls its ladder qualitative
+
+Primary review of `2607.07663v1` finds no measured cross-method verification
+law. The 1,250-record sample combines 871 seed-harvest papers with 379 targeted
+supplements; 74% are from 2026, about 54 supplemental records are acknowledged
+peripheral bleed, and one annotator applied rules plus manual corrections. The
+paper orders formal verifiers, execution feedback, learned judges, and
+intrinsic signals but explicitly calls the relationship to demonstrated
+improvement a “qualitative pattern,” not a measured law. Its governance-
+measurement gap is inferred partly from the 60/1,250 foundations family, not a
+separately coded governance denominator.
+
+ArXiv source is useful; GitHub access is the decisive artifact boundary. At
+`2026-09-04T04:26:29.867Z`, unauthenticated Git against the paper-declared
+`bamboodrift/recursive_self_improvement` target returned `Repository not
+found`, so corpus assignments and scripts cannot be checked. Reddit made zero
+requests and remains deferred until its existing trigger. `RV-004` remains
+high/open. Confidence is high in the paper's self-description, moderate in the
+taxonomy, and low in unverified corpus counts or the ordering. Next
+primary-review EvoSOP `2607.07321` to test whether construct/merge/evaluate/
+prune is experimentally isolated as the improvement mechanism.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
