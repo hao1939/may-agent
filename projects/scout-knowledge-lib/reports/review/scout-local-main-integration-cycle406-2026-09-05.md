@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 406 local-main preparation: exact canonical tip ec9549e90511817b80912bbdc769c677c70129d6 merges conflict-free with exact main 8554a5718cfa051bf4fb827c974423380614e5a7 as isolated candidate be902d03fc97da1998ebbb9492cf5393853d91c2. All 295 protected dirty-path overlaps have explicit byte or lineage dispositions, but main remains unchanged and RV-041 stays high/open pending independent review and a stable landing boundary."
+summary: "Cycle 406 local-main preparation has a sound 295-path reconciliation manifest and a clean validated candidate, but candidate be902d03fc97da1998ebbb9492cf5393853d91c2 was built from canonical ec9549e90511817b80912bbdc769c677c70129d6 and does not contain current canonical tip 577ba279885308c05feb8abf4ff00f949cc82694. Independent review accepts the preparation evidence and two bounded worktree removals but blocks landing until a current-tip candidate and a tested 23-path overlay-preservation operation are reviewed."
 triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Read-only protected-checkout observations through 2026-09-04T18:49:57.606Z; exact main, canonical, merge, tree, status, overlap, blob, and ancestor identities; a 295-row path manifest; full validation in the goal-owned isolated merge worktree."
+source_basis: "Read-only protected-checkout observations through 2026-09-05T04:11:44+08:00; exact main, canonical, merge, tree, status, overlap, blob, ancestor, worktree-registry, and retained-commit identities; a mechanically verified 295-row path manifest; independent full validation on both the isolated merge candidate and exact current canonical tip."
 </ai_context>
 
 # Cycle 406 isolated local-main preparation
@@ -99,6 +99,32 @@ reproduces every protected fingerprint and disposition without new drift.
 Local `main` has not moved. Historical candidate `283f723fd1` remains
 superseded for landing; this current candidate contains exact canonical tip
 `ec9549e905` instead.
+
+### Independent landing-safety disposition
+
+Independent review accepts the manifest as preparation but returns **revise**
+for landing candidate `be902d03fc97da1998ebbb9492cf5393853d91c2`.
+The candidate is clean, has the stated parents and tree, and independently
+passes the full Scout gate. It is nevertheless stale: current canonical Scout
+tip `577ba279885308c05feb8abf4ff00f949cc82694` is not its ancestor. The
+candidate's canonical parent is `ec9549e90511817b80912bbdc769c677c70129d6`,
+so it excludes later canonical commits `8d28565893a474e65e975d85a3728696d421fc30`
+and `577ba279885308c05feb8abf4ff00f949cc82694`.
+
+The manifest's 23 `retained-canonical-ancestor` rows prove that the protected
+files match exact retained ancestor `9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b`.
+They do not prove that a concrete main-landing operation will retain those
+older bytes as visible human-owned dirty changes. No landing operation was
+performed or authorized. RV-041 therefore remains high/open, and RV-043
+records the stale-candidate and untested-preservation boundary.
+
+Before landing, build a new isolated candidate from exact current canonical
+tip, specify and test a reversible overlay-preserving operation in goal-owned
+space, verify pre/post protected fingerprints and all 23 retained bytes, and
+rerun exact-candidate validation. Stop on any drift. Rollback of this review
+disposition is one ordinary revert of its reviewer commit; rollback of any
+future landed merge must revert that exact merge without cleaning or replacing
+the protected overlay.
 
 Because the candidate is not landed, rollback is to retain both source commits
 and remove the isolated candidate worktree/branch only after no active or saved
