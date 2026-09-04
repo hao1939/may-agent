@@ -5744,6 +5744,33 @@ paper contains no Scout outcome join. Next begin seed-first and primary-review
 CXI's distinct deterministic-admission contract, now the highest accessible
 unqualified convergence claim, before compaction.
 
+Exact Cycle 329 material `7d4b6e01af3117c0bba4445a663a24a8e281a38f`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 101.81 seconds. The broad audit passes 1,540
+documents / 1,728 links. Read-only health at
+`2026-09-04T03:31:48.612Z` returns 26 facts / 16 wakes with
+`truncated:true`; accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and standing status/runtime state are empty. Protected
+HEAD and fingerprints remain `386b445c…1fec8`, 916 /
+`8e3558f4…848a36`, and Scout scope 296 / `a430d0c9…32d7e`.
+
+### Cycle 330 seed-first start — test admission-contract scope
+
+At `2026-09-04T03:31:56.476Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside cadence. This bounded reconciliation
+makes zero XHS or public requests: additions/changes unknown, removals `[]`,
+all 132 seeds unavailable, and account state unchanged.
+
+Rank (1) inaccessible high/open `RV-004`; (2) unreleased Memory in the Loop
+result; (3) CXI `2607.06000`, highest accessible because “zero escapes” is
+currently generalized from a deterministic gate's tested field/effect/
+invocation contract to reliability and attack-class prevention; (4) Cortex's
+inaccessible ablation; (5) other primary/reproduction gaps; (6) Reddit; (7)
+compaction. Select CXI. Test denominators, safe-completion tradeoff, threat
+model, evaluator/oracle construction, false denial, uncertainty, and artifact
+availability before retaining cross-domain convergence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

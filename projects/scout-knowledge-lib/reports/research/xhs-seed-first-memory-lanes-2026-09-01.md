@@ -12022,6 +12022,43 @@ Next begin seed-first and primary-review CXI's distinct deterministic-admission
 contract, now the highest accessible unqualified convergence claim, before
 compaction.
 
+Exact Cycle 329 material `7d4b6e01af3117c0bba4445a663a24a8e281a38f`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 101.81 seconds. The broad audit passes 1,540
+tracked Scout Markdown documents / 1,728 local prose links. Read-only health
+at `2026-09-04T03:31:48.612Z` returns 26 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and standing porcelain/runtime state are empty.
+
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 porcelain-v2 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+the combined Scout scope remains 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not mutate either protected surface.
+
+## Cycle 330 seed-first start — test admission-contract scope
+
+At `2026-09-04T03:31:56.476Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside cadence. This bounded reconciliation
+makes zero XHS, GitHub, arXiv, Reddit, or other public requests: additions and
+changes remain unknown, observed removals are `[]`, all 132 durable seeds are
+unavailable, provenance remains the last browser receipt plus ledger, and
+account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected outcome join; (2) Memory in the Loop's unreleased
+authority-bearing result; (3) CXI `2607.06000`, highest accessible because the
+library generalizes its tested deterministic field/effect/invocation gate and
+zero-escape result into a reliability and attack-class prevention claim; (4)
+Cortex's unavailable taxonomy-size ablation; (5) other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (6) Reddit
+until a relevant-thread/access change; and (7) compaction. Select CXI. Test
+denominators, safe-completion tradeoff, threat model, evaluator/oracle
+construction, false denial, uncertainty, and attributable artifacts before
+retaining cross-domain convergence.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
