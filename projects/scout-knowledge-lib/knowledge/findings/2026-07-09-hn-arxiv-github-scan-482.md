@@ -202,6 +202,29 @@ source-reported preliminary results, not a controlled or independently
 reproducible comparison; representation effects cannot be isolated from the
 unknown model and configuration bundle.
 
+**GAM denominator check (2026-09-04):** GAM's primary arXiv source
+`2511.18423v1` does not define a single LoCoMo “average accuracy.” It reports
+F1 and BLEU-1 separately for single-hop, multi-hop, temporal, and open-domain
+questions under GPT-4o-mini and Qwen2.5-14B-Instruct. The four published GAM
+F1 values average `48.1975` and `46.0100`, respectively, but neither value is
+identified as AIM's denominator. GAM's only timing table is instead HotpotQA:
+its online serving takes `12.43`, `16.65`, and `18.49` seconds at 56K, 224K,
+and 448K, slower than every listed baseline there; total times are `69.32`,
+`269.37`, and `575.65` seconds. Thus AIM's reported 4.18x speed and 13.54%
+higher average relative accuracy cannot be matched to a public GAM task,
+metric, serving definition, or configuration. This is a comparability gap, not
+a direct contradiction, because AIM publishes none of those bindings.
+
+The attributable repository was inspected at
+`VectorSpaceLab/general-agentic-memory@565db2cc2518d377e44389b82aecf3cc129d5fe5`.
+It contains LoCoMo evaluation code but neither datasets nor retained paper-result
+outputs; reproduction requires external data, model credentials, and broadly
+versioned dependencies. Its README asks for `data/locomo10.json`, while the
+provided shell runner uses `data/locomo/locomo10.json`. The paper pins no
+repository revision and the inspected head postdates submission. Public code
+therefore exposes a plausible method, not the exact run underlying AIM's
+comparison.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

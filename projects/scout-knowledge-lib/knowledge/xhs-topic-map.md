@@ -6668,6 +6668,45 @@ Reddit until a relevant-thread/access trigger; and (6) compaction. GitHub,
 arXiv, Reddit, and accepted refs make zero requests/checks in this seed record.
 Commit this ordering before retrieving GAM.
 
+### Cycle 345 checkpoint — AIM's GAM denominator is not publicly identifiable
+
+ArXiv returned exact `2511.18423v1` metadata and source at
+`2026-09-04T05:36:40Z` (3,021 bytes / `359120e6…751a9`; 1,191,394 bytes /
+`8c9c11e7…de931`). GAM uses GPT-4o-mini and Qwen2.5-14B-Instruct for GAM and
+baselines, BGE-M3 retrieval, reflection depth three, at most five retrieved
+pages, and 2,048-token pages. Its LoCoMo table reports separate F1/BLEU-1
+values for four categories rather than a single average accuracy. The four GAM
+F1 cells average `48.1975` and `46.0100` for the two models, respectively.
+
+GAM's only efficiency table is HotpotQA, not LoCoMo. Its online serving times
+are `12.43` / `16.65` / `18.49` seconds and totals are `69.32` / `269.37` /
+`575.65` seconds at 56K / 224K / 448K. GAM is slower online than every listed
+baseline in that table. Because AIM names no task slice, metric, model,
+serving boundary, hardware, or GAM revision, its reported 4.18x speed and
+13.54% higher average relative accuracy cannot be matched to these public GAM
+results. Preserve AIM's reported direction; confidence is high that its joint
+comparison is publicly unbound, not that it is false.
+
+GitHub resolved
+`VectorSpaceLab/general-agentic-memory@565db2cc2518d377e44389b82aecf3cc129d5fe5`
+at `2026-09-04T05:37:34Z–05:38:32Z` (archive 1,399,347 bytes /
+`48549380…6f08b`). The repository has LoCoMo evaluation code but no bundled
+datasets or retained paper-result outputs. Reproduction needs external data,
+model credentials, and unpinned dependencies; README and shell runner disagree
+between `data/locomo10.json` and `data/locomo/locomo10.json`. Static parsing
+finds 115/116 Python files valid; the lone failure is an unrelated TTL
+quickstart at line 175. The paper pins no code revision, and this head postdates
+submission. Confidence is high in the table/configuration and repository
+inventory, moderate in mapping current code to the paper run, and absent for
+the unpublished AIM denominator.
+
+ArXiv and GitHub were useful. Reddit made zero requests and stays deferred
+until a relevant-thread or access trigger. `RV-004` remains high/open because
+this primary-evidence correction does not supply a protected query/rank ->
+selection -> later-outcome join. Next seed-first, then choose the highest-value
+remaining promoted claim whose primary evidence can distinguish a real
+contradiction or denominator from another unbound author report.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -1153,6 +1153,18 @@ or artifact. A title-matching OpenReview record is challenge-gated and is not
 cited by the overview, so these remain preliminary author reports rather than
 evidence that a structured representation alone caused the gains.
 
+GAM's primary `2511.18423v1` source narrows that limit further. Its LoCoMo
+table separates F1 and BLEU-1 across four question categories and two backbone
+models; it defines no “average accuracy.” The four GAM F1 cells average
+`48.1975` for GPT-4o-mini and `46.0100` for Qwen2.5-14B-Instruct, with no
+evidence that AIM used either denominator. GAM's timing table is for HotpotQA,
+not LoCoMo, and its online path is slower than every listed baseline at all
+three context lengths. The public GAM repository supplies evaluation code but
+no datasets, retained paper outputs, pinned dependencies, or paper-era revision.
+Accordingly, AIM's direction remains a source report while its 4.18x / 13.54%
+joint comparison has no matching public task, metric, timing, or configuration
+identity.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.

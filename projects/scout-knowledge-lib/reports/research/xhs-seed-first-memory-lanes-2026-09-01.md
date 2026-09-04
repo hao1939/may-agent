@@ -13360,6 +13360,54 @@ gaps; (5) Reddit until a relevant-thread/access trigger; and (6) compaction.
 GitHub, arXiv, Reddit, and accepted refs make zero requests/checks in this seed
 record. Commit this ordering before retrieving GAM.
 
+## Cycle 345 checkpoint — AIM's GAM comparison has no matching public denominator
+
+At `2026-09-04T05:36:40Z`, arXiv returned exact `2511.18423v1` metadata
+(3,021 bytes / SHA-256
+`359120e6149402922365c453592ee37de9891974449fb92fa8ef73bf558751a9`)
+and source (1,191,394 bytes /
+`8c9c11e7c3c97d87ff495cc77df0cc87d5999ffb60c996760265d208909de931`).
+GAM uses GPT-4o-mini and Qwen2.5-14B-Instruct for GAM and baselines, BGE-M3
+retrieval, maximum reflection depth three, five retrieved pages, and 2,048-
+token pages. LoCoMo is reported as separate F1 and BLEU-1 values for
+single-hop, multi-hop, temporal, and open-domain questions. The paper defines
+no single “average accuracy”; the four GAM F1 cells average `48.1975` under
+GPT-4o-mini and `46.0100` under Qwen2.5-14B-Instruct.
+
+GAM's only efficiency table is HotpotQA rather than LoCoMo. GAM's online
+serving times are `12.43`, `16.65`, and `18.49` seconds and total times are
+`69.32`, `269.37`, and `575.65` seconds at 56K, 224K, and 448K. Its online
+path is slower than every listed baseline in all three rows. AIM does not name
+its task slice, metric aggregation, model, online/total serving boundary,
+hardware, or GAM revision. Its source-reported 4.18x speed and 13.54% higher
+average relative accuracy therefore cannot be matched to GAM's public LoCoMo
+metrics or HotpotQA timings. This does not prove the AIM claim false; it proves
+that the public record cannot currently reproduce or even identify the joint
+comparison.
+
+At `2026-09-04T05:37:34Z–05:38:32Z`, anonymous GitHub reads resolved
+`VectorSpaceLab/general-agentic-memory@565db2cc2518d377e44389b82aecf3cc129d5fe5`.
+Its 1,399,347-byte archive has SHA-256
+`485493809b8525c6d6e8559965ceeb8a90154c3e5034a13d39d13dd47eb6f08b`.
+The repository contains LoCoMo evaluation code but no bundled benchmark data
+or retained paper-result outputs. A full rerun requires external datasets,
+model API credentials, and dependencies constrained only by lower bounds.
+README and runner disagree on `data/locomo10.json` versus
+`data/locomo/locomo10.json`. A read-only AST parse accepts 115/116 Python
+files; an unrelated TTL quickstart fails at line 175. The paper does not pin a
+repository revision, and current head postdates its submission.
+
+ArXiv primary evidence and GitHub code were useful. Reddit made zero requests
+and remains deferred until a relevant-thread/access change. `RV-004` stays
+high/open: no protected Scout query/rank -> selection -> later-outcome join
+appeared. Confidence is high in the exact GAM metrics, timings, configuration,
+and current repository inventory; moderate that current code faithfully
+represents the paper run; high that AIM's published comparison is unbound; and
+low in any inference that one memory representation causes the reported
+direction. Next seed-first, then prefer an accessible promoted claim with a
+released denominator or contradictory primary evidence over another narrative
+comparison.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
