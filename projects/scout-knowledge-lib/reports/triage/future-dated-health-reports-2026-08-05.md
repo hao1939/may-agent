@@ -28,14 +28,16 @@ All six files have now been moved out of `reports/health/` into triage status.
 1. **All three Aug-named reports were future-dated relative to the current trusted date**
    (`2026-08-05`).
 2. **All three Aug-named reports cite a chronology that cannot be trusted from current primary evidence.**
-3. **Two of the three report bodies cite findings absent from the current library**:
-   - the Aug 22 body cites `knowledge/findings/2026-08-22-xhs-direct-scan-51.md`,
-     which does not exist;
-   - the Aug 25 body cites `knowledge/findings/2026-08-24-arxiv-executable-turn-triage.md`,
-     `knowledge/findings/2026-08-25-hn-scan-49.md`, and
-     `knowledge/findings/2026-08-23-xhs-direct-scan-52.md`, none of which exist.
-4. **The current `knowledge/INDEX.md` does not reflect those absent Aug 22 / Aug 23 /
-   Aug 24 / Aug 25 findings.**
+3. **At audit time, two of the three report bodies cited findings absent from the then-current library.**
+   Those references now resolve to provenance-repaired snapshots:
+   - `knowledge/findings/2026-06-29-xhs-memory-self-evolution-disenchantment.md`;
+   - `knowledge/findings/2026-06-29-arxiv-executable-turn-triage.md`;
+   - `knowledge/findings/2026-06-29-hn-ai-cost-wall-agent-supply-chain.md`; and
+   - `knowledge/findings/2026-06-29-xhs-loop-engineering-eval-acceleration.md`.
+   Their exact retrieval dates remain unverifiable; June 29 is the Git-evidenced
+   repository-observation upper bound, not a guessed source observation date.
+4. **The repaired snapshots are now linked from `knowledge/INDEX.md`; this does not
+   retroactively validate the reports' claimed August chronology.**
 5. **Each Aug-named report has a content-equivalent earlier-path sibling in `reports/health/`**,
    differing only by the later warning banner added to the Aug-named copy:
    - `library-health-2026-08-19.md` ↔ `library-health-2026-07-09b.md`

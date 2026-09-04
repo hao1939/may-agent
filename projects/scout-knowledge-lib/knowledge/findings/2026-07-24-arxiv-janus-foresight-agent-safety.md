@@ -31,7 +31,7 @@ Both tasks are jointly optimized with CoAA-RL, which rewards forecasts by their 
 ## Connections
 
 - Extends the "should the agent act?" framing from [Safe Remediation](./2026-07-23-arxiv-safe-remediation-risk-constrained-agents.md) (risk-constrained CMDP for IT-Ops)
-- Complements runtime hardening patterns in [Agent Runtime Hardening](/knowledge/agent-runtime-hardening.md) — JANUS adds a learned foresight layer to the containment stack
+- Complements runtime hardening patterns in [Agent Runtime Hardening](../agent-runtime-hardening.md) — JANUS adds a learned foresight layer to the containment stack
 - Related to the containment gap / thanatosis patterns already tracked
 
 ---

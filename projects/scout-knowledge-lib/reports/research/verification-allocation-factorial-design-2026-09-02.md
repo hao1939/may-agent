@@ -1,0 +1,4256 @@
+<ai_context>
+summary: "Preregistration-ready design and deterministic smoke analyzer for separating provisional-plan relevance, current temptation, and authenticated supersession state in scarce memory-verification allocation. This is design/tooling evidence, not a completed model experiment or causal result."
+triggers: ["memory verification allocation", "supersession-aware retrieval", "factorial allocation design", "stale memory", "verification budget"]
+last_updated: "2026-09-03"
+source_basis: "Scout's checksum-verified review of arXiv 2608.25553v3 and its deposited Experiment C archive, including all 600 P1 episodes, all 5,400 Experiment C completion-manifest entries and usage records, and the Cycle 42–44 selection, ordering, and design audits; plus the deterministic synthetic controls, schema checks, identity bindings, and rollback/replay audits documented below through Cycle 219. These later controls remain local and outcome-unverified; they do not add provider, policy, cost, or behavioral authority."
+</ai_context>
+
+# Separate relevance from freshness before claiming a scheduler
+
+## What is missing
+
+The retained Experiment C result shows that a relevance rule moves scarce
+verification toward constraint-bearing memories. Scout's raw-episode audits
+also show that selection order closely follows the agent's intended action.
+Those observations do not establish that an allocator can prefer current
+evidence over stale evidence when relevance pulls the other way.
+
+In the 600 P1 episodes:
+
+- all 300 `agrees`/`withdraws` pairs have byte-identical turn-1 prompts and
+  memory blocks;
+- supersession is hidden until a selected archive path is returned;
+- all episodes share one current-situation text fingerprint,
+  `7d4a5d81e70534a64ecd74fd86dc1d534a98fdfeaed743b333a8e3ab59eba0b8`;
+- intended action is a model response, not an assigned treatment; and
+- separate stochastic calls produce different raw turn-1 responses in all
+  300 world pairs.
+
+The archive therefore supports descriptive allocation evidence, not an
+independent causal estimate for plan, temptation, or visible freshness.
+
+## Proposed factorial
+
+Use a one-slot allocation task with three independently assigned binary
+factors. Keep inherited memory bodies constant across cells.
+
+| Factor               | Level 0                              | Level 1                               | Purpose                                                                            |
+| -------------------- | ------------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------- |
+| Provisional plan     | plan names the decoy direction       | plan names the target direction       | Separates prior commitment from the model's endogenous turn-1 intent.              |
+| Current temptation   | situation favors the decoy direction | situation favors the target direction | Separates immediate pressure from the declared plan.                               |
+| Authenticated status | target path is current               | target path is superseded             | Tests whether visible authoritative freshness changes allocation before retrieval. |
+
+The status cue must be a compact, authenticated lineage manifest supplied by
+the archive authority. It must name the latest record for every candidate path
+using symmetric wording. It must not reveal the later record's conclusion,
+call one path “critical,” or use target-specific instruction text.
+
+Counterbalance two target identities, target/decoy presentation order, and the
+mapping between semantic direction and stable memory identifier. This produces
+`2 × 2 × 2 × 2 × 2 = 32` prompt cells per model/seed block. With the
+six retained model identities and 25 seeds, the confirmatory grid would contain
+4,800 one-turn allocation episodes. A smaller smoke gate may validate schema,
+serving, and factor isolation, but cannot substitute for the frozen grid.
+
+## Outcomes and estimands
+
+Primary outcome: whether the target path receives the single verification
+slot. Score this before any archive record is returned or downstream decision
+is requested.
+
+Primary estimand:
+
+`Delta_status = P(select target | target current) - P(select target | target superseded)`
+
+Report it in every plan-by-temptation stratum. The strongest operational test
+is the cell where both plan and temptation favor the target: a freshness-aware
+allocator should still reduce selection when the authenticated manifest says
+that target is superseded.
+
+Secondary estimands:
+
+- plan main effect and plan-by-status interaction;
+- temptation main effect and temptation-by-status interaction;
+- three-way interaction among plan, temptation, and status;
+- target-identity and record-order heterogeneity; and
+- malformed, over-budget, abstaining, and non-candidate outputs.
+
+Use the model/run block as the inference unit, keep all factor cells together
+when resampling, and report per-model effects beside the pooled equal-model
+summary. Freeze practical-effect regions and the bootstrap seed before any
+confirmatory call. Do not interpret a status effect as provenance correctness
+unless the manifest's issuer and signature verification are independently
+enforced.
+
+## Isolation checks
+
+Before the smoke gate, a deterministic verifier must prove:
+
+1. each prompt differs only in registered factor spans plus counterbalancing;
+2. memory bodies are byte-identical across all status cells;
+3. plan and temptation wording have matched length and structure across
+   directions;
+4. the status manifest is symmetric across candidates and contains no outcome
+   language;
+5. every cell/model/seed identity is unique and scheduled exactly once;
+6. target identity and record order are balanced within every factor cell; and
+7. the scorer reads only the structured allocation answer.
+
+The frozen design, prompt generator, verifier, model listing, seed policy,
+schedule, exclusion rules, and empty result manifest must be content-addressed
+and externally timestamped before confirmatory calls.
+
+## Offline isolation fixture
+
+Scout commit `957390080c9a77dc2adc88ed91d66c7f5ba86d50` adds the
+[deterministic generator and verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.ts)
+plus [regression tests](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.test.ts).
+Its deliberately smaller smoke fixture contains one synthetic model identity,
+two synthetic seeds, and all 32 factor/counterbalance cells: 64 episodes at
+SHA-256
+`cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd`.
+
+The verifier reconstructs every prompt, requires one unique episode for every
+cell, balances target identity and presentation order within each
+plan/temptation/status cell, keeps each memory body byte-stable, checks matched
+factor wording and symmetric lineage fields, and gives the scorer only the
+one-field structured allocation answer. Regression fixtures prove rejection
+of unregistered prompt text, body drift, missing counterbalance cells,
+asymmetric or outcome-oriented lineage, and extra scorer fields.
+
+The schedule labels itself `synthetic-design-fixture`, sets
+`providerCallsAuthorized` to false, and contains an empty results array. Its
+`fixture-only` attestation is not a signature or an authenticated archive
+authority. No serving revision, real seed policy, retry/exclusion package,
+external timestamp, execution credential, or call/token/cost authority is
+present. The fixture therefore closes the mechanical toy-isolation step but
+does not unlock a smoke or confirmatory provider run.
+
+## Cycle 47 source-archive compatibility audit
+
+The next seed-first cycle recovered the authoritative `2608.25553v3` data/code
+archive again rather than inventing model or seed metadata. The downloaded
+61,508,909-byte ZIP matches its published SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+Five preregistration entries also match their internal manifest exactly:
+
+| Entry                       | SHA-256                                                            |
+| --------------------------- | ------------------------------------------------------------------ |
+| `FROZEN_MODEL_LIST.json`    | `add6ac48796c783835896c11c7fbb9c6639bb9650fdec358bd293e4c2c10cd58` |
+| `FROZEN_SEEDS.txt`          | `487b2ab14351bc608a74f6400ef44eb844f46b406917dcd827f0218c10c930c6` |
+| `FROZEN_SEED_POLICY.md`     | `b4a4ae10f83a1e14adb1b45701bbe10a0d120015b7b0b53ce8ff47fe5c3e0c63` |
+| `SCHEDULE.json`             | `c3b509e7ea33490259a163b93bc6f56f751964045a3c5fb7ff7d3000f7ece974` |
+| `FROZEN_EXCLUSION_RULES.md` | `1fc7bd27b43be0cb376f1d2ff3a53b43ecd952cf3ce7615a56de216065698cec` |
+
+Those files resolve six requested aliases: `claude-opus-5`,
+`claude-sonnet-5`, `claude-haiku-4-5`, `gpt-5.6-sol`, `gpt-5.6-terra`, and
+`gpt-5.6-luna`. Only Haiku resolves to a dated snapshot,
+`claude-haiku-4-5-20251001`; Opus and Sonnet explicitly retain undated aliases,
+and the three GPT listing lookups record a 403 permission boundary and make no
+snapshot claim.
+
+The seed material is also not transferable to Scout's proposed factorial.
+It freezes 5,400 `stale-c1` cell seeds over six models, runs 0–24, 18 K/P
+cells, and two world states using `mulberry32(FNV-1a(seed))`. Its schedule has
+900 tasks per model. Scout's design instead has 32 independently
+counterbalanced cells per model/seed and 4,800 episodes. Reusing the source
+experiment's cell seeds would silently change their encoded meaning; treating
+the 25 run numbers as Scout seeds would invent an unregistered seed policy.
+
+Finally, the bundled `EXTERNAL_REGISTRATION.template.json` still has empty
+external URL, identifier, deposit time, artifact hash, local commit, and
+manifest hash fields and says `verification_status: "PENDING"`. The archive
+does contain an OpenTimestamps proof for a development-registration digest,
+but that is not an external timestamp of Scout's proposed schedule. Therefore
+the honest result of this audit is a reusable source constraint, not a frozen
+Scout execution package. The 64-episode offline fixture remains the only
+generated Scout schedule, with provider calls still unauthorized and results
+still empty.
+
+## Cycle 48 offline freeze gate
+
+Scout commit `f71b2f185a08061cc67340017a31c643e7d0a9cb` adds a
+[fail-closed freeze validator](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.ts)
+and [seven regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.test.ts).
+It accepts unknown JSON rather than trusting a TypeScript caller, hashes every
+declared artifact's supplied bytes, rejects missing, duplicated, tampered, or
+undeclared artifacts, and binds model resolution evidence plus a Scout-specific
+seed policy to the schedule's exact model and seed order.
+
+The gate requires 32 cells per model/seed, recomputes the episode count, parses
+the byte-bound schedule, preserves empty results and
+`providerCallsAuthorized: false`, and invokes the original factorial verifier.
+A regression changes a memory body and then updates both schedule hashes; the
+freeze still fails because the factorial verifier detects the body drift.
+
+Another regression encodes the observed Cycle 47 incompatibilities: an
+undated alias, `stale-c1` seed namespace, 18 cells, 5,400 episodes, and pending
+external registration. All are rejected. The validator also requires declared
+HTTPS registration metadata, deposited bundle and checksum-manifest hashes,
+and a supplied proof artifact when a fixture says registration is verified.
+
+This is deliberately not a network verifier. It proves that supplied bytes and
+declared relationships agree, not that a model resolution, external URL,
+registration receipt, timestamp proof, signature, or lineage authority is
+authentic. Even a structurally valid manifest remains offline execution
+preparation and never authorizes provider calls or spending.
+
+## Cycle 49 read-only directory gate
+
+Scout commit `f44c14bd69a601b1ad0a248159906793b19e4c6a` adds a
+[read-only directory adapter](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.ts)
+and [six regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.test.ts).
+The adapter requires an explicit absolute directory rather than choosing a
+default execution package. It reads a fixed `freeze-manifest.json`, inventories
+all nested files, and rejects a symlinked root, any nested symlink or
+non-regular entry, traversal-shaped artifact names, and undeclared bytes before
+calling the Cycle 48 manifest gate.
+
+The passing fixture is synthetic and goal-owned. Negative regressions cover a
+relative root, `..` traversal, a readable symlink, an undeclared file, and a
+manifest that attempts to authorize provider calls. The adapter performs no
+network or provider operation. Passing it establishes only local path,
+inventory, byte-binding, and schedule consistency; it does not authenticate
+provider listings, external registration, timestamp proofs, signatures,
+lineage, call cost, or spending authority.
+
+## Cycle 67 deterministic analysis controls
+
+Exact local commit `e8ce4879dfe649377051801927aa145df514640f`
+adds a strict analyzer for the existing 64-episode toy schedule without
+changing its SHA-256
+`cd137ac3dcf914adb708dc2f4a798d436732048ed12e9d7fb50a8ee5bbd468fd`.
+It requires one outcome for every known episode, fails closed on missing,
+duplicate, or unknown episode identities, keeps malformed answers in the
+scheduled denominator, reports them separately, and computes the declared
+current-minus-superseded target-selection contrast in each of the four
+plan-by-temptation strata.
+
+Three deterministic controls prove that the analyzer distinguishes the
+registered factors. A plan-only control has current/superseded target rates
+`0/0`, `0/0`, `1/1`, and `1/1`; a temptation-only control has `0/0`, `1/1`,
+`0/0`, and `1/1`. Both therefore have status contrast zero in every stratum.
+An authority-aware oracle selects the target only when its manifest record is
+current, producing `1/0` and status contrast `+1` in all four strata. Each
+status cell contains eight scheduled episodes. A malformed control output
+produces seven target selections across eight scheduled attempts, rate
+`0.875`, with one invalid answer rather than silently changing the denominator.
+
+Focused validation passes nine tests with 32 assertions, TypeScript, and
+formatting. These are synthetic policy controls, not sampled model behavior,
+an authenticated lineage authority, or evidence that a deployed allocator
+follows freshness. The analyzer also does not implement the model-block
+bootstrap required for confirmatory inference. Provider calls remain
+unauthorized and the schedule's results array remains empty.
+
+## Cycle 68 result binding and model blocks
+
+Exact local commit `3aaba3f61478ba2ee8493fbb668139ba0b1c8599`
+adds a strict result-bundle envelope for the synthetic analyzer. The envelope
+names its schema and evidence class, carries the SHA-256 of one exact schedule,
+and receives its own SHA-256 after structural validation. It rejects an
+unmatched schedule digest, malformed outcome envelopes, missing or duplicate
+outcomes, unknown episode identities, and schedules with empty, duplicated, or
+undeclared model and seed blocks. These checks bind analysis to the scheduled
+episode population; they do not authenticate who generated a bundle or when.
+
+The matched synthetic control contains the same two seeds and complete 32-cell
+counterbalance for each of two declared models. An authority policy produces
+`Delta_status = +1` in all four plan-by-temptation strata, while an inverse
+policy produces `-1` in the same strata. Per-model analysis preserves both
+effects; the equal-model mean is `0` in every stratum. This is supporting
+evidence that a pooled null can conceal complete model disagreement and that
+model blocks must be reported before aggregation. It is simultaneously
+contradictory evidence against treating the equal-model zero as evidence that
+status has no effect. The exact 128-episode schedule SHA-256 is
+`19d0356964f181fb05cb426e6045cc72c4e000f2ba8d8a8591253ecb6cb1e4ec`;
+the matched result-bundle SHA-256 is
+`aca705e7cf2b3e47ccd0a6cfcbbeabf967b6e48556b563f992957e330c69a513`.
+
+Focused validation passes 11 tests with 43 assertions, TypeScript, formatting,
+and whitespace checks. Confidence is high for the deterministic schema and
+aggregation behavior exercised by these fixtures, but low for any claim about
+real model behavior. There is still no bootstrap, interval, practical-effect
+decision rule, authenticated generator, timestamped real result bundle, or
+provider execution. The next bounded analysis question is whether a frozen
+block-resampling rule can preserve the declared model/run inference unit and
+surface this heterogeneity without making provider calls.
+
+## Cycle 69 frozen model/run block resampling
+
+Exact local commit `6a22b25107c1e77b79b4b55e6a0057ce7ee9b424`
+implements the next deterministic gate. Its schema fixes 1,024 resamples,
+2.5% and 97.5% empirical quantiles, equal weights for the named model set, and
+SHA-256 seed
+`b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3`.
+The exact specification SHA-256 is
+`81c7bca2fec86527dc75cbdc8c5b90a69638821f83944509e173b52bc826b8e0`.
+Malformed, episode-level, unfrozen-seed, non-finite-quantile, and out-of-bound
+resample specifications fail closed.
+
+The resampler first scores every complete model/seed run block, then samples
+those blocks with replacement within each named model. All 32 factorial cells
+for a run remain together. Model estimates and percentile intervals are
+reported before the equal-model summary; the named model set itself is not
+resampled, so the interval is conditional on those models and cannot support
+generalization to an unseen model population.
+
+Two matched controls make the boundary visible. On the exact Cycle 68 schedule
+and result bundle, the authority model stays `[+1,+1]`, the inverse model stays
+`[-1,-1]`, and the equal-model interval is `[0,0]` in all four strata while an
+explicit direction-conflict flag remains true. On a one-model schedule with
+one authority run and one inverse run, the point estimate is zero and the
+run-block interval is `[-1,+1]` throughout. The latter schedule and bundle
+SHA-256 values are
+`6ba3977f6d4d069a2896b453eea5ddf5dd15142db73acba05c5ead91bc4019c4`
+and `8006bbdecf38c3f66312d73d576c8f559654e781d94d28a7049faae2ed36d1dd`.
+
+This supports the mechanical claim that whole-run resampling can expose
+within-model uncertainty without splitting registered factors. It also
+contradicts treating a narrow aggregate interval as evidence of homogeneous
+behavior: the aggregate `[0,0]` is compatible with maximally opposed named
+models. Confidence is high for deterministic execution and fail-closed input
+handling, but low for interval coverage, practical significance, or real-model
+behavior. Two synthetic runs cannot calibrate a percentile interval, and no
+provider call, authenticated producer, external timestamp, or cost authority
+exists. The next bounded question is to freeze and test a practical-effect
+decision rule that refuses a pooled conclusion when named-model directions
+conflict.
+
+## Cycle 70 practical-effect decision gate
+
+Exact local commit `96b5762c675d8710438bdf5aae75cd132d7f708c`
+adds a content-addressed decision layer above the schedule-bound block
+bootstrap. The synthetic policy fixes a practical-delta threshold of `0.10`,
+percentile intervals, unanimous named-model decisions, and an inconclusive
+conflict disposition. Its exact SHA-256 is
+`378f8988ddcef4d1905a4cf24ce67a069521db8f0281468c442b11d66531f0aa`.
+Non-finite or boundary thresholds and policies that pool or ignore conflict
+fail closed.
+
+On the exact 128-episode schedule, result bundle, and bootstrap specification
+from Cycles 68–69, the aggregate interval `[0,0]` falls wholly inside the toy
+negligible region. The authority model is nevertheless positive and the
+inverse model negative. The gate therefore returns **inconclusive** in all four
+plan-by-temptation strata with reason “named-model point estimates have
+opposing directions.” Matched unanimous authority models return positive in
+all four strata; matched plan-only models return negligible throughout.
+
+This supports the mechanical claim that a pooled interval cannot override
+named-model disagreement under the frozen policy. It contradicts promoting the
+same aggregate `[0,0]` to a negligible-behavior conclusion. Confidence is high
+for deterministic classification and provenance binding, but low for the
+substantive `0.10` threshold or frequentist operating characteristics: the
+threshold is a synthetic fixture value, the percentile intervals remain
+uncalibrated, and no model response was sampled. The next bounded question is
+to test false-conclusion behavior under known synthetic run-generating
+processes and establish a defensible minimum run-block gate before any provider
+execution.
+
+## Cycle 71 exact null calibration
+
+Exact local commit `4cce1a0da52ead9f520337eb89442d4ddc0edcaf` replaces the
+earlier finite preview with a content-addressed calibration oracle. Specification
+SHA-256 `6ac043cd0cab150dae665af183045dfc076cb9dfd007f1f2f5900eb8d40ffcc2`
+predeclares the same `0.10` practical threshold, 2.5%/97.5% percentile rule, a
+1% false-direction tolerance, a candidate minimum of 64 complete run blocks,
+and verification through every integer count from 64 through 96. Three matched
+zero-mean run processes use effects `-1/0/+1`: balanced probabilities
+`0.25/0.50/0.25`, dense `0.50/0/0.50`, and sparse `0.10/0.80/0.10`.
+Asymmetric, malformed, duplicated, or incomplete specifications fail closed.
+
+For every possible observed negative/zero/positive count, the oracle enumerates
+the exact multinomial sampling probability and the exact conditional
+nonparametric percentile-bootstrap distribution. It therefore has zero Monte
+Carlo standard error. The earlier 25-run preview is contradicted as a safe 1%
+gate: exact false-direction probabilities are 1.3211% for the balanced null and
+1.4633% for the dense null. Dense-null risk remains 1.3283% at 48 blocks.
+At 64 blocks the exact rates are 0.2308% balanced, 0.8147% dense, and 0.0176%
+sparse. Across every integer count from 64 through 96, the worst cases are
+0.2703% at 69 for balanced, 0.8772% at 78 for dense, and 0.0250% at 69 for
+sparse. All remain below the predeclared 1% tolerance.
+
+Focused validation passes 19 tests with 86 assertions. The full Scout gate
+passes syntax bundling, TypeScript, source formatting, and 128 tests with 403
+assertions; whitespace and all 22 relative links pass. Read-only health remains
+bounded at 33 facts and 16 wake signals, and runtime state is empty.
+
+This supports 64 as a **bounded candidate minimum for the declared exact null
+family through 96 blocks**, not as a universal provider-run gate. The existing
+1,024-resample implementation is a separate finite approximation and is not
+calibrated by this exact oracle; other effect supports, dependence, drift,
+nonzero alternatives, power, real model behavior, and counts above 96 remain
+unknown. Confidence is high for the enumerated probabilities and low for
+transfer outside the frozen family. The next decision-relevant question is
+whether the finite 1,024-resample implementation agrees with the oracle on the
+boundary compositions that determine the 1% result; until then, provider
+execution remains unauthorized.
+
+## Cycle 72 finite-resampler permutation repair
+
+Seed reconciliation `c756182c62c41ee0a88ed2f7513ebf5709f63d63` preceded this
+work. Boundary fixture `84f0b189a69c54eafecfc2e93e571c901c6028c6` then instantiated
+one named model with 64 complete dense-null run blocks. Exact enumeration says
+21 negative/43 positive blocks are positive, 22/42 and 42/22 are inconclusive,
+and 43/21 is negative under the `0.10` rule.
+
+The first matched placement check exposed a finite-resampler defect. At 21/43,
+grouping negative blocks produced interval `[0.125, 0.5625]` and decision
+positive, while spreading the identical multiset produced
+`[0.09375, 0.5625]` and inconclusive. The symmetric 43/21 case changed from
+`[-0.5625, -0.125]` and negative when grouped to
+`[-0.5625, -0.09375]` and inconclusive when spread. Block order is not an
+inference unit, so these were contradictory outputs for the same evidence.
+
+Exact repair `6cac8790071f1688c00595082ef2902fee795420` lexicographically
+canonicalizes each model's run-effect vectors before deterministic block draws.
+The regression now exercises front, back, and evenly spread placements at all
+four boundary compositions. Every placement returns the same four-stratum
+intervals and the exact-oracle positive/inconclusive/inconclusive/negative
+decisions. Focused validation passes 20 tests with 134 assertions; the full
+Scout gate passes syntax, TypeScript, formatting, and 129 tests with 451
+assertions.
+
+This establishes permutation invariance for the exercised dense-null boundary
+and removes one implementation artifact. It does not calibrate the finite
+1,024-resample false-direction rate over every possible composition, other
+null families, model identifiers, nonzero alternatives, or real providers.
+Confidence is high for the reproduced defect and regression, moderate for the
+64-block dense boundary, and low for statistical transfer. The next ranked
+question is to enumerate the canonical finite-resample decisions over all
+64-block compositions and compare its operating rates with the exact oracle.
+
+## Cycle 73 complete finite-versus-exact comparison
+
+Seed reconciliation `1eb84e065046b80a1201a236f265cf9cb05f8482` preceded this
+analysis. Exact local commit `8667408cd28d224e6cab1eb2a2dc2b405b0af337`
+then enumerates all 2,145 negative/zero/positive compositions at the frozen
+64-block candidate and compares the canonical 1,024-resample decision with the
+Cycle 71 exact conditional oracle. The comparison specification SHA-256 is
+`83926b57b4561a0dd39e238ddf2ee010ade6818fdc38d2d6123bf0c19ab30de8`;
+it binds calibration specification
+`6ac043cd0cab150dae665af183045dfc076cb9dfd007f1f2f5900eb8d40ffcc2`,
+bootstrap specification
+`81c7bca2fec86527dc75cbdc8c5b90a69638821f83944509e173b52bc826b8e0`,
+and model ID `calibration-model`.
+
+The finite and exact decisions differ on 26 compositions. The first mismatch
+has counts `1/49/14`: exact is inconclusive while finite is positive. Under the
+balanced null, exact false-direction probability is
+`0.002307919821710335`, finite is `0.003173180319440574`, and mismatch
+probability is `0.000867460474092118`. Under the dense null, both
+false-direction probabilities are `0.008146902228698577` and mismatch
+probability is zero. Under the sparse null, exact false-direction probability
+is `0.0001755936794143284`, finite is `0.00025673753238608036`, and
+mismatch probability is `0.0005090313721621996`.
+
+This supports the narrower claim that the frozen finite implementation remains
+below the declared 1% false-direction tolerance for all three declared nulls at
+64 blocks. The 26 mismatches contradict treating that implementation as the
+exact oracle, even after the Cycle 72 permutation repair. Confidence is high
+for the exhaustive composition enumeration and exact null integration, but
+low outside the fixed block count, effect support, null families, resampling
+seed, and model identifier. Dependence, drift, alternatives, power, real-model
+behavior, and provider execution remain untested. The next ranked question is
+whether changing the model identifier or resampling seed materially changes
+the finite operating rates or the 1% decision.
+
+## Cycle 74 model-ID and resampling-seed sensitivity
+
+Seed reconciliation `9ac993e73cb94829360f43e404d26502aa5c8706` preceded this
+matched-control analysis. Exact local regression commit
+`59268cc62629ebcf3cf274835d259b3b158ac2d6` holds the 64-block
+calibration, 1,024-resample count, quantiles, effect support, and three null
+processes fixed while crossing model IDs `calibration-model`,
+`calibration-model-b`, and `calibration-model-c` with three frozen seeds:
+`b33363aee6fc701c2006d91356525e4a5abbd4386129fc4b90e9c78569e086b3`,
+`182d0240d5d1ff20be112d03fe169ed9397ad7a0cb562da4c96e348d79f9978e`,
+and `505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932`.
+
+Across the nine deterministic controls, decision-mismatch counts range from 10
+to 32 of 2,145 compositions. Finite false-direction rates range from
+`0.0018220732433059704` to `0.003173180319440574` for balanced,
+`0.00368996427654005` to `0.008146902228698577` for dense, and
+`0.00013702289768857516` to `0.00025673753238608036` for sparse.
+Every value remains below the frozen 1% tolerance. Sparse-null total decision
+disagreement nevertheless reaches `0.022723637739035525`; these disagreements
+include non-direction classifications and therefore can exceed the much
+smaller false-direction rate.
+
+This supports stability of the bounded 1% go/no-go conclusion across the nine
+declared salts. It contradicts any claim that 1,024 deterministic draws make
+all practical classifications salt-invariant. Confidence is high for these
+nine replayable controls and low for unsampled identifiers, seeds, dependence,
+alternatives, or real-model responses. The next ranked question is whether a
+frozen resample-count ladder reduces the worst observed classification
+sensitivity enough to justify the added computation, while retaining the
+exact oracle as the calibration authority.
+
+## Cycle 75 frozen resample-count ladder
+
+Seed reconciliation `0c313b7160c8061569db48e3bef2c903b8fb8fdc` preceded this
+matched ladder. Exact local regression commit
+`bbbcd6e7418293e0e5427bfd1b47f4a6a0114757` holds the worst Cycle 74
+sparse-disagreement salt fixed at model ID `calibration-model` and seed
+`505328b996766057fca7496772a6b69b68badbfb41d5e72185c6b3a506e04932`,
+then compares 1,024, 4,096, and 16,384 draws. Their comparison SHA-256 values
+are respectively
+`4a0dfbd13f6be113b1aae96cdeaed339b36022173beb3925b947e09dd15a0fb6`,
+`69ff21c62db4b08b56ba3303a4eb34cab65ea7e6de5282d7f5e95eec09d39e2a`,
+and `5a4cee68a880cb2d6a7c20934c114d30d4fb7b76adddd4a1adc443ebab94274d`.
+
+Composition mismatch counts fall from 18 to 11 to 3. Sparse-null decision
+disagreement falls from `0.022723637739035525` to
+`0.00002061050403066235` to `0.000000013726857835043323`. Every finite
+false-direction rate remains below 1%. Convergence is not uniform or monotone:
+balanced disagreement is `0.00023599279460173557` at 4,096 but
+`0.0003965403610030345` at 16,384, while dense false-direction probability is
+`0.005918433252619305` at 4,096 and returns to the exact
+`0.008146902228698577` at 16,384.
+
+This supports more draws as a strong reduction for the selected sparse
+disagreement and total composition count. It contradicts a blanket claim that
+each intermediate operating metric approaches the oracle monotonically.
+Confidence is high for this fixed salt and low for other salts, an optimal
+draw count, real effects, or provider behavior. The next ranked question is to
+classify the three residual 16,384-draw mismatch compositions and determine
+whether any are directional errors or only boundary-label differences.
+
+## Cycle 76 residual mismatch classification
+
+Seed reconciliation `15e5a7cf86e7eeaabc9508038e354d2565f549fa` preceded this
+classification. Exact local commit
+`433ac5165384e04f901bb62f3118b2a0c4aa18dc` extends each null-process result
+with finite-directional/exact-nondirectional, exact-directional/finite-
+nondirectional, and remaining mismatch probabilities, and verifies that the
+three categories sum to total mismatch probability.
+
+At the exact Cycle 75 16,384-draw comparison SHA-256
+`5a4cee68a880cb2d6a7c20934c114d30d4fb7b76adddd4a1adc443ebab94274d`,
+all three residual compositions are directional errors by the finite rule. The
+`6/36/22` and `8/31/25` negative/zero/positive counts change from exact
+inconclusive to finite positive; `25/31/8` changes from exact inconclusive to
+finite negative. No residual is an exact-directional call lost by the finite
+rule or a remaining non-directional/opposed mismatch. Their combined
+finite-only directional probability is `0.0003965403610030345` under the
+balanced null, zero under dense, and `0.000000013726857835043323` under sparse.
+
+This supports the 1% operating bound because the residual directional risk is
+already included in the reported finite false-direction rates. It contradicts
+treating the finite interval as authoritative for individual boundary
+compositions, even at 16,384 draws. Confidence is high for the exhaustive
+frozen classification and low for other salts, supports, dependence, or real
+models. The next ranked question is to freeze a mismatch-aware disposition that
+keeps finite-only directional boundary cases inconclusive while preserving
+directions supported by the exact declared trinomial oracle.
+
+## Cycle 77 exact-oracle authority disposition
+
+Seed reconciliation `2a40cbe28b8625df5a550bb3650281f6d154fa55` preceded this
+change. Exact local commit `09f33e3831a0be56140c0255f7c9b78141e5e99b`
+makes the comparison output name `exact-trinomial-oracle` as its decision
+authority and `diagnostic-comparison-only` as the finite result's role. Each
+process now exposes an authoritative false-direction probability copied from
+the exact enumeration and computes tolerance pass/fail from that value, never
+from the finite approximation. Invalid comparisons return neither authority
+nor disposition.
+
+All three declared 64-block nulls pass the authoritative 1% tolerance. The
+finite rates and mismatch categories remain visible because they are useful
+implementation diagnostics, including the Cycle 76 finite-only directional
+cases, but they cannot silently replace the exact decision. This resolves the
+declared trinomial calibration ambiguity without claiming an exact method for
+continuous effects or real provider outputs. Confidence is high for the
+schema-backed disposition and low for transfer beyond its frozen support. The
+next ranked question is to use exact enumeration to measure correct-direction
+power and wrong-direction risk under predeclared symmetric nonzero alternatives
+at the 64-block candidate.
+
+## Cycle 78 exact nonzero-alternative power
+
+Seed reconciliation `2dff87dc8315eb0b62c96408a9fd3bf13913eff2` preceded this
+analysis. Exact local commit `311d68216b49cb664ec0019c3259e00f9246bfda`
+adds a separate fail-closed alternative-calibration schema rather than
+weakening the symmetric-null contract. It requires positive/negative mirror
+pairs whose expected effects exceed the `0.10` practical threshold, fixes 64
+blocks, declares 80% minimum correct-direction power and 1% maximum
+wrong-direction probability, and exactly enumerates positive, negative,
+negligible, and inconclusive outcomes. Specification SHA-256 is
+`22df2188523708cbe52f28ea0dbbacf30563adf2a1447a57175d04e28008f887`.
+
+The moderate pair has expected effects ±0.15. Exact correct-direction power is
+`0.08407170601489997`; wrong-direction probability is
+`0.0000018579349140504212`, and about 91.59% remains inconclusive. The strong
+pair has expected effects ±0.30. Correct-direction power is
+`0.5975522317286325`; wrong-direction probability is
+`0.0000000002298192502702488`, and about 40.24% remains inconclusive. Mirror
+pairs agree to floating-point tolerance and every four-way probability sum is
+one. All processes pass the 1% wrong-direction tolerance, but none passes the
+declared 80% power target.
+
+This directly contradicts treating the 64-block null-safety candidate as a
+generally adequate execution size. It supports only low wrong-direction risk
+for the declared alternatives, not sufficient sensitivity. Confidence is high
+for exact enumeration of these four synthetic processes and low for the
+substantive choice of alternatives, dependence, continuous effects, drift, or
+real models. The next ranked question is to find the minimum exact run count
+that reaches 80% for the ±0.30 pair and determine whether the ±0.15 pair can
+reach it within a bounded 256-block search.
+
+## Cycle 79 exact bounded power search
+
+Seed reconciliation `afe03387668faa46e48c4adb3f65290cf5366687` preceded this
+search. Exact local commit `e19f5cb72a1916268c894da1366ba5373ba81aa3`
+adds a separate fail-closed, content-addressed power-search schema while
+preserving Cycle 78's single-count contract. It scans every integer run count
+from 64 through 256, records first crossings and observed maxima, and makes no
+monotonicity assumption. Search specification SHA-256 is
+`bffe0129348403b1e6059a24889b9d823763423aa0cb9433c72751cfbc1023cb`.
+The exhaustive run covered all 193 counts at
+`2026-09-02T19:34:13.476Z–19:41:38.298Z` with zero Monte Carlo error.
+
+The ±0.30 pair is below the synthetic 80% target at 104 blocks: positive-side
+correct, wrong, negligible, and inconclusive probabilities are respectively
+`0.7973065499459407`, `4.981433348942849e-14`,
+`1.815042056657329e-14`, and `0.20269345005412967`. It first crosses at 105
+blocks, where the same four probabilities are `0.8045178323414782`,
+`4.462239207721462e-14`, `9.878447314110688e-15`, and
+`0.1954821676586286`. The mirrored negative process agrees to floating-point
+tolerance.
+
+The ±0.15 pair never reaches 80% anywhere in the bounded search. Its largest
+conservative mirror-pair power is only `0.20370063408471942` at 249 blocks;
+the positive process there has wrong, negligible, and inconclusive
+probabilities `1.6918725993772752e-13`, `0.0006700234221932275`, and
+`0.7956293424930317`. At the 256-block endpoint, correct, wrong, negligible,
+and inconclusive probabilities are `0.19986471777037063`,
+`7.831916288574057e-14`, `0.0008245605443736368`, and
+`0.7993107216856294`. The moderate power maximum occurring before the endpoint
+is direct contradictory evidence against inferring bounded results from a
+single endpoint or assuming monotone power.
+
+This supports 105 as the first exact crossing only for the declared strong
+synthetic pair. It contradicts using 64 blocks as a universal gate and shows
+that even quadrupling to 256 does not make the moderate pair adequately
+sensitive under this rule. Confidence is high for the exhaustive discrete
+search and low for the synthetic 80% target, operational affordability,
+continuous effects, dependence, provider drift, alternative interval rules,
+or real-model transfer. The next ranked question is whether 105 complete model
+run blocks are operationally acceptable; if not, the design needs a different
+estimand or interval rule rather than a weaker claim about 64 blocks.
+
+## Cycle 80 operational sizing boundary
+
+Seed reconciliation `7adec24b78b0f1bc5c43d048955ce30d63c3ae01` preceded this
+analysis. The existing inference implementation resamples complete seed blocks
+**within each named model** and applies a unanimous named-model decision before
+the equal-model aggregate can decide. The Cycle 79 count is therefore a
+per-model calibration input, not a pooled six-model total.
+
+The retained design has six models, 25 seeds per model, and 32 episodes per
+model/seed block: 150 blocks and 4,800 episodes. Exact 25-block matched-control
+specification SHA-256
+`a15de1f8e8899632f30bdb6ddd143b1c3637038213acac37cbf54379f55a122b`
+shows only `0.30605391271020227` correct-direction power for the ±0.30 pair and
+`0.0691999011766968` for ±0.15. Wrong-direction probabilities remain below 1%,
+but Cycle 71 separately shows balanced and dense null false-direction rates of
+1.3211% and 1.4633% at 25 blocks. Thus the original 4,800-episode grid fails
+both the declared null-safety and power criteria under the synthetic families.
+
+Supplying the Cycle 79 strong-effect crossing to every named model would
+require 105 seeds per model, 630 complete blocks, and 20,160 episodes—4.2 times
+the retained grid. Even this is not an 80%-powered six-model unanimous gate.
+Under the additional illustrative assumptions that all six models share the
+same process and decide independently, per-model power
+`0.8045178323414782` yields only
+`0.2711527720864071` probability that all six decide correctly. Those
+assumptions are not established, so this product is a warning against pooled
+interpretation, not a calibrated multi-model result. At 256 blocks per model,
+the ±0.15 pair still fails while the grid would reach 49,152 episodes, 10.24
+times the retained plan.
+
+The current design is therefore not operationally justified as a confirmatory
+unanimous six-model run. No call, token, cost ceiling, frozen current model set,
+or execution credential closes that gap. Confidence is high for schedule
+arithmetic, the 25-block exact control, and the within-model code path; low for
+cross-model independence, real effect distributions, affordability, or
+provider behavior. The next ranked question is to freeze a multi-model power
+contract that separates per-model and unanimous-gate power, then compare a
+directional estimand with the current “exceeds 0.10” practical estimand under
+the same exact false-direction discipline.
+
+## Cycle 81 dependence-honest unanimous power
+
+Seed reconciliation `439a49247138fd38c145d99ffdeea1f99be352e2` preceded this
+change. Exact local commit `aca937e3f66661e0ccee5aed434cfbe7c309cf64`
+adds a fail-closed unanimous named-model power contract at specification
+SHA-256
+`438cb3dc3964a76de7927ffa43eea7423fa6ae1dc025e66eefe8d40a186827ff`.
+It binds the exact 105-block per-model calibration SHA-256
+`6cf0c60769fc8d0691fac797a4439eaae5b728a6826824f055e1d708a0c96bbc`,
+six named models, an 80% unanimous target, and one explicit dependence
+treatment: Fréchet bounds under unknown dependence, with an independence
+product labeled as illustration rather than authority.
+
+For the strong positive process, per-model correct-direction power is
+`0.8045178323414782`. Unknown-dependence unanimous power is therefore bounded
+by `[0, 0.8045178323414782]`; the independence illustration is
+`0.2711527720864071`. Per-model wrong-direction probability is
+`4.462239207721462e-14`, giving unanimous wrong-direction bounds
+`[0, 4.462239207721462e-14]` and an independence illustration of
+`7.894362904086226e-81`. The negative mirror agrees to floating-point
+tolerance. For the moderate positive process, per-model correct-direction
+power is `0.11132478415415377`, unanimous bounds are
+`[0, 0.11132478415415377]`, and the independence illustration is only
+`0.0000019034925024798922`.
+
+To guarantee 80% unanimous power across six equal-marginal models without a
+dependence assumption, per-model power must reach at least
+`0.9666666666666667`. Under independence it would need at least
+`0.9634924839989961`, but independence is not evidence-backed here. Neither
+declared process passes either target at 105 blocks. A deterministic matched
+control with per-model power one reaches lower bound, upper bound, and
+independence illustration one, proving the pass path; malformed model counts,
+dependence policies, targets, and nested calibrations fail closed.
+
+This makes the Cycle 80 warning executable and contradicts promoting the
+single-model 105-block crossing to multi-model confirmation. Confidence is
+high for the exact per-model input and sharp equal-marginal Fréchet bounds;
+low for equal real-model marginals, any cross-model dependence structure,
+aggregate-interval support, provider behavior, or final-gate power. The next
+ranked question is to compare a directional estimand (`effect > 0`) with the
+current practical-exceedance estimand (`effect > 0.10`) under matched exact
+null and alternative controls, without weakening either claim after seeing
+the result.
+
+## Cycle 82 matched estimand comparison
+
+Seed reconciliation `0f0812d89908e1f0e4451b3cbd9ccc527e0e4e85` preceded this
+change. Exact local commit `ee0d64bf3821fd9b65980cdb9fc33b0dad87cd1d`
+adds a fail-closed, exact comparison at specification SHA-256
+`c4f6c80564d7e83c2b99024a7d9ac0f84e98fdb0fc1aeb22bd00fb77b8adf24c`.
+It freezes the same 105 run blocks, 2.5%/97.5% percentile interval, three
+symmetric nulls, two mirror-paired alternatives, 80% power target, and 1%
+false-direction limit for both estimands. Only the decision threshold changes:
+zero for a directional claim and `0.10` for practical exceedance. Null and
+alternative process IDs must be disjoint, and malformed or asymmetric inputs
+fail closed.
+
+The directional claim improves alternative power but fails the matched null
+contract. Its exact false-direction probabilities are 4.4935% balanced,
+5.0442% dense, and 4.2680% sparse, all above 1%. The practical-exceedance
+claim yields 0.0815%, 0.3221%, and 0.0024%, respectively, so all three pass.
+At the same time, strong-process correct-direction power rises from 80.45% for
+practical exceedance to 98.46% for direction alone, and moderate-process power
+rises from 11.13% to 53.44%. The moderate directional claim therefore remains
+below the 80% target even while accepting too much null-direction risk.
+
+This supports keeping the two questions separate and contradicts treating a
+directional estimand as a cost-free substitute for the practical claim. The
+calculation has zero Monte Carlo error. Confidence is high for the exact
+frozen trinomial controls and low for continuous effects, other interval
+rules, model dependence, provider behavior, and real factorial results. A next
+comparison must predeclare a stricter directional interval calibration against
+all three nulls before measuring retained alternative power; it must not tune
+the interval after selecting the most favorable alternative.
+
+## Cycle 83 null-first directional interval calibration
+
+Seed reconciliation `c4cf683ab8d867ac9ba802e2a745b0e5ef9c6356` preceded this
+change. Exact local commit `0320840b91d0c598b7f829b45cb991411291f9a0`
+separates interval selection from power measurement. Null-only specification
+SHA-256 `1d8633f0591d9e4a1cd7c2fdc919a9546a26edf27a9761ab3ce113ab815b2ba8`
+freezes 105 blocks, the same three symmetric nulls, the 1% false-direction
+limit, and lower-tail candidates `0.025`, `0.01`, `0.005`, and `0.0025` in
+least-to-most-strict order. Alternative outcomes are absent from this schema.
+
+The first three candidates fail at least one null. At `0.005`/`0.995`, the
+balanced and sparse risks pass at `0.009568589909137726` and
+`0.009521856408058721`, but dense risk remains `0.010817905625820424` and
+fails. The selected `0.0025`/`0.9975` interval yields exact false-direction
+probabilities `0.004746432583487716` balanced,
+`0.006016081515250353` dense, and `0.004673936662618542` sparse. All pass the
+frozen limit with zero Monte Carlo error.
+
+Only after reproducing that null selection, power specification SHA-256
+`b5715c37201d532faf4067286232fe390e959b98b76651958b3a0cb3a693bef9`
+binds the null-specification hash, selected quantiles, run count, and disjoint
+alternative process IDs. Strong-process correct-direction power is
+`0.9066218357309971`; moderate-process power is `0.2298628645622084`.
+Wrong-direction probability is `1.3853047321045116e-12` strong and
+`4.6912051074282143e-7` moderate. The negative mirrors agree to
+floating-point tolerance. Reordered candidates, altered binding fields, and
+cross-class null/alternative process-ID collisions fail closed.
+
+This qualifies the Cycle 82 result: a directional estimand can meet the frozen
+null-risk contract when its interval is made stricter, and it retains more
+strong-process power than the 95% practical-exceedance rule (90.66% versus
+80.45%). It is not a general shortcut. The stricter interval loses much of the
+95% directional rule's power (98.46% strong and 53.44% moderate), and moderate
+power remains only 22.99%, below the 80% target. Confidence is high for the
+exact frozen grid and synthetic processes, and low for grid optimality,
+continuous effects, cross-model dependence, affordability, provider behavior,
+and real models. The next ranked question is the exact run-block count needed
+for the strong pair to reach the 96.67% per-model power required by Cycle 81's
+dependence-honest six-model lower bound, and whether the moderate pair reaches
+that target through 256 blocks.
+
+## Cycle 84 dependence-honest block-count search
+
+Seed reconciliation `ab77e3b1d3dc4b287ffa135b0d6a47c4534be2ad` preceded this
+work. The executable authority remains source commit
+`0320840b91d0c598b7f829b45cb991411291f9a0`; no provider was called. The first
+exact pass used null-range specification SHA-256
+`95a08e5dd2e6a8115c3576698a8209c061f822952845b95b117e1dc9bb18397a`
+to test the selected `0.0025`/`0.9975` interval at every integer count from 105
+through 256 before inspecting power. All counts preserve the 1% contract. The
+worst balanced null is `0.004834055102652536` at 145 blocks, the worst dense
+null is `0.007584811775432895` at 111, and the worst sparse null is
+`0.004991530412381129` at 164.
+
+Only after that range passed, power-search specification SHA-256
+`678c170fccf949646fb9f628fd2f094a147c02a05ad8a8728988339473c988d4`
+scanned the same 152 integer counts against the Cycle 81 requirement of
+`29/30` (96.67%) per-model power. The strong pair is 96.5995% at 132 blocks and
+first passes at 133 with 96.6926%. Its maximum through 256 is 99.9878%. The
+moderate pair never passes; its maximum is 66.9532% at 256. Maximum observed
+wrong-direction probability remains `1.3853047321045128e-12` strong and
+`4.6912051074282397e-7` moderate.
+
+Under Cycle 81's equal-marginal, unknown-dependence Fréchet contract, the
+strong result at 133 implies a six-model unanimous lower bound of about 80.16%
+and therefore clears the synthetic target. It also expands the design to 798
+model-run blocks and 25,536 factorial episodes, versus 20,160 at 105 blocks.
+This is a mathematical sizing result, not evidence that the execution is
+affordable or that real models have equal marginals. Confidence is high for
+the complete exact discrete search and low for transfer to continuous effects,
+real-model dependence, cost, drift, and provider behavior. The next ranked
+question is whether a prespecified non-unanimous six-model aggregation rule can
+reduce the 25,536-episode burden while retaining explicit aggregate power and
+false-direction bounds; no provider run is justified before that contract and
+a cost ceiling exist.
+
+## Cycle 85 conflict-safe strict-majority bound
+
+Seed reconciliation `0e624606b29ab4ce5e2c985745af30f954bbb719` preceded this
+change. Exact local source commit
+`930fc9e7aa269642291c9687fa46f3f8f22a9547` adds specification SHA-256
+`f2263724b736580c776796983ca0df095e06eefd793a3347868f69bf58196dca`.
+The specification binds the Cycle 83 null and power hashes, six equal-marginal
+models, the smallest strict majority (four), an inconclusive conflict policy,
+the 80% aggregate-power target, the 1% aggregate wrong-direction limit, and 32
+factorial episodes per model-run block. A threshold of three fails closed
+because three positive and three negative models could simultaneously satisfy
+it; altered nested calibration binding also fails closed.
+
+No independence assumption is introduced. If `S` of `n` models support one
+direction, each with marginal probability `p`, the exact count-moment bounds
+are `max(0,(np-(k-1))/(n-k+1)) <= P(S>=k) <= min(1,np/k)`. For the strong
+positive process at 105 blocks, per-model power `0.9066218357309971` therefore
+gives aggregate power `[0.813243671461994, 1]`. The aggregate wrong-direction
+upper bound is `2.0779570981567675e-12`. The negative mirror agrees to
+floating-point tolerance. Both pass.
+
+The moderate process remains non-passing: per-model power
+`0.2298628645622084` gives aggregate power `[0, 0.3447942968433126]`, while its
+wrong-direction upper bound is `7.036807661142322e-7`. The 4-of-6 rule uses
+20,160 episodes at 105 blocks per model, 5,376 fewer than the 25,536-episode
+133-block unanimous design from Cycle 84, a 21.05% reduction.
+
+This supports a conflict-safe reduction in the strong synthetic design's
+burden and contradicts treating majority voting as either independence or a
+remedy for weak marginals. Confidence is high for the algebra and bound inputs,
+and low for equal real-model marginals, heterogeneous effects, affordability,
+provider behavior, and drift. The next ranked question is to search downward
+for the first block count at which the selected interval keeps every null below
+1% and strong per-model power reaches the 90% required by the 4-of-6 lower
+bound; the moderate process must remain reported rather than optimized away.
+
+## Cycle 86 earliest strict-majority operating point
+
+Seed reconciliation `6c5e68c2175c7dba70fb88508d17e82c32c3b6d7` preceded this
+work. The exact executable source remains
+`930fc9e7aa269642291c9687fa46f3f8f22a9547`; no provider was called. Null-range
+specification SHA-256
+`3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5`
+checks every integer count from 64 through 105 under the Cycle 83 interval.
+Every count passes 1%. The worst dense risk is 0.8555% at 71 blocks; balanced
+and sparse worst cases are 0.5283% and 0.5740% at 64. At the selected 104-block
+point, exact risks are 0.4738% balanced, 0.4233% dense, and 0.4675% sparse.
+
+Power-search specification SHA-256
+`bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f`
+checks the same 42 counts without assuming monotonicity. Strong per-model power
+is `0.8993227186947798` at 103 blocks and first exceeds 90% at 104 with
+`0.9030482059720658`. Under the frozen 4-of-6 count bound, 104 therefore gives
+aggregate power `[0.8060964119441317,1]`; its strong wrong-direction upper
+bound is about `2.378646314564966e-12`. Moderate per-model power is only
+`0.22637721624588303` at 104, giving aggregate power `[0,0.33956582436882455]`.
+
+The selected design contains 19,968 episodes. It saves 192 episodes relative
+to Cycle 85's 105-block rule and 5,568 relative to Cycle 84's 133-block
+unanimous rule, but still needs 104 blocks per model while the retained plan
+has only 25 seeds per model. This supports 104 as the earliest point in the
+declared range, not as an affordable or provider-ready design. Confidence is
+high for exact discrete enumeration and low for real-model marginals,
+heterogeneity, repeated-run independence, cost, drift, and provider behavior.
+The next ranked question is to generalize the count bound to a frozen
+heterogeneous six-model marginal vector and measure how one or two weaker
+models change the 80% guarantee before any execution proposal.
+
+## Cycle 87 asymmetric-boundary correction
+
+Seed reconciliation `405c60e145205ff2a71b283f108ea02d48b03bc1` preceded this
+correction. Exact local source commit
+`39dfb2d76b6b59b88271096770d83678c1a3c50c` replaces the Cycle 82
+all-symmetric practical-null fixture with three retained zero-effect controls
+plus a genuinely asymmetric positive practical-boundary null with trinomial
+probabilities `[0.2,0.5,0.3]` and expected effect `+0.10`. Comparison
+specification SHA-256 is now
+`465a3c1041b4dce920f323df04e50276aeac0e1c7f804ed1dbd356d751de1542`.
+The schema freezes the 1% false-direction limit, requires at least one
+asymmetric practical null, rejects a process outside the practical-null band,
+and rejects duplicate IDs both within a class and across the null/alternative
+classes.
+
+The correction preserves every previously reported zero-effect probability.
+For the directional estimand, balanced/dense/sparse false-direction
+probabilities remain `0.04493475270663312`, `0.05044215663997886`, and
+`0.04267998231399742`; for practical exceedance they remain
+`0.0008153019889196652`, `0.0032209898687990566`, and
+`0.000024067259773916887`. Strong correct-direction power remains
+`0.9845896004887843` directional versus `0.8045178323414782` practical, and
+moderate power remains `0.5344140683113935` versus
+`0.11132478415415377`.
+
+The asymmetric boundary changes the conclusion. A `+0.10` process is a
+positive process for the zero-threshold directional estimand, so its positive
+decision probability `0.289256693611456` is not a false direction; only the
+negative probability `0.00027161058571514634` is, and it passes 1%. For the
+practical-exceedance estimand the same process is on the null boundary, so its
+positive and negative decisions (`0.028051868524189363` and
+`0.0000007753540473255935`) are unsupported practical-direction calls. Their
+sum `0.028052643878236687` fails 1%.
+
+This qualifies rather than reverses the retained directional-versus-practical
+finding. The 95% directional shortcut still fails the three zero-effect
+controls, and its stronger interval remains necessary there. Practical
+exceedance no longer has a supported blanket claim that every declared null
+passes: it passes the three zero-effect controls but fails this exact boundary
+control. Confidence is high for the exhaustive discrete probabilities and
+their estimand-specific labels, but low for other asymmetric nulls, continuous
+effects, boundary conventions, dependence, real models, and provider
+behavior. The next bounded investigation remains the already seed-linked
+heterogeneous 4-of-6 marginal sensitivity analysis; it must retain this
+corrected estimand boundary as contradictory evidence rather than treating a
+single rule as uniformly safer.
+
+## Cycle 88 heterogeneous strict-majority sensitivity
+
+Seed reconciliation `eda787b12bed0a4348a5803297f6b178bb876b9a` preceded this
+work. Exact local source commit
+`e8bd94a4f0210ce7f1a88fc330abf2085fcb71ad` adds specification SHA-256
+`10dec5699c1ce2d83502e0fb8d4025d0c1a735e6e8aee242c9528823176654a6`.
+It binds six named synthetic model marginals, Cycle 86 null-range SHA
+`3d88ae647a7602f66779c114a577df96d61d4f67226ea9fec59bd1ad16691ca5`,
+power-search SHA
+`bbd889086dc4dbeb8c6f6f119a61a3fce71146110a9e3abc325d93edccd7f22f`,
+104 blocks, the conflict-safe 4-of-6 threshold, unknown dependence, 80%
+aggregate power, and 1% aggregate wrong-direction risk. Missing, duplicate, or
+unknown model identities, invalid probability envelopes, and a non-strict
+majority fail closed.
+
+The unknown-dependence count-moment lower bound requires the six correct-
+direction marginals to sum to at least `5.4`. Six strong synthetic marginals
+sum to `5.418289235832395` and retain the Cycle 86 aggregate lower bound
+`0.8060964119441317`. Replacing one named model with the frozen moderate
+process lowers the sum to `4.741618246106212` and the aggregate lower bound to
+`0.5805394153687372`; replacing two lowers them to `4.064947256380029` and
+`0.3549824187933431`. Only the all-strong scenario passes 80%.
+
+All three wrong-direction upper bounds pass 1%: about
+`2.378646314564966e-12`, `1.2283981426580603e-7`, and
+`2.4567724988529744e-7`. This supports directional safety for this stress
+family but contradicts treating the all-strong aggregate-power pass as robust
+to even one full moderate-process substitution. “Moderate substitution” is a
+synthetic sensitivity control, not an observation of real model
+heterogeneity. Confidence is high for the algebra, exact frozen marginals,
+identities, and schema checks; low for real-model marginals, dependence,
+graded heterogeneity, cost, drift, and provider behavior. The next ranked
+question is the minimum weakest-model marginal that preserves the 80% lower
+bound when the other five remain at the frozen strong marginal, followed by
+graded vectors rather than another full-process substitution.
+
+## Cycle 89 weakest-marginal and graded boundaries
+
+Seed reconciliation `eb4a2fc15292d08ba5d4667dd7db6e19164a9111` preceded this
+work. Exact local test commit
+`4ecb85ac510a3fb8f656bcb9b290de4f06fa9737` exercises the Cycle 88 analyzer
+without changing its schema or source specification. With five models frozen
+at correct-direction marginal `0.9030482059720658`, the sixth must be at least
+`0.8847589701396714` to reach the required total `5.4`. Exact boundary
+specification SHA-256 is
+`94ebee148ee1ae7c0b4a905a83efe39efae606df46113bbb58ed159851938ffb`;
+it produces lower bound `0.8000000000000002` and passes.
+
+A matched graded vector `[0.88,0.89,0.90,0.91,0.92,0.90]` also sums to `5.4`
+and passes at exact SHA-256
+`dd37d582b2347f573fadddf0c394a4ff22f0feb7d139b2d1263d3b745c1c30d1`.
+Reducing only its weakest component from `0.880` to `0.879` gives total
+`5.399000000000001`, lower bound `0.799666666666667`, and a failure at SHA-256
+`fd54d04de55d8c9594f8f1116b8bf903ad39b493d27dde05110c1ca85ca5a1e0`.
+The wrong-direction marginals are matched across all three controls, so their
+4-of-6 upper bound remains `2.378646314564966e-12` and passes 1%.
+
+This supports a precise aggregate budget interpretation: under the declared
+unknown-dependence first-moment bound, the sum of named correct-direction
+marginals determines the guarantee, not equality of those marginals. It also
+contradicts treating the all-strong pass as comfortable—the permitted drop for
+one model with the other five frozen is only about 1.83 percentage points.
+These graded vectors remain synthetic controls, not observed model behavior.
+Confidence is high for the algebra and exact regression hashes, and low for
+real marginals, cross-model dependence, continuous effects, drift, cost, and
+provider behavior. The next accessible question is the earliest block count
+at which five strong-process marginals plus one moderate-process marginal
+recover the 80% 4-of-6 guarantee while every frozen null still passes 1%,
+without assuming power is monotone.
+
+## Cycle 90 mixed-marginal recovery boundary
+
+Seed reconciliation `bf53cef114c946a2e5ae959379bbffd1354649de` preceded this
+work. A one-time exact scan evaluated every integer block count from 64 through
+256 under the retained 99.5% directional interval. The immutable power output
+has SHA-256
+`a69681e4532b513a8ed622ad9c26be8f3b76572c3700f919ae32a0e4ca1d6875`;
+the search manifest has SHA-256
+`2d60ee8cdeaac072884b596e0dbf7a1e9cf35bad0dc064eaa163d3976cc0bbda`.
+The scan did not assume monotonicity and found no later regression after the
+first pass.
+
+At 171 blocks, strong correct-direction power is
+`0.9931639463253494`, moderate power is `0.43334150555065293`, and the
+five-strong/one-moderate marginal sum is `5.399161237177401`. Its sharp
+unknown-dependence 4-of-6 lower bound is `0.7997204123924669`, so it fails the
+80% target. At 172 blocks, the corresponding powers are
+`0.9934576391929564` and `0.43646480159465234`, the sum is
+`5.403752997559434`, and the lower bound is `0.801250999186478`, so it passes.
+At 256 blocks the lower bound reaches `0.8896410833501275`.
+
+Every declared null passed the frozen 1% false-direction limit throughout the
+64–256 scan. The largest observed null risk was the dense null at 71 blocks,
+`0.008554538502693238`. Exact null-record SHA-256 values at 71, 171, 172, and
+256 blocks are respectively
+`e7b35ad29a6226319fa5b191696348f7c0ade414d85e9f6a745d1b35af35b641`,
+`486655fa1d6d62ead8a1dfdde7a42e837568257b6535751e39b833ea83c780c4`,
+`a0e0d92ee7ae22dad567a1c183b7014427b163364284fb9cf71ae0a9c4d8743e`,
+and `cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c`.
+The adjacent and endpoint power-record SHA-256 values are
+`32e257c2206d350128bc6a8e24b3421bb9e7b472bebf922410a97f2c20bb55df`,
+`b8446c95d53279d73bfb12826cbb64a1ddf49f2ad17cba83297d47478c4c2681`,
+and `6bc9a70bdbc9b9a44d1e12f4b8377d86230187a55ff061e18cfd15e99e3529d1`.
+
+Exact test source `c79f2a32042ff1e5433bf15897800fd44dabd178` pins only the
+decision-relevant 171/172 edge rather than adding the 12-minute exhaustive
+scan to routine validation. Its independently regenerated calibration/power
+specification pairs are `486655fa…80c4` / `26f54702…3d5e` at 171 and
+`a0e0d92e…743e` / `956ad848…295c` at 172; floating-point accumulation differs
+from the saved scan only below the reported precision and gives the same
+pass/fail decisions.
+
+This answers the frozen equal-block question but makes the operational burden
+worse: 172 blocks for each of six models means 33,024 complete factorial
+episodes, 13,056 more than the 104-block all-strong design and far above the
+retained 25 seed blocks per model. Confidence is high for exact discrete
+enumeration, the adjacent regression, and the sharp first-moment bound; it is
+low for identifying a real weaker model in advance, unequal allocation,
+cross-model dependence, drift, cost, provider behavior, and transfer from the
+synthetic processes. The next ranked question is whether a predeclared unequal
+block allocation can meet the same 5.4 marginal budget with fewer total
+episodes, without weakening any model's 1% null control.
+
+## Cycle 91 bounded unequal-allocation probe
+
+Seed reconciliation `51f62b0ab5e7a4f6a9093cbdf50573229707ef5b` preceded this
+probe. Exact local test source
+`1cf95c026d659f6f1c678b8af61231bf5c98c94d` fixes the moderate synthetic
+model at the tested 256-block endpoint and compares five strong synthetic
+models at 120 versus 121 blocks. This is a named sensitivity allocation; it
+does not infer which real model, if any, would be weaker.
+
+At 120 strong blocks, per-model strong power is `0.9452316649448583`; paired
+with moderate endpoint power `0.6695324195378379`, the six marginal sum is
+`5.395690744262129` and the 4-of-6 lower bound is `0.7985635814207098`.
+The 856-block, 27,392-episode design therefore fails. Raising each of the five
+strong models to 121 blocks gives strong power `0.9473025370635995`, marginal
+sum `5.406045104855835`, and lower bound `0.8020150349519449`. That 861-block,
+27,552-episode candidate passes and saves 171 blocks or 5,472 episodes relative
+to Cycle 90's equal 172-block design.
+
+The exact 120-, 121-, and 256-block null specification SHA-256 values are
+`e75f18903c731197715e52a06ea708f7eacd7f57050ad6e247adc447bfca4666`,
+`87e9c39e40e21215807c9bf152fc1119b0a81554c59456cb3d21e24ccb0a683f`,
+and `cf104d024b1677f5cd413cbf8ee84598baeae30144e63d622a532a70cc21a72c`.
+Their largest declared null risks are respectively `0.004715853666719678`,
+`0.006150808149995726`, and `0.004818913568993839`, all below 1%. The passing
+candidate's aggregate wrong-direction upper bound is
+`1.3423176283386044e-10`.
+
+This supports the decision-relevant claim that equal block counts are not
+cost-minimal within the tested synthetic controls. It does not establish a
+global optimum: the committed regression pins only the adjacent 120/121 edge
+with the moderate model fixed at 256, while the exploratory check covered
+strong counts 115–121. It also assumes the weaker identity is known before
+allocation and does not price latency, parallelism, retries, or model-specific
+calls. Confidence is high for the frozen exact probabilities, null checks,
+episode arithmetic, and first-moment bound; low for other allocations,
+real-model identification, dependence, drift, cost, and provider behavior.
+The next ranked question is an exhaustive, non-monotonic total-block search
+over the retained 64–256 grid to determine whether another named allocation
+improves on 861 blocks while every selected count retains null control.
+
+## Cycle 92 exhaustive unequal-allocation minimum
+
+Seed reconciliation `80cd9450fc66c13e6a96fc4afddfdeaf8acf7158` preceded this
+search. One goal-owned exact process enumerated all 193 run counts from 64
+through 256, retained each null and alternative result, and then used dynamic
+programming to maximize the five strong-process marginals at every attainable
+block total before pairing each state with every moderate-process count. This
+covers unequal counts among the five strong models and makes no monotonicity
+assumption. All 193 counts passed every frozen null. The exact row table has
+SHA-256 `f26c11984cf283978fb8e1b551ab12b7729c6a04a6fce6d62911359d36ae7402`;
+the derived result has SHA-256
+`d17d44ed7e48c18ec86c6193e74e72f2ce011f901ba56c5b4f30b9d9dceccbcd`.
+
+The minimum passing total is 859 blocks: strong-model counts
+`[120,120,121,121,121]` and moderate-model count `256`. Their correct-
+direction marginal sum is `5.401903360618353`, giving the sharp 4-of-6 lower
+bound `0.800634453539451`; the wrong-direction upper bound is
+`1.3424179862500522e-10`. This is 27,488 complete factorial episodes, 64 fewer
+than Cycle 91's five-by-121 probe and 5,536 fewer than the equal 172-block
+design.
+
+The strongest allocation at every cheaper total occurs at 858 blocks, with
+strong counts `[120,120,120,121,121]` and the same 256-block moderate model.
+Its marginal sum is `5.399832488499611` and its lower bound is
+`0.7999441628332038`, so it fails. The dynamic program retained 961 exact
+five-model total states; comparing all of them with all 193 moderate counts
+proves no cheaper allocation in the declared grid passes the frozen
+first-moment rule. The largest null risk across the grid remains dense-null
+`0.008554538502693238` at 71 blocks.
+
+Exact local test source `03e66b1063fa3eeadcbb34c27c6870c7aeeb70c7`
+pins the decision-relevant 858/859 edge using the 120-, 121-, and 256-block
+calibration and power digests. It deliberately does not add the roughly
+24-minute exhaustive search to routine validation.
+
+This resolves the named-grid minimum, but not operational allocation. It
+assumes the moderate model is identified in advance and assigns that model the
+largest budget. It also treats the five strong models as the same synthetic
+process apart from count, and does not model latency, parallelism, retries,
+cost tiers, drift, or provider behavior. Confidence is high for exhaustive
+grid coverage, digests, the sharp bound, and the adjacent regression; low for
+real-model classification and transfer. The next ranked question is a matched
+identity-misassignment control: swap the 256-block budget onto a strong model
+and place the moderate process at one of the 120/121 counts, then measure how
+much of the claimed saving survives.
+
+## Cycle 93 matched identity-misassignment control
+
+Seed reconciliation `fec350593be2cb47486f4d4294bc6aff16f8d312` preceded this
+control and recorded a material saved-shell access change without an
+attributable saved item. The test keeps Cycle 92's exact 859-block multiset and
+27,488-episode cost fixed. It changes only which frozen process class receives
+the large budget, so cost cannot explain the comparison.
+
+When a strong process receives 256 blocks and the moderate process receives
+120, strong counts are `[120,121,121,121,256]`. Correct-direction marginals sum
+to `5.061461251302365` and the sharp 4-of-6 lower bound is
+`0.6871537504341217`. With the moderate process at 121, strong counts are
+`[120,120,121,121,256]`; the sum is `5.062726969010269` and the lower bound is
+`0.6875756563367563`. Both fail the frozen 80% power target. Their aggregate
+wrong-direction upper bounds are only `5.369590192734223e-8` and
+`5.1284290158212815e-8`, respectively, so both retain the 1% false-direction
+discipline.
+
+Exact local source `552532bd9690613ebc5eb8d796f3ab61bd94ccac` binds both
+permutations to the same 120-, 121-, and 256-block calibrations as Cycle 92.
+The full factorial test file passes 42 tests with 418 assertions; TypeScript
+and focused formatting pass. This supports directional safety under the two
+identity errors but contradicts treating the 5,536-episode saving as robust to
+process misclassification. It does not estimate a classifier, a
+misclassification rate, real-model effects, dependence, provider behavior, or
+operational cost. Confidence is high for the exact frozen permutations and
+low for those transfer questions.
+
+The next ranked question is the bounded identity-invariant control already
+available from local evidence: give every model 172 blocks, verify that the
+moderate identity cannot change the result, and quantify its robustness
+premium over the targeted 859-block allocation before another global search.
+
+## Cycle 94 identity-invariant equal-allocation control
+
+Seed reconciliation `89f0da7644c37f35d228773435df16f27245c425` preceded this
+control and reproduced the same profile-class access boundary with zero
+attributable items. The regression gives all six named models 172 blocks and
+permutes the one moderate process through every identity. Each of the six
+scenarios has correct marginal sum `5.403752997559532`, sharp 4-of-6 lower
+bound `0.8012509991865105`, and aggregate wrong-direction upper bound about
+`4.567335716582027e-9`. Every placement passes the frozen 80% power and 1%
+wrong-direction gates.
+
+Exact local source `b4ffa1c522019bb42cb1d52602efa7e563359a3d` binds all six
+placements under sensitivity-spec SHA-256
+`a7a31b9d54011af60a523b154d25127d2dc0e230ff40f9c5c0509725e8260328`.
+The equal design costs 1,032 blocks and 33,024 complete factorial episodes.
+That is 173 blocks and 5,536 episodes more than Cycle 92's targeted 859-block
+design. The focused identity-invariance test passes with 44 assertions;
+TypeScript and focused formatting pass.
+
+This supports equal allocation as an identity-invariant control and
+quantifies the price of avoiding the classification assumption. It does not
+prove equal 172 is the cheapest robust unequal vector, nor does it establish
+real-model effects, a classifier, dependence, provider behavior, or
+operational cost. Confidence is high for exact permutation invariance and low
+for those transfer questions. The next ranked question is an exhaustive,
+non-monotonic search over the retained 64–256 grid for the minimum allocation
+whose 4-of-6 lower bound passes for every possible moderate-process identity.
+
+## Cycle 95 exhaustive identity-robust minimum
+
+Seed reconciliation `a8ffbc692bffce0f8143c3475e3cec07e494b63f` preceded this
+search and recorded a material profile-to-login shell transition without an
+attributable saved item. Four goal-owned local processes enumerated every
+64–256 count under the frozen exact null and alternative fixtures. All 193
+counts pass the null gate; dense-null at 71 remains worst at
+`0.008554538502693238`. The retained row representation has SHA-256
+`d1792f60380298c205f32f72c1fb04b1e8b1b457bf1423b0c5e6b2fc1f10a6dc`.
+
+For each attainable six-model total, a dynamic program maximized the sum of
+strong-process marginals at every observed strong-minus-moderate gap
+threshold. Taking the worst of all six possible moderate identities then
+tests the exact robust criterion without assuming monotonicity or a known
+process class. The result representation has SHA-256
+`a2f55d41dd3086532897ce695e66c1e5d39e3820d3a20a42864922276659b40c`.
+
+The minimum pass is 1,029 blocks with counts
+`[171,171,171,172,172,172]`, or 32,928 complete factorial episodes. When the
+moderate process receives 171 blocks, the worst correct marginal sum is
+`5.400042315780292`, giving lower bound `0.8000141052600972`; when it receives
+172, the lower bound is `0.800957306318893`. The worst aggregate wrong-
+direction upper bound is `4.778429753042595e-9`.
+
+The strongest cheaper state is 1,028 blocks at
+`[171,171,171,171,172,172]`. Its worst correct marginal sum is
+`5.399748622912675` and lower bound `0.7999162076375583`, so it fails. Exact
+local source `b638788e80b563c5745274fa5b82c036743d4406` pins both adjacent
+vectors using the retained 171- and 172-block calibrations. The focused test
+passes with 56 assertions; TypeScript and formatting pass.
+
+This proves the identity-robust minimum over the declared grid, but it changes
+the operational conclusion: the optimized robust vector saves only three
+blocks and 96 episodes versus equal 172 sampling. Its aggregate lower-bound
+margin is only `0.0000141052600972`, or 0.00141 percentage points. Confidence
+is high for the exact enumeration, dynamic program, edge regression, and
+frozen probabilities; low for marginal estimation, drift, real models,
+dependence, cost, and providers. The next ranked question is to compute the
+uniform downward marginal perturbation that erases this pass and compare its
+buffer with equal 172 before treating the 96-episode saving as actionable.
+
+## Cycle 96 matched uniform-drift sensitivity
+
+Seed reconciliation `7e129894260daf75bd1eb54de6b9bccdc480d0b2`
+preceded this analysis and recorded a material login-to-profile shell
+transition without an attributable saved item. The local accepted-ref check
+at `2026-09-02T23:07:59.654Z–23:07:59.658Z` found all six tracked refs present
+and unchanged. GitHub, arXiv, and Reddit therefore made zero public requests.
+
+Exact local source `b652c60a22972619be0212c8f88e23262eeccc1a` applies the
+same downward perturbation to each of the six frozen correct-direction
+marginals while leaving the already-passing wrong-direction bounds unchanged.
+For the identity-robust `[171,171,171,172,172,172]` vector, the worst marginal
+sum is `5.400042315780292`. Its largest passing per-model downward drift is
+therefore `(5.400042315780292 - 5.4) / 6`, or
+`0.000007052630048557755` probability (`0.0007052630048557755` percentage
+points). The matched equal-172 sum gives an exact fixture-derived buffer of
+`0.0006254995932550855` probability (`0.06254995932550855` percentage
+points), `88.69026008006738` times larger. The displayed equal-allocation sum
+is rounded to 15 decimal places; the buffer pins the underlying fixture value.
+
+Both six-identity designs pass the frozen 80% aggregate lower-bound target at
+their exact buffers and fail when their respective buffer is increased by
+`1e-12`; their retained aggregate wrong-direction upper bounds remain below
+1%. The focused regression passes with 65 assertions, and TypeScript and
+focused formatting pass.
+
+This supports equal 172 as the materially more drift-tolerant choice despite
+its extra three blocks and 96 episodes, and contradicts treating the declared-
+grid minimum's tiny cost saving as operationally robust. The calculation is a
+matched deterministic sensitivity analysis, not an observed drift estimate,
+confidence interval, provider result, or claim that real drift is uniform or
+always adverse. Confidence is high for the frozen algebra and boundary tests;
+low for real marginals, dependence, provider behavior, costs, and the size or
+shape of actual drift. The next ranked question is to map the Pareto frontier
+between identity-robust episode cost and uniform-drift reserve over the
+retained grid, avoiding an arbitrary reserve threshold.
+
+## Cycle 97 local cost-reserve frontier
+
+Seed reconciliation `b0b184795f35cb7bc5a7a3fb593d70a067d0d8e4`
+preceded this analysis and recorded a material profile-to-login shell
+transition without an attributable saved item. The post-seed accepted-ref
+check at `2026-09-02T23:16:03.519Z–23:16:03.523Z` found all six tracked refs
+unchanged; GitHub, arXiv, and Reddit made zero public requests.
+
+Exact local `53cebd440a55eb786b2084d566875f1003d56835` evaluates all seven
+identity-robust mixtures of the already-frozen 171- and 172-block marginals.
+Totals 1,026–1,028 fail. The passing 1,029-, 1,030-, 1,031-, and 1,032-block
+designs require 32,928, 32,960, 32,992, and 33,024 episodes and tolerate
+uniform per-model downward drift of `0.000007052630048557755`,
+`0.00005600144131830594`, `0.00010495025258775807`, and
+`0.0006254995932550855`, respectively.
+
+The first two extra blocks above the minimum each buy about `0.00004894881127`
+additional probability per model. The final extra block, which eliminates the
+last 171-block placement and therefore its worse moderate-process gap, buys
+about `0.00052054934067`. This supports the equal-172 endpoint over either
+intermediate mixture when the 96-episode maximum premium is affordable. It
+does not prove that another 64–256 vector cannot dominate a local point.
+Confidence is high for the exact seven-point slice and low for the remaining
+grid, real marginals, drift shape, dependence, providers, and operational
+cost. The next ranked work is the complete retained-grid Pareto search.
+
+## Cycle 98 complete retained-grid frontier
+
+Seed reconciliation `468376aaf0f1ae3a4f9b446cb267ca92c08e252b`
+preceded the search and retained the saved-target login wall with only body-
+byte drift. Added and changed IDs remain unknown, removals are `[]`, and all
+132 durable seeds remain unavailable. The post-seed accepted-ref check at
+`2026-09-02T23:55:59.924Z–23:55:59.929Z` found all six tracked refs unchanged;
+GitHub, arXiv, and Reddit made zero public requests.
+
+The [exact frontier verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-robust-frontier.ts)
+at `6fd185a54b4fa386d92ceba26b187a3a7963a6fe` regenerates every count from 64
+through 256 in four interleaved local workers. All 193 rows retain the frozen
+null gate; dense-null at 71 is again worst at `0.008554538502693238`. The
+canonical row representation has SHA-256
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`.
+
+For every attainable six-model total, the verifier maximizes strong-process
+marginal sum under each observed strong-minus-moderate gap threshold, then
+recomputes the selected allocation in sorted count order. The stable result
+representation has SHA-256
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Two complete runs reproduced the row evidence; the stabilized final run binds
+this result hash to the reviewed source.
+
+The first passing point remains 1,029 blocks at
+`[171,171,171,172,172,172]`: 32,928 episodes, worst correct marginal sum
+`5.400042315780292`, per-model uniform drift reserve
+`0.000007052630048557755`, and aggregate wrong-direction upper bound
+`4.778429753042595e-9`. The globally optimal results at totals 1,030–1,032 are
+exactly the Cycle 97 mixtures, so no other retained-grid vector dominates a
+local point at the same or lower cost.
+
+Every integer total from 1,029 through 1,536 strictly increases the best
+reserve. All 508 passing totals are therefore nondominated. At the declared
+grid endpoint, `[256,256,256,256,256,256]` costs 49,152 episodes and raises the
+per-model reserve to `0.044820541675075244`; its aggregate wrong-direction
+upper bound is `1.3405852452814177e-10`.
+
+This resolves the complete-grid dominance question but contradicts choosing a
+single design from optimization alone: cost and reserve improve together at
+every passing total. The calculation remains exact synthetic sensitivity, not
+a real drift estimate, confidence interval, provider result, or operating-
+cost judgment. Confidence is high for coverage, repeated row hashes, stable
+arithmetic, and the dynamic program; low for real marginals, dependence, drift
+shape, provider behavior, and the missing policy preference. The next ranked
+question is to require an independently justified reserve target or episode
+ceiling before selecting a frontier point, rejecting an implicit post-hoc
+choice.
+
+## Cycle 99 explicit operating-policy boundary
+
+Seed reconciliation `6151fc3398f1f8f25f2c9dd4bd4e9b49d8d437fa`
+preceded this work. It recorded a saved-shell login-to-profile transition but
+still exposed zero attributable items: added and changed IDs remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. The local-only
+accepted-result inventory at
+`2026-09-03T00:12:55.252Z–00:12:55.258Z` found all six refs unchanged. GitHub,
+arXiv, and Reddit therefore made zero public requests.
+
+Exact local `7a4c7ce5b934692271e418c64f0bba140126f4be` adds a
+schema-checked selector to the complete frontier verifier. It accepts exactly
+one of two caller policies: the minimum uniform-drift reserve to satisfy or the
+maximum episode count not to exceed. Each policy must carry a nonempty evidence
+reference. Missing, conflicting, malformed, structurally inconsistent, and
+unattainable input returns no selection. A reserve target selects the cheapest
+qualifying point; an episode ceiling selects the strongest point within the
+ceiling. The emitted SHA-256 binds the exact caller policy, while its evidence
+status remains `caller-supplied-unverified`.
+
+The exact full-grid rerun reproduced row SHA-256
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+result SHA-256
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Without a policy, the real 508-point frontier returned `selected: null` and
+`exactly one explicit frontier policy with evidence is required`. Focused
+coverage passes 4 tests and 9 assertions, including a malformed episode-count
+control, both selection bases, empty evidence, conflicting bases, and an
+unattainable target.
+
+This prevents optimization output from silently becoming an operating
+decision. It does not establish that a referenced reserve, budget, cost, or
+drift estimate is independent, current, affordable, or valid. Confidence is
+high for fail-closed parsing, deterministic selection, full-grid compatibility,
+and exact local hashes; low for every real-policy input and provider transfer.
+The next ranked question is whether a minimal provenance manifest can bind the
+caller policy to a named owner, decision revision, observation time, and
+independent evidence status without pretending to validate its substantive
+judgment.
+
+## Cycle 100 policy-provenance binding
+
+Seed reconciliation `3f01ee4ae6eb2ae8f8220781045dfb2a26fca2ed`
+preceded this work. The saved profile shell retained the same semantic access
+fingerprint and zero attributable items; only its byte length and body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. The local-only accepted-result inventory at
+`2026-09-03T00:38:49.086Z–00:38:49.089Z` found all six refs unchanged. GitHub,
+arXiv, and Reddit made zero public requests.
+
+Exact local `6eab5e9bd76022e0b65aa26d43019e49a8348644` requires a
+policy-provenance manifest before selecting a frontier point. The manifest
+binds the exact policy SHA-256 and evidence reference to a nonempty decision
+owner, decision revision, exact UTC observation time, and one of two honest
+independent-evidence states: `not-provided` or `provided-unverified`. A
+provided state requires its own reference. Mismatched hashes or references,
+malformed timestamps, unbound fields, missing evidence, and contradictory
+status/reference combinations fail closed. The selector hashes the accepted
+manifest separately and still labels the entire binding
+`caller-supplied-unverified`.
+
+The real 508-point synthetic control used reserve target `0.0006`, policy
+SHA-256 `ab3e639387e21f092303d992b215daf4f67cf79289c8ddfc1a92eef20615373d`,
+and manifest SHA-256
+`f7b8f28bde41941b5ae48ee2874940a30555cf76a7d1259281519eb9405afed8`.
+It selected the cheapest qualifying point: equal 172 sampling, 1,032 blocks,
+33,024 episodes, and reserve `0.0006254995932553816`. Established row and
+result hashes remained
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Focused validation passes 7 tests and 20 assertions.
+
+This proves structural provenance binding, not that the synthetic reserve is a
+good operating target or that any named owner, revision, timestamp, or
+independent evidence is authentic. Confidence is high for exact binding,
+failure controls, selection, and hashes; low for real policies and provider
+transfer. The next ranked question is to byte-bind the referenced decision
+record itself through the existing descriptor-safe local evidence path, while
+continuing to distinguish integrity from authority and independent validation.
+
+## Cycle 101 decision-record byte binding
+
+Seed reconciliation `bd8463ccc7410bb2b78f8c197d0a7c905021573c`
+preceded this work. The saved profile shell retained its semantic access class,
+login wall, and zero attributable items; only its response length and body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. A local-only check at
+`2026-09-03T01:00:40.647Z` found the six accepted source commits present and
+their standing equivalents contained in the current branch. GitHub, arXiv, and
+Reddit made zero public requests.
+
+Exact local `882bee03a86d34c1d58b03bc8c1457ebd230a88f` closes the gap
+between a manifest claim and the bytes it names. The frontier CLI now requires
+one explicit absolute evidence root with the policy and manifest. It pins that
+root and every nested directory with file descriptors, rejects traversal,
+relative or symbolic-link roots, linked directories and files, non-regular
+files, and byte mismatches, and reads and hashes the final file through the
+same descriptor. A mismatch clears the selected frontier point and fails
+closed. The shared primitive also replaces the duplicate no-follow reader in
+the existing execution-freeze bundle.
+
+The full 193-row control byte-bound the 1,022-byte local decision record at
+SHA-256 `346915ecdda9e8c2e946abdaa174d3e2da4ed1692657d90fdbbe76f39701e996`.
+Its 0.0006 reserve policy hash is
+`3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`;
+the expanded manifest hash is
+`23a5cba4130aa5df098e71e2dc4d759404db85e83d4fbc8320105cf42cd165ae`.
+Only after that byte match did the selector return equal 172 sampling at 1,032
+blocks and 33,024 episodes. Established row and result hashes remain
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`
+and `383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+Focused validation passes 22 tests and 51 assertions, TypeScript, formatting,
+whitespace, and the exhaustive run.
+
+This proves one local file matched its declared hash for one descriptor-safe
+read. It does not prove authorship, authority, independence, timestamp
+validity, real drift, operating cost, provider behavior, or substantive
+correctness. The record content is not yet structurally cross-checked against
+the manifest fields it is meant to support. Confidence is high for the local
+integrity and failure controls and low for every external or substantive
+interpretation. The next ranked question is to require the record's embedded
+policy, owner, revision, time, and evidence status to match the manifest before
+selection, without promoting that consistency check into authentication.
+
+## Cycle 102 decision-record content binding
+
+Seed reconciliation `a5eccbdabb4c34a30e41b1f7ebd43181ff44e292`
+preceded this work. The public Explore view remained readable at 30 notes; the
+saved target retained the same profile-class semantic fingerprint, login wall,
+102,929-byte length, and zero attributable items. Only its body SHA-256
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. The local accepted-result check at
+`2026-09-03T01:09:51.531Z` found all six accepted source commits present and
+all standing equivalents contained. GitHub, arXiv, and Reddit made zero public
+requests.
+
+Exact local `bd9cb1f3e525cfbd0ed4e50eade3f449c7da428d` prevents a
+hash-matched but contradictory record from selecting a point. After the
+descriptor-safe byte check, the binder parses strict UTF-8 JSON and requires
+the record's exact schema and field set, decision identity, owner, revision,
+UTC time, policy, independent-evidence state and optional reference to match
+the policy and manifest. It also requires nonempty rationale and scope-limit
+text. A mismatch preserves the useful fact that the bytes matched while
+clearing the content status and selected point.
+
+The regression rejects seven separately re-hashed contradictions: decision
+identity, owner, revision, time, reserve policy, evidence state, and an extra
+unbound claim. A selector-level control separately rejects a byte-matched
+revision contradiction. The unchanged 1,022-byte real control still matches
+record SHA-256 `346915ecdda9e8c2e946abdaa174d3e2da4ed1692657d90fdbbe76f39701e996`,
+policy SHA-256 `3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`,
+and manifest SHA-256
+`23a5cba4130aa5df098e71e2dc4d759404db85e83d4fbc8320105cf42cd165ae`.
+It returns both `local-byte-match-unverified` and
+`local-content-match-unverified` before selecting the retained equal-172
+point. Focused validation passes 10 tests and 32 assertions plus TypeScript,
+formatting, and whitespace.
+
+This establishes internal local consistency, not who authored or approved the
+record, whether its time or revision is externally genuine, or whether 0.0006
+is a defensible real drift reserve. Confidence is high for the declared local
+schema and mismatch controls and low for authority, independence, real drift,
+cost, provider transfer, and the target's substantive value. The next ranked
+question is to audit the retained primary archive for measured drift or cost
+evidence that could justify any reserve target or episode ceiling; absent such
+evidence, the selection must remain illustrative rather than operational.
+
+## Cycle 103 retained-archive drift and cost audit
+
+Seed reconciliation `5a6b0b2deeeca1c90f64258fbe6f85360bbd737f`
+preceded the conclusion. The saved target retained its profile-class semantic
+fingerprint, login wall, 102,929-byte length, and zero attributable items; only
+its body SHA-256 changed. Added and changed IDs remain unknown, observed
+removals are `[]`, and all 132 durable seeds remain unavailable.
+
+Both retained copies of the `2608.25553v3` data/code ZIP are byte-identical at
+61,508,909 bytes and SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+The Experiment C completion manifest has SHA-256
+`ddacf2b6564b1d64c5d1fed275a3b8876100c81a85394ea471941851d7bd3f82`;
+all 5,400 listed episode members reproduce their declared hashes with zero
+mismatches.
+
+Those raw records do contain measured operating-volume evidence that the
+results report does not aggregate. Summing every `usage` entry yields
+15,072,675 input tokens, 7,110,497 output tokens, and 3,019,903 reported
+reasoning or thinking tokens across 10,500 completed generation calls. Every
+call has one usage record. The first and last call times are
+`2026-08-28T02:33:31.643Z` and `06:04:24.019Z`, reproducing the report's
+12,652-second wall-clock run and seven recovered transport retries.
+
+This supports using the archive as a historical sizing input, but contradicts
+treating episode count as operating cost. Every named model has the same 900
+episodes and 1,750 completed calls, yet per-model input volume spans 1,672,953
+to 3,935,347 tokens (2.352 times), output volume spans 545,032 to 2,454,367
+(4.503 times), and summed call duration spans 7,888,374 to 36,486,282 ms
+(4.625 times). The design projected about 14 million input and 7.4 million
+output tokens and four hours; the observed totals are 7.66% higher, 3.91%
+lower, and 12.14% shorter respectively. The repository explicitly supplies no
+prices.
+
+The archive does not supply a measured drift distribution or a reserve target.
+Its schedule-position diagnostic is not a repeated-time marginal-drift
+estimate; its one mention of model drift is an alternative explanation. In
+the analysis, `spend` is the number of memory IDs named, while `C3 cost` is a
+decision-outcome diagnostic, neither money nor resource consumption. The
+frontier's 96-episode difference is only 0.2907% of equal 172 sampling, but the
+archive's episodes use different one- or two-call prompts and therefore cannot
+price or time Scout's 32-cell factorial episodes without an explicit transfer
+assumption.
+
+Confidence is high for archive identity, manifest coverage, exact usage sums,
+and the absence of a registered drift estimate or price table; low for current
+provider transfer, monetary cost, throughput transfer, and any real drift
+shape. The illustrative 0.0006 record remains non-operational. The next ranked
+question is whether the policy evidence schema can distinguish retrieval-count
+budgets, measured but non-transferable usage, and a protocol-matched approved
+episode ceiling, failing closed when units or applicability are absent.
+
+## Cycle 104 policy-evidence applicability boundary
+
+Seed reconciliation `b54a008a7f10984c94107e619e9b5d6ce5ec2cd6`
+preceded this work. The saved shell changed from profile-class to login-class,
+but still exposed a login wall and zero attributable items: added and changed
+IDs remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable. The local accepted-result check at
+`2026-09-03T01:29:26.379Z–01:29:26.385Z` found all five accepted reviewer refs
+unchanged and all nine standing reconciliation commits contained. GitHub,
+arXiv, and Reddit made zero public requests.
+
+Exact local `5364acc811249d991829d4b43edb6a69b0246eb2` makes the
+policy-evidence contract distinguish the two accepted operating quantities.
+A minimum-reserve policy now requires evidence kind
+`uniform-marginal-drift-reserve` in `probability-per-model`; an episode-ceiling
+policy requires `complete-factorial-episode-ceiling` in
+`complete-factorial-episodes`. Both must name a nonempty protocol reference and
+model-scope reference. Missing applicability, a wrong policy/unit pair,
+retrieval-count units, extra fields, and an explicit `not-established` status
+all fail closed. The byte-matched decision record must carry exactly the same
+applicability declaration as its manifest.
+
+The retained synthetic decision record is deliberately migrated with
+`applicabilityStatus: not-established`. Its 1,434 bytes have SHA-256
+`dc3a5143b7706d3e62dfd73c0d135976d4e1165f6664729bd7109e6e24f09092`,
+while its policy hash remains
+`3a32f5d299c75a11f9e494b29a9abdbfc0682019d6300e4cc2defc139cd22a71`.
+A production-shaped local call returns no selection and the exact error
+`policy evidence applicability is not established for this protocol and model
+scope`. Focused validation passes 11 tests and 37 assertions plus TypeScript,
+formatting, and whitespace.
+
+This closes a structural unit-confusion path; it does not prove that a named
+protocol or model set matches the evidence. The positive status is explicitly
+`protocol-matched-unverified`, so owner, revision, timestamp, applicability,
+independence, cost, drift, and provider behavior remain caller-supplied rather
+than authenticated. Confidence is high for exact schema rejection and local
+failure controls, and low for every real operating-policy claim. The next
+ranked question is whether protocol and model-scope references can themselves
+be descriptor-safe, byte-bound artifacts whose declared units and identities
+are derived rather than accepted as free text.
+
+## Cycle 105 verified-scope composition audit
+
+Seed reconciliation `c48dc033c97f753ea094129e070748c4e4feadac`
+preceded this audit. The saved shell remained login-class with zero attributable
+items; only its body hash changed. Added and changed IDs remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. The local
+accepted-result check at `2026-09-03T01:38:26.110Z–01:38:26.181Z` found the
+five accepted reviewer refs unchanged and all nine standing reconciliation
+commits contained. GitHub, arXiv, and Reddit made zero public requests.
+
+The existing freeze path already supplies most of the required scope evidence.
+Exact source `f71b2f185a08061cc67340017a31c643e7d0a9cb` requires immutable
+requested-to-resolved model mappings with bound resolution artifacts, a
+`scout.verification-allocation-schedule/v1` schedule with exactly 32 cells per
+model/seed, exact schedule/model identity agreement, and episode count derived
+as models times seeds times 32. Exact source
+`882bee03a8ae5957e3fdad1c8f63d8f6418f3e17` inventories an explicit bundle
+through pinned no-follow descriptors and rejects linked, undeclared, malformed,
+or mismatched bytes. Focused validation passes 18 tests and 46 assertions plus
+TypeScript.
+
+That evidence also contradicts adding separate protocol and model-scope
+manifests. They would duplicate facts already cross-checked by the freeze gate
+and create another disagreement surface. The actual composition gap is
+smaller: `FreezeVerificationResult` returns only counts and discards the exact
+resolved model identities and schedule-scope digest that the policy binder
+would need. The library retains no real freeze manifest or schedule bundle at
+all; the only matching JSON artifact is the explicitly non-applicable synthetic
+policy record. Therefore no current policy scope can honestly be promoted from
+`protocol-matched-unverified` to byte-bound.
+
+GitHub/local code was selected because this was an implementation-contract
+question. arXiv remains high-value and retains MemGauge `2608.30177v1` plus
+allocation study `2608.25553v3`; no paper or artifact trigger fired. Reddit
+remains RSS-readable/JSON-403 and deferred without quota because there was no
+seed-linked claim, content delta, or access change. Confidence is high for the
+current interface, descriptor behavior, repository inventory, and focused
+controls; low for any unretained real bundle, provider identity, or operating
+approval. The next ranked investigation is a single composition adapter that
+derives canonical protocol and resolved-model-scope digests from one verified
+freeze bundle and requires those digests at the policy binder, without a
+second scope-authority format.
+
+## Cycle 106 verified-freeze scope composition
+
+Seed reconciliation `902ecc29796a36b85a36f1425dcb72ba65049101`
+preceded this work. The saved shell retained the login-class access fingerprint,
+46,672-byte length, login wall, and zero attributable items; only its body hash
+changed. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable.
+
+Exact local `3bf5698900e7963ed81d45b2fa0427829603b77f` composes one
+verified freeze result into two canonical typed identities. The protocol hash
+binds schedule schema and SHA-256, cells per model/seed, seed namespace,
+algorithm, policy-artifact SHA-256, seed IDs, and episode count. The model-scope
+hash binds requested and resolved IDs, resolution kind, and each resolution-
+evidence SHA-256. Failed freeze validation returns no scope. Positive policy
+applicability now rejects free-text references and requires an exact matching
+`scout.verification-allocation-freeze-policy-scope/v1` object.
+
+The canonical one-model/two-seed toy freeze emits protocol reference
+`freeze-protocol-sha256:5626601a5b3e7b904341c813739f2b64c2303ad2136b532cac796b7e4793c12a`
+and model reference
+`freeze-model-scope-sha256:6195842bbfffe94e640963a13284bc1c0cd87889e2c0d79205fc88e53741df6c`.
+An exact repeat is identical. Changing only model-resolution evidence changes
+only model scope; changing only seed-policy evidence changes only protocol
+scope. A mismatched scope object fails closed. Focused validation passes 27
+tests and 90 assertions plus TypeScript, formatting, and whitespace.
+
+This removes free-text scope from the positive policy path without adding a
+second manifest format. It still does not authenticate a caller-supplied scope
+result or reverify a freeze bundle inside the policy binder. The current CLI
+does not accept a freeze-bundle root, so no production-shaped positive policy
+can silently bypass the gap; the retained 0.0006 record remains
+`not-established`. GitHub/local code was selected; public GitHub, arXiv, and
+Reddit made zero requests. The five accepted reviewer refs remained unchanged
+and nine standing reconciliation commits remained contained at
+`2026-09-03T01:46:01.155Z–01:46:01.227Z`.
+
+Confidence is high for canonical hashing, factor-specific matched controls,
+fail-closed composition, and local tests; low for real freeze availability,
+provider identity, approval, cost, and drift. The next ranked investigation is
+to let the CLI accept one explicit freeze-bundle root, descriptor-safely verify
+it, and pass only the derived scope into policy selection, while preserving the
+provider-call denial and keeping the non-applicable retained record closed.
+
+## Cycle 107 explicit freeze-bundle selection boundary
+
+Seed reconciliation `ebcbb0589913b6a4bad40d2fad592e35abbdb45d`
+preceded this work. The saved target retained its login-class semantic
+fingerprint, login wall, 46,672-byte length, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, observed removals
+are `[]`, and all 132 durable seeds remain unavailable. GitHub, arXiv, and
+Reddit made zero public requests.
+
+Exact local `dcc15ee0f138e14e717c754b98b35a9881411e76` makes the
+actual frontier entry point derive scope instead of accepting it from its
+caller. A policy-bearing invocation now requires an explicit freeze-bundle root
+in addition to the policy JSON, provenance manifest JSON, and evidence root.
+The adapter verifies the freeze through the existing pinned no-follow
+descriptor path and passes only a successful derived protocol/model scope to
+the local-record selector. Failed freeze verification cannot reach the
+positive policy path, and no branch authorizes provider calls.
+
+The positive regression combines the canonical one-model/two-seed toy freeze
+with a byte- and content-matching decision record. It returns freeze status
+`ok`, `providerCallsAuthorized: false`, both derived scope hashes, both local
+evidence-match statuses, and the equal-172 point at 1,032 blocks and 33,024
+episodes. A relative freeze root returns exact error `bundle root must be an
+explicit absolute path` with no selection. A separately valid policy/record
+whose model-scope hash differs from the verified freeze returns exact error `a
+matching verified freeze policy scope is required for applicability` with no
+selection. Focused validation passes 18 tests and 45 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves descriptor-safe local composition for one synthetic fixture. It
+does not authenticate the freeze's external registration, model resolution,
+owner, revision, timestamp, independent evidence, real drift, cost, or provider
+behavior. No real execution freeze is retained, and the illustrative 0.0006
+decision record remains `not-established`; this change does not promote it.
+Confidence is high for the local success and denial controls and low for every
+real operating-policy claim.
+
+The local accepted-result check at
+`2026-09-03T01:53:24.485Z–01:53:24.571Z` found all nine standing reconciliation
+commits contained and the four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Public GitHub retains its four exact named heads, arXiv retains
+MemGauge `2608.30177v1` at 15/15 and the allocation study `2608.25553v3` at
+14/15, and Reddit remains last known RSS-readable/JSON-403; none had a revision,
+artifact, replication, content, access, or readable-seed trigger.
+
+The next ranked investigation is a process-level CLI control using an explicit
+goal-owned freeze and decision fixture. It should confirm that the executable's
+serialized result preserves freeze verification, local-record evidence,
+selection denial, and zero provider authority rather than relying only on an
+in-process adapter test.
+
+## Cycle 108 executable-boundary audit
+
+Seed reconciliation `9e2491100e4197bc2cc527e8c02faab6d71da8be`
+preceded this audit. The saved target remained a 46,672-byte login shell with
+the same semantic access fingerprint and zero attributable items; only its body
+SHA changed. Added and changed IDs remain unknown, removals are `[]`, and all
+132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made zero
+public requests.
+
+The actual frontier executable ran on that exact tip from
+`2026-09-03T01:59:00.357Z` through `02:07:28.843Z`. It took 8m28.496s to
+regenerate the 193 exact rows and 508 nondominated points. Its 11,363-byte JSON
+has SHA-256 `2187ab202f866cc839af2ab78a24f39f92e9d91cacdf6083007d797da3d6a613`.
+The established row and result hashes reproduced as
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252` and
+`383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`.
+
+The no-argument process returned `freezeVerification: null`, no selected point,
+and exact error `exactly one explicit frontier policy with evidence is
+required`. It also reproduced the 1,029-block robust minimum and all-256
+endpoint. This proves the real executable does not silently choose a frontier
+point when its policy inputs are absent.
+
+The process audit does not prove the positive path for a real freeze because no
+real freeze is retained. The synthetic in-process regression already proves
+valid descriptor-safe composition, invalid-root denial, scope-mismatch denial,
+and `providerCallsAuthorized: false`. Repeating the exhaustive executable for
+each synthetic control would cost about 8.5 minutes per case, while a hidden
+test bypass would weaken the same boundary under test. Confidence is high for
+deterministic process regeneration and fail-closed output, and low for real
+freeze availability, external registration, model resolution, operating
+policy, provider behavior, cost, and drift.
+
+The accepted-result check at
+`2026-09-03T02:08:10.128Z–02:08:10.218Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. No accepted result is known unintegrated.
+
+The next ranked investigation is a byte-bound reusable frontier snapshot that
+must reproduce the exact row/result hashes and all 508 points before selection.
+It should make positive process controls practical while rejecting missing,
+stale, or tampered bytes and must not confer policy or provider authority.
+
+## Cycle 109 byte-bound frontier snapshot
+
+Seed reconciliation `1eac5ae21354e22bbfaebe2fa83bd0b08c781231`
+preceded this work. The saved target retained the login-class semantic
+fingerprint, 46,672-byte length, login wall, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, removals are `[]`,
+and all 132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made
+zero public requests.
+
+Exact local `8cf88b8f5ddd437da5e61a8bdf442f99b138d093` adds a
+versioned offline frontier snapshot. It records the exact row SHA-256, result
+SHA-256, canonical frontier SHA-256, all ordered points, a fixed generator
+reference, and `providerCallsAuthorized: false`. The exhaustive generator now
+constructs this snapshot and refuses output unless it matches the retained
+193-row, 508-point computation identity.
+
+The full candidate run from `2026-09-03T02:13:31.043Z` through
+`02:21:41.445Z` took 8m10.407s. It reproduced row hash
+`6fac7f99c1159798c211016ad2ec0cbd464c7c95ae56cf324a6000028dd38252`,
+result hash `383a699f69ef92bdc1f5edd0941d03ba4e411cdfe22adf2f4b4e07257c2b8fff`,
+508 points, and frontier hash
+`067201a66252a39d1deb6a6189783137921b6610ac8b2d35acbea38d5b4530ef`.
+The 203,712-byte wrapper output has SHA-256
+`201b45553a4d4056fcf844d30769dc2eff385176991540f28faef9449da7ad65`.
+
+The extracted 116,578-byte snapshot has outer SHA-256
+`8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`.
+Its explicit descriptor-safe load returned the same three inner hashes, all 508
+points, local byte-match status, and provider denial. Focused tests reject an
+outer byte mismatch before parsing, an inner point mutation under a stale hash,
+a fully re-hashed wrong frontier against the retained computation, malformed
+structure, and added provider authority. Eleven tests and 27 assertions pass
+with TypeScript, formatting, and whitespace.
+
+This proves repeatable local computation identity and one pinned local byte
+read. It does not authenticate the generator revision, author, timestamp,
+policy approval, real marginal drift, cost, model identity, external
+registration, or provider behavior. No real snapshot or execution freeze is
+retained as operating evidence, and the illustrative 0.0006 policy remains
+`not-established`. Confidence is high for exact local integrity and failure
+controls and low for all substantive transfer.
+
+The local accepted-result check at
+`2026-09-03T02:22:58.098Z–02:22:58.188Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a fast CLI mode that requires an explicit
+snapshot root, canonical relative artifact name, and expected outer SHA-256.
+It must verify the retained computation before passing its frontier to the
+existing freeze/decision selector, reject missing or tampered bytes, and never
+authorize provider calls.
+
+## Cycle 110 snapshot-backed fast selection
+
+Seed reconciliation `5bd90ec78e8f05c82ec85a19c53f02424cff21ff`
+preceded this work. The saved surface retained the same login-class semantic
+fingerprint and zero attributable items; only its body SHA changed. Added and
+changed IDs remain unknown, removals are `[]`, and all 132 durable seeds remain
+unavailable. GitHub, arXiv, and Reddit made zero public requests.
+
+Exact local `cab0d65a17d2de7decd463707335d6b62991764b` adds an
+explicit `snapshot` CLI mode. Its ordered inputs name the snapshot root,
+canonical relative artifact, expected outer SHA-256, policy JSON, evidence
+manifest JSON, evidence root, and freeze root. It descriptor-safely loads the
+retained 508-point computation first and returns no freeze result or selection
+when that step fails. A positive integration fixture then proves that a valid
+snapshot proceeds through freeze scope, local decision byte/content checks,
+and the equal-172 selection without authorizing provider calls.
+
+Two actual process controls avoid the 8-minute computation. The valid retained
+snapshot loaded in 38 ms; a deliberately relative freeze root then failed at
+exact error `bundle root must be an explicit absolute path`, with selection
+false and provider authority false. Replacing only the expected outer hash
+loaded in 32 ms, failed with `local evidence bytes do not match the declared
+SHA-256`, and left freeze and selection unattempted. This distinguishes cache
+failure from downstream freeze failure.
+
+The initial success-path diagnostic was 209,109 bytes because it serialized all
+508 verified points again. Follow-up `b45d8450a2609fbee79947331d745a56d7d8f52b`
+keeps those points internal and emits only snapshot schema, evidence class,
+generator reference, three hashes, point count, and provider denial before the
+freeze/selection result. The compact 2,070-byte output has SHA-256
+`f54c64367939322bf509ede8454e86e5e6a625037638baddd0c3ef41cdb6cff3`,
+a 99.01% reduction. Focused validation passes 24 tests and 57 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves fast local integrity composition, ordered short-circuiting, and
+compact diagnostics. It does not prove a positive real policy because the
+library retains no real freeze or applicable decision. It also does not yet
+bind the policy decision record to the exact frontier hash; the executable's
+retained expectation supplies a current code-level boundary, not decision
+provenance. Confidence is high for local behavior and low for approval, real
+drift, cost, model identity, external registration, and provider transfer.
+
+The accepted-result check at
+`2026-09-03T02:29:45.729Z–02:29:45.798Z` found all nine standing reconciliation
+commits contained and all four self-evolution artifacts byte-identical to
+`df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a matched cross-snapshot substitution: hold
+the freeze and decision evidence fixed while changing the exact frontier
+identity. If the current decision provenance cannot distinguish that
+substitution, bind the frontier reference in the smallest schema-backed way
+without promoting local integrity into authority.
+
+## Cycle 111 cross-snapshot substitution control
+
+Seed reconciliation `b470c35c6e82557186a41743782437ce0e3e15b8`
+preceded this control. The saved surface retained the login-class semantic
+fingerprint, login wall, 46,672-byte length, and zero attributable items; only
+its body SHA changed. Added and changed IDs remain unknown, removals are `[]`,
+and all 132 durable seeds remain unavailable. GitHub, arXiv, and Reddit made
+zero public requests.
+
+The matched fixture kept the freeze bundle, policy object, provenance
+manifest, local decision bytes, and evidence roots unchanged. It modified one
+frontier point's reserve, then recomputed both the frontier hash and outer file
+hash so the substitute remained internally consistent. Exact local
+`2e3aae4473b370714be579ff7bd81e6a90bfebbd` verifies the current behavior:
+the retained expectation rejects the substitute with `frontier snapshot does
+not match the expected computation`; freeze verification is never attempted,
+no selection is returned, and provider authority remains false.
+
+This supports the code-level snapshot identity as a current-revision boundary
+and contradicts adding a decision-record field solely for same-revision
+substitution: that path is already closed before policy evidence is evaluated.
+Focused validation passes 12 tests and 35 assertions plus TypeScript,
+formatting, and whitespace.
+
+The evidence is narrower than a durable provenance conclusion. The snapshot
+expectation is supplied by the executable revision, while the policy decision
+record does not name it. A future revision that intentionally updates the
+expectation could therefore have a different transfer boundary. Confidence is
+high for current substitution denial and low for cross-version policy rollover,
+real freeze availability, approval, drift, cost, model identity, and provider
+behavior.
+
+The accepted-result check at
+`2026-09-03T02:34:23.125Z–02:34:23.201Z` found all nine standing reconciliation
+commits contained and all four accepted self-evolution artifacts byte-identical
+to `df80a1da`. Nothing accepted is known unintegrated.
+
+The next ranked investigation is a version-rollover control that changes only
+the expected snapshot identity while holding the old policy evidence fixed. A
+schema change is justified only if that old evidence silently authorizes the
+new computation.
+
+## Cycle 112 version-rollover control
+
+Seed commit `38d308306a874eb8386c829f8d9fec8c3093a5b6` preceded this
+control. Semantic XHS access remained unchanged: public Explore exposed 30
+notes, while the saved target was an HTTP-200 login shell with zero attributable
+items. Added and changed IDs remain unknown, removals are `[]`, and all 132
+durable seeds remain unavailable. GitHub, arXiv, and Reddit made zero public
+requests.
+
+The matched pre-fix fixture held the freeze, policy, manifest, decision bytes,
+and evidence roots fixed while changing the accepted snapshot from identity
+`4176d7766cebc51d2848fa07d870d6727c0c59f5cdd81762d7f095a5a5488471`
+to `1b7734c1c00269e96cf21d1d1e3295f360c60623390d7b8948c7fa61c1110fe5`.
+The old evidence still selected equal 172 from the new snapshot with policy
+hash `fb19ef3…472f0a`, manifest hash `038df2d…8e60aa`, and decision hash
+`5a5acf9…0868cd`. Snapshot/freeze verification and selection were true;
+provider authority was false.
+
+Exact implementation `418fdb03b92c323058485458e800c489696f66f5` binds a
+derived row/result/frontier/count snapshot reference into policy applicability,
+the provenance manifest, and the descriptor-safe local decision record.
+Snapshot selection supplies the verified reference; a stale reference now
+fails closed before selection. A caller that does not use a snapshot remains
+compatible and cannot claim a snapshot reference it did not verify.
+
+Focused validation passes 12 tests and 48 assertions, TypeScript, formatting,
+and whitespace. The evidence is exact for this fixture but does not authenticate
+policy authority, freshness, real drift, cost, models, or providers. The next
+ranked control is process-level: use the retained snapshot with a newly bound
+decision record, then substitute a stale reference without regenerating the
+frontier.
+
+## Cycle 113 retained-snapshot process control
+
+Seed commit `153dfd496168335538d6927c4ea6cb814e8d9f49` preceded this
+control. The saved XHS target remained a login shell with zero attributable
+items; no public source request was made.
+
+The actual CLI loaded the retained 116,578-byte snapshot at outer SHA
+`8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`
+and derived snapshot reference `frontier-snapshot-sha256:07bdf16be7c4cf46bb04f726ebd80fef9451d301c722df467430a31d791dc8c1`.
+A matching local decision selected `[172,172,172,172,172,172]` at 1,032
+blocks. Replacing only that reference with 64 zeroes left snapshot and freeze
+verification true but returned no selection. Provider authority was false in
+both outputs. The one process test passed six assertions in 107 ms and its
+temporary external-artifact harness was removed afterward.
+
+This verifies the retained fast path after the Cycle 112 schema change. It
+does not validate the synthetic freeze, decision authority, drift threshold,
+cost, models, or providers. The next ranked control is whether a direct
+freeze-only caller can inject a snapshot reference without having verified a
+snapshot; if so, the verified adapter must own scope construction.
+
+## Cycle 114 call-path authority control
+
+Seed commit `a36cdf1cef8d76f004869ab95ac46afe81f274ba` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and no public lane request was made.
+
+Before the fix, the public freeze-only adapter accepted a caller-provided
+snapshot reference. When the synthetic local decision repeated the arbitrary
+value, freeze verification and selection both succeeded without any snapshot
+read. Exact implementation `72e925bff6e7c76c2c97331f5762413926dab5e1`
+removes that argument: only the snapshot adapter can derive combined scope, and
+only after both snapshot and freeze verification. The matched direct call now
+fails closed; snapshot-backed selection and ordinary freeze-only selection
+retain their prior behavior.
+
+Focused validation passes 13 tests and 51 assertions, TypeScript, formatting,
+and whitespace. This proves call-path containment for the local implementation,
+not decision authority or real provider readiness. The next ranked control is
+whether compact output explicitly preserves the matched snapshot reference or
+requires reopening the decision record to reconstruct that relation.
+
+## Cycle 115 compact-output auditability control
+
+Seed commit `18703e0919e4ba5b4af1510b7aa6808274bf1e05` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and GitHub, arXiv, and Reddit made zero public requests.
+
+The matched pre-fix fixture loaded a byte- and computation-matched snapshot,
+verified the freeze and local decision record, selected equal 172, and denied
+provider calls. Its compact summary omitted the exact derived snapshot
+reference even though it exposed the component hashes and point count. The
+failed expectation named
+`frontier-snapshot-sha256:4176d7766cebc51d2848fa07d870d6727c0c59f5cdd81762d7f095a5a5488471`.
+
+Exact local `26a29696ce29b23729cf8ab2d32241e7eb9b312a` adds the derived
+reference to the compact verified-snapshot object. It does not serialize the
+full frontier or change provider authority. Focused validation passes 10 tests
+and 31 assertions plus TypeScript, formatting, and whitespace checks. This
+supports local result auditability; it does not authenticate policy authority,
+snapshot freshness, real drift, cost, models, or providers.
+
+The full candidate gate passes syntax, TypeScript, formatting, 180 tests with
+890 assertions, whitespace, and 21 relative links. Read-only health remains at
+26 facts and 16 wake signals, runtime `.state` is empty, accepted containment is
+9/9 standing ancestors plus 4/4 artifact blobs, and both protected checkout
+fingerprints are unchanged.
+
+The next ranked control is process-level: exercise actual CLI serialization
+against a snapshot-bound fixture and preserve a stale-reference denial control.
+
+## Cycle 116 retained-snapshot CLI serialization
+
+Seed commit `feaff4a171f3c353070578650f2ca1545cb63924` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds were
+unavailable, and no public lane request was made.
+
+The actual CLI loaded the retained 116,578-byte, 508-point snapshot. Its
+matching 3,229-byte JSON exposed exact reference
+`frontier-snapshot-sha256:07bdf16be7c4cf46bb04f726ebd80fef9451d301c722df467430a31d791dc8c1`,
+reported snapshot and freeze verification true, selected equal 172, omitted the
+frontier body, and denied provider calls. A 2,705-byte matched control changed
+only the decision/manifest reference to 64 zeroes; snapshot and freeze remained
+verified, selection returned false with null data and the exact scope-mismatch
+error, and provider calls remained denied. The bounded process ran from
+`2026-09-03T03:12:54.566Z` through `03:12:54.723Z`; its temporary synthetic
+freeze, evidence, and harness were removed.
+
+This supports actual serialized-output auditability and stale-reference denial,
+not policy authority, snapshot freshness, real drift, cost, models, or
+providers. The next ranked control is whether the compact success output makes
+the matched protocol and model scope equally explicit.
+
+## Cycle 117 freeze-scope output contract
+
+Seed commit `27f0c6ce51fa9c9f9764730e741ef2682aced8c5` preceded this
+control. XHS semantic access remained unchanged; the login shell changed by one
+byte but exposed no attributable item, all 132 seeds remained unavailable, and
+no public lane request was made.
+
+The existing compact success object preserved the exact derived protocol and
+model-scope references under its verified freeze result. Exact test-only commit
+`8345ba5311f167cf2097ba36edf17121b0edeb43` locks both object and
+serialized-JSON visibility while retaining the no-frontier assertion. Focused
+validation passes 10 tests and 34 assertions plus TypeScript, formatting, and
+whitespace.
+
+No production field was added because the behavior was already supported. This
+proves local output structure, not external registration authenticity, policy
+authority, real drift, cost, models, or providers. The next ranked control is
+whether the freeze's `verified` registration label overstates a purely local
+byte-binding check for an arbitrary unreachable HTTPS target.
+
+## Cycle 118 registration-evidence qualification
+
+Seed commit `6ad703e586b6b3d73eeab977530796814ed3d616` preceded this
+control. XHS semantic access remained unchanged; the saved login shell returned
+to 46,672 bytes with a new body hash, exposed no attributable item, and left all
+132 seeds unavailable. No public lane request was made.
+
+The pre-fix fixture pointed at reserved, unreachable
+`https://example.invalid/scout-freeze/fixture`, declared registration status
+`verified`, and returned overall success from local structural and byte checks.
+No external URL, timestamp service, signature authority, model, or provider was
+contacted. Exact local `5e5281c55433e119b78368b0053594858671c5a5`
+adds result field `externalRegistrationEvidenceStatus`: successful local
+bindings are `local-byte-match-unverified`, while failed bundle paths expose an
+empty status. Provider authority remains false.
+
+Focused validation passes 22 tests and 79 assertions plus TypeScript,
+formatting, and whitespace. This corrects result semantics without promoting
+the declaration. The next ranked control is cross-registration substitution:
+hold protocol/model/snapshot/decision evidence fixed, change only registration
+identity, and see whether the same policy scope remains applicable.
+
+## Cycle 119 cross-registration substitution
+
+Seed commit `c5a55a42f3db767d07ffb6d7fc34fb21caef7f2d` preceded this
+control. XHS semantic access remained unchanged, all 132 durable seeds remained
+unavailable, and no public lane request was made.
+
+Matched controls held every protocol, model, seed, artifact byte, frontier,
+policy, manifest, and local decision field fixed while changing only the
+reserved registration URL, identifier, and deposit timestamp. Both results
+remained `local-byte-match-unverified`, their derived protocol/model scopes were
+identical, and the old decision still selected equal 172 with provider authority
+false. Exact test-only commit
+`28a3164bbbcf68cf8b1477d71b25aaf9725d4a46` preserves the direct and
+end-to-end results.
+
+Focused validation passes 23 tests and 98 assertions plus TypeScript,
+formatting, and whitespace. The conclusion is qualified: unverified deposit
+metadata is provenance, not policy applicability, so no production scope field
+was added. The next ranked control changes registered execution-bundle bytes
+instead; unlike metadata, executable content may affect what the decision
+actually authorizes.
+
+## Cycle 120 execution-bundle substitution
+
+Seed commit `3404c2dedc790459ed9ca2cfcfe3cbd0bf89ad60` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The pre-fix matched freeze-only control changed only `bundle.zip` bytes and
+the corresponding artifact and registration digests. The freeze still verified
+locally, protocol/model scope remained exactly
+`5626601a5b3e7b904341c813739f2b64c2303ad2136b532cac796b7e4793c12a` /
+`2c43a39dcf1489eee08ccc8cc037dc866e4136cdd6c701af8129c14c0363f1d7`,
+and old local decision `5a5acf9a38d31f39df6c8e1ad5405e4517332ddba5edc555d46e66c64d0868cd`
+still selected equal 172. This contradicted the expected meaning of a frozen
+execution protocol; provider authority remained false.
+
+Exact repair `74ca45c79e5437918ee70df4b472025a3555ee86` incorporates the
+locally verified registered artifact name and digest into protocol-scope
+derivation. The persistent regression strengthens the control through the
+snapshot adapter: snapshot, schedule, model, seed, frontier, policy, and local
+decision record
+`e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8`
+remain fixed. The baseline selects equal 172; the substituted bundle passes
+local freeze and snapshot verification but the old decision is rejected for a
+combined-scope mismatch. Changing only unverified registration identity still
+preserves scope and selection.
+
+Focused validation passes 17 tests and 80 assertions plus TypeScript,
+formatting, and whitespace. This proves local factor separation and stale-
+decision denial, not external registration, executable authenticity, policy
+authority, real execution, drift, prices, model behavior, or provider
+readiness. The next ranked control checks whether the opaque checksum-manifest
+artifact actually binds the execution bundle it purports to describe.
+
+## Cycle 121 checksum-manifest coherence
+
+Seed commit `62c465ca99139affdd5d74c5a60b39815caa78ed` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The prior accepted fixture paired bundle SHA-256
+`fd01710b5ef211e073b7dda564f30925cca256e4ff9b7ea7bd2fd49e672ecdae`
+with opaque checksum-manifest bytes whose unrelated SHA-256 was
+`46a3429c1b6283935a142b86bff9d077229d06e2a41ac441f092487115698c88`.
+Both declarations were locally byte-consistent, so the freeze passed even
+though the checksum artifact did not name or digest the bundle.
+
+Exact repair `fff100583e82a8fa9aea4ebb133f5c01e9451e69` requires exactly one
+standard SHA-256 entry whose filename and digest equal the registered artifact
+binding. Opaque text and a zero-digest contradiction now fail with
+`external registration checksum manifest does not bind its artifact` and no
+registration-evidence status. A coherent replacement manifest still allows
+the Cycle 120 bundle-substitution control to reach the intended stale-policy
+denial.
+
+Focused validation passes 26 tests and 102 assertions plus TypeScript,
+formatting, and whitespace. The result proves a local checksum relationship,
+not timestamp-proof validity, external deposit, authorship, policy authority,
+real execution, drift, prices, model behavior, or provider readiness. The next
+ranked control changes the registered artifact name while preserving identical
+bytes and all other decision inputs to test executable entry-point identity.
+
+## Cycle 122 same-byte artifact aliasing
+
+Seed commit `eac393d7d8f7369474d05531e0d50952a92379e6` preceded this
+control. XHS semantic access remained unchanged; the saved login shell changed
+by two bytes and body hash but exposed no attributable item. All 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+The snapshot-bound control retained exact bundle SHA-256
+`fd01710b5ef211e073b7dda564f30925cca256e4ff9b7ea7bd2fd49e672ecdae`
+and changed only its registered filename from `bundle.zip` to
+`aliased-bundle.zip`, with a coherent checksum-manifest update. Schedule,
+models, seeds, frontier, snapshot, policy, and local decision evidence stayed
+fixed. Baseline selection returned equal 172. The alias still passed local
+snapshot/freeze checks, but protocol scope changed while model scope did not,
+so the old decision failed the combined-scope match. Provider authority stayed
+false.
+
+Exact test-only `1170e6698775771778409518445a044df30a7879` records the
+result. No production edit was needed because the Cycle 120 scope derivation
+already binds artifact name and digest. Focused validation passes 9 tests and
+44 assertions plus TypeScript, formatting, and whitespace. This proves a local
+entry-point identity distinction, not external registration, timestamp-proof
+validity, policy authority, real execution, drift, prices, model behavior, or
+provider readiness. The next ranked control isolates timestamp-proof bytes
+from executable policy scope.
+
+## Cycle 123 timestamp-proof separation
+
+Seed commit `75507eabeff67dc47c1c4f01095184bf1a05be5f` preceded this
+control. XHS semantic access remained unchanged; the saved login shell changed
+by two bytes and body hash but exposed no attributable item. All 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+Exact test-only commit
+`5df12fad1c66c2dddea5b7cd3d2ee1fd28f494a5` changed only the
+`MANIFEST.sha256.ots` bytes and the corresponding local artifact digest. The
+proof SHA-256 changed from
+`90b8453eb4ad5b97194fa6168b3c151f992a8d9b358ec122d084d61b21e3f994`
+to `97296f89af73fbd23ebf1f10fb872a949ab1b0073ee7525c4a02bf0fb79e133e`.
+Execution artifact identity, checksum manifest, schedule, models, seeds,
+frontier, snapshot, policy, and decision evidence remained fixed.
+
+Both paths selected equal 172 and returned exact decision SHA-256
+`e720e0dcbcac4fdc1d946c83e16f400f9bb99698ef7e0bc009de7a9f632aafe8`.
+Protocol and model scopes stayed equal, both local registrations remained
+`local-byte-match-unverified`, and provider authority remained false. Focused
+validation passes 10 tests and 49 assertions plus source formatting.
+
+This supports local factor separation: opaque timestamp-proof bytes do not
+change the execution policy. It does not validate either proof, bind it
+semantically to the checksum manifest, authenticate an external timestamp,
+identify an owner, or prove a deposit. The next ranked control tests the
+proof-to-manifest coherence boundary while preserving the explicit unverified
+evidence class.
+
+## Cycle 124 proof-presence disclosure
+
+Seed commit `9dda9c28ba1f13f536a1fa33b57feb7937485e92` preceded this
+control. XHS semantic access and byte length were unchanged, all 132 durable
+seeds remained unavailable, and no public lane request was made.
+
+The matched fixture replaced `MANIFEST.sha256.ots` with literal
+`not an OpenTimestamps proof` and updated only its declared local SHA-256. The
+pre-fix verifier returned `ok: true`, registration status
+`local-byte-match-unverified`, and provider authority false without a
+proof-specific result. The regression therefore failed one of 11 tests because
+the expected qualification was absent.
+
+Exact local `a358ee349934b6702c6d21efde69a401e73cfe1c` adds a separate
+`timestampProofEvidenceStatus`. Locally digest-matched bytes return
+`local-byte-presence-unverified`; bundle load failures return an empty value.
+The verifier still does not parse OpenTimestamps, bind the proof semantically
+to `MANIFEST.sha256`, contact a calendar, or authenticate the declared deposit.
+Three focused suites pass 29 tests and 115 assertions plus TypeScript, source
+formatting, and whitespace.
+
+This resolves the output ambiguity without promoting local evidence. The next
+ranked control tests whether the registration status itself is correctly gated
+by earlier artifact integrity errors rather than only registration-specific
+checks.
+
+## Cycle 125 registration-status gating
+
+Seed commit `8882edfb1167e4554a554beeb6466a439db50514` preceded this
+control. XHS semantic access and byte length remained unchanged, all 132
+durable seeds remained unavailable, and no public lane request was made.
+
+The matched invalid fixture preserved registration metadata and its coherent
+checksum relation while tampering `schedule.json`, omitting `seed-policy.md`,
+and adding `undeclared.txt`. Before repair, the verifier returned `ok: false`
+with the expected integrity errors but still emitted
+`externalRegistrationEvidenceStatus: local-byte-match-unverified`. The
+regression failed one of 11 tests on that exact received value.
+
+Exact local `c0377631e478404018913bf346f2e2e3046242c4` now emits the
+positive registration status only when the complete freeze has no errors. The
+invalid fixture returns an empty status; valid local fixtures retain the
+explicitly unverified status. Three focused suites pass 29 tests and 116
+assertions plus TypeScript, source formatting, and whitespace.
+
+This removes a contradictory positive label without authenticating external
+registration. The next ranked control maps overall validity, registration
+evidence, and proof-byte presence across proof-specific and unrelated
+integrity failures before any further schema decision.
+
+## Cycle 126 evidence-status matrix
+
+Seed commit `3fcff78042c06b2ec5e21ba09c5a4fb6070d7890` preceded exact
+test-only commit `441064d354314ad28a95a5b8dde3730ec1a3a0c3`. Five matched cases
+now pin the result contract:
+
+- a valid local bundle reports overall validity, locally matched unverified
+  registration, and locally present unverified proof bytes;
+- an unrelated schedule mismatch clears overall validity and registration but
+  preserves the independent proof-byte presence fact; and
+- proof digest mismatch, missing proof bytes, or undeclared proof bytes clear
+  both proof and registration statuses.
+
+Provider authority remains false throughout. Focused validation passes 12
+tests and 61 assertions plus TypeScript and source formatting. No production
+change was needed after Cycle 125's complete-error gate.
+
+This proves local status composition, not proof validity or target identity.
+The next ranked control asks whether the schema identifies the checksum
+manifest as the proof target before any cryptographic verification is added.
+
+## Cycle 127 proof-target identity
+
+Seed commit `d473e5a04f4da1bd9a535f92d15264d9f2355d09` preceded the
+matched control. XHS semantic access and byte length remained unchanged, all
+132 durable seeds remained unavailable, and no public lane request was made.
+
+A locally valid freeze declared `schedule.json` and its digest as the detached
+proof target. Before repair, the verifier ignored those target fields and
+returned `ok: true`; the new expectation yielded 12 passing tests and one
+failure across the 13-test focused suite.
+
+Exact local `c190ba8e2af7c821c419c7b8717c6329c2afe9d6` adds required
+`proofTargetArtifact` and `proofTargetSha256` bindings. They must equal the
+registered checksum manifest artifact and digest. The schedule-target control
+now fails with a stable proof-target error and no registration status. Three
+focused suites pass 31 tests and 129 assertions plus TypeScript, formatting,
+and whitespace.
+
+This proves declared target identity only. It does not parse the proof or
+authenticate a timestamp. The next ranked investigation inspects retained
+proof bytes and the available local verifier/tool boundary before any parser
+or stronger evidence status is proposed.
+
+## Cycle 128 retained proof and verifier boundary
+
+Seed commit `259eedf1a3938fdc442283912609d30e918b0d45` preceded this
+read-only audit. The retained source is
+`/tmp/g-c1b31972-arxiv-2608.25553/paper2-data-and-code-v3.zip`, one of two
+locally retained copies previously shown byte-identical. From
+`2026-09-03T04:27:56.908Z–04:27:58.028Z`, the 61,508,909-byte ZIP passed
+`unzip -tqq` and reproduced published SHA-256
+`41ca426998db106d041f85c8eb1fb2f2cfd692615b98160952d32d3877a63138`.
+
+The Experiment C proof chain has two distinct local targets:
+
+| Target                                    | Target bytes / SHA-256                                                      | Proof bytes / SHA-256                                                    | Direct byte observation                                                                                    |
+| ----------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `preregistration/MANIFEST.sha256`         | 12,987 / `cb6e7c8d6b897a1afb605a52d4fc49a5067d41540f5089286e56060c0dab6225` | 945 / `5d0097b0c1324a441ba74ead2c0ac5b70a70cf44543d4feec7c86d4e5a45a4fe` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+| `preregistration/DEV_REGISTRATION.sha256` | 86 / `c9893d8da0f7fcc07d549e97b2cac57bb69a5410528ce14ea6c4403304b55dba`     | 595 / `e171588711ae1c7e152d02bcc52312b7d4e93776e90b5f3035b09521cabad568` | OpenTimestamps magic header; target digest bytes after the header/tag prefix; four public calendar strings |
+
+The 86-byte development target contains the SHA-256 and filename of the
+5,696-byte `DEV_REGISTRATION.md`; that Markdown member reproduces SHA-256
+`3f24266a249956ce656e470952fec20087ecb3904f8e06db8906afd6189f589e`.
+This is a development-call registration and is not a proof of Scout's proposed
+schedule. The manifest proof concerns Experiment C's 103-entry source package,
+not a real Scout freeze.
+
+The current execution identity is UID 1000 (`hao`) in the goal-owned worktree.
+It has no `ots` or `opentimestamps` executable and no Python
+`opentimestamps`/`opentimestamps_client` module. An exact
+`ots info <retained-proof>` attempt fails locally with
+`/bin/bash: ots: command not found`. No tracked Scout file is an `.ots` proof
+and no Scout dependency supplies a verifier. The source freeze script requires
+an external `ots` client to stamp a manifest, while the source runner's runtime
+gate only checks that the named proof exists and is non-empty. Source
+`EXTERNAL_REGISTRATION.json` says `VERIFIED` and records an OSF download-back
+match; the source results report repeats that label. These are source claims,
+not an independent result produced by this worker.
+
+Magic bytes, an embedded matching digest, calendar strings, and a source label
+do not establish proof syntax, calendar receipt, Bitcoin inclusion, deposit
+authority, authorship, or temporal ordering. The existing Scout status
+`local-byte-presence-unverified` is therefore the strongest supported state and
+no production change is warranted. The next bounded question is whether a
+future external-verifier result can be byte- and target-bound without trusting
+a free-form caller status or conflating cryptographic time evidence with
+provider/deposit authority.
+
+## Cycle 129 caller-claim injection denial
+
+Seed commit `debf7ad7dbec3b246c53a2748476c152cbc7532c` preceded this
+matched control. A valid local freeze retained identical artifact, schedule,
+model, seed, checksum-manifest, proof-target, and proof bytes. The only changes
+were caller-supplied top-level fields
+`timestampVerificationStatus: "verified"` and `providerAuthority: true`, plus
+external-registration field
+`verifierResult: "Bitcoin timestamp verified"`. Before repair,
+`verifyExecutionFreezeManifest` returned `ok: true`. Its own evidence outputs
+remained explicitly unverified and provider-denied, but accepting a v1 manifest
+that carries unsupported authority claims left two interpretations in the same
+object.
+
+Exact repair `821a085b7db863364040c30bb7ee1189f44f391c` rejects unknown keys
+at the top-level v1 manifest and external-registration boundaries. The control
+now reports both stable unsupported-field errors, clears registration evidence,
+retains the independently true `local-byte-presence-unverified` proof fact, and
+keeps `providerCallsAuthorized: false`. The same verifier is used by direct,
+descriptor-safe bundle, and frontier-selection paths, so the focused three-
+suite gate exercises all current consumers: 32 tests and 135 assertions pass,
+along with TypeScript, focused formatting, and whitespace.
+
+This denies the tested in-band free-form claims; it does not establish a
+positive verification protocol. No positive status should be added until a
+primary, versioned verifier-output grammar and verifier identity can be bound
+to exact proof bytes, target bytes, and output bytes without conflating
+cryptographic time evidence with deposit, author, provider, call, or spending
+authority.
+
+## Cycle 130 retained verifier-output contract audit
+
+Seed commit `81568ada62d9894b828bf4ba1d1463ec63be16d4` preceded this
+read-only audit. The retained source archive has one status adapter that goes
+beyond checking proof presence: open-model extension
+`scripts/ots_status.py`. The file is 2,922 bytes with SHA-256
+`9050d588bdd1c1cd56a0092461dbe25a1bea2dbb4712890d53a8ddc3dcc49795`.
+It discovers an unversioned `ots` path, applies `ots upgrade` to copied proof
+bytes, then runs `ots info`. It ignores both commands' exit status and stderr
+and extracts block heights and calendar URLs from human-readable stdout with
+regular expressions. Its own comment says a second block-height form was
+added after the first regex missed actual client output.
+
+The resulting 1,143-byte `OTS_STATUS.json` has SHA-256
+`0b75f2e66b0c69b7ee8cecdef7042c7f5d0854de80b4a38ccdb161fc8027b722`.
+It records source-claimed block numbers, proof paths, and clocks, but no client
+identity/version, input proof hash, target hash, upgraded-copy hash, raw stdout
+or digest, command exit status, stderr, or verifier identity. The archive's
+lock files contain no OpenTimestamps client dependency. This JSON is therefore
+a source-generated summary, not a primary, versioned, byte-bound verifier
+receipt.
+
+No safe positive receipt schema follows from the retained evidence. A future
+contract needs a primary stable output grammar, pinned verifier identity, exact
+proof/target/output bindings, explicit command success, and a separate account
+of what the cryptographic result does not authorize. Until then Scout retains
+only `local-byte-presence-unverified`; no production change is made in this
+cycle. The next local control asks whether Cycle 129's v1 unknown-field denial
+should extend to nested freeze objects without breaking valid current inputs.
+
+## Cycle 131 nested freeze-manifest exactness
+
+Seed commit `af72a983468257fe20d89382705ede23dc2714de` preceded the
+matched control. One valid manifest kept all values and bytes fixed while
+adding an undeclared `label` to an artifact, `modelAuthority` to a model,
+`randomnessAuthority` to seed policy, and `providerAuthority` to schedule
+metadata. Before repair the verifier returned `ok: true`, proving Cycle 129's
+top-level and external-registration exactness did not cover the four remaining
+nested object types.
+
+Exact repair `2b537f86648e16b52296ff6bbc1e54f9d51597da` reuses the v1
+allowlist helper for artifacts, models, seed policy, and schedule metadata. The
+control now returns all four stable unsupported-field errors. Registration
+evidence clears; local proof-byte presence remains separately and explicitly
+unverified; provider authority remains false. Current valid fixtures retain
+their prior results.
+
+The focused direct-freeze, descriptor-safe bundle, and frontier-adapter gate
+passes 33 tests and 143 assertions plus TypeScript, source formatting, and
+whitespace. This closes unknown-field ambiguity across the complete freeze
+manifest schema, but not across the independently parsed schedule JSON. The
+next local control tests exact top-level and episode object shapes there.
+
+## Cycle 132 byte-bound schedule exactness
+
+Seed commit `e7aca29cfee527435086d27b8cf7e4dae4686b6d` preceded the
+matched control. One valid schedule kept its declared values and regenerated
+prompt fixed while adding only `sourceAuthority`, `episodeAuthority`,
+`selectionAuthority`, and `memoryAuthority` at the schedule, episode, factor,
+and candidate levels. Its schedule bytes, digest, and manifest binding were
+updated coherently. Before repair the freeze verifier returned `ok: true`; the
+isolated expectation reported zero passes, one failure, and one assertion.
+
+Exact repair `28418b2d3d71db137c1e0ed453be7308e0d9353c` extends the
+existing allowlist rule to those four schedule shapes. The matched control now
+returns four stable schedule-verification errors, clears registration evidence,
+retains separately matched proof bytes as `local-byte-presence-unverified`, and
+keeps provider calls denied. Valid current schedules retain their prior result.
+
+The direct freeze, descriptor-safe bundle, and frontier-adapter gate passes 34
+tests and 151 assertions plus TypeScript, focused formatting, and whitespace.
+This closes the explicit schedule-object ambiguity. It does not authenticate
+proofs, providers, or real execution, and it does not yet independently test
+the nested JSON prompt shape: the current contract protects that shape by exact
+comparison with the frozen prompt generator. The next matched control tests
+that claim without adding a redundant parser unless the control passes open.
+
+## Cycle 133 embedded prompt exactness
+
+Seed commit `bf8a3037fecaac6a8f100511bccd4069e2690c8c` preceded the
+matched control. One valid prompt gained only `providerAuthority:true` inside
+its lineage object; the schedule and manifest digests were then updated
+coherently. The existing exact comparison against `renderFactorialPrompt`
+rejected the bytes with the episode-scoped `prompt contains an unregistered
+difference` error. Registration evidence cleared, local proof-byte presence
+remained explicitly unverified, and provider calls remained denied.
+
+Regression `fa29e5b995558bf85cd4ba9dc8e3bd2de4a10d62` pins that behavior.
+No runtime change or duplicate prompt schema is justified. The three freeze
+paths pass 35 tests and 156 assertions plus TypeScript, source formatting, and
+whitespace. This is high-confidence local generator exactness, not evidence of
+prompt quality, proof validity, model behavior, or provider authority.
+
+The next distinct parser question is whether same-value duplicate JSON keys
+can be accepted because `JSON.parse` collapses them before exact-key checks.
+
+## Cycle 161 versioned direct-result serialization
+
+Seed commit `8df9797ead3d53d27aff68a6d4fbbe0afe2c542a` preceded the output
+contract audit. The valid Cycle 160 artifact bound its internal computation but
+had no top-level schema to distinguish format evolution from computational
+drift.
+
+Exact local `1889461ecf47ba9d1ca62e66bb37e78bdb5de06c` applies immutable
+schema `scout.verification-allocation-robust-frontier-output/v1` to direct
+results. A caller-like payload schema cannot override it. Nine focused output
+and process tests pass with 31 assertions plus TypeScript, formatting, and
+whitespace.
+
+This versions current serialization only; it does not retroactively identify
+old outputs or authenticate their computation, policy, or provider. The next
+control audits the separate snapshot-selection output contract.
+
+## Cycle 162 versioned snapshot-selection serialization
+
+Seed commit `404461bd2786aa00c70a733f621e06660f715e48` preceded the
+snapshot-output audit. The summary already preserved nested snapshot,
+evidence, decision, selection, and provider-denial state, but its distinct
+outer format had no immutable identity.
+
+Exact local `0440507e23f31fdf52b8d935fddcfa470ace6ce7` applies schema
+`scout.verification-allocation-snapshot-selection-output/v1` through the
+snapshot summary function. A conflicting caller-like schema is overwritten,
+and both helper and integration assertions pin the distinct envelope. Fourteen
+focused tests pass with 75 assertions plus TypeScript, formatting, and
+whitespace.
+
+This versions current serialization only. It does not authenticate
+computation, policy, authority, models, providers, or future compatibility.
+The next control exercises the actual fast snapshot CLI end to end and checks
+that the schema appears without changing nested evidence or provider denial.
+
+## Cycle 163 fast snapshot CLI serialization
+
+Seed commit `5ebe5b1cbc2cbe3f1adbf7778e6400a647f92efe` preceded the
+process run. The actual CLI read the retained 116,578-byte snapshot at exact
+outer SHA-256 `8bee6076d46161948059e6eddedb5f448431f1c65ec040146fd812e23aedae76`
+in 0.04 seconds and emitted schema
+`scout.verification-allocation-snapshot-selection-output/v1`.
+
+The summary retained row, result, and frontier hashes
+`6fac7f99…d38252`, `383a699f…c2b8fff`, and `067201a6…b4530ef`, the
+508-point count, and `local-byte-match-unverified`. An empty policy and a
+goal-owned directory without `freeze-manifest.json` produced the exact
+selection error `exactly one explicit frontier policy with evidence is
+required` and a descriptor-read `ENOENT`; no point was selected and provider
+authority remained false at the snapshot, freeze, and outer levels.
+
+This proves current process wiring and local bytes, not earlier computation,
+generator identity, authority, policy, freshness, drift, models, or providers.
+The next control audits whether any consumer validates the output schema before
+using nested fields.
+
+## Cycle 164 consumer-side schema identity
+
+Seed commit `6633dd46b755012decdd336a33f95bf17c70d99b` preceded a
+repository-wide consumer audit. The two schemas appeared only in producers,
+tests, and documentation; no parser enforced either identity for a consumer.
+
+Exact local `846b607441d31ce0d10f270fb9f0c95cfe4f8953` adds one narrow
+identifier. It returns only the exact direct or snapshot v1 schema after
+rejecting malformed JSON, non-objects, missing/future schemas, and literal or
+escaped duplicate keys. It never returns nested payload fields. A recognized
+snapshot envelope carrying `providerCallsAuthorized:true` still yields only
+the schema identity, so recognition cannot be mistaken for authority
+validation. Sixteen focused tests pass with 85 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves local format discrimination only. The next control separately
+validates the shared provider-denial invariant without authenticating other
+nested content.
+
+## Cycle 165 consumer-side provider denial
+
+Seed commit `23126e5fa656e0e9f066b5245660495ffbf87a4d` preceded matched
+direct and snapshot controls. Exact local
+`a264b31f455e5259f4223afdfb130a9ca583e4f8` requires every
+shape-specific provider-call field to be false and rejects a contradictory
+authority key anywhere in the recognized payload. It validates no other field.
+
+Eighteen focused tests pass with 93 assertions plus TypeScript, formatting, and
+whitespace. The actual retained-snapshot CLI emitted 2,446 bytes; the consumer
+identified snapshot v1 and returned provider denial true while the output kept
+its missing-freeze and explicit-policy failures.
+
+This proves current local denial serialization only. The next control matches
+the declared computation identity tuple and derived snapshot reference to an
+explicit expectation without calling that recomputation or authority.
+
+## Cycle 166 consumer-side computation identity
+
+Seed commit `96ee5aeba7d49d005c10b8319f55182626b83985` preceded matched
+direct and snapshot controls. Exact local
+`88e3d86b53bf23fe0bedf010177e2b5e40dace50` compares serialized row,
+result, frontier, count, and derived-reference declarations against one
+explicit valid expectation. Cross-field count/hash/reference contradictions
+fail; provider denial remains a separate check.
+
+Twenty focused tests pass with 99 assertions plus TypeScript, formatting, and
+whitespace. The actual 2,446-byte snapshot CLI output independently passed
+schema, denial, and retained-identity checks. This is equality of declarations,
+not recomputation or authority. The next control regenerates one current direct
+v1 output and applies all three consumers; the older retained direct artifact
+predates the schemas.
+
+## Cycle 167 current direct-result consumer audit
+
+Seed commit `6aaff007aa` preceded one current no-policy direct regeneration.
+The producer exited 0 after 561.69 seconds and emitted 203,783 bytes at exact
+SHA-256 `a371cb088abeab1fbdcfc710b175b4701e7f238abbd35789a2d8305657bd9cb7`.
+
+The stream consumer identified direct-output v1, verified provider denial, and
+matched the retained computation tuple. The output carries exact row hash
+`6fac7f99…d38252`, result hash `383a699f…c2b8fff`, 508 frontier points at
+`067201a6…b4530ef`, and the 1,029-block first pass
+`[171,171,171,172,172,172]`. It has null freeze verification, no selection,
+and the exact explicit-policy error.
+
+This supports current producer/consumer interoperability and deterministic
+local regeneration. It does not make the identity matcher a recomputation
+oracle or establish policy authority, external provenance, provider execution,
+cost, or model behavior. No implementation change was justified. The next
+control audits whether callers need one explicit all-of result for schema,
+provider denial, and computation identity rather than three independently
+callable booleans.
+
+## Cycle 168 composed consumer assessment
+
+Seed commit `7b8b07f674` preceded a repository-wide caller audit. The three
+consumer helpers had no composing caller: each was available independently,
+but no API result named whether all three scoped checks passed.
+
+Exact local `1a1ebb6409` adds one assessment retaining schema, provider-denial,
+and computation-identity verdicts plus their conjunction. Matched direct and
+snapshot v1 fixtures pass. A provider-authority mutation leaves schema and
+identity true but makes denial and the conjunction false; a wrong result hash
+leaves schema and denial true but makes identity and the conjunction false.
+Ten focused tests pass with 31 assertions plus TypeScript, formatting, and
+whitespace.
+
+The result closes check-omission at this API boundary. It is not whole-payload
+validation, recomputation, policy authority, external provenance, provider
+execution, cost, or model evidence. The next control adds an unrelated policy
+or selection claim to an otherwise passing payload and tests whether the
+conjunction's scope remains unambiguous.
+
+## Cycle 169 scoped composite naming
+
+Seed commit `52bdd028a2` preceded one matched direct-v1 control. Valid schema,
+retained identity, and provider denial coexisted with unverified
+`policyApproved:true` and a selected value. The pre-fix result returned all
+three verdicts true plus `allChecksPass:true`.
+
+Exact local `931fab16aa` renames only that conjunction to
+`scopedChecksPass` and pins the control. Unrelated policy and selection fields
+remain unchecked as designed; no strict whole-payload schema or authority rule
+is invented. Eleven focused tests pass with 32 assertions plus TypeScript,
+formatting, and whitespace.
+
+This clarifies the composite API without changing its evidence boundary. It
+does not validate policy, selection, whole-payload shape, recomputation,
+provenance, authority, cost, or model behavior. The next control applies the
+renamed assessment to the actual retained-snapshot CLI output.
+
+## Cycle 170 fast snapshot composite assessment
+
+Seed commit `300c496e39` preceded the process control. The actual CLI loaded the
+goal-owned 116,578-byte retained snapshot at exact SHA-256
+`8bee6076…edae76` in 0.04 seconds and emitted 2,446 bytes at
+`e881ce48…4f99a69`.
+
+The assessment identified snapshot-selection v1, verified provider denial,
+matched the retained row/result/frontier/count/reference tuple, and returned
+`scopedChecksPass:true`. The missing freeze manifest and explicit-policy
+failures remained separate, no point was selected, and provider authority was
+false at every reported layer.
+
+This proves fast current process composition around retained local bytes, not
+fresh recomputation, policy approval, external provenance, authority, cost,
+drift, model behavior, or provider execution. No code change was justified.
+The next control tests bounded behavior for a deeply nested recognized payload.
+
+## Cycle 171 bounded output nesting
+
+Seed commit `35bd0bfb5c` preceded a depth ladder. Recognized direct-v1 payloads
+passed through 10,000 nested objects. The 25,000-level, 150,601-byte control
+threw `RangeError: Maximum call stack size exceeded` instead of returning a
+verdict; 50,000 and 100,000 levels reproduced the failure.
+
+Exact local `5eb3893d61` rejects raw JSON beyond 256 structural levels before
+recursive scans. A quoted string containing 300 opening braces remains valid,
+while a 1,000-level control returns schema null and every scoped verdict false
+without throwing. Twelve focused tests pass with 34 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves a bounded local consumer failure mode and repair, not a universal
+JSON resource limit, policy validity, provenance, authority, model behavior,
+cost, drift, or provider execution. The next audit checks other untrusted
+callers of the shared recursive duplicate-key scanner.
+
+## Cycle 172 bounded inline policy/evidence nesting
+
+Seed commit `4f16af6f6c` preceded the inline CLI depth ladder. A 25,000-level
+policy argument remained responsive, while 50,000 levels / 500,004 bytes threw
+`RangeError: Maximum call stack size exceeded`; 100,000 and 200,000 levels
+reproduced the failure. The evidence-manifest argument reached the same
+recursive scanner.
+
+Exact local `5b9d77b0f1` reuses the iterative output-nesting scanner and rejects
+more than 256 structural levels before recursive duplicate-key inspection.
+Quoted braces do not count as structure, 256 levels remain accepted, and 257
+are rejected with a stable argument-specific error. Twenty-four focused tests
+pass with 72 assertions plus TypeScript, formatting, and whitespace.
+
+This proves a bounded local CLI failure mode and repair, not a universal JSON
+resource limit, policy validity, provenance, authority, model behavior, cost,
+drift, or provider execution. The next audit checks the remaining local
+snapshot and policy-provenance readers that call the shared recursive scanner.
+
+## Cycle 173 bounded byte-matched snapshot nesting
+
+Seed commit `e1b1b1e9d6` preceded the descriptor-backed depth ladder. The
+frontier snapshot loader returned a normal invalid-snapshot verdict at 25,000
+levels / 250,004 bytes, then threw a stack `RangeError` at 50,000 levels /
+500,004 bytes and 100,000 levels / 1,000,004 bytes. Every file matched its
+caller-supplied SHA-256, isolating the post-read recursive exact-key scan.
+
+Exact local `7d8730c724` applies the shared iterative 256-level pre-scan before
+that recursion. A byte-matched 1,000-level fixture now returns a stable error
+with its exact digest, length, unverified local-evidence class, and provider
+denial intact. Eight focused tests pass with 13 assertions plus TypeScript,
+formatting, and whitespace.
+
+This proves one bounded descriptor-backed failure mode and repair, not snapshot
+computation, provenance authority, general JSON limits, cost, drift, model
+behavior, or provider execution. The next audit tests the separate local
+policy-provenance manifest and decision-record readers.
+
+## Cycle 174 bounded local policy-provenance nesting
+
+Seed commit `89cebb5f60` preceded two descriptor-backed ladders. At 25,000
+levels / 250,004 bytes, the manifest and decision-record readers returned their
+normal invalid-content verdicts. Each threw a stack `RangeError` at 50,000
+levels / 500,004 bytes and again at 100,000 levels / 1,000,004 bytes. Every
+file matched the caller-supplied SHA-256, isolating the post-read exact-key
+recursion.
+
+Exact local `1a123e083e` applies the shared iterative 256-level pre-scan to
+both readers. Matched 1,000-level regressions now return distinct stable errors
+while retaining each local digest, byte length, unverified evidence class, and
+empty content status. Twenty focused tests pass with 68 assertions plus
+TypeScript, formatting, and whitespace.
+
+This proves two bounded local failure modes and repairs, not substantive
+provenance, authorship, authority, general JSON limits, cost, drift, model
+behavior, or provider execution. The next audit tests the separate
+freeze-bundle canonical-manifest parser under the same ladder.
+
+## Cycle 175 freeze-manifest caught-depth control
+
+Seed commit `d408a3f511` preceded the separate freeze-bundle ladder. The public
+verifier returned normal invalid-manifest results from 100 through 25,000
+levels. At 50,000 and 100,000 levels, internal canonical serialization raised
+a stack `RangeError`, but the existing catch returned `valid:false` with a
+readable-JSON diagnostic instead of leaking the exception. The two high-depth
+paths took about 1.2 seconds each.
+
+No production change is justified by this matched control: unlike the prior
+shared-scanner callers, the supported public boundary already fails closed.
+This is high-confidence local evidence for the current Bun/runtime behavior,
+not a general resource ceiling, timing guarantee, policy or provenance claim,
+or provider result. The next audit tests execution-freeze schedule and
+canonical artifact readers under matched depth controls.
+
+## Cycle 214 nested freeze-manifest order is presentation-only
+
+Seed commit `cfb5bd7e8b` preceded exact test-only commit `7945490bf5`. The
+original and recursively reordered manifests parse equally but hash to
+`a951e9ec…0878572` and `d9fb263a…ee00a8`. The control reorders keys inside the
+model, seed-policy, schedule, artifact, and external-registration declarations
+while holding every artifact byte and every array order fixed.
+
+Strict v1 returns the complete same verification result for both
+serializations, and restoration is exact. The focused gate passes 27 tests and
+152 assertions plus TypeScript, formatting, and whitespace. Container key
+order is therefore recursively presentational in the one-model fixture;
+declared evidence bytes remain role-specific identity. No external owner,
+authority, consumer, or provider result supports a schema change. The next
+control repeats this boundary on the two-model explicit-identity fixture.
+
+## Cycle 215 two-model manifest-order transfer
+
+Seed commit `c734610e95` preceded exact test-only commit `37256db149`. The
+existing two-model explicit-identity fixture remains valid with two retained
+models. Its ordered freeze manifest hashes to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`;
+recursively reversing all object keys changes only the presentation bytes and
+hash, to
+`2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`.
+The parsed objects and complete verification results are exactly equal, and
+restoration reproduces the original result.
+
+The focused gate passes 28 tests and 159 assertions plus TypeScript,
+formatting, and whitespace. This transfers Cycle 214's one-model result to the
+smallest current multi-model control. Together with Cycles 208–214 it supports
+ordered model/seed execution identity, role-specific evidence-byte identity,
+set-like artifact inventory, and recursively presentational manifest object
+keys. It does not supply external ownership, migration or update authority,
+consumer requirements, or provider behavior. The useful local candidate-
+registry ordering audit is closed; a schema migration remains trigger-bound to
+that missing external evidence.
+
+## Cycle 216 multi-model failure attribution
+
+Seed commit `8b3c8a050c` preceded exact test-only commit `97986c1ec1`. Two
+matched two-model bundles substitute only the requested ID inside either the
+first or second model's canonical resolution record and update that artifact's
+digest. The verifier attributes the mismatch to the exact `models[0]` or
+`models[1]` ordinal, retains two models and 128 episodes, returns no policy
+scope, and denies provider calls.
+
+The byte-bound manifest preserves the ordinal-to-requested-ID, resolved-ID,
+and artifact mapping. The result JSON deliberately contains none of those
+three values. The focused gate passes 29 tests and 169 assertions plus
+TypeScript, formatting, and whitespace. This makes the current boundary
+explicit: a failure result is not a self-contained model registry or receipt;
+it must be interpreted with its manifest. No result-schema change is justified
+without an identified consumer, and reflecting unvalidated caller identifiers
+from an invalid manifest needs its own safety contract. The next control asks
+whether an opaque content reference can bind a failed manifest without
+granting it scope or echoing those identifiers.
+
+## Cycle 217 diagnostic-reference synthesis
+
+Seed commit `9c1b51f908` preceded this synthesis. Cycle 216 establishes that an
+ordinal failure result requires its bound manifest. Cycle 215 already provides
+the matched reference experiment: the parsed-equal two-model manifests hash to
+`98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850`
+and `2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c`
+but return exactly equal complete verification results.
+
+The raw SHA is therefore a byte receipt, not a semantic diagnostic reference.
+Adding it to results would preserve exact presentation provenance while
+splitting equivalent outcomes by object-key order. Avoid a new production
+field or redundant regression. A semantic reference needs a versioned
+canonical projection and explicit treatment of invalid input, plus an actual
+consumer and migration/rollback contract. The next distinct control is whether
+simultaneous first- and second-model mismatches both survive in stable ordinal
+error order.
+
+## Cycle 218 simultaneous model failures
+
+Seed commit `b290d08b92` preceded exact test-only commit `cb2e27fbaf`. The
+two-model control substitutes the second model-resolution record first and
+observes only `models[1] resolution evidence does not match declaration`.
+After substituting the first record, the verifier returns both exact errors in
+manifest order, `models[0]` then `models[1]`, although mutation order was the
+reverse. A repeated verification is exactly equal.
+
+The result retains seven artifacts, two models, two seeds, and 128 episodes,
+returns no policy scope, and denies provider calls. The focused gate passes 30
+tests and 172 assertions plus TypeScript, formatting, and whitespace. Failures
+do not mask each other and ordering is deterministic at this boundary, so no
+production change is justified. The manifest remains necessary for model
+identity. The next distinct control combines one model-record mismatch with a
+schedule/model-order mismatch to test cross-layer error completeness.
+
+## Cycle 219 cross-layer diagnostic completeness
+
+Seed commit `13dc948146` preceded exact test-only commit `2e1c698872`. The
+two-model fixture combines one first-model resolution/declaration mismatch with
+a coherently reversed schedule model order. Verification returns the exact
+resolution mismatch followed by the exact immutable-resolution schedule
+mismatch, and a repeat returns the identical result.
+
+The invalid result retains seven artifacts, two models, two seeds, and 128
+episodes, returns null policy scope, and denies provider calls. The focused
+gate passes 31 tests and 174 assertions plus TypeScript, formatting, and
+whitespace. This supports independent deterministic validation at the tested
+layers; it does not establish completeness for every malformed bundle,
+external consumers, or provider execution. No production change is justified.
+
+The remaining registry question is now a retrieval-quality question rather
+than another marginal permutation. Compact Cycles 215–219 without losing exact
+commit, outcome, uncertainty, migration, rollback, or authority boundaries.
+
+## Cycle 213 top-level freeze-manifest order is presentation-only
+
+Seed commit `2603a53b29` preceded exact test-only commit `76307212e1`. Two
+top-level manifest serializations parse to equal objects and are each 2,011
+bytes, but hash to `a951e9ec…0878572` and `07bd1ee6…421174`.
+
+Both produce the complete same verification result: model scope, protocol
+scope, evidence labels, counts, errors, and false provider authority are
+unchanged. Restoring the original serialization is exact. The focused gate
+passes 26 tests and 147 assertions plus TypeScript, formatting, and whitespace.
+
+The container is therefore presentation-only at this boundary, while Cycles
+211–212 prove declared model and seed-policy artifacts are byte identities. A
+future registry must be a deterministic versioned declared artifact; outer
+manifest key order cannot substitute for registry identity. No current owner,
+authority, consumer, or provider result supports a schema change. The next
+control tests nested manifest-declaration key order with every artifact fixed.
+
+## Cycle 212 seed-policy bytes control protocol scope
+
+Seed commit `0c9fcbd14a` preceded exact test-only commit `4a6c83abb1`. Two
+188-byte seed-policy records parse to equal objects while differing only in
+object-key order. The original hashes to `ea062908…e0495` and protocol scope
+`bdee2f38…e6ee8`; the reordered record hashes to `b1177782…03fc3` and protocol
+scope `f2d5446c…286d91`.
+
+Both bundles verify with unchanged model scope and false provider authority.
+Restoring the original record and digest reproduces the complete original
+verification result. The focused gate passes 25 tests and 142 assertions plus
+TypeScript, formatting, and whitespace.
+
+Together with Cycle 211, this proves role-specific content addressing: model
+evidence bytes set model scope and seed-policy bytes set protocol scope. Parsed
+object equality normalizes neither. A future explicit registry must define and
+version deterministic bytes plus exact rollback; current v1 should not change
+without owner, deposit/update authority, consumer need, or provider evidence.
+The next control reorders only top-level freeze-manifest keys to distinguish
+container presentation from declared evidence identity.
+
+## Cycle 211 model evidence bytes control model scope
+
+Seed commit `27948c969b` preceded exact test-only commit `d157824111`. Two
+model-resolution records parse to equal objects while differing only in object-
+key order. The original 160-byte record hashes to `87914189…36708b` and model
+scope `ac29ae22…7c5bf`; the reordered bytes hash to `3e5e4a77…962116` and
+model scope `0760afdd…80b31`.
+
+Both bundles verify with the same protocol scope and false provider authority.
+Restoring the original record and digest reproduces the complete original
+verification result. The focused gate passes 24 tests and 133 assertions plus
+TypeScript, formatting, and whitespace.
+
+Current v1 therefore content-addresses canonical round-trippable bytes rather
+than normalizing parsed field order. A future explicit registry must specify a
+single field order or deterministic canonicalization, version the resulting
+scope change, and retain the exact v1 bytes for rollback. No current owner,
+deposit/update authority, consumer requirement, or provider execution supports
+that migration. The next audit applies the same matched key-order control to
+the seed-policy evidence record.
+
+## Cycle 210 seed order is reversible protocol identity
+
+Seed commit `ed53da97d1` preceded exact test-only commit `5adf98250d`. The
+valid one-model fixture reverses seed IDs in the declaration, canonical policy
+record, and generated schedule. The reversed bundle validates with a distinct
+protocol scope and unchanged model scope; reversing it back reproduces the
+complete original result exactly.
+
+The focused bundle gate passes 23 tests and 124 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes semantic seed order from set-
+like artifact inventory. The next audit tests model-resolution record key
+spelling against content-addressed model scope.
+
+## Cycle 209 artifact declaration order is non-semantic
+
+Seed commit `e8514b7a0f` preceded exact test-only commit `1ea329b404`. The
+valid two-model fixture reverses only its seven artifact declarations. Raw
+manifest bytes change, but the verifier returns the complete same result,
+including identical model and protocol scopes and false provider authority.
+
+The focused bundle gate passes 22 tests and 119 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes set-like artifact inventory
+from semantic model order. External registration and consumer behavior remain
+unknown. The next matched audit tests coherent seed-order reversal.
+
+## Cycle 208 model order is reversible execution identity
+
+Seed commit `7ab40b9f80` preceded exact test-only commit `582423d8ff`. A valid
+two-model bundle reverses both model declarations and generated schedule order.
+The reversed bundle validates but receives different model-scope and protocol
+references; reversing it back reproduces the complete original result exactly.
+
+The focused bundle gate passes 21 tests and 118 assertions plus TypeScript,
+formatting, and whitespace. This distinguishes semantic execution order from a
+mere registry-list presentation while retaining provider denial. The next
+matched control permutes only artifact declarations.
+
+## Cycle 207 partial rollback is fail-closed
+
+Seed commit `6c9327da55` preceded exact test-only commit `3a7e2a9228`. Three
+matched cases start from the same valid two-model bundle and remove only the
+peer resolution record, only its model declaration, or only its schedule
+cells. All return `ok:false`, null policy scope, and false provider authority.
+The exact distinguishing errors are missing bound resolution evidence,
+expected 64/found 128 episodes, and expected 128/found 64 episodes.
+
+The focused bundle gate passes 20 tests and 113 assertions plus TypeScript,
+formatting, and whitespace. This supports atomic coupling in the current v1
+design but supplies no registry owner, update authority, or consumer need. The
+next audit tests whether coherent model-order reversal changes semantic scope.
+
+## Cycle 206 exact per-model rollback
+
+Seed commit `abd11a10d9` preceded exact test-only commit `423f05d513`. A
+matched fixture records the untouched one-model verification result, expands
+to two distinct matching model-resolution records and 128 schedule cells, then
+removes the peer record, declaration, and generated schedule cells.
+
+Strict v1 accepts the expansion, and the complete rollback result is exactly
+equal to the untouched baseline. The focused bundle gate passes 19 tests and
+98 assertions plus TypeScript, source formatting, and whitespace. This
+supports the current per-model design as reversible without a registry
+migration. It remains local fixture evidence: external ownership, atomic
+deployment, deposit/update authority, consumer compatibility, and provider
+behavior are still unknown. The next control tests fail-closed partial rollback
+of each coupled component.
+
+## Cycle 205 strict-v1 per-model resolution records
+
+Seed commit `15dc4d3da4` preceded exact test `dcbf6f99bf`. Two distinct
+canonical resolution objects name the two declared models in a coherent
+128-episode schedule. Their hashes are `87914189…36708b` and
+`8c2ddbde…e083fe`.
+
+Strict v1 returns `ok:true`, seven artifacts, two models, 128 episodes, model
+scope `freeze-model-scope-sha256:583177de…353459`, the same local-unverified
+evidence labels, and provider authority false. A new registry is therefore not
+required merely to express several explicit identities; the per-model record
+design already works.
+
+The focused bundle gate passes 19 tests and 97 assertions plus TypeScript,
+formatting, and whitespace. Remaining registry value depends on a real owner,
+deposit/update contract, or consumer need. The next control pins exact rollback
+from the two-record expansion to the original one-record result.
+
+## Cycle 204 copied cross-model resolution denial
+
+Seed commit `e362380035` preceded exact test `ba9505219b`. A coherent
+two-model, 128-episode freeze points model zero to the original resolution
+object and model one to its separately declared same-byte copy on a distinct
+inode.
+
+The result fails only with `models[1] resolution evidence does not match
+declaration`, reports seven artifacts and two models, returns null policy
+scope, and denies provider authority. Copying bytes and changing the locator
+does not make those bytes evidence for a different model identity.
+
+The focused bundle gate passes 18 tests and 95 assertions plus TypeScript,
+formatting, and whitespace. The next alternative tests two distinct matching
+per-model objects under strict v1 before proposing any registry migration.
+
+## Cycle 203 copied model-resolution identity
+
+Seed commit `c6f3cf77c3` preceded exact local test `366ef996ad`. A separately
+declared regular file copies the exact 160-byte model-resolution object at
+SHA-256 `87914189…36708b`; source and copy have distinct inodes.
+
+Pointing the one model declaration first to the source and then to the copy
+keeps both freezes valid at seven inventoried artifacts and one model. Both
+produce exact model scope `freeze-model-scope-sha256:ac29ae22…7c5bf`, retain
+the same local-unverified evidence labels, and deny provider authority. The
+extra path is inventory, not a second identity or independent observation.
+
+This supports content-addressed aliases and contradicts both path-counted
+evidence and a global duplicate-digest rejection. It does not establish a
+second model, independent authority, authorship, or real resolution. The
+focused bundle gate passes 17 tests and 91 assertions plus TypeScript,
+formatting, and whitespace. The next control points a distinct second model at
+the copy and requires declaration-mismatch denial.
+
+## Cycle 202 within-role resolution-object reuse
+
+Seed commit `3ad68e1706` preceded exact test `61dd65f4d8`. A coherent
+two-model schedule has 128 episodes, two unique requested/resolved model IDs,
+and one shared `model-resolution.json` artifact. The artifact's structured v1
+content matches model zero and not model one.
+
+Verification fails only with the second declaration's evidence-mismatch error,
+returns null policy scope, and keeps provider authority false. The result
+supports byte reuse for one declared identity but rejects implicit inference
+that one v1 object can register several models. It does not justify global
+digest uniqueness or a production change. The focused bundle gate passes 16
+tests and 86 assertions plus TypeScript, exact-file formatting, and whitespace.
+
+For the explicit candidate-registry alternative, this narrows the migration
+boundary: a multi-model registry requires a new strict schema, a single parsed
+authority used by schedule generation and verification, a new model scope and
+decision, preserved v1 reading, and rollback to the untouched v1 bundle. It
+cannot be introduced as a same-byte alias or an optional v1 sidecar. External
+owner/deposit authority and a real second registry revision remain absent.
+
+Exact follow-up `c2d36a4029` constructs the migration/rollback failure matrix
+with a 341-byte canonical v2-like registry at
+`7154c025a9ef0c92fc44ebc123b83560f77054123fcfb119f38ca239335994a7`.
+Strict v1 rejects its explicit top-level binding solely as an unsupported
+field, returns null scope, and denies providers while still reporting seven
+locally matched artifacts. Deleting the binding, declaration, and bytes
+reproduces the complete baseline v1 result exactly.
+
+The focused direct-freeze gate passes 48 tests and 269 assertions plus
+TypeScript, exact-file formatting, and whitespace. This favors a parallel
+strict v2 reader and untouched-v1 rollback over an optional v1 field. It does
+not implement v2 or supply registry authority. The next control tests whether
+copied same-byte model-resolution aliases remain one content identity without
+becoming independent evidence.
+
+Exact reviewed Cycle 202 tip `970aaec426f7b43a895eec2888d62757b06d2ac0`
+passes the full Scout gate at 263 tests and 1,341 assertions. Structural,
+link, health, runtime-state, accepted-lineage, and protected-fingerprint checks
+also pass; unaccepted peer `d041c41b54` remains provenance-only and deferred.
+
+## Cycle 201 cross-role digest reuse
+
+Seed commit `a8347e3640` preceded exact test `7bafcf4651`. In one bundle,
+`seed-policy.json` becomes a hard link to the model-resolution evidence; in a
+matched reverse bundle, the model-resolution path becomes a hard link to the
+seed policy. The target digest follows the substituted bytes and stat confirms
+one inode in both cases.
+
+Each substitution still fails all three applicable role checks: unknown fields,
+wrong schema, and declaration mismatch. Both results are invalid, expose no
+policy scope, and keep provider authority false. The evidence supports
+deduplicating content storage only while retaining typed logical declarations;
+digest or inode equality does not make evidence interchangeable. No production
+change is justified. Focused validation passes 62 tests and 350 assertions
+plus TypeScript, exact-file formatting, and whitespace. Transfer to a future
+object resolver and same-role multi-declaration reuse remain untested; the
+latter is the next control.
+
+Exact reviewed tip `3e866479aac05ba984f5b38f9630e3b578fde037`
+passes the full Scout gate at 261 tests and 1,336 assertions, all 30 affected
+relative links, read-only health 26/16 at the bounded cap, empty runtime state,
+clean whitespace and worktree, 9/9 accepted standing ancestors, both accepted
+patch pairs, and 4/4 final accepted artifacts.
+
+## Cycle 200 hard-link and duplicate-digest semantics
+
+Seed commit `cb0d876578` preceded exact test `3e0ea3d818`. A hard-linked proof
+alias and a copied same-byte alias both produce valid seven-artifact bundles,
+identical policy scope and evidence labels, and false provider authority. Stat
+evidence confirms only the hard-linked pair shares an inode.
+
+V1 therefore treats name as declaration identity, SHA-256 as content identity,
+and inode as irrelevant storage detail. A future object store may deduplicate
+bytes, but must not count different logical IDs as independent evidence. No
+digest- or inode-uniqueness rejection is justified. Focused validation passes
+61 tests and 336 assertions plus TypeScript, formatting, and whitespace. The
+remaining gap is incompatible digest reuse across semantically checked roles;
+that is the next control.
+
+## Cycle 199 restricted paths versus digest-object storage
+
+Seed commit `30cba41d32` preceded a read-only design audit. A candidate v2 rule
+with 1–64-byte ASCII segments, alphanumeric ends, internal `._-`, 240-byte
+total bound, device-name denial, and unique lowercase keys accepts all 6
+current names and rejects all 3 collision classes. No rename is required.
+
+Four existing alias controls at `b9131efb44`, `b5b7d70373`, `1170e66987`, and
+`df65aaf56d` pass with 26 assertions. Non-execution path
+aliases preserve scope and selection; the same-byte executable alias changes
+protocol scope and invalidates the old decision. Current artifact records use
+632 JSON bytes; logical-ID/digest records use 620, only 12 fewer. An object
+store still needs a new schema, inventory, reference resolver, separate
+external filename, scope/replay migration, and rollback. The external
+executable name remains policy identity, so restricted paths dominate as the
+smallest conditional v2. No authority exists and v1 remains unchanged.
+
+The next audit tests hard-link and duplicate-digest semantics across distinct
+artifact identities before deciding whether byte deduplication needs a rule.
+
+## Cycle 198 simultaneous path-collision pairs
+
+Seed commit `ae11b42b23` preceded exact test `df65aaf56d`. On this Linux host,
+case-fold, NFC/NFD, and trailing-dot pairs coexist as distinct declared proof
+artifacts in otherwise matched seven-artifact bundles. All verify without
+error and keep provider authority false.
+
+This proves host-local exactness, not extraction behavior on a collapsing
+filesystem. The expected missing/undeclared-file denial elsewhere remains an
+inference until run on another platform. No v1 change is justified. Focused
+validation passes 60 tests and 329 assertions plus TypeScript, formatting, and
+whitespace. The next audit compares lowercase restricted paths with logical
+artifact IDs mapped to digest-derived storage paths, including migration and
+rollback cost.
+
+## Cycle 197 host path-admissibility boundary
+
+Seed commit `85ef9d491d` preceded exact test `84d3dce5e0`. This Linux directory
+accepts sequential upper/lowercase aliases, `CON`, a trailing dot, and a
+255-byte component; `getconf` reports `NAME_MAX=255` and `PATH_MAX=4096`. The
+in-memory checksum verifier accepts a 256-byte exact target, while case and
+trailing-dot aliases fail. Provider authority stays false.
+
+V1 therefore has exact identity but host-defined admissibility. That is not a
+local fail-open defect and does not justify a production change without a real
+registry. A future v2 needs a named case/normalization/trimming collision
+domain, conservative component/total limits, a real deposit inventory,
+platform matrix, migration fixture, policy rollover, and rollback. Focused
+validation passes 59 tests and 317 assertions plus TypeScript, formatting, and
+whitespace. The next audit tests simultaneous case-fold, NFC/NFD, and
+trailing-dot collision pairs.
+
+## Cycle 196 checksum path portability boundary
+
+Seed commit `a1ada76aa7` preceded exact test `3d4d4da2dc`. The local directory
+adapter rejects NUL and backslash, while proof aliases containing tab, newline,
+NFC, or NFD Unicode remain distinct valid names. The registered checksum
+target accepts both coreutils markers and an exact tab, rejects an embedded
+newline, and never aliases NFC with NFD. Provider authority stays false.
+
+Current v1 is literal and fail-closed, not portable across unspecified tools.
+No production change is justified without registry authority. A future v2
+should prefer sorted conservative-ASCII paths and one text marker; Unicode
+normalization or a JSON registry would add collision migration and schema
+rollover. Required evidence is a real deposit/path inventory, supported
+platform matrix, collision scan, explicit owner, dual-version reader,
+policy-scope rollover, and v1 rollback fixture. Focused validation passes 59
+tests and 284 assertions plus TypeScript, formatting, and whitespace. The next
+audit bounds case folding, reserved basenames, trailing dots, and path length.
+
+## Cycle 195 checksum target exactness
+
+Seed commit `2501738d81` preceded exact test `17c53dbfea`. One unrelated
+checksum line may appear before or after the registered target. Duplicate
+target lines, coreutils-style escaped spelling, `./bundle.zip`, and a trailing
+space all fail the exact binding. Provider authority stays false. Focused
+validation passes 46 tests and 231 assertions plus TypeScript, formatting, and
+whitespace.
+
+This preserves v1 while selecting a conditional v2 rule: if an explicit
+registry becomes justified, generate one lexicographically sorted exact
+literal-path checksum set and reject noncanonical set bytes. Remaining design
+uncertainty is portable filename grammar, Unicode normalization, control
+characters, and the binary marker. No production change is made.
+
+## Cycle 194 checksum-set versus archive-member closure
+
+Seed commit `a7bb627aef` preceded exact test `7683519e23`. A registry sidecar
+is declared locally and added to `MANIFEST.sha256`; after one matching pass,
+the sidecar changes while the checksum line stays stale. Both paths remain
+valid with the baseline scope and local-unverified registration. Focused
+validation passes 45 tests and 213 assertions plus TypeScript, exact-file
+formatting, and whitespace.
+
+The result proves current claims are narrow and correct: only `bundle.zip` is
+validated against the checksum manifest. A future exact checksum-set relation
+is the smaller design because the manifest is already the proof target and
+local sidecars already have safe paths and exact digests. It still needs
+canonical ordering plus missing, duplicate, extra, unsafe-path, and mismatch
+denials. Archive membership would require a new parser and limits for duplicate
+names, traversal, links, compression, sizes, headers, and extraction; the
+current bundle is opaque.
+
+No production change is justified before a real registry authority exists.
+The next audit resolves checksum-set path ordering and escaping ambiguity.
+
+## Cycle 193 unreferenced-sidecar registration control
+
+Seed commit `8d29025efb` preceded exact test commit `23f6578017`. A
+canonical `candidate-registry.json` is added to the declared freeze artifact
+set with a correct local digest, then changed and rehashed. Both the original
+and changed seven-artifact freezes return `ok:true`, no errors,
+`local-byte-match-unverified`, provider denial, and the exact six-artifact
+baseline policy scope.
+
+The result is not a vulnerability: unreferenced files must not perturb policy
+identity, and the registration status is explicitly local and unverified. It
+does prove that artifact declaration plus SHA-256 is only local integrity. A
+future registry must be referenced by the freeze, included in protocol scope,
+and covered by a validated registration relation; otherwise it is not an
+authority. Focused validation passes 44 tests and 209 assertions plus
+TypeScript, exact-file formatting, and whitespace.
+
+The next audit compares two possible registration closures: validate a
+canonical checksum set over every protocol sidecar, or inventory a registered
+archive and bind exact member paths/digests. Neither should be implemented
+without duplicate, omission, substitution, migration, and rollback controls.
+
+## Cycle 192 explicit candidate-registry design audit
+
+Seed commit `8ad547c390` preceded this audit. Exact current source provenance
+is `b83e8c8f2a` for the compiled candidates and schedule verifier,
+`b64f8ec65f` for freeze validation and protocol-scope derivation,
+`d87bc9eb7f` for descriptor-safe bundle loading, and `9c4c82c688` for the
+coherent registry-substitution regression.
+
+The current toy schedule has 64 episodes, 128 repeated candidate records,
+118,502 canonical bytes, and SHA-256 `cd137ac3…d468fd`. The matched Cycle 191
+substitution has 121,574 bytes and SHA-256 `9fecbf67…a283d3`, then fails the
+compiled body and provenance checks. Because protocol scope already contains
+the schedule SHA, an extra digest derived from the same candidate values adds
+no demonstrated integrity to this frozen path.
+
+A minimal canonical explicit registry would be 341 bytes at SHA-256
+`87406223c6af192aa1b5b93eebff9e558a224fc05b7669c8bfaaadb7235efda1`.
+It would improve inspectability only if it became the sole candidate authority.
+Adding it beside the constants would create duplicate authority; adding only
+its digest would preserve code coupling and hide the identities.
+
+The credible artifact design therefore needs all of the following together:
+
+1. a new freeze schema rather than silently widening strict v1;
+2. canonical, exact-key, depth-bounded registry parsing through the existing
+   descriptor-safe bundle reader;
+3. one registry artifact/digest in protocol scope and one parsed registry used
+   for both schedule construction and verification;
+4. preserved v1 verification plus regenerated v2 policy and decision scope;
+5. missing, duplicate, order, body, provenance, noncanonical, symlink,
+   substitution, stale-policy, migration, and rollback controls; and
+6. an identified authority and external-registration closure for the registry
+   bytes.
+
+No implementation is made. The present design already fails closed and no
+real second registry revision, independent owner, signature/deposit, or
+consumer requirement exists. A versioned verifier identity is cheaper but
+still code-coupled; a reproducible executable digest would require build and
+release evidence absent here. Confidence is high for the current code and
+hash observations, moderate for retaining the smaller design, and low for
+future governance transfer. The next audit tests whether local sidecar
+artifacts are transitively covered by the external registration relation.
+
+## Cycle 191 compiled candidate-registry boundary
+
+Seed commit `81c8093c25` preceded a coherent replacement of every candidate
+body, path, and revision, with prompts and schedule digests rebound. The freeze
+path has no standalone registry artifact; candidate truth is compiled, while
+the accepted schedule and execution artifact are content-addressed.
+
+The replacement returns separate body and provenance registration errors,
+null policy scope, and provider denial. Exact local `9c4c82c688` preserves the
+matched regression. This supports fail-closed compiled registration but leaves
+controlled registry evolution coupled to a verifier revision. It does not
+establish external registration or governance. The next audit evaluates the
+cost and integrity of a minimal canonical registry artifact before changing
+the schema.
+
+## Cycle 190 answer-enum ordering control
+
+Seed commit `990a047e6a` preceded a one-cell prompt-only permutation. Candidate
+arrays and factors remained exact, the answer enum reversed, and the outer
+schedule plus both digest bindings were regenerated.
+
+The existing raw prompt-registration comparison returns the exact affected
+episode's `prompt contains an unregistered difference`, null policy scope, and
+provider denial. Exact local `e04a50d5dd` preserves this matched regression;
+no production repair was justified.
+
+This is high-confidence evidence for current byte-exact answer/candidate order
+binding, not semantic quality, external registration, authority, cost, drift,
+real models, or providers. The next audit asks whether candidate registration
+itself has an explicit content-addressed protocol identity.
+
+## Cycle 189 lineage-record ordering control
+
+Seed commit `d612dfd5e2` preceded a one-cell prompt-only permutation. Candidate
+arrays and factors remained exact, the two lineage records reversed, and the
+outer schedule plus both digest bindings were regenerated.
+
+The existing raw prompt-registration comparison returns the exact affected
+episode's `prompt contains an unregistered difference`, null policy scope, and
+provider denial. Exact local `72b48e8b65` preserves this matched regression;
+no production repair was justified.
+
+This is high-confidence evidence for current byte-exact prompt/candidate order
+binding, not semantic provenance, external registration, authority, cost,
+drift, real models, or providers. The next audit tests answer-schema enum order
+against the factor-bound candidate array.
+
+## Cycle 188 registered presentation-order association
+
+Seed commit `f336902855` preceded a matched whole-schedule order reversal.
+Every candidate retained its registered identity, body, path, and revision, but
+each actual array reversed against its unchanged `presentationOrder`; prompts
+and both schedule digests were coherently rebound. Before repair the freeze
+returned `ok:true`, no errors, provider authority false, model scope
+`ac29ae2…7c5bf`, and protocol scope `b97a14c…81f9`.
+
+Exact local `b83e8c8f2a` derives expected candidate order from target identity
+and the presentation factor. The reversal now returns one exact error, null
+policy scope, and provider authority false. The direct freeze suite passes 40
+tests and 202 assertions plus TypeScript, exact-file formatting, and
+whitespace; the complete gate is rerun at the final documentation tip.
+
+This is high-confidence local evidence for the byte-exact factor-to-order
+association and contradictory evidence against treating regenerated prompts
+and digests as sufficient. It does not authenticate registration, prompt
+semantics, policy authority, cost, drift, real models, or providers. The next
+audit permutes only prompt lineage-record order against exact candidates and
+factors.
+
+## Cycle 187 registered candidate-provenance association
+
+Seed commit `9e186e90a3` preceded a matched whole-schedule provenance swap.
+Every episode retained the registered IDs and bodies plus two distinct, stable
+path/revision tuples, but the tuples exchanged memory IDs; prompts and both
+schedule digests were coherently rebound. Before repair the freeze returned
+`ok:true`, no errors, provider authority false, model scope `ac29ae2…7c5bf`,
+and protocol scope `1c289ac…41869`.
+
+Exact local `dcd601390a` binds each stable, distinct provenance tuple to its
+registered memory identity. The swap now returns one exact error, null policy
+scope, and provider authority false. The complete freeze/factorial gate passes
+83 tests and 686 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+This is high-confidence local evidence for the byte-exact identity/provenance
+association and contradictory evidence against treating tuple stability and
+uniqueness as sufficient. It does not authenticate provenance, authorship,
+registration, policy authority, cost, real-model behavior, or provider
+execution. The next audit tests whether actual candidate order matches the
+declared `presentationOrder` factor.
+
+## Cycle 186 registered candidate-body association
+
+Seed commit `2306cdba55` preceded a matched whole-schedule body swap. Every
+episode retained distinct, stable bodies and provenance tuples, but the two
+bodies exchanged memory IDs; prompts and both schedule digests were coherently
+rebound. Before repair the freeze returned `ok:true`, no errors, provider
+authority false, model scope `ac29ae2…7c5bf`, and protocol scope
+`0b3153e…9f850`.
+
+Exact local `c672fa7f4b` binds each stable, distinct body to the registered body
+for its memory identity. The swap now returns one exact error, null policy
+scope, and provider authority false. The complete freeze/factorial gate passes
+82 tests and 685 assertions plus TypeScript, exact-file formatting, and
+whitespace.
+
+This is high-confidence local evidence for the byte-exact identity/body
+association and contradictory evidence against treating stability/uniqueness
+as sufficient factor isolation. It does not prove semantic equivalence,
+authorship, registration, policy authority, cost, real-model behavior, or
+provider execution. The next audit swaps the two distinct provenance tuples
+between otherwise correct identities and bodies.
+
+## Cycle 185 cross-identity candidate body separation
+
+Seed commit `305b3cb2d1` preceded a matched whole-schedule content alias. Every
+episode retained distinct candidate IDs and provenance tuples, but `memory-b`
+reused `memory-a`'s body; prompts and both schedule digests were coherently
+rebound. Before repair the freeze returned `ok:true`, no errors, provider
+authority false, model scope `ac29ae2…7c5bf`, and protocol scope
+`525ad23…9eef5`.
+
+Exact local `679b528aad` requires the two stable per-memory bodies to be
+distinct. The alias now returns one exact error, null policy scope, and provider
+authority false. The complete freeze/factorial gate passes 81 tests and 684
+assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for byte-exact content separation and
+contradictory evidence against treating distinct identity/provenance alone as
+a meaningful contrast. It does not detect semantic equivalence or prove the
+body-to-identity association, authorship, registration, policy authority, cost,
+real-model behavior, or provider execution. The next audit swaps the two
+distinct bodies between stable identities and provenance tuples.
+
+## Cycle 184 cross-identity candidate provenance separation
+
+Seed commit `5829666b5f` preceded a matched whole-schedule alias. Every episode
+retained two candidate IDs and two bodies, but `memory-b` reused `memory-a`'s
+path/revision tuple; prompts and both schedule digests were coherently rebound.
+Before repair the freeze returned `ok:true`, no errors, provider authority
+false, model scope `ac29ae2…7c5bf`, and protocol scope `670b97a…02172`.
+
+Exact local `71cdafa787` requires the two stable per-memory tuples to be
+distinct. The alias now returns one exact error, null policy scope, and provider
+authority false. The complete freeze/factorial gate passes 80 tests and 683
+assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for provenance separation and
+contradictory evidence against treating per-identity stability alone as an
+identity guarantee. It does not authenticate either tuple or prove distinct
+content, authorship, registration, policy authority, cost, real-model behavior,
+or provider execution. The next audit tests whether two identities with
+distinct tuples can carry one shared body across every cell.
+
+## Cycle 183 cross-cell candidate provenance binding
+
+Seed commit `206a3d37d6` preceded path-only and revision-only matched controls.
+Each changed one `memory-a` candidate field in one cell while retaining the
+candidate IDs and bodies, regenerating the exact prompt, and recomputing both
+schedule digests. Before repair, both freezes returned `ok:true`, no errors,
+provider authority false, model scope `ac29ae2…7c5bf`, and non-null protocol
+scopes `7b1b777…b071` and `bdbc111…1960`, respectively.
+
+Exact local `8db9e758e9` tracks one path/revision tuple per memory identity in
+the existing bounded factorial pass. Either drift now returns one exact
+cross-cell provenance error, null policy scope, and provider authority false.
+The complete freeze/factorial gate passes 79 tests and 682 assertions plus
+TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the matched synthetic invariant and
+contradictory evidence against treating body stability plus coherent byte
+rebinding as complete provenance isolation. It does not authenticate the
+tuple, require distinct tuples across identities, or establish authorship,
+registration, policy authority, cost, real-model behavior, or provider
+execution. The next audit tests whether two memory identities can share one
+path/revision tuple consistently across every cell.
+
+## Cycle 182 candidate cardinality and identity binding
+
+Seed commit `43d0dd7727` preceded two matched candidate controls. A valid
+64-episode schedule was coherently rebound after one episode's candidate list
+and matching prompt expanded from two entries to 20,000 copies. Before repair,
+verification returned a lineage-length error after 358.28 ms, 0.39 s process
+wall time, and 193,304 KB peak RSS. A second fixture retained two candidates
+but duplicated one memory identity; the resulting freeze returned `ok:true`.
+
+Exact local `ea660109ca` requires exactly one of each registered memory before
+episode traversal. The oversized control now returns one exact error in 229.66
+ms, 0.26 s wall time, and 165,028 KB peak RSS. The duplicate-identity fixture
+now fails with null policy scope and provider authority false. The full
+freeze/factorial gate passes 78 tests and 681 assertions plus TypeScript,
+exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the synthetic acceptance boundary
+and matched current runtime, not a general resource ceiling, substantive
+provenance, policy authority, cost, drift, model behavior, or provider
+execution. The next audit tests cross-cell candidate path/revision stability.
+
+## Cycle 181 bounded schedule-metadata breadth
+
+Seed commit `7ef315207a` preceded two matched schedule controls. The valid
+64-episode baseline passed. Replacing only its parsed model or seed list with
+5,000 unique strings and coherently rebinding both digests produced the correct
+declaration mismatch, then respectively 80,066 and 40,066 unnecessary
+diagnostics. The combined isolated test took 76.00 ms; its process took 0.10 s
+and reached 107,264 KB peak RSS.
+
+Exact local `b64f8ec65f` returns after the existing declaration error when
+parsed model or seed metadata differs from its bound list. Both controls now
+return one error each in 33.61 ms; process wall time is 0.06 s and peak RSS
+76,160 KB. Count-matched unknown-field and factor-isolation controls retain
+their detailed diagnostics. The full freeze/factorial gate passes 76 tests and
+672 assertions plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth/resource ceiling, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests
+oversized per-episode candidate lists in a count-matched schedule.
+
+## Cycle 180 bounded schedule-episode breadth
+
+Seed commit `0c6a4feb22` preceded a matched schedule control. The baseline
+64-episode schedule passed. Replacing its episode array with 5,000 shallow
+copies while preserving the declared count and coherently rebinding both
+digests produced the correct declaration mismatch, then 5,016 unnecessary
+factorial diagnostics. The isolated test took 499.76 ms; its process took 0.54
+s and reached 220,016 KB peak RSS.
+
+Exact local `fc763bc954` returns after the existing declaration error when the
+parsed episode count differs from its bound count. The same control now returns
+one error in 250.23 ms; process wall time is 0.30 s and peak RSS 152,480 KB.
+Count-matched unknown-field and factor-isolation controls retain their detailed
+diagnostics. The full freeze/factorial gate passes 75 tests and 669 assertions
+plus TypeScript, exact-file formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth/resource ceiling, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests
+oversized shallow model/seed metadata arrays before factorial balance loops.
+
+## Cycle 179 bounded result-bundle breadth
+
+Seed commit `da4f103236` preceded a matched result-bundle control. The baseline
+64-outcome bundle passed. Replacing its outcome array with 50,000 shallow copies
+of one valid envelope preserved the outer schema, evidence class, and schedule
+digest.
+
+Before repair, the analyzer accumulated 50,062 duplicate/missing diagnostics,
+traversed and serialized the bundle, and denied it after 896.67 ms with 384,076
+KB peak process RSS. Exact local `678c67109a` compares the envelope-valid count
+with the supplied schedule before depth traversal, pooled analysis, or
+serialization. The same control now returns one exact count error in 84.15 ms
+in the full factorial file (119.04 ms first isolated), with null pooled analysis
+and no bundle digest; isolated peak RSS fell to 118,856 KB. The focused gate
+passes 44 tests and 485 assertions plus TypeScript, formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth/resource ceiling, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests an
+oversized shallow episode list inside a byte-bound schedule.
+
+## Cycle 178 bounded result-bundle object depth
+
+Seed commit `05f38abc42` preceded a matched result-bundle control. The baseline
+passed. Replacing only one answer with a 50,000-level object preserved the
+outer schema, evidence class, schedule digest, and outcome envelope.
+
+Before repair, the analyzer completed pooled work and then returned the generic
+serialization error after 1,365.56 ms. Exact local `4c38637cf5` performs an
+iterative 256-level object preflight before pooled analysis while retaining the
+existing circular-object serialization error. The deep control now returns the
+specific nesting denial in 7.96 ms in the full factorial file (10.72 ms first
+isolated), with null pooled analysis and no bundle digest. The focused gate
+passes 43 tests and 480 assertions plus TypeScript, formatting, and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general breadth or resource bound, substantive provenance, policy authority,
+cost, drift, model behavior, or provider execution. The next audit tests a
+large shallow outcome flood against the exact schedule count.
+
+## Cycle 177 bounded embedded-prompt latency
+
+Seed commit `03b197144b` preceded a matched execution-freeze control. Its
+baseline verified `ok:true` with provider calls denied. The changed fixture
+embedded a 50,000-level JSON object in one quoted `episode.prompt`, then
+canonically reserialized and byte-bound the otherwise shallow schedule.
+
+Before repair, recursive lineage rendering reached the outer catch after
+1,227.86 ms and returned only `schedule artifact is not valid verifiable JSON`.
+The exception stayed contained and provider authority stayed false, but the
+latency and error attribution were wrong. Exact local `cfbceace65` applies the
+shared 256-level iterative check at the embedded-prompt parse boundary. The
+same control now returns an episode-scoped prompt-depth error in 23.24 ms in
+the complete freeze file (47.52 ms first isolated), with null policy scope and
+provider denial. The matched regression passes seven assertions; the wider
+focused gate passes 75 tests and 660 assertions plus TypeScript, formatting,
+and whitespace.
+
+This is high-confidence local evidence for the matched current runtime, not a
+general resource bound, substantive provenance, policy authority, cost, drift,
+model behavior, or provider execution. The next audit tests deeply nested
+objects in result bundles before post-analysis serialization.
+
+## Cycle 176 bounded execution-freeze artifact latency
+
+Seed commit `496756883e` preceded matched schedule, model-resolution, and
+seed-policy artifact ladders. At 25,000 nesting levels the three paths returned
+`ok:false` in 10.051, 8.879, and 6.599 ms. At 50,000 levels they still returned
+denials, but recursive canonical serialization cost 1,200.766, 1,160.526, and
+1,184.279 ms.
+
+Exact local `b520c4dcfd` applies the shared iterative 256-level pre-scan to the
+common canonical-record reader and schedule parser. The identical 50,000-level
+controls now return in 4.933, 9.366, and 5.343 ms while preserving
+`ok:false`, null policy scope, provider denial, and the established evidence
+errors. Thirty-two focused tests pass with 178 assertions plus TypeScript,
+formatting, and whitespace.
+
+This is high-confidence local evidence for a matched latency reduction, not a
+general resource bound, substantive provenance, policy authority, cost, drift,
+model behavior, or provider execution. The next audit tests deeply nested JSON
+inside the quoted prompt of an otherwise shallow schedule.
+
+## Cycle 160 positive direct-result equivalence
+
+Seed commit `6798efdab4b2484a4013c59615cb4c44f2faa6af` preceded one valid
+no-policy direct regeneration. It completed in 498,128 ms and produced 203,712
+bytes at SHA-256 `201b45553a4d4056fcf844d30769dc2eff385176991540f28faef9449da7ad65`.
+
+The output retains the exact expected 193-row hash `6fac7f99…d38252`, result
+hash `383a699f…c2b8fff`, 508-point frontier hash `067201a6…b4530ef`, and
+1,029-block first pass `[171,171,171,172,172,172]`. Freeze verification remains
+null and no-policy selection fails with the explicit-policy error.
+
+This proves positive local computation equivalence after the parse relocation,
+not whole-file equivalence: later output fields make the current artifact
+larger than Cycle 108's 11,363-byte output. It also does not establish policy
+authority, cost, drift, model, or provider behavior. The next control asks
+whether the direct output needs a top-level schema/version so serialization
+evolution is explicit.
+
+## Cycle 159 parse before exhaustive generation
+
+Seed commit `53e2e77f64e076318c339dd7fc277e2e41c77950` preceded a bounded
+process control. Before repair, malformed direct input ran for 1,010 ms until
+timeout exit 124, emitted zero bytes, and never reached the parser error. No
+goal-owned worker remained after the timeout.
+
+Exact local `ae86874fc8717ea0c09d87f74aec7a05da80a616` moves the
+existing direct-input parse ahead of the four exhaustive workers. The same
+malformed input now reaches the relative-root error in 35 ms without stdout or
+timeout. Eight focused parser/process tests pass with 30 assertions plus
+TypeScript, focused formatting, and whitespace.
+
+This proves local failure ordering and bounded work, not positive full-result
+equivalence, policy authority, external compatibility, or execution approval.
+The next control regenerates the valid no-policy result once and compares its
+retained row, result, and frontier identities.
+
+## Cycle 158 fail-fast CLI filesystem inputs
+
+Seed commit `2b66eaf9677148233b2d05426c5e5901c5ea1185` preceded matched
+parser controls. Before repair, the focused parser run passed six tests and 19
+assertions, then returned relative evidence root `relative/evidence` to the
+adapter boundary instead of throwing.
+Existing descriptor-safe adapters still rejected unsafe inputs when reached;
+the defect was inconsistent fail-fast ordering, not a reproduced read bypass.
+
+Exact local `d1ca8f511a32f1c93ffbc8659e110247620855d1` requires explicit
+absolute snapshot, evidence, and freeze roots without NUL bytes, a canonical
+relative snapshot artifact, and exactly 64 lowercase hexadecimal snapshot
+SHA-256 digits. Both inline and descriptor-safe manifest modes share the root
+gate, and malformed input fails before adapter dispatch.
+
+The four related suites pass 33 tests and 126 assertions plus TypeScript,
+focused formatting, and whitespace. This proves local parser ordering and
+input shape, not path existence, artifact truth, authority, authorship,
+external compatibility, or execution. The next ranked control tests whether
+the direct process delays parsing until after expensive frontier regeneration.
+
+## Cycle 157 fail-fast local manifest descriptors
+
+Seed commit `59ff8ff7d163cc04059757c893884c156a128f67` preceded matched
+descriptor controls. Exact local
+`62500911afedbba49c0c87ec0618d1140d85a71b` rejects traversal-shaped
+manifest locators and non-lowercase or wrong-length SHA-256 values during CLI
+parsing, before snapshot/freeze adapters can read anything. Programmatic
+descriptors require the same exact shape.
+
+The direct unsafe-path control returns no selection or evidence and keeps the
+manifest locator empty. The focused gate passes 25 tests and 119 assertions
+plus TypeScript, source formatting, and whitespace. This proves local fail-fast
+ordering and safe output, not authority, authorship, policy truth, external
+compatibility, or execution.
+
+The next ranked control applies the same pre-read boundary to all explicit
+snapshot, evidence, and freeze roots and to the snapshot artifact/hash.
+
+## Cycle 156 manifest locator and same-byte aliases
+
+Seed commit `8444821fe0553a99425938dee10eef8099d7e175` preceded the matched
+alias control. Exact local
+`7f14c127c943f7b4fedc0ee9d076c26afe7b7789` retains the validated
+canonical relative manifest locator beside the raw artifact hash and canonical
+content identity in file-backed selections and compact snapshot output.
+
+The same bytes at `policies/manifest.json` and
+`policies/manifest-alias.json` produce the same raw hash, canonical identity,
+and equal-172 selection at 1,032 blocks. Each compact result retains only its
+own locator. The focused gate passes 19 tests and 100 assertions plus
+TypeScript, source formatting, and whitespace.
+
+This proves local content equivalence with locator-level replay provenance; it
+does not prove authority, authorship, policy truth, external compatibility, or
+execution. The next ranked control rejects malformed locator/hash CLI input
+before snapshot/freeze loading and ensures an unsafe locator cannot serialize.
+
+## Cycle 155 supported snapshot manifest input
+
+Seed commit `c20c41b8bd926dee36ebbff2e78d2573d60e126c` preceded the CLI and
+adapter integration. Exact local
+`991a38c4cd996e00bc8281b55e4ea95592b7ab88` adds a versioned local-
+manifest input descriptor to the existing CLI grammar. Inline mode remains
+unchanged. File-backed mode names an explicit relative artifact and raw SHA;
+the freeze/snapshot adapters route it through the Cycle 154 manifest and
+decision-record checks.
+
+The matched snapshot control selects equal 172 at 1,032 blocks and the compact
+JSON includes both raw manifest-artifact and canonical manifest-content hashes.
+Partial/reordered input and duplicate policy keys fail closed. The focused gate
+passes 25 tests and 107 assertions plus TypeScript, source formatting, and
+whitespace. This proves one local supported route, not authority, authorship,
+policy truth, external compatibility, or execution.
+
+The compact result does not yet retain the canonical relative manifest locator.
+The next ranked control adds that replay provenance and tests whether a same-
+byte alias preserves content identity without erasing the locator distinction.
+
+## Cycle 154 descriptor-safe policy-manifest path
+
+Seed commit `d2441c29e415426cf6f8d130bcf72c381eb8c4cd` preceded the new
+separate file-backed selector. Exact local
+`4ac2a82730d518544408a80a44955b092e7a8241` reads a declared manifest
+artifact through pinned descriptors, verifies its raw hash, rejects duplicate
+JSON keys, applies the existing strict manifest/content checks, and only then
+reads and checks the decision record.
+
+The matched fixture selects equal 172 at 1,032 blocks with policy hash
+`128eb203f8c45dacd4e2ccccb3f7bf09fdda207fd2a5bf7ebf18adf05c782ecb`.
+Its 1,019-byte raw manifest hashes to `87060af8…f2e6`; canonical manifest
+content hashes to `159d1e34…1e1b`; its 1,069-byte decision record hashes to
+`1e120323…af03`. Missing, hash-mismatched, and re-hashed duplicate-key
+manifests return no selection and no decision-record evidence.
+
+The existing caller-supplied selector remains unchanged and explicitly
+unverified. The focused provenance/policy gate passes 16 tests and 59
+assertions plus TypeScript, source formatting, and whitespace. This is high-
+confidence local byte/content evidence and low-confidence evidence for
+authorship, authority, policy truth, external compatibility, or execution.
+
+The next ranked investigation is a supported CLI/snapshot input that carries
+raw artifact and canonical manifest identities through selection and
+serialization without silently replacing the existing caller-supplied mode.
+
+## Cycle 153 caller-manifest persistence boundary
+
+Seed commit `f073902e899ef46cf0375cdf98d6772a28a9f4cb` preceded a coherent
+substitution control. Exact local
+`1e8026b5c830e8d7df1d0a99624b380e28e43c97` writes a baseline and
+substituted decision record beneath the same local root, supplies matching
+caller manifests, and selects from both. Each returns equal 172 at 1,032 blocks
+with explicit caller-supplied and local-match unverified labels. The policy hash
+is unchanged; both the manifest hash and decision-record hash change.
+
+The root inventory is exactly `decisions/`, so neither manifest is durably
+stored. That is direct evidence of a persistence limitation, not a hidden
+authority escalation: coherent substitution remains possible only through the
+already caller-supplied API and both results stay unverified. The focused gate
+passes 18 tests and 59 assertions plus TypeScript, source formatting, and
+whitespace. Confidence is high for this local comparison and low for durable
+persistence, authorship, authority, external compatibility, or execution.
+
+The next ranked investigation is a separate descriptor-safe, byte-bound
+policy-manifest path with missing-file, hash-mismatch, and duplicate-key
+controls. It must preserve rather than silently redefine the existing
+caller-supplied interface.
+
+## Cycle 152 canonical policy-manifest identity
+
+Seed commit `bce3a3141448ec01b9e483c2f8985951a98ed202` preceded a matched
+object-order control. Before repair, equivalent policy evidence manifests with
+top-level and nested keys in different insertion orders both validated but
+hashed to `1a97e4d…147bb9c` and `6f3c0c1…7469b3`. The identifier was
+therefore neither an exact-byte hash nor stable content identity.
+
+Exact fix `25f4ae6a32c543b8cf3f875f6858623efcfc231e` hashes the existing
+canonical JSON representation after strict validation. Both orders now return
+`12f80669a1cff6fa7f5f45e98bea5a71eb9db36858decc7313e5d05178ac639f`.
+Field validation, local decision-record binding, scope matching, unverified
+status, and provider denial are unchanged.
+
+The focused provenance, frontier-policy, freeze-selection, and CLI gate passes
+31 tests and 118 assertions plus TypeScript, source formatting, and whitespace.
+Confidence is high for canonical in-memory content identity and low for
+persistence, authorship, authority, external producer compatibility, or real
+execution. This does not byte-bind a stored manifest. The next control tests a
+coherent caller-manifest substitution without any descriptor-safe manifest
+artifact before extending that interface.
+
+## Cycle 151 compact-summary manifest identity
+
+Seed commit `2713353aeb748cb75efefc968397254fc9d639b6` preceded a matched
+serialization assertion on the aliased snapshot selection. Exact regression
+`349ee07fdf882729723878f0a02cd18443dbd639` proves the compact summary and
+its JSON serialization carry the aliased evidence-manifest SHA-256
+`0b78d31…cf216` and do not retain baseline `0f6d11f…e7dea1`. Selection,
+record/policy identity, and provider denial remain unchanged.
+
+The snapshot branch of `verification-allocation-robust-frontier.ts` is the sole
+production summarizer caller; no separate replay consumer exists. The result
+therefore proves local serialization, not durable replay. In particular, the
+summary preserves the manifest hash but not the caller-supplied manifest bytes
+needed to reconstruct it. No runtime change or invented replay format is
+justified.
+
+The focused snapshot, CLI-input, and selection gate passes 21 tests and 79
+assertions plus TypeScript, source formatting, and whitespace. Confidence is
+high for local serialization and low for persistence, replay, external
+producer compatibility, authority, or execution. The next ranked question is
+whether the policy evidence manifest itself should be a descriptor-safe byte-
+bound artifact before selection.
+
+## Cycle 150 local locator aliases preserve selection, not manifest identity
+
+Seed commit `65fb0d29f3ca2312182ad913eb039d944d875419` preceded one matched
+snapshot-bound selection control. The fixture renamed the exact-byte frontier
+snapshot and decision record, updated only their caller/manifest locators, and
+retained snapshot bytes and computation, record bytes, policy, applicability,
+freeze scope, and frontier.
+
+Exact regression `d19421881337352ebd2bd66400c411c19500323e` records the existing
+contract. Both descriptor-safe reads retain their local evidence labels;
+decision-record SHA-256 `d8afac0…384a`, policy SHA-256 `fb19ef3…472f0a`,
+provider denial, and equal-172 selection at 1,032 blocks remain fixed. The
+evidence-manifest SHA-256 changes `0f6d11f…e7dea1`→`0b78d31…cf216`
+because its locator pointer changed. Thus decision semantics are stable but
+whole-result identity is not. Existing byte/content and scope-rollover
+controls continue to fail closed.
+
+The focused snapshot, policy-provenance, descriptor-safe read, and selection
+gate passes 27 tests and 104 assertions plus TypeScript, source formatting,
+and whitespace. No runtime change is justified. This is high-confidence local
+synthetic evidence, not external producer compatibility, authorship,
+authority, independence, freshness, or execution evidence. The next matched
+control tests whether replay or compact summary consumers preserve the changed
+manifest identity instead of conflating semantically equal selections.
+
+## Cycle 149 aliased-bundle frontier selection
+
+Seed commit `c811d47c48f953f648592af2020afbb85f351f23` preceded a complete
+local selection control. The fixture renamed model-resolution, seed-policy,
+schedule, checksum-manifest, and timestamp-proof files and updated only their
+manifest inventory and pointers. Exact bytes, digests, relationships, policy,
+frontier, and executable `bundle.zip` name stayed fixed.
+
+Exact regression `b5b7d70373d85e11b868b419898ebdb3be34a8d2` records the existing
+contract: descriptor-safe freeze verification succeeds, registration remains
+`local-byte-match-unverified`, proof remains
+`local-byte-presence-unverified`, both policy-scope references match baseline,
+and the unchanged policy still selects 1,032 blocks at equal 172. Provider
+authority remains false. The retained executable-name alias rejects the old
+decision, so alias tolerance is limited to content-addressed evidence rather
+than every path.
+
+The focused direct-freeze, descriptor-safe bundle, and frontier-selection gate
+passes 49 tests and 235 assertions plus TypeScript, source formatting, and
+whitespace. No runtime change is justified. This is high-confidence local
+synthetic evidence, not external producer compatibility, proof authenticity,
+authorship, authority, independence, or execution evidence. The next matched
+control tests same-byte locator aliases for the frontier snapshot and local
+decision record while retaining their byte-mutation denials.
+
+## Cycle 148 descriptor-safe bundle alias semantics
+
+Seed commit `18da6c376f1d462739d919d3581dec6fa1575dd3` preceded one real
+temporary-directory control. It renamed all five non-executable artifacts and
+updated only their manifest inventory/pointers while preserving bytes,
+digests, relations, schedule content, and the executable entry-point name.
+
+Exact regression `b9131efb44dc34c97c53e4a5fc23e490cc4824a3` records the existing
+contract: descriptor-safe inventory and regular-file reads accept the aliases,
+retain both local evidence labels and exact policy scope, and keep provider
+authority false. No runtime change is justified.
+
+The focused freeze gate passes 48 tests and 230 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local filesystem evidence,
+not external producer compatibility, timestamp authenticity, authorship,
+authority, independence, or real execution proof. The next matched control
+exercises complete frontier selection from the aliased bundle while retaining
+the executable-name substitution denial.
+
+## Cycle 147 registration-locator alias semantics
+
+Seed commit `b97ea2633ebce183ce4f8063e0a363ef952f6006` preceded matched
+checksum-manifest and timestamp-proof controls. Each changed only one
+artifact's locator and the corresponding manifest pointers while preserving
+exact bytes, SHA-256, registered-artifact and proof-target relations, schedule,
+and every scope input.
+
+Exact regression `54a60db0de79e7dcf9bb10a43006774c9889d8d9` records the existing
+contract: both aliases verify without errors, retain the local-byte registration
+and proof-presence labels, preserve both scope references, and keep provider
+authority false. No runtime change is justified.
+
+The focused freeze gate passes 47 tests and 228 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local direct-verifier
+evidence, not descriptor-safe bundle compatibility, timestamp authenticity,
+authorship, authority, independence, or real execution proof. The next matched
+control repeats all content-addressed aliases through the directory loader.
+
+## Cycle 146 schedule-artifact alias semantics
+
+Seed commit `2acc659740fd7dd79c1b92f39bb6670ee3faf32e` preceded one matched
+control. It changed only the schedule artifact's name and its manifest
+pointer/inventory entry while preserving exact schema-bearing bytes, SHA-256,
+episodes, declarations, evidence, execution bundle, and every other input.
+
+Exact regression `46e8518ae4e817cf4f95006d1734c4696172184f` records the existing
+contract: the alias verifies without errors, provider authority stays false,
+and both scope references remain equal to baseline. No runtime change is
+justified. Schedule semantics are content-addressed, while the executable
+entry-point name remains separately bound.
+
+The focused freeze gate passes 46 tests and 224 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local direct-verifier
+evidence, not external packaging compatibility, authorship, authority,
+independence, freshness, or real execution proof. The next matched controls
+apply the locator question to checksum-manifest and timestamp-proof artifacts
+without changing their exact bytes, digests, or target relations.
+
+## Cycle 145 evidence-artifact alias semantics
+
+Seed commit `ed03bf20c3bcec377a4466d3b82bddac8098b74a` preceded matched model
+and seed controls. Each changed only one structured evidence artifact's name
+and its manifest pointer/inventory entry while preserving exact schema-bearing
+bytes, SHA-256, declarations, schedule, execution bundle, and all other
+inputs.
+
+Exact regression `4d8f0b02e703cab143afcb514aec60ed59fa8d8c` records the existing
+contract: both aliases verify without errors, provider authority stays false,
+and both derived scope references remain equal to baseline. No runtime change
+is justified. Structured model and seed evidence is content-addressed, unlike
+the separately bound executable entry-point identity.
+
+The focused freeze gate passes 46 tests and 222 assertions plus TypeScript,
+formatting, and whitespace. This is high-confidence local direct-verifier
+evidence, not external bundle compatibility, authorship, authority,
+independence, freshness, real execution, or future migration proof. The next
+distinct matched control applies the same question to the schedule artifact
+while keeping its exact schema, bytes, digest, and episode content fixed.
+
+## Cycle 144 evidence-schema identity
+
+Seed commit `c9ca6ed0c94fb0f566843c91a279fc9d4831d07e` preceded two matched
+controls. Removing the schema or substituting a future `/v2` schema in
+otherwise matching model-resolution and seed-policy evidence left the pre-fix
+verifier at `ok:true`; the isolated expectation reported zero passes, two
+failures, and two assertions.
+
+Repair `2f2efcd3eb5b435ff5c6c43bfde09967b77df09a` requires exact schemas
+`scout.verification-allocation-model-resolution/v1` and
+`scout.verification-allocation-seed-policy/v1`. Missing and unknown schemas
+fail before model or protocol scope is returned. Direct, descriptor-safe
+bundle, and frontier paths pass 45 tests and 218 assertions plus TypeScript,
+source formatting, and whitespace.
+
+The schema fields change the bound evidence bytes and legitimately roll the
+fixture decision-record SHA-256 from `eb98a87…9e41` to `d8afac0…384a`.
+This is high-confidence local format-version enforcement, not provider
+authentication, authorship, policy authority, independence, freshness,
+migration compatibility, or proof of real execution. The next matched control
+tests same-byte evidence-artifact aliasing to decide whether artifact names
+belong in derived scope or whether content addressing is the intended
+contract.
+
+## Cycle 143 seed-policy evidence agreement
+
+Seed commit `feeea2bd03862b965bdd2ebcff9a30a7e2932d59` preceded a matched
+control. A policy artifact was coherently rehashed after replacing declared
+`fixture-seed-01` with `fixture-seed-02`; the manifest and schedule remained
+unchanged. The pre-fix verifier returned `ok:true`; the isolated expectation
+reported zero passes, one failure, and one assertion.
+
+Repair `8fd2973624ecb684bfcd948beff3c71bb9ab2f90` requires the artifact
+to be canonical UTF-8 JSON containing exactly `namespace`, `algorithm`, and
+`seedIds`, with all three matching the manifest. Contradictory, opaque,
+duplicate-key, and extended evidence fails before protocol scope is returned.
+Direct, descriptor-safe bundle, and frontier paths pass 43 tests and 210
+assertions plus TypeScript, source formatting, and whitespace.
+
+The valid fixture migrates from opaque `seed-policy.md` to structured
+`seed-policy.json`; the resulting protocol-scope change rolls the exact
+decision-record hash from `6894916…8b8e` to `eb98a87…9e41`. This is
+high-confidence local internal consistency, not policy authorship, authority,
+independence, freshness, or proof of real execution. The next investigation
+tests whether both structured evidence artifacts need explicit schema/version
+identity before any future format rollover.
+
+## Cycle 142 model-resolution evidence agreement
+
+Seed commit `1645ec9beee26396f7ebfe41d960c42489a92d09` preceded a matched
+control. A model-resolution artifact was coherently rehashed after changing
+only its resolved ID from declared `fixture-model-a` to
+`fixture-model-b`. The pre-fix verifier returned `ok:true`; the isolated
+expectation reported zero passes, one failure, and one assertion.
+
+Repair `d57428a3666b077be239fb0bbac5aaa0d09bc88c` requires the artifact
+to be canonical UTF-8 JSON containing exactly `requestedId`, `resolvedId`, and
+`resolutionKind`, with all three matching the manifest. Contradictory, opaque,
+duplicate-key, and extended evidence fails before model scope is returned.
+Direct, descriptor-safe bundle, and frontier paths pass 41 tests and 192
+assertions plus TypeScript, source formatting, and whitespace.
+
+The structured fixture changes its derived model scope and rolls the exact
+decision-record hash from `e720e0d…afe8` to `6894916…8b8e`; matched bundle and
+proof controls retain their decisions. This is high-confidence local internal
+consistency, not provider authentication, authorship, independence, freshness,
+or proof of a real model snapshot. The next investigation tests whether the
+bound seed-policy artifact content agrees with its declared namespace,
+algorithm, and seed IDs before protocol scope is derived.
+
+## Cycle 141 escaped prompt rendering
+
+Seed commit `b9b0b92719fbc2bcf4d5c9d946dd7c1ec20e89f3` preceded a matched
+freeze control. One embedded prompt changed only `authority` to the
+JSON-equivalent spelling `auth\u006frity`; the outer schedule was canonically
+reserialized and both schedule digests were recomputed. The existing
+registered-render comparison rejected the episode with `prompt contains an
+unregistered difference`.
+
+Regression `02149b9e9281d6bdbe89d135dee506c024c0c9c7` pins that behavior.
+Registration evidence clears, timestamp-proof bytes remain present but
+semantically unverified, and provider calls remain denied. The direct freeze
+gate passes 20 tests and 106 assertions plus TypeScript, source formatting,
+and whitespace. No runtime change or semantic prompt canonicalizer is
+justified.
+
+This is high-confidence local evidence for raw exactness in the current
+generator/verifier pair, not evidence of prompt quality, proof validity, model
+behavior, provider authority, or arbitrary external schedule compatibility.
+The next investigation tests whether the byte-bound model-resolution evidence
+content must agree with the manifest's requested ID, resolved ID, and
+resolution kind before it enters model scope.
+
+## Cycle 140 embedded prompt raw exactness
+
+Seed commit `d05c11930ce06b16bedc294e5011cc689b5f3eea` preceded a matched
+freeze control. A same-value duplicate `authority` key was inserted directly
+into one embedded prompt, after which the outer schedule was canonically
+reserialized and both schedule digests were recomputed. The existing
+registered-render comparison rejected the episode with `prompt contains an
+unregistered difference`.
+
+Regression `9502c26b582159c1c81300a041b10c791c9c87cc` pins that behavior.
+Registration evidence clears, timestamp-proof bytes remain present but
+semantically unverified, and provider calls remain denied. The direct freeze
+gate passes 19 tests and 101 assertions plus TypeScript, source formatting,
+and whitespace. No runtime change or duplicate prompt parser is justified.
+
+This is high-confidence local evidence for the current generator/verifier
+pair, not evidence of prompt quality, proof validity, model behavior, provider
+authority, or arbitrary external schedule compatibility. The next control
+changes one prompt key to a single escaped-equivalent spelling and verifies
+that raw registered rendering, rather than parsed semantic equality, remains
+the contract.
+
+## Cycle 139 escaped-equivalent key identity
+
+Seed commit `4ad1e158ad485ebe96580a520da7e8d96bde2179` preceded matched
+scanner controls. Literal `decisionOwner` plus escaped
+`decision\u004fwner`, and nested `policy` plus `poli\u0063y`, are duplicates.
+Repeated `schema` names in distinct object and array scopes remain valid.
+
+Exact regression `b0e515fd0e99a7a9127e042e5b349eb94ce0f11a` passes two tests
+and three assertions plus TypeScript, formatting, and whitespace. No production
+change was required because key strings are decoded before scope-local
+comparison. This proves behavior for valid JSON after syntax parsing, not
+authority or provenance. The next control checks the embedded prompt string.
+
+## Cycle 138 duplicate inline CLI keys
+
+Seed commit `9df76458e0d7a176e033a2a0bf81d78199dca2b1` preceded matched
+policy and evidence CLI controls. Before repair, a policy argument repeating the
+same `policy:true` key returned the same parsed object; the isolated run
+reported four passes, one failure, and eight assertions.
+
+Exact repair `593d3ffb0b40a3ce2dbd2cd5e9bad67640f99d1a` applies the shared
+object-scope scanner after syntax parsing and before either inline candidate is
+returned. Both arguments now throw the stable duplicate-key error, and snapshot
+mode inherits the same parser. The focused gate passes five tests and nine
+assertions plus TypeScript, formatting, and whitespace.
+
+This proves local CLI ambiguity denial, not authority or provenance. The next
+control checks escaped-equivalent key spellings against the scanner.
+
+## Cycle 137 duplicate frontier-snapshot keys
+
+Seed commit `554935a4522f29724c96d54e904eef9c16ec1258` preceded a matched
+descriptor-safe snapshot control. The snapshot duplicated the same false
+provider-authority key and the caller supplied its exact outer byte digest.
+Before repair it verified `ok:true`; the isolated run reported three passes,
+one failure, and six assertions.
+
+Exact repair `a1021aa2590bc06884c41992a3e9325b21d4e673` shares the Cycle 136
+object-scope scanner between decision records and snapshots. The duplicate now
+fails with `frontier snapshot contains duplicate JSON object keys`; the two
+paths pass 12 focused tests and 35 assertions plus TypeScript, formatting, and
+whitespace.
+
+Whitespace remains compatible and repeated names in distinct object scopes
+remain valid. This proves local ambiguity denial, not authorship, generator
+identity, policy authority, drift, or provider behavior. The next control
+checks the inline CLI policy and evidence JSON inputs.
+
+## Cycle 136 duplicate decision-record keys
+
+Seed commit `d89e658b7951618ff4db4fbfb935172da911fdad` preceded a matched
+descriptor-safe record control. The record duplicated `decisionOwner` with the
+same value and the manifest coherently bound its new byte digest. Before repair
+the binding returned `ok:true` and `local-content-match-unverified`; the
+isolated run reported seven passes, one failure, and 28 assertions.
+
+Exact repair `ed8b58f8a4b9f0cfb1da55d5449a55dfb97ec83f` scans every object
+scope after the byte/hash match and before content matching. Top-level owner and
+nested policy duplicates fail with
+`local decision record contains duplicate JSON object keys`; repeated names in
+different object scopes remain valid. The focused gate passes eight tests and
+29 assertions plus TypeScript, formatting, and whitespace.
+
+The structural scan preserves both current minified and pretty-printed record
+formats. This proves local ambiguity denial, not authorship, authority,
+independence, drift, or provider behavior. The next control checks the
+descriptor-safe frontier snapshot parser.
+
+## Cycle 135 canonical freeze-manifest bytes
+
+Seed commit `1549eead9395e00f6cc297e17dd4dcc1b3641ec8` preceded a matched
+bundle control. An otherwise valid raw `freeze-manifest.json` duplicated
+`providerCallsAuthorized:false`. Before repair the bundle returned `ok:true`
+because `JSON.parse` collapsed the duplicate before schema validation; the
+isolated run reported eight passes, one failure, and 17 assertions.
+
+Exact repair `d87bc9eb7fccae2dabdd9f131de59a9c58a4538e` compares raw
+manifest bytes with their canonical parsed serialization before trusting the
+manifest. The control now fails with
+`freeze-manifest.json is not canonical verifiable JSON` and keeps provider
+calls denied. The three freeze paths pass 37 tests and 164 assertions plus
+TypeScript, formatting, and whitespace.
+
+This also rejects alternate whitespace and key order. Current generated
+fixtures are canonical, but no real freeze supplies broader compatibility
+evidence. The next control checks the descriptor-safe local decision record.
+
+## Cycle 134 canonical schedule bytes
+
+Seed commit `0da74737b8c0fae83a6de79fec0c35c831807998` preceded a matched
+duplicate-key control. The schedule duplicated
+`providerCallsAuthorized:false` and coherently updated both digest bindings.
+Before repair the verifier returned `ok:true` because `JSON.parse` collapsed
+the duplicate before object-key validation.
+
+Exact repair `fd7a02c360aec359c33c88a6d46aaf70e16708b1` requires raw
+schedule bytes to match their canonical parsed serialization. The control now
+fails with `schedule artifact is not canonical verifiable JSON`; registration
+evidence clears, proof-byte presence remains explicitly unverified, and
+provider calls remain denied. Three freeze paths pass 36 tests and 161
+assertions plus TypeScript, formatting, and whitespace.
+
+This also rejects alternate whitespace and key order. Current generated
+fixtures are canonical, but no real freeze supplies broader compatibility
+evidence. The next control checks the separately parsed freeze manifest.
+
+## Go/no-go boundary
+
+This checkpoint authorizes no provider call. Execution requires all of the
+following to be explicit and current:
+
+- a reviewed frozen design and deterministic factor-isolation verifier;
+- named provider/model revisions and a bounded retry/exclusion policy;
+- credential availability in the execution identity without exposing secrets;
+- an approved call/token/cost ceiling; and
+- a smoke gate whose outputs remain separate from confirmatory results.
+
+If those gates are absent, the correct disposition is “designed, not run,” not
+an inferred result from the existing archive. The unrelated mixed-scope
+event-chain exploration remains out of scope.
+
+## Provenance and relation to Scout
+
+This design refines the [authority-boundary finding](../../knowledge/findings/2026-08-26-agent-memory-governance-authority-boundaries.md)
+and the [seed-first source-lane record](./xhs-seed-first-memory-lanes-2026-09-01.md).
+Its primary source is arXiv
+[`2608.25553v3`](https://arxiv.org/abs/2608.25553v3); MemGauge
+[`2608.30177v1`](https://arxiv.org/abs/2608.30177v1) remains the broader
+stage-wise utility/risk anchor. This document adds no independent empirical
+replication and does not duplicate either paper as a new source.

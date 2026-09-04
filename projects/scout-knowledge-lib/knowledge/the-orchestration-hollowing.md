@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: orchestration frameworks are being hollowed from both ends simultaneously — BUT with a key revision (Jun 22, scan #106): the hollowing applies only to SINGLE-AGENT orchestration. META-orchestration (cross-agent policy, multi-agent coordination, device sync) is growing explosively (Omnigent 4,455★ in 11 days, Vercel Eve 2,266★ in 6 days). Revised thesis: orchestration BIFURCATES — simple routing/delegation absorbed by models (confirmed), while meta-harness layer ABOVE individual agents grows as new market category. The containment/sandboxing that 'doesn't work' with traditional approaches is being solved by this meta-layer treating agents as interchangeable execution units."
-triggers: ["orchestration framework", "framework complexity", "split terminal", "tmux agent", "anti-framework", "orchestration dead", "containment", "framework value", "orchestration hollowing", "agent sandbox", "permission fatigue", "dangerously-skip-permissions", "meta-harness", "omnigent", "vercel eve", "orchestration bifurcation"]
-last_updated: "2026-06-22"
-source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c)."
+triggers: ["orchestration framework", "framework complexity", "split terminal", "tmux agent", "anti-framework", "orchestration dead", "containment", "framework value", "orchestration hollowing", "agent sandbox", "permission fatigue", "dangerously-skip-permissions", "meta-harness", "omnigent", "vercel eve", "orchestration bifurcation", "Slack Code", "code channels", "multiplayer agents"]
+last_updated: "2026-08-21"
+source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c). UPDATE Aug 21: Salesforce Slack Code launch page and HN item 49374965 (78pts/105 comments reported by HN API fields at retrieval; 30 top-level comments returned by Algolia)."
 </ai_context>
 
 # The Orchestration Hollowing
@@ -233,3 +233,52 @@ The "meta-harness" IS the answer to the containment/sandboxing gap identified in
 Source: https://github.com/omnigent-ai/omnigent
 Source: https://github.com/vercel/eve
 Source: https://news.ycombinator.com/item?id=48631726
+
+---
+
+## Update: Codex turns the bifurcation into a product boundary (2026-08-21)
+
+A fresh HN submission points to OpenAI's description of Codex as an open agent
+harness rather than only an app, CLI, or IDE extension. The HN item was only at
+1 point with no comments when checked, so this is an **upstream product signal**,
+not evidence of HN consensus.
+
+The published boundary closely matches the revised orchestration thesis:
+
+- **Harness-owned:** conversation state, the agent loop, context compaction,
+  streamed events, tool execution, sandbox policy, approval requests, and work
+  carried across turns.
+- **Host-application-owned:** the workflow-specific interface, business context,
+  records, tools/MCP services, approval placement, and return to the system of
+  record.
+- **Three integration depths:** bounded noninteractive jobs via `codex exec`,
+  start/resume/stream workflows via the SDK, and persistent product integration
+  via the app-server protocol.
+
+This is not the original framework pattern of encoding a large routing graph
+above a weak model. It packages the **single-agent execution loop, state, and
+containment surface** as reusable infrastructure while leaving domain workflow
+and consequential controls above it. In other words, the middle is not simply
+vanishing: it is crystallizing into a narrow runtime protocol beneath
+workflow-native applications.
+
+The strongest design implication is that **the durable application boundary is
+not chat**. OpenAI's Relay example starts from a selected shipment in an
+operations dashboard, gives the agent application-owned MCP tools, and requires
+approval before rebooking. The interface itself supplies scoped context and a
+review surface. That supports a practical rule: embed agents where authoritative
+state and human decisions already live rather than rebuilding those systems as
+conversation history.
+
+There is also a qualification to the "open harness" framing. OpenAI explicitly
+says the open-source layer is the harness and integration surface while model
+access and managed services remain separate. An inspectable runtime reduces
+black-box integration risk, but an application built directly around its thread,
+turn, event, and approval protocol can still acquire **protocol-level lock-in**.
+Treat the app-server as an adapter boundary: keep domain records, tool contracts,
+and approval policy owned by the host so the execution runtime remains
+replaceable.
+
+- **HN:** https://news.ycombinator.com/item?id=49383362
+- **Source:** https://developers.openai.com/blog/codex-as-a-platform
+- **Repo:** https://github.com/openai/codex

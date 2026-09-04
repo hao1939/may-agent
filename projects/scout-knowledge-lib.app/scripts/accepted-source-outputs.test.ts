@@ -35,11 +35,12 @@ function canonicalAttempt(
 function stateWith(
   status: Record<string, unknown>,
   attempts: Record<string, unknown> = {},
+  source = "hn",
 ): Record<string, unknown> {
   return {
     resources: {
-      "explore-hn": {
-        spec: { workflow: "scout-explore", input: { source: "hn" } },
+      [`explore-${source}`]: {
+        spec: { workflow: "scout-explore", input: { source } },
         status,
       },
     },
@@ -74,6 +75,25 @@ describe("latest accepted Scout source output collector", () => {
     expect(sample.note.resources).toHaveLength(1);
   });
 
+  it("counts a converged Reddit resource as a supported source lane", () => {
+    const sample = collectAcceptedSourceOutputs(
+      stateWith(
+        {
+          phase: "converged",
+          updatedAt: "2026-08-21T00:30:00.000Z",
+          evidence: [`${outputPrefix}reddit.md`],
+        },
+        {},
+        "reddit",
+      ),
+      { now },
+    );
+
+    expect(sample.note.resources).toEqual([
+      expect.objectContaining({ taskId: "explore-reddit", source: "reddit" }),
+    ]);
+  });
+
   it("excludes a latest evidence-backed no-change resource", () => {
     const sample = collectAcceptedSourceOutputs(
       stateWith({
@@ -86,6 +106,61 @@ describe("latest accepted Scout source output collector", () => {
 
     expect(sample.value).toBe(0);
     expect(sample.note.resources).toEqual([]);
+  });
+
+  it("preserves one source loss even while the aggregate remains healthy", () => {
+    const resource = (
+      source: string,
+      evidence: string[],
+    ): Record<string, unknown> => ({
+      spec: { workflow: "scout-explore", input: { source } },
+      status: {
+        phase: "converged",
+        updatedAt: "2026-08-21T00:30:00.000Z",
+        evidence,
+      },
+    });
+    const matched = {
+      resources: {
+        "explore-arxiv": resource("arxiv", [`${outputPrefix}arxiv.md`]),
+        "explore-hn": resource("hn", [`${outputPrefix}hn.md`]),
+        "explore-xhs": {
+          spec: { workflow: "scout-explore", input: { source: "xhs" } },
+          status: { phase: "waiting", updatedAt: "2026-08-21T00:30:00.000Z" },
+        },
+      },
+    };
+    const oneSourceLost = structuredClone(matched);
+    oneSourceLost.resources["explore-arxiv"] = resource("arxiv", [
+      "result:evidence-backed-no-op",
+    ]);
+
+    const bothPresent = collectAcceptedSourceOutputs(matched, { now });
+    const arxivLost = collectAcceptedSourceOutputs(oneSourceLost, { now });
+
+    expect(bothPresent.value).toBe(2);
+    expect(bothPresent.note.sourceOutputCounts).toEqual({
+      arxiv: 1,
+      hn: 1,
+      xhs: 0,
+      github: 0,
+      reddit: 0,
+    });
+    expect(arxivLost.value).toBe(1);
+    expect(arxivLost.note.sourceOutputCounts).toEqual({
+      arxiv: 0,
+      hn: 1,
+      xhs: 0,
+      github: 0,
+      reddit: 0,
+    });
+    expect(arxivLost.note.sourceStates).toEqual({
+      arxiv: "converged-without-output",
+      hn: "accepted-output",
+      xhs: "not-converged",
+      github: "resource-unavailable",
+      reddit: "resource-unavailable",
+    });
   });
 
   it("deduplicates duplicate output paths on the latest resource", () => {

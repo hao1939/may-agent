@@ -1,12 +1,14 @@
 <ai_context>
-summary: "Meta-Synthesis #246 (2026-11-01): The Recapitulation Sequence — 19 consecutive scans (#227-#245) form a three-phase developmental arc that recapitulates the historical infrastructure stack evolution (diagnosis → architecture → infrastructure) seen in OS development, networking, and cloud computing. Phase 1 (Scans #227-#232, Diagnosis) catalogs six dimensions of specification-behavior failure. Phase 2 (Scans #233-#239, Architecture) reveals that per-system fixes create coupling crises, trilemmas, and structural impossibilities. Phase 3 (Scans #240-#245, Infrastructure) shifts to building missing industrial layers. This is not linear progress — it is the field re-deriving from first principles the same layered infrastructure pattern that took computing 40 years to discover. Three uncovered arXiv papers reinforce the pattern: personality-task-structure dependence (2606.27443), implicit world model gaps (2606.27406), and scaled agent simulation via offline compilation (2606.27650)."
+summary: "Meta-Synthesis #246 (observation date unverifiable; repository-observed by 2026-06-29): The Recapitulation Sequence — 19 consecutive scans (#227-#245) form a three-phase developmental arc that recapitulates the historical infrastructure stack evolution (diagnosis → architecture → infrastructure) seen in OS development, networking, and cloud computing. Phase 1 (Scans #227-#232, Diagnosis) catalogs six dimensions of specification-behavior failure. Phase 2 (Scans #233-#239, Architecture) reveals that per-system fixes create coupling crises, trilemmas, and structural impossibilities. Phase 3 (Scans #240-#245, Infrastructure) shifts to building missing industrial layers. This is not linear progress — it is the field re-deriving from first principles the same layered infrastructure pattern that took computing 40 years to discover. Three uncovered arXiv papers reinforce the pattern: personality-task-structure dependence (2606.27443), implicit world model gaps (2606.27406), and scaled agent simulation via offline compilation (2606.27650)."
 triggers: ["recapitulation", "three-phase", "diagnosis architecture infrastructure", "meta-synthesis", "developmental arc", "infrastructure stack evolution", "field maturation", "industrialization recapitulation"]
 source_basis: "Meta-analysis of scans #227-#245 in scout-knowledge-lib/knowledge/findings/. New uncovered arXiv: 2606.27443 (Personality Composition), 2606.27406 (Implicit Software World Models), 2606.27650 (GenWorld). Cross-referenced with substrate-inversion.md, compilation gradient, governance-compilation-gradient.md."
 </ai_context>
+> **Provenance repair (2026-08-19):** The exact observation/retrieval date is unverifiable. This artifact was present in repository commit `8cd88aa594fba5ec8dc9a6e26f46e78ad9c8073b` by `2026-06-29T18:40:50Z`; that timestamp is an upper bound, not a claimed observation time. All embedded source links, stable IDs, claims, and the original `<ai_context>` are retained; false future-dated aliases were removed.
+
 
 # The Recapitulation Sequence
 
-**Scan**: #246 | **Date**: 2026-11-01 | **Type**: Meta-Synthesis of Scans #227-#245
+**Scan**: #246 | **Observation date**: unverifiable | **Repository-observed by**: 2026-06-29T18:40:50Z | **Type**: Meta-Synthesis of Scans #227-#245
 
 ## Thesis
 

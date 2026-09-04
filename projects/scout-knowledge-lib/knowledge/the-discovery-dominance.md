@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: At a predictable scale threshold (~20 agents), the cost of FINDING (discovering capabilities, routing requests, selecting tools/agents) dominates the cost of DOING (execution). The field optimizes execution but the enterprise MAS paper (2606.20058) proves discovery noise is the primary bottleneck at scale. Simple tasks degrade faster than complex ones because complex tasks amortize discovery cost across longer execution chains. ToolPro (2606.19992) independently converges on compilation as the fix — encoding multi-step discovery into executable programs. Our production data (Coordination Tax 2:1 planning:work, Cold Start Tax 46% state re-discovery, Compilation Threshold 53.5% below-threshold sessions) validates this from three angles. The next infrastructure wave will be discovery compilation: pre-resolving what-to-call at deploy time rather than runtime."
 triggers: ["discovery dominance", "discovery bottleneck", "discovery noise", "agent routing at scale", "why simple tasks fail", "scale vs complexity", "enterprise agent", "multi-agent scaling", "discovery compilation", "MCP scaling", "ToolPro", "capability routing"]
-last_updated: "2026-06-21"
-source_basis: "arXiv 2606.20058 (Enterprise Event-Driven MAS: 208 scenarios, Persona/Department/Enterprise scale, discovery noise primary bottleneck); arXiv 2606.17519 (Enterprise Routing: 110 agents/584 tools, F1 drops 16-23pp at scale, 10pp irreducible confusion gap); arXiv 2606.19992 (ToolPro: tool programs, 53.4% latency reduction, 96.1% traffic reduction by compiling discovery); arXiv 2606.20537 (Execution-State Capsules: graph-bound checkpoint/restore beyond KV-cache); HN 48614631 (When I Reject AI Code: discrimination bottleneck 102pts 64c); production data (Coordination Tax 2.04:1 ratio, Cold Start Tax 46%, Compilation Threshold 53.5% below-floor sessions); Orchestration Hollowing synthesis; Compilation Gradient synthesis."
+last_updated: "2026-08-21"
+source_basis: "arXiv 2606.20058 (Enterprise Event-Driven MAS: 208 scenarios, Persona/Department/Enterprise scale, discovery noise primary bottleneck); arXiv 2606.17519 (Enterprise Routing: 110 agents/584 tools, F1 drops 16-23pp at scale, 10pp irreducible confusion gap); arXiv 2606.19992 (ToolPro: tool programs, 53.4% latency reduction, 96.1% traffic reduction by compiling discovery); arXiv 2606.20537 (Execution-State Capsules: graph-bound checkpoint/restore beyond KV-cache); HN 48614631 (When I Reject AI Code: discrimination bottleneck 102pts 64c); production data (Coordination Tax 2.04:1 ratio, Cold Start Tax 46%, Compilation Threshold 53.5% below-floor sessions); Orchestration Hollowing synthesis; Compilation Gradient synthesis; wang2122/sprix-sage-router source and synthetic benchmark at revision 8618cd04278a31c96a64d7bb24cf73d6c069cf2a."
 </ai_context>
 
 # The Discovery Dominance: Why Finding Overtakes Doing
@@ -206,6 +206,47 @@ phenomenon viewed from the human-agent interface:
 The enterprise paper proves this at system level. The HN post proves it at
 individual level. Both show that **the discrimination/discovery cost now exceeds
 the production/execution cost.**
+
+---
+
+## GitHub Update — Routing Must Include “Keep Going” (2026-08-21)
+
+[Sprix SAGE Router](https://github.com/wang2122/sprix-sage-router), inspected at
+[`8618cd0`](https://github.com/wang2122/sprix-sage-router/tree/8618cd04278a31c96a64d7bb24cf73d6c069cf2a),
+turns a useful correction to discovery-first architecture into executable form:
+**agent selection should not assume that another agent must be selected.** Its router
+scores `SELF`, `COLLABORATE`, and `HANDOFF` in one constrained objective, so keeping
+the incumbent is a first-class candidate rather than the fallback after a search for
+someone new.
+
+That matters mid-execution. The implementation filters candidates by permissions,
+quoted budget, deadline, availability, and prior failure before ranking them; accounts
+for completed requirements, current executors, progress, and transferable context;
+then charges switching and coordination loss against the expected gain from a peer or
+team ([route core](https://github.com/wang2122/sprix-sage-router/blob/8618cd04278a31c96a64d7bb24cf73d6c069cf2a/sprix_sage.py#L315-L353),
+[utility and bounded team search](https://github.com/wang2122/sprix-sage-router/blob/8618cd04278a31c96a64d7bb24cf73d6c069cf2a/sprix_sage.py#L620-L731)).
+Outcome feedback is requirement-conditioned and gives weak weight to team-only
+outcomes, while separately updating bid fidelity for realized cost and latency
+([outcome update](https://github.com/wang2122/sprix-sage-router/blob/8618cd04278a31c96a64d7bb24cf73d6c069cf2a/sprix_sage.py#L355-L416)).
+
+The repository's deterministic synthetic benchmark reports higher common utility for
+online SAGE (0.487 ± 0.006) than static SAGE (0.467 ± 0.007), incumbent-only (0.389 ±
+0.002), and three solo-selection baselines across 2,500 simulated tasks. A local rerun
+reproduced those printed values and all 12 included unit tests passed. This validates
+that the implementation behaves as documented under its own simulator—not that it
+routes real heterogeneous agents better. The README explicitly calls for real trace
+replay, stronger learned-routing baselines, calibration analysis, and adversarial
+conditions before such a claim ([benchmark and caveat](https://github.com/wang2122/sprix-sage-router/blob/8618cd04278a31c96a64d7bb24cf73d6c069cf2a/README.md#benchmark)).
+
+**Refinement to Discovery Dominance:** compile the common route, but make
+`continue-current-route` an explicit contender whenever replanning occurs. Otherwise
+a discovery layer can impose the very context-transfer and coordination tax it is
+supposed to reduce. At the same time, contextual trust and bid calibration only help
+if downstream evaluators produce requirement-level evidence; weak team-level success
+signals cannot reliably identify which agent or pairing earned the result.
+
+Repo: https://github.com/wang2122/sprix-sage-router  
+Source: https://api.github.com/search/repositories?q=topic%3Aai-agents%20created%3A%3E%3D2026-08-18&sort=stars&order=desc&per_page=20
 
 ---
 

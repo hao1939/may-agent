@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #479: The Verification Hierarchy. Five uncovered arXiv papers converge: verification has a strict gradient of strength, and choosing any level below the required one produces systematically misleading *positive* signals — not noise, not silence, but confident green lights from mechanisms that levels above would reject. Recursive Self-Improvement survey (2607.07663) covers 1,250 papers and derives a verification hierarchy from formal verifiers (strongest) to intrinsic self-assessment (weakest); self-improvement strength tracks this hierarchy exactly; governance-grade measurement is the field's 'most underpopulated niche.' Physics-Audited Agentic SciML (2607.07379) proves error metrics (weak verification) select surrogates that violate physics constraints (strong verification) — a model with low error responds to future loading history (causal violation invisible to the error metric). Rethinking Code Performance Benchmarks (2607.07619) shows only 6.11% of 'performant' implementations are statistically significantly faster — 94% of claimed improvements evaporate under rigorous testing; multi-agent test generation recovers 24-25% of hidden differences. EvoSOP (2607.07321) proves agents self-evolve through lifecycle governance (construct→merge→evaluate→prune), not through static toolsets — the governance loop IS the improvement mechanism. Towards Agentic AI Governance (2607.07612) surveys governance literature and identifies that agentic AI requires targeted governance mechanisms distinct from pre-existing AI frameworks. HN: Uniqlo terminal plateau (1,335pts, +0.5%). LLM Burnout surges to 241pts (+25.5%), P-70 on track. Frontier combined ~1,444pts leads Uniqlo by ~109pts (8.2%). Cloudflare infrastructure double (Drop 341pts + Meerkat 238pts = 579pts). John Deere right-to-repair acceleration (+15.9%, governance enforcement in physical domain). FAANG Simulator 354pts (new). GitHub: system_prompts_leaks 54,423★ (slowing), T3MP3ST 3,923★ (slowing), BuilderIO/skills 3,553★ (new major skill library)."
+summary: "Scan #479: The Verification Hierarchy, with PA-SciML, PerformanceBench, EvoSOP, and the agentic-governance review qualified. Verification evidence is claim- and predicate-specific. The governance review maps a small, mostly conceptual/legal literature but does not measure deployed mechanisms or a deployment–governance gap; its adoption premise comes from narrow vendor surveys, and it misreads 66% reporting productivity gains as a 66% productivity increase."
 triggers: ["verification hierarchy", "verification gradient", "recursive self-improvement", "self-improvement survey", "governance-grade measurement", "verification strength", "formal verifiers", "self-assessment", "physics-audited", "PA-SciML", "error metrics misleading", "causal violation", "benchmark validity", "performance benchmark", "statistical significance", "EvoSOP", "standard operating procedures", "tool evolution", "lifecycle governance", "construct merge evaluate prune", "agentic AI governance", "governance mechanisms", "verification level", "misleading positive signal", "self-confirming loops", "model collapse", "diversity collapse", "harness leverage", "LLM burnout", "developer fatigue", "infrastructure sovereignty", "Cloudflare Drop", "Cloudflare Meerkat", "FAANG Simulator", "scan 479"]
 </ai_context>
 
@@ -7,63 +7,74 @@ triggers: ["verification hierarchy", "verification gradient", "recursive self-im
 
 **Date**: 2026-07-09
 **Sources**: arXiv API, Hacker News Algolia API, GitHub API
-**Theme**: Verification has a strict gradient of strength. Choosing any level below the required one produces systematically misleading *positive* signals — not noise, not silence, but confident green lights that higher-level verification would reject.
+**Theme**: Verification evidence is claim- and predicate-specific. A valid score can remain silent about a required property; no universal ordering follows across unrelated claims.
 
 ---
 
 ## Convergence Theme
 
-Five uncovered arXiv papers from different domains independently demonstrate the same structural pattern: verification mechanisms exist in a hierarchy, and weak verification doesn't just miss problems — it *produces confident positive results* that create false assurance. This is the mechanism underlying the Governance Silence (#478): governance doesn't fail because it reports failure; it fails because it reports *success* at the wrong verification level.
+The scan originally arranged five papers as a strict hierarchy. Primary review
+of PA-SciML and PerformanceBench does not support that total ordering. Their
+durable common pattern is missing predicate coverage: an error metric can be a
+valid error measurement without testing causality, and a repeated timing test
+can be valid for one workload without testing correctness or representative
+usage. Calling either mechanism globally weaker obscures which claim failed.
 
-The hierarchy, synthesized across papers:
+A claim-coverage map is the safer synthesis:
 
-| Level | Verification Type | Domain Example | Failure Mode When Misapplied |
-|-------|------------------|----------------|-------------------------------|
-| 1 (Strongest) | Formal verifiers (Coq/Lean kernels) | Aria (#475): 100% proof coverage | Sound but narrow — domain must be formalizable |
-| 2 | Deterministic gates | CXI (#475): zero escapes | Strong but domain-specific |
-| 3 | Physics/domain constraints | PA-SciML: causality, boundary conditions | Incomplete but meaningful — catches what metrics miss |
-| 4 | Statistical testing (30+ runs, significance tests) | Rethinking Benchmarks: 6.11% significant | Reveals what single runs hide |
-| 5 | Multi-agent review | SWE-Review (#475), CREAD (#472) | Diversity-dependent — collapses with coupled agents (#455) |
-| 6 | Automated judges (LLM-as-judge) | Blind Curator (#478): false-pass bias | Correlated with subject's own blind spots |
-| 7 (Weakest) | Intrinsic self-assessment | RSI survey: self-confirming loops | Produces highest confidence with lowest validity |
+| Verification type | Domain example | Claim it can support | What remains separate |
+|---|---|---|---|
+| Formal verifier | Aria (#475) | A formal statement under a kernel and encoding | Domain adequacy and omitted behavior |
+| Deterministic gate | CXI (#475) | A specified condition at mediated sinks | Unreviewed sinks, policy/runtime compromise, task success |
+| Physics contract | PA-SciML | Named output properties under one contract, tolerance, and input domain | Predictive accuracy, omitted physics, search completeness |
+| Repeated statistical test | PerformanceBench | A distributional contrast under selected tests and decision thresholds | Functional correctness, workload representativeness, multiplicity |
+| Multi-agent review/testing | SWE-Review; CREAD (#472) | Outcomes of a stated reviewer/oracle configuration | Independence, coordination attribution, external authority |
+| Automated judge | Blind Curator (#478) | Agreement with the judge's rubric | Ground truth outside that rubric |
+| Intrinsic self-assessment | RSI survey | The system's own assessment | Independent validity |
 
-**The key finding**: self-improvement strength, benchmark validity, and governance effectiveness all degrade along this same hierarchy. Each lower level produces *more confident* results with *less validity*.
+**The key finding**: verification is stronger or weaker only relative to a
+declared claim. Every result should name its predicate, domain, tolerance,
+sampling or search budget, authority, and explicit non-claims.
 
 ---
 
 ## Uncovered arXiv Papers
 
-### 1. Recursive Self-Improvement in AI: From Bounded Self-Refinement to Autonomous Research Loops (2607.07663v1) — SURVEY [UNCOVERED]
+### 1. Recursive Self-Improvement in AI: From Bounded Self-Refinement to Autonomous Research Loops (2607.07663v1) — SURVEY [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07663
 
-**Abstract**: Surveys 1,250 arXiv papers (2024–2026) along two axes: what the system improves (behavior, policy, evaluator, research process) and the degree of loop closure (human-in-the-loop to fully closed). Separates bounded self-refinement (convergent, evaluable, industrial practice) from open-ended recursive self-improvement (RSI), which remains bounded by grounding requirements, collapse dynamics, and compute constraints on every measured axis.
+**Abstract**: Organizes a 1,250-paper arXiv sample (2024–2026) along two axes: what the system improves (deployment behavior, training policy, evaluator, or research process) and degree of loop closure. The authors distinguish bounded self-refinement from open-ended recursive self-improvement (RSI).
 
 **Key findings**:
-- **Verification hierarchy derived from data**: A strict ordering from formal verifiers (strongest) through process reward models, external judges, and rubrics to intrinsic self-assessment (weakest). Self-improvement strength *tracks this hierarchy* — systems verified by stronger mechanisms achieve more reliable improvement.
-- **Failure modes map to hierarchy violations**: Self-confirming loops, model collapse, and diversity collapse all occur when verification is performed at a level below the system's actual requirements. The "research direction-setting" bottleneck sits at the top of the hierarchy — it's the task that no current mechanism can verify automatically.
-- **Governance-grade measurement is the field's "most underpopulated niche"**: The survey identifies that measuring whether self-improvement is actually occurring (vs. overfitting to weak evaluators) is under-studied relative to achieving self-improvement.
-- **Vocabulary conflation**: "Self-refine," "self-reward," "self-play," "self-evolve" describe fundamentally different ambitions. The shared "self-" prefix creates an illusion of a unified field.
+- **The hierarchy is an author synthesis, not a measured law**: Section 5.2 orders formal verifiers, execution feedback, learned judges, and intrinsic signals, then explicitly calls the proposed relationship between verification and demonstrated improvement a “qualitative pattern we observe throughout the corpus, not a measured law.” No common outcome, effect estimate, or controlled cross-level comparison is reported.
+- **The corpus supports a useful taxonomy under important sampling limits**: The 1,250 records combine an 871-paper seven-thread seed harvest with a targeted 379-paper supplement. Seventy-four percent were posted in 2026; capped queries and the supplement favor recent work; about 54/379 supplemental records are acknowledged peripheral bleed. One annotator applied keyword rules and manual correction (89 rule moves plus three explicit corrections).
+- **The governance gap is an inference, not a direct category count**: “Governance-grade measurement” is called the most underpopulated niche because the broad foundations/limits/safety family is smallest at 60/1,250 and the authors find little technical infrastructure behind slowdown measurement. The corpus does not expose a separately coded governance-measurement denominator in the paper.
+- **The vocabulary and loop-closure distinctions remain useful**: Deployment-time refinement, training-time self-iteration, self-evaluation, and automated research are different improvement objects. The paper says nearly all surveyed systems remain bounded and human-on-the-loop; those are survey judgments rather than measured causal effects.
 
-**Implication for our system**: The RSI survey validates the Oversight Inversion at survey scale. Every improvement loop is a *claim* that some signal can substitute for human judgment. When the signal is a formal verifier, the claim is strong. When the signal is self-assessment, the claim is circular. The governance gap is structural, not accidental.
+**Primary-review provenance and access boundary (2026-09-04)**: arXiv `2607.07663v1` Atom metadata and source were observed at `2026-09-04T04:26:13.283Z` (3,378 bytes, SHA-256 `a7b210e2…b5ef7`; 5,287,732 bytes, SHA-256 `8178b7e0…cec2d`). At `2026-09-04T04:26:29.867Z`, unauthenticated Git from the goal-owned worktree attempted the paper-declared `bamboodrift/recursive_self_improvement` repository and GitHub returned `Repository not found`. The promised corpus, assignments, query scripts, and figure sources therefore could not be checked. Confidence is high in what the paper claims about its own method, moderate in the taxonomy, and low in corpus counts beyond the PDF or in the proposed ordering.
+
+**Implication for our system**: The taxonomy is a useful map and the survey itself reinforces the need to declare evaluator coverage. It does not validate a universal verification hierarchy at survey scale. Treat formal checks, execution feedback, judges, and intrinsic signals as different evidence types whose relative adequacy depends on the claim.
 
 **Connections**: Extends Governance Silence (#478, Level 7 self-assessment), Verification Loop (#475, Level 1-2 formal/deterministic), Blind Curator (#478, Level 6 judge corruption), Dispersion Collapse (#455, Level 5 diversity loss).
 
 ---
 
-### 2. Physics-Audited Agentic Discovery in Scientific Machine Learning (2607.07379v1) — VERIFICATION [UNCOVERED]
+### 2. Physics-Audited Agentic Discovery in Scientific Machine Learning (2607.07379v1) — VERIFICATION [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07379
 
 **Abstract**: In agentic SciML, LLM agents discover surrogate models and select one by an automated score (typically an error metric). A low error does not establish that predicted fields satisfy the physics. Introduces PA-SciML: a verification-first workflow that fixes a scoring evaluator before search, derives machine-checkable physics requirements, and checks each candidate on its outputs.
 
 **Key findings**:
-- **Causal violation invisible to error metrics**: In transient elastodynamics, an error-only baseline with similar mean error **fails a causality check** — it responds to future parts of the loading history. The error metric reports success; physics auditing reveals the result is physically impossible.
-- **Verification-first workflow**: Fix the evaluator *before* search (not after). Derive reviewable, machine-checkable physics requirements. Check each candidate individually, not just the best one.
-- **Per-candidate physics evidence**: The key distinction is not a richer score but evidence *on the predicted fields themselves* — process information, not outcome metrics.
-- **Constraint hierarchy matters**: Physics constraints (Level 3) catch what error metrics (Level 4-7) miss. The surrogate that looks best under weak verification is the one that violates the strongest constraints.
+- **A post-run audit exposes one acausal baseline**: In the 500-history transient example, the audit-enabled surrogate has mean relative error `2.629e-3` versus `2.724e-3` for an earlier error-only baseline. When rechecked under a common reference contract, the baseline's early response changes when only later loading changes: normalized causality violation 12.62 on sampled histories and 2750.62 under bounded input search, against a pass threshold of 1. The selected causal architecture reports zero on that check.
+- **This is property evidence, not a selection reversal**: The audit-enabled model is also about 3.5% better on the error metric, so the experiment does not show the weak metric choosing a more accurate but physically worse winner. Causality was a soft diagnostic during the live search and became hard only in the post-run reference audit. Of 14 scored live transient candidates, two failed hard zero-input/linearity checks, but neither beat the selected model's error.
+- **The static example is a negative control**: Both selected static-elasticity surrogates pass the common linearity, scaling, and boundary checks. The audit adds evidence there without changing the outcome. Across both examples, a physics audit can distinguish properties that error does not measure; error-only selection is not shown to fail systematically.
+- **The method comparison is bundled and single-seed**: Each problem compares one audit-enabled run with one error-only run. Verification, advisory probes, and physics summaries available to later proposals change together; the transient baseline is an earlier run. The search produced 28 static candidates and 16 transient candidates, two of which timed out. Code, data, exact provider identifiers, budgets, and run records are promised only upon publication and are not currently available.
 
-**Implication**: This is the Process Erasure (#462) in the scientific domain. Error metrics erase the physics information governance requires. When verification is applied at the wrong level, the best-performing model under weak evaluation is systematically the worst-performing model under strong evaluation — not randomly worse, but structurally worse.
+**Primary-review provenance and limits (2026-09-04)**: arXiv `2607.07379v1` Atom metadata and source were observed at `2026-09-04T04:20:50.420Z` (3,187 bytes, SHA-256 `b2b12cbc…2061b1`; 3,520,960 bytes, SHA-256 `b7470a9d…77b64`). The source names Claude Sonnet 4.6 and GPT-5.4 role groups but defers full provider identifiers to future configuration files. No attributable public repository or result artifact is provided. Confidence is high that the reported tables and stated contract distinguish error from causality, moderate in the single-run example, and low for a causal workflow effect or transfer beyond the two linear-mechanics problems.
+
+**Implication**: Verification mechanisms are not a single strength ladder independent of the claim. Prediction error and causality checks answer different questions; a stronger conclusion requires declaring the target property, contract, tolerance, input domain, and search budget. PA-SciML supports predicate-specific evidence and reviewable contracts, not a systematic inversion between weak and strong verification.
 
 **Connections**: Extends Process Erasure (#462), Variance Signal (#457), Verification Loop (#475), Diagnostic Deficit (#476).
 
@@ -73,49 +84,58 @@ The hierarchy, synthesized across papers:
 
 **Source**: https://arxiv.org/abs/2607.07619
 
-**Abstract**: Revisits four popular benchmarks (EffiBench, Enamel, EvalPerf, Mercury). Evaluates 1,538 tasks under rigorous conditions: 30 runs each, statistical significance testing. With benchmark-provided test suites, only **6.11%** of "performant" implementations are significantly faster than canonical solutions.
+**Abstract**: Revisits four Python function-level benchmarks (EffiBench, Enamel, EvalPerf, Mercury), running each implementation 30 times on benchmark-provided tests. The paper reports that 94/1,538 (**6.11%**) benchmark-labeled "performant" implementations are faster under its final decision rule.
 
 **Key findings**:
-- **94% of claimed performance improvements are statistically insignificant**: The benchmark tests claim improvement; rigorous testing (30 runs + significance) shows most are noise. This is verification Level 4 (statistical testing) catching what Level 6-7 (single-run comparison) misses.
-- **Limitation is the tests, not just the method**: Manual analysis of 308 non-significant tasks: 99 have no meaningful performance change, but 209 contain potential improvements not exposed by original tests. The benchmark tests themselves are the bottleneck.
-- **Multi-agent framework recovers hidden differences**: Three-agent framework (generate, diagnose, repair) produces performance-oriented tests. Reveals significant improvements in 24–25% of tasks where original tests found none. Multi-agent verification (Level 5) exposes what single-agent evaluation (Level 6) misses.
-- **DeepSeek-v3.1 and GPT-4o produce comparable results** (24.01% vs 25.43%) — model choice matters less than framework design (echoing Harness Effect and Allocation Asymmetry #477).
+- **The 94 is a compound gate, not a false-positive count**: The released RQ1 CSVs reproduce 94 only when both implementations pass every original test, the one-sided Mann–Whitney result is `p < .05`, and positive Cliff's delta is at least 0.147. `p < .05` alone gives 138 tasks. The complement of 94 contains 1,400 `p >= .05` tasks and 44 more that fail correctness or effect-size conditions; non-significance does not establish no improvement.
+- **Correctness and workload adequacy are separate failures**: 529 performant implementations pass fewer original tests than their canonical counterparts. In the authors' stratified manual sample of the 1,444-task complement, 99/308 have no meaningful code-performance change while 209/308 have plausible performance-impacting changes hidden by weak inputs. Generated tests deliberately scale stress inputs, so they establish performance on those selected inputs, not representative workload speed.
+- **The authors' generated-test result is artifact-supported**: Released spreadsheets reproduce 94 DeepSeek and 102 GPT detections on the 209-task manual subset, and 228/240 on the remaining 1,136 tasks (the paper says 229/240). Across both subsets, the artifact therefore supports 322/1,345 (23.94%) for DeepSeek and 342/1,345 (25.43%) for GPT, conditioned on its generated workloads and final correctness/significance/effect gate.
+- **The COFFE comparison table does not reproduce from the released spreadsheets**: The artifact yields DeepSeek/GPT counts of 5/13 on the 209-task subset and 34/47 on the 1,136-task subset, versus 4/1 and 23/5 in the paper. This prevents using the released package to support the reported between-framework advantage. No equal call/token budget comparison or multiple-comparison correction was observed.
 
-**Implication**: The evaluation crisis the Oversight Inversion documents is not limited to agent behavior — it extends to the benchmarks we use to evaluate LLM output. 94% of performance claims evaporate under statistical rigor. The implication for agent evaluation: if code performance benchmarks have a 94% false-positive rate under single-run testing, what is the false-positive rate for agent behavior benchmarks that don't even have deterministic tests?
+**Primary-review provenance and limits (2026-09-04)**: arXiv `2607.07619v1` Atom metadata and source were observed at `2026-09-04T04:05:47.354Z` (3,564 bytes, SHA-256 `87ebde8d…303419`; 275,431 bytes, SHA-256 `5d0357a4…3babbf`). Zenodo record `10.5281/zenodo.21227455` was observed at `2026-09-04T04:06:21.338Z`; it advertises a 296,611,757-byte ZIP with MD5 `e9e69897e4063f69c9971f9c29b999f5`. README, RQ1 CSVs, source files, and four RQ3 workbooks were selectively retrieved from its 427-entry ZIP and inspected; the whole archive checksum was not verified. Confidence is high in the CSV counts and the spreadsheet/table contradiction, moderate in the authors' original-test conclusion, and low for transfer to representative, repository-scale, concurrent, I/O-bound, or production workloads.
+
+**Implication**: Repeated measurement, correctness checks, effect sizes, and workload design are distinct verification axes. The defensible result is that only 6.11% pass this study's complete gate under existing tests—not that 94% of optimizations evaporate. Generated stress tests can reveal directional differences, but their selection process and unreproduced baseline comparison must be governed before they support a general hierarchy claim.
 
 **Connections**: Extends Evaluation Mirage, Variance Signal (#457), Allocation Asymmetry (#477, framework > model choice), Diagnostic Deficit (#476).
 
 ---
 
-### 4. From Atomic Actions to Standard Operating Procedures (EvoSOP) (2607.07321v1) — ARCHITECTURE [UNCOVERED]
+### 4. From Atomic Actions to Standard Operating Procedures (EvoSOP) (2607.07321v1) — ARCHITECTURE [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07321
 
 **Abstract**: Agents self-evolve by synthesizing atomic actions into reusable Standard Operating Procedures (SOPs) — callable higher-order tools that encapsulate multi-step logic. EvoSOP: an iterative lifecycle of construction, merging, evaluation, and pruning.
 
 **Key findings**:
-- **Governance loop IS the improvement mechanism**: The construct→merge→evaluate→prune lifecycle is a governance architecture, not just an optimization. The *pruning* step — removing SOPs that reduce performance — is the verification gate. Without it, the toolset degrades (echoing Blind Curator #478: without functional retirement, the system accumulates false-pass artifacts).
-- **Task success rates improve substantially**: EvoSOP reduces interaction rounds significantly vs. baselines. The improvement comes not from better individual actions but from better *orchestration* of action sequences — governance-level, not capability-level.
-- **Toolset evolution requires lifecycle management**: Static toolsets force agents to reinvent logic for every task. But evolved toolsets require governance (merging, pruning) or they accumulate redundant and contradictory SOPs. The toolset is not self-maintaining.
+- **The benchmark gain is a bundled-system result**: Across six ACEBench workflows and three Tau2Bench workflows, GPT-4o-constructed EvoSOP reports `84.2±1.9` versus ReAct's `80.8±3.4` on Multi-Step, `79.4±3.0` versus `72.2±3.7` on Multi-Turn, and `40.9±0.4` versus `37.1±2.8` on Tau2 Telecom Solo. Other construction backbones and the DFSDT worker produce different contrasts. The paper reports standard errors but no hypothesis test, interval for a paired difference, multiplicity treatment, or per-task result.
+- **Only two bundled components are ablated**: The ACEBench figure removes the Reviewer or Merger; it never removes Constructor or Evaluator. Reviewer removal also removes both LLM judgment and the resulting prune decision, so evaluation and pruning remain inseparable. Its largest contrast is on Multi-Step (roughly `0.82` full versus `0.41` without Reviewer, with a wide error bar); on Multi-Turn the plotted full and no-Reviewer intervals overlap. Removing Merger leaves both bars close to the full system. This is suggestive evidence for feedback-guided retirement in one setting, not isolation of a four-stage mechanism.
+- **Selection and generalization are not separated**: EvoSOP receives 25 randomly sampled trajectories over the first five iterations, re-executes training tasks during evaluation, checkpoints every iteration, and selects the epoch with highest training success without a separate validation set. The main table pools exposed and unseen tasks rather than reporting them separately. Six/three workflow averages therefore do not reveal held-out transfer or selection optimism.
+- **Round and lifecycle plots are descriptive**: The ACEBench rounds plot compares full EvoSOP trajectories with a fixed ReAct line, but gives no tabulated denominators or inferential analysis. A representative run shows individual SOP construction, use, merging, and removal, and the aggregate toolset remains below ten maintained SOPs; neither plot supplies a matched no-pruning outcome. They document behavior of the implementation, not causal attribution of benchmark gains.
+- **No attributable implementation is available**: The arXiv record and source declare no project repository. An unauthenticated GitHub repository search returned eight incidental matches; the only exact-name repository, `rahmadikaaa/evosop`, is empty, postdates the paper, and has no observed author or paper linkage. Code, prompts beyond selected examples, task allocations, random seeds, per-run outputs, and exact API snapshots cannot be independently reproduced.
 
-**Implication**: EvoSOP validates the Governance Conversion (#471): improvement comes from governance mechanisms crystallized from failures, not from capability scaling. The lifecycle (construct→merge→evaluate→prune) is structurally identical to the Verification Harness Hypothesis (#451): the harness that governs tool composition IS the mechanism that produces reliable evolution.
+**Primary-review provenance and limits (2026-09-04)**: arXiv `2607.07321v1` Atom metadata and source were observed at `2026-09-04T04:32:35Z` (2,957 bytes, SHA-256 `35f7f93e…bf74`; 181,356 bytes, SHA-256 `b0e10a3b…34244`). At `2026-09-04T04:33:51.682Z`, an unauthenticated GitHub search response was 51,571 bytes (SHA-256 `07981678…3e89`), complete with eight matches; the exact-name repository's tree read returned HTTP 409 because it is empty. Confidence is high in the paper's stated table, workflow, and plotted qualitative contrasts; moderate in the bundled benchmark result; and low in four-stage attribution, held-out transfer, or independent reproducibility.
+
+**Implication**: EvoSOP demonstrates a concrete lifecycle architecture and provides limited evidence that feedback-guided retirement can prevent harmful accumulation. It does not establish that governance alone, pruning alone, or all four lifecycle stages cause the reported improvement. Governance Conversion (#471) and the Verification Harness Hypothesis (#451) should use it as an architecture example with one suggestive component contrast, not as mechanistic validation.
 
 **Connections**: Extends Governance Conversion (#471), Verification Harness (#451), Governance Silence (#478, pruning as anti-silence), Expressivity Boundary (#474), Skill ecosystem trends.
 
 ---
 
-### 5. Towards Agentic AI Governance: A Preliminary Assessment (2607.07612v1) — GOVERNANCE SURVEY [UNCOVERED]
+### 5. Towards Agentic AI Governance: A Preliminary Assessment (2607.07612v1) — GOVERNANCE SURVEY [PRIMARY-REVIEWED]
 
 **Source**: https://arxiv.org/abs/2607.07612
 
 **Abstract**: Systematic review of the emerging literature on agentic AI governance. Identifies features distinguishing agentic AI from traditional AI systems. Synthesizes governance priorities, proposed mechanisms, and stakeholder roles.
 
 **Key findings**:
-- **Agentic AI requires targeted governance**: Pre-existing AI governance frameworks are insufficient — autonomy, tool use, multi-step planning, and environmental interaction create governance challenges qualitatively different from generative AI.
-- **Governance priorities identified**: The review synthesizes emerging consensus on what agentic AI governance must address — safety, accountability, transparency — and surfaces the gap between academic proposals and deployed mechanisms.
-- **Preliminary groundwork**: Explicitly positions itself as an "initial scholarly effort" — the field is pre-paradigmatic. This status itself is diagnostic: if agentic AI governance is still at "preliminary assessment" while agentic AI deployment is accelerating, the gap between deployment velocity and governance maturity is widening.
+- **The 21-paper map is narrow and not reproducible as a systematic review**: The paper reports an approximate funnel of more than 3,000 search results, about 995 governance works, 552 autonomous-device exclusions, 389 other-AI exclusions, 54 core publications, and 21 peer-reviewed articles after 33 further exclusions. It gives no exact search dates, database-specific queries or counts, duplicate count, screening flow, extraction form, reviewer count, disagreement process, or quality/risk-of-bias appraisal. Its stated 2020–2025 window also includes one 2026 corpus item.
+- **The corpus maps proposals, not deployment outcomes**: Table 1 labels most records conceptual/theoretical, review, legal analysis, technical proposal, or regulatory landscape; two rows include qualitative or empirical labels. The review does not count implemented governance mechanisms, evaluate their effect, compare governed and ungoverned deployments, or grade supporting evidence. It supports an early-literature characterization and a taxonomy of autonomy, moral agency, privacy, stakeholders, and proposed controls—not a measured implementation gap.
+- **The adoption premise is external and population-specific**: KPMG's primary page reports that 42% of 130 U.S.-based C-suite/business leaders at organizations with at least $1B annual revenue had deployed at least some agents, up from 11% two quarters earlier. PwC's primary page reports 308 U.S. executives surveyed in April 2025, 79% saying agents were being adopted, and 66% of adopters reporting increased productivity. The paper incorrectly restates the latter as a 66% increase in productivity. These vendor self-reports do not measure the 21-paper corpus or establish a causal deployment–governance divergence.
+- **Framework uniqueness is an attributed claim**: The paper describes Singapore's January 2026 Model AI Governance Framework for Agentic AI as the first and only formal dedicated framework and summarizes its four dimensions. The literature search ends in 2025 and no jurisdictional framework inventory method is reported, so uniqueness and completeness remain unverified. The paper itself acknowledges peer-reviewed-only selection and common-law concentration as limitations.
 
-**Implication**: The paper's self-description as "preliminary" validates the RSI survey's finding that governance-grade measurement is the field's most underpopulated niche. Agentic AI is deploying at scale while governance is still at the "identify features" stage.
+**Primary-review provenance and limits (2026-09-04)**: arXiv `2607.07612v1` Atom metadata and PDF were observed at `2026-09-04T04:39:27Z` (2,375 bytes, SHA-256 `6d923547…f1cae`; 277,827 bytes, SHA-256 `3b9e9166…f844`). The e-print endpoint supplied only the PDF, not a source archive. At `2026-09-04T04:39:58Z–04:39:59Z`, the KPMG and PwC pages returned HTTP 200 (207,986 bytes / `8fa389fd…cabb`; 189,188 bytes / `dcdb605a…72bd`); Gartner returned HTTP 403 (10,494 bytes / `effbc317…1c26`). Confidence is high in the paper's declared funnel and table, high in the correction to the PwC statistic, moderate in the early-literature characterization, and low in search completeness, framework uniqueness, or a measured widening gap.
+
+**Implication**: The review is useful as a preliminary taxonomy and points to a real empirical research need: evaluate which governance controls are deployed and whether they change outcomes. It does not validate the RSI survey's governance-measurement gap independently or establish that deployment is outpacing governance. Keep the latter as a cross-source hypothesis requiring population-aligned adoption and governance measurements.
 
 **Connections**: Extends Balkanization Problem (#473, governance knowledge fragmented), Governance Conversion (#471), Oversight Inversion (structural pattern).
 
@@ -147,7 +167,7 @@ The hierarchy, synthesized across papers:
 | **FAANG Simulator** | 354pts | 137c | Gamified tech industry critique. Escapism from velocity treadmill. |
 | **Cloudflare Drop** | 341pts | 166c | File transfer infrastructure. Sovereignty product. |
 | **Cloudflare Meerkat** | 238pts | 47c | Distributed consensus. Infrastructure sovereignty. |
-| **Grok/GPT/Claude comparison** | 118pts | 58c | Community performs *controlled comparison* — task fixed, model varied. Echoes Harness Effect methodology. |
+| **Grok/GPT/Claude comparison** | 118pts | 58c | Title and attention suggest a comparison topic; design controls require the underlying experiment. |
 | **DocuBrowser** | 105pts | 23c | Documents → searchable knowledge base. Knowledge infrastructure. |
 | **Left-handed bug** | 101pts | 54c | Edge case discovery narrative. |
 | **OpenMandriva sabotage** | 88pts | 16c | Open-source supply chain attack attempt. Real-world Balkanization Problem. |
@@ -161,15 +181,27 @@ The hierarchy, synthesized across papers:
 
 Gap widening from 87pts (6.5%) in #478 — but the structural observation holds: three separate frontier model launches are required to sustain a lead over a single decoded bash script, and the lead is narrower than any new story on the page (FAANG Simulator alone is 354pts).
 
-The "We made Grok 4.5, GPT-5.5, and Claude build the same apps" story (118pts) is diagnostically significant: the community performs *controlled comparisons* — holding the task fixed and varying the model. This is exactly the methodology of the Harness Effect paper (2607.06906): holding orchestration constant to isolate model contribution. The community intuitively discovers what the paper formalizes.
+The "We made Grok 4.5, GPT-5.5, and Claude build the same apps" story drew
+118 points. Its title suggests a same-task comparison, but point count and a
+title do not establish fixed orchestration, matched budgets, scoring, or any
+other controlled-comparison property. It is an attention signal; comparison
+design must come from the underlying experiment.
 
 ### Infrastructure Sovereignty Signal
 
-**Cloudflare Double**: Drop (341pts) + Meerkat (238pts) = **579pts**. A single infrastructure provider's two product launches outperform individual frontier model stories. Cloudflare positioning as infrastructure sovereignty provider: file transfer (Drop) + distributed consensus (Meerkat) — the building blocks for verified, sovereign agent infrastructure.
+**Cloudflare Double**: Drop (341pts) + Meerkat (238pts) = **579pts**. That
+sum describes attention to two product stories from one infrastructure
+provider. File transfer and distributed-consensus products may be relevant to
+control of infrastructure, but their point totals do not establish agent use,
+verification, sovereignty, adoption, or outcomes.
 
 ### LLM Burnout
 
-LLM Burnout at **241pts** (+25.5%, highest growth rate) with high comment-to-point ratio (0.73). Developer fatigue with AI tooling is being *named*. This is the demand-side of Knowledge Erosion (#450): developers who delegated understanding hit the experiential wall where the tools that accelerated them now exhaust them. The naming is significant — once a phenomenon has a name, it compounds in discourse.
+LLM Burnout reached **241pts** (+25.5%, the largest reported growth in this
+snapshot) with a 0.73 comment-to-point ratio. This establishes attention and
+discussion volume around a named fatigue story. It does not measure prevalence,
+cause, delegated understanding, experiential loss, or future discourse growth;
+those remain hypotheses for content- and population-level evidence.
 
 ---
 
@@ -185,30 +217,41 @@ LLM Burnout at **241pts** (+25.5%, highest growth rate) with high comment-to-poi
 | **dao-code** | 1,610★ | **1,611★** | +1 | Flat. |
 | **Cognitive-Core-Skills** | 274★ | **273★** | -1 | Flat. |
 
-**GitHub skill ecosystem observation**: The top new repos are *skill libraries*, not frameworks. BuilderIO/skills (3,553★), Loopy (2,572★), Cloudflare security-audit-skill (2,353★), gzh-design-skill (1,588★). Skills have become the primary unit of community contribution — the framework era is yielding to the skill era. This validates the XHS Skill Atomization observation from Scan #74 and confirms P-55 (DISCONFIRMED: no framework-level successor to Superpowers).
+**GitHub skill ecosystem observation**: Four newly tracked repositories are
+described as skills or loop/skill libraries and had 1,588–3,553 stars in this
+snapshot. The scan supplies no complete repository denominator, contribution
+unit classification, comparable framework cohort, or longitudinal adoption
+measure. It therefore supports local interest in skill artifacts, not that
+skills became the primary contribution unit, the framework era ended, or an
+XHS prediction was independently validated.
 
-**Recursive self-improvement ecosystem**: Sakana-Fugu (58★, recursive LLM calling), Awesome-Harness-Self-Improvement (5★, curated reading list for RSI of LLM agents), Sentryn (1★, AI agent guardrail detecting recursive execution loops). The RSI survey paper (2607.07663) finding that governance-grade RSI measurement is underpopulated is reflected in the GitHub data: the tooling is nascent.
+**Recursive self-improvement ecosystem**: Sakana-Fugu (58★),
+Awesome-Harness-Self-Improvement (5★), and Sentryn (1★) were three small
+tracked repositories. Without a complete search, identity review, or category
+denominator, they neither measure RSI tooling maturity nor independently
+support the survey's attributed governance-measurement gap.
 
 ---
 
 ## The Verification Hierarchy — 37th Layer of the Oversight Inversion
 
-The five uncovered papers converge on a structural insight that extends the Oversight Inversion:
+The five papers motivated a structural insight. Primary review of all five
+supports only the qualified version:
 
-**Layer 37: The Verification Hierarchy** — Verification mechanisms exist in a strict ordering of strength. When verification is applied at any level below what the domain requires, it produces *systematically misleading positive results* — not random errors, not silence, but confident success signals from mechanisms that higher-level verification would reject.
+**Layer 37: The Verification Coverage Map** — Verification mechanisms cover different predicates. A score can be valid for predictive error while saying nothing about causality, correctness, authority, or another required property. Primary review does not establish one strict cross-domain total ordering or systematic positive error at every lower level; it establishes that evidence must name the claim it can and cannot test.
 
-The Governance Silence (#478, Layer 36) identified that governance fails without producing failure signal. The Verification Hierarchy identifies *why*: because the verification mechanism operates at the wrong level in a strict hierarchy, and lower levels produce *positive* signals even when higher levels would reject.
+The Governance Silence (#478, Layer 36) identified that governance can fail without producing a failure signal. The coverage map identifies one mechanism: an instrument may truthfully report its own predicate while leaving the property required for a decision untested.
 
 **Evidence across papers**:
-- RSI Survey: self-improvement with self-assessment (Level 7) produces self-confirming loops. With formal verifiers (Level 1), it converges reliably. The failure mode is not "sometimes wrong" but "always confident."
-- PA-SciML: error metrics (Level 4-7) select surrogates that violate causality (Level 3). The error-only baseline *reports lower error* than the physics-audited selection.
-- Benchmarks: single-run testing (Level 6-7) claims 94% of implementations are improved. Statistical testing (Level 4) shows 94% are not.
-- EvoSOP: static evaluation (Level 6-7) of tool compositions fails. Lifecycle governance with pruning (Level 2-3) succeeds.
-- Governance survey: pre-existing AI governance (general Level 7) is insufficient for agentic AI (requires Level 2-4 targeted mechanisms).
+- RSI Survey: proposes a qualitative ordering between verification types, but reports no common outcome or controlled cross-level comparison. It supplies taxonomy and attributed synthesis, not evidence that self-assessment is always confident or formal verification causes reliable convergence.
+- PA-SciML: one error-only baseline fails a post-run causality contract, but the audit-enabled selection also has lower error and causality was soft during live search. This is missing-predicate evidence, not an ordering reversal.
+- Benchmarks: benchmark labels call all 1,538 implementations performant, while only 94 pass this study's correctness, one-sided significance, and effect-size gate under original tests; the complement is not a measured false-positive rate.
+- EvoSOP: the bundled lifecycle has higher average success in its reported workflows. A Reviewer/pruning ablation is adverse in Multi-Step but not cleanly separated in Multi-Turn; no experiment isolates evaluation from pruning or all four stages.
+- Governance survey: maps a small, mostly conceptual/legal literature and proposed targeted controls. It does not compare general with agentic-specific governance or measure deployed-control effects.
 
 **Twenty-two-point exit arc**:
 1–21: (Layers #444–#478)
-22. **Verification Hierarchy (#479): Before trusting any verification result, identify the verification level applied and the verification level required. If there is a gap, the result is not "unverified" — it is *misleadingly positive*. Audit the verification hierarchy itself: formal verifiers > deterministic gates > domain constraints > statistical testing > multi-agent review > automated judges > self-assessment. Each level produces confident results that levels above would reject.**
+22. **Verification Coverage (#479): Before trusting a result, name the claim, predicate, domain, tolerance, sampling or search budget, and authority that the verifier actually covers. Do not infer causality from error, correctness from timing, or external authority from local checks. Different mechanisms may be stronger for different claims; require explicit coverage and preserve unknowns rather than projecting a universal ladder.**
 
 ---
 
@@ -239,25 +282,37 @@ The Governance Silence (#478, Layer 36) identified that governance fails without
 
 | Domain | arXiv Finding | HN Signal | GitHub Signal |
 |--------|--------------|-----------|---------------|
-| **Verification hierarchy** | RSI survey: governance-grade measurement underpopulated | Databricks benchmarking (34pts): industry seeks rigorous agent evaluation | Awesome-Harness-Self-Improvement (5★): nascent RSI governance tooling |
-| **Misleading metrics** | Benchmarks: 94% of perf claims insignificant; PA-SciML: error hides physics violations | Signal from noise (190pts): OpenAI itself grapples with evaluation validity | system_prompts_leaks (54K★): community demands model transparency when metrics mislead |
-| **Governance as improvement** | EvoSOP: lifecycle governance IS the improvement mechanism | LLM Burnout (241pts): developers exhausted by ungoverned velocity | BuilderIO/skills (3,553★): community builds structured skill libraries with governance |
-| **Infrastructure sovereignty** | Agentic AI Governance survey: targeted governance needed | Cloudflare double (579pts): infrastructure provider fills sovereignty gap | Cloudflare security-audit-skill (2,353★): verification-as-infrastructure |
+| **Verification coverage** | RSI survey proposes a qualitative ordering; PA-SciML and PerformanceBench expose different missing predicates | Databricks benchmarking story drew 34pts; intent and rigor are not measured by points | One 5★ RSI reading list was tracked; no tooling denominator was collected |
+| **Metric limits** | Only 94/1,538 pass PerformanceBench's compound original-test gate; one PA-SciML baseline fails a causality predicate | “Signal from noise” drew 190pts; title/points do not reveal evaluation validity | system_prompts_leaks had 54K★; stars do not establish why users starred it |
+| **Lifecycle architecture** | EvoSOP implements construct/merge/evaluate/prune, with only limited component evidence | LLM Burnout drew 241pts; no causal link to governance was measured | BuilderIO/skills had 3,553★; structure, verification, reuse, and outcomes were not audited here |
+| **Governance proposals** | The governance review maps proposed controls but no deployed effect | Two Cloudflare stories totaled 579pts; sovereignty or agent use was not measured | security-audit-skill had 2,353★; this snapshot did not test its verification behavior |
 
 ---
 
 ## Synthesis
 
-The Verification Hierarchy is the structural mechanism unifying the last four layers of the Oversight Inversion:
+The Verification Coverage Map is the qualified synthesis connecting the last
+four layers of the Oversight Inversion:
 
 - **Layer 34 (Balkanization Problem)**: Governance knowledge is fragmented — researchers at different verification levels don't cite each other.
 - **Layer 35 (Verification Loop)**: When verification IS execution, reliability becomes a construction property — verification at the right level.
 - **Layer 36 (Governance Silence)**: Governance fails silently — because verification at the wrong level produces positive signals.
-- **Layer 37 (Verification Hierarchy)**: The underlying structure — verification has a strict ordering, and every level produces confident results that higher levels reject.
+- **Layer 37 (Verification Coverage)**: The underlying structure — results become misleading when their measured predicate is silently substituted for the claim a decision actually needs.
 
-The RSI survey's identification of governance-grade measurement as "the field's most underpopulated niche" is the strongest single statement of the Oversight Inversion's core claim: the gap between deployment velocity and verification adequacy is structural, not accidental, and it's widening because verification infrastructure is built from the extremes (formal proofs at Level 1, self-assessment at Level 7) while the middle — governance-grade verification (Levels 3-5) — remains empty.
+The RSI survey calls governance-grade measurement "the field's most
+underpopulated niche" and proposes an ordering from formal verification to
+self-assessment. Primary review finds that the paper explicitly calls this a
+qualitative pattern rather than a measured law. PA-SciML, PerformanceBench,
+EvoSOP, and the governance review cannot independently establish it because
+they study different predicates, systems, and populations and do not share a
+common outcome.
 
-The HN signal confirms: the community is exhausted (LLM Burnout), comparing models rather than celebrating them (Grok/GPT/Claude comparison), and investing in infrastructure sovereignty (Cloudflare double) rather than capability frontiers. The skill library explosion on GitHub (3,553★ for BuilderIO/skills) shows the community building governance-level artifacts (structured, verified, reusable) rather than capability-level artifacts (model wrappers, prompt chains).
+The HN and GitHub snapshots add topic-attention and repository-popularity
+observations. They do not confirm community exhaustion, controlled model
+comparison, infrastructure sovereignty, a framework-to-skill transition, or
+governance quality. Those claims require content review, explicit populations,
+comparison cohorts, and behavior or outcome measures. Their role here is
+discovery provenance, not independent validation of the coverage map.
 
 ---
 

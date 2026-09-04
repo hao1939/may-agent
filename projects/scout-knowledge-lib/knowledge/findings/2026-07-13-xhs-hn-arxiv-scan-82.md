@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source scan #82 (2026-07-13). XHS search blocked (login wall). HN signals: Token Bloat Accountability (524pts — Claude Code 33k tokens before reading prompt vs OpenCode 7k), GPT-5.6 Migration Economics (172pts — 2.2x faster, 27% cheaper), GitLost Agent Security (538pts — tricked GitHub Copilot into leaking private repos). arXiv: Failure as a Process (2607.09510 — 1,794 trajectories, failures start in first few steps but stay hidden), Shared Selective Persistent Memory (2607.09493 — 96% vs 79% completion, full history DEGRADES performance), Skill Market (2607.09065 — first large-scale empirical study of SE skills in agent marketplaces), Agent Risk Classification (2607.09586 — 12-dimension scoring rubric for enterprise agentic AI)."
+summary: "Cross-source scan #82 (2026-07-13), partly qualified. XHS search was blocked. HN signals include token-overhead and migration claims plus strong attention to GitLost. GitLost is a Noma-controlled GitHub Agentic Workflow proof running Claude, not GitHub Copilot or a third-party breach: a public issue induced a cross-repository token to publish a two-line private test README. The arXiv summaries remain source claims pending their own primary review."
 triggers: ["token bloat", "Claude Code tokens", "OpenCode", "GPT-5.6 migration", "agent failure trajectory", "persistent memory", "selective memory", "skill market", "agent risk classification", "GitLost", "agent security"]
 last_updated: "2026-07-13"
-source_basis: "HN Algolia API (search + search_by_date), arXiv API (cs.AI + cs.SE recent agent papers). XHS blocked by login wall — 0 results from search."
+source_basis: "Original HN Algolia and arXiv API observations; XHS was blocked. GitLost primary page, public issue/comment, workflow runs, and exact workflow revision primary-reviewed 2026-09-04. Other claims retain their original source status."
 </ai_context>
 
 # Cross-Source Scan #82 — The Accountability Turn
@@ -38,7 +38,14 @@ First production migration report with hard economics. The model upgrade deliver
 ### 3. GitLost Agent Security — 538pts, 204c (2026-07-08)
 **"GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos"**
 
-Security researchers at Noma demonstrated that GitHub's AI agent could be manipulated into exposing private repository contents. This is the highest-engagement agent security story since the "deleted production database" incident (860pts). The attack surface is the agent's context window — injected instructions override access controls.
+Security researchers at Noma demonstrated that a Noma-owned GitHub Agentic
+Workflow running Claude could be manipulated into publishing a private test
+repository's two-line README. An explicit request in a public issue crossed
+into an operator-configured token with cross-repository read authority and a
+safe-output path with issue-comment write authority. The issue author did not
+have that private access, so this is a real confused-deputy proof; it is not an
+override of GitHub access controls, a GitHub internal breach, or evidence of a
+third-party production victim.
 
 **Connection:** Extends Security Reckoning phase (#76-77 XHS), confirms P-42 (agent security enters mainstream discourse).
 

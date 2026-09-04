@@ -3,26 +3,35 @@
  * XHS (小红书) Browser Tool
  * Uses Chrome DevTools Protocol to browse xiaohongshu.com
  * Chrome must be running visible (non-headless) on DISPLAY=:99 with --remote-debugging-port=9222
+ * Override endpoint wiring with SCOUT_XHS_CDP_HOST and SCOUT_XHS_CDP_PORT.
  *
  * Commands:
  *   status                - Check whether the browser session can read XHS
+ *   saved-status          - Inspect saved-profile availability without navigation
  *   feed                  - Get explore feed items
  *   search <keyword>      - Search for notes
  *   read <url>            - Read a specific note (must include xsec_token)
  *   scroll                - Scroll feed and get more items
  */
 
+import { createHash } from "node:crypto";
 import http from "node:http";
+import {
+  resolveXhsCdpEndpoint,
+  selectXhsCdpTab,
+  selectXhsProfileHistoryTarget,
+  summarizeXhsPageStatus,
+} from "./xhs-cdp-config.mjs";
 
-const CDP_PORT = 9222;
-const CDP_HOST = "localhost";
+let CDP_HOST;
+let CDP_PORT;
 
 // --- CDP helpers ---
 
 function cdpGet(path) {
   return new Promise((resolve, reject) => {
     http
-      .get(`http://${CDP_HOST}:${CDP_PORT}${path}`, (res) => {
+      .get({ hostname: CDP_HOST, port: CDP_PORT, path }, (res) => {
         let d = "";
         res.on("data", (c) => (d += c));
         res.on("end", () => {
@@ -40,8 +49,7 @@ function cdpGet(path) {
 function cdpPut(path) {
   return new Promise((resolve, reject) => {
     const req = http.request(
-      `http://${CDP_HOST}:${CDP_PORT}${path}`,
-      { method: "PUT" },
+      { hostname: CDP_HOST, port: CDP_PORT, path, method: "PUT" },
       (res) => {
         let d = "";
         res.on("data", (c) => (d += c));
@@ -61,9 +69,7 @@ function cdpPut(path) {
 
 async function getXHSTab() {
   const tabs = await cdpGet("/json/list");
-  const xhsTab = tabs.find(
-    (t) => t.url.includes("xiaohongshu.com") && t.type === "page",
-  );
+  const xhsTab = selectXhsCdpTab(tabs);
   if (xhsTab) return xhsTab;
   throw new Error(
     "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
@@ -188,23 +194,269 @@ async function handleStatus(cdp) {
   const result = await cdp.evaluate(`
     (function() {
       const body = document.body?.innerText || '';
-      const noteCount = document.querySelectorAll(
-        'section.note-item, a[href*="xsec_token"], a[href*="/explore/"]'
-      ).length;
-      const loginWall = /扫码登录|手机号登录|登录后查看更多|请先登录/.test(body);
-      const ready = noteCount > 0 && !loginWall;
+      const hrefs = Array.from(document.querySelectorAll(
+        'a[href*="xsec_token"], a[href*="/explore/"], a[href*="/search_result/"], a[href*="/discovery/item/"]'
+      ), anchor => anchor.href);
+      const summarize = ${summarizeXhsPageStatus.toString()};
       return {
-        ready,
         url: window.location.href,
-        noteCount,
-        loginWall,
-        reason: ready
-          ? 'source content is readable'
-          : (loginWall ? 'XHS browser login is required' : 'no readable XHS source content found')
+        ...summarize({
+          body,
+          hrefs,
+          sectionCount: document.querySelectorAll('section.note-item').length
+        })
       };
     })()
   `);
   return result;
+}
+
+function savedProfileFetchExpression(requestUrl) {
+  return `
+    (async function() {
+      const response = await fetch(${JSON.stringify(requestUrl)}, {
+        credentials: 'include',
+        cache: 'no-store',
+        redirect: 'follow'
+      });
+      const text = await response.text();
+      const bytes = new TextEncoder().encode(text);
+      const digest = async (value) => Array.from(
+        new Uint8Array(await crypto.subtle.digest('SHA-256', value)),
+        byte => byte.toString(16).padStart(2, '0')
+      ).join('');
+      const documentCopy = new DOMParser().parseFromString(text, 'text/html');
+      const ids = [...new Set(
+        Array.from(documentCopy.querySelectorAll('a[href]'), anchor => anchor.href)
+          .map(href => href.match(/\\\/(?:explore|search_result|discovery\\\/item)\\\/([0-9a-f]{24})(?:[/?#]|$)/i)?.[1]?.toLowerCase())
+          .filter(Boolean)
+      )].sort();
+      const finalUrl = new URL(response.url);
+      const xhsHost = finalUrl.hostname === 'xiaohongshu.com' ||
+        finalUrl.hostname.endsWith('.xiaohongshu.com');
+      const finalLocation = !xhsHost
+        ? 'external'
+        : finalUrl.pathname === '/login'
+          ? 'login'
+          : /^\\\/user\\\/profile\\\/[0-9a-f]{24}\\\/?$/i.test(finalUrl.pathname)
+            ? 'profile'
+            : 'other-xhs';
+      return {
+        httpStatus: response.status,
+        contentType: response.headers.get('content-type') || '',
+        finalLocation,
+        byteLength: bytes.byteLength,
+        bodySha256: await digest(bytes),
+        attributableItemCount: ids.length,
+        idFingerprint: await digest(new TextEncoder().encode(ids.join('\\n'))),
+        loginWall: finalLocation === 'login' || /登录|扫码登录|手机号登录/.test(text)
+      };
+    })()
+  `;
+}
+
+function safeSavedProfileSummary(value) {
+  const sha256 = /^[0-9a-f]{64}$/;
+  const locations = new Set(["external", "login", "profile", "other-xhs"]);
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !Number.isInteger(value.httpStatus) ||
+    value.httpStatus < 100 ||
+    value.httpStatus > 599 ||
+    typeof value.contentType !== "string" ||
+    !locations.has(value.finalLocation) ||
+    !Number.isSafeInteger(value.byteLength) ||
+    value.byteLength < 0 ||
+    typeof value.bodySha256 !== "string" ||
+    !sha256.test(value.bodySha256) ||
+    !Number.isSafeInteger(value.attributableItemCount) ||
+    value.attributableItemCount < 0 ||
+    typeof value.idFingerprint !== "string" ||
+    !sha256.test(value.idFingerprint) ||
+    typeof value.loginWall !== "boolean"
+  ) {
+    throw new Error("Saved-profile status returned an invalid summary");
+  }
+
+  return {
+    httpStatus: value.httpStatus,
+    contentType: value.contentType.slice(0, 120),
+    finalLocation: value.finalLocation,
+    byteLength: value.byteLength,
+    bodySha256: value.bodySha256,
+    attributableItemCount: value.attributableItemCount,
+    idFingerprint: value.idFingerprint,
+    loginWall: value.loginWall,
+  };
+}
+
+/**
+ * Fingerprint only the supported semantic access boundary. Exact response byte
+ * length and body hash remain separate provenance and cannot perturb this value.
+ */
+export const XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION = 2;
+
+export function fingerprintXhsSavedProfileAccess(value) {
+  const sha256 = /^[0-9a-f]{64}$/;
+  const allowedKeys = new Set(["tab", "subTab"]);
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    typeof value.targetEvidenceSha256 !== "string" ||
+    !sha256.test(value.targetEvidenceSha256) ||
+    !Array.isArray(value.targetQueryKeys) ||
+    value.targetQueryKeys.some(
+      (key) => typeof key !== "string" || !allowedKeys.has(key),
+    ) ||
+    new Set(value.targetQueryKeys).size !== value.targetQueryKeys.length ||
+    JSON.stringify(value.targetQueryKeys) !==
+      JSON.stringify([...value.targetQueryKeys].sort())
+  ) {
+    throw new Error("Saved-profile access evidence is invalid");
+  }
+
+  const summary = safeSavedProfileSummary({
+    ...value,
+    bodySha256: "0".repeat(64),
+  });
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        `xhs-saved-profile-access/v${XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION}`,
+        value.targetEvidenceSha256,
+        value.targetQueryKeys,
+        summary.httpStatus,
+        summary.contentType,
+        summary.finalLocation,
+        summary.attributableItemCount,
+        summary.idFingerprint,
+        summary.loginWall,
+      ]),
+    )
+    .digest("hex");
+}
+
+const XHS_SAVED_PROFILE_ACCESS_FIELDS = [
+  "targetEvidenceSha256",
+  "targetQueryKeys",
+  "httpStatus",
+  "contentType",
+  "finalLocation",
+  "attributableItemCount",
+  "idFingerprint",
+  "loginWall",
+];
+
+function comparableXhsSavedProfileAccess(value) {
+  fingerprintXhsSavedProfileAccess(value);
+  const summary = safeSavedProfileSummary(value);
+  return {
+    targetEvidenceSha256: value.targetEvidenceSha256,
+    targetQueryKeys: value.targetQueryKeys,
+    httpStatus: summary.httpStatus,
+    contentType: summary.contentType,
+    finalLocation: summary.finalLocation,
+    byteLength: summary.byteLength,
+    attributableItemCount: summary.attributableItemCount,
+    idFingerprint: summary.idFingerprint,
+    loginWall: summary.loginWall,
+    bodySha256: summary.bodySha256,
+  };
+}
+
+/**
+ * Compare raw observations under the current semantic access contract without
+ * returning any evidence value. Persisted fingerprint values and versions are
+ * deliberately not treated as input identity. Exact byte-length and body drift
+ * remain separate provenance signals.
+ */
+export function compareXhsSavedProfileAccess(previous, current) {
+  const before = comparableXhsSavedProfileAccess(previous);
+  const after = comparableXhsSavedProfileAccess(current);
+  const changedAccessFields = XHS_SAVED_PROFILE_ACCESS_FIELDS.filter(
+    (field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]),
+  );
+  return {
+    equivalent: changedAccessFields.length === 0,
+    changedAccessFields,
+    byteLengthChanged: before.byteLength !== after.byteLength,
+    bodyChanged: before.bodySha256 !== after.bodySha256,
+  };
+}
+
+function historyTabRank(tab) {
+  try {
+    return new URL(tab.url).pathname === "/login" ? 0 : 1;
+  } catch {
+    return 2;
+  }
+}
+
+/**
+ * Inspect one credential-safe saved-profile history target without navigating
+ * any tab. The injectable client factory keeps the access contract executable
+ * in tests without a browser or simulated source data.
+ */
+export async function inspectXhsSavedProfileStatus(
+  tabs,
+  clientFactory = (wsUrl) => new CDPClient(wsUrl),
+) {
+  if (!Array.isArray(tabs)) {
+    throw new Error("DevTools page targets must be an array");
+  }
+
+  const candidates = tabs
+    .filter(
+      (tab) =>
+        selectXhsCdpTab([tab]) &&
+        typeof tab.webSocketDebuggerUrl === "string" &&
+        tab.webSocketDebuggerUrl,
+    )
+    .sort((left, right) => historyTabRank(left) - historyTabRank(right));
+
+  for (const tab of candidates) {
+    const cdp = clientFactory(tab.webSocketDebuggerUrl);
+    try {
+      await cdp.connect();
+      await cdp.send("Runtime.enable");
+      const history = await cdp.send("Page.getNavigationHistory");
+      const target = selectXhsProfileHistoryTarget(history?.entries);
+      if (!target) continue;
+
+      const observed = safeSavedProfileSummary(
+        await cdp.evaluate(savedProfileFetchExpression(target.requestUrl)),
+      );
+      const targetEvidenceSha256 = createHash("sha256")
+        .update(target.evidenceUrl)
+        .digest("hex");
+      const accessFingerprint = fingerprintXhsSavedProfileAccess({
+        targetEvidenceSha256,
+        targetQueryKeys: target.queryKeys,
+        ...observed,
+      });
+      return {
+        ready:
+          observed.finalLocation === "profile" &&
+          !observed.loginWall &&
+          observed.attributableItemCount > 0,
+        targetEvidenceSha256,
+        targetQueryKeys: target.queryKeys,
+        accessFingerprintVersion: XHS_SAVED_PROFILE_ACCESS_FINGERPRINT_VERSION,
+        accessFingerprint,
+        ...observed,
+      };
+    } finally {
+      cdp.close();
+    }
+  }
+
+  return {
+    ready: false,
+    reason: "no credential-safe saved profile found in XHS page history",
+  };
 }
 
 async function handleScroll(cdp) {
@@ -379,6 +631,7 @@ async function main() {
         status: "help",
         commands: [
           "status",
+          "saved-status",
           "feed",
           "search <keyword>",
           "read <full_url_from_feed>",
@@ -391,6 +644,17 @@ async function main() {
 
   let cdp;
   try {
+    const endpoint = resolveXhsCdpEndpoint();
+    CDP_HOST = endpoint.host;
+    CDP_PORT = endpoint.port;
+
+    if (command === "saved-status") {
+      const tabs = await cdpGet("/json/list");
+      const result = await inspectXhsSavedProfileStatus(tabs);
+      console.log(JSON.stringify({ status: "success", data: result }, null, 2));
+      process.exit(0);
+    }
+
     const tab = await getXHSTab();
     cdp = new CDPClient(tab.webSocketDebuggerUrl);
     await cdp.connect();
@@ -417,7 +681,7 @@ async function main() {
         throw new Error(
           "Unknown command: " +
             command +
-            ". Use: status, feed, search, read, scroll",
+            ". Use: status, saved-status, feed, search, read, scroll",
         );
     }
 
@@ -431,4 +695,4 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) main();

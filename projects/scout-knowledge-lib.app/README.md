@@ -13,6 +13,10 @@ delivery to the independently runnable Scout knowledge-library project in
   owns the current durable library layout.
 - [`tasks/README.md`](tasks/README.md) explains the task resources and their
   generated read projection.
+- [`docs/herdr-supervisor.md`](docs/herdr-supervisor.md) explains which Scout
+  responsibilities fit Herdr goals, how to run them, and how to recover them.
+- [`herdr/goals/library-health-pilot.goal.json`](herdr/goals/library-health-pilot.goal.json)
+  is a safe, portable first contract for validating the supervised workflow.
 - [`design/archive/`](design/archive/) retains completed proposals and rollout
   evidence; those files are not current instructions or deployment targets.
 - [`archive/agents/`](archive/agents/) preserves the retired Amy and Amy-Kimi
@@ -32,3 +36,51 @@ never in the tracked agent or knowledge archive.
 cd /app/projects/scout-knowledge-lib.app
 bun run check
 ```
+
+The deterministic library observer also has a read-only inspection command:
+
+```bash
+bun scripts/library-health-readonly.ts
+```
+
+Run it from an isolated worktree when using it as Herdr completion evidence.
+
+The allocation-design isolation fixture is offline and authorizes no provider
+calls:
+
+```bash
+bun scripts/verification-allocation-factorial.ts
+```
+
+It verifies a synthetic 64-episode toy schedule. Passing it is design-tooling
+evidence, not a model result or proof of a cryptographic lineage authority.
+
+The execution-freeze validator binds a proposed schedule to immutable model
+resolution declarations, a Scout-specific seed policy, exact artifact hashes,
+and completed external-registration metadata while keeping results empty and
+provider authority false:
+
+```bash
+bun test scripts/verification-allocation-freeze.test.ts
+```
+
+Use `verifyExecutionFreezeManifest` from
+[`scripts/verification-allocation-freeze.ts`](scripts/verification-allocation-freeze.ts)
+with the unknown manifest value and the exact supplied artifact bytes. The
+validator also runs the factorial isolation verifier over the bound schedule.
+It is an offline structural and byte-binding gate: it does not contact a
+provider, verify that an external URL or timestamp is genuine, authenticate
+lineage, or grant call or spending authority.
+
+For an explicit goal-owned directory, use `verifyExecutionFreezeBundle` from
+[`scripts/verification-allocation-freeze-bundle.ts`](scripts/verification-allocation-freeze-bundle.ts).
+It reads the fixed `freeze-manifest.json`, inventories the directory, and
+rejects relative roots, traversal-shaped artifact names, symlinks, non-regular
+entries, and undeclared files before invoking the same offline gate. Regular
+files are opened through no-follow descriptors, so replacing an inventoried
+file with a final-component symlink cannot redirect the subsequent read. On
+the Linux Scout runtime, the root directory remains pinned and recursive
+children are opened relative to its `/proc/self/fd` descriptor chain, so an
+intermediate directory replacement also fails closed. A runtime without that
+descriptor filesystem cannot validate a directory bundle. Directory
+validation does not authenticate provenance or authorize provider calls.

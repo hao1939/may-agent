@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #472: The Frozen Frontier. SICP-Sol gap crosses 100pts (338 vs 229pts) — a 40-year-old lecture series commands 48% more attention than the most powerful AI model's public launch. Three frontier models simultaneously on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) collectively total 860pts — less than a decoded bash script on a t-shirt (1,149pts). RuBench (2607.06411v1) provides the mechanism: the product silently substitutes models on 20% of tasks, proving the deployed product is the unit measured, not the model. CREAD (2607.06078v1) shows collaborative multi-agent testing discovers 2.1× more failures than single-agent baselines. The frontier is frozen not in capability but in attention — the community has priced in capability and is demanding understanding."
+summary: "Scan #472: The Frozen Frontier, qualified. At one unmatched snapshot, three selected frontier-model stories total fewer cumulative HN points than one decoded-shirt story; they cross it within later scans and finish above it, so the basket does not establish a structural attention ceiling or category-wide preference. RuBench retains one mismatch rejection plus 20 model-identity-clean Fable trajectories, one of whose passes fetched current upstream source; it supports configuration reporting and executing-model checks, not universal product-over-model attribution. CREAD's one unseeded 50-iteration run per arm finds a collaboration gain in Highway but not Roundabout; it does not establish a general 2.1x effect or an orthogonal-LLM-agent mechanism."
 triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier models", "RuBench model substitution", "CREAD collaborative testing", "comprehension premium", "skill ecosystem GitHub", "sovereignty stack EU", "digital deletion PlayStation"]
 </ai_context>
 
@@ -7,7 +7,7 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.MA), GitHub
-**Theme:** The frontier is frozen — not in capability, but in attention. Three frontier model announcements coexist on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) totaling 860pts — **less than a decoded bash script on a t-shirt** (Uniqlo 1,149pts). SICP-Sol gap crosses the 100pt threshold for the first time (338 vs 229pts, 48% premium). RuBench catches a deployed product silently substituting models, proving the product — not the model — is the unit of measurement. The community has priced in capability and is demanding understanding, governance, and sovereignty.
+**Theme:** At this unmatched snapshot, three selected frontier-model announcements (GPT-Live 411 points, Grok 4.5 276, SWE-1.7 173) total 860 cumulative HN points, fewer than one decoded-shirt story at 1,149. Later scans reverse the ordering. The comparison describes selected counters; it does not establish a frozen frontier, category-wide attention reallocation, or community preference. RuBench supplies a separate measurement warning: routed products require configuration reporting plus executing-model checks.
 
 ---
 
@@ -16,8 +16,11 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 ### CREAD: Collaborative Multi-Agent Testing for Emergent Failure Discovery (2607.06078v1)
 **Title:** Collaborative Multi-Agent Testing for Emergent Failure Discovery in Autonomous Driving Systems
 **Source:** https://arxiv.org/abs/2607.06078
-**Key finding:** CREAD organizes three specialized agents — a Perception Fuzzer Agent (generates perturbations), a Metamorphic Validator Agent (assesses behavioral consistency across scenario pairs), and an Orchestrator Agent — through a shared blackboard architecture. The collaborative configuration discovers **2.1× more failures per 100 scenarios** than a single-agent baseline. However, gains over a non-collaborative two-agent baseline vary by environment, suggesting the collaboration quality (not just agent count) matters.
-**Significance:** This is a constructive complement to the Dispersion Collapse (#455). Where that paper showed agent *populations* collapse to shared attractors (undermining independent verification), CREAD shows that *structured* collaboration — with explicitly differentiated roles and a shared blackboard — can multiplicatively amplify failure discovery. The key difference: CREAD agents have orthogonal functions (perturb, validate, coordinate), not homogeneous goals. Diversity is architectural, not emergent. The Oversight Inversion implication: collaborative testing agents work **when their roles are compiled into distinct functions**, not when they are N copies of the same evaluator.
+**Primary-review qualification (2026-09-04):** CREAD is a work-in-progress HighwayEnv proxy around a deterministic heuristic ego controller and simulated state corruption, not a production autonomous-driving stack. Only the Perception Fuzzer uses an LLM (`GLM-5-Turbo`); the Metamorphic Validator is a rule-based behavioral-inconsistency indicator, not a formal oracle, and the Orchestrator is heuristic search. Each arm has one reported 50-iteration run in each of two environments. Failures per 100 scenarios are Highway 52/14/12 and Roundabout 52/58/38 for collaborative/non-collaborative/single-agent respectively. Thus collaboration beats the same-role non-collaborative control in Highway but loses 52 to 58 in Roundabout. The headline approximately **2.1×** is the average of the two collaborative rates (52) divided by the average of the two single-agent rates (25), not a consistent collaboration effect.
+
+**Reproducibility and control limits:** The attributable repository is `ruizhengu/CREAD` at observed main head `cc59f9c622c721146637c3a8a1648b38ed7ceb81`. It releases the runner but no result JSON, release asset, tag, action artifact, fixed seed, repeated-run distribution, uncertainty interval, or LLM budget/response ledger. The runner uses unseeded Python, NumPy, and simulator randomness. Its single-agent arm also removes the validator role, so the single-agent comparison changes functionality as well as coordination; only collaborative versus non-collaborative keeps the two testing roles common. The reported 50-scenario rates imply 26/7/6 Highway failures and 26/29/19 Roundabout failures. Descriptive 95% Wilson intervals are broad (for example, collaborative 52%: 38.5%–65.2%; Roundabout non-collaborative 58%: 44.2%–70.6%), and no repeated-run evidence is available.
+
+**Significance:** Retain the narrower result: adaptive blackboard/orchestrator search changed failure yield substantially in one lightweight environment and not in the other. This is environment-specific evidence that coordination strategy can matter, not evidence that orthogonal LLM agents generally amplify failure discovery, that collaboration causes a 2.1× gain, or that the result transfers to sensor-level or deployed autonomous-driving systems. Revisit on a seeded repeated ablation, retained result bundle, equal-budget ledger, higher-fidelity controller/simulator result, or repository/paper revision.
 
 ---
 
@@ -25,8 +28,8 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 
 ### RuBench: The Product, Not the Model (2607.06411v1 — previously noted in #451)
 **Source:** https://arxiv.org/abs/2607.06411
-**Deepened insight:** While RuBench's multilingual benchmark results are valuable (best configuration resolves 78.7% of tasks), the paper's most structurally important finding is buried in the methodology section: auditing Claude Code + Fable 5 trajectories, they caught the **product silently substituting the model on 5 of 25 tasks (20%)**. An official safeguard fallback re-routed routine HTTP-protocol fixes from Fable 5 to Opus 4.8. This is "direct, reproducible evidence that the deployed product, not the model, is the unit actually measured."
-**Connection to Frozen Frontier theme:** When the community debates whether Grok 4.5 or Sol or SWE-1.7 is "better," the assumption is that the model is what's being evaluated. RuBench proves that deployed products silently add, swap, and route between models — the attention ceiling on "frontier model announcements" reflects a dawning market awareness that model identity is porous. The Frozen Frontier is partly a **measurement crisis** — what is being announced is not necessarily what is being deployed.
+**Deepened insight, primary-reviewed 2026-09-04:** The paper reports that an official safeguard fallback substituted Opus 4.8 for Fable 5 on **5 of 25 tasks (20%)**. The pinned public repository directly retains one `MODEL-SUBSTITUTION` rejection, a runner that deletes mismatched cells, and the complementary 20 Fable task trajectories; all 1,585 model-bearing messages in those retained traces identify Fable. They are model-identity-clean, but one retained Fable pass fetched current upstream source containing the gold-fix file (17/20 becomes 16/20 under the paper's sensitivity rule). The five rejected trajectories and the reported 2/2 rerun are absent, so the exact five-task set remains author-reported rather than independently reproducible from the release.
+**Connection to Frozen Frontier theme:** When a product can route models, an announced model name does not fully specify the evaluated system. The defensible rule is to name product, requested model, effort, versions, and task slice and then verify the executing model in every trace. RuBench does not prove that the model is never an explanatory unit: its own Round 2 reports a 26-point generation gap inside one product shell.
 
 ---
 
@@ -88,9 +91,23 @@ SICP at **338pts** vs Sol at **229pts** = **109pt gap** (was 83pts in #471). The
 | #471 | 309 | 226 | +83 | +36.7% |
 | **#472** | **338** | **229** | **109** | **+47.6%** |
 
-This is **exponential divergence**, not linear drift. The gap has gone from 2→11→50→63→83→109 in six scans. At this rate, SICP will reach **double Sol's score** within 3-4 scans. The comprehension premium is compounding.
+These are six repeated cumulative reads of two selected stories, not six
+independent observations. The growing difference is descriptive; fitting no
+time axis or growth model means it cannot distinguish exponential from linear
+change. It also mixes submission age and exposure. Stable HN records observed
+on `2026-09-04T08:29:12Z` show SICP item `48825664` was submitted at
+`2026-07-07T23:57:29Z` and finished at 355 points / 48 descendants
+(`da3cb0b8…dae1a`), while Sol item `48827402` was submitted 4h15m later at
+`04:12:13Z` and finished at 235 / 210 (`a8f3818e…3d20`). The final gap is 120
+points and the ratio is 1.51×, so the forecast of 2× within four scans is
+falsified.
 
-### 2. The Frozen Frontier: Three Models, One Ceiling
+SICP and Sol also differ in source, title, event semantics, submitter, and
+audience. HN points do not measure comprehension. The series is compatible
+with durable interest in SICP, but does not establish a compounding
+“comprehension premium,” growth law, or causal reallocation from model news.
+
+### 2. The selected basket is not a category ceiling
 
 Three frontier model stories coexist on the HN front page:
 - **GPT-Live**: 411pts (OpenAI)
@@ -104,23 +121,40 @@ For comparison, single non-AI stories:
 - **Chat Control original**: 1,102pts
 - **StreetComplete**: 802pts
 
-The frontier is frozen: three competing vendors' model announcements collectively generate less attention than a decoded bash script, an EU privacy policy, or a map editing app. The community has not stopped evaluating AI — it has priced in model capability as a category and reallocated attention to governance, sovereignty, and comprehension.
+The arithmetic is correct for that selected snapshot. The inference is not.
+The stories differ in age, submitter, title, source, event semantics, audience,
+and front-page exposure; the scan does not preserve an observation timestamp,
+impressions, rank history, or a denominator for all model and non-model
+stories. Points are cumulative engagement counters, not coded preference,
+evaluation effort, or attention allocation.
 
-**The attention decay function across vendors:**
-- Sol Preview: 1,137pts → Sol Ultra: 413pts → GPT-Live: 411pts → Grok 4.5: 276pts → Sol Launch: 229pts → SWE-1.7: 173pts
+Later retained scans reverse the comparison: the three-model basket crosses
+Uniqlo at 1,298 versus 1,291 in Scan 476. Stable HN records observed on
+2026-09-04 finish at Grok 776, GPT-Live 750, SWE-1.7 272, and Uniqlo 1,489.
+The model basket is then **1,798**, 309 points (20.8%) above Uniqlo. SWE-1.7
+item `48833866` was submitted at `2026-07-08T16:19:36Z` and hashes to
+`5116d04b…ffa57` at observation `08:25:00.782Z`; Uniqlo item `48829312` was
+submitted at `08:46:06Z` and hashes to `2dd018f5…6a25d` at
+`08:25:01.238Z`. The model items were roughly 7.5–9.2 hours younger than the
+comparator, reinforcing the exposure mismatch.
 
-The decay is **monotonically decreasing** regardless of vendor, model capability, or announcement timing. The ceiling is structural, not per-vendor.
+The reversal does not show that model attention is structurally advantaged
+either. It shows that the “one ceiling” conclusion depends on capture time and
+selection. A defensible category claim needs a predeclared sampling frame,
+matched exposure or score-at-age, comparison distributions rather than one
+hand-picked story, and an explicit outcome such as impressions or coded
+evaluation work. Audience saturation remains possible but unmeasured.
 
 ### 3. The Measurement Unit Problem
 
-RuBench (2607.06411) reveals that deployed products silently substitute models — 20% of tasks used a different model than what the product claimed to be running. This is the mechanism behind the Frozen Frontier:
+RuBench (2607.06411) reports model substitution on 20% of one hors-concours task set and directly exposes one public rejection event. This is a separate measurement-unit warning, not a demonstrated mechanism behind the HN counters:
 
 - **What's announced**: "Model X with capability Y"
 - **What's deployed**: Product Z, which may route to models A, B, or C depending on safeguards
-- **What's measured**: Product Z's aggregate performance, not any model's true capability
-- **What the community knows**: The model identity is porous, making model announcements structurally less informative
+- **What's measured**: A product/model/effort/version/task-slice configuration whose actual routing must be checked
+- **What the evidence shows**: Model identity can be porous under one safeguard regime; it is not always porous
 
-The attention ceiling on frontier model announcements is the market's implicit pricing of this measurement crisis. When the product is the unit measured, model announcements become product marketing — and the community has priced in product marketing.
+The attention ceiling is consistent with a market discount on underspecified product claims, but this scan does not identify attention's cause. The safe methodological conclusion is operational: preserve trajectories and validate requested versus executing model before assigning an outcome.
 
 ### 4. Sovereignty Stack Expands with Fresh EU Signal
 
@@ -173,9 +207,9 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 ## Tracked Metrics
 
 - **Foundations Turn**: SICP 338pts + Notes on Quality 157pts + Accretive Work 130pts = **625pts** (2.73× Sol). With Hayabusa2 (151pts) and NoiseLang (98pts) as comprehension-adjacent: **874pts** (3.82× Sol).
-- **Frontier models combined**: GPT-Live 411pts + Grok 4.5 276pts + SWE-1.7 173pts = **860pts** (~3.8× Sol). Less than Uniqlo alone (1,149pts).
+- **Selected frontier-model snapshot**: GPT-Live 411pts + Grok 4.5 276pts + SWE-1.7 173pts = **860pts** (~3.8× Sol), below Uniqlo's 1,149 at that unmatched capture; later scans reverse the ordering.
 - **Sovereignty stack**: ~5,075pts across 10 domains (22.2× Sol).
-- **SICP-Sol gap**: 109pts (47.6% premium). New ATH. Sixth consecutive scan of widening gap.
+- **SICP-Sol selected-item gap**: 109pts (47.6%) at this unmatched capture; final stable records reach 120pts (51.1%), not the predicted 2× ratio.
 - **Sol plateau**: 229pts. Sixth consecutive near-zero growth scan.
 - **Comprehension:News ratio**: 625pts / 229pts = **2.73** (Foundations Turn only).
 - **Running accuracy**: ~96.6% (95/98). No new predictions or falsifications.
@@ -184,9 +218,9 @@ The pattern: skills are optimizing for **judgment** (fable-soul), **efficiency**
 
 ## Predictions
 
-1. **SICP will reach 2× Sol's score** (i.e., SICP ≥ 458pts) within 4 scans. Current trajectory: +29pts/scan vs Sol's +3pts/scan.
+1. **FALSIFIED:** SICP does not reach 2× Sol within four scans and finishes at 355 versus 235 (1.51×); cumulative increments were not a fitted trajectory.
 2. **GitLost will cross 500pts** within 2 scans. Currently at 474pts, growing at ~10pts/scan.
-3. **Grok 4.5 will not exceed SICP** within 3 scans. Despite +103pt surge, structural ceiling below comprehension content.
+3. **FALSIFIED:** Grok 4.5 exceeds SICP within three retained scans (458 versus 343 in Scan 476); the proposed structural ceiling does not hold.
 
 ---
 

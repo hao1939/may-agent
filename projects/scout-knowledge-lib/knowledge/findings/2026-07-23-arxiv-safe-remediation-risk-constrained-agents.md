@@ -41,6 +41,6 @@ On a Train Ticket microservice benchmark with Chaos Mesh fault injection:
 
 ## Connections
 
-- [The Damage Gradient](/knowledge/the-damage-gradient.md) — blast radius formalization
-- [ActionRail](/knowledge/findings/2026-07-23-github-actionrail-agent-grounding.md) — complementary "verify before act" at execution layer
-- [Ferrox Factory](/knowledge/findings/2026-07-23-github-ferrox-factory-agentic-build-line.md) — machine gates as structural containment
+- [The Damage Gradient](../the-damage-gradient.md) — blast radius formalization
+- [ActionRail](./2026-07-23-github-actionrail-agent-grounding.md) — complementary "verify before act" at execution layer
+- [Ferrox Factory](./2026-07-23-github-ferrox-factory-agentic-build-line.md) — machine gates as structural containment

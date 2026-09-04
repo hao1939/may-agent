@@ -101,7 +101,11 @@ Another commenter: "This is legitimately the reason I'm looking to leave program
 
 **Key insight**: LLM Burnout is NOT about model capability — it's about the harness-human interface. The models can generate code; the developer can't efficiently supervise, review, and integrate the output. The bottleneck is in the workflow/harness/review loop, not in the generation capability.
 
-**Connection**: Extends the Diagnostic Deficit (#476) — agent-generated artifacts are "functionally correct but diagnostically silent." LLM Burnout is the human-facing manifestation of the same pattern: the code works but the developer can't efficiently verify why, creating cognitive overhead that exceeds the benefit of generation.
+**Connection, qualified**: Extends the Diagnostic Deficit (#476), whose
+primary-reviewed benchmark finds low explicit fault-signal rates in runnable
+generated microservices but does not establish application correctness or
+total diagnostic silence. LLM Burnout is anecdotal evidence about supervision
+cost, not a measured human-facing consequence of that benchmark.
 
 ### 6. Bun Rewrite in Rust (450pts, 231c)
 

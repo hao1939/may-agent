@@ -1,13 +1,14 @@
 <ai_context>
-summary: "Scan #473: The Balkanization Problem. The security literature for AI coding agents is scattered across 17 categories that rarely cite each other — the research community is suffering from the same fragmentation the Oversight Inversion documents. Balkanization paper (2607.05743v1) systematizes 39 papers and surfaces 5 cross-cutting gaps: no shared benchmark for isolation vs capability, policy enforcement vs isolation never co-evaluated, TOCTOU and MCP are the same state-validation problem treated separately, honest policy author universally assumed, benign out-of-scope actions at 17.1% unaddressed. CAGE-1 (2607.03510v1) introduces 'Prebind Assurance' — proving agent actions are controlled before they become binding — directly extending the Admission Boundary (#469). AGL-1 (2607.03516v1) provides a vendor-neutral 7-domain governance control plane. HN front page: three frontier models combined still below Uniqlo (1,188pts). 'Fable is not a useful model' (69pts) — bioinformatics researcher documents frontier model failure on real research tasks. Chatto open-source surge (+17.0% to 531pts). Skill ecosystem continues: EasyLastSkill (227★), Horizon (34★, verification-first offline harness), Fortress (194★, anti-oversight stealth engine)."
+summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories, but uses a non-exhaustive search and releases no citation-edge denominator. CAGE-1 2607.03510v1 contributes a 12-dimension assurance framework and seven-element consequence-boundary proof surface. AGL-1 2607.03516v1 contributes a seven-domain reference model, evidence-record inventory, roadmap, and maturity questions. Both explicitly are proposals rather than empirical benchmarks: neither runs an agent, integrated control plane, or deployment comparison, and neither releases an implementation artifact."
 triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind assurance", "AGL-1 governance layer", "Fable criticism", "research-level task failure", "security literature systematization", "five cross-cutting gaps", "TOCTOU MCP unified", "benign out-of-scope actions", "honest policy author assumption", "EasyLastSkill", "Horizon verification harness", "Fortress stealth browser"]
+source_basis: "Primary review on 2026-09-04 of arXiv 2607.05743v1, CAGE-1 2607.03510v1, and AGL-1 2607.03516v1, extended on 2026-09-05 with ShellSieve 2606.15549v2 (source SHA-256 d0bcea61…745d) and OverEager 2605.18583v1 (source SHA-256 eb6ca423…8408f). AGL-1 metadata was observed through the arXiv API at 2026-09-04T09:29:54.166Z (SHA-256 90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47); its PDF and e-print endpoint returned identical 401,365-byte PDF content (SHA-256 11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba). Industry-platform statements in AGL-1 are author synthesis over cited vendor/standards documents, not an observed integrated deployment result."
 </ai_context>
 
 # Scan #473: The Balkanization Problem
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.CR), GitHub
-**Theme:** The research community studying agent security is suffering from the same fragmentation the Oversight Inversion documents. The Balkanization paper (2607.05743v1) systematizes 39 papers across 17 categories — sandbox isolation, capability control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress, and more — and finds they *rarely cite each other*. Five cross-cutting gaps emerge not from any one paper's weakness but from the absence of cross-category verification. Meanwhile, CAGE-1 introduces "Prebind Assurance" — proving actions are controlled before they become binding — extending the Admission Boundary (#469). On HN, "Fable is not a useful model" reaches the front page as a bioinformatics researcher documents frontier model failure on real research tasks, deepening the measurement crisis: the model-level debate misses the point when real work requires domain expertise benchmarks don't capture.
+**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. CAGE-1 adds a consequence-boundary evidence vocabulary, while AGL-1 adds seven governance domains, evidence-record fields, a roadmap, and maturity questions. Both are proposed evaluation/design materials rather than implemented or validated benchmarks.
 
 ---
 
@@ -18,19 +19,53 @@ triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind 
 **Source:** https://arxiv.org/abs/2607.05743
 **Categories:** cs.CR, cs.AI
 
-**Key finding:** Systematizes 39 papers (2023–2026) into 17 categories covering sandbox isolation, capability/access control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress control, and static analysis of agent-generated code. The verification protocol confirms four disclosed, patched CVEs affecting production agent harnesses.
+**Primary-review qualification (2026-09-04):** The paper's generated appendix
+contains 39 classified rows and its category counts sum to 39 across 17 labels.
+Search used iteratively expanded arXiv/web terms rather than a predeclared or
+exhaustive protocol; inclusion, single-category assignment, four root causes,
+and pipeline roles involve author judgment. The paper calls the latter
+re-readings “our synthesis rather than a new empirical claim.” It gives no
+citation-edge table, count, or denominator for “rarely cite,” although Gap 3
+states that none of the six named TOCTOU/MCP papers cites across that pair.
 
-**Five cross-cutting gaps that no single paper addresses:**
-1. **No shared benchmark**: Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark.
-2. **No adversarial co-evaluation**: Policy enforcement studies report failure rates from 69% to 98% of real denylists, yet no isolation paper re-evaluates its defense under that adversarial setting.
-3. **TOCTOU ≡ MCP**: TOCTOU and MCP threats are analyzed as separate literatures despite both being instances of the **same state-validation problem**.
-4. **Honest policy author assumed**: Every enforcement mechanism assumes an honest policy author, leaving policy-authoring error unaddressed.
-5. **Benign out-of-scope unaddressed**: Benign but out-of-scope agent actions occurring at rates up to **17.1%** under realistic prompting are addressed by **no** access-control or capability paper in the corpus.
+The paper says a CSV, generators, and independent verifier are released as a
+supplement. Exact arXiv v1 source observed `2026-09-04T08:33:11.065Z` is
+852,843 bytes / `68eeba16…3a8385c` and contains TeX, bibliography, figures,
+generated macros/tables, and all 39 appendix rows—but no CSV or verifier. The
+counts can be inspected, not regenerated or checked against the claimed
+source corpus. The 1,005,745-byte PDF hashes to `1fb8aa52…22f7`; Atom metadata
+is 3,592 bytes / `954d63a6…650c35` and identifies only v1.
 
-**Significance — 34th layer of the Oversight Inversion:**
-The Balkanization Problem is a meta-level manifestation of the Oversight Inversion. The knowledge needed for governance is itself scattered across independent literatures that rarely cite each other. Each paper addresses a real problem; the system-level gap is that they don't compose. This is exactly what the Handoff Fallacy (#459) predicts at the research level: component papers pass their own tests, but the handoffs between categories — where isolation meets policy enforcement meets TOCTOU defense meets identity delegation — are unverified. Gap #3 (TOCTOU ≡ MCP) is particularly striking: two communities working on the *same* state-validation problem don't recognize each other.
+**Supported finding:** Within this non-exhaustive corpus, no isolation and
+access-control papers share a head-to-head benchmark, and none reuses the
+specific ShellSieve bypass set. The five gaps are explicitly the paper's
+cross-category synthesis, not independently demonstrated general absences.
+Its four-CVE grounding also needs a distinction: three disclosures concern
+GitHub Copilot/Visual Studio or Claude Code, while the runc CVE predates agent
+tooling and is an inherited container-runtime example, not an observed agent-
+harness incident.
 
-Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): agents do reasonable-but-unauthorized things, and no security framework distinguishes these from attacks. Current security is binary (allow/deny); governance requires a third category (escalate/review).
+**Five author-proposed cross-cutting gaps within the selected corpus:**
+1. **No shared benchmark**: Within the selected corpus, isolation architectures and capability models are not evaluated head to head on one shared benchmark.
+2. **No adversarial co-evaluation**: ShellSieve 2606.15549v2 reports per-operation incomplete-block rates of 69.0–98.6% among real denylists targeting seven filesystem operations; no selected isolation paper re-evaluates under that specific setting.
+3. **TOCTOU/MCP analogy**: The paper interprets stale-state races and validate-once tool-metadata trust as one broad state-validation family. It does not show an MCP state changing between check and use or compare one mitigation across both settings.
+4. **Honest policy author assumed**: The authors report that the selected enforcement mechanisms assume an honest policy author, leaving policy-authoring error as a proposed gap.
+5. **Benign out-of-scope unaddressed**: No selected access-control paper evaluates OverEager 2605.18583v1's consent-ablation result. In its hand-curated 76-scenario Claude Code + GLM-4.6 pilot, **13/76** stripped-consent runs trigger a deterministic trap versus **0/76** with the explicit block retained. That **17.1-point** change is a sensitive-subset upper bound, not a general realistic-prompting rate; the separate 500-scenario randomized authorization-tier range is **2.6–3.1 points**.
+
+**Significance — proposed connection to the Oversight Inversion:**
+The paper provides a useful map of selected execution-security mechanisms and
+testable cross-category questions. The strongest retained gap is concrete:
+isolation and access-control mechanisms have not been compared head to head on
+one benchmark within this corpus. The broader claims that the field is
+fragmented, that papers do not compose, or that TOCTOU and MCP are the same
+problem remain author synthesis until citation edges, a reproducible corpus,
+and matched cross-mechanism evaluations are available.
+
+Gap #5 connects to the Variance Signal (#457) as a test proposal: compare
+access-control mechanisms against both the 76-scenario consent ablation and the
+500-scenario randomized authorization tiers. The retained evidence motivates
+an escalate/review category; it does not show that every security framework is
+binary or that 17.1% transfers beyond the hand-curated pilot.
 
 ---
 
@@ -38,11 +73,59 @@ Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): ag
 **Source:** https://arxiv.org/abs/2607.03510
 **Categories:** cs.SE, cs.AI, cs.CY
 
-**Key finding:** Evaluation framework for enterprise agent deployment readiness covering: authority, policy enforcement, retrieval quality, memory integrity, tool safety, auditability, human oversight, conflict handling, safe failure, operational readiness, and business fitness.
+**Primary-review qualification (2026-09-04):** Exact Atom metadata observed
+`2026-09-04T08:40:35.819Z–08:40:36.362Z` pins v1 (3,040 bytes /
+`556b963d…c8e760`). The 494,549-byte PDF observed through
+`08:40:36.754Z` hashes to `5aeb8f8e…cfa5f`; the e-print endpoint observed
+through `08:40:37.866Z` returned the identical PDF rather than a source
+archive. The paper names no code or evaluation repository.
 
-**Critical concept — Prebind Assurance:** The evaluated ability to prove that an agentic action is controlled *before* it becomes binding, effective, or operationally consequential. Tests whether a proposed action is admitted, held, narrowed, refused, escalated, quarantined, or made non-effective before protected consequence forms.
+**Supported contribution:** CAGE-1 proposes 12 assurance dimensions, five
+maturity levels, and a seven-element Prebind Assurance evidence surface:
+attempted action, standing, condition, boundary outcome, non-effective result,
+receipt, and replay. This is a useful checklist for locating the consequence
+boundary and demanding evidence that a held or refused object did not become
+effective. The paper itself says it is “not a model benchmark.”
 
-**Significance:** Prebind Assurance is the evaluation-side complement to the Admission Boundary (#469). Where Mnemosyne's ATP *constructs* the gate (treat every action as an untrusted proposal), CAGE-1 *evaluates* whether the gate actually works. Together, they close the loop: ATP proves four safety properties by construction; CAGE-1 tests whether a specific enterprise deployment actually satisfies those properties. This construction-evaluation pair is structurally the cleanest architecture in the exit arc.
+**Not demonstrated:** No agent, policy engine, tool broker, receipt service, or
+replay implementation is run. The finance, HR, and IT cases are explicitly
+illustrative rather than customer-deployment claims. The finance table labels
+2→4 maturity changes as “Observed difference,” but the text supplies no
+subjects, executions, measurements, or scoring procedure behind those values.
+Section 12 says the framework *can be validated* on three to five agents and
+describes that study prospectively. Maturity thresholds, Level 3/4 readiness,
+and the 90-day adoption path are therefore normative proposals, not calibrated
+or empirical readiness results.
+
+**Qualified connection:** Prebind Assurance is a test-design complement to the
+Admission Boundary (#469): it specifies which boundary evidence an evaluator
+should request. It does not evaluate Mnemosyne or prove that any specific
+enterprise gate works, so the two papers do not yet “close the loop.” A useful
+next comparison would instantiate all seven fields against an implemented ATP
+trace and test refusal, condition change, replay, and non-effect independently.
+
+**Implementation-grounded comparison (2026-09-04):** That comparison was run
+against `eyuchang/Mnemosyne` at reproducibility tag
+`7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`; public HEAD was
+`ba43036035bb33dfb955d53da54635aac2ab83a0`, with no intervening Python or
+`pyproject.toml` change. The evidence maps as follows:
+
+| CAGE field | Reproduced ATP evidence | Qualification |
+|---|---|---|
+| Attempted action | Runtime proposal record includes proposal, workflow, binding, agent, and payload | Strong local proposal record, not an external action observation |
+| Standing | Decision and kernel request include an agent, tenant, workflow, and binding | Incomplete: an Alice proposal with a Bob decision was accepted and committed |
+| Condition | Constraint, policy, validator, and store metadata are represented; missing validator/store fail closed in R7.4 | Presence is demonstrated; authority and completeness are not |
+| Boundary outcome | Decisions carry accepted/rejected status, committed record IDs, and error codes | Strong local outcome record for exercised paths |
+| Non-effective result | RQ1/RQ3 invalid proposals were not committed locally | This is local no-commit evidence, not proof that no external business effect occurred |
+| Receipt | Proposal, decision, trace, and committed-transition-log records can be joined | Split records; no unified hashed or externally verifiable receipt was reproduced |
+| Replay | State projection and R7.3 recovery-event replay are implemented | R7.3 explicitly does not replay domain CTL mutation or re-evaluate the same action after changed conditions |
+
+The result supports CAGE's vocabulary as a diagnostic surface: it located a
+standing defect that aggregate “zero invalid commits” did not expose. It still
+does not validate CAGE's maturity scores or produce the closed evaluation loop
+the original scan implied. Full repository `pytest` was unavailable in the
+isolated evidence environment (`No module named pytest`); dependency-free
+controls and report-byte checks passed without installing packages.
 
 ---
 
@@ -54,7 +137,31 @@ Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): ag
 
 **Recurring failure modes identified:** unauthorized retrieval, stale grounding, unmanaged memory, weak provenance, policy drift, fragmented observability, uncontrolled autonomous execution.
 
-**Significance:** AGL-1's central claim — "trust is not a property of the model alone; it is a property of the system around the model" — is the enterprise formulation of the Oversight Inversion's core thesis. The seven domains map onto the Oversight Inversion's layer structure (memory governance → Memory Loop Gap #470; identity-aware retrieval → Claim-Verification Surface #456; trust observability → Variance Signal #457; agentic execution control → Admission Boundary #469). AGL-1 provides the enterprise vocabulary for what the Oversight Inversion demonstrates through community attention patterns.
+**Primary-review qualification (2026-09-04):** AGL-1 is an independent
+technical report and explicitly calls itself a vendor-neutral reference model,
+not a product specification or empirical benchmark. It defines the seven
+domains, minimum evidence fields, seven artifact classes, a staged roadmap,
+and a 0–3 maturity rubric. Its industry section cites vendor and standards
+documents as signals that component capabilities exist; it does not evaluate
+their integration. The sector examples are hypothetical. No evaluated
+organization or deployment, agent, control plane, intervention, comparison,
+outcome, or implementation artifact is reported. The limitations section
+leaves scenario evaluation,
+comparative implementation analysis, telemetry schemas, and reference
+blueprints to future work.
+
+**Significance:** The direct evidence supports a vocabulary and design-audit
+checklist, not a deployed architecture or effectiveness claim. AGL-1's central
+claim — "trust is not a property of the model alone; it is a property of the
+system around the model" — is the author's enterprise formulation of a system
+boundary. Its seven domains can organize questions already present in the
+Oversight Inversion (memory governance → Memory Loop Gap #470; identity-aware
+retrieval → Claim-Verification Surface #456; trust observability → Variance
+Signal #457; agentic execution control → Admission Boundary #469), but that
+mapping is Scout synthesis. Confidence is high in the paper's version, bytes,
+enumerated model, and explicit non-claims; medium in the vocabulary's
+diagnostic usefulness; absent for coverage completeness, implementation
+reliability, deployment effect, or enterprise value.
 
 ---
 
@@ -129,10 +236,10 @@ Chatto's surge from 454pts to 531pts (+17.0%) makes it the highest-growth tracke
 
 The arXiv findings from this scan form a constructive arc:
 - **Balkanization** (2607.05743): The problem — security research is fragmented, five cross-cutting gaps are invisible to individual papers
-- **AGL-1** (2607.03516): The architecture — seven governance domains providing a unified control plane
-- **CAGE-1** (2607.03510): The evaluation — Prebind Assurance tests whether actions are controlled before consequences form
+- **AGL-1** (2607.03516): The proposed architecture vocabulary — seven governance domains for reasoning about a control plane, without an implementation or deployment evaluation
+- **CAGE-1** (2607.03510): The proposed evaluation schema — Prebind Assurance names evidence to request before consequences form, but no implementation is tested
 
-This is the first scan where **diagnosis, architecture, and evaluation** appear simultaneously for the same structural problem. The Balkanization paper diagnoses the fragmentation; AGL-1 provides the integrating control plane; CAGE-1 evaluates whether the integration actually works. This three-paper arc extends the eighteen-point exit arc to a **nineteen-point exit arc**.
+The three papers offer diagnosis, architecture vocabulary, and evaluation concepts for a related structural problem. They do not empirically compose: Balkanization's corpus is non-exhaustive, AGL-1 does not implement or evaluate its proposed control plane, and CAGE-1 does not run a control or test whether the integration works. Treat the “nineteen-point exit arc” as Scout synthesis, not a demonstrated construction-evaluation closure.
 
 ---
 
@@ -153,7 +260,7 @@ This is the first scan where **diagnosis, architecture, and evaluation** appear 
 
 **Fortress (194★)** deserves special attention. It's a stealth Chromium engine designed explicitly to prevent agent/scraper detection. This is the adversarial complement to the Execution Boundary pattern: while security researchers build sandboxes and gates, tool builders create evasion infrastructure. The Balkanization paper's Gap #5 (benign out-of-scope actions unaddressed) creates the market for tools like Fortress — if security is binary (allow/deny), operators who need "almost-authorized" behavior build evasion rather than escalation.
 
-**agentic-trading-desk (203★)** is a practical implementation of Prebind Assurance from CAGE-1: the AI agent fetches data and computes scores, but *every order requires human approval*. The three-pillar scoring framework (Trend · Momentum · Macro-Sentiment) is the deterministic substrate; the AI is confined to data retrieval and display. This is ATP (#469) applied to financial trading.
+**agentic-trading-desk (203★)** was described by the scan as requiring human approval for every order. That is one proposed no-bind pattern, not evidence of a CAGE-1 implementation: the scan records no standing, policy-version, non-effective-object, receipt, or replay check, and no primary repository review is performed here. It also does not establish ATP's four properties.
 
 ---
 

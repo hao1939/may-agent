@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #456 (2026-07-09): The Claim-Verification Surface. Three uncovered arXiv papers converge: the structural gap between what a system claims and what is independently verified is the core governance surface — and it can be closed architecturally. Pitwall (2607.06495) treats faithfulness as an architectural property by decomposing every sentence into typed factual claims verified against a calibrated probabilistic state engine; discovers that virtues trade off and must be gated separately — 'fine-tuning on richer targets buys vividness that collapses into hallucination when the grounding state is sparse.' Claimed or Attested (2607.06194) measures the claim–attestation gap across 5.87B git commits: only 17.59% carry cryptographic signatures, yet these form a precision anchor for identity trust tiers (unsigned → signed → real-world-bound → cross-corpus attested). VAORA (2607.06522) aligns agent reasoning to visual action outcomes via dual rewards, suppressing hallucinated CoT that contradicts physical reality. 28th layer of the Oversight Inversion: governance must target the claim-verification surface — the typed boundary between what is asserted and what is independently checked — because verification of untyped, undifferentiated claims is the regime where the Inversion operates. Thirteen-point exit arc extended with claim-typing condition. HN: Sovereignty stack sustained ~4,630pts. StreetComplete 730pts (ATH plateau, +0.3%). GPT-5.6 Sol 80pts (+29% but still 9× less than StreetComplete). Herdr 232pts (NEW — agent multiplexer, 13,749★). Fable 5 extension 136pts (approaching 150pt prediction). Foundations Turn: TAOCP + 30papers + SICP = 1,000pts (milestone). GitHub: Herdr 13,749★ (NEW — agent multiplexer in Rust). Halo 39★ (+2.6%). trace-spec 5★ (NEW — TRACE attestation standard for agents). shepherd 1,068★, local-llm 1,204★ (plateau). Running accuracy: ~96.1% (73/76)."
+summary: "HN/arXiv/GitHub Scan #456 (2026-07-09), partly qualified. Pitwall's typed gates are extraction/ontology bounded. Claimed or Attested counts signature markers, not verified identities. VAORA's full reward improves all nine reported PHYRE Pass@k cells over the matched expert-guided baseline, but its alignment scores reuse training rewards rather than independent hallucination labels; its held-out templates are selected for first-collision compatibility, training has no repeated-seed uncertainty, and adapted Virtual Tool/CRAFT results do not support environment-agnostic or uniformly improved reasoning. Public VAORA code, data, checkpoints, one Set 2 result CSV, and three DQN summaries are attributable; most paper result surfaces are not retained. HN counters remain discovery signals."
 triggers: ["claim verification surface", "typed claims", "faithfulness as construction", "faithfulness by architecture", "claim decomposition", "virtue tradeoff", "Pitwall", "grounding engine", "calibrated verification", "claimed vs attested", "commit signatures", "identity attestation", "trust tiers", "unsigned signed attested", "precision anchor", "VAORA", "visual action outcome", "reasoning action alignment", "hallucinated CoT", "dual reward grounding", "vividness hallucination tradeoff", "sparse context audit", "claim typing", "agent multiplexer", "Herdr", "terminal multiplexer agent", "scan 456"]
-source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Herdr 13,749★, trace-spec 5★, halo 39★, shepherd 1,068★, local-llm 1,204★). Cross-referenced with Dispersion Collapse (#455), Write Contract (#454), Verification Harness (#451), Authority Gap (#434), Announcement Gap (#428)."
+source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 2607.06194 Claimed or Attested, 2607.06522 VAORA). All three v1 sources primary-reviewed 2026-09-04. Related artifact vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab and VAORA artifact vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76 inspected; public VAORA Hugging Face dataset 4f0619673adc4d840eb853e07b55eafac362dae7 and checkpoint/result tree 1729df5d285c68721da30769b42ef1c0ade316c2 inventoried. Pitwall's repository and Claimed or Attested's promised bundle/code were not attributable. HN front page and other GitHub counters are historical discovery observations."
 </ai_context>
 
 # Scan #456: The Claim-Verification Surface
@@ -12,19 +12,47 @@ source_basis: "arXiv cs.CL/cs.AI/cs.CR/cs.SE 2026-07-07 (2607.06495 Pitwall, 260
 
 ## Theme
 
-The Dispersion Collapse (#455) showed that populations of agents converge to shared attractors, undermining the assumption of independent verification. But what exactly should verification target? Three uncovered papers from the same arXiv batch converge from production deployment, code infrastructure, and embodied reasoning to name the answer: **the typed boundary between what is claimed and what is independently verified** — the Claim-Verification Surface.
+The Dispersion Collapse (#455) motivated measuring verifier independence rather
+than assuming it. What exactly should verification target? Three papers from the
+same arXiv batch suggest the typed boundary between a claim and its checking
+substrate. They study different populations and authorities, so this is a useful
+architectural synthesis, not three independent replications of one result.
 
-Each paper attacks a different domain but reaches the same architectural conclusion: faithfulness is achievable when claims are decomposed into typed units with independent verification, and it collapses when claims remain untyped or undifferentiated.
+Each paper motivates a different typed verification surface. Whether those
+surfaces have sufficient extraction coverage and authority remains an empirical
+question in each domain.
 
-1. **Pitwall: Faithful Natural-Language Race-Strategy Briefings from a Calibrated Real-Time Monte Carlo Engine** (2607.06495): A production system for live F1 strategy commentary that treats **faithfulness as an architectural property rather than an aspiration**. Every published sentence is decomposed into typed factual claims (positions, gaps, tyres, pace, overtakes, race control) and each claim is verified against the probabilistic race state that prompted it. The same verifier gates the fine-tuning data: of 3,045 model-written targets, only the 81.9% whose every claim is state-supported are retained. Deployed live at two consecutive Grands Prix (Austria and Britain, 2026).
+1. **Pitwall** (2607.06495v1): Specifies ten claim classes and checks extracted
+   claims against live structured state. The corpus retains 2,494/3,045 model
+   generations and uses 551 template fallbacks. This supports typed admission
+   and publication gates, but the paper's admission rule says at least one
+   checkable and zero contradicted claims; it does not explicitly require zero
+   unverifiable claims. Coverage is therefore a precondition, not a proven
+   construction-wide guarantee. Its richer-target sparsity failure and four-base
+   comparison are a qualitative deployment-shaped audit with no probe count or
+   repeated-run uncertainty.
 
-   Critical finding: **virtues trade off and must be gated separately**. In simulation, calibration-optimal is not decision-optimal. In generation, fine-tuning on richer targets buys vividness that collapses into hallucination when the grounding state is sparse. A four-base replication traces this to base-model instruction adherence, not scale. **Sparse-context auditing** removes the failure from the production model.
+2. **Claimed or Attested?** (2607.06194v1): Detects a signature header in
+   1,031,721,316/5,866,595,698 commits (17.59%). This is exact marker presence,
+   not full signature or identity verification. Two platform keys carry 95.9%
+   of author-key associations; only 465,398/62,579,994 canonical authors
+   (0.74%) reach the paper's person-key tier. A 398-key sample retrieves 78
+   public keys and finds 39 user-id emails matching the author string. Treat
+   the axis as provenance evidence with explicit trust levels, not a binary
+   identity attestation.
 
-2. **Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code** (2607.06194): Across 5,866,595,698 git commits, only **17.59% carry a cryptographic signature** (PGP 98.96%, with growing SSH and X.509/sigstore minority). The rest rely on unverified author strings — "free text the committer typed." The paper introduces four identity trust tiers: unsigned → signed → real-world-bound → cross-corpus attested. Key insight: the signature axis is **a precision anchor, not a coverage layer** — it doesn't cover everything, but what it covers is cryptographically grounded.
+3. **VAORA** (2607.06522v1): Adds scene, placement, and collision rewards
+   derived from privileged simulator state. The full reward improves all nine
+   reported PHYRE Pass@1/3/5 cells over a matched expert-guided baseline, but
+   “hallucination suppression” is not independently adjudicated: the alignment
+   analysis reports the same rewards used for optimization. Template selection,
+   adapted transfer protocols, and absent repeated-training uncertainty bound
+   the generalization claim.
 
-3. **VAORA: Visual Action Outcome Reasoning Alignment** (2607.06522): Addresses the claim-action gap in embodied agents. Two key failure modes: hallucinated chain-of-thought reasoning that contradicts physical reality, and misalignment between reasoning and actions. VAORA introduces dual rewards: Visual Alignment Reward (anchors reasoning to visual context independent of action) and Visual-Action Alignment Reward (grounds reasoning in the visual outcome of the action). Together, these suppress hallucinated CoT and close the gap between what the agent claims (its reasoning) and what it does (its actions).
-
-**The 28th Layer of the Oversight Inversion**: The Claim-Verification Surface. The Oversight Inversion operates in the regime of untyped, undifferentiated claims — where "the output" is the unit of verification and its internal structure is opaque. Pitwall demonstrates that typing claims (position, gap, pace) and verifying each against an independent substrate closes faithfulness architecturally. Claimed-or-Attested shows the same structure at the identity level: claims (author strings) vs. attestations (cryptographic signatures). VAORA shows it in embodied reasoning: claims (CoT reasoning) vs. outcomes (visual action effects).
+**The 28th Layer of the Oversight Inversion, qualified**: Claim typing reduces
+an opaque output into mechanically checkable units. It does not close
+faithfulness unless extraction covers every asserted claim, the ontology models
+the relevant kinds of error, and the substrate has adequate authority.
 
 The exit condition: **type the claims, verify each typed claim independently, gate composition at the type boundary**. This unifies the Predicate Gate (#446) with the Authority Gap (#434): the gate operates at the claim-type level, and the authority is grounded in an independent verification substrate.
 
@@ -45,102 +73,239 @@ The exit condition: **type the claims, verify each typed claim independently, ga
 
 ---
 
-## arXiv Papers (3 Convergent)
+## arXiv Papers (3 Distinct Evidence Paths)
 
-### 1. Pitwall: Faithful Natural-Language Race-Strategy Briefings from a Calibrated Real-Time Monte Carlo Engine (2607.06495)
+### 1. Pitwall: Faithful Natural-Language Race-Strategy Briefings from a Calibrated Real-Time Monte Carlo Engine (2607.06495v1)
 
 **Domain**: Live sports commentary — grounded generation under a deadline. Statements concern real, named athletes; the grounding state changes every few seconds; no reference text exists at generation time.
 
-**Architecture**:
-- **Typed claim decomposition**: Every sentence → typed factual claims (6 types: positions, gaps, tyres, pace, overtakes, race control)
-- **Independent verification substrate**: Vectorized Monte Carlo engine (N=2,000 per-lap race continuations), calibrated on 126 races (2018-2024), validated on held-out 2025-2026 seasons (winner-in-top-3 90.3% over 155 backtests; held-out Brier 0.0745)
-- **Training data gating**: Same verifier gates fine-tuning data — only 81.9% of model-written targets whose every claim is state-supported are retained; the rest fall back to a provably faithful template
-- **Deployment**: Live at two consecutive Grands Prix (Austria and Britain, 2026). At Silverstone, a timestamped probability trace committed to disk before the outcome was known locked onto the eventual winner ten laps before the flag.
+**Architecture and denominators**: The schema has ten classes: leader,
+position, gap-to-leader, battle, pace, tyre, safety-car, lap-number, overtake,
+and position-change. A deterministic extractor sees only 0--2 of the 4--15
+asserted facts in free-form outputs; an LLM extractor sees 8--15. The latter is
+still a fallible model, so the verifier checks extracted claims, not necessarily
+every claim in a sentence. The paper reports 36 claim tests but releases neither
+their code nor results.
 
-**Critical discovery — the Virtue Tradeoff**:
-- In **simulation**: calibration-optimal is not decision-optimal. The best-calibrated model doesn't make the best strategy recommendations.
-- In **generation**: fine-tuning on richer targets buys vividness that **collapses into hallucination when the grounding state is sparse**. When there's less data to ground against, richer training makes the model fill gaps with confabulation.
-- **Root cause**: Four-base replication traces the failure to base-model instruction adherence, not scale. It's not about model size; it's about how well the base model follows constraints.
-- **Fix**: Sparse-context auditing — identify situations where the grounding state is sparse and gate the generator to template fallback.
+The fine-tuning corpus has 3,045 targets: 2,494 model generations admitted and
+551 template fallbacks. The stated rule requires at least one checkable claim
+and zero contradicted claims after two retries. That is useful admission
+control, but the method text does not explicitly reject every unverifiable
+claim. The stronger abstract phrase “every claim is state-supported” therefore
+needs code or per-target verdicts to reconcile.
+
+**Virtue tradeoff, bounded**: Two Qwen2.5-3B adapters share a base and differ in
+targets. The template-trained adapter is terse (28--52 tokens) and the rich-
+target adapter is vivid on dense contexts but invents drivers, gaps, and tyres
+on sparse inputs. Llama-3.2-1B and Mistral-7B reproduce sparse inventions;
+Phi-4-mini uses generic non-checkable language. This is an informative
+qualitative audit, but no probe count, output ledger, run variation, or matched
+quantitative score is reported. It supports a sparse-context release gate; it
+does not isolate “instruction adherence” as a measured causal variable.
+
+**Deployment boundary**: The paper reports end-to-end use at Austria and
+Britain. Its Silverstone table contains 13 unique two-minute polls over laps
+39--52 after removing a duplicate lap-51 sample. Locking onto the winner from
+lap 42 is a prospective feasibility trace, not calibration evidence; the paper
+explicitly calls the 14 raw polls anecdotal. The claimed JSONL trace, experiment
+logs, engine, verifier, and tests are not in the arXiv archive.
+
+**Related artifact and contradiction**: The cited companion `2606.09376v2`
+defines coverage against a derived oracle and explicitly reports that an
+out-of-schema teammate/title-fight invention can receive perfect supported
+fraction. This is the central limit on “faithfulness by architecture”:
+unextracted entity or causal claims are invisible. The related repository
+`vectrayx/precision-is-not-faithfulness@a1caae7858f4152b3be616ba68d00334fc7bcdab`
+passes six dependency-free verifier tests and exposes ten strategy claim types.
+It is not the Pitwall implementation. Its checked-in prompt-ablation table also
+differs materially from the arXiv v2 archive: the archive says mean recall falls
+0.60→0.47, whereas the repository says four of five models improve and Gemini
+falls 0.27→0.08. Version-specific conclusions must therefore stay bound to the
+artifact cited.
 
 **Why this matters for the Oversight Inversion**:
 
-Pitwall demonstrates that faithfulness can be a **construction property** (not a testing property) when:
-1. Claims are typed (not all text is the same — positions, gaps, pace are different verification targets)
-2. Each type has a defined verification procedure against an independent substrate
-3. The generator never sees ungrounded targets during training (the training data is itself verified)
-4. Virtues are gated separately (vividness and faithfulness are in tension; sparse-context auditing manages the tradeoff)
+Pitwall supplies a candidate **construction discipline**: type claims, define a
+check per type, gate training and publication, and audit sparse contexts. The
+guarantee remains conditional on extractor coverage, ontology coverage, state
+quality, and a reconciled admission rule. Those conditions should be measured
+before calling faithfulness architectural or independent.
 
-This instantiates the Verification Harness (#451) in a production deployment. It also validates the Architecture Premium (#448): the Monte Carlo engine + typed claim decomposition + training data gating constitute an *architecture*. The model (Claude, GPT, etc.) is interchangeable configuration within this architecture.
+**Connection to the Announcement Gap (#428)**: Pitwall supplies a candidate
+mechanism: decompose an announcement into typed claims and check each extracted
+claim. It cannot detect claims outside the extractor or ontology.
 
-**Connection to the Announcement Gap (#428)**: Pitwall's typed claims are the structural fix for the Announcement Gap — instead of accepting the agent's natural-language announcement at face value, decompose it into typed claims and verify each one.
+Sources: https://arxiv.org/abs/2607.06495v1,
+https://arxiv.org/abs/2606.09376v2,
+https://github.com/vectrayx/precision-is-not-faithfulness/tree/a1caae7858f4152b3be616ba68d00334fc7bcdab
 
-Source: https://arxiv.org/abs/2607.06495
+### 2. Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code (2607.06194v1)
 
-### 2. Claimed or Attested? A Commit-Signature Dataset and Identity Trust Tiers across the World of Code (2607.06194)
+**Population and extraction**: The paper scans all 128 commit-table shards in
+World of Code V2604. It finds a canonical `gpgsig` marker and family banner in
+1,031,721,316/5,866,595,698 commits (17.59%): 98.96% PGP, 1.02% SSH, and
+0.02% X.509/sigstore. Three SHA-space shards range 17.53--17.65%, and strict
+versus loose markers agree within 0.01 percentage points. These checks support
+header detection. They do not cryptographically validate each signature,
+recover its signer, or prove that signer is the author named in the commit.
 
-**Scale**: 5,866,595,698 commits from the World of Code (WoC) V2604 collection.
+**Platform-key confound**: A commit signature binds an object to a key; it need
+not bind the author field to the human who holds that key. Across 44,871,077
+author-key associations, GitHub's web-flow key covers 30,440,944 authors and a
+second platform key covers 12,592,731—95.9% together. A fan-out threshold of 50
+removes 2,651 shared keys and leaves 583,360 candidate person keys, but the
+threshold is heuristic and the paper does not report a held-out classifier
+validation.
 
-**Core finding**: The author string in a git commit is free text — an unverified claim. A cryptographically signed commit binds the identity to a key the committer controls. Only **17.59% of all commits carry any signature** (1,031,721,316 signed commits). PGP dominates at 98.96%, with growing SSH and X.509/sigstore minority.
+**The proposed alias gold is conditional**: The paper initially calls raw
+co-signature pairs “cryptographic alias gold.” Its own fan-out-two triage shows
+otherwise. Of 32,192 pairs the alias map leaves apart, only 9,036 (28.1%) have
+a corroborating email/name/domain signal; 23,156 (71.9%) are two people sharing
+one key and are correctly separate. Thus a low-fan-out key is evidence to
+investigate, not a same-person guarantee. The reported fan-out-stratified map
+“recall” cannot by itself calibrate identity accuracy, and map precision is not
+reported.
 
-**Trust Tiers** (A2trust):
-1. **Unsigned**: author string is a claim, nothing verifies it
-2. **Signed**: commit bound to a key the committer controls
-3. **Real-world-bound**: key ties back to a verified real-world identity
-4. **Cross-corpus attested**: identity corroborated across independent corpora
+**Trust tiers, qualified**: Among 62,579,994 canonical authors, 30,638,625 are
+T0 unsigned (49.0%), 31,475,971 are T1 platform-signed only (50.3%), and only
+465,398 reach T2 person-key (0.74%). The 966 scholarly T3 authors are described
+as a subset but not represented as a separate row in the exhaustive tier
+table. A PGP user-id email, a key registered to a GitHub account, or an OIDC
+subject binds a key to an account or asserted address; it is not automatically
+a verified real-world person.
 
-**Key insight — precision anchor, not coverage layer**: Signed commits skew toward recent, security-conscious developers. The signature axis doesn't cover everything — but what it covers is cryptographically grounded. This creates a *calibration anchor* for heuristic identity maps: the 17.59% of signed commits can verify/calibrate the heuristic alias mappings used for the other 82.41%.
+**Sampled verification and uncertainty**: Of 398 random candidate person keys,
+78 are retrievable from the Ubuntu keyserver (19.6%; Wilson 95% interval
+16.0--23.8%). Of those, 39 user-id emails match the signed author string (50.0%;
+39.2--60.8%), or 39/398 of the whole sample (9.8%; 7.3--13.1%). Thirty-seven
+differ and two expose no user-id. This calibrates keyserver/email reachability;
+it neither validates all commit signatures nor bounds a “residual forgery
+rate,” because the unretrieved population and meaning of mismatches remain
+unresolved.
+
+**Artifact boundary**: The five-file arXiv source contains prose, references,
+and figures only. Its availability section says the data and replication code
+are released but still names `TODO/woc-commit-signatures-v2604` and a DOI “to be
+minted.” At `2026-09-04T07:10:32Z`, an unauthenticated exact-title GitHub
+repository search returned one non-author result; two Hugging Face dataset
+searches returned empty arrays. No released row, extractor, parser, or
+replication script was attributable, so the full-corpus counts and key graph
+cannot be independently reproduced from the claimed package.
 
 **Why this matters for agent governance**:
 
 As AI agents produce more commits (2607.05677 from #454 documented 13,360 AI sessions across 1,356 OSS repos), the claim-attestation gap widens. Agent-generated commits typically carry the human developer's author string but may have been written by Claude Code, Copilot, or Codex. The commit *claims* human authorship; nothing *attests* to it.
 
-The trust tier framework maps directly to agent output governance:
-- **Level 0 (Unsigned/Unclaimed)**: Agent output with no provenance — the regime most output operates in today
-- **Level 1 (Signed)**: Output bound to a specific agent run or session (Halo's hash-chained records, Brain0's decision graph)
-- **Level 2 (Real-world-bound)**: Output traceable to a specific model version, configuration, and prompt
-- **Level 3 (Cross-corpus attested)**: Output independently verified across multiple systems
+The tier framework usefully separates evidence levels, but does not map directly
+to agent-output semantics. A signed byte sequence, a session/model binding, a
+human identity, and independent correctness evidence are different claims and
+need separate verifiers.
 
-The Oversight Inversion operates in Level 0. Every exit arc condition is a step toward Level 1+.
+**Connection to Authority Gap (#434)**: The 17.59% result quantifies signature-
+marker prevalence in one global corpus, not grounded author identity. The
+durable lesson is to type provenance levels explicitly and avoid promoting
+marker presence into key control, account binding, person identity, or content
+correctness.
 
-**Connection to Authority Gap (#434)**: The Authority Gap showed that verification verdicts often lack grounded authority. Claimed-or-Attested quantifies this: 82.41% of the world's commits rest on ungrounded claims. The fix is not "more commits" but "typed attestation tiers."
+Source: https://arxiv.org/abs/2607.06194v1
 
-Source: https://arxiv.org/abs/2607.06194
+### 3. VAORA: Visual Action Outcome Reasoning Alignment (2607.06522v1)
 
-### 3. VAORA: Visual Action Outcome Reasoning Alignment (2607.06522)
+**What the mechanism actually sees**: VAORA asks Qwen3-VL-8B to emit tagged
+scene, placement, collision, and action tuples. Scene object coordinates and
+sizes, the first post-action ball placement, and collision events are compared
+with states extracted from the PHYRE simulator. A frozen DQN expert estimates
+action-success probability and gates placement/collision reward; scene
+grounding remains outside that gate. This is useful privileged simulator
+supervision. It is not an independent visual observer, generic environment
+verifier, or correctness proof for the free-form chain of thought outside the
+parsed tuple vocabulary.
 
-**Problem**: Vision-language models (VLMs) in interactive physical reasoning fail via two mechanisms: (1) hallucinated chain-of-thought reasoning that contradicts physical reality, and (2) misalignment between the model's reasoning and its actions.
+**Matched result and uncertainty**: The full reward beats the matched `+EG`
+baseline in all nine PHYRE Pass@1/3/5 cells across three independently trained
+held-out splits. Set 2 changes are 0.178→0.198, 0.312→0.390, and 0.362→0.472.
+Each split contains 500 tasks, but the paper reports one training per split,
+chooses the best checkpoint from the training curve, and provides no training-
+seed variance or paired uncertainty. For orientation only, marginal Wilson 95%
+intervals in Set 2 are 0.165--0.235 versus 0.147--0.214 at Pass@1,
+0.348--0.433 versus 0.273--0.354 at Pass@3, and 0.429--0.516 versus
+0.321--0.405 at Pass@5. These are not paired causal intervals.
 
-**Architecture — dual reward grounding**:
-- **Visual Alignment Reward**: Anchors VLM reasoning to the visual context *independent of the agent's action*. The reasoning must match what the scene shows, regardless of what the agent plans to do.
-- **Visual-Action Alignment Reward**: Grounds reasoning in the visual outcome *induced by the model's action*. The reasoning must predict what actually happened after the action.
+**Selection boundary**: PHYRE has 25 templates, but the collision reward models
+only the first object the action ball hits. The authors select ten compatible
+templates and draw each five-template test split from those ten. The three
+splits overlap, so they test variation within an intentionally compatible task
+family rather than representative cross-template generalization across PHYRE.
+The 36,000 split-specific SFT traces are generated from simulator information
+by Gemini-3.1-Flash; the matched `+EG` comparison shares that SFT base and is
+the useful local control.
 
-Together, these dual rewards suppress hallucinated CoT and reduce the reasoning-behavior gap.
+**Alignment is not an independent outcome**: The alignment table re-reports
+grounding, placement, and collision rewards—the same functions optimized by
+VAORA. Higher scores establish optimization of those structured proxies, not
+independent suppression of hallucinated reasoning. Simulator Pass@k is the
+separate behavioral outcome. The component table also is not monotonically
+additive: adding placement to grounding lowers Pass@3 and Pass@5, while adding
+collision lowers Pass@5; only the full three-reward combination is best in all
+three cells.
 
-**Why this matters**: VAORA addresses the claim-verification gap at the reasoning level. The agent's chain-of-thought is a *claim* about the world. The visual state is the *verification substrate*. Dual rewards enforce that claims (reasoning) align with both the pre-action state and the post-action outcome — closing the loop that the Latent Horizon (#433) showed was structurally open.
+**Transfer is adapted and mixed**: Virtual Tool removes tool selection, lets a
+model try every tool repeatedly, and remaps colors to PHYRE. On its 18-task
+Original Split, VAORA wins Pass@1 (3/18 versus Gemini-3.1-Pro's 2/18) but loses
+Pass@3 (4/18 versus 5/18) and Pass@5 (6/18 versus 7/18). This supports some
+transfer under an adapted protocol, not environment-agnostic understanding.
+CRAFT samples 1,000 questions from each of five types and moves overall
+accuracy from 44.56 for `+EG` to 46.06, but “consistent across all five” is
+false: Prevent falls 51.50→50.50. No confidence intervals or repeated runs are
+reported for either transfer benchmark.
 
-**Connection to the Dispersion Collapse (#455)**: Without grounding, agents' reasoning converges to plausible-sounding but unverified patterns (attractor dynamics in reasoning space). VAORA's dual rewards are a form of architectural diversity imposition — they force the reasoning to engage with two independent verification surfaces rather than converging to a single internal attractor.
+**Artifacts and retained reproduction**: At `2026-09-04T07:18:34Z`, the
+project page resolved to `vaora-proj/VAORA@4995736af63206e60504a3d3452bf7371f11fb76`.
+The repository contains the VAORA `verl` fork, PHYRE, batch inference, and
+Virtual Tool code. Public Hugging Face trees expose dataset revision
+`4f0619673adc4d840eb853e07b55eafac362dae7` and checkpoint/result revision
+`1729df5d285c68721da30769b42ef1c0ade316c2`. One retained VAORA Set 2 CSV
+exactly reproduces 0.198/0.390/0.472, and three 500-task DQN JSON summaries
+exactly reproduce all nine DQN table cells. The checkpoint tree contains no
+equivalent retained result for VAORA Sets 1/3, `+EG`, Virtual Tool, or CRAFT;
+the evaluation scripts retain machine-specific default paths. Full training
+requires the public large artifacts, PHYRE build, and the reported two H200
+GPUs and was not attempted here. Artifact availability is therefore material,
+but result-level reproduction remains partial.
 
-Source: https://arxiv.org/abs/2607.06522
+**Durable governance lesson**: outcome-derived structured rewards can be a
+useful training signal, but proxy coverage, substrate privilege, selection,
+and independent behavioral evaluation must remain separate. Do not call a
+training reward a verifier merely because it reads post-action state.
+
+Sources: https://arxiv.org/abs/2607.06522v1,
+https://github.com/vaora-proj/VAORA/tree/4995736af63206e60504a3d3452bf7371f11fb76,
+https://huggingface.co/datasets/vaora-proj/vaora-dataset/tree/4f0619673adc4d840eb853e07b55eafac362dae7,
+https://huggingface.co/vaora-proj/vaora-checkpoints/tree/1729df5d285c68721da30769b42ef1c0ade316c2
 
 ---
 
 ## The Claim-Verification Surface — Structural Synthesis
 
-The three papers name a single architectural pattern from different domains:
+The three papers suggest a shared architectural pattern from different domains;
+all three and the attributable related artifacts are now primary-reviewed:
 
 | Paper | Domain | Claim Type | Verification Substrate | Surface |
 |-------|--------|-----------|----------------------|---------|
-| Pitwall | NLG | Typed factual claims (position, gap, pace) | Calibrated Monte Carlo engine | Sentence → claims → verified claims |
-| Claimed/Attested | Code Identity | Author strings | Cryptographic signatures | Free text → signed → attested |
-| VAORA | Embodied Reasoning | Chain-of-thought | Visual state (pre/post action) | Reasoning → dual visual alignment |
+| Pitwall | NLG | Ten typed factual classes | Structured race state / probabilistic engine | Sentence → extracted claims → checked claims; extraction and ontology remain coverage limits |
+| Claimed/Attested | Code provenance | Author strings | Signature marker → key/account evidence | Free text → marker present → candidate key → qualified binding |
+| VAORA | Embodied reasoning | Parsed scene/action tuples | Privileged simulator state plus DQN proxy | Reasoning → training rewards → separately measured task success |
 
-**The pattern**: Decompose output into typed claims. Verify each claim against an independent substrate. Gate production at the claim level, not the output level. The verification surface is not "the output" — it's the typed boundary between claims and their verification.
+**The pattern**: Decompose output into typed claims, verify each extracted claim
+against an authority-bearing substrate, and gate composition. The gate covers
+only claims the extractor sees and types the ontology represents.
 
 **What this means for the Oversight Inversion**: The Inversion thrives on undifferentiated output — when "the model output" is the unit of verification, verification is expensive, subjective, and scaling super-linearly. When claims are typed and each type has a defined verification procedure:
 - Verification becomes **mechanizable** (different procedures for different claim types)
-- Faithfulness becomes a **construction property** (Pitwall's training data gating)
-- Coverage becomes **measurable** (Claimed-or-Attested's 17.59% vs. 82.41%)
+- Faithfulness becomes a **conditional construction target** (Pitwall's gates,
+  bounded by extraction, ontology, and state authority)
+- Signature-marker prevalence becomes **measurable** (17.59% vs. 82.41% in WoC
+  V2604); verified author identity remains a much smaller, qualified subset
 - The claim-verification gap becomes **quantifiable** per type
 
 ---
@@ -214,11 +379,15 @@ This extends the Attribution Error (#440): the community assigns attention based
 
 **New repos — the Attestation Layer emerging**:
 
-- **trace-spec** (5★, agentrust-io/trace-spec): "TRACE — Trust Runtime Attestation and Compliance Evidence. Open attestation standard for agent actions." Directly implements what Claimed-or-Attested (2607.06194) measures the absence of: a standard for moving agent output from Level 0 (unsigned) to Level 1+ (attested).
+- **trace-spec** (5★, agentrust-io/trace-spec): "TRACE — Trust Runtime Attestation and Compliance Evidence. Open attestation standard for agent actions." It proposes agent-action attestation infrastructure. Claimed-or-Attested supplies adjacent commit-signature prevalence evidence, not a measurement of this standard's absence or adoption.
 - **bootproof** (6★, bootproof/bootproof): "The end of 'Works on my machine.' Zero-trust supervisor that verifies execution environments before agents run." Attestation at the infrastructure level — verify the substrate before trusting the claim.
 - **agent-video-attestation** (4★): "AVAP — Agent Video Attestation Protocol: signed, blockchain-anchored agent-to-agent verification."
 
-These repos are tiny (5-6★) but they represent a structural shift: the ecosystem is starting to build the attestation layer that Claimed-or-Attested proves is 82.41% absent from the code corpus. The Pitwall pattern (typed claims + independent verification) is starting to appear as infrastructure, not just research.
+These repos are tiny (5-6★) discovery signals for attestation-adjacent
+infrastructure. They do not establish a structural shift, and Claimed-or-
+Attested's 82.41% unsigned share does not measure whether an attestation layer
+is absent from the corpus. The stronger retained pattern is that typed claims
+need claim-specific evidence rather than a generic “signed” label.
 
 **Herdr ecosystem** (13,749★ + 34 + 31 + 41 + 55 = 13,910★ combined): The fastest-growing tooling ecosystem in the tracked set. Agent multiplexing validates the Oversight Inversion operationally — developers need tools to manage the oversight burden of concurrent agent sessions. The reviewr (31★) and file-viewer (55★) companion tools confirm that oversight tooling follows multiplexing immediately.
 
@@ -232,13 +401,20 @@ These repos are tiny (5-6★) but they represent a structural shift: the ecosyst
 
 The twelve-point exit arc (#444–#455) identified necessary conditions for escaping the Oversight Inversion. Layer 28 identifies the **granularity at which those conditions should operate**: the typed claim.
 
-**Three convergent demonstrations**:
+**Three candidate surfaces, all primary-reviewed**:
 
-1. **Pitwall** — typed factual claims (position, gap, pace) verified against a Monte Carlo engine. 81.9% of model outputs survive claim-level verification. The remaining 18.1% fall back to templates. Result: faithful production deployment at two live events.
+1. **Pitwall** — ten typed classes are checked against structured race state;
+81.9% of generated targets are admitted and 18.1% use templates. The gate is
+coverage-limited, and two live events support feasibility rather than complete
+faithfulness.
 
-2. **Claimed-or-Attested** — identity claims (author strings) vs. identity attestations (cryptographic signatures). 17.59% attested, 82.41% claimed. The attested subset calibrates the heuristic mapping for the whole.
+2. **Claimed-or-Attested** — 17.59% of commits carry a signature marker, but
+platform keys dominate and only 0.74% of canonical authors reach the candidate
+person-key tier. Marker, key, account, and person bindings must remain separate.
 
-3. **VAORA** — reasoning claims (chain-of-thought) vs. reasoning attestations (visual pre/post state). Dual rewards suppress hallucinated reasoning.
+3. **VAORA** — parsed reasoning tuples receive rewards from privileged
+simulator state; task success improves in the matched PHYRE cells, while
+independent hallucination adjudication is absent.
 
 **The structural pattern**: The Oversight Inversion operates on undifferentiated output. Every previous exit condition (Predicate Gate, Composition Surface, Verification Harness, etc.) works better when claims are typed:
 - Predicate gates gate at *typed* transitions (not generic checkpoints)
@@ -248,7 +424,9 @@ The twelve-point exit arc (#444–#455) identified necessary conditions for esca
 
 **Thirteen-point exit arc**:
 1–12: (#444–#455)
-13. **Claim-Verification Surface (#456): Type claims and verify each typed claim against an independent substrate — the Inversion dissolves when claims are small enough and typed enough to verify mechanically (granularity condition)**
+13. **Claim-Verification Surface (#456): Type claims, measure extractor and
+ontology coverage, and verify each visible claim against an authority-bearing
+substrate (granularity condition)**
 
 ---
 
@@ -274,20 +452,25 @@ Running accuracy: **~96.1% (73/76)** (+1 confirmation: Foundations Turn total >8
 | Fable 5 extension >150pts | 1-2 scans | HIGH (at 136pts, steady growth) |
 | GPT-5.6 Sol peaks <200pts (post-launch) | 3 scans | MEDIUM-HIGH (model announcements generate diminishing attention per Attribution Error) |
 | ≥1 attestation repo (trace-spec, bootproof, halo) crosses 100★ | 5 scans | MEDIUM (early-stage, need catalyst event) |
-| Typed claim verification appears in ≥1 major agent framework | 3 months | MEDIUM-LOW (Pitwall demonstrates viability but niche deployment domain) |
+| Typed claim verification appears in ≥1 major agent framework | 3 months | MEDIUM-LOW (Pitwall suggests feasibility in a niche domain; its implementation is unavailable) |
 
 ---
 
 ## Cross-Source Convergence Summary
 
-The Claim-Verification Surface is a five-layer convergent finding:
+The Claim-Verification Surface is a five-layer synthesis with different
+evidence strengths:
 
 | Layer | Source | Signal | Mechanism |
 |-------|--------|--------|-----------|
-| Production | arXiv (cs.CL) | 2607.06495 Pitwall | Typed claims verified against Monte Carlo engine → faithfulness as construction property |
-| Identity | arXiv (cs.CR/cs.SE) | 2607.06194 Claimed/Attested | 82.41% of commits rely on unverified claims → trust tiers from unsigned to cross-corpus attested |
-| Reasoning | arXiv (cs.AI) | 2607.06522 VAORA | CoT claims verified against visual state → dual rewards suppress hallucinated reasoning |
+| Production | arXiv (cs.CL) | 2607.06495v1 Pitwall | Typed gates plus live feasibility; extraction and ontology bound coverage |
+| Provenance | arXiv (cs.CR/cs.SE) | 2607.06194v1 Claimed/Attested | 17.59% signature-marker presence; person/account binding is sparse and heuristic |
+| Reasoning | arXiv/code/Hugging Face | 2607.06522v1 VAORA | Simulator-derived rewards improve reported task success; independent hallucination evidence is absent |
 | Community | HN | Herdr 232pts/13,749★ | Agent multiplexer validates oversight burden → developers build review tooling immediately |
-| Ecosystem | GitHub | trace-spec 5★, bootproof 6★ | Attestation infrastructure emerging → ecosystem recognizes the 82.41% gap |
+| Ecosystem | GitHub | trace-spec 5★, bootproof 6★ | Small historical discovery signals for attestation-adjacent infrastructure; no adoption inference |
 
-The Oversight Inversion has 28 layers and a 13-point exit arc. The Claim-Verification Surface is the granularity condition: every other exit condition operates more effectively when claims are typed and verified individually rather than when output is treated as an undifferentiated blob. Pitwall proves this works in production — typed claim decomposition + independent verification substrate + training data gating = faithful generation under deadline.
+The Claim-Verification Surface is the granularity condition: typed units make
+mechanical checks possible, while extractor recall, ontology coverage, and
+substrate authority determine what the gate actually proves. Pitwall supports
+this conditional design discipline; it does not prove complete faithful
+generation under deadline.

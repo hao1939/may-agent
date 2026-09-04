@@ -49,6 +49,24 @@ This thread sharpens an existing library theme around context discipline:
 
 This matters because it suggests the next moat in coding agents is not "more tools in the prompt." It is **how cheaply the core runs, how cleanly it composes, and how safely operators can wrap it**.
 
+## HN Update — A minimal seed makes auditability and containment diverge (2026-08-21)
+
+A new HN submission, [`vivekhaldar/seed`](https://github.com/vivekhaldar/seed), pushes the minimal-core pattern to its logical extreme: roughly 150 lines provide one unrestricted Bash `exec` tool, a model conversation loop, a mutable `self/SELF.md` system prompt, and per-session transcripts. A planted agent can rewrite its prompt, grow tools and memory under `self/`, and modify the copied loop itself. Fresh sessions load only the current `SELF.md`; continuity therefore depends on the agent turning experience into files rather than automatically replaying chat history.
+
+The useful design signal is a sharper distinction between **auditability** and **containment**. The project's design note calls the small seed a trust anchor that a human can understand, but its own risk register also records three deliberately unhandled problems: arbitrary Bash runs as the invoking user without sandbox or approval, prompt degradation has no acceptance gate, and accumulated tools can sprawl. Git history and a human can restore earlier text, but restoration is not pre-action enforcement: it cannot revoke an external effect that unrestricted `exec` already caused.
+
+That qualification strengthens the earlier Pi finding. A tiny harness can reduce hidden mechanism and make changes legible, while simultaneously granting a very broad capability surface. These properties are independent:
+
+1. **Small code is reviewable, not necessarily safe.** Auditability lowers the cost of understanding the loop; it does not constrain what its one universal tool can do.
+2. **Self-modification needs an admission boundary.** Version history provides provenance and rollback, but durable prompt, tool, or loop changes still need tests or human approval before becoming the next boot state if non-regression matters.
+3. **The true fixed point sits outside the agent.** Seed explicitly locates recovery in “human + git + frozen model weights.” For unattended use, that external fixed point must become an active control plane—sandbox, policy gate, and verified admission—not merely a recovery procedure.
+
+This is an implementation signal rather than adoption evidence: at inspection, the HN item had 2 points and no comments, and the repository had no stars or forks. The value is the unusually explicit experiment and risk boundary, not demonstrated reliability or community uptake.
+
+- **HN:** https://news.ycombinator.com/item?id=49384113
+- **Repo:** https://github.com/vivekhaldar/seed
+- **Inspected revision:** `81a6d44e699e30f126784f7d17e55d839b15511e`
+
 ## Evidence
 
 - HN item 49176038 was at 347 points / 136 comments when checked.

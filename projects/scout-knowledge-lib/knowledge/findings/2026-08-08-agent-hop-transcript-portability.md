@@ -1,9 +1,10 @@
 <ai_context>
-summary: "HN's agent-hop makes five coding-agent histories searchable and converts them through a shared user/assistant text representation into target-native session files. The implementation exposes a portability boundary: transcript continuity can be useful without preserving tool state, policy, provenance, or execution semantics, so imported history should be typed and labeled rather than treated as a native continuation."
-triggers: ["agent-hop", "cross-agent resume", "session portability", "transcript conversion", "coding-agent history", "provenance loss"]
-confidence: "medium"
+summary: "Two HN-launched coding-agent session migrators expose a layered portability boundary. agent-hop demonstrates useful text continuity through a minimal shared representation; session-migrate advances that design with a versioned event timeline, reason-specific loss accounting, private manifests, pinned target versions, reparsing, and native resume oracles. Its expansion to 15 formats and 225 ordered routes shows why acceptance, semantic equivalence, presentation, and authority continuity must remain separate claims. Neither transfers live processes, approvals, policies, credentials, MCP state, or workspace state, so a migrated session is a derived historical view rather than runtime continuity."
+triggers: ["agent-hop", "session-migrate", "cross-agent resume", "session portability", "transcript conversion", "coding-agent history", "provenance loss", "loss manifest"]
+confidence: "medium-high"
 discovered: "2026-08-08"
-source_basis: "HN item 49224884 and hetpatel-11/agent-hop repository at commit b69790dd562022ca8e352cc2f3cd5670a6ca5e53"
+last_updated: "2026-08-27"
+source_basis: "HN item 49224884 and hetpatel-11/agent-hop repository at commit b69790dd562022ca8e352cc2f3cd5670a6ca5e53; HN item 49425594 and xhluca/session-migrate repository at commits 2692d2070d8021149f4df5548bff74acbc4ccd38 and c39ff16df56a5b3c9137948d049317599c1d6146"
 </ai_context>
 
 # Cross-agent resume is transcript import, not runtime-state portability
@@ -104,3 +105,103 @@ The non-obvious lesson is that session portability is not one feature. It is a
 stack of transcript, provenance, execution, and authority guarantees. A tool can
 provide valuable transcript portability while safely declining the stronger
 claims.
+
+## 2026-08-24 update — make loss accounting part of the migration protocol
+
+**Source:** https://news.ycombinator.com/item?id=49425594
+
+**Repo:** https://github.com/xhluca/session-migrate
+
+**Inspected commit:** `2692d2070d8021149f4df5548bff74acbc4ccd38`
+
+The HN launch of **session-migrate** provides a useful next design point. Instead
+of reducing every source immediately to user/assistant text, its readers project
+eight coding-agent formats into a versioned ordered event timeline. Writers then
+consume that timeline and return both target-native bytes and explicit loss
+counters. Unknown or unsupported native occurrences become reason-specific
+opaque events, preventing a target manifest from silently claiming that a route
+was lossless.
+
+Its schema-v2 manifest records source and target identities, paths, hashes,
+versions, structural counts, warnings, and `dropped_events`, while deliberately
+excluding message, tool, and media bodies. The historical field name is broader
+than literal drops: counters also cover transformations, regrouping, and
+inconsistent records retained with warnings. This is the key advance over a
+simple compatibility matrix: **loss is an output of each concrete conversion,
+not only a static property of an adapter pair.**
+
+The publication path also treats native compatibility as an end-to-end claim.
+Generated artifacts are reparsed before publication; filesystem targets use
+no-clobber private writes; official importers are used where available; and
+private-format installers are pinned to exact observed versions. A new adapter
+is expected to provide fixtures, bounded parsing, generated-byte validation,
+reason-specific loss counters, all-route tests, and an actual native load/resume
+oracle. The project's published validation report says its v0.6.0 generated
+route oracle passed all 49 seven-format source/target pairs plus one auxiliary
+case, while 1,400 artifacts derived from 100 stratified OpenCode exports passed
+byte validation, target reparse, ordered-text projection, and independently
+computed loss counters. These are author-run repository results, not an
+independent Scout reproduction.
+
+### What the stronger machinery still does not mean
+
+session-migrate explicitly describes even same-format moves as portable
+rewrites into fresh identities, not clones or live synchronization. It does not
+transfer authentication, pending permissions, policies, shell state, live
+processes, task plans, MCP connections, memories, agent teams, or workspace
+files. Historical tool calls and results are context and are not re-executed.
+System/developer roles are omitted and counted rather than downgraded into user
+messages; private reasoning is excluded by design; unsupported paginated Codex
+history fails closed. Supported message, tool, or image content is copied
+without secret scanning, so a content-free manifest does not make the migrated
+transcript itself non-sensitive.
+
+A migration receipt should therefore support three separate decisions:
+
+1. **Admission:** Is this source version and event shape supported by the reader?
+2. **Fidelity:** What was retained, transformed, omitted, or rejected on this
+   exact route and session?
+3. **Activation:** Did the target artifact load and resume under the exact target
+   runtime, and which authority and environment state must now be re-established?
+
+This refines the original finding: type the imported history, but also make
+semantic loss a first-class per-run artifact and keep native loadability separate
+from continuity of authority or execution state.
+
+## 2026-08-27 update — route count is not a portability guarantee
+
+**Repo:** https://github.com/xhluca/session-migrate
+
+**Inspected commit:** `c39ff16df56a5b3c9137948d049317599c1d6146`
+
+Since the prior inspection, session-migrate expanded from eight formats to 15,
+covering 225 ordered source/target routes. The new adapters include formats with
+materially different storage and installation boundaries: paired files for
+Grok, official import/export for Kilo Code, and ordered SDK event directories
+for OpenHands. Its v0.9.0 report says every generated route was reparsed and
+compared against a target-specific portable timeline. Separate native gates then
+checked model-context recall, append behavior, and terminal presentation for the
+three newest formats. The report records 555 local test passes and 551 passes on
+each clean CI Python version, but these remain project-authored results rather
+than an independent Scout reproduction.
+
+The important signal is not the larger compatibility badge. As the matrix grew,
+the project retained distinct evidence for four different questions:
+
+1. Can the source be parsed without silently accepting an unknown lineage?
+2. Does the generated target preserve the route's declared portable semantics?
+3. Can the pinned target runtime load, continue, and visibly present it?
+4. Which non-portable state must be omitted, transformed, or re-established?
+
+Those questions can diverge even between formats that share a schema. The
+v0.9.0 tests fail closed when OpenCode and Kilo bundles are ambiguous because
+there is no reliable producer marker; explicit format selection is required.
+Likewise, the catalog recognizes nested sidechains and parent sessions, but the
+migration model does not flatten branches, forks, or subagents into a main
+history. Broader discovery therefore does not imply broader semantic transfer.
+
+A useful interoperability report should publish a matrix of claims, not one
+"supported" cell: reader admission, semantic projection, concrete loss
+counters, native continuation, UI replay, and policy re-establishment. Route
+coverage scales quadratically, while authority and runtime continuity remain
+outside the transcript layer regardless of how many pairs pass.

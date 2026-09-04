@@ -57,7 +57,7 @@ DCI ~10% independently validated on Chinese XHS.
 after Loop Engineering. When loops create feedback, the next question is
 "how do we know the loops improve things?" Window: Q1 2027.
 
-Full scan: [findings/2026-10-31-xhs-scan-61.md](./findings/2026-10-31-xhs-scan-61.md)
+Full scan: [findings/2026-06-29-xhs-scan-61.md](./findings/2026-06-29-xhs-scan-61.md)
 
 ---
 

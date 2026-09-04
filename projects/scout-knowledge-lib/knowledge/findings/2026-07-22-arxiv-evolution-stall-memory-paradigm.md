@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Triage of 10 new arXiv papers (May–June 2026) converging on 'The Evolution Stall' — the systematic discovery that agent self-improvement has counter-intuitive failure modes. Harness-updating capability is flat across model tiers (even weak models produce good updates), but harness-benefit is non-monotonic (mid-tier benefits most, strong-tier benefits less). Per-criterion accuracy gains don't compose into end-to-end task completion. Evaluator-solver co-evolution is required to avoid stagnation. Complementary cluster on memory: anticipation > archival (T-Mem), graph memory has structural attack surfaces invisible to provenance checks (Selection Integrity), and evidence-use is the bottleneck, not retrieval (MemTrace). The false-success problem (45-48% of agent failures) is structurally undetectable by LLM judges but trivially detectable by lightweight classifiers."
-triggers: ["harness evolution", "self-evolution", "harness-updating", "harness-benefit", "non-monotonic improvement", "evolution stall", "T-Mem", "anticipatory memory", "write-time triggers", "graph memory attack", "selection integrity", "AuthSelect", "false success", "confident closing", "SecureClaw", "dual-boundary", "DeltaBox", "checkpoint rollback", "decoupled search grounding", "DSG", "MCP gateway", "Parthenon", "legal agent", "SCORE", "co-evolutionary training", "MemTrace", "knowledge point", "G-Long", "attention-aware importance"]
-last_updated: "2026-07-22"
-source_basis: "arXiv API queries: 'AI agent' AND 'multi-agent' (cs.AI), 'LLM agent' AND 'runtime' AND 'failure', 'agentic' AND 'production' AND 'LLM', 'agent' AND 'memory' AND 'long-term' AND 'LLM', 'agent' AND 'self-evolving' AND 'harness', 'agent' AND 'transaction' AND 'rollback' AND 'LLM'. All abstracts read from export.arxiv.org API. Deduplicated against all prior triages (131+ paper IDs checked)."
+summary: "Triage of arXiv papers converging on 'The Evolution Stall' — the systematic discovery that agent self-improvement has counter-intuitive failure modes. Harness-updating capability is flat across model tiers, but harness-benefit is non-monotonic. Per-criterion gains don't compose into end-to-end completion, and evaluator-solver co-evolution is required to avoid stagnation. August updates add a three-layer experience architecture (raw traces → persistent wiki → executable skills) and behavior-attributed candidate verification: durable improvement needs both consolidated knowledge and evidence that each harness edit caused its relevant gains without hidden regressions. Complementary memory results show anticipation > archival, evidence-use > retrieval, and graph selection has structural attack surfaces invisible to provenance checks."
+triggers: ["harness evolution", "self-evolution", "harness-updating", "harness-benefit", "non-monotonic improvement", "evolution stall", "WikiSkill", "persistent knowledge wiki", "raw experience consolidation", "HarnessLens", "behavior-aware verification", "attributable-evidence gate", "T-Mem", "anticipatory memory", "write-time triggers", "graph memory attack", "selection integrity", "AuthSelect", "false success", "confident closing", "SecureClaw", "dual-boundary", "DeltaBox", "checkpoint rollback", "decoupled search grounding", "DSG", "MCP gateway", "Parthenon", "legal agent", "SCORE", "co-evolutionary training", "MemTrace", "knowledge point", "G-Long", "attention-aware importance"]
+last_updated: "2026-09-01"
+source_basis: "arXiv API queries: six standard Scout queries listed in the original triage, plus the 2026-08-28 recent-submission feed `(all:\"AI agent\" OR all:\"LLM agent\" OR all:agentic)` sorted by submitted date. August update adds WikiSkill 2608.27454 and HarnessLens 2608.27311 after primary-ID deduplication. The 2026-09-01 WikiSkill update reviews the complete 2608.27454v1 TeX source (archive SHA-256 `476256f460d3e44e5c8e76e56db3eb3d39bb797b8361d8c73f1a9ddb01c2eab4`) and inspects one clearly labeled third-party implementation at pinned GitHub revision `4cb78c00e3529b5645c101d4f7779c5ebb2c32b1`."
 </ai_context>
 
 # Source Triage — August 20, 2026 (arXiv: The Evolution Stall & Memory Paradigm Shift)
@@ -181,9 +181,97 @@ The memory cluster reveals the complementary problem: even when agents access re
 
 ---
 
+## August 28 update: consolidation and attribution are separate gates
+
+Two new papers make the improvement pipeline more concrete by addressing different failure points.
+
+### WikiSkill: do not compile executable skills directly from scattered traces
+
+**WikiSkill** separates three stores that many self-improving systems collapse:
+immutable raw execution traces, a persistent wiki of patterns and proposal
+history, and executable skills. Each proposal changes one skill; validation
+accepts it only when its score is strictly greater than the best prior score.
+Rejected skills roll back, while the wiki and its programmatic skill-impact log
+remain. Training agents see skills but not the wiki; the maintainer and proposer
+use the wiki to compile cross-run evidence into later candidates.
+
+The full source makes the headline quantitative. Across LiveMath, SealQA,
+SpreadsheetBench, OfficeQA, and ALFWorld, WikiSkill has the best five-benchmark
+average for all five tested inference models. Relative to the strongest other
+skill-evolution baseline in each model block, the paper reports gains of
+**3.3, 5.1, 10.0, 5.8, and 12.0 points** for Qwen-3.5-4B, Qwen-3.5-9B,
+Qwen-3.6-27B, Gemma-4-31B, and Gemini-3.5-Flash. Relative to no skills, the
+Qwen averages rise by 12.3, 17.5, and 23.9 points as model size increases;
+Qwen-3.5-9B with WikiSkill reaches 47.4 versus 39.4 for Qwen-3.6-27B without
+skills. Results average three full evolution runs, and top-tier markings use
+1,000-iteration paired bootstrap tests at `p < 0.05`.
+
+Persistent knowledge is useful in the paper's bundled ablation, but the
+boundary matters. With Gemini-3.5-Flash across four benchmarks, disabling wiki
+access for both proposer and maintainer yields 48.7 average; enabling it for
+the proposer/maintainer path while keeping it away from training inference
+yields 63.7. Giving training inference wiki access as well lowers the average
+to 60.9 and LiveMath from 72.6 to 64.8. This supports a separation between
+evidence used to *develop* a skill and context used to *execute* training
+tasks. It does not isolate every wiki component independently, and the
+validation sets are small (10–40 tasks), so the paper explicitly averages three
+runs to reduce gate noise.
+
+Transfer is also conditional rather than uniformly positive. Qwen-3.6-27B
+skills raise Qwen-3.5-9B SpreadsheetBench from 24.3 without skills and 33.6
+with self-evolved skills to 50.5. Yet Qwen-3.5-4B skills lower
+Gemini-3.5-Flash on that benchmark from 50.5 without skills to 18.1, versus
+76.6 with self-evolved skills. The authors attribute negative transfer to
+small-model workarounds and fragmented procedures exhausting a stronger
+model's interaction budget. The reusable result is therefore narrower than
+"skills transfer": discovery and execution are separable capabilities, and
+transfer itself needs a target-model regression gate.
+
+The paper directly injects all active skills and does not evaluate retrieval or
+triggering. It has no wiki pruning, excludes neutral proposals that might
+enable later gains, and does not test runs lasting hundreds of actions or
+hours. Up to eight traces per iteration are shown to the maintainer (at most
+five failures and three successes, each capped at 15,000 characters), so the
+wiki is a sampled compilation rather than a complete replay. Neither the TeX
+source nor arXiv metadata identifies author-supplied code.
+
+A bounded GitHub search on 2026-09-01 found multiple community implementations,
+which are not paper artifacts. The most active-looking result,
+[`ashutoshsinghpr7/wikiskill` at `4cb78c00`](https://github.com/ashutoshsinghpr7/wikiskill/commit/4cb78c00e3529b5645c101d4f7779c5ebb2c32b1),
+implements isolated Hermes/Claude skill profiles, persistent wiki history,
+strict gating, rollback, transfer, and paired comparison. Its 48 local tests
+pass at that revision. Its own documented live runs report only rejected or
+no-action proposals, never a live accepted improvement. That is useful
+implementation experience and a counterweight to the paper's benchmark gains,
+but the tests use local fixtures and the run log is maintainer-reported; neither
+is an independent reproduction of the paper.
+
+This sharpens the earlier flat-updating result without claiming that arbitrary
+prose memory transfers: preserve raw evidence, consolidate reusable knowledge
+separately, compile a bounded operational candidate, and gate it on the exact
+consumer and deployment domain.
+
+*Primary source: [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454v1), arXiv 2608.27454v1, submitted 2026-08-27; complete v1 source observed 2026-09-01.*
+
+### HarnessLens: verify the behavior an edit claims to change
+
+**HarnessLens** targets the next gate: candidate harness edits are expensive to evaluate, while a single aggregate score can hide local regressions. It derives modifications from execution trajectories, maps each candidate to behavior-relevant tasks, and requires attributable evidence rather than rerunning every candidate on one fixed suite. Across three harnesses and four benchmarks, the paper reports **7.6–13.6% average held-out improvement** with substantially less evaluation budget than comparison methods.
+
+The conjunction yields a stronger loop than either paper alone:
+
+1. retain raw traces as audit evidence;
+2. consolidate cross-run knowledge without overwriting that evidence;
+3. compile a bounded candidate skill or harness edit; and
+4. verify it on tasks tied to the behavior it changes, while retaining a broader regression sentinel.
+
+The last clause is important: behavior-scoped testing is an efficiency mechanism, not permission to ignore unrelated effects. The abstract reports held-out gains but does not quantify the residual risk from a mistaken relevance map. Candidate attribution and global regression detection therefore remain distinct checks.
+
+*Source: [Verify Smarter, Evolve Further: Efficient Harness Evolution through Behavior-Aware Verification](https://arxiv.org/abs/2608.27311v1), arXiv 2608.27311v1, submitted 2026-08-27.*
+
 ## New Paper IDs (for dedup tracking)
 
 ```
 2605.22781 2605.30621 2606.04507 2606.04602 2606.09549 2606.09863
-2606.12290 2606.13115 2606.15405 2606.17328 2606.18947
+2606.12290 2606.13115 2606.15405 2606.17328 2606.18947 2608.27311
+2608.27454
 ```

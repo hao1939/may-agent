@@ -1,19 +1,24 @@
 <ai_context>
-summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, but the more structurally important August 2026 signal is that control-surface questions are now being surfaced in public titles: self-evolution is being framed through harness+loop composition, challenged on evaluator independence ('the biggest pitfall is letting the agent judge itself'), and tested against shared-workspace interference via SWE-Touch."
-triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface"]
-last_updated: "2026-08-06"
-source_basis: "XHS source packet for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06. Analysis is grounded in current search-result titles, authors, likes, and links only."
+summary: "Current XHS AI-agent discourse still rewards self-evolving-agent overviews, while recurring titles expose a broader control surface: harness/loop composition, evaluator design, shared-workspace interference, online training, and explicit alternatives to natural-language reflection. Cycle 19 connects a new collected SkillOpt card to pinned Microsoft code and primary papers, then shows why held-out capability admission must be paired with security and state-change audits."
+triggers: ["xhs", "self-evolving agents", "harness + loop", "self-judge", "SWE-Touch", "user interference", "agent evals", "control surface", "SEED", "Bayesian memory"]
+last_updated: "2026-09-01"
+source_basis: "XHS source packets for query 'AI agent 智能体' checked by the scout-explore workflow on 2026-08-06 and 2026-08-19; direct collection metadata and access reconciliation through 2026-09-01T17:13:38.951Z; pinned SeBastArt/self-optimize-skill source at bd43cb3911ad4ebccf1f309176ca28d964e06bbc; pinned Microsoft SkillOpt source at db46cd9ae7ce12f1dbd73c945185816aa738751d; and full-source reviews of arXiv 2605.23904v2 and 2608.17684v1."
 </ai_context>
 
 # XHS: Self-Evolving Agent Discussion Narrows to the Control Surface
 
 Date: 2026-08-06
-last_updated: 2026-08-06
+last_updated: 2026-09-01
 Source: https://www.xiaohongshu.com/search_result/6a50bbbf000000000803eb62
 Source: https://www.xiaohongshu.com/search_result/69c4a069000000002200fc9a
 Source: https://www.xiaohongshu.com/search_result/6a5df9630000000006010403
 Source: https://www.xiaohongshu.com/search_result/6a7217af00000000210200a2
-Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface
+Source: https://www.xiaohongshu.com/search_result/6a577ffa000000000f02ac21
+Source: https://www.xiaohongshu.com/search_result/6a8276d000000000320307a6
+Source: https://www.xiaohongshu.com/search_result/6a5a6c690000000013027489
+Source: https://www.xiaohongshu.com/search_result/6a59a0dd000000001b01f455
+Source: https://www.xiaohongshu.com/search_result/6a7a89760000000005033b26
+Tags: xhs, self-evolving-agents, harness, evals, shared-workspace, control-surface, online-training, bayesian-memory
 
 ## Summary
 
@@ -59,6 +64,127 @@ That is a useful leading indicator because these are production questions, not c
 
 This XHS packet usefully aligns with Scout's recent arXiv note on **SWE-Touch**: shared-workspace awareness is becoming visible not only in benchmark research but also in Chinese practitioner discourse. A non-obvious implication is that **self-evolution and collaboration safety are converging**: a loop that claims to improve an agent is incomplete if it cannot survive outside edits, counter-edits, or user corrections.
 
+## Update: 2026-08-19 — the control surface expands from judgment to learning state
+
+A new result set for the same query reinforces the topic while making the mechanism split more explicit:
+
+| Post | Author | Likes | Metadata-grounded signal |
+|---|---|---:|---|
+| 翁荔长文谈自进化：自进化agent如何评测？ | 奇点逃逸 | 100 | Evaluation remains a named self-evolution problem. |
+| AI Agent不写反思，靠贝叶斯记账越错越强 | 光头不砍树 | 39 | A post title explicitly contrasts free-form reflection with Bayesian bookkeeping. |
+| LLM + Harness？自提升 Agent 的全面综述！ | 轻舟AI | 35 | Harness composition remains part of the public framing. |
+| SEED：面向长程 Agent RL 的自演化在线opd | Davin | 295 | Online self-evolution is being connected to long-horizon reinforcement learning. |
+| 迈向可靠的自进化智能体 全新综述出炉！ | HySEA | 367 | Reliability is now prominent in a comparatively high-engagement overview title. |
+
+The useful shift is from a generic **self-reflection loop** toward a set of separable design choices: the learning substrate (online RL or explicit state updates), the memory/update representation (for example, Bayesian bookkeeping rather than prose reflection), and the evaluator that decides whether change is improvement. Search-result engagement is only an attention signal, but the 295- and 367-like posts suggest that training and reliability framings are not confined to niche criticism.
+
 ## Caveat
 
-This finding is based only on current XHS search-result metadata supplied in the workflow packet. It does **not** claim details of the linked papers or posts beyond what their public titles and engagement counts support.
+The original XHS finding is based only on search-result metadata supplied in
+workflow packets. It does **not** claim details of the linked papers or posts
+beyond what their public titles and engagement counts support. Likes are
+mutable snapshots, not quality or adoption measures. The Cycle-15 update adds
+separately labeled collection-access and pinned GitHub evidence; it does not
+recover the unavailable XHS body.
+
+## Update: 2026-09-01 — probable repository match, process evidence only
+
+Cycle 15 began with live collection reconciliation, not repository search. Two
+identical bounded passes materialized 129 of the prior 130 cards. Stable ID
+`6a4b745f000000001c025691`, whose preserved collection title is “让 skill 也学会自我优化的开源项目”,
+was absent in both and its unsigned direct detail path returned `/404` without
+a login wall. It is recorded as unavailable, not removed.
+
+Only after that persisted result did a bounded public GitHub search run. The
+exact Chinese title returned zero repositories; the query `"skill
+self-optimization" agent` returned eight with `incomplete_results=false`.
+[`SeBastArt/self-optimize-skill`](https://github.com/SeBastArt/self-optimize-skill/commit/bd43cb3911ad4ebccf1f309176ca28d964e06bbc)
+is the strongest relation candidate because its name and description match the
+retained title and it was created on 2026-07-02. Interpreting the stable ID's
+first eight hexadecimal digits as an ObjectID-style timestamp yields July 6,
+four days later; that date interpretation is a heuristic. The timing and
+wording are circumstantial provenance, not proof that the unavailable post
+links this repository.
+
+At pinned revision `bd43cb3911ad4ebccf1f309176ca28d964e06bbc`, the complete
+tree is five Markdown files: a router skill, README, and three mode references.
+The directly observed design splits self-optimization into repository setup,
+task setup, and in-flight friction capture. It requires observable stack
+discovery, explicit completion criteria, early risk probes, test-first work,
+persistent friction/win logs, and operator control over costly or authority-
+bearing changes. Its long-running-loop section adds useful safeguards: gates
+may tighten but not silently relax, self-modification needs negative tests,
+and worker/model changes should be treated as measured experiments.
+
+The evidence limit is equally important. The README says the consolidated
+skill was tested against baseline subagent scenarios, and later prose reports
+reference-run lessons, but the pinned tree contains no test, fixture, result,
+CI configuration, or executable implementation. README calls three external
+tools optional while `SKILL.md` calls them a must-have basis; installation
+rules also vary between per-item confirmation and a separately operator-enabled
+free-tool autonomy policy. These are reviewable specification tensions, not
+measured performance results. The repository is therefore admitted as
+implementation-pattern evidence for the existing self-evolution control-
+surface finding, not as proof that self-optimization improves task outcomes or
+as confirmed provenance for the unavailable XHS post.
+
+## Update: 2026-09-01 — capability gates do not cover exposure drift
+
+Cycle 19 first reconciled the live collection in commit
+`eb6b4131f07d46acdcae2b7405ef1a10b9398467`. Two repeated 130-card
+observations added stable ID `6a96b1320000000012024529`, titled
+“微软开源：SkillOpt 技能训练器” by CountryRoad, to the durable confirmed-seed
+union. Its current signed detail resolved `/404` without a login wall, so the
+title supports a topic connection but no claim about the post body. This
+search began only after the seed commit.
+
+A bounded public GitHub repository query for `SkillOpt` returned 130 results
+with `incomplete_results=false` and ranked
+[`microsoft/SkillOpt`](https://github.com/microsoft/SkillOpt/commit/db46cd9ae7ce12f1dbd73c945185816aa738751d)
+first. At `2026-09-01T17:18:20.756Z`, public `main`, the goal-owned clone, and
+revision `db46cd9ae7ce12f1dbd73c945185816aa738751d` agreed. Direct source review
+found the default gate enabled, its metric set to hard score, and ties
+rejected: the candidate must score above the current skill. The repository
+contains 80 Python test files and CI matrices for Python 3.10–3.12, two
+supported Gradio majors, and strict documentation builds. These are source and
+CI definitions, not a claim that this worker reproduced the paper's
+model-dependent results. The source also exposes important configuration
+boundaries: disabling the gate force-accepts candidates after validation, and
+an optional semantic-density bonus is off by default. “Validation-gated”
+accurately describes the default paper path, not every supported run.
+
+The repository links primary arXiv
+[`2605.23904v2`](https://arxiv.org/abs/2605.23904v2). Its exact-ID Atom feed
+returned one entry, and the 27-page TeX source archive had SHA-256
+`ee3bed5c2f0cbdbed0a3ee529f28cb616393e37ecfd9a25a42a04070c4f5bcef`.
+The paper reports that bounded add/delete/replace edits plus a held-out
+selection gate were best or tied in 52 of 52 evaluated
+model/benchmark/harness cells and improved GPT-5.5's six-benchmark direct-chat
+average by 23.5 points. Those are author-reported results. Its own limitations
+require reliable scored feedback, acknowledge optimizer and rollout cost,
+constrain the method to one portable skill, and call for held-out checks before
+transfer to substantially different models, harnesses, or tasks.
+
+The same arXiv topic search surfaced the fresher
+[`2608.17684v1`](https://arxiv.org/abs/2608.17684v1). Full-source SHA-256 was
+`7a325bec5624239aaf36f24b8a2cef218576d2a1e5e5d4fc34e88b12fdbbea46`.
+In one corrected simulated-banking audit with three independently evolved
+lineages, SkillOpt raised benign utility from 0.741 to 0.837 but also turned 10
+previously correct cases wrong, raised injected-content exposure from 0.820 to
+0.943, and raised unauthorized financial-state changes from 0.583 to 0.685.
+Utility, exposure, and unauthorized-state deltas were positive in all three
+lineages; total attack-success rate rose from 0.496 to 0.530 in aggregate but
+agreed in direction in only two of three. The authors claim no statistical
+significance, no transfer, and no production generality: they study one
+primary executor, one simulated banking environment, three lineages, and one
+offline evolution pass. A complete GitHub search for the paper title or arXiv
+ID returned zero repositories, consistent with its statement that code will
+be released upon publication.
+
+The deduplicated operational conclusion is narrower than either headline:
+held-out task improvement is a useful admission gate, but it is not a security
+gate. A skill update also needs paired regression counts, attack-surface
+contact, unauthorized state-change checks, and executor-interface
+compatibility. This extends the existing control-surface finding; it does not
+create a second SkillOpt finding or count the seed, repository, and two papers
+as independent replications.

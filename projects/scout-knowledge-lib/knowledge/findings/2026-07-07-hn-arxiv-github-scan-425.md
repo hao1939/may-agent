@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. Five independent sources converge: the locus of both risk and optimization has shifted from the model to its configuration. CONTRA (2607.03220) proves 75.1% of agent skills have at least one configuration leading to malicious action execution — danger lives in the config, not the intent. HexStrike-AI (2607.02873) shows the driving client is a 2.1× factor over model choice — performance lives in orchestrator configuration. SkillOpt-Lite (2607.03451) formalizes skill evolution via ZO optimization and shows one line of vibe can outperform complex pipelines. AGL-1 (2607.03516) and CAGE-1 (2607.03510) define enterprise governance as a control plane over the configuration surface — seven governance domains from identity to execution control. On GitHub, self-learning-skills (843★) productizes self-configuring agents. On HN, ROI skepticism cluster emerges (AI ROI 51pts + GLM 5.2 150pts + Learn to code 98pts = ~299pts combined) — the community questions whether current AI configuration is economically sustainable. CoMaps ✅ crosses 300pts. Riddle surges +78.3% to 123pts."
+summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), SkillOpt-Lite (2607.03451), and Anchored Self-Play (2607.03523) report distinct task-specific results. Anchored Self-Play improves one paper-reported code-repair average from 29.1% to 36.1%, but bundles two interventions, has no repeated main-run uncertainty, transfers only +1.6 points to DebugBench without in-domain retraining, and does not test self-configuration. Its repaired public repository exposes code and benchmark rows, but no paper result artifacts, and its current default launcher differs from the paper's main setup. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, HexStrike-AI, SkillOpt-Lite, and Anchored Self-Play primary-reviewed 2026-09-04. Anchored Self-Play exact v1 Atom SHA-256 aadc41125c1b80ec1d901d23254bad7ea5a7540fdfdbf319f6e4db41b786b7a3, source-archive SHA-256 c89f173e77c758e5f7f9a239614601365f7958fd30dc60018b909a7ae4c665f1, and cchoi1/anchored_self_play commit 60fc9af2323e06f798a1af5b08d6a0ea30242fa9. Exact SkillOpt-Lite v1 Atom SHA-256 b94c249f5ede26cb57f10c98055bb9abf3ea8ffe0b26337e1e7b57eb0582a574, source-archive SHA-256 20a29acf82e86eb374b777d2f2f2033c78bee63416b80f279f028894cecce938, author repository EvolvingLMMs-Lab/SkillOpt-Lite commit 4cb4eeef1f95375a9179737ab94cf5e64b9647c6, and Hugging Face size response SHA-256 d479ba529d7da03313d6c0d86e2c883d6d8152235d2c7acf766ddb407343027d. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -12,15 +12,24 @@ source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.032
 
 ## Theme
 
-Five independent sources converge on a structural finding: **the locus of both risk and optimization has shifted from the model to its configuration**. The model is increasingly commodity; the configuration surface — how skills are composed, how the orchestrator drives execution, how governance constrains the control plane — is where safety, performance, and economic value are determined.
+The original scan grouped five sources under a structural hypothesis: **model
+configuration can materially affect risk and performance**. They do not share
+one task, intervention, comparator, or outcome, so they do not by themselves
+show that configuration universally dominates model choice or determines
+economic value. AGL-1, CAGE-1, CONTRA, HexStrike-AI, and SkillOpt-Lite have
+now been primary-reviewed.
 
-- **CONTRA** (2607.03220): 75.1% of agent skills have at least one configuration leading to malicious action execution. Existing scans don't catch it. The danger isn't in the skill — it's in how the skill is *configured*.
-- **HexStrike-AI** (2607.02873): The driving client is a **2.1× factor** over model choice for a fixed model. Performance lives in orchestrator configuration, not model capability.
-- **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. One line of vibe enables a nano model to outperform its larger sibling under standard pipelines. Configuration > parameters.
-- **AGL-1/CAGE-1** (2607.03516, 2607.03510): Enterprise governance is governance of the configuration surface — seven domains from identity-aware retrieval to agentic execution control. Prebind Assurance = proving configuration is safe *before* consequence forms.
+- **CONTRA** (2607.03220): 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged search. This is a skill-level search yield, not configuration or incident prevalence.
+- **HexStrike-AI** (2607.02873): Released row-level logs reproduce a **154/258 versus 72/258** DeepSeek client contrast (2.139×) over matched challenge/regime cells. This is strong client-associated evidence in the study, not clean client-only causality or evidence of general client dominance.
+- **SkillOpt-Lite** (2607.03451): Reports 23 wins, three ties, and four losses against SkillOpt across 30 within-model cells. Its two smaller-model headlines change the optimization method as well as model scale; matched-method rows preserve the larger model's advantage.
+- **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
 - **self-learning-skills** (843★): Agents that configure *themselves*. Recognizes golden paths in sessions and harvests them as reusable skills.
 
-**Design principle**: Model capability is necessary but insufficient. The configuration layer — skill composition, orchestrator behavior, governance controls, self-evolution rules — is where safety, performance, and value are determined. Verify the configuration, not just the model.
+**Qualified design principle**: Evaluate configuration alongside the model and
+task. Skill composition, orchestrator behavior, governance controls, and
+self-evolution rules are plausible decision variables, but their importance
+must be established within matched experiments rather than assumed across
+systems.
 
 ---
 
@@ -86,21 +95,90 @@ Sovereignty stack: ~1,590pts strict (Xbox 473 + OpenWrt 438 + CoMaps 307 + Alumi
 
 ### CRITICAL: CONTRA — Configuration Tree-Search for Red-Teaming Agents (2607.03220)
 
-**Finding**: 75.1% of agent skills have at least one configuration resulting in execution of a malicious action. CONTRA, an LLM-assisted tree-search algorithm, discovers dangerous agent configurations — not by finding malicious skills, but by finding *benign yet dangerous configurations* of legitimate skills. Standard scans don't detect these configurations. Overall, CONTRA successfully triggers target malicious actions in 39.2% of all tested cases.
+**Primary-reviewed finding:** In the paper's simulated, LLM-generated and
+LLM-judged environment, 75.1% of 473 selected popular skills had at least one
+generated target for which the search elicited the target action; 39.2% of
+1,590 generated, severity-filtered target actions succeeded. The first number
+is a skill-level at-least-one rate, not a configuration prevalence. The second
+is a target-action rate, not a live incident rate.
 
-**Dataset**: 473 most popular skills from a public repository, 2-5 corresponding malicious target actions per skill. Evaluated in simulated environments.
+**Dataset and search boundary:** The skills come from a cited ClawHub dataset.
+Gemma4-31b generated two to five target actions per skill and assigned their
+severity; only targets above severity two remained. Each search run had up to
+25 iterations × five candidates, with early stopping. The red team could
+modify agent files including the user task, and proxy tools were regenerated
+when the task or heartbeat changed. No real tool or service was invoked.
 
-**Why this matters**: This is the Configuration Layer thesis in its most dangerous form. The skill isn't malicious — the *configuration* is. Existing security scans operate at the skill/code level (wrong depth, per Depth Mismatch #424). Configuration-level red-teaming requires a fundamentally different approach: tree-search over composition space, not static analysis of individual components.
+**Supported value:** Dynamic configuration search found simulated target
+actions that skill-file scanners did not label. This supports configuration-
+aware red-team testing as complementary to static scanning within the tested
+setup.
+
+**Not established:** The 100-skill baseline compares static malicious-content
+flags with executed-target outcomes, which the paper acknowledges are different
+objects. The cross-model table changes only the assistant over 25 skills and
+77 targets; the Gemma-family orchestrator, tool creator, simulators, and judge
+remain shared. The paper reports no repeat seeds, intervals, significance
+tests, total executed trajectories, configuration base rate, or natural
+occurrence rate. Its 98.5% judge accuracy comes from 100 positive and 100
+negative human-labelled trajectories, but annotator count, sampling, and
+disagreement are not reported. “Benign” means a separate LLM judge did not
+detect direct target instructions or named adversarial strategies; it is not a
+human or deployment-safety verdict.
+
+The 30-file source archive includes paper sources, figures, and system prompts,
+but no 473-skill snapshot, target-action rows, result rows, configurations, or
+executable implementation. The paper promises release after responsible
+disclosure. An exact public GitHub repository search on 2026-09-04 returned
+zero results with `incomplete_results=false`. Live prevalence, external
+validity, reproducibility, and whether naturally arising configurations cause
+real harm therefore remain unknown.
 
 **Connects to**: Appearance Collapse (#411) — surface-level scans miss composition risks. Compositional tool-chain security (2607.03423, #424) — per-tool guardrails miss multi-tool violations. Persistence Attack Surface (#423) — configurations persist across sessions. Skill Supply Chain (#375).
 
 Source: https://arxiv.org/abs/2607.03220
 
-### HIGH: HexStrike-AI — Driving Client as First-Order Factor (2607.02873)
+### HIGH: HexStrike-AI — A Strong, Qualified Client Contrast (2607.02873)
 
-**Finding**: Using HexStrikeAI (150+ tools, 86 picoCTF challenges, 774 trials), the driving client creates a **2.1× performance gap** for a fixed model (DeepSeek). Three tool-access regimes and three model/client configurations tested. Overall solve rate rises from 55.4% to 72.0% with targeted corrections. Residual failures are reasoning- or environment-bound, not missing-tool.
+**Primary-reviewed result:** The released baseline logs contain 86 RooCode and
+86 5ire transcript files, each with the same three challenge/regime verdicts.
+Across the 258 matched cells, DeepSeek/RooCode succeeds in 154 (59.7%) and
+DeepSeek/5ire in 72 (27.9%), reproducing the paper's 2.139× aggregate
+contrast. Pairing the cells gives 50 both-success, 104 RooCode-only, 22
+5ire-only, and 82 neither; an exact two-sided McNemar test on the 126
+discordant cells gives `p = 6.07e-14`. The direction holds in every regime,
+but the ratio varies: 51/86 versus 26/86 free (1.962×), 51/86 versus 17/86
+ranked (3.000×), and 52/86 versus 29/86 strict (1.793×). This supports a
+large client-associated contrast for this DeepSeek/picoCTF setup and shows why
+benchmark results should name the driving client.
 
-**Why this matters**: This empirically proves that the orchestrator configuration — how the client drives the model — matters more than model capability for tool-use tasks. The 2.1× gap from client choice dwarfs typical model-to-model gaps. Configuration of the *harness* is the dominant variable, not the model inside it.
+**What the comparison does not isolate:** The clients use the same
+`deepseek-chat` alias and prompt matrix, but the alias was rolling over the
+multi-week study, sampling used client defaults with temperature and top-p
+unpinned, and no randomized or interleaved execution schedule is documented.
+Only one model runs on both clients, baseline cells are single runs, and the
+60-run stability study is post-fix and free-regime only. The authors manually
+assigned verdicts, while the three regimes reuse each challenge. These facts
+do not reverse the observed direction, but they prevent attributing the full
+magnitude to the client alone or generalizing it to other models, benchmarks,
+or live security work.
+
+**Artifact boundary:** The paper-linked public repository
+`BreadyBred/hexstrike-eval` at
+`83290b00c8fdd748f468072d903f4c0d0ff02c71` exposes the row-level transcripts,
+prompt generator, analysis narrative, and MIT-licensed fork. A manifest over
+the 172 DeepSeek transcript files is SHA-256
+`941502aa515564ac1ec14736866849e63b74d8566042ca0838550386aae6869a`; the
+derived 258-row paired-verdict matrix is SHA-256
+`672ca57d3587176f10f1966bf94b0be9e8b1a538486f0fad06a1b3da3f8c1917`.
+The figure script redraws hard-coded aggregates rather than recomputing the
+logs, the large challenge artifacts were not needed for this audit, and the
+repository does not provide a fully self-contained reproduction package.
+
+The paper separately reports that its bundled, same-challenge intervention
+raises all-configuration solve rate from 55.4% to 72.0%. That post-fix result
+does not identify the causal contribution of client choice and should not be
+folded into the baseline client contrast.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning effort > tool access. Verification Stack (#412) — architecture layer. Oversight Inversion (#382) — harness design as verification substrate.
 
@@ -108,9 +186,47 @@ Source: https://arxiv.org/abs/2607.02873
 
 ### HIGH: SkillOpt-Lite — Minimal Viable Skill Optimization (2607.03451)
 
-**Finding**: Formalizes agent skill optimization via zeroth-order (ZO) optimization, mapping classical counterparts (central difference, trust regions) to recent agent literature. Three convergence principles: file-system-based trajectory exploration, consensus attribute mining, independent validation gating. SkillOpt-Lite improves LiveMath by +8.8 points on GPT-5.5 and **+25.4 points on GPT-5.4-nano**, allowing the nano model to surpass standard GPT-5.4 optimized by full SkillOpt. Extends to HarnessOpt: GPT-5.4-nano achieves 0.7758 accuracy on SpreadsheetBench, outperforming larger GPT-5.5 under standard pipelines (0.7620).
+**Primary-reviewed result:** The paper maps text-skill editing to zeroth-order
+optimization and compares SkillOpt-Lite with initial skills and full SkillOpt
+over five models and six benchmarks. Reading its 30 within-model
+SkillOpt-versus-Lite cells gives 23 Lite wins, three ties, and four losses. The
+named LiveMath differences reproduce from Table 1: GPT-5.5 is 73.6 versus
+64.8 (+8.8 points) and GPT-5.4-nano is 55.7 versus 30.3 (+25.4). On
+Spreadsheet, the five-model mean is 69.7 versus 57.1 (+12.6). This is useful
+task-specific evidence that the lighter pipeline can outperform the full one;
+it is not a universal win.
 
-**Why this matters**: Configuration optimization > parameter scaling. A smaller model with optimized skills/harness outperforms a larger model with standard configuration. This empirically validates the Configuration Layer thesis: investment in configuration yields higher returns than investment in model scale.
+**Cross-scale qualification:** The nano LiveMath headline compares
+SkillOpt-Lite/nano at 55.7 with SkillOpt/GPT-5.4 at 54.0, only +1.7 points
+while changing both model scale and optimization method. The SpreadsheetBench
+headline similarly compares HarnessOpt-with-skill/nano at 0.7758 with
+SkillOpt/GPT-5.5 at 0.7620, +0.0138 under different harnesses. Under the same
+reported method, scale still wins: SkillOpt-Lite/GPT-5.5 reaches 0.7972 versus
+0.6619 for nano, and HarnessOpt-with-skill/GPT-5.5 reaches 0.8577 versus
+0.7758. The results therefore support co-optimizing harness and skill, not a
+general configuration-over-model-scale ordering.
+
+**Uncertainty and cost boundary:** SkillOpt runs for `max(4 epochs, 10
+batches)` while Lite runs for ten batches, but the paper reports no token,
+model-call, wall-time, or monetary totals. It provides no repeated seeds,
+intervals, significance tests, or per-example outcome rows. LiveMath and
+OfficeQA use changed 2:2:6 splits; the published dataset currently exposes 36/35/106
+and 49/49/148 train/validation/test rows respectively. The paper says the
+optimizer model is held fixed between methods but does not name it or bind a
+run manifest. Claims of faster or cheaper optimization are consequently not
+independently quantified.
+
+**Artifact boundary:** The author repository
+`EvolvingLMMs-Lab/SkillOpt-Lite` is public and MIT-licensed at
+`4cb4eeef1f95375a9179737ab94cf5e64b9647c6`. Its untruncated 491-entry tree
+contains implementation code, dataset hydration, and optimized skill/harness
+snapshots, but no tests and no LiveMath or Spreadsheet result rows. Four
+`eval_summary.json` files cover SearchQA only. The README and run scripts name
+`scripts/eval_only.py`, yet the exact tree has no `scripts/` directory; the
+main config also points LiveMath at a stale 2:1:7 path while the run script and
+dataset use 2:2:6. Thus the current public artifact supports code and checkpoint
+inspection but cannot independently reproduce the headline cells without
+missing entry points, provider credentials, and outcome records.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning architecture > raw capability. Cost Inversion Threshold (#404) — smaller models with better configuration as economic escape. Discipline Import — optimization discipline applied to agent skills.
 
@@ -118,9 +234,44 @@ Source: https://arxiv.org/abs/2607.03451
 
 ### MEDIUM: Anchored Self-Play for Code Repair (2607.03523)
 
-**Finding**: Generator-fixer self-play for code repair drifts toward difficult but unrealistic bugs. Anchored Self-Play (ASP) adds a code-embedding similarity reward and reference-bug mixing, improving average fix rate over standard self-play by +24% relative / +7.0pp absolute. Introduces BugSourceBench spanning realistic bug sources: human-written, LM-generated, and human-edited LM-generated code.
+**Finding**: In the paper's Qwen2.5-Coder-7B experiment, Anchored
+Self-Play (ASP) raises the reported average one-shot fix rate from 29.1% for
+standard self-play to 36.1% (+7.0 points, about +24% relative). The 127 held-out
+tasks are shared across four bug sources. The gains are heterogeneous: +1.3
+points on human bugs, +5.5 on human-edited LM bugs, +12.6 on Qwen bugs, and
++8.7 on GPT-OSS bugs. An alternate DeepSeek-Coder-6.7B experiment reports
+30.5% versus 21.6%, but out-of-domain DebugBench transfer is only 60.3% versus
+58.7%; training directly on DebugBench reaches 66.3%.
 
-**Why this matters**: Self-play without anchoring produces drift toward synthetic difficulty. Anchoring to realistic distributions is essential — this parallels how agent self-evolution (SkillOpt-Lite, self-learning-skills) requires grounding to avoid optimizing for artificial benchmarks.
+ASP combines two interventions: reference-bug mixing and an
+embedding-similarity reward. The paper's component table reports 29.5% with
+mixing alone and 30.9% with similarity alone, versus 36.1% together. That
+supports complementarity in this run, not identification of either component
+as independently sufficient. The main table reports no repeated training
+seeds, confidence intervals, or significance test. The setting is Python
+function repair with unit-test feedback; it excludes repository localization,
+dependencies, build systems, and long-horizon tool use.
+
+**Artifact qualification**: The author repository is public and Apache-2.0 at
+`60fc9af2323e06f798a1af5b08d6a0ea30242fa9`. The initial paper release
+`736e6d578f7c90af86ed6dec36dba25a196abc39` was not fresh-clone runnable;
+later commits restored omitted modules, configuration, data preparation, and
+dependencies. The current tree contains the 127-row, four-source benchmark and
+four narrow API-evaluation regression tests, which pass locally, but no paper
+checkpoints or result outputs. Its default main launcher also differs from the
+paper: one human-edited-LM reference source rather than equal representation
+from four sources, 50% rather than 20% reference mixing, and 20 rather than 10
+epochs. Reproducing the headline therefore still requires reconstructing the
+paper-bound configuration, eight H100-class GPUs for the reported roughly
+48-hour/120-step run, Voyage API access, and unreleased checkpoint-selection
+and outcome artifacts.
+
+**Why this matters**: The measured result supports the narrower hypothesis
+that reference-distribution anchoring can mitigate synthetic-bug drift in this
+code-repair setup. It does not show that anchoring is universally essential or
+that the intervention transfers to autonomous self-configuration. For
+self-evolving agents it is a candidate experimental design, not a validated
+mitigation.
 
 **Connects to**: Repair Turn (#419) — code repair as structural bottleneck. Behavioral Baseline (#421) — proof absorption requires grounding. Abstention Decay — training for one objective erases another unless anchored.
 
@@ -133,7 +284,7 @@ Source: https://arxiv.org/abs/2607.03523
 ### self-learning-skills: 843★ (Kulaxyz)
 Agent self-configuration productized. Recognizes hard-won golden paths in coding sessions and harvests them as reusable skills/rules. Same developer as token-diet (596★). Combined ecosystem = agents that learn to optimize both their skills AND their token budget.
 
-**Structural significance**: This is the Configuration Layer as product. The agent doesn't wait for a human to configure it — it *configures itself* from experience. Combined with SkillOpt-Lite's theoretical framework, self-configuration is crossing from research to deployment.
+**Structural significance**: This is the Configuration Layer as product. The agent doesn't wait for a human to configure it — it *configures itself* from experience. SkillOpt-Lite separately publishes an alpha implementation and checkpoint skills, but its current public head does not reproduce the headline results; that is an artifact release rather than evidence of production deployment.
 
 Source: https://github.com/Kulaxyz/self-learning-skills
 
@@ -186,7 +337,7 @@ Source: https://github.com/rzhub/GateMem
 | RAG pruning departs (absorbed) | Medium-High | 1 scan | Ratio 10.40 = silent agreement, pre-absorption |
 | AI ROI skepticism sustained | Low-Medium | 2 scans | Contentious (ratio 1.16), may not sustain |
 | Anthropic GW >300pts | Medium | 2 scans | +33.8% surge, interpretability research welcomed |
-| CONTRA cited by ≥1 agent security framework | Medium | 3 months | 75.1% finding too alarming to ignore |
+| CONTRA cited by ≥1 agent security framework | Medium | 3 months | High simulated search yield motivates configuration-aware auditing |
 | self-learning-skills >1K★ | Medium | 2 weeks | 843★, ~40★/day growth |
 
 ---
@@ -195,31 +346,47 @@ Source: https://github.com/rzhub/GateMem
 
 ### Thesis Statement
 
-After the Depth Mismatch (#424) showed that verification fails when it operates at the wrong depth, this scan reveals *which depth matters most*: the **configuration layer** — between the model (below) and the user intent (above).
+After the Depth Mismatch (#424), this scan proposes the **configuration layer**
+— between the model and user intent — as another important evaluation surface.
+The three quantitative papers report different configuration-sensitive
+results; they have not yet been shown to measure one shared causal construct.
 
-Three independent measurements prove this:
-1. **Risk**: 75.1% of skills are configurable into dangerous actions (CONTRA)
-2. **Performance**: 2.1× gap from client configuration, dwarfing model-to-model differences (HexStrike)
-3. **Optimization**: Smaller model + optimized configuration > larger model + standard configuration (SkillOpt-Lite)
+The original scan summarized three reported results:
+1. **Risk**: 75.1% of 473 selected skills had at least one successful generated target under CONTRA's simulated search
+2. **Performance**: 2.1× gap from client configuration for a fixed model in the evaluated cells (HexStrike)
+3. **Optimization**: SkillOpt-Lite beats full SkillOpt in 23 of 30 reported within-model cells, while its smaller-model headlines compare different optimization methods and do not isolate scale from configuration
 
 ### Connection to Prior Theses
 
 | Thesis | Configuration Layer Connection |
 |--------|-------------------------------|
-| Oversight Inversion (#382) | You can't oversee what you can't configure — governance IS configuration governance |
-| Depth Mismatch (#424) | Configuration is the correct depth for most practical verification |
-| Cost Inversion (#404) | Optimizing configuration (free) beats scaling parameters (expensive) |
-| Governance Depth (#405) | AGL-1/CAGE-1 define governance as control-plane configuration |
+| Oversight Inversion (#382) | Configuration governance is one candidate part of system governance; the cited reports do not establish equivalence |
+| Depth Mismatch (#424) | Configuration is one verification depth to test when the failure mechanism lives there |
+| Cost Inversion (#404) | The reported optimized-small-model cells motivate a matched-cost comparison with model scaling; configuration work is not cost-free |
+| Governance Depth (#405) | AGL-1/CAGE-1 propose control-plane and prebind vocabularies; neither validates an implementation |
 | Persistence Attack Surface (#423) | Configurations persist — every persisted config is an attack surface |
-| Verification Stack (#412) | Configuration verification is the missing layer in the stack |
-| Repair Turn (#419) | Repairing configuration is easier than repairing model weights |
+| Verification Stack (#412) | Configuration verification is a candidate layer where configuration-sensitive failures are plausible |
+| Repair Turn (#419) | Configuration repair may be cheaper, but that comparison is not measured here |
 
 ### The Self-Configuration Risk
 
-self-learning-skills (843★) and SkillOpt-Lite both show agents beginning to configure *themselves*. Combined with CONTRA's finding that 75.1% of configurations can be dangerous, self-configuration introduces a recursive risk: **agents optimizing their own configuration may optimize toward dangerous configurations that pass their own validation gates**.
+self-learning-skills (843★) and SkillOpt-Lite describe systems that modify
+their reusable skills or harnesses. Combined with CONTRA's reported finding
+that 75.1% of 473 selected skills had at least one successful generated target
+under simulated search, this
+motivates a recursive-risk test: **can self-optimization select a dangerous
+configuration that still passes its own validation gate?** The current scan
+does not run that test.
 
-ASP (Anchored Self-Play, 2607.03523) provides the mitigation template: anchor self-optimization to realistic distributions. Without anchoring, self-play (and by extension self-configuration) drifts toward synthetic optima.
+ASP (Anchored Self-Play, 2607.03523) provides a candidate experiment design:
+compare self-optimization with and without reference-distribution anchoring.
+Its measured evidence is limited to function-level code repair, bundles two
+anchoring interventions, and transfers weakly to DebugBench without in-domain
+retraining. It does not establish that self-configuration drifts by the same
+mechanism or that ASP mitigates it.
 
 ### Design Principle
 
-> Before evaluating a model, evaluate its configuration. Before securing a skill, secure its configuration space. Before optimizing parameters, optimize the configuration. The model is the engine; the configuration is the steering.
+> Evaluate the model, task, and configuration together. Treat skill composition,
+> orchestration, and self-evolution rules as testable factors, not as a universal
+> substitute for model-level evidence.

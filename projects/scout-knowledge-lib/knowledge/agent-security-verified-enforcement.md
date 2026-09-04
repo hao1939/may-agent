@@ -371,13 +371,16 @@ for agentic (as opposed to content) governance.
 authority must bind to the same action manifest before tool execution proceeds.
 Policies mark protected sink fields; typed releases carry narrow validated values;
 opaque data slots keep evidence as data. On 720 AgentDojo episodes (1,739 LLM
-calls) and 400 code-agent episodes: 231 safe task completions, zero observed
-escapes across all three authority dimensions.
+calls), 199 are safe task completions; on 400 repository episodes, 231 are safe
+task completions. Neither set has an observed escape at the mediated sink.
+Validator completeness, task quality, wrong field classes, unmediated sinks,
+and compromised policy or runtime remain outside the fixed-policy guarantee.
 
 **Defense class**: Deterministic execution-boundary enforcement.
 **Distinguishing property**: operates at the execution surface itself, not the
-approval surface above it — immune to encoding-gap attacks (cf. MCP TAG-Block
-Concealment, 2607.05744).
+approval surface above it. Complete mediation can stop an encoding-gap proposal
+from becoming authority at a covered sink; CXI does not make unreviewed sinks or
+incomplete policies immune (cf. MCP TAG-Block Concealment, 2607.05744).
 
 **Connection**: Extends Institutional Attestation (§2.34) — both gate consequential
 actions; CXI adds triple-binding at the exact execution point.
@@ -391,18 +394,35 @@ signature bound to single-use nonce and timestamp window. Role-based and
 argument-level policy the agent can neither read nor modify. SHA-256 hash-chained
 audit log with HMAC-authenticated QR receipts.
 
-Results: 15 models tested against 8 attack scenarios; refusal varies 38–100%.
-With gateway: **0% residual attack success for all 15 models** at ≤0.03ms added
-latency. Blocks 9/9 in-scope case studies (policy baseline without identity
-binding: 4/9). Key insight: "prevents a deceived model from acting beyond the
-verified user's authority."
+The public benchmark has 15 models × 8 scenarios, but four Qwen cells contain
+only HTTP 429 errors. Its 116 completed cells summarize 580 successful model
+calls and 187 dangerous-call attempts. Although the runner evaluates every
+attempt, the saved result retains one representative verdict for each of 44
+attempting cells; all 44 are denied. The benchmark fixes the caller as `member`
+under a restrictive default policy: four dangerous tools are owner-only and
+the member-allowed `web_fetch` has an empty URL allowlist. This supports
+deterministic fixed-policy denial, not uniform model safety or identity-only
+attribution.
+
+The largest rounded per-model average decision time is 0.0304 ms and the
+largest retained decision is 0.0659 ms; neither measures end-to-end gateway
+latency. The 9/9 versus 4/9 result statically reconstructs reduced policy styles
+rather than running the cited systems. AgentDojo provides separate
+argument-policy evidence: both no-defense cells are already 0/20 attack
+success, seven emitted attacker-directed calls are denied by a known-payee
+allowlist, and clean utility falls from 100% to 80%.
 
 **Defense class**: Off-host structural enforcement.
 **Extends**: ActPlane (§2.33) — both enforce externally; aiAuthZ adds
 identity binding and cryptographic audit trail.
 
-**Connection**: Strengthens the externalization proof (§2.43 cluster) — identity
-binding provides the missing principal attribution layer.
+**Connection**: Strengthens the case for external enforcement only when every
+sensitive path is mediated. Overlapping built-in tools must be disabled; the
+gateway, keys, policy, database, and shared nonce/rate-limit store remain
+trusted; permitted calls can compose harm; and symmetric HMAC does not provide
+third-party non-repudiation. The pinned public repository makes policy and
+aggregate arithmetic inspectable, but omits the claimed raw multi-model
+transcripts, so the original provider calls are not fully replayable.
 
 *(arXiv [2607.05518](https://arxiv.org/abs/2607.05518), Jul 2026. Scan #453)*
 

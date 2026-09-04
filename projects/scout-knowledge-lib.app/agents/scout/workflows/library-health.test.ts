@@ -10,8 +10,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
+  acceptedSourceOutputsMetricDefinition,
   buildLibraryHealthPacket,
   execute,
+  KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+  knowledgePreambleCoverage,
   type LibraryHealthPacket,
 } from "./library-health";
 
@@ -58,6 +61,61 @@ function oversizedNote(projectDir: string, lines: number): void {
 }
 
 describe("Scout library-health observer", () => {
+  it("can alert when every latest accepted source output disappears", () => {
+    const definition = acceptedSourceOutputsMetricDefinition("/app/scout.app");
+
+    expect(definition).toMatchObject({
+      target: 1,
+      threshold: 1,
+      alertOp: "<",
+    });
+    expect(0 < definition.threshold).toBe(true);
+    expect(1 < definition.threshold).toBe(false);
+  });
+
+  it("owns and records canonical knowledge preamble coverage", async () => {
+    const paths = fixture();
+    writeFileSync(
+      join(paths.projectDir, "knowledge", "README.md"),
+      "<ai_context>\nsummary: navigation\n</ai_context>\n",
+    );
+    expect(knowledgePreambleCoverage(paths.projectDir)).toEqual({
+      value: 0.5,
+      sampleSize: 2,
+    });
+    const records: Array<{
+      id: string;
+      value: number;
+      options?: { sampleSize?: number; measuredBy?: string };
+    }> = [];
+    await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        workspace: {
+          appRoot: paths.appDir,
+          projectRoot: paths.projectDir,
+          root: paths.projectDir,
+          output: join(paths.appDir, ".state", "output"),
+        },
+        recordMetric: async (id, value, options) => {
+          records.push({
+            id,
+            value,
+            options: options as (typeof records)[number]["options"],
+          });
+        },
+      }),
+    );
+    expect(records).toContainEqual({
+      id: KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+      value: 0.5,
+      options: {
+        sampleSize: 2,
+        measuredBy: "workflow:library-health",
+      },
+    });
+  });
+
   it("wakes for a new fact but not for the same fact in the next packet", () => {
     const paths = fixture();
     const now = Date.parse("2026-07-20T00:00:00.000Z");

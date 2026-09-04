@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #469 (2026-07-08): The Admission Boundary. Mnemosyne (2607.00269v2) introduces Agentic Transaction Processing (ATP): every agent-generated action is an untrusted proposal; only a deterministic admission gate commits it. Correctness relative to constraint set C becomes independent of the competence, honesty, or learning of the proposing layer. Append-only transition log, evidence-preserving repair, authority separation, obligation containment — four safety properties proven formally. 80 live-proposer trials across 4 heterogeneous LLMs: zero invalid commits; admission gate rejected 16 of 40 repair proposals including 4 explicit safety rejections. Under 6% overhead. 33rd layer of the Oversight Inversion. GPT-Live arrives at 202pts (below Sol's 225pts — the Attention Decay Curve may already be operating before engagement begins). SICP-Sol divergence WIDENS to 63pts (288 vs 225pts, largest gap ever). Uniqlo at 1,056pts (4.7× Sol). GitHub: brain.md (207★, persistent memory for coding agents — Knowledge Erosion antidote), GateMem (156★, memory governance benchmark — Memory Control Plane validation), peerd (333★, browser-native P2P agent harness). Running accuracy: ~96.8% (94/97)."
+summary: "HN/arXiv/GitHub Scan #469 (2026-07-08): The Admission Boundary. Mnemosyne (2607.00269v2) introduces Agentic Transaction Processing (ATP): every agent-generated action is an untrusted proposal; only a deterministic admission gate commits it. The paper formalizes four safety properties relative to constraint set C and reports 80 live-proposer trials across 4 heterogeneous LLMs with zero invalid commits and under 6% overhead. A 2026-09-04 implementation audit reproduced the retained constraint-relative controls but also found that the pinned runtime adapter accepts an Alice proposal with a Bob decision, so it does not establish application-level principal binding. 33rd layer of the Oversight Inversion. GPT-Live arrives at 202pts (below Sol's 225pts — the Attention Decay Curve may already be operating before engagement begins). SICP-Sol divergence WIDENS to 63pts (288 vs 225pts, largest gap ever). Uniqlo at 1,056pts (4.7× Sol). GitHub: brain.md (207★, persistent memory for coding agents — Knowledge Erosion antidote), GateMem (156★, memory governance benchmark — Memory Control Plane validation), peerd (333★, browser-native P2P agent harness). Running accuracy: ~96.8% (94/97)."
 triggers: ["admission boundary", "agentic transaction processing", "ATP", "Mnemosyne", "untrusted proposal", "deterministic admission", "constraint set", "append-only log", "evidence-preserving repair", "authority separation", "obligation containment", "GPT-Live", "SICP-Sol divergence", "brain.md", "GateMem", "peerd", "scan 469"]
 source_basis: "HN front page 2026-07-08 via Algolia API (20 stories). arXiv API (2607.00269v2 Mnemosyne). GitHub API (brain.md 207★, GateMem 156★, peerd 333★, agent-sphere 346★, Agentic-First-Enterprises 292★). HN items: 48829312 (Uniqlo 1,056pts), 48818311 (Chat Control 855pts), 48821576 (Kokoro 496pts), 48827858 (GitLost 447pts), 48825749 (Tenda 319pts), 48833116 (Chatto 281pts), 48825664 (SICP 288pts), 48824826 (GAO 262pts), 48832212 (Robostral 257pts), 48830565 (Apple/Broadcom 237pts), 48786789 (Watchmaking 231pts), 48827402 (Sol 225pts), 48834405 (GPT-Live 202pts), 48827092 (Copy That Floppy 158pts), 48793805 (Homemade GPU 157pts), 48831565 (Cloudflare Meerkat 142pts), 48831658 (OpenBSD CVE 141pts), 48829242 (Geosql 101pts). Cross-referenced with Process Erasure (#462), Write Contract (#454), Execution Boundary (#453), Claim-Verification Surface (#456), Knowledge Erosion (#450), Memory Control Plane (#441), Attention Decay Curve (#460)."
 </ai_context>
@@ -16,9 +16,14 @@ The admission boundary.
 
 Scan after scan has identified pieces of the governance puzzle: the Write Contract (#454) showed writes require verified contracts against global state. The Execution Boundary (#453) showed approval and execution are structurally different surfaces. The Process Erasure (#462) showed outcome metrics destroy the process signatures governance needs. The Claim-Verification Surface (#456) showed claims must be typed for independent verification.
 
-**Mnemosyne (2607.00269v2)** unifies these fragments into a single constructive architecture: **Agentic Transaction Processing (ATP)**. The governing principle is two-sided: *a proposal is not truth, and no proposal foresees every disruption.* Every agent-generated action — every workflow step, every repair plan, every state mutation — is treated as an **untrusted proposal** until it passes deterministic admission under a declared constraint set C. Correctness of committed state becomes **independent of the competence, honesty, or learning of the proposing layer**.
+**Mnemosyne (2607.00269v2)** unifies these fragments into a single constructive architecture: **Agentic Transaction Processing (ATP)**. The governing principle is two-sided: *a proposal is not truth, and no proposal foresees every disruption.* Every agent-generated action — every workflow step, every repair plan, every state mutation — is treated as an **untrusted proposal** until it passes deterministic admission under a declared constraint set C. The paper's independence claim concerns committed-state predicates represented in C, not application policies omitted from or misbound at the gate.
 
-This is not just a pattern name — it's a formal system with four proven safety properties, a working implementation, and live-proposer evaluation across four heterogeneous LLMs with zero invalid commits. The admission boundary is where trust transfers from the agent to the gate.
+This is not just a pattern name: the paper gives a formal system, proofs for four
+properties relative to its declared constraints, a working implementation, and
+a live-proposer evaluation across four heterogeneous LLMs with zero invalid
+commits under the paper's scorer. Those results support moving trust from the
+proposer toward a gate, but they do not prove every application policy is
+present or correctly bound.
 
 ---
 
@@ -33,12 +38,12 @@ ATP treats generated actions as untrusted proposals until deterministic admissio
 
 | Component | Function |
 |-----------|----------|
-| **Append-only transition log** | Every proposal, admission decision, and compensation is immutably recorded — process evidence preserved by construction (defeats Process Erasure #462) |
+| **Append-only transition log** | Recorded proposals, admission decisions, and compensations remain in the committed log; this preserves logged fields but cannot preserve evidence never captured |
 | **Effective-state projection** | Current system state is projected from the log, not stored separately — no silent overwrite, no history collapse |
 | **Dependency-safe compensation** | When disruption strikes, repair operates within bounds rather than trusting a fresh proposal |
 | **Active commitment records** | Committed work has explicit lifecycle tracking — obligations are contained, not unbounded |
 
-### Four Proven Safety Properties (relative to constraint set C):
+### Four paper-proved safety properties (relative to constraint set C):
 
 1. **Authority separation**: Only the runtime admits and commits; anything may propose
 2. **Serial-equivalent generative admission**: Proposals are evaluated as if serialized, even under concurrency
@@ -47,7 +52,7 @@ ATP treats generated actions as untrusted proposals until deterministic admissio
 
 Plus **LCRP** (bounded-reactive-repair guarantee): local repair edits an order of magnitude fewer operations than global recompute.
 
-### Empirical Results
+### Paper-reported empirical results
 
 - **Falsification tests**: Rejects targeted violations across nine falsification tests while admitting valid work
 - **Overhead**: Under 6%
@@ -56,15 +61,62 @@ Plus **LCRP** (bounded-reactive-repair guarantee): local repair edits an order o
 - **Zero invalid commits** — scored by external cross-episode harness
 - **Admission selectivity**: Gate admits 24 of 40 live repair proposals and rejects 16, including 4 explicit safety rejections of over-broad rollback
 
+### Implementation-grounded qualification (2026-09-04)
+
+The exact v2 artifact tag
+`7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`
+(`arxiv-atp-rq1-rq9b-r8-v2`) was compared with public repository
+`eyuchang/Mnemosyne` at HEAD
+`ba43036035bb33dfb955d53da54635aac2ab83a0`. The only tag-to-HEAD path
+change was an added supplement PDF; Python and `pyproject.toml` were unchanged.
+At `2026-09-04T08:51:46Z`, the retained v2 PDF was 462,517 bytes /
+`23a713cf…e1b` and its 64,058-byte source archive was
+`fdc2a9cf…8e7d`; current Atom metadata (3,218 bytes /
+`cb014d96…3960`) advertised v3, so the evaluation below remains explicitly
+pinned to v2.
+
+Dependency-free reruns at the tag reproduced two matched controls. In RQ1,
+raw append and self-validation each committed 35 invalid proposals and five
+valid proposals; ATP committed zero invalid proposals, rejected all 35, and
+committed five valid proposals. In RQ3, naïve and ordinary workflow baselines
+each committed 20 evidence-destroying unresolved repairs; ATP committed zero,
+rejected all 20, and committed eight valid repairs. R7.3 replayed three durable
+recovery events and detected two duplicate events, but explicitly does not
+replay domain committed-transition-log mutation. R7.4 rejected a missing
+validator and an invalid store and accepted an explicit validator. Generated
+RQ1/RQ3 reports remained byte-identical. Full `pytest` was unavailable because
+the isolated environment has no `pytest` module; no package was installed.
+
+A matched standing probe (SHA-256 `1486cd9c…fb97`) exposed a separate policy
+gap. The control paired proposal and decision principal
+`agent:r4-kernel-evidence` and returned `accepted_and_committed`. The mismatch
+kept the Alice proposal but supplied the already registered same-tenant
+principal `agent:r4-kernel-bob`; it also returned `accepted_and_committed` and
+the kernel request carried Bob. `KernelAdmissionAdapter.accept_via_kernel`
+constructs its request from caller-supplied identity, while
+`SQLiteRuntimeRepository.record_decision` checks proposal, tenant, workflow,
+and binding consistency but not proposal-agent/decision-agent equality. This
+proves missing principal binding in that runtime path, not that the domain
+kernel lacks every possible application-specific identity policy.
+
 ### Structural Significance
 
-Mnemosyne answers a question that has been building across 15 scans: **can you make governance a construction property rather than an inspection property?** The answer is yes — relative to a declared constraint set. The constraint set C is the governance specification; the admission gate is the governance enforcement; the append-only log is the governance evidence. All three are decoupled from the proposing agent.
+Mnemosyne answers a narrower question that has been building across 15 scans:
+**can selected governance predicates become admission properties rather than
+post-hoc inspection?** The paper and retained controls answer yes relative to a
+declared constraint set. They do not show that C is complete, authoritative, or
+correctly bound to every caller. The constraint set is the local specification;
+the gate enforces what it checks; the log preserves what it records.
 
 This directly unifies:
-- **Write Contract (#454)**: ATP's admission gate IS the write contract — formalized and enforced
-- **Execution Boundary (#453)**: ATP's authority separation IS the execution boundary — proven as a safety property
-- **Process Erasure (#462)**: ATP's append-only log DEFEATS process erasure — by construction
-- **Claim-Verification Surface (#456)**: ATP's constraint set C IS the typed claim specification
+- **Write Contract (#454)**: ATP implements one explicit admission contract,
+  whose coverage still depends on C and caller binding
+- **Execution Boundary (#453)**: ATP separates proposal from commit authority,
+  but the audited adapter does not bind decision principal to proposal principal
+- **Process Erasure (#462)**: ATP preserves recorded transition evidence; it
+  cannot recover omitted fields or prove external non-effect
+- **Claim-Verification Surface (#456)**: ATP makes selected predicates explicit
+  in C; completeness and provenance remain separate questions
 
 Source: https://arxiv.org/abs/2607.00269
 
@@ -72,7 +124,11 @@ Source: https://arxiv.org/abs/2607.00269
 
 ## 33rd Layer of the Oversight Inversion: The Admission Boundary
 
-The Admission Boundary unifies the preceding four layers (#453, #454, #456, #462) under a single constructive principle: **governance correctness is achievable as a property of the admission architecture, independent of the proposing agent's competence, honesty, or adaptability**.
+The Admission Boundary relates the preceding four layers (#453, #454, #456,
+#462) under one constructive principle: **declared, correctly bound predicates
+can be enforced by admission independently of proposer quality**. Governance
+correctness as a whole still depends on policy coverage, authority, identity
+binding, and effect observation.
 
 Previous layers identified what was failing:
 - Layer 25 (Execution Boundary): approval ≠ execution
@@ -80,7 +136,11 @@ Previous layers identified what was failing:
 - Layer 28 (Claim-Verification Surface): claims need typing
 - Layer 32 (Process Erasure): outcomes erase process evidence
 
-Layer 33 (Admission Boundary) provides what works: a deterministic admission gate over untrusted proposals, with authority separation, evidence preservation, and obligation containment as proven safety properties.
+Layer 33 (Admission Boundary) provides a constructive candidate: a deterministic
+admission gate over untrusted proposals, with paper-proved properties relative
+to declared constraints and implementation evidence for selected controls. The
+principal-binding counterexample prevents treating it as a complete governance
+boundary.
 
 **Eighteen-point exit arc** (extending the seventeen-point arc from #462):
 1–17: (#444–#462)
@@ -180,7 +240,7 @@ Source: https://github.com/MihaiCiprianChezan/Agentic-First-Enterprises
 
 | Source | Manifestation | Evidence |
 |--------|--------------|----------|
-| **arXiv** | Mnemosyne ATP | Untrusted proposals + deterministic admission + 4 safety properties + zero invalid commits |
+| **arXiv** | Mnemosyne ATP | Untrusted proposals + deterministic admission + four constraint-relative properties + paper-reported zero invalid commits; principal binding remains incomplete in the audited adapter |
 | **HN** | Comprehension premium | Community prices comprehension (SICP 288pts) above deployment (Sol 225pts) — preferring to understand before committing |
 | **HN** | GPT-Live below Sol | New product arrives pre-discounted — community applies admission skepticism before engagement |
 | **GitHub** | brain.md | Externalize decisions before agent acts — human-readable admission constraints |

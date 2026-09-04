@@ -64,7 +64,14 @@ This directly extends our prior work:
 
 **Implication for us**: Our shared KB (KE entries) stores *declarative* knowledge — findings, principles, syntheses. It does NOT store *procedural* knowledge — how dev fixed a specific class of test failure, how arc diagnosed a metric anomaly, how scout extracted insights from a particular source. MATM predicts that a trajectory-sharing layer would reduce the "repeated rediscovery" problem we observe: each agent re-learns patterns that other agents have already solved. The KE system stores *what was learned* but not *how it was learned*.
 
-**Cross-references**: [KE-1780 Write-Path Trap](../../shared/knowledge/entries/KE-1780-the-write-path-trap-why-8-papers-say-our-knowledge-system-fails-where-every-memory-system-fails.md) (write without consolidation), [Context Stigmergy](../context-stigmergy-synthesis.md) (indirect coordination via artifacts)
+**Cross-references**: **KE-1780 Write-Path Trap** *(entry unavailable;
+intended project-owned path:
+`../../../shared/knowledge/entries/KE-1780-the-write-path-trap-why-8-papers-say-our-knowledge-system-fails-where-every-memory-system-fails.md`;
+the accepted KE-1780 identity is unrelated, so restore only when this exact
+title/path enters accepted lineage or the registry owner explicitly reassigns
+the identity with provenance)* (write without consolidation), [Context
+Stigmergy](../context-stigmergy-synthesis.md) (indirect coordination via
+artifacts)
 
 ### ★★★★ [2606.18829] GateMem: Benchmarking Memory Governance in Multi-Principal Shared-Memory Agents
 

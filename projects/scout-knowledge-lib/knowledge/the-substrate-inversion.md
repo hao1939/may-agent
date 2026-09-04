@@ -327,7 +327,7 @@ dropping). Today it's a *structural* claim supported by:
 5. **Internal evidence** — same model, 7× efficiency from architecture difference
 6. **Community convergence** — "strip orchestration from the LLM," "meta-harness"
 
-**Update (2026-10-06, Scan #167):** icat-agent (2606.25514) provides the strongest controlled evidence yet. Same model (GPT-5.4-xhigh), different scaffold → **+8.3pp on SWE-bench Pro** (67.4% vs prior SOTA 59.1%). Key: context isolation (no shared state → prevents context poisoning), quality-adaptive workflow (well-defined issues get parallel patching; ambiguous get exploration), event-based message passing. The improvement on the *harder* benchmark is larger than most model-generation jumps. Also: SWE-Pro (2606.25530) measures the quality gap directly — experts achieve 15.5× speedup + 171.3× memory reduction; LLMs achieve negligible gains. The ceiling is real and its position is architectural.
+**Scan #167 update (source activity through 2026-06-25; exact retrieval time unverifiable; repository-observed by 2026-06-29T18:40:50Z):** icat-agent (2606.25514) provides the strongest controlled evidence yet. Same model (GPT-5.4-xhigh), different scaffold → **+8.3pp on SWE-bench Pro** (67.4% vs prior SOTA 59.1%). Key: context isolation (no shared state → prevents context poisoning), quality-adaptive workflow (well-defined issues get parallel patching; ambiguous get exploration), event-based message passing. The improvement on the *harder* benchmark is larger than most model-generation jumps. Also: SWE-Pro (2606.25530) measures the quality gap directly — experts achieve 15.5× speedup + 171.3× memory reduction; LLMs achieve negligible gains. The ceiling is real and its position is architectural.
 
 The window matters because the implications are directional and irreversible:
 - Every week, local models get slightly better → harness advantage grows
@@ -550,7 +550,7 @@ way a good defensive harness commoditizes code generation. This means:
 - Only structural defense (memory safety, formal verification, container isolation)
   survives — the security version of the Perimeter Impossibility
 
-Source: [findings/2026-10-29-hn-scan-223.md].
+Source: [findings/2026-06-28-hn-scan-223.md].
 
 ### Update: The Backbone Imperative — Constructive Name (Scan #242, 2026-11-01)
 
@@ -575,7 +575,7 @@ Every success case (GILP, HORIZON, Glite ARF, ActPlane, PerceptionRubrics) has
 this shape. Every failure case (Stochastic Gatekeeper Paradox, Authority Default)
 results from stochastic systems in backbone roles without deterministic constraint.
 
-Source: [findings/2026-11-01-hn-arxiv-scan-242.md].
+Source: [findings/2026-06-29-hn-arxiv-scan-242.md].
 
 ## §Serving-Layer Crystallization (Scan #257, 2026-11-03)
 
@@ -600,7 +600,7 @@ deterministic infrastructure (recipe definitions, budget caps, policy
 constraints, failure modes) governs stochastic capability (model responses).
 The harness IS the backbone, productized.
 
-Source: [findings/2026-11-03-hn-arxiv-scan-257.md]
+Source: [findings/2026-07-02-hn-arxiv-scan-257.md]
 
 ## §The Post-Loyalty Economy (Scan #315, 2026-07-02)
 

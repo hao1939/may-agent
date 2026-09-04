@@ -2,7 +2,7 @@
 title: "HN — Cross-Session Messaging Makes Authority Non-Transitivity Explicit"
 source: hn
 date: 2026-08-08
-last_updated: 2026-08-09
+last_updated: 2026-08-26
 type: finding
 tags: [hn, coding-agents, multi-agent, messaging, permissions, local-runtime]
 relevance: high
@@ -98,6 +98,30 @@ The implementation also exposes where not to overclaim. The broker is same-user 
 - **Repo:** https://github.com/kelvincushman/orphus
 - **Revision inspected:** https://github.com/kelvincushman/orphus/commit/f69468b7876c78efc2a03401df74f1dee07b0099
 - **Architecture:** https://github.com/kelvincushman/orphus/blob/f69468b7876c78efc2a03401df74f1dee07b0099/docs/architecture.md
+
+## GitHub follow-up — a handoff should import an inactive branch, not a current mandate
+
+Jiaojie revision [`35cd1bf`](https://github.com/Jordanwei1/jiaojie-skill/commit/35cd1bf474495a61fe8925cfb822779d0dc78d22) applies the same non-transitivity principle to **portable state**, not just live messages. Its handoff model separates a small HOT startup projection from WARM decisions, constraints, rejected options, failed attempts, and answered questions, plus COLD evidence and artifacts. The receiving workflow requires reading the state behind the projection before accepting a proposed action, preserves concurrent decisions as explicit branches, and keeps an imported branch inactive until an explicit merge and current-user approval.
+
+The security boundary then separates four claims that portable-state systems often collapse:
+
+1. hashes establish byte consistency, not origin;
+2. a valid origin or signature does not establish source truth;
+3. approval to transfer or receive a package does not transfer effect authority; and
+4. every protected action still needs a current authorization bound to principal, resource, operation, purpose, and time.
+
+This makes **negative knowledge**—a failed approach or a user-rejected option—portable without making historical instructions executable. The receiver can avoid repeating settled mistakes while still rechecking stale external facts and obtaining present authority before acting. It is a stronger handoff contract than copying a session summary because it treats receipt, merge, and continuation as distinct decisions.
+
+The repository is unusually careful about the limit of its evidence. Its recorded deterministic run reports 28 passing contract, round-trip, mutation-rejection, path-safety, and fixture checks, and GitHub Actions passed the same dependency-free project check at the inspected revision. But its compatibility matrix marks all named model families, language directions, and runtime behaviors `NOT_RUN`. The code therefore demonstrates a structured and security-conscious **candidate protocol**; it does not yet demonstrate cross-model semantic continuity. Package integrity and a well-formed receipt cannot substitute for an isolated receiver recovering the right state and next action.
+
+- **Repo:** https://github.com/Jordanwei1/jiaojie-skill
+- **Revision inspected:** https://github.com/Jordanwei1/jiaojie-skill/commit/35cd1bf474495a61fe8925cfb822779d0dc78d22
+- **Security boundary:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/references/security-boundary.md
+- **Receive workflow:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/references/receive-workflow.md
+- **Evaluation policy:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/evals/README.md
+- **Compatibility matrix:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/evals/compatibility-matrix.json
+- **Deterministic result:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/evals/results/project-deterministic-2026-08-20/summary.json
+- **Passing workflow:** https://github.com/Jordanwei1/jiaojie-skill/actions/runs/32376266188
 
 ## Operational pattern
 

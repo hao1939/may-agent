@@ -1,0 +1,67 @@
+{
+  "schema": "scout.navigation-diagnostic-controls/v1",
+  "frozen_at": "2026-09-03T18:16:41.915Z",
+  "frozen_against_tip": "d4a9208af8b70c9419efe8e2d8d4774506a4444c",
+  "source_basis": "Cycle 252 freezes the existing v1 caller-bound query and one newly explicit lifecycle-vocabulary control before any scorer or index change. The control reproduces the scores reported in Cycle 244, but is current replay evidence rather than proof of the unstored historical query.",
+  "cases": [
+    {
+      "id": "caller-bound-original",
+      "query": "bind agent memory write read revise and forget operations to the verified caller identity",
+      "expected_ranks": [
+        {
+          "target": "./the-read-write-attention-inversion.md",
+          "matched": ["bind", "memory", "writ", "read", "oper", "caller"],
+          "coverage": 0.545455,
+          "score": 44.894763
+        },
+        {
+          "target": "./findings/2026-08-26-agent-memory-governance-authority-boundaries.md",
+          "matched": [
+            "bind",
+            "agent",
+            "memory",
+            "writ",
+            "oper",
+            "verifi",
+            "caller",
+            "identity"
+          ],
+          "coverage": 0.727273,
+          "score": 37.83162
+        }
+      ]
+    },
+    {
+      "id": "caller-bound-lifecycle-control",
+      "query": "bind agent memory write retrieval approval recall erasure temporary custody verified caller identity",
+      "expected_ranks": [
+        {
+          "target": "./findings/2026-08-26-agent-memory-governance-authority-boundaries.md",
+          "matched": [
+            "bind",
+            "agent",
+            "memory",
+            "writ",
+            "retrieval",
+            "approval",
+            "recall",
+            "erasur",
+            "temporary",
+            "custody",
+            "verifi",
+            "caller",
+            "identity"
+          ],
+          "coverage": 1,
+          "score": 66.713178
+        },
+        {
+          "target": "./the-read-write-attention-inversion.md",
+          "matched": ["bind", "memory", "writ", "retrieval", "caller"],
+          "coverage": 0.384615,
+          "score": 32.745095
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 <ai_context>
-summary: "Scan #476: The Diagnostic Deficit. Three uncovered arXiv papers converge: agent-generated artifacts are functionally correct but diagnostically silent — they work until they fail, and when they fail, they provide no evidence. Observability-Aware Code (2607.05785) tests 200 microservice systems and reveals a consistent gap between source-level diagnostic semantics and actual fault signals in agent-generated code. Hidden Amplifiers (2607.05894) identifies micro-dependencies with <50 methods but 50,000+ dependents that are invisible to all current SCA tools — structurally critical nodes that provide no risk signal. From Conversation to Contribution (2607.05677) characterizes 13,360 AI coding sessions across 1,356 OSS repos, mapping the developer-AI interaction surface that shapes contribution patterns. HN front page: frontier models combined (1,298pts) BARELY cross Uniqlo (1,291pts) for the first time — three models combined ≈ one decoded bash script. Slopcode narrative enters at 39pts. Brown AI cheating (73pts) shows 50% score drop at in-person final. Chatto 713pts (+61, +9.4%, ATH). GitLost crosses 500pts (504pts). Chat Control sustained at 1,513pts combined. Foundations Turn at ~1,642pts. Bun rewriting in Rust at 255pts. Cloudflare Drop 227pts + Meerkat 215pts (two major Cloudflare announcements). SICP 343pts, 30papers 617pts."
+summary: "Scan #476: The Diagnostic Deficit, qualified. Observability-Aware Code reports low diagnostic-content recovery and low explicit fault-signal rates under its oracle. Hidden Amplifiers identifies 12 author-defined high-fan-in micro-dependencies in a curated 50-package corpus, but measures structural exposure rather than exploitability; its cross-level ranking does not beat code-only ranking on reported within-root precision. Conversation to Contribution observes a selected public-artifact cohort and repository proxies, not a chat-caused contribution effect."
 triggers: ["diagnostic deficit", "observability gap", "diagnostically silent", "observability-aware code", "hidden amplifiers", "micro-dependencies", "supply chain risk", "conversation to contribution", "OSS AI contribution", "slopcode", "agent code abandoned", "frontier parity uniqlo", "Brown AI cheating", "50% score drop", "Bun Rust rewrite", "Cloudflare Drop", "Cloudflare Meerkat", "scan 476"]
-source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
+source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894v1 (Hidden Amplifiers, cs.SE), 2607.05677v1 (From Conversation to Contribution, cs.SE). Hidden Amplifiers source archive and public OSCAR repositories primary-reviewed 2026-09-04: fabgonzalez-dev/oscar-dependency-observatory@a2bc492b, oscar-method-observatory@26a89fd7, oscar-frontend@1801fa69, oscar-research-data@c12df4fd. Conversation to Contribution source and public littlehousezh-commits/vibe_coding_oss@e4bda0e6 primary-reviewed 2026-09-04. HN front page via Firebase API 2026-07-09 01:10 UTC (top ~80 stories). GitHub trending 2026-07-09."
 </ai_context>
 
 # Scan #476: The Diagnostic Deficit
@@ -12,9 +12,19 @@ source_basis: "arXiv: 2607.05785v1 (Observability-Aware Code, cs.SE), 2607.05894
 
 ## Theme
 
-Agent-generated artifacts are functionally correct but diagnostically silent. They work until they fail, and when they fail, they provide no evidence of what went wrong.
+The primary-reviewed observability study reports that runnable generated
+microservices often lack explicit fault-specific log strings under its oracle.
+It does not establish application correctness, total diagnostic silence, or a
+longitudinal production lifecycle.
 
-Three uncovered arXiv papers converge on this structural gap. The Verification Loop (#475) proved that closing the loop — adding review, harness, or admission gates — produces step-function reliability gains. But closing the loop requires the artifacts being verified to *emit diagnostic evidence*. When agents generate code that passes tests but contains no logging, no tracing, no structured error reporting — when agents introduce dependencies that resolve but hide amplified risk behind <50 methods — the loop has nothing to verify except the final outcome. The Diagnostic Deficit is the gap between functional correctness and operational observability: the verification loop's blind spot.
+The three papers address different evidence surfaces rather than one established
+causal mechanism. The observability paper shows that runnable services can
+lack fault-specific log strings under its oracle. Hidden Amplifiers measures a
+curated package corpus's structural exposure and author-defined risk score; it
+does not demonstrate exploitability or systematically compare current SCA
+tools. Conversation to Contribution observes repositories selected because
+developers publicly committed chat artifacts; its linked commit and
+repository proxies do not establish that chat caused a contribution.
 
 Meanwhile, on HN: frontier models combined (1,298pts from GPT-Live + Grok 4.5 + SWE-1.7) BARELY cross Uniqlo (1,291pts) for the first time — three major model launches combined produce 0.5% more attention than a decoded bash script on a t-shirt. The parity itself is the signal: raw capability announcement is no longer an attention advantage even in aggregate. And "slopcode" enters vocabulary (39pts) — the community names the category of agent-generated code that is abandoned and deleted within months.
 
@@ -32,9 +42,25 @@ This paper presents the first systematic study of observability in agent-generat
 
 **Runtime-level**: Whether those artifacts translate into effective fault signals — tested through 200 generated microservice systems deployed on Kubernetes with 13 injected fault types.
 
-**Key finding**: A consistent gap between diagnostic semantics at the source level and fault signals at runtime. Agents can generate functionally correct microservices, but the diagnostic infrastructure is either absent, shallow (generic error messages), or structurally decoupled from the failure modes that actually occur in production.
+**Key finding, qualified**: Static restoration produces Position F1
+0.278–0.633 and lexical KeyBag F1 0.197–0.398. In a separate runtime study,
+only 136–154 of 200 generated services per model are runnable; explicit
+fault-signal rates are 4.95–13.99% over all intended faults and 6.56–20.62%
+over runnable services. The paper does not run application correctness tests,
+reuse the static restored artifacts in the runtime systems, or compare a
+human-written runtime control.
 
-**Why this matters structurally**: The Verification Loop (#475) proved that closed-loop architectures dramatically outperform open-loop generation. But the loop requires *information to flow from the system back to the verifier*. When agent-generated code lacks observability artifacts, the verification loop degrades to binary pass/fail — it can detect that something failed, but cannot diagnose *what* failed or *why*. The 200-microservice Kubernetes deployment makes this concrete: agents produce systems that work in development and fail silently in production.
+**Why this matters structurally**: Fault-specific logs are a separate quality
+dimension worth testing. The study's conservative string oracle finds a real
+gap under 13 injected fault classes, but cannot show that verification degrades
+to binary pass/fail, that the services worked in development, or that they fail
+silently in production. Detection ranges from 1.26% for time skew to 27.45%
+for upstream failure, so fault manifestation is a major alternative explanation.
+
+**Reproducibility boundary**: The 719,150-byte v1 source archive has SHA-256
+`57c14479…28779a2`. Its commented anonymous repository returned HTTP 401
+`not_connected`, and an exact-title GitHub search returned zero repositories.
+The paper states five repeats but reports no dispersion or public run outputs.
 
 **Connection to Process Erasure (#462)**: Process Erasure documented how outcome metrics destroy the process information governance requires. The Diagnostic Deficit is the production-code analog: agent-generated code destroys the diagnostic information operations requires. The erasure isn't in the measurement — it's in the artifact itself.
 
@@ -44,25 +70,100 @@ This paper presents the first systematic study of observability in agent-generat
 
 Modern supply chains comprise hundreds of transitive dependencies, but analysis tools operate at either ecosystem level (dependency graphs) or code level (static analysis within packages). This separation creates two failure modes: false-positive CVE alerts for unreachable code, and blind spots for structurally critical micro-dependencies.
 
-**Key concept — Cross-Level Risk Propagation**: A unified framework bridging code-level risk metrics with ecosystem-level dependency exposure through a single risk formula.
+**Key concept — Cross-Level Risk Propagation**: The paper multiplies a
+method-level code-risk score by compressed ecosystem fan-in. In its deliberately
+curated corpus of 35 npm and 15 PyPI packages, 12 meet its configurable
+definition of fewer than 50 extracted methods and more than 50,000 dependents.
+That is an observed structural-exposure class, not a demonstrated exploitability
+class or representative 24% ecosystem prevalence estimate; the authors say the
+selection inflates prevalence.
 
-**Key finding — Hidden Amplifiers**: Micro-dependencies with fewer than 50 methods but over 50,000 dependents carry outsized supply-chain risk that is invisible to ALL current SCA (Software Composition Analysis) tools. These are structurally critical nodes that provide no risk signal under current analysis paradigms.
+**Ranking result, qualified**: On 10 CVE-bearing roots, cross-level precision
+at K=3/5/10 is 0.43/0.44/0.38, code-only is 0.50/0.44/0.42, and fan-in-only is
+0.20/0.20/0.23. Code awareness beats fan-in-only, but cross-level scoring does
+not outperform code-only scoring on this within-root metric. The paper argues
+that the extra score instead makes methods comparable across packages; it does
+not validate that claimed benefit against later vulnerability outcomes.
 
-**Why this matters**: Agents routinely select dependencies based on functional fit, not structural risk. When an agent generates a dependency tree, it doesn't see (and can't see) the Hidden Amplifier pattern: a tiny library that technically works but is a single point of failure for 50K+ downstream dependents. The cross-level gap is a Diagnostic Deficit at ecosystem scale — the information needed for governance exists at a different level of analysis than the tools operate.
+**Tool-comparison boundary**: “Invisible to all current SCA tools” is the
+authors' claim, not the result of a systematic tool experiment. The paper gives
+a conceptual feature table and one `npm audit` example. No tested tool/version
+matrix or negative-result corpus establishes universal invisibility. The 2017
+`ms` case also uses a proportional historical fan-in estimate because deps.dev
+has no historical snapshots, so it is a retrospective plausibility example,
+not prospective validation.
+
+**Artifact review**: The public research-data revision `c12df4fd` contains the
+50-package corpus and exported tables. Its exact offline analysis command fails
+because the script searches for timestamp-suffixed CSVs while the repository
+ships unsuffixed names. A compatibility-only filename fallback regenerates the
+reported corpus, ranking, function-level, and sensitivity tables byte-for-byte
+apart from the generated timestamp. This reproduces analysis over the supplied
+exports, not the services, package ingestion, historical inputs, or external
+API acquisition. The bundled 20-item patch-mining spot check reports 16/20
+correct (80%), or 16/19 (84%) after excluding one minified case; it is a
+hard-coded author assessment rather than an independent labeled evaluation.
+
+**Why this matters**: The evidence supports inspecting small, high-reach
+dependencies and combining code and ecosystem views. It does not show that
+every qualifying package is dangerous, exploitable, or missed by every scanner.
 
 **Connection to Handoff Fallacy (#459)**: Components pass individually; handoffs between levels fail. The ecosystem-code analysis gap IS a handoff failure — code-level tools hand off to ecosystem-level tools without transmitting risk context.
 
-### 3. From Conversation to Contribution: Characterizing Coding Agent in Open-Source Software (2607.05677v1) [NEW — UNCOVERED]
+### 3. From Conversation to Contribution: Characterizing Coding Agent in Open-Source Software (2607.05677v1) [QUALIFIED]
 
 **Categories**: cs.SE
 
-Collected 13,360 AI conversation sessions comprising 79,172 user messages from 1,356 OSS repositories, linked to subsequent development and collaboration patterns.
+The discovery corpus has 13,360 publicly committed SpecStory sessions (79,172
+user messages) from 1,356 repositories; filtering retains 12,108 sessions from
+1,240 repositories. This is a selected observable-artifact population: 90% of
+repositories were created in 2025 or later, and repositories without committed
+chat histories are outside the sampling frame.
 
-**Key contribution**: The first large-scale empirical characterization of how developer-AI coding conversations relate to OSS contribution patterns — the interaction surface between vibe-coding workflows and open-source development.
+**Outcome-link qualification**: The paper's 98.9% “subsequent activity” result
+is not an independent future-outcome join. Its analysis defines subsequent
+activity from the chat-associated commit matched through the committed chat
+artifact's GitHub blob reference; 96.1% of those associated commits touch a
+development file. This shows that the discovery/linkage procedure usually
+finds a code-changing associated commit. It does not establish that the chat
+caused an otherwise absent contribution.
 
-**Why this matters**: Knowledge Erosion (#450) identified the developer deskilling risk from agent delegation. SHIELD/Knowledge Debt (#461) introduced the concept of lost incidental learning. This paper provides the empirical data: 13K sessions across 1.3K repos enables studying whether AI-mediated conversations produce contributions that differ structurally from direct human contributions — and what diagnostic information is preserved or lost in the conversation-to-code pipeline.
+**Repository results and controls**: RQ2 uses 608 repositories whose first
+observed chat follows GitHub publication, with a 114-repository older
+validation cohort. Interrupted-time-series models control repository fixed
+effects and age, but have no matched non-adopter counterfactual. Monthly commit
+activity declines after observed adoption, with no reliable immediate jump and
+a negative post-adoption trend. Contributor broadening in the main cohort
+reverses in the validation cohort; communication/review concentration is
+unchanged. “No broad quality deterioration” refers to proxies such as bug/fix
+messages, test-file touches, and continuous-integration status, not measured
+correctness or maintainability.
 
-**Connection to Delegation Reckoning (#467)**: The 5,346-developer study in #467 showed agent adoption expands language frontier 2.5× but concentrates expansion among developers with the thinnest prior knowledge. This paper provides the conversational mechanism: the developer-AI session is where knowledge transfer either happens or doesn't.
+**Survey boundary**: 25 responses from 589 delivered invitations (4.2%) support
+only self-selected perceptions. The raw `p=.029` maintenance result compares
+respondents' perceptions of other developers' AI code with their own; it is not
+an observed maintenance-cost result. The authors explicitly describe the
+repository analysis as association rather than causality.
+
+**Artifact boundary**: The anonymous 4open package returned HTTP 401. Public
+repository `littlehousezh-commits/vibe_coding_oss@e4bda0e643b1dbb24be5b667226106c396ca7518`
+contains collection/analysis scripts, a notebook, and survey questionnaire,
+but no cleaned cohort tables, repository records, or survey responses required
+by the analysis. The exact analysis command first stops on absent local
+`numpy`; installing it would not supply the missing inputs. Collection help is
+locally readable, but rebuilding the population would require fresh GitHub API
+collection and would not reproduce the frozen study cohort. No metric
+reproduction is claimed.
+
+**Why this matters**: The study provides a large descriptive surface for
+publicly committed coding-agent artifacts and repository activity. It does not
+measure developer comprehension, compare adopter and non-adopter outcomes, or
+demonstrate that preserving a conversation changes code quality or maintenance.
+
+**Connection to Delegation Reckoning (#467)**: The 5,346-developer study in
+#467 reports language-frontier expansion. This paper describes a different,
+selected public-chat surface; it does not measure knowledge transfer, so it
+cannot supply the mechanism behind that result.
 
 ---
 
@@ -127,7 +228,7 @@ Collected 13,360 AI conversation sessions comprising 79,172 user messages from 1
 
 Three frontier model announcements combined (GPT-Live 588pts + Grok 4.5 458pts + SWE-1.7 252pts = **1,298pts**) BARELY cross Uniqlo (1,291pts) for the first time: **+7pts (0.5%)**. This crossing is noise-level — within one scan's natural variance. The structural signal is that it took **three major model launches** to achieve approximate parity with a single craft/comprehension story.
 
-In Scan #472 (Frozen Frontier), frontier combined was 860pts vs Uniqlo 1,149pts (289pt deficit). The gap closed primarily through Grok 4.5 growth (+229pts across scans). But the *mechanism* of closing — requiring a third entrant (Grok) to achieve parity — confirms the Attention Decay Curve (#460): each individual model announcement arrives with diminishing attention, and only aggregation achieves what a single craft story achieves alone.
+In Scan #472 (Frozen Frontier), frontier combined was 860pts vs Uniqlo 1,149pts (289pt deficit). The gap closed primarily through Grok 4.5 growth (+229pts across scans). **Primary-review qualification (2026-09-04):** the reversal shows that the selected comparison is capture-time sensitive; it does not identify a closing mechanism or confirm an Attention Decay Curve. The stories have unmatched ages and exposure, and the basket has no predeclared category denominator or evaluation-effort outcome. Stable final records put the same three-model basket at 1,798 versus Uniqlo at 1,489, which likewise does not establish a model-attention advantage.
 
 **Prediction update**: Frontier combined will re-cross BELOW Uniqlo within 2 scans as individual models plateau and Uniqlo continues slow growth. The crossing is unstable.
 
@@ -139,13 +240,15 @@ In Scan #472 (Frozen Frontier), frontier combined was 860pts vs Uniqlo 1,149pts 
 - Has shallow understanding from its creator (Knowledge Erosion)
 - Is abandoned rather than maintained (the maintenance asymmetry from #467)
 
-Slopcode is the practical name for code that is functionally correct but diagnostically silent. The 39pts engagement suggests early-naming, not peak discourse — watch for amplification.
+“Slopcode” is an attributable community label, not evidence that the named code
+is functionally correct, diagnostically silent, or abandoned on a measured
+lifecycle. The 39-point engagement is a discovery signal only.
 
 #### 3. Brown AI Cheating: The Comprehension Dividend in Pedagogy
 
 Brown University professor, suspecting AI cheating, ordered an in-person final; scores fell 50% (73pts, 53c). This is the starkest quantification yet of the gap between AI-mediated performance and unmediated comprehension. The 50% drop is not a small effect — it's a cliff.
 
-This connects directly to the Comprehension Dividend (#444) and Knowledge Erosion (#450): students who delegate understanding to AI demonstrate AI's capability on assessments but possess only ~50% of the expected comprehension when the delegation channel is removed. The SICP-Sol divergence (343pts vs ~225pts) measures the community's revealed preference for comprehension. The Brown cheating scandal measures the cost of its absence.
+This connects as a research question to the Comprehension Dividend (#444) and Knowledge Erosion (#450): students who delegate understanding to AI demonstrate AI's capability on assessments but possess only ~50% of the expected comprehension when the delegation channel is removed. **Primary-review qualification (2026-09-04):** the unmatched SICP-Sol counters (343 versus about 225 here) do not measure comprehension or revealed preference. They describe two differently aged submissions; stable final records finish 355 versus 235, and no exposure, audience, or comprehension outcome is shared with the Brown study.
 
 #### 4. OpenAI's "Separating Signal from Noise" Surges +29.9%
 
@@ -179,17 +282,27 @@ Cloudflare Drop (227pts) and Cloudflare Meerkat (215pts) represent two major inf
 
 The Verification Loop (#475) proved that closed-loop architectures — generate, verify, revise — produce step-function reliability gains. But loops require information flow from the system back to the verifier. The Diagnostic Deficit names the structural gap where that information is absent:
 
-1. **At code level** (Observability-Aware Code, 2607.05785): Agent-generated microservices work but don't emit failure evidence. 200 Kubernetes deployments show diagnostic semantics at source level don't translate to fault signals at runtime. The Verification Loop degrades to binary pass/fail.
+1. **At code level** (Observability-Aware Code, 2607.05785v1): Separate static and runtime benchmarks show weak lexical restoration and low explicit fault-signal rates. Application correctness, a cross-stage causal link, and binary-only verification are not tested.
 
-2. **At ecosystem level** (Hidden Amplifiers, 2607.05894): Micro-dependencies with <50 methods but 50K+ dependents are invisible to all SCA tools. Risk analysis operates at the wrong abstraction level — code tools miss ecosystem exposure, ecosystem tools miss code-level risk.
+2. **At ecosystem level** (Hidden Amplifiers, 2607.05894v1): A curated corpus
+contains 12 packages below 50 extracted methods and above 50K dependents. The
+paper's cross-level score exposes that structure, but does not establish
+exploitability or universal scanner blindness, and does not beat code-only
+ranking on its reported within-root precision metric.
 
-3. **At interaction level** (Conversation to Contribution, 2607.05677): 13K AI coding sessions across 1.3K OSS repos — the empirical surface where developer-AI interaction either preserves or erases incidental learning. The diagnostic information about *how code was generated* is trapped in ephemeral conversation sessions.
+3. **At interaction level** (Conversation to Contribution, 2607.05677v1):
+13,360 committed sessions expose a descriptive interaction surface, but the
+sample is conditioned on public chat artifacts and the associated commit is
+not an independent later outcome. The study does not measure incidental
+learning or show that conversation retention improves contribution quality.
 
-4. **At community level** (HN): "Slopcode" enters vocabulary (39pts) — naming code that works but carries no diagnostic value. Brown AI cheating shows a 50% comprehension cliff. The `system_prompts_leaks` repo (54K★) represents the community's demand to inspect the diagnostic layer.
+4. **At community level** (HN): “Slopcode” enters vocabulary at 39 points, but this supplies discourse provenance rather than code-quality or lifecycle evidence.
 
 **The Diagnostic Deficit and the Oversight Inversion**: The Oversight Inversion documents the escalating cost of verification. The Diagnostic Deficit identifies a specific mechanism for that escalation: when the artifacts being verified emit no diagnostic information, verification degrades to black-box testing — which is known to scale poorly. Every prior layer of the Oversight Inversion implicitly assumed that verification has *something to verify*. The Diagnostic Deficit names the condition where it doesn't.
 
-**Not a proposed layer**: The Diagnostic Deficit deepens the Verification Loop (#475) rather than adding a new layer. It identifies the loop's primary failure mode: when the loop closes around diagnostically silent artifacts, it catches binary failures but misses structural degradation. The slopcode trajectory — functional at deployment, abandoned within months — is the lifecycle of diagnostically silent code.
+**Not a proposed layer**: The paper motivates adding fault-specific signals to
+evaluation. It does not identify the Verification Loop's primary failure mode
+or observe a functional-at-deployment, later-abandoned lifecycle.
 
 ---
 
@@ -215,9 +328,9 @@ Running accuracy: **~96.6% (96/99)** — one new confirmation (GitLost >500pts).
 
 | Paper/Story | Extends | Connection |
 |-------------|---------|------------|
-| Observability-Aware Code (2607.05785) | Verification Loop (#475), Process Erasure (#462) | The loop's blind spot: diagnostically silent code degrades closed-loop to binary pass/fail |
-| Hidden Amplifiers (2607.05894) | Handoff Fallacy (#459), Composition Surface (#447) | Cross-level analysis gap IS a handoff failure at ecosystem scale |
-| Conversation to Contribution (2607.05677) | Knowledge Erosion (#450), Delegation Reckoning (#467), Knowledge Debt (#461) | Empirical data for the developer-AI interaction surface |
+| Observability-Aware Code (2607.05785v1) | Verification Loop (#475), Process Erasure (#462) | Low explicit fault-signal rates motivate a separate observability gate; correctness and binary-only verification untested |
+| Hidden Amplifiers (2607.05894v1) | Handoff Fallacy (#459), Composition Surface (#447) | Structural exposure motivates joining package and method views; exploitability, universal tool blindness, and outcome benefit remain unvalidated |
+| Conversation to Contribution (2607.05677v1) | Knowledge Erosion (#450), Delegation Reckoning (#467), Knowledge Debt (#461) | Selected public-artifact cohort and repository associations; no independent later-outcome or comprehension effect |
 | Slopcode (HN, 39pts) | Subtraction Economy (#449), Knowledge Erosion (#450) | Naming the lifecycle of diagnostically silent agent-generated code |
 | Brown AI cheating (HN, 73pts) | Comprehension Dividend (#444), Knowledge Erosion (#450) | 50% score drop quantifies the comprehension-delegation gap |
 | Frontier parity with Uniqlo | Attention Decay Curve (#460), Frozen Frontier (#472) | Three models needed to match one craft story — aggregate parity is structural weakness |

@@ -11,7 +11,7 @@ delivery; those services are not requirements of Scout's reasoning core.
 
 ## Responsibilities
 
-- Explore arXiv, Hacker News, XHS, and GitHub using real source data.
+- Explore arXiv, Hacker News, XHS, GitHub, and Reddit using real source data.
 - Update existing reusable knowledge when a suitable note exists.
 - Otherwise write one source-grounded dated finding.
 - Connect recent findings across sources when a useful non-obvious implication
@@ -31,6 +31,10 @@ Use these absolute roots directly. Never create a nested project root.
 ## Knowledge Rules
 
 - Search before creating; prefer an in-place update over a duplicate.
+- When compacting duplicated material into one authoritative note, leave an
+  inline relative link at the omission point to the exact retained heading. A
+  file-level mention elsewhere is not a substitute; verify the link after the
+  edit.
 - New observations use flat, descriptive
   `knowledge/findings/YYYY-MM-DD-<topic>.md` paths. Never allocate a scan number
   as a new filename or finding identity.

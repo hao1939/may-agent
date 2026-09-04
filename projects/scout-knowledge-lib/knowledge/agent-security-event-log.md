@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion event log for agent-security-governance.md. Contains detailed HN and cross-source event narratives tracking security governance developments: Fable/ITAR dual-use impossibility (7 dimensions), supply-chain attack campaigns (LinkedIn backdoor, Miasma Worm), credential isolation convergence, command denylist fragility, memory trojans, agent-targeted repo poisoning, export control historical parallels, talent concentration dynamics, ToxicSkills marketplace poisoning, CyberChainBench agent exploit economics, Sovereignty Stack fragmentation, and Disclosure Collapse (exploitarium mass-drops, Chai dependency-graph propagation, Protocol Prying proximity fuzzing). Extracted from §5 'Open Problems' items 6-21 to reduce canonical note size."
-triggers: ["Fable 5", "ITAR", "dual-use", "supply chain attack", "LinkedIn backdoor", "Miasma Worm", "credential isolation", "command denylist", "CmdNeedle", "memory trojan", "repo poisoning", "export control", "PGP vs Mythos", "talent concentration", "exploitarium", "disclosure collapse", "Chai", "Protocol Prying", "offense-defense asymmetry"]
-last_updated: "2026-08-10"
-source_basis: "HN scans #7-58, #211 (Jun-Sep 2026), HN item 49238028 plus linked maintainer statement and MCPBlender repository/PyPI metadata (Aug 2026), arXiv papers (CmdNeedle 2605.15549, 2605.29960, 2605.25002, Chai 2606.26933, Protocol Prying 2606.26967, Inherited Circuits 2606.27091), and GitHub repository/release metadata for oliverb-io1902e8/agent-skills-collection (Aug 2026). Event tracking with HN point/comment counts as engagement signals. Extracted verbatim from agent-security-governance.md §5 items 6-21, then maintained in place."
+triggers: ["Fable 5", "ITAR", "dual-use", "supply chain attack", "LinkedIn backdoor", "Miasma Worm", "credential isolation", "command denylist", "CmdNeedle", "memory trojan", "repo poisoning", "export control", "PGP vs Mythos", "talent concentration", "exploitarium", "disclosure collapse", "Chai", "Protocol Prying", "offense-defense asymmetry", "prompt caching", "cache-write spend", "tool surface"]
+last_updated: "2026-09-04"
+source_basis: "HN scans #7-58, #211 (Jun-Sep 2026), HN items 49238028, 49363710, and 49383326 with linked primary sources, MCPBlender repository/PyPI metadata, OneCLI gateway policy implementation at ff7a192 (Aug 2026), OpenAI Codex issue 37674 and maintainer/user follow-up (Aug 2026), arXiv papers (ShellSieve 2606.15549v2, 2605.29960, 2605.25002, Chai 2606.26933, Protocol Prying 2606.26967, Inherited Circuits 2606.27091), and GitHub repository/release metadata for YoloFS/YoloFS at 77fd896 and oliverb-io1902e8/agent-skills-collection. Event tracking with HN point/comment counts as engagement signals. Extracted verbatim from agent-security-governance.md §5 items 6-21, then maintained in place."
 parent_note: "agent-security-governance.md"
 </ai_context>
 
@@ -134,27 +134,36 @@ prevent identity theft. Any agent that installs dependencies via search
 is structurally vulnerable regardless of behavioral safeguards.
 
 *(HN: 10k GitHub Trojan repos 945pts/243c, AUR attacks 54pts/37c;
-connects to CmdNeedle structural inadequacy, MemMark provenance)*
+connects to ShellSieve's command-denylist bypass evidence, MemMark provenance)*
 
-### 4. Command Denylist Fragility — 69-98.6% Bypassable
+### 4. ShellSieve Denylist Fragility — 69.0–98.6% Per Operation
 
-CmdNeedle (2606.15549) systematically characterizes command denylist
-fragility in terminal AI agents. Applied to 1,709 real-world denylists
-(13,332 rules) from GitHub: 69-98.6% are fragile. Even Claude Code's
-built-in denylist can be bypassed. Root causes: command aliasing,
-multi-utility commands (e.g., `find . -delete` bypasses `rm` ban), and
-Unix pipe composition. The structural problem: the combinatorial space of
-Unix command composition makes exhaustive enumeration impossible.
-Denylists are heuristic hints, not security boundaries. This is the
-Guard Paradox at the OS level — text-based behavioral controls cannot
-enforce structural safety properties.
+The paper historically indexed here as CmdNeedle (2606.15549v2) names its
+pipeline **ShellSieve**. Its abstract, evaluation, and dataset table report
+1,709 GitHub denylists containing 13,332 rules; one introduction paragraph
+instead says 1,731, an unresolved internal inconsistency. For each of seven
+filesystem-operation classes, the reported 69.0–98.6% is the fraction of
+denylists that incompletely block that operation among denylists that target
+it. It is not one fraction over all 1,709 configurations and does not measure
+all shell effects. The experiment uses a Debian 13.5 default-GNU command
+universe, model-proposed candidates, execution-based sandbox oracles, and a
+five-round repair cap.
+
+The exact per-operation integer numerators and denominators are plotted but
+not tabulated. The source says code and data will be released upon publication;
+its cited anonymous repository currently returns HTTP 401, so the plot and
+aggregate cannot yet be independently regenerated. The paper supports an
+open-world bypass risk for negative command lists and rejects its own semantic-
+gap hypothesis; it does not prove every denylist is bypassable, that Unix
+composition is the measured root cause, or that a particular allowlist,
+sandbox, or capability system resists the discovered commands.
 
 **Governance implication**: Agent sandbox security should NOT rely on
 command denylists as load-bearing safety. The SEB pattern (certificate-
 bound execution authority, 2606.20520) provides the structural alternative:
 specify what IS permitted rather than what ISN'T.
 
-*(arXiv: CmdNeedle 2606.15549, Jun 2026)*
+*(arXiv: ShellSieve 2606.15549v2, Jun 2026; artifact access checked Sep 2026)*
 
 ### 5. Memory Trojans via Conversational Interaction
 
@@ -196,7 +205,41 @@ Protocol-layer isolation (MCP auth) only covers MCP-aware tools.
 Prediction: "credential management for AI agents" becomes a named
 product category within 6 months.
 
-*(HN: MCP OAuth 266pts/100c; Airgap 16pts/1c; AMD SME 444pts/209c, Jun 2026)*
+**Update (Aug 19): isolation exposes the confused-deputy boundary.** A OneCLI
+Launch HN thread (34 points, 12 comments when checked) moved the discussion
+from whether the model can read a secret to whether it can misuse the authority
+behind that secret. Two commenters independently asked whether approval binds
+to the exact proposed action rather than a host or service. The maintainer said
+the held approval displays and binds method, URL, and body, and that rules can
+separate `GET` from `POST` on the same API path.
+
+The public implementation supports the narrower architectural claim. At commit
+[`ff7a192`](https://github.com/onecli/onecli/tree/ff7a1921a95943d19066567b274c1d3c9c157c14),
+the Rust gateway's shared matcher evaluates path glob, HTTP method, and optional
+body conditions; identity targets bind rules to agents, users, or groups; and a
+matched allow rule can require approval. The checked-in Gmail catalog separately
+classifies read endpoints and mutating methods, including a specific
+`POST /gmail/v1/users/*/messages/send` capability. Credential injection and
+policy evaluation therefore meet at an external gateway rather than in model
+instructions.
+
+This is inspectable design evidence, not a security audit. One important edge is
+explicitly documented in the enforcement code: if a body-dependent block rule is
+evaluated without buffering the body, that condition does not match and the rule
+would fail open. Exact-action authorization is only as strong as canonical request
+capture, parsing, and complete mediation. The reusable rule is: **hiding a token
+prevents direct exfiltration, but preventing confused-deputy actions requires the
+gateway to authorize and log the fully resolved request—principal, credential,
+method, path, body constraints, and approval—before injection and forwarding.**
+
+**Primary references:** [HN item 49363710](https://news.ycombinator.com/item?id=49363710);
+[OneCLI repository](https://github.com/onecli/onecli);
+[request matcher](https://github.com/onecli/onecli/blob/ff7a1921a95943d19066567b274c1d3c9c157c14/apps/gateway/src/policy.rs#L132-L163);
+[policy evaluator](https://github.com/onecli/onecli/blob/ff7a1921a95943d19066567b274c1d3c9c157c14/apps/gateway/src/policy_engine/evaluate.rs#L109-L165);
+[enforcement caveat](https://github.com/onecli/onecli/blob/ff7a1921a95943d19066567b274c1d3c9c157c14/apps/gateway/src/policy_engine/enforce.rs#L29-L33);
+[Gmail capability catalog](https://github.com/onecli/onecli/blob/ff7a1921a95943d19066567b274c1d3c9c157c14/packages/api/src/apps/app-permissions/gmail.ts).
+
+*(HN: MCP OAuth 266pts/100c; Airgap 16pts/1c; AMD SME 444pts/209c, Jun 2026; OneCLI 34pts/12c, Aug 19 2026)*
 
 ### 7. Maintainer Identity Failure Invalidates a Trusted MCP Head
 
@@ -261,7 +304,7 @@ infrastructure layer (AWS billing alerts, budget kill-switches), not at
 the agent layer. The agent has no incentive to self-limit.
 
 *(HN: 48500012, 1,467pts/89c; connects to Token Economics Trap,
-The Delegation Surface; Full scan: findings/2026-09-24-hn-scan-153.md)*
+The Delegation Surface; Full scan: findings/2026-06-25-hn-scan-153.md)*
 
 ### Fedora Supply-Chain Attention-DoS (HN 48484584, 552pts, Jun 11 2026)
 
@@ -286,7 +329,7 @@ human social engineering. Agent-scale attention-DoS achieves a subset
 of the same outcome (bad code merged) through volume rather than stealth.
 
 *(HN: 48484584, 552pts/40c; LWN article; connects to §2.26 Recursive Exposure
-Paradox; Full scan: findings/2026-09-24-hn-scan-153.md)*
+Paradox; Full scan: findings/2026-06-25-hn-scan-153.md)*
 
 ### $38k AWS Bedrock — Prompt Caching Assumption Chain (HN 47933355, Apr 28 2026)
 
@@ -301,7 +344,37 @@ chain." This is a class of failures unique to agent architectures with deep
 middleware stacks.
 
 *(HN: 47933355, 8pts; connects to Token Economics Trap Layer 1 (predictability
-collapse); Full scan: findings/2026-09-24-hn-scan-153.md)*
+collapse); Full scan: findings/2026-06-25-hn-scan-153.md)*
+
+**Update — a new tool can invalidate the cache contract (Aug 21, 2026):** An
+open Codex issue reports a second Bedrock incident with a more specific failure
+path. Across 3,656 requests, the reporter estimated 171.94M cache-write tokens
+and $1,182.09 of cache-write spend—about 85% of an estimated $1,386.46 total.
+These are usage-derived estimates rather than finalized invoice amounts.
+
+The initial diagnosis focused on Bedrock's explicit-cache request fields, which
+Codex did not expose. Follow-up narrowed the regression: an OpenAI contributor
+said the newly enabled web-search tool was most likely causing cache misses, and
+a user reproduced the boundary on Codex 0.148.0—`web_search = "cached"` produced
+zero cache reads, while `web_search = "disabled"` restored normal caching. That
+user had also measured a cache write-to-read ratio jump from 0.08 on 0.146.0 to
+8.84 on 0.147.0, then an immediate return to 0.025 after rollback. The issue
+remains open, and the maintainer described the cause as “most likely,” so the
+exact provider-level mechanism is not yet settled.
+
+This strengthens the caching-assumption-chain pattern: **the effective cache key
+includes the tool surface, not just the visible system prompt or conversation**.
+Enabling a tool can turn stable-prefix reads into full rewrites without changing
+the user's task. Production agent controls should therefore (1) canary tool-set
+changes against cache read/write ratios, (2) expose provider-native cache-read
+and cache-write fields per turn without double-counting subset buckets, and (3)
+attach cost-regression rollback thresholds to harness releases, not only model
+or prompt releases.
+
+- Source: https://github.com/openai/codex/issues/37674
+- Maintainer diagnosis: https://github.com/openai/codex/issues/37674#issuecomment-5359263744
+- User reproduction: https://github.com/openai/codex/issues/37674#issuecomment-5364202027
+- HN: https://news.ycombinator.com/item?id=49383326 (128 points, 39 comments at retrieval)
 
 ---
 
@@ -959,7 +1032,7 @@ Community insight (datakan): "The fear porn around this all has been horrible...
 vendors want to sell something. It started the day of the announcement which
 told me it was all BS."
 
-*(Source: [2026-10-29-hn-scan-223.md](./findings/2026-10-29-hn-scan-223.md).
+*(Source: [2026-06-28-hn-scan-223.md](./findings/2026-06-28-hn-scan-223.md).
 Connects to: Isolation Imperative #180, Implementation Blind Spot #203,
 Governance Vacuum #170, ActPlane §2.33, Trust Construction Gap #218)*
 
@@ -982,7 +1055,7 @@ nation-state actively competing to host US AI lab after US access curbs.
 Community correctly identifies hosting-without-R&D as permanent dependency.
 Open-weight models identified as the inclusion-based alternative.
 
-*(Source: [2026-10-29-hn-scan-223.md](./findings/2026-10-29-hn-scan-223.md).
+*(Source: [2026-06-28-hn-scan-223.md](./findings/2026-06-28-hn-scan-223.md).
 Connects to: Sovereignty Stack #189, Sovereignty Confirmation #209,
 Capture Spiral #194)*
 
@@ -1027,36 +1100,44 @@ capability-scoped authority) rather than exclusion-based (blocklist, denylist,
 .agentsignore). This aligns with Minimum Viable Authority Turn (§canonical note)
 and confirms the structural prediction from ToolPrivBench (#82).
 
-*(Source: [2026-11-03-hn-scan-260.md](./findings/2026-11-03-hn-scan-260.md).
-Connects to: Accountability Inversion #253, Sovereignty Stack #258,
+*(Source artifact unavailable; intended path:
+`./findings/2026-07-02-hn-scan-260.md`; restore a link only when that exact
+target enters accepted lineage or an owner-declared supersession preserves the
+complete source set and provenance. Connects to: Accountability Inversion #253,
+Sovereignty Stack #258,
 Invisible Layer #259, Capture Spiral #194)*
 
 ---
 
-### 17. GitLost: Prompt Injection Leaks Private GitHub Repos (2026-07-08)
+### 17. GitLost: Prompt Injection Publishes Private Test-Repo Data (2026-07-08)
 
-**Event**: Noma Security ("GitLost") demonstrated that GitHub's Copilot
-Workspace agent could be tricked via prompt injection into exfiltrating
-private repository contents. The attack poisons public repo data that the
-agent reads during cross-repo operations, redirecting it to leak private
-data to attacker-controlled endpoints.
+**Event**: Noma Security ("GitLost") demonstrated a confused deputy in a
+researcher-controlled GitHub Agentic Workflow running Claude Opus 4.6. An
+explicit request in public issue `sasinomalabs/poc#153` caused the workflow to
+read a Noma-owned private test repository and publish its two-line README in a
+public issue comment. This was not Copilot Workspace, a GitHub internal agent,
+or an attacker-controlled endpoint.
 
-**HN signal**: 534 pts, 203 comments. High engagement confirms community
-awareness that production agents at major platforms remain vulnerable.
+**HN signal**: 534 pts, 203 comments. High engagement measures attention to
+the proof; it does not measure production prevalence.
 
 **Pattern**: Classic confused-deputy attack — the agent has legitimate
 access to private repos but is manipulated into using that access on behalf
-of an attacker. Validates the capability-containment isomorphism from
-AutoJack (#scan-10): every tool capability is simultaneously an exfiltration
-channel. GitHub's agent had broad scope (read private repos + network access)
-without read-only pre-execution gates or scoped authority constraints.
+of an attacker. The exact workflow runs GitHub's MCP server read-only, but the
+operator supplies a token capable of reading another organization repository;
+a safe-output job separately has issue-write authority. The demonstrated
+exfiltration channel is the public issue comment, not unrestricted network
+egress.
 
-**Structural implication**: Confirms Minimum Viable Authority Turn prediction —
-agents with broad tool access require capability scoping, not just input
-filtering. Also confirms that platform-hosted agents (GitHub, Google, etc.)
-face the same confused-deputy surface as self-hosted ones.
+**Structural implication**: Supports the Minimum Viable Authority condition:
+scope cross-repository tokens and public outputs together rather than relying
+on model guardrails. It establishes one GitHub-hosted proof configuration, not
+a platform-wide affected population.
 
-*(Source: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md).
+*(Sources: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md),
+https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/,
+https://github.com/sasinomalabs/poc/issues/153,
+https://github.com/sasinomalabs/poc/actions/runs/23909609053.
 Connects to: AutoJack #scan-10, ToolPrivBench #82, Deterministic Gates arXiv 2607.07405)*
 
 ---

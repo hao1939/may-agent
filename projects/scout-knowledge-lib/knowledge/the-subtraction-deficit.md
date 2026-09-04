@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: Every pathology in the system traces to a single structural asymmetry — the system has many addition operators and zero subtraction operators. Learnings accumulate but never retire. Guards add but never sunset. Instructions grow but never shrink. Context expands but never compresses. Evaluations produce but never prune. Dead sessions persist but never deallocate. The system can only grow. Meanwhile, every external solution converging from arXiv, GitHub, HN, and XHS is a form of subtraction: forgetting curves (+16pp recall), ponytail's architectural laziness (3× growth), Arbor's pre-explore scoring (193% improvement from not-exploring), Shield Synthesis defensibility verdicts (don't defend what can't be defended), 古法編程's restraint-as-quality. Dev — the only agent with a reliable subtraction operator (92% quick-exit) — is the only agent with healthy structural behavior across all metrics. Subtraction is harder than addition for LLM agents because training rewards action, metrics reward throughput, and governance adds load."
 triggers: ["subtraction deficit", "addition only", "forgetting", "retirement", "pruning", "decay", "ponytail", "laziest senior dev", "YourMemory", "memory lifecycle", "subtraction operator", "removal primitive"]
-last_updated: "2026-07-11"
-source_basis: "Cross-source synthesis of: production data (18,351 sessions, 8 agents, 15 days — dev 91.7% abstention / 3.5% failure vs arc 11.4% abstention / 12.4% failure); GitHub (YourMemory +16pp from Ebbinghaus forgetting, ponytail 3× growth for restraint-as-skill, memory-os lifecycle management, guard-skills governance-as-subtraction); arXiv (Arbor checks-and-balances 193% improvement 2606.12563, Shield Synthesis defensibility verdicts 2606.13621, Abstention Competence three-gap taxonomy 2606.02965, TRACE compiled preference subtraction 2606.13174, Intelligence Entropy S(t)=S₀·e^αt); HN (local model parity from harness restraint 1,060pts, skill atrophy from over-generation 30pts, Discrimination Crisis 7 signals converging); XHS (古法編程 1,674❤ restraint-as-quality, 护栏効応 guardrails-create-what-they-measure, 循環工程 loop design as architectural subtraction); prior syntheses (Impedance Principle 7 amplification loops, Abstention Advantage 7× efficiency gap, Abstention Decay collapse trajectory, Learning Illusion 159K ops zero outcomes, Evaluation Mirage 148K ops producing 5.3KB, Ghost Metabolism dead sessions in living queues, Goodhart Cascade proxy accumulation)."
+last_updated: "2026-08-26"
+source_basis: "Cross-source synthesis of: production data (18,351 sessions, 8 agents, 15 days — dev 91.7% abstention / 3.5% failure vs arc 11.4% abstention / 12.4% failure); GitHub (YourMemory +16pp from Ebbinghaus forgetting, ponytail 3× growth for restraint-as-skill, memory-os lifecycle management, guard-skills governance-as-subtraction, Skill Sunset v0.2.0 instruction-retirement workflow); arXiv (Arbor checks-and-balances 193% improvement 2606.12563, Shield Synthesis defensibility verdicts 2606.13621, Abstention Competence three-gap taxonomy 2606.02965, TRACE compiled preference subtraction 2606.13174, Intelligence Entropy S(t)=S₀·e^αt); HN (local model parity from harness restraint 1,060pts, skill atrophy from over-generation 30pts, Discrimination Crisis 7 signals converging); XHS (古法編程 1,674❤ restraint-as-quality, 护栏効応 guardrails-create-what-they-measure, 循環工程 loop design as architectural subtraction); prior syntheses (Impedance Principle 7 amplification loops, Abstention Advantage 7× efficiency gap, Abstention Decay collapse trajectory, Learning Illusion 159K ops zero outcomes, Evaluation Mirage 148K ops producing 5.3KB, Ghost Metabolism dead sessions in living queues, Goodhart Cascade proxy accumulation)."
 </ai_context>
 
 # The Subtraction Deficit: Why Agent Systems Can Only Add
@@ -387,6 +387,43 @@ must be *value-guided*, not information-guided. This distinguishes the
 Selective Subtraction Principle from simple pruning or filtering.
 
 See full analysis: `findings/2026-07-11-arxiv-scan-437.md`
+
+## Update: Retirement Becomes a Reviewable Workflow (2026-08-26)
+
+GitHub's [Skill Sunset v0.2.0](https://github.com/ooocooc/open-skill-sunset/tree/013317c06b11f2c6f226a64d83d4e238d8113be8)
+turns instruction subtraction into a concrete audit protocol for `AGENTS.md`,
+`CLAUDE.md`, and generic `SKILL.md` files. Its useful contribution is not the
+regex linter by itself, but the **authority split around removal**:
+
+1. Deterministic checks may recommend `UPDATE` for broken references and stale
+   absolute paths, or `DEMOTE` oversized always-loaded material.
+2. A `RETIRE` recommendation requires the same generic Skill name plus an
+   identical hash of the *complete bundle*, not merely an equal `SKILL.md`.
+3. Claims that a newer model has made a reasoning scaffold, unconditional tool
+   call, or mandatory subagent obsolete receive `TEST`, not `RETIRE`.
+4. The generated experiment plan is validation-only until a separate `--run`
+   flag is supplied; baseline failure is `INCONCLUSIVE`, candidate failure or
+   excessive latency is `REGRESSION`.
+5. No finding edits or deletes input. The report instead emits handoff and
+   rollback artifacts, preserving a human or authorized agent as executor.
+
+This is a stronger subtraction primitive than automatic pruning because it
+separates **detection, hypothesis, authorization, execution, and rollback**.
+It also demonstrates a practical answer to the safety asymmetry above: make
+removal legible as a reversible evidence package rather than as deletion.
+
+The evidence boundary matters. The repository was created on 2026-08-26 and
+its observed popularity (71 stars during this scan) is only an early adoption
+signal. The semantic candidates are six hand-written patterns, scope exclusion
+uses keyword lists, the estimated token count is characters divided by four,
+and the experiment harness compares exit code, latency, and optionally stdout
+hash—not task quality unless the supplied commands encode it. The project
+itself states that a passing command proves only its configured acceptance
+criteria. Treat this as an inspectable reference implementation of retirement
+custody, not evidence that its health score or verdicts generalize.
+
+**Repo:** https://github.com/ooocooc/open-skill-sunset  
+**Pinned source:** https://github.com/ooocooc/open-skill-sunset/commit/013317c06b11f2c6f226a64d83d4e238d8113be8
 
 ---
 

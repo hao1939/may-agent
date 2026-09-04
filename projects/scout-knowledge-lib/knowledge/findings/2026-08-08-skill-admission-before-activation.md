@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Two August 2026 studies converge on treating an evolving skill bank as a governed dependency system rather than append-only memory. A Terminal-Bench 2 study reports that unconditional accumulation peaked at 62% pass@1 with 105 skills and fell to 50% at 179, while pre-commit gates reached 72% with 37 skills. GSE separately models dependency, co-usage, and conflict edges, consolidates related updates, and replays affected historical cases before acceptance; its held-out-project results and ablations support relationship-aware evolution, though both studies remain narrow and do not establish universal thresholds."
-triggers: ["2608.05810", "2608.06153", "skill contamination", "skill admission", "pre-commit gating", "Verifier-as-Gatekeeper", "skill lineage", "Skill Relation Graph", "globalized skill evolution", "self-evolving agents", "post-hoc rollback"]
-last_updated: "2026-08-08"
-source_basis: "arXiv 2608.05810v1 and 2608.06153v1 metadata, abstracts, and full HTML inspected; quantitative claims are attributed to the papers' Terminal-Bench 2 and held-out-project coding-agent experiments."
+summary: "Five August 2026 studies converge on treating evolving agent state as a governed release system rather than append-only memory. Skill-level evidence supports quarantine, relationship-aware replay, bundle admission, and source-disjoint scanner evaluation; Harness Continual Learning generalizes the pattern to jointly version prompts, memory, capabilities, and routing. Another study adds evaluator qualification. An OWASP public-review draft independently turns the pattern into a deployable control stack: signed and pinned identity, least-privilege manifests, isolated behavioral testing, runtime enforcement, inventory, and outcome receipts must work together because no install-time verdict establishes safe execution."
+triggers: ["2608.05810", "2608.06153", "2608.19013", "2608.18719", "2608.19901", "skill contamination", "skill admission", "pre-commit gating", "Verifier-as-Gatekeeper", "skill lineage", "Skill Relation Graph", "globalized skill evolution", "self-evolving agents", "harness continual learning", "harness-level forgetting", "guarded harness evolution", "reference-free judge gate", "judge competence", "within-question AUC", "post-hoc rollback", "MaliciousSkillBench", "source-disjoint skill detection", "benign false-positive rate", "OWASP Agentic Skills Top 10", "AST10", "behavior layer", "skill permission manifest", "outcome receipt"]
+last_updated: "2026-08-22"
+source_basis: "arXiv 2608.05810v1, 2608.06153v1, 2608.19013v1, 2608.18719v1, and 2608.19901v1 metadata, abstracts, and full HTML inspected; quantitative claims are attributed to the papers' experiments. OWASP Agentic Skills Top 10 public-review v1 project page, repository README, AST03, AST05-AST09, and Universal Skill Format inspected via HN item 49393145; OWASP's incident figures remain attributed claims rather than independently revalidated measurements."
 </ai_context>
 
 # Admit agent skills before activation, not after contamination
@@ -14,7 +14,19 @@ source_basis: "arXiv 2608.05810v1 and 2608.06153v1 metadata, abstracts, and full
 **Source:** https://arxiv.org/abs/2608.06153v1  
 **Source:** https://arxiv.org/html/2608.06153v1  
 **Source:** https://export.arxiv.org/api/query?id_list=2608.06153  
-**Tags:** agent-skills, self-evolution, admission-control, verification, provenance, rollback, dependency-graph, replay
+**Source:** https://arxiv.org/abs/2608.19013v1  
+**Source:** https://arxiv.org/html/2608.19013v1  
+**Source:** https://export.arxiv.org/api/query?id_list=2608.19013  
+**Source:** https://arxiv.org/abs/2608.18719v1  
+**Source:** https://arxiv.org/html/2608.18719v1  
+**Source:** https://export.arxiv.org/api/query?id_list=2608.18719  
+**Source:** https://arxiv.org/abs/2608.19901v1  
+**Source:** https://arxiv.org/html/2608.19901v1  
+**Source:** https://export.arxiv.org/api/query?id_list=2608.19901  
+**Source:** https://news.ycombinator.com/item?id=49393145  
+**Source:** https://owasp.org/www-project-agentic-skills-top-10/  
+**Repo:** https://github.com/OWASP/www-project-agentic-skills-top-10  
+**Tags:** agent-skills, self-evolution, admission-control, verification, provenance, rollback, dependency-graph, replay, harness-continual-learning, regression-anchors, judge-gates, evaluator-qualification, skill-security, runtime-enforcement, security-inventory
 
 ## Finding
 
@@ -70,6 +82,39 @@ The paper evaluates one-project-held-out transfer on 108 triggerable Java bugs f
 
 The ablations are more useful than the headline relative gains. On OpenHands, removing the relation graph reduced F1 from **0.31 to 0.27** for test generation and **0.70 to 0.59** for filtering. Removing consolidation plus replay-driven generalization produced **0.27** and **0.54**, respectively. This supports two distinct controls: relationship integrity and cross-case replay.
 
+## Harness-level generalization: version the whole execution state
+
+*Harness Continual Learning* (HCL) extends the same admission problem beyond skills. It treats four mutable components—task interface, experience memory, capability map, and adaptive router—as one jointly versioned harness around a frozen foundation model. A candidate stays isolated until a continual evaluator verifies current-task improvement, output validity, and historical retention under matched model, decoding, tool, environment, and seed conditions. Rejection leaves the deployed harness unchanged.
+
+The key new concept is **harness-level forgetting**: changing retrieval evidence, prompts, a tool procedure, or routing can break a previously correct answer or action trajectory even when model weights never move. HCL checks this with a compact anchor set of earlier cases. A loss budget controls admission: zero rejects a candidate if any currently solved anchor regresses; an infinite budget permits adaptation without a historical gate.
+
+The paper's controlled results show why the gate is not merely conservative release hygiene:
+
+- On ALFWorld with frozen Qwen3.5-9B, stability-oriented HCL reported **61.74%** final average and **2.64** average forgetting; unrestricted HCL reached **62.98%** but forgetting rose to **10.94**.
+- In a separate textual-reasoning retention sweep, average forgetting rose from **0.39** at zero tolerated anchor losses to **3.45** with no retention bound. Yet final performance did not rise monotonically: the best average, **63.46%**, occurred with a moderate budget of one loss, versus **60.13%** when unrestricted.
+- The paper explicitly reports residual forgetting even with a zero-loss gate because finite anchors do not cover all historical test behavior. “All replay checks passed” is therefore bounded evidence, not proof of behavioral preservation.
+- Minecraft uses retained skill tests rather than systematic full-task replay, making its reported completion of a 50-task curriculum evidence for skill-level progression, not comprehensive task-level retention.
+
+This broadens the release unit from an individual skill or relation graph to the **complete interacting harness revision**. Component-by-component checks are useful while searching for a candidate, but deployment should be atomic because memory, instructions, capabilities, and routing can alter one another's runtime meaning.
+
+## Qualify a reference-free judge before letting it gate admission
+
+*Competence, Not Accuracy* examines a tempting extension of this release process: replacing deterministic task verifiers with an LLM judge so that skill optimization can cover tasks without an automatic reward. Its core warning is that a reference-free judge effectively has to re-solve the item it grades. Under the paper's model, the judge's competence must exceed random-answer probability (`c > 1/k`) for above-chance discrimination to be possible, but that threshold is only **necessary**, not sufficient.
+
+The paper also identifies a measurement trap. A marginal ROC-AUC can look useful when a judge merely recognizes question difficulty: easy questions tend to produce both correct answers and high scores. Its proposed shadow probe therefore records judge scores on genuine optimization episodes without giving the judge control, labels those episodes with an available verifier, and compares correct and incorrect candidates **within the same question**. On the primary Sonnet runs, marginal AUC was 0.855 for factual QA but fell to 0.735 after within-question stratification; research mathematics remained at chance (0.489), while GPQA-Diamond had no repeated-question strata and therefore only an optimistic marginal estimate.
+
+A small closed-loop pilot shows why evaluator qualification belongs before candidate admission. The math judge that failed the screen produced a held-out final score of **0.238**, below both the random gate's **0.350** and verifier gate's **0.363**, with a 0.50 false-accept rate. The factual-QA judge that passed had no harmful accepts in three seeds but rejected 44% of improving candidates. This is evidence for a screening step, not proof that a passing judge is safe.
+
+The operational addition is an **evaluator-admission gate** in front of the skill-admission gate:
+
+- shadow-score representative candidate episodes before granting a judge decision authority;
+- use same-item positive/negative comparisons where possible, not pooled accuracy or marginal AUC alone;
+- measure task-specific self-solve competence, counting timeouts and non-convergent episodes as failures rather than censoring them;
+- reject judge control when competence is near the answer-space floor or discrimination is statistically indistinguishable from chance; and
+- continue verifier-backed spot audits after deployment because competence can drift and optimization can Goodhart the judge.
+
+The procedure does not eliminate the need for ground truth: its pre-deployment audit still needs verifier-labeled episodes. It instead uses a bounded labeled audit set to decide whether a judge may later govern a broader stream where deterministic verification is unavailable.
+
 ## Combined operational implication
 
 The papers together suggest a staged registry protocol:
@@ -79,15 +124,54 @@ The papers together suggest a staged registry protocol:
 3. compute affected dependency, co-usage, conflict, and derivation edges;
 4. consolidate related local updates into a reusable capability;
 5. replay cases selected from the affected subgraph;
-6. test the proposed active bundle on held-out tasks; and
-7. atomically activate the version while retaining its graph, evidence, and predecessor.
+6. qualify every evaluator that will control admission, including its task-specific competence and discrimination boundary;
+7. test the complete proposed harness revision—not only the edited component—on held-out tasks;
+8. record the anchor set, loss budget, evaluator configuration, and uncovered retention surface; and
+9. atomically activate the version while retaining its graph, evidence, and predecessor.
 
-Admission gating answers **whether a candidate may enter runtime**; relationship-aware evolution answers **what else must be reconsidered when it changes**. A flat source-to-descendant lineage is therefore necessary but insufficient: rollback and regression selection also need semantic interaction edges.
+Admission gating answers **whether a candidate may enter runtime**; evaluator qualification asks **whether the gate has signal to decide**; relationship-aware evolution answers **what else must be reconsidered when the candidate changes**; harness-level evaluation asks **whether the interacting deployed state still preserves prior behavior**. A flat source-to-descendant lineage is therefore necessary but insufficient: rollback and regression selection also need semantic interaction edges, while every clean judge or replay verdict needs an explicit coverage boundary.
+
+## HN update — admission is a stack, not a verdict (2026-08-22)
+
+An HN submission surfaced the **OWASP Agentic Skills Top 10 (AST10)** public-review v1 draft, which treats skills as the behavioral layer between model/tool connectivity and real-world execution. Its taxonomy spans malicious or compromised skills, excessive privilege, unsafe metadata and external instructions, weak isolation, update drift, poor scanning, missing governance, and cross-platform semantic loss. The important contribution is not another list of threats; it is the way those threats defeat any single admission signal.
+
+The draft's controls form a staged stack:
+
+1. establish artifact identity with publisher provenance, content hashes, signatures, dependency pins, and pinned external instruction content;
+2. declare minimum authority in a machine-readable permission manifest;
+3. compare declarations with observed behavior in an isolated sandbox;
+4. enforce permissions and network boundaries at runtime rather than trusting the manifest;
+5. inventory the exact installed version, hash, installer, scanner version, and policy decision; and
+6. join the authorization record to a distinct terminal outcome receipt.
+
+This sharpens the release-system model above. A signature says **which bytes were admitted**, not what those bytes will cause an agent to do. A scan says **what one analyzer observed under one coverage boundary**, not that later external content, updates, composition, or runtime conditions are safe. A permission manifest says **what authority was requested**, not that the runtime enforced it. An authorization receipt says **an attempt was permitted**, not that it committed successfully. Each record answers a different question and should not be promoted into a universal “trusted skill” badge.
+
+AST05 is particularly useful for admission design: documentation fetched at runtime is executable behavioral input even when the signed skill itself never changes. Such prose needs the equivalent of a lockfile—snapshot or hash it, reject drift, and route changes back through review. AST08 similarly warns that natural-language payloads, truncation, archives, and prompt injection against an LLM scanner make scanning advisory; isolated execution and narrow runtime authority remain necessary after a clean scan.
+
+**Operational delta:** store admission as a tuple—`artifact revision + transitive content set + declared authority + evaluator revision + sandbox evidence + runtime policy`—rather than a boolean attached to a skill name. Re-admit when any tuple element changes, and preserve separate authorization and outcome receipts for each consequential execution.
+
+The source is still an OWASP **Incubator** project in public review, and its Universal Skill Format labels its validation rules as `SHOULD`, not a finalized mandatory standard. Its incident counts and ecosystem percentages are compiled from cited third-party reports and were not independently reproduced in this HN run. The useful signal is therefore the control decomposition and emerging standardization pressure, not certification status or a newly validated prevalence estimate.
+
+## ArXiv update — scanners need source-disjoint admission tests (2026-08-22)
+
+*MaliciousSkillBench* tests a neglected boundary in skill admission: a detector can look strong when train and test examples share source conventions, yet fail on artifacts from unseen ecosystems. The authors normalize 8,414 raw malicious records from 13 public sources into 7,539 unique malicious identities and construct a primary static-text benchmark of **9,740 skills** (7,505 malicious and 2,235 benign). They explicitly separate random, structural-family-disjoint, and source-disjoint protocols.
+
+The strongest sparse text baseline, a word TF-IDF SVM, falls from **0.932 Macro-F1 on the random split to 0.665 source-disjoint**. It still recalls **95.6%** of malicious skills, but incorrectly flags **62.4%** of benign held-out-source skills. The error is operationally asymmetric: 340 benign false positives versus 37 malicious false negatives. Class balancing improves source-disjoint Macro-F1 to 0.710 and benign false-positive rate to 43.3%, while removing seven audited construction-wrapper classes leaves the broader gap intact. These controls establish source sensitivity, not a unique cause; provenance, documentation style, label policy, and source composition remain entangled.
+
+Three off-the-shelf scanners also occupy poor trade-off regimes on the full benchmark. Two keep benign false positives below 1% but detect only **6.4%** and **3.3%** of malicious skills; the more sensitive scanner reaches **56.6% recall** with **45.1% benign false positives**. The comparison covers isolated `SKILL.md` text only, not package code or runtime behavior, so it is not an upper bound on behavioral detection.
+
+**Operational delta:** qualify a skill scanner on held-out publishers, registries, or provenance families before it can control admission. Report malicious recall and benign false-positive rate separately, preserve technical abstentions as a third state, and route novel-source or low-confidence artifacts to sandbox replay and human review. A random-split score should not become a universal “safe to install” badge. This strengthens the staged registry model above: static scanning is one fallible evidence producer inside quarantine, not the gate by itself.
 
 ## Evidence limits
+
+*MaliciousSkillBench* is an arXiv v1 assembled from heterogeneous public datasets whose labels and source mixtures differ. Its source-disjoint split measures the selected held-out sources, not a universal future ecosystem, and its scanners use frozen static configurations rather than matched-capacity architectures. Structural families are reuse controls, not attack-mechanism or campaign labels. The benchmark is suitable for comparative static detection research, not malicious-skill prevalence estimates or claims about runtime protection.
 
 The admission study is an arXiv v1 with a small primary split: the paper itself reports overlapping, roughly 30-point-wide 95% Wilson intervals at intermediate rounds. Its assertion that the observed direction-of-trend difference “cannot” occur by chance is stronger than the presented uncertainty analysis establishes. The primary trajectory uses one backbone, one shell-heavy benchmark subset, five rounds, and a specific distillation/injection design. Transfer tests are only 25 tasks per backbone, and InterCode remains shell-adjacent.
 
 GSE is also an arXiv v1. It evaluates two specialized software-quality tasks, one public Java-derived dataset and one private Go dataset, with one evolution model at temperature zero. The private labels and proprietary deployment cannot be independently audited from the paper, and the reported percentage improvements are relative changes from some low baselines. Its ablations remove large subsystems rather than isolating graph-edge quality, replay-set selection, and consolidation independently.
 
-Together, the evidence supports a **mechanism and safety pattern**—gate before activation, model interactions, and replay the affected bundle—rather than a universal pool-size threshold, guaranteed irreversibility, or proof that every growing skill library needs GSE's exact graph and pipeline.
+HCL is likewise an arXiv v1. Its baselines were reimplemented inside the authors' harness rather than run from official repositories, task streams are short and fixed-order, and the study identifies efficient retention evaluation, content consolidation, and longer interaction streams as open problems. Anchor preservation is explicitly not a guarantee on unseen historical cases, and the Minecraft setting does not systematically replay completed tasks after every update.
+
+The judge-gate study is also an arXiv v1. Its main probe uses one optimizer, one target model, one primary judge, and three tasks; the cross-provider replication reports confounded marginal rather than within-question AUC because per-episode scores were not retained. The closed-loop pilot averages only three seeds for factual QA and two for mathematics. Most importantly, the paper derives and tests a necessary screen, not a sufficient safety condition: it does not establish robustness under sustained optimization, distribution drift, or Goodhart pressure.
+
+Together, the evidence supports a **mechanism and safety pattern**—qualify the evaluator, gate before activation, model interactions, and replay the affected bundle or harness—rather than a universal pool-size threshold, guaranteed non-regression, or proof that every evolving agent needs these papers' exact architecture.

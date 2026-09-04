@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how real systems are splitting backend-shell protocols from runtime identity/control layers."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id"]
-last_updated: "2026-08-06"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438 and 49198472), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), and the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence. See ai_context sources section below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "workload identity federation", "DPoP", "MCP roadmap"]
+last_updated: "2026-08-26"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, and VS Code's first-party Agent Host launch post (2026-08-26). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -27,6 +27,7 @@ coordination topology.
 - [MCP 2026-07-28 Spec Release: Transport Goes Stateless](#8-mcp-2026-07-28-spec-release-transport-goes-stateless)
 - [HN Implementation Follow-Through: Stateless MCP Pushes State Up the Stack](#8a1-hn-implementation-follow-through-2026-08-06-stateless-mcp-pushes-state-up-the-stack)
 - [GitHub Implementation Follow-Through: ACP Becomes a Backend Shell While Runtime Identity Lives Elsewhere](#8a2-github-implementation-follow-through-2026-08-06-acp-becomes-a-backend-shell-while-runtime-identity-lives-elsewhere)
+- [MCP Roadmap: Progressive Discovery Becomes an Authorization Boundary](#8a3-hn-roadmap-signal-2026-08-22-progressive-discovery-becomes-an-authorization-boundary)
 - [MCP Protocol Debt — Quantitative Evidence](#8b-mcp-protocol-debt--quantitative-evidence-2026-07-12)
 
 ## Protocol Taxonomy
@@ -381,7 +382,7 @@ enterprise-in (organizational boundaries justify overhead), startup-out
 position wins for simple cases. A2A's value emerges only when lifecycle
 management across organizational trust boundaries is needed.
 
-- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026; [HN Scan #157](./findings/2026-09-28-hn-scan-157.md), Sep 2026. HN item 48582679.
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026; [HN Scan #157](./findings/2026-06-25-hn-scan-157.md), Jun 2026. HN item 48582679.
 
 ### Protocol Fatigue: Agentic Resource Discovery Rejected (HN, June 2026)
 
@@ -637,7 +638,7 @@ Each new domain that adopts MCP raises switching costs and creates de facto
 standardization. The protocol is hardening through proliferation, not
 specification committees.
 
-### Microsoft AHP — Fourth Protocol Layer (Scan #204)
+### Microsoft AHP — Fourth Protocol Layer (Scan #204; Launch Follow-Through 2026-08-26)
 
 **Source**: https://github.com/microsoft/agent-host-protocol (65★, Jun 2026)
 
@@ -655,11 +656,40 @@ AHP occupies a previously unnamed protocol position:
 roblourens (VS Code team) announced AHP in the A2A thread, implicitly
 positioning it as what VS Code needs instead of A2A.
 
-**Prediction**: AHP remains VS Code-internal. The pattern repeats — vendors
-ship their own protocol layer, the ecosystem consolidates on MCP, vendor
-layers become internal implementation details.
+**Launch follow-through:** An HN submission on August 26 surfaced VS Code's
+first-party launch report. It falsifies this note's earlier prediction that AHP
+would remain an internal implementation detail: VS Code now ships the Agent
+Host in Stable and Insiders, documents `code agent host` as a standalone
+server, and publishes client libraries in five languages.
+
+The more useful signal is the protocol boundary, not merely persistence. A
+dedicated host owns authoritative, harness-neutral state while Copilot and
+Claude retain their own SDKs, loops, tools, permissions, subagents, commands,
+and hooks behind adapters. Sessions, chats, terminals, and changesets are
+URI-addressable channels. A subscriber receives a current snapshot followed by
+ordered actions; reconnecting clients replay missed actions, and shared reducers
+let an editor, agent-management window, and browser converge without
+understanding the harness backend. A client can observe, act, approve, cancel,
+or contribute tools to the same live session.
+
+**Architectural implication:** session portability needs an authority plane,
+not transcript copying. The host must own sequence, replay, capability
+negotiation, and a generic state model; otherwise each surface becomes a
+competing session authority. AHP also preserves an important distinction from
+AG-UI: it coordinates multiple independent clients around one long-running
+session rather than only streaming one agent's events to one frontend.
+
+**Limits hidden by the word “persistent”:** closing a folder does not end a
+local turn, but VS Code must remain running because it manages the local host;
+a remotely deployed standalone host has a different lifetime. Client-contributed
+tools also mean state continuity does not guarantee capability continuity when
+a contributing client disconnects. Finally, the launch post is first-party
+architecture evidence, not an interoperability, reliability, or security
+benchmark, and the specification remains under active development.
 
 - **Source**: [GitHub](https://github.com/microsoft/agent-host-protocol), HN item 48582679 (roblourens comment).
+- **HN follow-through**: https://news.ycombinator.com/item?id=49453910
+- **First-party launch report**: https://code.visualstudio.com/blogs/2026/08/26/agent-host-architecture
 
 ### The Absorption Principle (Scan #204, Jun 2026)
 
@@ -925,6 +955,51 @@ That matters because it updates the usual "protocol wars" framing. The live desi
 
 **Source**: https://github.com/junghan0611/entwurf
 Supporting docs: https://raw.githubusercontent.com/junghan0611/entwurf/main/AGENTS.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/VERIFY.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/acp-backend-rail.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/external-mcp-host.md
+
+### §8a.3. HN Roadmap Signal (2026-08-22): Progressive Discovery Becomes an Authorization Boundary
+
+The official MCP roadmap puts three previously separate scaling problems on the
+same protocol agenda:
+
+1. **Long-running work exceeds request/response.** The maintainers plan to
+   mature Tasks, subscriptions/listen, progress notifications, and
+   server-initiated events so work can be observed and steered without polling.
+2. **Large tool catalogs exceed model attention.** The roadmap says mounting a
+   server with 100 tools charges the model for the whole surface before a user
+   asks anything and worsens tool selection. Its proposed direction is
+   progressive discovery: expose a small entry point, then reveal more of the
+   catalog as the conversation narrows.
+3. **Unattended agents exceed browser-centric authorization.** The identity
+   track covers DPoP, Workload Identity Federation, ID-JAG, and token exchange
+   for cloud agents acting for absent users or delegating narrower authority to
+   sub-agents.
+
+The non-obvious design consequence is that **progressive discovery cannot be
+only a context-compression feature**. Once callers have workload identity and
+delegated scopes, the catalog revealed at each step should be filtered by what
+that identity may actually invoke. Otherwise a router may save tokens while
+still advertising forbidden capabilities, leaking schema metadata, and inviting
+plans that fail only at execution time. Discovery therefore becomes part of the
+authorization boundary: authenticate first, attenuate the discoverable surface,
+then disclose and execute.
+
+The HN discussion sharpened this coupling. One practitioner described Workload
+Identity Federation as preserving the compliance answer to “who” without
+blocking an unattended loop on interactive OAuth; another explicitly asked for
+service-independent limits for specialized sub-agents. A separate thread noted
+that practitioners already lazy-load MCP tools or front them with “code mode,”
+which shows progressive discovery is catching up with deployed routing patterns,
+not inventing them.
+
+This is a **roadmap signal, not a shipped-spec claim**. The practical near-term
+architecture is to keep the search→route→call layer independently enforceable,
+bind its results to caller identity and delegation, and retain execution-time
+authorization as the final check. [Warden's five-tool meta-router](./findings/2026-08-01-github-warden-mcp-meta-router.md)
+demonstrates the catalog-compression shape; the roadmap adds the missing
+requirement that the revealed catalog must be authority-aware.
+
+**Source**: https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
+HN: https://news.ycombinator.com/item?id=49399591
 
 ---
 

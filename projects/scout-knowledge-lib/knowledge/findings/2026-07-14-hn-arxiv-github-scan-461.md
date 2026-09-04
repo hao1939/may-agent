@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #461 (2026-07-14): The Accretive Signal. The Foundations Turn approaches 998pts (5.1× Sol public launch) as 'The difference between today's task and accretive work' (56pts) appears on the HN front page — the community is now explicitly naming the compounding pattern it has been demonstrating through behavior. Uniqlo t-shirt decode surges +82.3% (craft/comprehension resonance). arXiv: SHIELD (2607.06101) introduces Knowledge Debt as a developer-level Technical Debt analogue with 6 design principles for re-embedding incidental learning; Danus (2607.06447) uses fact-graph memory with stateless verifiers for accretive mathematical reasoning. GitHub: Visa Vulnerability Agentic Harness (660★) and Looper (638★) confirm verification harness productization at enterprise and developer-tool levels. Burner-Agents (646★) — disposable agents for unattributable interaction — represents the adversarial complement. The Accretive Signal: the community has crossed from demonstrating accretive value implicitly to articulating it as a named principle."
+summary: "HN/arXiv/GitHub Scan #461 (2026-07-14), primary-qualified in 2026-09. The Foundations Turn and Accretive Work counters are attention observations. Agents That Teach proposes unevaluated SHIELD; its cited randomized study reports a one-hour learning gap, not longitudinal atrophy. Danus supplies content-addressed, linked, revocable storage after an informal LLM verdict, but releases no research-run receipts and reports human-discovered errors; this supports repairable accumulation, not compounding verified correctness."
 triggers: ["accretive signal", "accretive work", "foundations turn", "knowledge debt", "SHIELD", "incidental learning", "Danus", "fact-graph memory", "Visa harness", "Looper review-gated", "burner agents", "uniqlo decode", "scan 461", "comprehension naming", "verification productization"]
-source_basis: "HN front page 2026-07-14 via Algolia API (50 stories). HN items: 48761868 (Accretive Work 56pts), 48829312 (Uniqlo 175pts), 48816883 (StreetComplete 770pts), 48818311 (Chat Control 680pts), 48823557 (EU Car Camera 654pts), 48819608 (30papers 536pts), 48821576 (Kokoro 424pts), 48827858 (GitLost 204pts), 48825664 (SICP 189pts), 48827402 (Sol launch 197pts), 48821378 (l runtime 147pts). arXiv API: 2607.06101 (SHIELD), 2607.06447 (Danus), 2607.06157 (Deliberative Collaboration). GitHub API: visa-vulnerability-agentic-harness 660★, looper 638★, burner-agents 646★, agent-apprenticeship 1,301★, AutoCVE 1,104★, omnigent 6,713★, shepherd 1,091★, tau 890★, Danus 16★."
+source_basis: "HN front page 2026-07-14 via Algolia API (50 stories). HN items: 48761868 (Accretive Work 56pts), 48829312 (Uniqlo 175pts), 48816883 (StreetComplete 770pts), 48818311 (Chat Control 680pts), 48823557 (EU Car Camera 654pts), 48819608 (30papers 536pts), 48821576 (Kokoro 424pts), 48827858 (GitLost 204pts), 48825664 (SICP 189pts), 48827402 (Sol launch 197pts), 48821378 (l runtime 147pts). arXiv: 2607.06101v1, 2601.20245v2, and 2607.06447v2 primary-reviewed 2026-09-04. Danus repository initial release 7aad41077147af7b8f2a697512075bb326ade992 and observed default head 6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c; release trees, verifier trust boundary, and admission/store semantics audited. Other GitHub counters remain discovery observations."
 </ai_context>
 
 # Scan #461: The Accretive Signal
@@ -16,7 +16,7 @@ The community is crossing from demonstrating accretive value to naming it.
 
 "The difference between 'today's task' and 'accretive work'" (56pts) has appeared on the HN front page — an essay explicitly articulating the distinction between transient tasks and compounding investments. This is the principle the Foundations Turn has been *demonstrating* through behavior since Scan #444: 30papers (536pts), SICP (189pts), Notes on Quality (136pts), Scheme (81pts), and now "Accretive Work" (56pts) collectively reach **998pts** — approaching the 1,000pt milestone at **5.1× the Sol public launch** (197pts). The community is no longer just preferring comprehension-oriented stories; it is explicitly naming *why*.
 
-On arXiv, SHIELD (2607.06101) makes the same argument for developer skill: agent-assisted productivity without incidental learning accumulates **Knowledge Debt** — a developer-level analogue of Technical Debt. On GitHub, Visa's Vulnerability Agentic Harness (660★) and Looper (638★) confirm that verification harnesses have crossed from research artifacts to enterprise tools and developer workflows.
+On arXiv, Agents That Teach (2607.06101v1) proposes **Knowledge Debt** as a developer-level analogue of Technical Debt and presents SHIELD as an early design prototype. A separate study it cites (2601.20245v2) supports an immediate learning-score gap in one controlled task; neither source measures debt accumulation or SHIELD effectiveness. On GitHub, Visa's Vulnerability Agentic Harness (660★) and Looper (638★) are productization signals, not evidence about learning outcomes.
 
 **The Accretive Signal**: When a community transitions from exhibiting a pattern to articulating it, the pattern has reached structural awareness. The Foundations Turn was behavioral evidence; "Accretive Work" on the front page is the community's own theorization of its behavior.
 
@@ -122,21 +122,21 @@ The arXiv API continues to show no papers submitted after July 7 — consistent 
 
 Source: https://arxiv.org/abs/2607.06101
 
-AI coding agents boost productivity but short-circuit **incidental learning** — the informal knowledge developers historically acquired through effortful problem-solving. The paper introduces **Knowledge Debt**: a developer-level analogue of Technical Debt, where agent-executed changes that the developer cannot fully understand accumulate over time, silently eroding the developer's ability to maintain, debug, or evolve the codebase.
+The paper argues that AI coding agents can short-circuit **incidental learning** and introduces **Knowledge Debt** as a developer-level analogue of Technical Debt. These are its motivating claims, not outcomes it measures: its data-availability statement says empirical evaluation is future work.
 
 Six design principles for learning-aware agent interactions:
-1. Surface contextual learning moments without disrupting flow
-2. Leverage the agent's own reasoning as teaching material
-3. Make learning out-of-band (asynchronous, not blocking)
-4. Adapt to developer's existing knowledge
-5. Preserve developer autonomy (teach, don't gatekeep)
-6. Design for incidental exposure, not formal instruction
+1. **Contextual** — tie learning to the current code or decision
+2. **Grounded** — use the coding agent's stated reasoning and alternatives
+3. **Ambient** — surface learning in optional, out-of-band IDE channels
+4. **Selective** — suppress routine or already-known concepts
+5. **Adaptive** — calibrate to the developer's inferred familiarity
+6. **Closed-Loop** — probe comprehension and update a concept map
 
-**SHIELD**: A multi-agent system implementing these principles. Uses the coding agent's own reasoning traces to generate contextual learning moments for the developer.
+**SHIELD** is an early VS Code prototype using CrewAI, Azure, Neo4j, GPT-5.1, and Claude Code telemetry. Its architecture observes a coding agent, triages concepts, queues probes and microlearning, assesses answers, and updates a developer concept map. The grounding step assumes telemetry faithfully exposes rationale, alternatives, and confidence; cold start assumes concepts in human-authored code imply familiarity. Neither assumption is validated. The paper reports only unspecified internal stakeholder feedback, with no population, protocol, measures, results, or dataset.
 
-**Connection to Knowledge Erosion (#450)**: Layer 22 identified that agent-delegated coding erodes developer diagnostic capacity. SHIELD provides the first concrete architecture for addressing the erosion: design learning *back into* the delegation pipeline. The Knowledge Debt framing is particularly potent — it positions skill atrophy not as a personal failure but as an architectural debt that accrues interest (increasing maintenance difficulty, growing dependence, narrowing the pool of humans who can intervene during failures).
+**What the cited controlled study adds**: How AI Impacts Skill Formation (2601.20245v2) randomized 52 Python-experienced, Trio-naive participants to AI or no-AI conditions for a one-hour unfamiliar-library task. Its authors report a 4.15-point/27-point, 17% immediate quiz-score reduction with AI (Cohen's d=0.738, p=0.010) and no significant mean completion-time improvement. It tests one chat interface and one library, not an agentic coding workflow. The authors explicitly say months-to-years skill formation, workplace realism, alternative evaluations, and human-assistance controls remain future work.
 
-**Connection to the Accretive Signal**: Knowledge Debt is what accumulates when work is treated as transient (get the task done) rather than accretive (build understanding while completing the task). The "Accretive Work" essay on HN and the SHIELD paper converge from different directions: HN names the principle; SHIELD operationalizes the risk of violating it.
+**Qualified connection to Knowledge Erosion and the Accretive Signal**: The randomized result makes short-term learning a credible design concern, while Agents That Teach offers a concrete architecture to test. Neither establishes longitudinal atrophy, compounding Knowledge Debt, loss of review ability, productivity-learning complementarity, or successful mitigation by SHIELD.
 
 ### Uncovered Paper 2: Danus — Fact-Graph Memory for Mathematical Reasoning (2607.06447)
 
@@ -147,15 +147,15 @@ Source: https://arxiv.org/abs/2607.06447
 An orchestration system for research-level mathematical reasoning centered on a **shared fact graph** as global memory. Architecture:
 - **Main agent**: planning and coordination
 - **Worker agents**: parallel proof search
-- **Stateless verifier**: checks proposed mathematical claims before admission to the fact graph
+- **Stateless informal LLM verifier**: reviews proposed mathematical claims before admission to the fact graph
 
-Each verified fact is stored with its proof and logical dependencies, enabling incremental construction of long arguments. The main agent periodically summarizes the evolving proof state and redirects workers.
+Each LLM-verifier-accepted fact is stored with its proof and declared predecessor IDs, enabling incremental construction and cascade revocation. The checker is explicitly not a formal prover, and expert review remains required.
 
-Evaluated on six research-level case studies in algebraic geometry, singularity theory, and combinatorics. Open source at https://github.com/frenzymath/Danus (16★, tracked since #460).
+The paper reports six research-level case studies in algebraic geometry, singularity theory, and combinatorics. Public releases contain no research graphs, run logs, or verdict receipts; the repository's tracked facts are toy examples. The paper also reports human-discovered target-scope, proof-gap, and faulty-reference errors.
 
-**Structural insight**: The fact graph is an accretive memory structure — each new verified fact builds on previous ones, and the graph's value compounds as more facts are admitted. This is the architectural implementation of the accretive principle: reasoning capacity grows with accumulated verified structure.
+**Structural insight, qualified**: The fact graph is an accretive and repairable memory structure, but admission quality does not compound automatically. Current code accepts a nonexistent declared predecessor after a controlled `correct` verdict, so integrity of the dependency closure needs its own check. This supports linked accumulation and revocation, not a claim that reasoning capacity or correctness necessarily grows with graph size.
 
-**Connection to Write Contract (#454)**: The fact graph with stateless verification is a concrete instance of the Write Contract pattern — every write to the shared state (every new fact) must pass verification before admission. The stateless verifier ensures that verification is decoupled from the agent's subjective state, preventing motivated reasoning from contaminating the proof.
+**Connection to Write Contract (#454)**: The fact graph is a concrete mediated-write pattern: every gateway fact write requires an independent LLM verdict. Fresh context reduces direct self-review coupling, but it does not prevent shared-model blind spots, bypasses outside the gateway, or incorrect verdicts.
 
 **Connection to Verification Harness (#451)**: The stateless verifier + fact graph is a domain-specific verification harness: the verifier provides soundness (only valid facts admitted), the graph provides completeness (all dependencies tracked), and the combination enables the worker agents to operate freely within the verified space.
 
@@ -249,12 +249,12 @@ All three sources this scan converge on the same structural insight:
 |--------|--------|--------|
 | HN | "Accretive Work" essay (56pts) | Community names the compounding principle |
 | HN | Foundations Turn 998pts (5.1× Sol) | Community demonstrates accretive attention allocation |
-| arXiv | SHIELD / Knowledge Debt (2607.06101) | Framework for the cost of non-accretive work |
+| arXiv | SHIELD / Knowledge Debt (2607.06101v1) | Proposed framework and unevaluated prototype; separate 2601.20245v2 supports a one-hour quiz gap |
 | arXiv | Danus fact-graph (2607.06447) | Architecture for accretive reasoning |
 | GitHub | Visa Harness, Looper | Accretive verification infrastructure (tools that compound safety over time) |
 | GitHub | Agent-Apprenticeship | Accretive agent skill building |
 
-The pattern: **systems that accumulate verified structure outperform systems that optimize for single-shot performance**. The Foundations Turn outperforms Sol because comprehension compounds while novelty decays. Danus outperforms stateless agents because verified facts compound while unverified reasoning resets. SHIELD argues that developer skill compounds when learning is designed in, but decays (Knowledge Debt) when learning is designed out.
+**Proposed pattern, qualified**: systems that retain reviewable and repairable structure may outperform single-shot systems, but the attention counters do not measure comprehension and Danus supplies no released matched outcome comparison for that claim. SHIELD remains unevaluated; its cited controlled study supports only an immediate, task-bounded learning gap.
 
 This is not a new layer of the Oversight Inversion but a deepening of existing layers — particularly Knowledge Erosion (#450), Verification Harness (#451), and Attention Decay Curve (#460). The accretive principle is the common structure underlying all three: oversight requires accumulated understanding, not transient attention.
 

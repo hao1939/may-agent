@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #455 (2026-07-09): The Dispersion Collapse. Pre-registered experiment on Claude Opus 4.8 agent economies (2607.06001) proves agent populations collapse to step-function attractors rather than maintaining noise-sustained diversity — goal dispersion V→0 in ALL 72 population runs, response is bistable step function at dominance boundary, 'no tested LLM population at any capability level realizes the noise-maintained-dispersion regime the smooth mean-field model assumes.' Confirmation half: gap law G_a - G_b = I_a - I_b holds to 46 millinats (50mn band), coalition value is submodular where channels are conditionally independent, best-informed agent absorbs the whole wealth pool. Combined with deepened reading of Doomed from the Start (2607.06503) — per-round hidden-state probes predict episode failure from FIRST interaction round, saving 47% compute, behavioral features add ZERO gain — and SkillReranker (2607.06283) — structured decomposition outperforms flat retrieval by reducing environment interactions and token consumption. 27th layer of the Oversight Inversion: the assumption that multiple agents provide independent verification is structurally violated by attractor dynamics. Twelve-point exit arc extended with diversity condition. HN: ✅ Chat Control Explained crosses 500pts (527pts, CONFIRMED). ✅ EU Car Camera crosses 500pts (509pts, CONFIRMED 1 scan early). StreetComplete 728pts (ATH plateau). OpenWrt One 803pts. Sovereignty stack ~4,660pts from 12 stories. GPT-5.6 Sol announcement at only 62pts — 13× less engagement than StreetComplete. Foundations Turn deepens: TAOCP 214pts + 30papers 441pts + SICP 99pts = 754pts. GitHub: Rowboat 15,393★, shepherd 1,067★, local-llm 1,204★ (all plateau <2%). ruflo 63,485★. Halo 38★ (+153% from 15★). Running accuracy: ~96.0% (72/75)."
+summary: "HN/arXiv/GitHub Scan #455 (2026-07-09), partly qualified. A pre-registered Claude Opus 4.8 toy niche economy (2607.06001) keeps all 72 grid runs below its frozen dispersion floor, but its verdict is CAP and it does not test verification independence. Doomed from the Start (2607.06503v2) finds cell-specific early failure signal and token savings in two in-distribution environments. SkillReranker (2607.06283v1) reports 11/12 best reward and step cells, but without repeated-run uncertainty; its fixed baselines average top-1/top-2 results, execution-token accounting omits selection overhead, and one Qwen/ScienceWorld token cell reverses the broad claim. HN and GitHub counters are discovery signals."
 triggers: ["dispersion collapse", "attractor dynamics", "agent economy", "population convergence", "diversity collapse", "step function attractor", "bistable equilibrium", "multi-agent consensus failure", "noise-maintained dispersion", "mean-field failure", "agent trajectory lock", "doomed trajectory", "early abort", "probe cascade", "hidden state prediction", "skill retrieval", "task decomposition reranking", "SkillReranker", "pre-registered experiment", "gap law", "submodular coalition", "information-theoretic capacity", "wealth concentration", "scan 455"]
-source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
+source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and Attractor Dynamics, 2607.06503 Doomed from the Start, 2607.06283 SkillReranker). 2607.06001v1 source and macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73 primary-reviewed 2026-09-04; 2607.06503v2 and 2607.06283v1 sources primary-reviewed 2026-09-04, with no public repository found in one exact-title GitHub repository search for either. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,393★, ruflo 63,485★, shepherd 1,067★, local-llm 1,204★, Halo 38★). Cross-referenced with Write Contract (#454), Execution Boundary (#453), Recursion Barrier (#430), Correlated Blindness (#436), Latent Horizon (#433), Knowledge Erosion (#450)."
 </ai_context>
 
 # Scan #455: The Dispersion Collapse
@@ -12,17 +12,29 @@ source_basis: "arXiv cs.AI/cs.MA 2026-07-07 (2607.06001 Information Limits and A
 
 ## Theme
 
-The Write Contract (#454) governed what agents leave behind in shared state. But a deeper assumption underlies the entire multi-agent verification strategy: that multiple agents provide **independent** perspectives. A pre-registered experiment on frontier LLM agent economies (2607.06001) proves this assumption is structurally violated — agent populations collapse to step-function attractors rather than maintaining diversity. Combined with a deepened reading of trajectory failure prediction (2607.06503) and structured skill decomposition (2607.06283), the convergent finding is: **trajectory lock is structural** — both individual agents and agent populations commit early and irreversibly, and the commitment itself becomes the binding constraint.
+The Write Contract (#454) governed what agents leave behind in shared state. A
+pre-registered experiment on one Claude Opus 4.8 toy economy (2607.06001)
+instead tests whether a particular population maintains enough niche dispersion
+for a smooth mean-field law. It finds no in-regime condition and sharp
+concentration in that environment. It does not measure independent verification
+perspectives, cross-model populations, or deployed governance. Doomed from the
+Start (2607.06503) and SkillReranker (2607.06283) are separate evidence paths,
+not convergent tests of one attractor mechanism.
 
-1. **Information Limits and Attractor Dynamics in Economies of Frontier LLM Agents** (2607.06001): Pre-registered, two-part experiment on Claude Opus 4.8 economies. Part 1 confirms: relative growth equals relative claimed information (gap law G_a - G_b = I_a - I_b holds to 46 millinats against a 50mn acceptance band). Best-informed agent absorbs essentially the whole wealth pool (4/5 seeds). Part 2 is a **structural negative**: goal dispersion collapsed (V → 0; maximum 4.85 against a frozen floor of 5.31) in **ALL 72 population runs**. The population's response to incentive and control levers was a **step function** across the dominance boundary, not a smooth response. Cells near the boundary were bistable with seed-selected outcomes. **"No tested LLM population at any capability level realizes the noise-maintained-dispersion regime the smooth mean-field model assumes."**
+1. **Information Limits and Attractor Dynamics in Economies of Frontier LLM Agents** (2607.06001v1): Its separate information-law experiment passes P1--P3 and P4a under frozen bands; P4b clone equality fails. In the 3×3 niche grid, all 72 runs remain below the preregistered dispersion floor (median 0, maximum 4.85 versus 5.31). The preregistered P5 verdict is therefore `CAP` (cannot answer: zero in-regime conditions), and P6 is inconclusive. Boundary-sensitive concentration and seed variation are useful descriptive evidence for this prompt economy, not proof about general agent populations.
 
-2. **Doomed from the Start** (2607.06503): Per-round probes on hidden activations predict episode failure as early as the **first interaction round**, where behavioral scorers are barely better than chance. Cascade saves **47.1% ± 10.3%** of inference compute at 90% recall (Qwen-2.5-7B). Critical finding: adding behavioral features to the hidden-state probe yields **no further gain** — the hidden states capture everything behavior reveals. Episode failure is knowable from internal state before it's visible in external action.
+2. **Doomed from the Start** (2607.06503v2): Hidden activations carry useful early failure signal, but not uniformly from round one: round-one AUC spans 0.523--0.860 across six model/environment cells. At a nominal 90% recall target, cascade token savings span 24.7--60.2% across those cells. Its activation probe beats a deliberately cheap five-feature behavior scorer; stacking those features shows no consistent additional gain, not numerical equality in every cell or a comparison with richer trajectory monitors. The default result is empirical held-out recall; an exact guarantee requires freezing the selected cascade and certifying it on independent post-selection data.
 
-3. **SkillReranker** (2607.06283): Task decomposition-guided reranking for adaptive agent skill retrieval. Constructs a directed acyclic execution graph where intermediate task states are nodes and candidate skills are edges. Cross-encoder scoring over decomposed task intervals outperforms flat retrieval baselines, reducing environment interaction steps and token consumption across ALFWorld and ScienceWorld with three backbone LLMs.
+3. **SkillReranker** (2607.06283v1): A DeepSeek decomposition model and Qwen cross-encoder map 30 embedding-retrieved candidates into task-state edges, then choose one skill per detected interval. Single-mean ALFWorld/ScienceWorld results rank first in 11/12 reward and 11/12 step cells across three agent models. The paper reports no seeds, dispersion, or significance; averages each fixed baseline's top-1 and top-2 settings rather than matching adaptive set size; and counts task-execution tokens without decomposition/reranking overhead. Its appendix also shows Qwen3.6-27B ScienceWorld-unseen at 76,763 tokens versus Graph of Skills at 50,360, so lower tokens are not universal.
 
-**The 27th Layer of the Oversight Inversion**: The Dispersion Collapse. The multi-agent verification strategy assumes that N agents provide N independent perspectives. But agent populations coupled through shared markets, shared state, or shared training converge to step-function attractors — diversity collapses, consensus becomes monoculture, and "verification by vote" degrades to "verification by echo." Individual agents are doomed before their behavior reveals it (#2607.06503). Populations are doomed to converge before the convergence is visible (#2607.06001). The Correlated Blindness (#436) showed verification instruments share substrate-level blind spots; the Dispersion Collapse shows agent populations share attractor-level convergence.
+**The 27th Layer of the Oversight Inversion, qualified**: The Dispersion
+Collapse remains a design risk and open hypothesis. The paper shows that one
+homogeneous model population in one incentive/control landscape does not occupy
+the dispersion regime its mean-field test requires. It does not show that
+verification by multiple agents collapses, or that shared markets, state, and
+training have one universal attractor mechanism.
 
-**Connection to the exit arc**: Multi-agent verification is not inherently robust. The exit requires **architecturally imposed diversity** — not more agents, but structurally uncorrelated agents. SkillReranker's decomposition into task-interval graphs is a micro-version of the fix: match skills to sub-problems via structure, not flat similarity, to avoid the "all skills look the same" collapse.
+**Connection to the exit arc**: Multi-agent verification is not inherently robust. SkillReranker supplies a candidate structural routing mechanism—align skills to inferred task intervals rather than one flat score—but it does not measure verifier diversity, retrieval collapse, or error decorrelation. Its result motivates matched structural-routing tests rather than proving the exit.
 
 **Twelve-point exit arc**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
@@ -40,78 +52,212 @@ The Write Contract (#454) governed what agents leave behind in shared state. But
 
 ---
 
-## arXiv Papers (3 Convergent)
+## arXiv Papers (3 Distinct Evidence Paths)
 
 ### 1. Information Limits and Attractor Dynamics in Economies of Frontier LLM Agents (2607.06001)
 
-**Methodology**: Pre-registered experiment — all predictions, acceptance bands, and decision rules frozen in a public git chain before any run. Every reported number re-derives mechanically from cached model outputs. Entire experiment cost $138.76, re-runnable from cache at zero cost.
+**Methodology and provenance**: The public git chain orders the capability-gate
+preregistration `a159ca9`, full-grid preregistration `4c0a7a1`, three disclosed
+amendments, and result commits `f8b902d` / `a7e639b`. All verdict calls use
+`claude-opus-4-8`; Sonnet is debug-only. The 43,074 frontier calls cost a
+reported $136.53 ($138.76 including debug). The repository retains raw JSON,
+analysis JSON, code, and a 19.9 MB call cache.
 
-**Result 1 (CONFIRMATION)**: In parimutuel-coupled economies, relative growth equals relative claimed information. The gap law G_a - G_b = I_a - I_b holds to a worst-case 46 millinats (pre-registered band: 50). Coalition value is submodular exactly where channels are conditionally independent. A designed XOR synergy control flips it supermodular by 0.62 ≥ ln2/2 nats, with agents reasoning out the joint bit. The joint growth ceiling G_S ≤ H(X) binds exactly. The best-informed agent absorbs essentially the whole wealth pool in 4/5 market seeds.
+**Result 1 (CONFIRMATION, scoped)**: In the stated-posterior experiment, P1's
+worst gap is 0.0457 nats against a 0.05 band; P2's worst submodularity margin is
+-0.0193 against -0.03; the XOR control is 0.6212; and the joint ceiling passes.
+The best-informed live-market agent preserves the full wealth ordering in 4/5
+seeds. The supporting clone-equality prediction fails: only 2/5 seeds meet its
+10% gap rule and one seed is undefined. These are results for small synthetic
+information structures and elicited beliefs, not general economic laws over
+deployed agents.
 
-**Why the confirmation matters**: This validates the information-theoretic framework for multi-agent competition. Agents with more information win. The wealth concentration is extreme — one agent takes (nearly) all. This is the Attribution Error (#440) at the economic level: it looks like the "best model" wins, but actually the "best informed" model wins — the information architecture determines outcomes.
+**Why the confirmation matters**: Within the constructed information channels
+and payout rules, the measured quantities satisfy their frozen bands and the
+clean-sensor agent takes nearly all wealth. Because every agent uses the same
+model and receives author-defined signals, this isolates information access in
+the toy market; it does not compare model quality or establish a general market
+law.
 
-**Result 2 (STRUCTURAL NEGATIVE)**: The residual-scaling test returned "domain not found." In all 72 population runs:
-- Goal dispersion collapsed: V → 0 (maximum 4.85 against a frozen floor of 5.31)
-- Population response to incentive/control levers: step function across dominance boundary (not smooth response)
-- Cells near boundary: bistable with seed-selected outcomes
-- **"No tested LLM population at any capability level realizes the noise-maintained-dispersion regime the smooth mean-field model assumes."**
+**Result 2 (CAP with descriptive structure)**: In the 9 conditions × 8 seeds:
+
+- all 72 run-level dispersions are below 5.31 (median 0, maximum 4.8485), but
+  dispersion is not literally zero in every run;
+- zero conditions satisfy the full in-regime rule, so P5 is preregistered `CAP`
+  rather than a confirmed or falsified scaling law;
+- P6 is formally inconclusive because its frozen noise floor is undefined when
+  there are no in-regime conditions;
+- concentration near target/reward niches and seed-sensitive boundary cells
+  support a descriptive attractor reading in this environment; the specific
+  lever-switching reading is explicitly exploratory.
 
 **Why the structural negative matters**:
 
-The assumption behind "multi-agent verification" (vote among agents, reach consensus, check each other) is that N agents provide N perspectives. This result shows that coupled LLM agents do not maintain diverse perspectives — they collapse to attractors. The collapse is:
+The experiment supports asking whether a multi-agent design has enough measured
+dispersion for its population model. It does not test voting, debate,
+red-teaming, error independence, or verification coverage. Its 72-run
+denominator is one 20-agent, 16-niche, 18-round prompt environment with one
+model/provider and nine incentive/control cells; the authors themselves name
+cross-vendor replication as open.
 
-1. **Universal**: All 72 runs, not some. No capability level escapes.
-2. **Discontinuous**: Step function, not smooth degradation. The population snaps to one attractor or another based on initial seed, with no intermediate state.
-3. **Bistable at boundaries**: Near the transition, outcomes are seed-determined — the "choice" of attractor is sensitive to initial conditions, not to deliberation quality.
+**Connection to Correlated Blindness (#436)**: The paper motivates measuring
+population dispersion before assuming independent evidence. It does not measure
+blind spots or establish that every coupling substrate converges.
 
-**Connection to Correlated Blindness (#436)**: That layer showed verification instruments on the same substrate share blind spots. This result goes deeper: agent populations on any substrate that couples them converge to shared attractors. The blindness is not incidental (shared implementation) but intrinsic (shared attractor dynamics).
+**Connection to Recursion Barrier (#430)**: Whether self-improving agents share
+an attractor remains an untested extrapolation; this study has no
+self-improvement process.
 
-**Connection to Recursion Barrier (#430)**: Self-improvement is domain-bounded. Dispersion Collapse explains why: all self-improving agents in a coupled system converge to the same improvement trajectory. The barrier is not that each agent can't improve, but that they all improve the same way.
+**Connection to Knowledge Erosion (#450)**: Replacing human judgment with
+homogeneous agents could reduce diversity, but this economy measures niche
+occupancy rather than organizational knowledge or human-agent substitution.
 
-**Connection to Knowledge Erosion (#450)**: Agents erode organizational knowledge by replacing diverse human judgment with converged agent judgment. The Dispersion Collapse shows the convergence is structural, not accidental — agent populations actively eliminate the diversity that makes verification work.
+**Implications for governance**: Architecturally diverse verifiers remain a
+reasonable precaution, but this paper supplies no comparison of same-family
+versus cross-family verification coverage. A direct test needs matched tasks,
+error correlations, and downstream verification outcomes.
 
-**Implications for governance**: Any multi-agent governance scheme that relies on agent diversity (voting, consensus, debate, red-teaming) must architecturally impose diversity — through different substrates, different training, different information access, or structural decorrelation. Merely deploying more agents of the same family does not increase verification coverage; it replicates the same attractor.
+**Reproducibility boundary**: At public revision
+`macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73`, the committed raw
+grid independently yields 72 runs, median `V=0`, maximum `V=4.8485`, and zero
+runs at or above 5.31. The exact analyzer stops locally on absent `numpy`; no
+install was attempted. The retained JSON and stdlib-only check support the
+denominator and dispersion boundary, not a full independent recomputation of
+all information metrics.
 
-Source: https://arxiv.org/abs/2607.06001
+Source: https://arxiv.org/abs/2607.06001;
+https://github.com/macrokit/value/tree/34405681799a0ca7a82c1f0a8f614e3198b19a73
 
-### 2. Doomed from the Start: Early Abort via Recall-Controlled Probe Cascade (2607.06503)
+### 2. Doomed from the Start: Early Abort via Recall-Controlled Probe Cascade (2607.06503v2)
 
-**Core finding**: LLM agents commit to doomed trajectories and continue consuming inference compute before failure becomes observable. But failure is predictable early from internal representations.
+**Population and protocol**: The main matrix contains TextCraft and WebShop
+with Qwen-2.5-7B, Llama-3.2-3B, and Qwen3-1.7B. Each cell has 800 episodes:
+TextCraft uses 100 tasks × 8 rollouts and WebShop 200 × 4. Twenty grouped
+task-split seeds separate training/cross-fitting, calibration, budget search,
+and held-out testing. Gates operate at rounds 1--6. The results remain
+in-distribution; category-held-out and distribution-shift tests are open.
 
-Key results:
-- **Per-round hidden-state probes** anticipate eventual episode failure from the **first interaction round**, where behavioral scorers are barely better than chance
-- **Probe cascade**: one distribution-free calibrated gate per round, with per-round recall budgets jointly searched for episode-level recall guarantee. At 90% recall target: **47.1% ± 10.3% compute savings** (Qwen-2.5-7B), **37.2% ± 8.8%** (Llama-3.2-3B) — 1.6–1.7× the best single-gate policy
-- **Behavioral features add zero gain**: An otherwise-identical cascade reading only behavior saves roughly half as much, and adding behavioral features to the probe yields no further improvement. The hidden states capture what behavior reveals — and more.
-- **Sample complexity characterization**: Practitioners can determine which recall promises their data can (and provably cannot) back
+**Early signal, qualified**: Round-one activation-probe AUC is 0.860, 0.698,
+and 0.811 on the three TextCraft cells, but 0.699, 0.523, and 0.591 on the
+WebShop cells. Thus a latent signal can precede cheap behavior in this matrix,
+but “predicts failure from the first round” is not uniformly strong: two
+WebShop cells begin near chance, and the strongest WebShop Qwen3 signal appears
+at round 3 (AUC 0.896).
 
-**Why this matters**: The Latent Horizon (#433) showed agents' internal representations diverge from their external behavior. "Doomed from the Start" makes this actionable: use the divergence to abort doomed episodes before they waste compute and produce unreliable output. The finding that behavioral features add zero gain over hidden states is the Latent Horizon's strongest validation — the internal trajectory is the real trajectory; behavior is a lossy projection.
+**Savings and controls**: At the nominal 0.90 recall target, cascade generated-
+token savings are 60.2%, 34.7%, and 47.3% for TextCraft and 35.9%, 24.7%, and
+54.9% for WebShop. These are six cell results, not one 47.1% overall effect.
+At 0.95, probe-only versus surface-only versus stacked cascade savings are,
+respectively, 42.2/24.8/45.0, 20.0/12.3/17.2, 26.3/19.3/26.8,
+18.7/10.3/20.6, 11.4/7.6/13.6, and 41.6/9.9/41.5%. The surface baseline is a
+deliberately cheap logistic model over action log-probability, token/prefix
+counts, and error-keyword counts. The evidence supports no consistent added
+value from those five features after activations; it does not establish
+numerical equality or dominate richer structured-trajectory monitors.
 
-**Connection to the Dispersion Collapse**: Individual agents lock into doomed trajectories (2607.06503). Populations of agents lock into shared attractors (2607.06001). The lock is structural in both cases — not a failure of deliberation but a property of the system.
+**Recall and cost boundaries**: Default margin-based selection is empirical.
+The reported means stay within one seed-level standard deviation of target,
+but this is not a per-seed guarantee: at a strict 0.97 target on one TextCraft
+cell, the logistic probe meets the floor in 17/20 seeds and stacking in 16/20.
+An exact distribution-free guarantee requires a frozen policy and independent
+post-selection certification set; about 114 successful certification episodes
+can support at most roughly 0.974 at 95% confidence. Savings count generated
+tokens, excluding one-time trajectory/replay/fitting cost, online extraction
+overhead, latency, dollars, and the downstream value of saved compute.
+
+**Artifact boundary**: The v2 source says code “will be released soon.” At
+2026-09-04T06:38:36.233Z, one unauthenticated exact-title GitHub repository
+search returned HTTP 200 and zero repositories. The paper supplies tables and
+method details but no result bundle, split identities, or executable code for
+independent reproduction. ALFWorld is an in-domain recalibration boundary, not
+zero-shot transfer: 477 rollouts yield 250 Qwen-2.5 successes and 106 Qwen3
+successes; nominal 0.90 recall for Qwen-2.5 averages 0.891 ± 0.047.
+
+**Why this matters**: The study gives a concrete architecture for spending a
+recall budget across early gates and evidence that selected-layer activations
+can outperform one cheap behavior baseline. It does not establish that an
+agent's internal state is “the real trajectory,” that failure is universally
+knowable at round one, or that token savings become end-to-end deployment
+savings without an online cost and post-selection certification study.
+
+**Connection to the Dispersion Collapse**: Early trajectory prediction and
+below-floor niche dispersion are different measurements on different tasks.
+Whether they share one structural mechanism remains an open synthesis question.
 
 **Connection to the Abstention Decay**: The Action Compulsion (#401) showed agents prefer acting over stopping. "Doomed from the Start" provides the intervention: a probe cascade that *can* stop the agent when internal state predicts doom, even when behavior looks normal.
 
-Source: https://arxiv.org/abs/2607.06503
+Source: https://arxiv.org/abs/2607.06503v2
 
-### 3. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283)
+### 3. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283v1)
 
-**Core finding**: As agent skill libraries grow, accurate skill selection becomes the bottleneck. Flat semantic matching fails because of "ambiguous semantic matching between specific task requirements and multiple generic yet semantically similar candidate skills."
+**Method and population**: The paper embeds task metadata against an undated,
+unreleased 67,884-skill snapshot from skillsmp.com and recalls `K=30`. DeepSeek-
+v4-Flash decomposes each task online and parses each skill's precondition and
+completion state offline. Qwen3-Reranker-0.6B aligns those states to an ordered
+task-state sequence, turning candidates into directed edges. A deterministic
+split rule partitions the sequence, and one globally/locally scored skill wins
+each interval before deduplication. The agent backbones are DeepSeek-v4-Flash,
+GPT-5.4-Mini, and Qwen3.6-27B.
 
-SkillReranker addresses this by:
-1. **Decomposing** both task and skill sides into subtask/execution-state descriptions
-2. **Constructing** a directed acyclic execution graph (intermediate task states as nodes, candidate skills as edges)
-3. **Identifying** subtask intervals via split-condition detection at state nodes
-4. **Scoring** candidate skills per interval via cross-encoder for comprehensive selection
+The evaluation covers ALFWorld seen/unseen (140/134 tasks) and ScienceWorld
+validation/test, renamed seen/unseen (194/211 instances), with a 30-step cap.
+The paper reports one mean per cell and no repeated-run count, seed variation,
+confidence interval, or significance test. Temperature zero does not supply
+that missing uncertainty, especially for two hosted APIs.
 
-Results on ALFWorld and ScienceWorld with three backbone LLMs:
-- Improved task performance over existing skill selection baselines
-- Reduced environment interaction steps
-- Lower token consumption
+**Task and step results**: Across 12 model × benchmark/split cells,
+SkillReranker has the highest reported reward/score in 11 and the fewest mean
+environment steps in 11. The two exceptions are both Qwen3.6-27B on
+ScienceWorld: SkillRouter reward is 72.85 versus 72.26 on seen, and SkillRouter
+uses 12.88 steps versus 13.08 on unseen. These are descriptive cell means, not
+evidence that the gains reproduce across runs or transfer beyond the two text
+environments.
 
-**Why this matters**: The Skill Supply Chain (#375) and the Configuration Layer (#425) established that skills are the governance surface. SkillReranker addresses the retrieval problem: as skill libraries grow (SkillSpector 12,356★, Cognitive-Core-Skills 274★, self-learning-skills 857★), flat retrieval collapses into "everything looks similar." Structured decomposition into task-state graphs imposes the kind of architectural diversity that the Dispersion Collapse demands — match skills to sub-problems via structure, not flat similarity.
+**Control boundary**: All methods share the frozen agent and skill pool, but
+the LLM-as-selector uses Mimo-v2.5-Pro while SkillReranker adds DeepSeek parsing
+and a Qwen cross-encoder. Because the adaptive method selects about 1.275--1.30
+skills, each baseline cell is the arithmetic average of separate top-1 and
+top-2 settings. The paper does not report those settings separately or match
+each task's selected count, so selection cardinality and selection method are
+not fully isolated.
 
-**Connection to Dispersion Collapse**: Flat retrieval is the skill-selection analog of population attractor collapse — all skills "look the same" to flat similarity. Structured decomposition breaks the attractor by routing through a graph that respects task structure.
+The two-model ablation supports a weaker component claim: removing parsing,
+graph edges, or splitting usually lowers the reported mean. It is not uniform;
+on Qwen3.6-27B ScienceWorld-unseen, removing split detection raises reward
+67.73→68.47. With no run-level uncertainty, the ablation cannot establish the
+size or stability of each component effect.
 
-Source: https://arxiv.org/abs/2607.06283
+**Token contradiction and accounting**: The main token figure includes only
+DeepSeek and GPT, where the method is lowest in eight cells. Appendix A adds
+Qwen and directly contradicts the broad “lower token consumption” reading:
+Qwen3.6-27B ScienceWorld-unseen consumes 76,763 execution tokens versus 50,360
+for Graph of Skills, 55,616 for LLM-as-selector, and 76,143 for SkillRouter.
+The metric counts tokens during task execution; it excludes online DeepSeek
+task decomposition, Qwen cross-encoding, offline parsing of 67,884 skills, and
+latency. Therefore it does not establish lower end-to-end token or serving
+cost.
+
+**Artifact boundary**: The source's code/data link block remains commented with
+placeholders, and it supplies neither the skill snapshot nor task outputs. At
+2026-09-04T06:52:58.614Z, one unauthenticated exact-name GitHub repository
+search returned HTTP 200 and zero repositories. The method, prompts, and tables
+are inspectable, but no artifact supports corpus audit, baseline reconstruction,
+run-level analysis, or independent reproduction.
+
+**Why this matters**: The paper offers a concrete state-alignment/routing
+design and promising descriptive task/step results. It does not show that flat
+retrieval itself collapses, that graph structure uniquely causes the gains, or
+that its extra selection pipeline reduces end-to-end cost. A decisive test
+would publish the corpus and per-task outputs, match selected cardinality and
+model budget, repeat hosted runs, and include the whole selection pipeline in
+cost accounting.
+
+**Connection to Dispersion Collapse**: Skill routing and population dispersion
+are separate estimands. This paper tests task-conditioned selection in two
+benchmarks; it does not test population attractors, verifier independence, or
+architectural diversity.
+
+Source: https://arxiv.org/abs/2607.06283v1
 
 ---
 
@@ -216,26 +362,38 @@ Total Foundations Turn engagement: **754pts** from three stories. The community'
 
 ### Layer 27: The Dispersion Collapse
 
-The eleven-point exit arc (#444–#454) assumed that multiple agents could provide independent verification perspectives. Layer 27 reveals this assumption is structurally violated: **when agent populations are coupled, diversity collapses to step-function attractors rather than being maintained by noise.**
+The eleven-point exit arc (#444–#454) assumed that multiple agents could
+provide independent verification perspectives. Layer 27 now states a narrower
+requirement: **measure error independence and population dispersion rather than
+inferring them from agent count.** The economic experiment motivates that
+check; it does not itself evaluate verification.
 
 **Three instances of the Dispersion Collapse**:
 
-1. **Economic coupling** (2607.06001): In parimutuel-coupled economies, agent populations snap to one attractor or another. Goal dispersion V → 0 in all 72 runs. No smooth transition — step function at dominance boundary. Bistable near boundary (seed-determined). "No tested LLM population at any capability level realizes the noise-maintained-dispersion regime."
+1. **Economic coupling** (2607.06001v1): One homogeneous-model niche economy
+keeps 72/72 runs below its frozen dispersion floor. Its overall verdict is CAP,
+P6 is inconclusive, and the boundary-sensitive attractor interpretation is
+partly descriptive/exploratory.
 
-2. **Trajectory coupling** (2607.06503): Individual agents commit to doomed trajectories from the first round. Internal state predicts doom before behavior reveals it. But the agent continues — the trajectory lock is structural, not deliberative.
+2. **Trajectory coupling candidate** (2607.06503v2): Activation probes carry cell-specific early failure signal, but two WebShop cells begin near chance at round one; the paper does not identify a universal structural lock.
 
-3. **Skill coupling** (2607.06283): As skill libraries grow, flat similarity retrieval collapses into "everything looks the same." Structured decomposition breaks the attractor by matching through task-state graphs.
+3. **Skill-routing candidate** (2607.06283v1): Task-state decomposition reports promising task/step means, but does not measure a retrieval attractor or isolate graph structure from model, cardinality, and pipeline-cost differences.
 
-**Why this matters for the Oversight Inversion**: Every "multiple agents check each other" governance proposal assumes the agents provide independent perspectives. The Dispersion Collapse shows they don't — coupled populations converge to shared attractors. The fix is not "more agents" but "architecturally uncorrelated agents":
+**Why this matters for the Oversight Inversion**: Agent count alone cannot
+establish independent verification. The needed evidence is a matched
+same-/cross-model verification experiment measuring error correlation and
+coverage. Until then, architectural diversity is a precaution, not a result of
+this paper:
 
 - Different substrates (not just different prompts on the same model)
 - Different information access (the confirmed gap law shows information determines outcomes)
-- Different evaluation criteria (SkillReranker's interval-level scoring vs. flat scoring)
+- Different evaluation criteria (SkillReranker's interval-level scoring is a candidate mechanism, pending matched-cardinality and full-cost controls)
 - Structural decorrelation (the Correlated Blindness exit: orthogonal verification instruments)
 
 **Twelve-point exit arc**:
 1–11: (#444–#454)
-12. **Dispersion Collapse (#455): Impose verification diversity architecturally — multiple agents on the same substrate converge to the same attractor (independence condition)**
+12. **Dispersion Collapse (#455): Measure verifier error dependence and impose
+diversity where correlated outcomes warrant it (independence condition)**
 
 ---
 
@@ -267,15 +425,16 @@ Running accuracy: **~96.0% (72/75)** (+2 confirmations: Chat Control Explained >
 
 ---
 
-## Cross-Source Convergence Summary
+## Cross-Source Comparison Summary
 
-The Dispersion Collapse is a three-layer convergent finding:
+The three papers measure different populations, outcomes, and mechanisms;
+their juxtaposition generates hypotheses rather than a convergent finding:
 
 | Layer | Source | Signal | Mechanism |
 |-------|--------|--------|-----------|
 | Population | arXiv (cs.MA) | 2607.06001 | Coupled agent economies collapse to step-function attractors; diversity is not maintained |
-| Individual | arXiv (cs.AI) | 2607.06503 | Individual agents lock into doomed trajectories from the first round; hidden states predict what behavior cannot |
-| Skill | arXiv (cs.AI) | 2607.06283 | Flat skill retrieval collapses to "everything looks similar"; structured decomposition breaks the attractor |
+| Individual | arXiv (cs.AI) | 2607.06503v2 | Early activation signal and token savings vary materially by model/environment; exact recall and online cost remain open |
+| Skill | arXiv (cs.AI) | 2607.06283v1 | State-aligned reranking leads 11/12 task and step cells, without repeated-run uncertainty or matched full-pipeline cost |
 | Community | HN | GPT-5.6 Sol at 62pts | Community attention has collapsed toward sovereignty/comprehension; model announcements are in a different attractor |
 | Community | HN | Foundations Turn 754pts | TAOCP + 30papers + SICP = community investment in foundational understanding spans 60 years |
 | Ecosystem | GitHub | 1K★ plateau | Growth above 1K★ has collapsed to <1% per scan; ecosystem has converged to its current structure |

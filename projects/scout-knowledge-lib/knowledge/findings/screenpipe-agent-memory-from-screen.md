@@ -32,3 +32,23 @@ Screenpipe addresses a core agent bottleneck: grounding agents in what the user 
 ## Tags
 
 agent-memory, screen-context, local-first, accessibility-tree, personal-knowledge-base, automation-discovery
+
+## 2026-08-25 update — separate temporal presence from semantic novelty
+
+HN: https://news.ycombinator.com/item?id=49429095  
+Repo: https://github.com/dragthelake/ambient-context  
+Inspected commit: https://github.com/dragthelake/ambient-context/tree/496c5e6c6510251552b0649274538088e33a38ce
+
+Ambient Context is a useful minimal counterpoint to Screenpipe. Instead of retaining screenshots, audio, or a query service, it polls the focused macOS Accessibility tree every five seconds, waits for a ten-second dwell, and appends blocks to one plain-Markdown file per day. Each block retains its time range and, when available, a document path or URL that lets a later agent reopen the authoritative source. The implementation writes an `AGENTS.md` beside the capture files so the representation explains itself to consumers.
+
+The more reusable design signal is how its writer separates **temporal presence** from **semantic novelty**. A day-wide hash set admits each body line only once, including across restarts, but `append_block` still writes a timestamped heading and source reference when every line in a later block is a duplicate. This keeps a cheap activity timeline without repeatedly charging the same interface text to an LLM. It also creates a strict interpretation rule: body-line frequency is not evidence of dwell time or recurrence. Consumers must use block headings for presence and body text for first-seen content. Memory formats that deduplicate observations should expose those axes separately rather than silently collapsing both into one stream.
+
+### Coverage and privacy boundaries
+
+This representation trades coverage for inspectability. The README explicitly says Chromium/Electron trees can initially be thin and GPU-rendered terminals can expose little or no text; an HN commenter independently reports needing app-specific profiles with a similar Accessibility-first approach. A useful deployment artifact would therefore be a versioned per-application coverage census, not a blanket claim that the screen has been recorded.
+
+The local privacy controls are real but bounded: Swift traversal skips secure text fields and refuses capture while the screen is locked; Rust drops named password-manager apps and window titles containing private-browsing markers, then regex-scrubs several credential and card-number shapes before writing. Those are denylist and pattern controls, not complete sensitive-content classification. The resulting Markdown remains a durable plaintext surveillance record readable by any process or agent with folder access. Local-first memory still needs explicit retention, reader authorization, and deletion policy.
+
+### Evidence limit
+
+This is source and implementation evidence from an early, unsigned macOS-only project, not a retrieval-quality, privacy, or resource benchmark. The repository's comment says cross-block repetition was 73% on one measured real day, but it publishes no corpus or evaluation protocol for that figure. Treat the two-channel encoding and coverage-census idea as testable architecture patterns, not established performance claims.

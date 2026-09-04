@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical note on agent security and governance patterns: attack surfaces (including AutoJack confused-deputy RCE via capability-containment isomorphism), structural governance, formal governance primitives, the Identity Boundary Convergence, the Boundary Delegation Paradox, the Composition Boundary, and the Minimum Viable Authority Turn. Three companion files: agent-security-defense-architectures.md (24 named defense patterns), agent-security-event-log.md (16 HN event narratives), and agent-security-state-level-governance.md (ITAR/Mythos, dual-use, infrastructure cost, browser moat). Aug 2026 updates add agent-native preflight auditing, self-hardening update channels, deterministic tool-provenance admission rules, an HN-reported foreign instruction-file import that makes automatic context discovery a data-egress boundary, a field report showing why goal approval must not imply mutation authority, and a GitHub profile that treats resolved-tool auditing as the check on least-capability configuration."
-triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "role confusion", "CoT forgery", "subconscious steering", "role perception", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity", "AutoJack", "confused deputy", "capability containment", "localhost trust", "browsing agent RCE", "agent identity", "identity boundary", "deployer identity", "execution authority", "attribution identity", "certificate-bound authority", "boundary delegation", "agent libOS", "CORS delegation", "observation authority", "capability runtime", "minimum viable authority", "privilege escalation", "ToolPrivBench", "over-privileged", "N-version programming", "ToolPro", "effect types", "scoped authority", "neuralyzer", "AIGX", "repo forensics", "preflight repo audit", "signed rulepack", "session-start security scan", "deterministic URL provenance", "agent-synthesized URL", "Rovo exfiltration", "foreign instruction file", "ambient context import", "AGENTS.md", "CLAUDE.md", "goal authorization", "mutation authority", "reversible action", "authorization check", "starter profile", "resolved tool audit", "toolset drift", "least-capability onboarding"]
-last_updated: "2026-08-10"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control; Aug 2026 — Atlassian Rovo exfiltration thread 49185983 plus Simon Willison's deterministic URL-provenance mitigation comment, Ask HN item 49235224 reporting cross-client personal instruction import, and HN item 49236439/ABC's gym-booking mutation report), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance. Microsoft Security Blog (Jun 18 2026): AutoJack confused-deputy exploit chain in AutoGen Studio MCP WebSocket. Sept 2026: Identity Boundary Convergence — SEB (2606.20520), Five-Plane (2606.12320), Delegated Execution Observability (2606.09692), Anthropic ID backlash, Cloudflare ephemeral accounts. Scan #82: ToolPrivBench (2606.20023), N-Version (2606.20158), ToolPro (2606.19992), Neuralyzer (57★), AIGX (24★), Claude-Pulse (23★). GitHub Aug 2026: alexgreensh/repo-forensics (146★, commit 7d0beff) for agent-native preflight auditing, signed IOC/rule-pack refresh, and monotonic self-hardening update control; teknium1/hermes-starter-profile (32★ at retrieval, commit 24dc015) for dual-layer tool restriction and resolved-capability drift auditing."
+summary: "Canonical note on agent security and governance patterns: attack surfaces (including AutoJack confused-deputy RCE via capability-containment isomorphism), structural governance, formal governance primitives, the Identity Boundary Convergence, the Boundary Delegation Paradox, the Composition Boundary, and the Minimum Viable Authority Turn. Three companion files: agent-security-defense-architectures.md (24 named defense patterns), agent-security-event-log.md (16 HN event narratives), and agent-security-state-level-governance.md (ITAR/Mythos, dual-use, infrastructure cost, browser moat). Aug 2026 updates add agent-native preflight auditing, self-hardening update channels, deterministic tool-provenance admission rules, resolved-tool auditing, and Cloudflare's Agent Access Model: task-scoped credentials, independently enforced tool and egress mediation, and a monotonic Trust Ratchet that narrows authority before protected data enters model context."
+triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "role confusion", "CoT forgery", "subconscious steering", "role perception", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity", "AutoJack", "confused deputy", "capability containment", "localhost trust", "browsing agent RCE", "agent identity", "identity boundary", "deployer identity", "execution authority", "attribution identity", "certificate-bound authority", "boundary delegation", "agent libOS", "CORS delegation", "observation authority", "capability runtime", "minimum viable authority", "privilege escalation", "ToolPrivBench", "over-privileged", "N-version programming", "ToolPro", "effect types", "scoped authority", "neuralyzer", "AIGX", "repo forensics", "preflight repo audit", "signed rulepack", "session-start security scan", "deterministic URL provenance", "agent-synthesized URL", "Rovo exfiltration", "foreign instruction file", "ambient context import", "AGENTS.md", "CLAUDE.md", "goal authorization", "mutation authority", "reversible action", "authorization check", "starter profile", "resolved tool audit", "toolset drift", "least-capability onboarding", "Agent Access Model", "task-scoped credential", "sender-constrained token", "Trust Ratchet", "capability ceiling", "multiplayer access control"]
+last_updated: "2026-08-21"
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control; Aug 2026 — Atlassian Rovo exfiltration thread 49185983 plus Simon Willison's deterministic URL-provenance mitigation comment, Ask HN item 49235224 reporting cross-client personal instruction import, HN item 49236439/ABC's gym-booking mutation report, and HN item 49392727 linking Cloudflare's Agent Access Model), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance. Microsoft Security Blog (Jun 18 2026): AutoJack confused-deputy exploit chain in AutoGen Studio MCP WebSocket. Sept 2026: Identity Boundary Convergence — SEB (2606.20520), Five-Plane (2606.12320), Delegated Execution Observability (2606.09692), Anthropic ID backlash, Cloudflare ephemeral accounts. Scan #82: ToolPrivBench (2606.20023), N-Version (2606.20158), ToolPro (2606.19992), Neuralyzer (57★), AIGX (24★), Claude-Pulse (23★). GitHub Aug 2026: alexgreensh/repo-forensics (146★, commit 7d0beff) for agent-native preflight auditing, signed IOC/rule-pack refresh, and monotonic self-hardening update control; teknium1/hermes-starter-profile (32★ at retrieval, commit 24dc015) for dual-layer tool restriction and resolved-capability drift auditing. Cloudflare Agent Access Model (Aug 2026) for task-scoped, sender-constrained credentials; immutable request authorization; dual tool/egress mediation; monotonic capability narrowing; and the unresolved multiplayer authority problem."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -931,6 +931,77 @@ verifier, human final sign-off).
 
 Source: https://deepmind.google/blog/securing-the-future-of-ai-agents/
 Full scan: [findings/2026-06-21-hn-scan-89.md](./findings/2026-06-21-hn-scan-89.md)
+
+---
+
+## 10. Authority Must Narrow Before Protected Data Arrives (Aug 2026)
+
+Cloudflare's **Agent Access Model (AAM)** turns minimum viable authority from a
+static launch-time grant into a task-lifetime state machine. The HN submission
+was only a fresh discovery signal (2 points, no comments when checked); the
+substantive evidence is Cloudflare's reference architecture rather than HN
+consensus.
+
+### 10.1 A dispatch grant is a ceiling, not a session permission
+
+At dispatch, AAM intersects a reusable task template with the initiating
+principal's authority plus resource-owner and tenant policy. It then issues a
+short-lived credential that identifies the agent, principal, and task, and is
+sender-constrained to a proof key held by the harness. The model receives
+neither that key nor a broad service credential.
+
+The important implementation detail is **authorize what will execute**: an
+adapter freezes the operation, resource, tenant, recipient, and scope-affecting
+arguments; the access engine authorizes that immutable representation; and the
+adapter executes the same representation. Token possession alone is therefore
+insufficient, and an approved operation cannot be swapped after the check.
+OAuth Token Exchange and DPoP provide pieces of this design, but the article is
+explicit that neither supplies task templates, argument policy, cross-layer
+mediation, or ratchet state by itself.
+
+### 10.2 The Trust Ratchet closes authority before releasing data
+
+AAM's novel control is monotonic: a task graph's capability set may only narrow.
+When a protected read occurs, the harness buffers the response while the access
+engine, tool runtime, and network boundary adopt a stricter state—for example,
+removing external support destinations while retaining two named ledger reads
+and one typed internal output. Old work is cancelled or drained, persistent
+connections are closed or reauthorized, cached decisions are cleared, and the
+response is released only after every required enforcement point acknowledges
+the new state version. Conflict, timeout, or a missing acknowledgement fails
+closed.
+
+This ordering matters more than a post-read policy check. Once sensitive data
+is in model context, a still-open socket or delegated child process can move it
+at machine speed. The ratchet instead makes **data release conditional on
+capability reduction**. Tool mediation and network egress are deliberately
+independent enforcement points: a harness bug still meets network policy, while
+a network mistake does not create tool authority.
+
+### 10.3 Operational correction: separate current-run authority from future policy learning
+
+AAM's activity log is populated by identity, access, harness, ratchet, and
+network enforcement points rather than model self-report. A grant-review loop
+may use successful runs, unused grants, and recurring denials to recommend
+changes, but approved changes apply only to future task templates. Repeated
+denial cannot train the active run into broader authority.
+
+The architecture also states its boundary honestly: it does not solve
+**multiplayer access control**. When one shared context contains data obtained
+under Alice's authority and Bob later asks a question, actor chains and scoped
+tokens do not preserve item-level provenance through retrieval, generation,
+caching, and delivery. Until an end-to-end label-preserving enforcement path
+exists, shared agents need per-principal isolation or a conservative common
+grant.
+
+**Operational implication:** represent every run with an explicit capability
+ceiling and versioned, monotonic authority state. Gate sensitive response
+release on acknowledgement from all relevant enforcement points; treat a
+broader need as a newly authorized task across a fresh isolation boundary, not
+a mid-run permission upgrade.
+
+**Source:** https://blog.cloudflare.com/the-agent-access-model/  
+**HN:** https://news.ycombinator.com/item?id=49392727
 
 ---
 

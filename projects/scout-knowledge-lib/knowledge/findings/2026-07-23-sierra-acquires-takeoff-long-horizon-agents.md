@@ -17,6 +17,6 @@ Sierra ($15.8B valuation, founded by ex-Salesforce co-CEO Bret Taylor) has acqui
 
 ## Connections
 
-- [LoopX — 200+ Hour Agent Runs](/knowledge/findings/) — validates long-horizon persistence as a real production need
-- [Multi-Agent Coordination](/knowledge/multi-agent-coordination.md) — long-horizon agents often require coordination infrastructure
+- [LoopX — 200+ Hour Agent Runs](./2026-07-22-xhs-agent-persistence-infrastructure.md) — validates long-horizon persistence as a real production need
+- [Multi-Agent Coordination](../multi-agent-coordination.md) — long-horizon agents often require coordination infrastructure
 - Sierra competitive landscape previously noted in Intercom/Fin acquisition discussion

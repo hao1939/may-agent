@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #492 (2026-07-09): The Harness Proof. The Harness Effect (2607.06906) provides the first controlled empirical proof of the Substrate Inversion: across 22 tasks × 6 models, changing ONLY the orchestration layer cuts cost 41%, time 44%, tokens 38% — model-invariant. Harness leverage correlates r=0.99 with baseline model strength. 'Token maxing' named as the structural default. Grok 4.5 contestation PLATEAUS at r=1.84 (first non-escalation in 7 scans) — the Contestation Ceiling. Chat Control climbs to 467pts (+18.5% from #491). Skill ecosystem produces governance infrastructure: SkillSpec 909★ (provability), guard-skills 977★ (quality gates), Cognitive-Core-Skills 272★ (taxonomy). GitHub agent-chief 319★ names attention as the scarcest resource. Hy3 (Tencent, 295B A21B) arrives on HN at 81pts — third Chinese model contender."
+summary: "HN/arXiv/GitHub Scan #492 (2026-07-09): The Harness Effect reports a paired Writer baseline-versus-harness bundle over 22 prompts and six models, with lower aggregate cost, latency, and tokens and quality treated as parity. Same-direction savings across six model aggregates do not establish model invariance; r=0.99 is a six-point, no-interval quality pattern. Promised raw artifacts are absent from the arXiv source, so the result is workload- and pair-specific rather than empirical proof of the Substrate Inversion. HN points and GitHub stars remain attention/popularity observations."
 triggers: ["harness effect", "harness proof", "token maxing", "orchestration layer", "contestation ceiling", "grok plateau", "skill governance", "SkillSpec", "guard-skills", "agent-chief", "attention scarcity", "Hy3 tencent", "scan 492", "substrate inversion proof", "model-invariant efficiency"]
 source_basis: "HN Algolia API 2026-07-09. Items: 48835111 (Grok 4.5, 740pts/1,363c), 48843923 (Chat Control, 467pts/255c), 48845049 (18 Words, 497pts/198c), 48846184 (Muse Spark 1.1, 164pts/107c), 48847552 (Hy3, 81pts/29c), 48845422 (FableCut, 73pts/45c), 48841446 (AI rewrites economics, 45pts/59c), 48840620 (AI buildout slowdown, 30pts/60c). arXiv: 2607.06906v1. GitHub API: modiqo/skillspec 909★, amElnagdy/guard-skills 977★, SmileLikeYe/agent-chief 319★, Kulaxyz/self-learning-skills 841★, Tencent-Hunyuan/Hy3 390★, elder-plinius/T3MP3ST 4,092★, Kulaxyz/token-diet 566★."
 </ai_context>
@@ -7,7 +7,9 @@ source_basis: "HN Algolia API 2026-07-09. Items: 48835111 (Grok 4.5, 740pts/1,36
 # HN/arXiv/GitHub Scan #492 — The Harness Proof
 
 **Date**: 2026-07-09  
-**Theme**: The Substrate Inversion is no longer a thesis or an axiom — it's a controlled experiment. The Harness Effect (2607.06906) proves, across 22 tasks × 6 models, that changing ONLY the orchestration layer produces model-invariant efficiency gains (41% cost, 44% time, 38% tokens). Meanwhile, the Grok contestation ratio plateaus for the first time in 7 scans (r=1.84), naming the Contestation Ceiling. The skill ecosystem begins producing its own governance infrastructure.
+**Theme**: One paired harness comparison reports material efficiency changes
+on one enterprise-assistant workload. Its design does not prove a general
+substrate inversion; the HN and GitHub snapshots are discovery signals.
 
 ---
 
@@ -17,7 +19,10 @@ source_basis: "HN Algolia API 2026-07-09. Items: 48835111 (Grok 4.5, 740pts/1,36
 
 ### Core Finding
 
-The paper introduces a controlled methodology for isolating orchestration-layer impact: 22 locked evaluation tasks, **six** foundation models (Claude Sonnet 4.6, Gemini 3.1, Gemini Flash 3.5, Qwen 3.6, GLM 5.1, Palmyra X6), changing ONLY the orchestration layer between a "frozen conventional production loop" and the Writer Agent Harness.
+The paper compares 22 locked prompts across **six** foundation models between
+a frozen conventional production loop and the Writer Agent Harness. Tasks,
+model identifiers, judges, and a price table are held fixed; the entire
+orchestration bundle changes, so individual mechanisms are not isolated.
 
 **Results (model held constant)**:
 - Cost per task: **-41%** ($0.21 → $0.12)
@@ -27,9 +32,13 @@ The paper introduces a controlled methodology for isolating orchestration-layer 
 - Quality per dollar: **+82%**
 - Task-completions per million tokens: 54.9 → 92.0
 
-### The Model-Invariance Property
+### Same-direction model aggregates, not demonstrated invariance
 
-**Every model gets cheaper (33–61%)** under the better harness. Efficiency is model-invariant — the harness effect multiplies across ANY model. But quality gains are capability-dependent: a model's quality improvement correlates **r=0.99** with its baseline strength (n=6). The paper names this **harness leverage** — the orchestration layer amplifies whatever the model already has.
+Every one of the six reported model aggregates is cheaper, by 33–61%. That is
+same-sign evidence on the named models, not invariance: the range is sizeable
+heterogeneity, and no interaction or transfer test is reported. The quality
+correlation is `r=0.99` over six model-level means, explicitly called
+suggestive by the paper and reported without an interval.
 
 ### Structural Implications
 
@@ -37,17 +46,30 @@ The paper introduces a controlled methodology for isolating orchestration-layer 
 
 2. **Six mechanism families** behind the harness effect: cache-shape discipline, failure-spend governance, turn-count compression, tool-payload pruning, delegation routing, and context-window management.
 
-3. **The Decisive Result**: On this workload, the orchestration layer moved cost per task MORE than the full spread of the model menu (cheapest to most expensive model). Choosing harness > choosing model.
+3. **The bounded result**: on this workload, the paper compares a 36% rounded
+   baseline model-menu spread with 33–61% per-model harness reductions. That
+   does not yield an unconditional “harness > model” ordering.
+
+### Primary-review limits
+
+The 22 are unique prompts, not 22 independent replications. Only four prompts
+and aggregate capability/model cells are printed. The baseline ran once and
+run-to-run variance is unmeasured. The arXiv source contains TeX, figures, and
+a hard-coded plotting script, but not the checklist's locked prompts, traces,
+price snapshot, judge panel, or configuration manifests. Exact-title and
+exact-ID GitHub repository searches found only secondary/unattributed projects.
+The authors disclose employment by Writer, the evaluated harness vendor.
 
 ### Cross-Scan Synthesis
 
-This paper is the **empirical proof** of the progression:
+This paper adds a reported workload-specific comparison to the progression:
 - **Scan #472** (The Frozen Frontier): Community attention already priced in models; harness is value locus (observational)
 - **Scan #263** (The Axiom Transition): HN community finds model-commoditization "boring" (discourse analysis)
 - **Scan #484** (Capacity Allocation Problem): Delegation > execution capacity by 4.2× (single architecture paper)
-- **Scan #492** (The Harness Proof): **Six models, 22 tasks, controlled swap** — orchestration > model (multi-model, enterprise-scale evidence)
+- **Scan #492** (Harness comparison): **six models, 22 prompts, one vendor pair** — material reported efficiency with unreleased raw evidence
 
-The epistemic progression: observation → axiom → mechanism → **proof**.
+The epistemic progression remains observation → hypothesis → one bounded
+comparison; replication and cross-harness evidence remain open.
 
 ---
 
@@ -88,13 +110,17 @@ The **Contestation Ceiling** at r≈1.84 may represent the maximum sustained tru
 - **Sovereignty stack**: Chat Control 467pts + PostHog 76pts = 543pts (on page alone)
 - **Frontier model stack**: Grok 4.5 740pts + Muse Spark 164pts + Hy3 81pts = 985pts
 
-BUT: Sovereignty at r=0.55 (accepted, growing) vs Frontier at r=1.84 (contested, plateaued). Points ≠ support. The community *engages* with frontier models but doesn't *trust* them. It *supports* sovereignty measures with less contestation.
+The reported comment-to-point ratios differ (`0.55` versus `1.84`). They
+measure discussion relative to points in this snapshot, not acceptance,
+support, trust, or a population-level plateau.
 
 ### The Buildout Bottleneck (30pts, r=2.00)
 
 "What's slowing down the AI buildout" (30pts, 60c, r=2.00) has the highest contestation ratio on the front page — double its points in comments. The discourse: electricity supply as structural bottleneck. Community consensus: neither the demand nor the grid capacity assumptions are settled.
 
-Cross-reference: This validates the Harness Effect's "token maxing" thesis from the supply side — if energy is the binding constraint, then token-efficient harnesses become infrastructure-critical, not just cost-optimizations.
+Cross-reference: the story's title and discussion count raise an energy-supply
+question. They do not establish that energy is binding or validate token
+maxing, so infrastructure criticality remains a hypothesis.
 
 ---
 
@@ -165,7 +191,8 @@ The three vendors compete on **cost** (Grok), **caching** (Meta), and **efficien
 
 ### New Predictions
 - **P-102**: "AI buildout slowdown" story type exceeds 100pts within 4 scans (energy constraint narrative gaining traction — currently 30pts with r=2.0 contestation)
-- **P-103**: Harness Effect paper cited in HN discourse within 3 scans (first controlled proof of harness > model will propagate)
+- **P-103**: Harness Effect paper cited in HN discourse within 3 scans (a
+  workload-specific harness comparison may propagate)
 - **P-104**: SkillSpec exceeds 1,500★ within 5 scans (provability market is forming — 909★ in 20 days = ~45★/day; projection: 1,134★ in 5 days)
 - **P-105**: Grok ratio begins declining within 3 scans (contestation ceiling = attention redirection begins)
 
@@ -178,14 +205,19 @@ The three vendors compete on **cost** (Grok), **caching** (Meta), and **efficien
 
 The Oversight Inversion has documented 46 layers of structural governance absence. The Harness Proof adds the 47th:
 
-**The Harness Proof** names the moment when the oversight function moves from an external inspection layer to an intrinsic construction property of the orchestration layer itself. The Harness Effect paper proves the harness determines cost, speed, and quality MORE than the model — meaning governance of AI systems IS governance of harnesses. But harness governance is currently absent: no standards body, no verification protocol, no provability requirement. The oversight gap has shifted from "unmonitored models" to "unmonitored harnesses."
+The Harness Effect motivates treating orchestration as an evaluation object:
+one bundle changes reported cost, speed, and tokens while quality is treated as
+parity. It does not prove that a harness determines quality more than a model,
+inventory governance infrastructure, or establish the system's binding gap.
 
 This extends the progression:
 - Verification Loop (#475): verification IS execution
 - Governance Silence (#478): governance outputs decouple from functions
 - **Harness Proof (#492)**: the harness IS the system; whoever governs the harness governs the AI
 
-Twenty-seven-point exit arc: (1) the harness is the value locus (proved), (2) harness governance is more impactful than model governance (proved), (3) no harness governance exists (observed), therefore (4) the most impactful governance gap is at the harness level, not the model level.
+The defensible exit condition is to evaluate model–harness configurations with
+released tasks, traces, pricing, repeated runs, and mechanism ablations before
+making value-locus or governance-priority claims.
 
 ---
 
@@ -193,11 +225,13 @@ Twenty-seven-point exit arc: (1) the harness is the value locus (proved), (2) ha
 
 This scan crystallizes a three-part convergence:
 
-1. **Academic proof** (Harness Effect): Orchestration > model, quantified across 6 vendors
+1. **Reported comparison** (Harness Effect): one Writer harness pair across six models from five vendors
 2. **Community attestation** (Grok Contestation Ceiling): The frontier model attention market has physically maxed out its contestation capacity
 3. **Ecosystem response** (Skill Governance Wave): The community builds verification infrastructure at the level where the gap was identified
 
-The structural implication: **the next governance crisis is a harness governance crisis**. Models are commoditized and contestation-capped. Skills are provability-gapped. The harness layer — which the Harness Effect proves controls everything — has no governance infrastructure at all.
+The bounded implication is that harness behavior deserves direct evaluation.
+Neither this paper nor the social/repository snapshots establish a next
+governance crisis, model commoditization, or absence of all harness governance.
 
 ---
 

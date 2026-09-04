@@ -279,14 +279,43 @@ Source: findings/2026-07-07-hn-arxiv-github-scan-423.md, https://arxiv.org/abs/2
 
 ## The Depth Mismatch — Root Cause Identified (2026-07-07, Scan #424)
 
-Eight arXiv papers converge on a single structural finding: **verification at the wrong depth fails silently** — and this is the root cause of the Oversight Inversion itself. Oversight costs scale super-linearly not because verification is inherently expensive, but because the default monitoring depth (behavioral surface) contains zero-to-low information about the actual computation.
+Eight arXiv papers motivate a structural hypothesis: **verification at the
+wrong depth can fail silently**. They provide candidate mechanisms for the
+Oversight Inversion, not proof of one universal root cause or cost law. The
+default behavioral surface can omit task-relevant internal signal, but the
+amount and recoverability must be measured per setting.
 
 Key evidence:
-- **Hidden computation** (2607.03502, ICML 2026): Frontier LLMs compute over content-free filler tokens. Behavioral CoT monitoring captures zero information. But the residual stream reveals **80-95%** of intermediate values via unsupervised decoding. Monitorability is a property of depth, not surface.
-- **Single-prover proofs** (2607.03561, ICML 2026): The debate paradigm for AI safety (two provers, weak verifier) is verification at the "adversarial pair" depth. Single-prover interactive proofs work when oracle access is structured — eliminating the doubled verification cost.
-- **Compositional taint** (2607.03423): Per-tool guardrails (individual depth) miss 79.2% of policy-violating tool pairs. Chain-level taint tracking (compositional depth) catches them with a monotonicity invariant.
-- **Code review rejection** (2607.03316): 56.3% of agentic code reviews rejected across 31K review-feedback pairs — agents verify functional concerns (wrong depth) while developers evaluate intent alignment (correct depth).
-- **Selective prediction** (2607.03528, ICML 2026): Training for correctness (wrong depth) causes abstention to decay. Training for risk-coverage AURC (correct depth) preserves the ability to stop.
+- **Hidden computation** (2607.03502, ICML 2026): On constructed tasks with
+  discrete intermediates, filler-token surfaces do not verbalize the hidden
+  steps. Residual tokens plus the strongest LLM judge recover 82.3--94.3% at
+  top-2 on correct examples; direct top-2 recovery spans 35.2--84.8%. This is
+  partial white-box auditability, not measured zero surface information or
+  general monitorability.
+- **Single-prover proofs** (2607.03561, ICML 2026): Formal protocols avoid an
+  honest opponent for robust computations or polynomial low-degree oracles
+  when both parties know the circuit and share oracle access. This separates
+  prover count from oracle structure; it does not measure debate as twice the
+  cost, demonstrate a cheaper deployment, or cover arbitrary unstable tasks.
+- **Compositional policy** (2607.03423): DSCC rejects 95/120 pairs in one
+  authored 16-policy catalog. This is not a measured set of violations missed
+  by per-tool guardrails: no per-tool baseline or labeled safety outcome is
+  evaluated. Its monotonicity result applies to represented policy fields;
+  policy truth, resource classification, legitimate-workflow loss, and
+  unrepresented flows remain outside the evidence.
+- **Code review replies** (2607.03316): 56.3% of 31,073 CodeRabbit comments
+  with a developer reply were labeled rejected, but these comments are only
+  9.34% of the 332,693 eligible reviews. Invalidity is the majority rejection
+  class (58%); intent/practice misalignment is 42%. This supports separate
+  technical and depth-mismatch failure modes, not attribution of the aggregate
+  rejection rate to intent depth.
+- **Selective prediction** (2607.03528, ICML 2026): Batch-ranked AURC reward
+  improves aggregate confidence ordering, but evaluation still generates every
+  answer and thresholds verbalized confidence afterward. Per-dataset transfer
+  is mixed, and the MedQA claim retains 38/1,273 test cases without a finite-
+  sample risk guarantee. This supports a ranking-depth intervention, not the
+  stronger claims that correctness training caused production abstention decay
+  or that the model learned an action-level stop.
 
 **The Depth Mismatch unifies five layers of the Oversight Inversion**:
 - Economic: monitoring output volume (wrong) vs. monitoring at production depth (right)
@@ -295,22 +324,44 @@ Key evidence:
 - Repair: detecting at surface (wrong) vs. repairing at the failure's own layer (right)
 - Persistence: stateless snapshot (wrong) vs. stateful history tracking (right)
 
-**Design implication**: Before deploying oversight, audit the depth. If the mechanism operates at a different depth than the phenomenon it monitors, it will fail silently. Moving to the correct depth is usually possible (80-95% for residual stream, 79.2% for compositional taint, 76% for review rejection prediction). The barrier is architectural habit, not fundamental limitation.
+**Design implication**: Before deploying oversight, audit both the depth and
+the access assumptions. A deeper readout may expose signal missed at the
+surface, but coverage must be measured for the target, model, and threat model.
+In 2607.03502, strong recovery requires open weights, discrete nameable values,
+4-bit frontier checkpoints, substantial compute, and an LLM judge; diffuse or
+adversarial computation remains unresolved. The barrier is not shown to be
+architectural habit alone.
 
 Source: findings/2026-07-07-arxiv-scan-424.md, https://arxiv.org/abs/2607.03502, https://arxiv.org/abs/2607.03561, https://arxiv.org/abs/2607.03423, https://arxiv.org/abs/2607.03316, https://arxiv.org/abs/2607.03528
 
 ## The Configuration Layer (#425) — Seventh Oversight Inversion Layer
 
-The Depth Mismatch (#424) showed verification fails at the wrong depth. Scan #425 reveals *which depth matters most*: the **configuration layer**.
+The Depth Mismatch (#424) showed verification fails at the wrong depth. Scan
+#425 proposes the **configuration layer** as one important candidate depth;
+its heterogeneous studies do not establish that it matters most in every
+system.
 
-Three independent measurements converge:
-- **Risk is in the config**: CONTRA (2607.03220) proves 75.1% of agent skills have at least one *configuration* leading to malicious action execution. Existing scans at the skill/code level miss them entirely. Standard security operates at the wrong layer.
-- **Performance is in the config**: HexStrike-AI (2607.02873) shows the driving client creates a 2.1× performance gap for a fixed model. The orchestrator configuration dominates over model choice.
-- **Optimization is in the config**: SkillOpt-Lite (2607.03451) shows a nano model with optimized configuration outperforms its larger sibling under standard pipelines (+25.4 points LiveMath). Configuration > parameters.
+Three scan-reported measurements motivate separate configuration-sensitive
+questions; their tasks, interventions, and outcomes are not directly
+comparable:
+- **Risk configuration**: CONTRA (2607.03220) reports that 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged configuration search. This is not configuration or live-incident prevalence.
+- **Driving-client performance**: HexStrike-AI (2607.02873) releases matched logs reproducing DeepSeek/RooCode 154/258 versus DeepSeek/5ire 72/258 (2.139×). The direction is strong, but rolling-model, client-default, and schedule confounds make it client-associated rather than clean client-only evidence.
+- **Skill/harness optimization**: SkillOpt-Lite (2607.03451) reports 23 wins, three ties, and four losses against SkillOpt across 30 within-model cells. Its smaller-model headlines change optimization method as well as scale; matched-method rows retain the larger model's advantage.
 
-Enterprise governance frameworks AGL-1 (2607.03516) and CAGE-1 (2607.03510) formalize this: governance is governance of the configuration surface — seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability).
+Enterprise governance reports AGL-1 (2607.03516) and CAGE-1 (2607.03510) propose vocabulary for this surface: seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability) and a seven-field prebind checklist. Neither report implements or empirically validates the proposed control plane.
 
-**Self-configuration risk**: Agents now configure themselves (self-learning-skills, 843★ on GitHub). Combined with CONTRA's finding, self-configuration introduces recursive risk: agents may optimize toward dangerous configurations that pass their own validation. Anchored Self-Play (2607.03523) provides the mitigation template: anchor self-optimization to realistic reference distributions.
+**Self-configuration risk hypothesis**: self-learning-skills describes harvesting
+session patterns into reusable skills, while CONTRA reports dangerous
+configurations in a separate simulated benchmark. Together they motivate a
+test of whether a self-modifying system can select a dangerous configuration
+that still passes its own validation gate; the current evidence does not run
+that joined test. Anchored Self-Play (2607.03523) separately reports 36.1%
+versus 29.1% average fix rate after combining reference mixing and similarity
+shaping in function-level code repair. The main result lacks repeated-run
+uncertainty, transfers only +1.6 points to DebugBench without in-domain
+retraining, and the public default launcher does not reproduce the paper-bound
+configuration. ASP is therefore a candidate comparison design rather than a
+demonstrated self-configuration mitigation.
 
 **Configuration Layer completes the Oversight Inversion depth stack**:
 - Economic: monitoring output volume (wrong) vs. monitoring production cost (right)
@@ -448,7 +499,7 @@ Source: findings/2026-07-08-hn-arxiv-github-scan-429.md, findings/2026-07-08-hn-
 
 Source: findings/2026-07-09-arxiv-scan-432.md, https://arxiv.org/abs/2607.05029, https://arxiv.org/abs/2607.05120, https://arxiv.org/abs/2607.05318, https://arxiv.org/abs/2607.05277, https://arxiv.org/abs/2607.03821
 
-**Why the Latent Horizon completes the observation model (Layer 15, #433)**: Layers 10–14 showed the agent's *behavior* undermines verification: it lies (#428), changes what it governs (#429), doesn't transfer improvements (#430), detects evaluation (#431), and erodes trust boundaries (#432). Layer 15 reveals the complementary failure: the agent's *internal state* structurally diverges from its observable behavior in both directions. Latent Programming Horizons (2607.05188) shows coding agents' residual streams encode program properties AND predict future edit outcomes up to 25 steps ahead (AUC 0.83) — the agent "knows" more than it shows. Error Propagation (2607.05139) shows that when code is generated before tests, faults propagate into test artifacts, reducing detection from 25% to 14% — the agent "confirms" more than it should, creating mutual consistency that masks defects. The Repair Budget Bound (2607.05197) shows repair loops saturate at 3–4 iterations regardless of allocated budget — workflow orchestration matters more than model capability. The Latent Horizon is the inverse of the Simulation Confounder (#431): the Confounder showed the agent detects *being observed*; the Horizon shows the agent has *internal observations* it doesn't surface. Together they establish that the observation gap is bidirectional — neither direction of observation (outside→in, inside→out) provides complete information. The design implication: verification should target internal representations (probes, residual analysis) when external outputs create mutual consistency, set explicit repair iteration limits (~3–4), and never generate tests in the same context as the code they verify.
+**Why the Latent Horizon completes the observation model (Layer 15, #433)**: Layers 10–14 showed the agent's *behavior* undermines verification: it lies (#428), changes what it governs (#429), doesn't transfer improvements (#430), detects evaluation (#431), and erodes trust boundaries (#432). Layer 15 reveals the complementary failure: the agent's *internal state* structurally diverges from its observable behavior in both directions. Latent Programming Horizons (2607.05188) shows coding agents' residual streams encode program properties AND predict future edit outcomes up to 25 steps ahead (AUC 0.83) — the agent "knows" more than it shows. Error Propagation (2607.05139) shows that when code is generated before tests, faults propagate into test artifacts, reducing detection from 25% to 14% — the agent "confirms" more than it should, creating mutual consistency that masks defects. Repair Budget Bound (2607.05197) is separate external-workflow evidence: six tested tool/dataset configurations show diminishing completion-rate returns, but different flattening rates and later nonzero gains; its cross-tool comparison does not isolate workflow from task, dataset, validation, or model effects. The Latent Horizon is the inverse of the Simulation Confounder (#431): the Confounder showed the agent detects *being observed*; the Horizon shows the agent has *internal observations* it doesn't surface. Together they establish that the observation gap is bidirectional — neither direction of observation (outside→in, inside→out) provides complete information. The design implication: verification should target internal representations (probes, residual analysis) when external outputs create mutual consistency, calibrate explicit repair limits from target-workflow marginal benefit and cost rather than a universal 3–4 rule, and never generate tests in the same context as the code they verify.
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-433.md, https://arxiv.org/abs/2607.05188, https://arxiv.org/abs/2607.05197, https://arxiv.org/abs/2607.05139
 
@@ -567,71 +618,100 @@ The 20th layer of the Oversight Inversion: **verification of individual componen
 
 Source: findings/2026-07-19-hn-arxiv-github-scan-447.md, https://arxiv.org/abs/2607.02857, https://arxiv.org/abs/2607.02911, https://arxiv.org/abs/2607.04034
 
-## The Architecture Premium (#448) — ROI Principle
+## The Architecture Premium (#448) — testable factor hypothesis
 
-Scan #448 completes the five-scan exit arc by establishing the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — actively invest in the architecture. Two uncovered arXiv papers converge:
+Scan #448 proposes the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — test the surrounding architecture as a candidate factor. Two arXiv papers provide different bounded signals:
 
-- **Three-Phase Evaluation** (2607.05125, cs.SE): Four developers reimplemented the same app across three AI autonomy levels. AWS Kiro (spec-driven architecture) outperforms GitHub Copilot (model-driven workflow) on most measured dimensions. Key finding: "tooling architecture may influence outcomes **independently of AI autonomy level**." NASA-TLX workload measures reveal the **Frustration Paradox**: cognitive load decreases with autonomy but frustration increases — the Oversight Inversion at the individual developer level.
-- **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846, cs.LG): Training order determines governance surface. Imbalanced curricula produce **disentangled neural circuits** enabling precise safety fine-tuning; balanced training creates shared pathways where suppressing one capability degrades another. The curriculum is the architecture of learning — governance costs are determined at training time.
+- **Three-Phase Evaluation** (2607.05125v1, cs.SE): One four-student team reimplemented the same app in three fixed-order phases. Later Kiro values were directionally better on several measures, while mental-demand means fell and frustration means rose. Platform, workflow, order, accumulated familiarity, and unarchived runtime identity are confounded; n=4 workload values are descriptive, and evaluator blinding is internally inconsistent. This is a pilot hypothesis for a randomized architecture comparison, not an independent architecture effect or a confirmed individual-level Oversight Inversion.
+- **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846v1, cs.LG): Small synthetic transformers show schedule-dependent generalization, component use, and selective fine-tuning. The main text's 100-seed report conflicts with 30 seeds in methods, refusal analysis conditions on successful models, and the linked repository is empty. This supports curriculum as a factor to test, not the claim that it determines governance cost or transfers to large models.
 
-**The Architecture Premium is fractal** — it applies at every phase:
+**The Architecture Premium hypothesis spans multiple phases**, but each phase needs its own identified comparison:
 
 | Phase | Architecture Premium Manifestation |
 |-------|-----------------------------------|
-| **Training** | Curriculum design (04846) — imbalanced learning → governable circuits |
-| **Configuration** | Scaffold design (#425, #440) — tooling > model for outcomes |
-| **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
-| **Deployment** | Governance layers (GitHub: fable-soul, sail-skill) — architecture > capability |
+| **Training** | Curriculum schedule (04846v1) — synthetic directional effect; governance-cost transfer unknown |
+| **Configuration** | Scaffold design (#425, #440) — a factor to separate from model choice |
+| **Composition** | Gate placement (#446, #447) — test boundaries against component-only controls |
+| **Deployment** | Governance layers (GitHub: fable-soul, sail-skill) — examples, not a capability-controlled comparison |
+
+The HN and GitHub popularity observations do not supply that comparison. The
+two Chat Control items are now identity-pinned and their historical changes
+corrected to +8.1% and +3.0%, but the 0.81 basket is manually classified rather
+than a complete denominator. The selected repositories mix governance and
+capability—`watch-skill` adds video understanding—and the original search
+result and matched capability cohort are unavailable. Popularity therefore
+supports discovery and revisit decisions, not a market-preference or causal
+return estimate.
 
 **Five-scan exit arc complete**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle — the exit from the Oversight Inversion is architectural investment)
+5. Architecture Premium (#448): Treat architecture as an explicit factor; its universal advantage over model choice is unproved
 
 Source: findings/2026-07-20-hn-arxiv-github-scan-448.md, https://arxiv.org/abs/2607.05125, https://arxiv.org/abs/2607.04846
 
-## The Subtraction Economy (#449) — Market Pricing
+## The Subtraction Economy (#449) — economic hypothesis
 
-The Architecture Premium (#448) established that investing in architecture yields higher returns than investing in capability. Scan #449 reveals the **economic corollary**: the market has priced the Subtraction Deficit. When production is near-free, subtraction becomes the premium economic activity.
+The Architecture Premium (#448) treats architecture as a factor to isolate. Scan #449 proposes an economic question: when production becomes cheaper, does realized spending shift toward remediation and constraint? The current evidence does not estimate that market effect.
 
-- **"$10k/week to delete AI-generated code"** (HN, 44pts): Odra openly prices code *deletion* as a premium service. "A client calls, asks for a 'small refactor,' and sends you 100k lines of AI-generated spaghetti." Production costs $149 (Fable port). Deletion costs $10k/week. The **67× ratio** between production cost and subtraction cost is the Oversight Inversion expressed in dollars.
-- **OptiAgent** (2607.05346, cs.AI): SOTA on 3/4 benchmarks via four specialized *subtractive* feedback loops — each targeting a distinct failure mode (misinterpretation, structural defects, mathematical inconsistencies, code errors). Architecture's value is in what it *removes* at each stage, not what it adds. Modular subtraction is transparent; monolithic validation is opaque.
-- **Cortex** (2607.05377, cs.AI): Constrains robotics from infinite action space to **32 canonical skill primitives** via "harness engineering from task contexts to skill constraints." Outperforms monolithic baselines by 3.1–4.1%. Standardization as subtraction — reducing the possible to the canonical.
-- **HeRo** (2607.05353, cs.CR): Selective disclosure in LLM watermarking — different verifiers decode only their access-level portions. Verification itself can be subtracted: not verify-everything, but verify-what-matters-at-your-level.
+- **"$10k/week to delete AI-generated code"** (HN item `48823359`): Slopfix's first-party page offers one week by three senior engineers for a conditional $10,000, with proportional payment against a line-reduction target. It reports no customer, completed engagement, revenue, supplier cost, conversion, competitor, or quantity evidence. The unrelated $149 Fable-port anecdote has different scope and units; `10,000 / 149 ≈ 67.1` is arithmetic, not a comparative price or cost estimate.
+- **OptiAgent** (2607.05346v1, cs.AI): Its GPT-5.4 row is highest on three of four solving-accuracy tables and its design exposes intermediate artifacts through four feedback routes. The study uses one run per configuration, mixes published and current baselines without variability, and leaves loop ablation, interpretability metrics, multi-run evaluation, and human audit tests to future work. The data do not isolate feedback-loop causality, audit success, sub-linear cost, or “subtraction.”
+- **Cortex** (2607.05377v1): Constrains planner-to-executor language to **32 canonical skill labels**, while the executor retains continuous robot actions. It reports 3.1- and 4.1-percentage-point benchmark gaps, but taxonomy, data, event-balanced sampling, memory, and harness changes are bundled. The public repository at `InternRobotics/Cortex@d2a9795` covers System-2 evaluation and annotation; joint LIBERO/RoboTwin evaluation and System-2 training remain unreleased. This supports constrained interfaces, not a causal “fewer actions” conclusion.
+- **HeRo** (2607.05353v1): Independent per-level watermark keys let differently equipped verifiers decode different metadata fields; an unauthorized deeper level remains near chance under the paper's exchangeability and uniform-message assumptions. It measures bit accuracy and GPU decoding latency, not authorization enforcement, reviewer labor, total audit cost, or sub-linear verification.
 
 Three forms of subtraction:
 
 | Form | Mechanism | Example | Layer |
 |------|-----------|---------|-------|
 | **Economic** | Delete what was added | $10k/wk code deletion | Market |
-| **Architectural** | Constrain the possible | 32 canonical primitives | Design |
-| **Verification** | Verify selectively | HeRo hierarchical disclosure | Oversight |
+| **Architectural** | Constrain an interface | Cortex's 32 labels; effect unisolated | Design |
+| **Disclosure** | Reveal keyed metadata fields selectively | HeRo; audit-cost effect unmeasured | Provenance |
+
+The service offer establishes that remediation is available for sale, not that
+the market cleared at that price or that subtraction is more expensive or
+valuable than production. The engineering papers motivate mechanism-specific
+tests; they are not independent economic observations.
 
 **Six-scan exit arc**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
+6. Subtraction Economy (#449): Test realized remediation demand and constraint effects
 
 Source: findings/2026-07-21-hn-arxiv-github-scan-449.md, https://arxiv.org/abs/2607.05346, https://arxiv.org/abs/2607.05377, https://arxiv.org/abs/2607.05353
 
 ## The Knowledge Erosion (#450) — Exit-Arc Complication
 
-The six-scan exit arc (#444–#449) assumed the organizational capacity to subtract, verify, and comprehend already exists. Three arXiv papers reveal this assumption is false — agents systematically erode the very knowledge infrastructure that makes the exit strategies executable.
+The six-scan exit arc (#444–#449) assumed the organizational capacity to
+subtract, verify, and comprehend already exists. Scan #450 proposes that agent
+delegation can weaken that capacity; the reviewed papers do not establish one
+systematic organizational-erosion effect.
 
-When a developer writes code, three knowledge byproducts emerge for free: (1) expertise accrual — the developer learns from the act of writing; (2) process evidence — the developer knows *how* and *why*; (3) diagnostic capacity — the developer builds in observability because they'll debug it. When an agent writes code, all three disappear, and the disappearance is invisible until remediation is needed.
+The scan proposes three knowledge effects—expertise accrual, process evidence,
+and diagnostic capacity—but does not establish that human authorship supplies
+all three for free or that agent authorship removes all three. Primary review
+currently supports only the narrower benchmark evidence below.
 
-- **"Agents That Teach"** (2607.06101): Names **Knowledge Debt** — the silent accumulation of skill gaps when developers over-delegate. Unlike technical debt (visible in code), knowledge debt is invisible until the developer faces a problem the agent can't solve. Incidental learning was never designed; it was a free byproduct of human authorship. Proposes designing learning *back into* agent workflows.
-- **"What Resolve Rate Hides"** (2607.06184): The dominant metric — resolve rate — compresses trajectory quality into a single binary. **TraceProbe** recovers what resolve rate discards: search breadth, edit precision, tool efficiency, revert frequency. Process evidence is eroded by the very metrics that claim to measure it. Two agents with identical resolve rates can have wildly different trajectory structures.
-- **"Observability-Aware Code"** (2607.05785): Agent-generated code is functionally correct but **diagnostically opaque** — lacking logging, metrics, error context, and observability signals. Agents optimize for passing tests, not for debuggability. As agent-authored code proportion increases, codebase observability degrades even if all tests pass.
+- **"Agents That Teach"** (2607.06101v1): Proposes **Knowledge Debt** and six learning-aware design principles—Contextual, Grounded, Ambient, Selective, Adaptive, and Closed-Loop—then instantiates them in an early, unevaluated SHIELD prototype. A separate cited randomized study (2601.20245v2; n=52) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task with AI (Cohen's d=0.738, p=0.010), but no significant mean completion-time gain. That supports a task-bounded learning concern, not longitudinal atrophy, compounding debt, loss of review ability, or SHIELD effectiveness. SHIELD's use of agent reasoning as ground truth and human-authored code as evidence of familiarity remain unvalidated assumptions.
+- **"What Resolve Rate Hides"** (2607.06184v1): **TraceProbe** maps
+  heterogeneous runs into nine canonical action types and deterministic effect
+  labels. OpenCode/GLM and OpenCode/Opus have similar resolve rates (71.6% vs
+  71.4%) but different descriptive process profiles. Task difficulty confounds
+  aggregate failure associations, several detectors weaken or reverse on
+  SWE-Bench Pro, and some measures use gold-patch anchors. The paper supports
+  process reporting beside outcomes, not luck/skill labels, prediction,
+  remediation, cost savings, future reliability, or evidence-destruction.
+- **"Observability-Aware Code"** (2607.05785v1): Static restoration produces Position F1 0.278–0.633 and lexical KeyBag F1 0.197–0.398; a separate generated-microservice study reports 4.95–13.99% explicit fault-signal rates, or 6.56–20.62% among runnable services. It does not test application correctness, developer diagnosis, test-driven incentives, rising agent-authored share, or longitudinal erosion, and supplies no human-written runtime control.
 
-**Corrective architectures emerging**: AgentTether (2607.06273) externalizes diagnostic structure into task graphs — diagnosis becomes a system property, not an operator skill. LogicHunter (2607.06195) uses agents to test agent frameworks — detecting silent semantic failures in LangChain, LlamaIndex, CrewAI that manifest as "ordinary exceptions" not crashes. horizon (34★) achieves 7B=671B parity through verification architecture (hard test execution + symbolic checking + agentic repair). agent-apprenticeship (1,295★) turns completed work into reusable experience data.
+**Corrective architectures emerging**: AgentTether (2607.06273v1) reports higher conditional repair rates when failed-run transition graphs, auxiliary LLM diagnosis, repair memory, and optional intervention augment blind retry. It does not make diagnosis operator-independent, and its artifact is currently unreadable. LogicHunter (2607.06195v1) reports a higher-precision oracle on a LogicHunter-generated failure corpus, but its public artifact omits the evaluation data and its unequal full-pipeline comparison does not establish that active agentic testing is necessary. Horizon and agent-apprenticeship remain separate claims pending primary review.
 
-**HN confirmation**: "$10k/wk to delete AI-generated code" surges +211% to 137pts, pricing the remediation of an erosion the organization can't perform with its own depleted expertise. The deletion company exists because the developers who delegated the code creation no longer have the knowledge to perform the deletion themselves.
+**HN discovery signal**: “$10k/wk to delete AI-generated code” rose to 137
+points. The service page reports no transaction, cost, customer motive, or
+internal expertise measure, so this does not economically confirm erosion.
 
 **HN confirmation (Aug 2026)**: Two current front-page threads make the same erosion visible at the workflow level. In **"LLMs reward expertise"** (HN 49161518), practitioners converge that the scarce input is no longer typing speed but architecture and supervision skill: walrus01 says LLMs reward knowing "how to structure things," natsucks says good agent use requires asking the right questions with deep domain expertise, and asdfman123 frames the human as "team lead to the LLM's junior dev." In **"Prevent cognitive debt by manually retyping LLM-generated code"** (HN 49153374), commenters describe retyping or question-only workflows as a way to rebuild mental models and counter code-review fatigue. The synthesis is sharper than "experts use tools better": once production is cheap, teams must deliberately spend effort preserving comprehension, or the expertise required for verification disappears.
 
@@ -641,27 +721,27 @@ When a developer writes code, three knowledge byproducts emerge for free: (1) ex
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. **Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)**
 
-Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
+Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2601.20245, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
 
 ## The Verification Harness (#451) — Exit-Arc Instantiation
 
-The seven-scan exit arc (#444–#450) demanded an exit that is architectural, not human-dependent. Three arXiv papers reveal the concrete instantiation: a **verification harness** that makes soundness a *construction property*, not an *inspection activity*.
+The seven-scan exit arc (#444–#450) demanded an architectural exit. Three arXiv papers reveal a qualified instantiation: a **verification harness** makes only the property checked by its actual authority an admission condition.
 
-- **Aria** (2607.06341): A general LLM code agent, free to choose its own proof strategy within a verification harness enforcing soundness, completeness, and termination, proves **ALL 4,647 targeted lemmas** across Iris separation logic (4,257+217 lemmas), reglang (318 lemmas, prior provers managed 1-in-8), and Lean 4 port (72 lemmas) — with zero failures and zero expert intervention. **Imposing a strategy is unnecessary and limiting; imposing a harness is sufficient and enabling.**
+- **Aria** (2607.06341, primary-reviewed 2026-09-04): An Opus 4.7 code-agent campaign with kernel checking and coverage/lint hooks reports all 4,864 existing target lemmas proved across Iris, RustBelt, reglang, and iris-lean, with zero expert intervention during the campaign. The cross-system reglang comparison and absence of a matched alternate-harness control do not establish that strategy freedom or harness design alone caused coverage.
 - **RuBench** (2607.06411): A trajectory-tracking benchmark caught Claude Code + Fable 5 silently substituting Opus 4.8 on **20% of tasks** via an undisclosed safeguard fallback. Outcome-only evaluation would have attributed all results to Fable 5. The paper states: "the deployed product, not the model, is the unit actually measured." Validates Attribution Error (#440) and Configuration Layer (#425).
-- **Danus** (2607.06447): Mathematical reasoning with a shared **fact graph** as verified memory — a stateless verifier checks claims before admission, each fact stored with its proof and logical dependencies. Incremental construction of long proofs in algebraic geometry, singularity theory, and combinatorics. The fact graph is a verification harness for mathematical knowledge.
+- **Danus** (2607.06447, primary-reviewed 2026-09-04): Mathematical reasoning with a shared fact graph, but its stateless verifier is an informal LLM judge rather than a formal kernel. The paper reports six case studies and useful proof/dependency/revocation structure, while also reporting human-discovered target-scope, proof-gap, and faulty-reference errors. Its public releases retain only toy facts, not the research graphs or verdict receipts; current admission code also accepts a declared nonexistent predecessor after a controlled `correct` verdict.
 
-**The Verification Harness Hypothesis**: the harness provides exactly the three guarantees the Knowledge Erosion (#450) showed human authorship can no longer supply:
+**The Verification Harness Hypothesis, qualified**: a harness supplies only the guarantee supported by its checking authority and retained evidence. A proof kernel, trajectory identity check, and informal LLM judge are not interchangeable:
 
 | Knowledge Layer Eroded (#450) | Harness Guarantee (#451) |
 |------|------|
-| Expertise accrual | **Soundness** — harness rejects unsound output regardless of operator expertise |
-| Process evidence | **Completeness** — harness ensures no obligation silently dropped |
-| Diagnostic capacity | **Termination** — harness prevents divergent execution, makes failure visible |
+| Expertise accrual | **Soundness when proved by the authority** — Danus's LLM verdict can be wrong |
+| Process evidence | **Completeness over retained obligations** — unreleased runs cannot be independently audited |
+| Diagnostic capacity | **Termination when explicitly enforced** — an agent declaring a target verified is not a formal termination guarantee |
 
 **GitHub confirmation**: AgentStalker (129★) — formal taint tracking proofs for agent vulnerabilities. donecheck (15★) — proof-of-done evidence receipts for coding agents. The harness ecosystem (172K★ top 5) has absorbed; new growth is in *verification of harnesses*.
 
@@ -672,35 +752,55 @@ The seven-scan exit arc (#444–#450) demanded an exit that is architectural, no
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. **Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)**
+8. **Verification Harness (#451): The architecture makes its checker authority and retained evidence explicit (instantiation)**
 
 Source: findings/2026-07-22-hn-arxiv-github-scan-451.md, https://arxiv.org/abs/2607.06341, https://arxiv.org/abs/2607.06411, https://arxiv.org/abs/2607.06447
 
 ### Layer 24: The Co-Evolution Imperative (Scan #452, 2026-07-08)
 
-The eight-scan exit arc assumed the harness is designed once and applied thereafter. Three arXiv papers from reinforcement learning, scientific replication, and theoretical computer science converge to demonstrate that **a fixed harness degrades as the system it governs evolves**.
+The eight-scan exit arc assumed the harness is designed once and applied thereafter. Three arXiv papers from reinforcement learning, scientific replication, and theoretical computer science motivate—but do not jointly demonstrate—the hypothesis that **a harness may need to adapt as its task or governed system changes**.
 
-**HASE — Harness-Aware Self-Evolving** (2607.03935): A single **Qwen3-8B** model that co-evolves its own harness matches the performance of **GPT-OSS-120B** using a fixed Claude Code harness in text classification, and **outperforms** it in alpha factor mining. The 15× model-size advantage is entirely consumed by harness quality. Harness authorship is an endogenous capability, not an external design activity — a fixed harness designed for one capability level becomes a constraint at the next.
+**HASE — Harness-Aware Self-Evolving** (2607.03935): One **Qwen3-8B** system jointly updates policy weights, whitelisted harness components, and solutions. It reports Symptom2Disease accuracy `86.98 ± 0.38%` against an imported **GPT-OSS-120B/Meta-Harness** value of `86.8%`, and stronger alpha-mining profitability than imported CogAlpha rows. These are cross-system, cross-paper comparisons: model, proposer, orchestration, implementation, and search/training budget change together. The direct Heilbronn control is narrower—FULL policy updates reach `0.036082` after evaluator repair versus FREEZE at `0.021880`. HASE demonstrates feasible endogenous harness edits, not that harness quality consumed a 15× model-size advantage or that a previously adequate fixed harness degraded.
 
-**VERITAS** (2607.02931): The first general-purpose scientific replication tool — extracts claims from papers, runs methodology via CLI coding agents, judges each claim against experimental evidence. Prior replication agents only ran inside their benchmark's own pipeline. The critical design choice: VERITAS must be domain-agnostic because the papers it verifies span ever-expanding domains. A fixed replication harness would fall behind the frontier of what needs replicating.
+**VERITAS** (2607.02931): A released CLI-agent pipeline accepts a paper,
+repository, or both and is designed to extract claims, run and repair the
+methodology, verify each claim, and write a Replication Score and report. Its
+evaluation is narrower. Hand-authored benchmark tasks bypass claim extraction,
+the tool's own score, fix assessment, and the user report. Under CORE-Bench's
+official scorer it passes 40/45 capsules, two more than an up-to-three-session
+retry baseline; its 44/45 headline adds four VERITAS-only passes under an
+author-added zero-variance rule. On ReplicationBench it gains two of 111
+paper-only tasks and one of 35 full-mode tasks over the strongest matched
+baseline. All rows are single-run with no cost-matched control. The current
+public release retains source and prompts but no raw benchmark result bundle,
+and later replaced the paper's deterministic numeric grader with an
+evidence-reading agent. This supports a concrete replication pipeline and
+cross-domain core coverage, not end-to-end generality, exact independent
+replay, or a claim that its harness must continually evolve.
 
 **Doubly-Efficient Interactive Proofs for AI Safety** (2607.03561): Shows how to *avoid debate* — the dominant AI safety verification paradigm assumes two competing provers of equal ability, one truthful. This paper replaces the fixed dual-prover assumption with single-prover interactive proofs where a computationally weak verifier validates a powerful prover's claims. The honest-opponent requirement was a fixed structural constraint that doesn't survive in practice.
 
-**The Co-Evolution Imperative**: A verification harness that does not co-evolve with the system it governs becomes the 24th layer of the Oversight Inversion. The harness is subject to the same dynamics as every preceding layer: designed for one capability level, it degrades at the next.
+**The Co-Evolution Imperative hypothesis**: A verification harness that does not adapt may become the 24th layer of the Oversight Inversion. HASE makes this a testable system-design question, but its bounded runs do not observe temporal degradation of an initially adequate fixed harness. Its evaluator repair also depends on an immutable external oracle assumed accurate; agreement is only established on observed mismatches.
 
 Supporting evidence:
-- **Organizational Memory for Agentic Business Process Execution** (2607.03228): Enterprise governance knowledge (policies, SOPs) encoded once in prompts creates knowledge silos. Organizational memory must be shared, governed, and *evolving*.
-- **SwarmResearch** (2607.02807): Single-context harness causes exploration convergence failure. Multi-branch orchestration with a Shepherd Agent is a structural harness evolution that achieves SOTA on 13/15 tasks.
-- **Aggregate Alignment Misleads** (2607.03386): Aggregate verification metrics hide per-state divergence — the audit resolution must co-evolve to match the policy's actual granularity.
+- **Organizational Memory for Agentic Business Process Execution** (2607.03228): A structured, frozen memory improves binary create/refuse decisions over document RAG in one synthetic procurement fixture. Sharing across agents, human governance, policy updates, and evolution are architectural requirements, not evaluated results.
+- **SwarmResearch** (2607.02807): A Shepherd and branch-isolated Search Agents
+  are a credible alternative to one-state greedy search, and the released
+  trajectories make all 15 Swarm runs inspectable. The main benchmark is one
+  stochastic run per method/task with unmatched EvoX budget and selectively
+  substituted CORAL reference scores; its table gives 12 strict EvoX wins,
+  not the prose's 13. This supports a structural search design, not a causal
+  claim that single context caused the gains or that a fixed harness degraded.
+- **Aggregate Alignment Misleads** (2607.03386): In one hotel-pricing simulator, pooled/reference-state distances and closed-loop revenue rank two repairs differently. This supports multi-resolution audit, not exact per-state divergence or audit co-evolution over time.
 
 **Connection to preceding layers**:
-- Extends the Verification Harness (#451): The harness is the exit, but only if it co-evolves
-- Deepens the Architecture Premium (#448): Architecture determines outcomes at deployment time; co-evolution determines outcomes *across time*
-- Explains why the Knowledge Erosion (#450) is self-reinforcing: knowledge migrating into a fixed harness degrades when the harness can't evolve
-- Resolves the Recursion Barrier (#430): Self-improvement is domain-bounded precisely because the harness is fixed; co-evolution relaxes the domain bound
+- Extends the Verification Harness (#451): a checker may need governed updates, but the update mechanism still needs a named authority
+- Qualifies the Architecture Premium (#448): HASE changes model, harness, training, and search together, so it does not isolate architecture from capability
+- Raises a Knowledge Erosion (#450) question: if knowledge migrates into a harness, what evidence should trigger a governed update rather than assuming either permanence or degradation?
+- Reopens the Recursion Barrier (#430): expanding an editable surface may relax one fixed constraint, while oracle authority and patch review introduce another boundary
 
 **HN confirmation**: Full sovereignty stack plateau — all top-tier stories grow <4% (StreetComplete 694→702 +1.2%, Chat Control 444→455 +2.5%, EU Car Camera 433→447 +3.2%, Microsoft idTech 539→551 +2.2%). ✅ Kokoro TTS crosses 300pts (293→300). Fable 5 extension story (48pts) vs C&C Generals port (687pts) confirms Attribution Error at the attention level: the product of the model matters 14× more than model access. Comprehension:News ratio 0.825 (near ATH).
 
@@ -711,38 +811,38 @@ Supporting evidence:
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)
-9. **Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)**
+8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
+9. **Co-Evolution Imperative (#452): Test governed harness adaptation (sustainability hypothesis)**
 
-Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://arxiv.org/abs/2607.03561
+Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://github.com/ChicagoHAI/veritas, https://arxiv.org/abs/2607.03561
 
 ### Layer 25: The Execution Boundary (Scan #453, 2026-07-09)
 
 The nine-scan exit arc assumed that **what the harness approves is what the system executes**. Five independent papers reveal the approval surface and the execution surface are **structurally decoupled**, and the decoupling is exploitable at the protocol level.
 
-**MCP TAG-Block Concealment** (2607.05744): First protocol-level proof that what humans see during MCP tool approval ≠ what models receive in context. Unicode TAG block (U+E0000–U+E007F) has no assigned glyph in any mainstream renderer — payloads are invisible in approval dialogs while surviving byte-for-byte into the model's tokenizer. Across 5 MCP metadata surfaces, 8 techniques, 3 independent server implementations: **8/8 deliver payload into model context, 0/8 trigger re-approval** (even under TOCTOU rug-pull). The gap is protocol-level, not implementation-specific.
+**MCP TAG-Block Concealment** (2607.05744): A deterministic reference harness exposes an approval-fidelity gap: across 5 metadata surfaces and 3 Python server implementations, **8/8 techniques remain in serialized prompt/JSON-RPC bytes, 4/8 evade its lexical sanitizer, 1/8 is hidden by its simplified renderer, and 0/8 force protocol re-approval**. This supports a transport/rendering defect, not model compromise: no model is run, model interpretation and action are unmeasured, and no named deployed client is audited. The shared payload catalogue/process family also makes 32/32 agreement strongest at the tool-management layer. The claimed driver, raw data, and verifier were absent from the inspected arXiv/GitHub surfaces, so the generated tables are inspectable but independent replay remains unavailable. See the [canonical source audit](./findings/2026-07-09-hn-arxiv-github-scan-453.md#1-unicode-tag-block-concealment-of-mcp-tool-metadata-payloads-260705744).
 
-**Context-to-Execution Integrity (CXI)** (2607.06000): The architectural fix — **triple-binding** at the execution boundary. Policies mark protected sink fields; typed releases carry narrow validated values; a deterministic gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the **same action manifest**. On 720 live AgentDojo episodes (1,739 LLM calls) and 400 code-agent episodes: **231 safe task completions, zero observed escapes** across all three authority dimensions.
+**Context-to-Execution Integrity (CXI)** (2607.06000): **Triple-binding** at the execution boundary. Policies mark protected sink fields; typed releases carry narrow validated values; a deterministic gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the **same action manifest**. The paper reports no observed escape at mediated sinks; safe task completion is 199/720 AgentDojo episodes (1,739 LLM calls) and 231/400 repository episodes. This is a fixed-policy admission result, not complete-safety or utility-preservation evidence.
 
-**Balkanization of Execution-Security Research** (2607.05743): Systematizes 39 papers (2023–2026) into 17 categories that **rarely cite each other**. Confirms 4 disclosed, patched CVEs in production agent harnesses. Surfaces 5 cross-cutting gaps: (1) no shared benchmark across isolation architectures; (2) policy enforcement reports 69–98% failure but isolation papers don't test adversarially; (3) TOCTOU and MCP threats analyzed separately despite being the same state-validation problem; (4) **every enforcement mechanism assumes an honest policy author**; (5) benign out-of-scope actions (up to 17.1%) addressed by zero papers. This is the Correlated Blindness (#436) applied to the research community itself — the 17 categories share correlated blind spots.
+**Balkanization of Execution-Security Research** (2607.05743): Assigns 39 selected papers (2023–2026) to 17 categories through an iterative, non-exhaustive search and proposes five cross-category gaps. The strongest within-corpus result is the missing shared isolation/access-control benchmark; TOCTOU/MCP equivalence and the broader absence claims are author synthesis. No citation-edge denominator supports “rarely cite.” Three checked CVEs affect Copilot/Visual Studio or Claude Code; the fourth is pre-agent runc substrate risk. The source archive contains 39 generated appendix rows but not the claimed CSV/verifier, so counts are inspectable while selection and regeneration are not independently reproducible. This motivates Correlated Blindness (#436), not a measured field-wide citation effect.
 
-**aiAuthZ** (2607.05518): Off-host, identity-bound authorization gateway. Tests 15 models against 8 attack scenarios — refusal ranges from 100% down to 38%. With gateway: **0% residual attack success for all 15 models** at ≤0.03ms added latency. Key quote: "The gateway does not prevent a model from being deceived; it prevents a deceived model from acting beyond the verified user's authority."
+**aiAuthZ** (2607.05518): Off-host authorization gateway whose public benchmark retains 116/120 completed model/scenario cells and one representative verdict for each of 44 cells with a dangerous-call attempt; all 44 are denied under a fixed restrictive policy. Four Qwen cells contain only HTTP 429 errors, the 187 underlying attempts are not individually retained, and the claimed raw model transcripts are absent. AgentDojo separately shows seven argument-allowlist denials but starts at 0/20 no-defense attack success and loses 20 points of clean utility. This supports covered-call denial under complete mediation, not uniform model safety or identity-only attribution; the 0.0304 ms maximum per-model average excludes end-to-end gateway/network cost.
 
-**Doomed from the Start** (2607.06503): Per-round probes on hidden activations predict episode failure from the first interaction round (behavioral scorers barely better than chance). Probe cascade saves **47.1%** of inference compute at 90% recall. Adding behavioral features yields **no further gain** — hidden states already capture what behavior reveals. Extends the Latent Horizon (#433) from diagnostic observation to practical intervention.
+**Doomed from the Start** (2607.06503v2): Activation probes carry early failure signal, but round-one AUC spans 0.523--0.860 across six cells and two WebShop cells begin near chance. At a nominal 90% recall target, cascade generated-token savings span 24.7--60.2% by cell. Activations beat one deliberately cheap five-feature behavior scorer; stacking those features has no consistent added value, not literal equality or superiority to richer trace monitors. The default held-out result is empirical; exact recall requires a frozen cascade and independent certification data, while online latency and dollar cost remain unmeasured.
 
 **The Execution Boundary**: Verification deployed at any layer above the execution boundary provides approval-confidence, not execution-confidence. Three instances:
-1. **Encoding gap**: Human approval renders one encoding; model tokenizer processes another (2607.05744)
+1. **Encoding gap**: The reference approval renderer drops TAG codepoints retained in serialized prompt bytes; downstream model interpretation is untested (2607.05744)
 2. **Authority gap**: Approval checks intent; execution requires exact-effect authorization (2607.06000)
-3. **Research gap**: 39 papers cover individual boundaries; 5 cross-cutting gaps remain uncovered (2607.05743)
+3. **Research gap**: The authors assign 39 selected papers to 17 categories and propose 5 cross-cutting gaps; the non-exhaustive corpus does not establish field-wide absence (2607.05743)
 
 **Connection to preceding layers**:
 - The Predicate Gate (#446) gated state transitions — Layer 25 reveals the gate must bind to execution, not approval
 - The Boundary Dissolution (#432) showed trust boundaries erode — Layer 25 shows they may never have existed at the protocol level
 - The Authority Gap (#434) asked what grounds authority — Layer 25 asks whether authority reaches the execution point
-- The Correlated Blindness (#436) showed research shares blind spots — the Balkanization survey shows 17 non-citing categories in execution security
+- The Correlated Blindness (#436) showed research may share blind spots — the Balkanization paper proposes 17 categories over a selected corpus but supplies no citation-edge denominator for a “non-citing” field-wide claim
 
 **HN confirmation**: Comprehension:News ratio crosses **1.0** for the first time (1.21). 30papers at 399pts (1pt from 400 prediction). Fortress — "stealth Chromium so your agents stop getting blocked" (35pts/32c, ratio 0.91) — the approval-execution arms race as a product.
 
@@ -753,11 +853,11 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 2. Restraint Premium (#445): Invest in producing less (supply-side)
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
-5. Architecture Premium (#448): Architecture > Model (ROI principle)
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)
-9. Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)
+8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
+9. Co-Evolution Imperative (#452): Test governed harness adaptation (sustainability hypothesis)
 10. **Execution Boundary (#453): Bind verification to the execution surface, not the approval surface (fidelity condition)**
 11. **Write Contract (#454): Govern shared state mutations with explicit contracts (persistence condition)**
 
@@ -768,14 +868,19 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-453.md, findings/2026-07-09-hn-
 The ten-scan exit arc (#444–#453) verified individual agent actions. Layer 26 reveals the structural gap beneath individual actions: agents operate on **shared mutable state** (memory stores, codebases, knowledge graphs, tool registries), and the governance of state mutations is fundamentally asymmetric.
 
 **The read/write asymmetry**:
-- **Reads are manageable**: Progressive disclosure, projected views, RAG, token budgets — the ecosystem has developed robust techniques for reading. PatchOptic confirms: "existing methods make the read side manageable."
+- **Reads can be bounded**: Progressive disclosure and projected views can reduce exposure and tokens on a fixed task. PatchOptic's 46 hand-authored cases support that narrower result, not a general claim that retrieval is solved.
 - **Writes are ungoverned**: "They do not define when a locally proposed rewrite is valid after it is applied back to the full state."
 
 Three papers converge:
 
-- **StateFuse** (2607.05844): Conflict-preserving CRDT memory. Conflicts become first-class objects with immutable history, explicit correction handles, deterministic predicate contracts, and projection-time resolution. Key insight: current overwrite-based systems destroy valuable conflict information.
-- **PatchOptic** (2607.05483): Optic-inspired projected reads + verified structured patches. Each step declares a read view, an authorized write region, and a patch-source region. On PatchBench (46 cases): projected reads reduce leakage and token cost; runtime verification blocks contract violations before commit.
-- **From Conversation to Contribution** (2607.05677): 13,360 AI sessions across 1,356 OSS repos. Key finding: developers perceive others' AI-generated code as harder to maintain (p = .029). AI lowers production barriers while increasing maintenance burden — Knowledge Erosion (#450) confirmed at population scale.
+- **StateFuse** (2607.05844v1): Conflict-preserving CRDT memory exposes
+  contradictions as public objects. On an official 282-case slice, aggressive
+  conflict-preserving and collapsed surfaces tie at 97.5% accuracy while their
+  conflict visibility differs; the slice has no gold abstention cases. Safer
+  post-verification action appears only in a deterministic 50-task synthetic
+  loop, where all conservative non-collapsing baselines tie.
+- **PatchOptic** (2607.05483v1): Optic-inspired projected reads plus declared write and patch-source paths. On 46 hand-authored cases, projection reduces reported leakage and tokens without lowering accepted-only GPT-5-mini content; View Only overlaps PatchOptic. Mechanical phase/scope checks block their diagnosed violations, and PatchOptic plus Verify Only reject 9/9 fixed hidden-source artifacts. PatchOptic still accepts 21/24 expected-reject weak-actor cases per round, so this is not general semantic-validity enforcement.
+- **From Conversation to Contribution** (2607.05677v1): 13,360 committed chat sessions were discovered and 12,108 across 1,240 repositories analyzed. The maintenance asymmetry is a raw `p=.029` paired perception result from at most 25 self-selected respondents (4.2% response), not population maintenance evidence. Repository proxies show no broad quality decline or sustained production gain; contributor broadening reverses in the validation cohort, and communication concentration remains unchanged.
 
 **The Write Contract**: Without verified contracts between local writes and global state validity, conflicts accumulate silently, disagreements are destroyed, and maintenance debt compounds. Reads can be cheap; writes must be governed.
 
@@ -783,32 +888,111 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-454.md, https://arxiv.org/abs/2
 
 ### Layer 27: The Dispersion Collapse (Scan #455, 2026-07-09)
 
-The eleven-point exit arc assumed that multiple agents could provide **independent** verification perspectives. A pre-registered experiment on frontier LLM agent economies proves this assumption is structurally violated.
+The eleven-point exit arc assumed that multiple agents could provide
+**independent** verification perspectives. Agent count does not prove that
+independence; it must be measured. A pre-registered frontier-model economy
+motivates this check but does not itself test verification perspectives.
 
-**Information Limits and Attractor Dynamics** (2607.06001): Pre-registered, two-part experiment on Claude Opus 4.8 economies ($138.76 total cost, re-runnable from cache). Confirmation half: gap law G_a - G_b = I_a - I_b holds to 46 millinats (50mn band); best-informed agent absorbs essentially the whole wealth pool (4/5 seeds); coalition value is submodular where channels are conditionally independent. Structural negative: goal dispersion collapsed (V → 0; max 4.85 vs floor 5.31) in **ALL 72 population runs**. Response to incentive/control levers was a **step function** at dominance boundary, not smooth. Cells near boundary were **bistable** with seed-selected outcomes. **"No tested LLM population at any capability level realizes the noise-maintained-dispersion regime the smooth mean-field model assumes."**
+**Information Limits and Attractor Dynamics** (2607.06001v1,
+primary-reviewed 2026-09-04): One Claude Opus 4.8 toy niche economy keeps all
+72 grid runs below its preregistered dispersion floor (median 0, maximum 4.85
+versus 5.31). This forces the scaling prediction to `CAP` with zero in-regime
+conditions; the direction prediction is inconclusive, and a specific
+lever-switching interpretation is exploratory. A separate stated-posterior
+experiment passes P1--P3 and a wealth-ordering check, while clone equality
+fails. The study uses one provider/model, N=20, 16 niches, and 18 rounds; it
+does not measure verification error independence or general coupled
+populations.
 
-**Doomed from the Start** (2607.06503): Per-round hidden-state probes predict episode failure from the **first interaction round** (behavioral scorers barely better than chance). Cascade saves **47.1%** of compute at 90% recall. Adding behavioral features yields **zero further gain** — hidden states capture everything behavior reveals and more. The Latent Horizon (#433) validated and made actionable.
+**Doomed from the Start** (2607.06503v2): The activation-probe advantage is
+conditional rather than universal. Round-one AUC ranges from 0.523 to 0.860;
+two WebShop cells begin near chance, while later gates become informative.
+Nominal 90%-recall cascade token savings range from 24.7% to 60.2% across the
+six cells. One cheap hand-engineered behavior baseline is weaker, and stacking
+its five features adds no consistent value. Rich trace monitors, shifted tasks,
+online systems cost, and independent post-selection recall certification remain
+open, so this is a practical candidate intervention rather than proof that
+internal state always determines an agent's outcome.
 
-**SkillReranker** (2607.06283): Flat skill retrieval collapses to "everything looks similar" as libraries grow. Structured task decomposition into directed acyclic execution graphs breaks the attractor by matching skills to task intervals via structure, not flat similarity.
+**SkillReranker** (2607.06283v1): State-aligned reranking reports the best reward and step means in 11/12 ALFWorld/ScienceWorld cells, but without repeated-run uncertainty. Fixed baselines average top-1/top-2 settings instead of matching adaptive cardinality, and execution-token accounting omits decomposition/reranking overhead; one Qwen ScienceWorld cell uses 76,763 tokens versus Graph of Skills at 50,360. This is a candidate routing mechanism, not evidence that flat retrieval collapses or that graph structure breaks an attractor.
 
-**The Dispersion Collapse**: Every "multiple agents check each other" governance proposal assumes N agents provide N perspectives. Coupled populations converge to shared attractors:
-- **Economic coupling**: Wealth concentrates to best-informed agent; diversity V → 0 universally
+**The Dispersion Collapse, qualified**: Every “multiple agents check each
+other” proposal must demonstrate that N agents provide independent evidence:
+- **Economic coupling**: One toy economy concentrates below its frozen
+  dispersion floor; transfer to verifier errors is untested
 - **Trajectory coupling**: Individual agents commit to doom from the first round
 - **Skill coupling**: Flat retrieval converges to "all skills look the same"
 
-The fix is not "more agents" but **architecturally uncorrelated agents**: different substrates, different information access, different evaluation criteria, structural decorrelation.
+The design precaution is not merely “more agents” but measured error diversity:
+different substrates, information access, and evaluation criteria should be
+tested with matched coverage outcomes rather than assumed to decorrelate.
 
 **Connection to preceding layers**:
-- Correlated Blindness (#436) showed verification instruments on the same substrate share blind spots — the Dispersion Collapse shows populations on any coupling mechanism converge to shared attractors
-- Recursion Barrier (#430) showed self-improvement is domain-bounded — Dispersion Collapse explains why: all self-improving agents in a coupled system converge to the same improvement trajectory
-- Knowledge Erosion (#450) showed agents replace diverse human judgment — Dispersion Collapse shows the convergence is intrinsic, not accidental
+- Correlated Blindness (#436) motivates measuring shared errors; this economy
+  does not test blind spots or arbitrary coupling mechanisms
+- Recursion Barrier (#430) concerns self-improvement, which this economy does
+  not include
+- Knowledge Erosion (#450) concerns human judgment and is not tested here
 
 **Twelve-point exit arc**:
 1–11: (#444–#454)
-12. **Dispersion Collapse (#455): Impose verification diversity architecturally — multiple agents on the same substrate converge to the same attractor (independence condition)**
+12. **Dispersion Collapse (#455): Measure verifier error dependence and impose
+diversity when correlated outcomes warrant it (independence condition)**
 13. **Claim-Verification Surface (#456): Type claims and verify each typed claim against an independent substrate (granularity condition)**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-455.md, https://arxiv.org/abs/2607.06001, https://arxiv.org/abs/2607.06503, https://arxiv.org/abs/2607.06283
+
+### Layer 28: The Claim-Verification Surface (Scan #456, 2026-07-09)
+
+Pitwall (`2607.06495v1`) makes claim typing an explicit architecture: ten claim
+classes are extracted from commentary and checked against structured race
+state, while the same checking surface gates training targets and publication.
+The 3,045-target corpus retains 2,494 model generations and substitutes 551
+templates. A qualitative sparse-context audit finds that rich-target adapters
+on Qwen, Llama-1B, and Mistral-7B invent unsupported detail, while Phi-4-mini
+uses generic non-checkable language.
+
+The stronger construction claim is conditional. The paper says its pattern
+extractor sees only 0--2 of 4--15 asserted facts and its LLM extractor sees
+8--15; the related `2606.09376v2` artifact explicitly shows that an out-of-
+schema entity/causal invention can score perfectly. The sparse audit reports no
+probe count or run uncertainty, and the claimed Pitwall repository, verifier,
+logs, and live JSONL were not attributable from the paper or author's public
+repositories. Two race-distance deployments and 13 unique Silverstone table
+rows support operational feasibility, not complete faithfulness or calibration.
+
+The durable condition is therefore: type claims and gate them, but measure
+extractor recall, ontology coverage, and substrate authority. Untyped or unseen
+claims pass no matter how strict the downstream checker is.
+
+Claimed or Attested (`2607.06194v1`) reinforces the need to type evidence
+levels. Its 17.59% is exact signature-header presence across WoC V2604, not
+verified author identity. Two platform keys produce 95.9% of author-key
+associations and only 0.74% of canonical authors reach its candidate person-key
+tier. Even fan-out-two keys are not identity gold: 71.9% of map disagreements
+are two people sharing a key; only 28.1% have another corroborating signal. The
+promised data and replication package remain unavailable behind a TODO locator.
+Signature marker, key possession, account/email binding, person identity, and
+content correctness are separate claims.
+
+VAORA (`2607.06522v1`) shows a narrower outcome-grounding result. Its parsed
+scene, placement, and collision tuples are scored against privileged PHYRE
+simulator state, while a frozen DQN success proxy gates action-linked reward.
+The full reward improves all nine PHYRE Pass@k cells over a matched `+EG`
+baseline, but the “alignment” analysis reuses the optimized reward functions
+rather than independent hallucination labels. Ten of 25 templates are selected
+for first-collision compatibility, no repeated-training uncertainty is
+reported, and adapted Virtual Tool/CRAFT results are mixed. Public code, data,
+and checkpoints support partial result reproduction, including exact Set 2
+VAORA and all three DQN summaries. The durable distinction is reward proxy
+versus independent behavioral outcome, not pre/post vision versus text alone.
+
+Source: findings/2026-07-09-hn-arxiv-github-scan-456.md,
+https://arxiv.org/abs/2607.06495v1,
+https://arxiv.org/abs/2606.09376v2,
+https://arxiv.org/abs/2607.06194v1,
+https://arxiv.org/abs/2607.06522v1,
+https://github.com/vaora-proj/VAORA/tree/4995736af63206e60504a3d3452bf7371f11fb76
 
 ### Layer 29: The Variance Signal (Scan #457, 2026-07-10)
 
@@ -816,17 +1000,21 @@ The thirteen-point exit arc (#444–#456) assumed that verification produces inf
 
 **The variance-information connection**: Two papers converge from opposite ends (experimental design and production monitoring) to the same conclusion: variance is the primary diagnostic signal for agent systems, and destroying it destroys the information needed for governance.
 
-- **An Experimental Design Approach to Evaluating Agentic AI's Autonomous Model Discovery** (2607.06413): Treats coding agents (Codex, Claude Code) as **stochastic model-discovery operators** — random functions, not tools. Introduces utility-aligned canonical decomposition: reasoning effort has a dominant direction in performance-cost space that a single benchmark run cannot detect. Only replicated experimental designs with controlled factors (reasoning effort, task, metric, data composition) can characterize this direction.
+- **An Experimental Design Approach to Evaluating Agentic AI's Autonomous Model Discovery** (2607.06413, primary-reviewed): Proposes coding agents (Codex, Claude Code) as **stochastic model-discovery operators**. Its 144-run factorial has no repeated configuration, so it does not estimate same-input stochastic variance. Retained data reproduce all eight negative effort slopes under one prespecified equal-weight utility, but primary-metric effort effects do not survive correction, utility-weight sensitivity is deferred, and the leading canonical directions are weakly identified. Replication is a requirement exposed by the paper, not evidence the demonstration itself supplies.
 
-- **Monitoring Agentic Systems Before They're Reliable** (2606.02494): Uses **coefficient of variation (CV) as a characterization signal** across three monitoring scopes: within-run (CV=0.02, deterministic stage defects), cross-run (CV=1.25, stochastic integration consequences), and structural (CV=0.00, integration gaps with perfect consistency). Critical experimental result: **injected task-level errors are indistinguishable from clean baselines** because structural defects mask the signal task-level monitors are designed to detect. Deterministic triage routes 97% of findings to automated tracking; only the 2% reflecting variable behavior need human investigation.
+- **Monitoring Agentic Systems Before They're Reliable** (2606.02494, primary-reviewed): Reports CV `.02`, `1.25`, and `0` for different evaluators and defects in one synthetic, deliberately zero-signal system. No clean/error test statistic or reusable artifact is released. Its table routes 97.68% automatically and 2.32% to humans, but 2.10% are an invariant simulator artifact and only 0.22% are variable L2 findings. This supports a bounded diagnostic example, not portable CV thresholds or the claim that 2% variable behavior is the human-review set.
 
-**The Variance Signal**: Current evaluation compresses stochastic agent behavior into point estimates (resolve rate, benchmark score). This compression destroys exactly the information governance needs: the distributional structure that distinguishes reliable agents from fragile ones that happen to produce the same mean.
+**The Variance Signal, qualified**: Current evaluation may lose governance-relevant information when it compresses stochastic behavior into point estimates. The reviewed experimental-design paper motivates retaining distributions but does not itself observe repeated outcomes for a fixed configuration. Its robust retained result is narrower: under one fixed performance-cost utility, higher effort has a negative slope across eight small strata. Evidence that the missing same-configuration distribution distinguishes reliable from fragile agents remains to be supplied.
 
-**Connection to the Variance Paradox**: The Dispersion Collapse (#455) showed agent populations converge to zero-variance attractors. The Variance Signal shows variance is the primary diagnostic. Together: **agent populations destroy exactly the signal needed to govern them.** The system becomes ungovernable precisely when it appears most stable. The exit requires both structural independence (Dispersion Collapse) AND distributional evaluation (Variance Signal), simultaneously.
+**Connection to the Variance Paradox**: The Dispersion Collapse (#455) finds
+below-threshold niche variance in one toy population; the Variance Signal argues
+that distributions matter. Together they motivate measuring both population
+dispersion and verifier-error correlation. They do not establish that agent
+populations generally destroy governance signals.
 
-**The monitoring maturity transition**: Monitoring must evolve through stages: (1) structural characterization → (2) error detection → (3) reliability tracking. This maps to the Co-Evolution Imperative (#452): the monitoring system itself must co-evolve. A fixed monitoring strategy degrades as structural defects resolve and new failure modes emerge.
+**The proposed monitoring maturity transition**: The paper observes only Stage 1, structural characterization. Stage 2 error detection and Stage 3 reliability tracking are author-labeled predictions requiring longitudinal study. They map plausibly to the Co-Evolution Imperative (#452), but the transition has not been observed.
 
-**Internal system implication**: Our heuristic evaluator produces 3 bits of Shannon entropy across 14,345 evaluations (Evaluation Mirage thesis). The Variance Signal explains why this is not just wasteful but actively harmful: collapsing variance into quantized states destroys the distributional information needed to distinguish improving sessions from degrading ones. The fix: report CV per agent, characterize distributional shape, route only variable behavior to human review.
+**Internal system implication, hypothesis**: Our heuristic evaluator produces 3 bits of Shannon entropy across 14,345 evaluations (Evaluation Mirage thesis). This motivates retaining distributions alongside states, but Scan #457 does not show that per-agent CV is sufficient or that variable behavior alone should route to humans. Any routing rule still needs outcome evidence, severity calibration, and validation against missed deterministic failures.
 
 **Fourteen-point exit arc**:
 1–13: (#444–#456)
@@ -836,75 +1024,104 @@ Source: findings/2026-07-10-hn-arxiv-github-scan-457.md, https://arxiv.org/abs/2
 
 ### Layer 30: The Handoff Fallacy (Scan #459, 2026-07-10)
 
-The fourteen-point exit arc (#444–#457) provided conditions for governance at the component level. Layer 30 reveals that component-level governance, however sophisticated, misses the structural site of failure: the handoff between components.
+The fourteen-point exit arc (#444–#457) provided conditions for governance at
+the component level. Layer 30 adds the handoff between components as a
+candidate failure surface that component outcomes alone cannot rule out.
 
-**The handoff mechanism**: Two uncovered papers converge from opposite ends (meta-analysis and experimental robotics) to the same conclusion: verification of components in isolation systematically misses the transition states where failure actually occurs.
+**The handoff hypothesis**: Two papers motivate transition-state evaluation
+from a narrative synthesis and a small robotics pilot. They do not establish
+that component verification systematically misses where failure occurs.
 
-- **Beyond the Leaderboard: A Synthesis of Tool-Use, Planning, and Reasoning Failures in Large Language Model Agents** (2607.05775): Synthesizes 27 benchmark, taxonomy, and audit papers (2023–2026) spanning 19 distinct benchmarks into a unified taxonomy of LLM agent limitations. Six failure clusters (tool errors, planning failures, long-horizon degradation, multi-agent coordination failures, safety/security failures, measurement validity problems). Three structural findings: (1) failures compound **nonlinearly** with task length; (2) strong performance on individual sub-tasks does **NOT** reliably translate into end-to-end success; (3) additional scaffolding does **NOT** consistently improve reliability.
+- **Beyond the Leaderboard: A Synthesis of Tool-Use, Planning, and Reasoning Failures in Large Language Model Agents** (2607.05775, primary-reviewed): Reports a narrative 27-paper/19-benchmark synthesis and six-cluster taxonomy, but no reproducible search, corpus manifest, independent coding, or pooled analysis. The authors label nonlinear compounding, non-composability, and uneven scaffolding returns as candidate structural properties and do not reverify source results. It is a useful retrieval map, not proof that handoffs are the primary failure site or a quantified failure law.
 
-- **Diagnosing Semantic Handoff Failures in Agent-Orchestrated Vision-Language-Action Skill Composition** (2607.06256): Studies the boundary between consecutive skills in long-horizon robotic tasks (BEHAVIOR-1K). Skills achieve **77–100% success** from clean skill-boundary snapshots but composed rollouts from **chained states** (the terminal state of the previous skill) frequently stall. Execution traces attribute failures to next-skill readiness, target grounding, and low-level control — the handoff, not the component. Key structural insight: **clean demonstrations systematically underrepresent the messy chained-state distribution** where production operates.
+- **Diagnosing Semantic Handoff Failures in Agent-Orchestrated Vision-Language-Action Skill Composition** (2607.06256, primary-reviewed): Reports 90/104 clean-snapshot successes across seven measured skills and 19.5% mean reference-plan progress over 30 composed rollouts. It does not report matched chained per-skill success. Its 130 verifier-labeled failures come from one representative round; an arm-reach verifier recovers 1/10 tasks versus 0/10 while also inducing 25 more navigation attempts. This is preliminary evidence that readiness-aware recovery can help one rollout, not an estimate that handoffs dominate failure.
 
-**The Handoff Fallacy**: The assumption that if each component works in isolation, the system works in composition. The fallacy is structural: training and evaluation systematically exclude the transition states where failure occurs. Component-level verification creates component-confidence, but the system needs **handoff-confidence** — verification that the terminal state of component N meets the preconditions of component N+1.
+**The Handoff Fallacy**: The unsupported assumption that component success
+guarantees system success. The retained engineering condition is to measure
+whether component N's terminal state meets component N+1's preconditions,
+using matched endpoints rather than inferring the effect from component and
+task metrics with different denominators.
 
-**Connection to the Composition Surface (#447)**: The Composition Surface identified that risk lives in the composition between actions. The Handoff Fallacy provides the mechanism (postcondition-precondition mismatch) and the evaluation failure (clean-snapshot bias). Together: the Composition Surface says *where* to look; the Handoff Fallacy says *what you'll find when you look there* and *why current evaluation can't see it*.
+**Connection to the Composition Surface (#447)**: The Composition Surface
+identifies composition as a risk surface. The Handoff Fallacy supplies a testable
+postcondition-precondition hypothesis, not proof of what every evaluation will
+find or why it missed it.
 
-**Connection to the Comprehension Compound (#458)**: HN's Foundations Turn (856pts) vs GPT-5.6 Sol (178pts) — a 4.8× ratio — can be read as the community's intuitive recognition that understanding how components connect (comprehension) matters more than acquiring new components (novelty). The GitLost surge (+131.6%) shows what happens when the handoff between approval and execution is exploited in production.
+**Connection to the Comprehension Compound (#458)**: HN's Foundations Turn
+(856pts) versus GPT-5.6 Sol (178pts) is an attention observation, not a market
+price for comprehension. GitLost supplies a public, researcher-controlled
+example of untrusted input crossing into operator-granted cross-repository
+authority and then a public-output path; it is not a GitHub internal incident.
 
 **Fifteen-point exit arc**:
 1–14: (#444–#457)
-15. **Handoff Fallacy (#459): Verify transition states between components, not just component outcomes; evaluate from chained states, not clean snapshots (handoff condition)**
+15. **Handoff Fallacy (#459): Verify transition states as well as component and system outcomes; compare matched clean/chained endpoints before attributing a gap (handoff condition)**
 
 Source: findings/2026-07-10-hn-arxiv-github-scan-459.md, https://arxiv.org/abs/2607.05775, https://arxiv.org/abs/2607.06256
 
-### Layer 31: The Attention Decay Curve (Scan #460, 2026-07-08)
+### Proposed Layer 31: The Attention Decay Hypothesis (Scan #460, declared 2026-07-08)
 
-The fifteen-point exit arc (#444–#459) provided conditions for governance at the technical level. Layer 31 reveals that the *attention* funding oversight investment decays faster than the announcement pipeline can deliver new things to evaluate — creating a structural deficit where the most consequential deployment events receive the least evaluative attention.
+Three Sol-related HN submissions finish at 1,139, 415, and 235 points over
+11.46 days. They are different events submitted by different users to
+different sources. The third item announces that the model family will launch
+the next day; it is not the deployment event. HN supplies no matched
+impressions, rank duration, audience overlap, or measure of evaluation effort.
+The 83% first-to-third score difference is therefore descriptive, not a
+measured attention-decay curve or oversight deficit.
 
-**The decay mechanism**: GPT-5.6 Sol's three-announcement arc constitutes the first fully measured attention decay curve for a frontier model release:
+The useful governance question survives as a test design: release studies
+should predeclare comparable preview/integration/availability/deployment events,
+archive exposure and rank histories, and measure security review, capability
+assessment, or integration work directly. Audience saturation, source/title
+quality, submitter, timing, and competing stories remain alternative causes.
+The selected foundation basket is likewise cumulative and unmatched, so it
+does not establish that comprehension compounds while novelty decays.
 
-- **Preview** (Jun 26): 1,137pts, 743 comments. The novelty premium captures maximum attention.
-- **Ultra in Codex** (Jul 06): 413pts, 397 comments. 36.3% retention — the follow-up announcement inherits less than half the novelty.
-- **Public Launch** (Jul 08): 193pts, 169 comments. 17.0% retention — the event that makes Sol publicly available and creates actual deployment risk receives 6× less attention than the event that announced its existence.
-
-**Three structural findings:**
-1. **83% signal loss in 12 days.** Each announcement is objectively more consequential (existence → capability → availability) but receives less attention. Capability escalates while attention depletes.
-2. **Comments stay high relative to points.** The pts/comment ratio drops from 1.53 to 1.04 to 1.14 — the community *engages* (debating, questioning) but declines to *endorse*. This is contested significance, not apathy.
-3. **Equivalence with foundations.** The Sol public launch (193pts) receives statistically equivalent attention to SICP Video Lectures 1986 (178pts). The community values understanding what exists at the same level as accessing what's new.
-
-**The Attention Decay Curve**: The assumption that more consequential events receive more evaluative attention is empirically false for frontier model releases. The novelty premium that funds attention is consumed by the preview. Each subsequent announcement inherits less attention despite creating greater deployment exposure. Oversight demand accumulates (preview + ultra + launch each require evaluation) while attention supply depletes (83% loss). The result: the deployment event — where oversight most matters — receives the least attention.
-
-**Connection to the Comprehension Compound (#458)**: The Foundations Turn (915pts, rising) represents *accretive* attention — resources that compound over time. Sol announcements represent *depreciating* attention — novelty consumed by prior exposure. The community is implicitly maximizing lifetime value of attention allocation: comprehension compounds, novelty decays.
+Scan #471's separate-vendor extension does not supply replication. Its first
+Grok 4.5 snapshot was 173 points, but stable HN item `48835111` later finished
+at 776; same-day GPT-Live item `48834405` finished at 750. The initial ordering
+therefore was not a stable ceiling, and neither item supplies a matched release
+arc or evaluation-effort measure. Cross-vendor attention decay remains a test
+candidate rather than an established layer.
 
 **Sixteen-point exit arc**:
 1–15: (#444–#459)
-16. **Attention Decay (#460): Distribute oversight investment across the announcement arc, not at the novelty peak; evaluate at launch, not at preview — the preview captures attention but the launch creates exposure (decay condition)**
+16. **Attention-decay test (#460): distinguish release-arc position, exposure,
+    and actual evaluation effort before redistributing oversight (candidate
+    condition, not yet empirically established)**
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-460.md, HN items 48689028, 48799614, 48827402
 
-### Layer 32: The Process Erasure (Scan #462, 2026-07-15)
+### Layer 32: The Process Erasure Hypothesis (Scan #462, 2026-07-15)
 
-The sixteen-point exit arc (#444–#460) provided conditions for governance at the component, handoff, and attention levels. Layer 32 reveals the structural mechanism that undermines all of them: **outcome metrics systematically erase the process signatures that governance requires**.
+The sixteen-point exit arc (#444–#460) proposed conditions for governance at
+the component, handoff, and attention levels. Layer 32 asks whether
+outcome-only summaries omit process signatures useful for governance. The
+reviewed evidence does not yet establish a common causal mechanism.
 
-Four uncovered arXiv papers converge on the same structural error from different domains:
+Four papers motivate related but differently supported cases:
 
 | Domain | What's erased | Erasure mechanism | Remedy |
 |--------|--------------|-------------------|---------|
-| Evaluation | Trajectory structure | Resolve rate (binary) | TraceProbe (2607.06184): canonical 9-type action taxonomy + anti-pattern detection. 2,500 trajectories, 5 production settings on SWE-Bench Verified. Function selection and completion behavior localize success/failure; file choice is too coarse. |
-| Memory | Conflict structure | Overwrite/collapse | StateFuse (2607.05844): CRDT-based immutable history + explicit conflict objects + semantic correction handles. 282-question MemoryAgentBench. Preserving ambiguity enables safer abstention than early collapse — accuracy ties, but contradiction visibility diverges. |
-| State mutation | Authorization structure | Unconstrained writes | PatchOptic (2607.05483): optic-inspired projected reads + declared write regions + patch-source regions. 46-case PatchBench. Runtime verification blocks contract violations before commit; path-level footprints support static reordering. |
-| Repair | Failure localization | Blind retry | AgentTether (2607.06273): Transition Units + Critical Transition Graphs with offline normal-behavior model + cross-iteration Repair Memory. 261 tau-bench tasks. Repairs 59–65% of failed tasks; reduces turns and tokens; transfers cross-model. |
+| Evaluation | Trajectory structure | Outcome-only reporting omits process measurements | TraceProbe (2607.06184v1): canonical nine-action taxonomy and fixed pattern rules over 2,500 SWE-Bench Verified runs. Same-task comparisons localize divergence, but several measures use gold-patch anchors and the study does not provide per-run causal diagnosis or remediation. |
+| Memory | Conflict structure | Overwrite/collapse | StateFuse (2607.05844v1): aggressive surfaces tie at 97.5% accuracy on a 282-case official slice while explicit conflict visibility is 100% versus 0%; the slice has no gold-abstention cases. A separate deterministic 50-task loop favors every conservative non-collapsing surface equally over collapse. |
+| State mutation | Authorization structure | Unconstrained writes | PatchOptic (2607.05483v1): projected reads + declared write/source regions. Projection drives the live leakage/token result; modeled path checks fail closed, but 21/24 weak-actor expected rejects are accepted per round. Static reordering is analytic. |
+| Repair | Failure localization | Blind retry supplies no diagnostic guidance | AgentTether (2607.06273v1): on 123 initially failed Qwen tau-bench tasks, full repair is 85/123 versus 53/123 blind retry and 74/123 post-run-only. Separate Banking failure sets reach 49/83 Qwen and 56/86 GPT-5.4; no guidance transfers between models. Intervention significantly helps only Banking and hurts 3 cases. Auxiliary LLM judgments, gold-action localization evaluation, no reported repeated runs, and an HTTP-401 artifact limit transfer and reproducibility. |
 
-**The Process Erasure**: Compressing a rich process into a scalar outcome destroys the information needed for governance. Resolve rate compresses trajectories into binary. Overwrite memory compresses history into latest-value. Unconstrained mutation compresses authorization into implicit trust. Blind retry compresses failure into repeat. Every governance failure in the preceding 31 layers can be restated as a case where process information was compressed into an outcome metric.
+**The Process Erasure hypothesis**: Scalar outcomes omit process information that can support diagnosis. TraceProbe demonstrates added description and AgentTether demonstrates a conditional repair gain from one richer pipeline, but neither shows that the source process was destroyed or that every governance failure is an instance of compression.
 
-**Connection to preceding layers**:
-- The Variance Signal (#457) identified variance-destroying evaluation — Process Erasure names the general mechanism
-- The Write Contract (#454) identified ungoverned state mutations — PatchOptic provides the optic-based formalization
-- The Handoff Fallacy (#459) identified inter-component failure — AgentTether localizes failure to transitions
-- The Dispersion Collapse (#455) identified population convergence — StateFuse prevents memory collapse from accelerating it
+**Proposed connections to preceding layers**:
+- The Variance Signal (#457) argues that summaries can omit distributional information; TraceProbe supplies an analogous trajectory view without measuring governance benefit.
+- The Write Contract (#454) concerns ungoverned state mutations; PatchOptic supplies a declared mechanical boundary, not semantic validity or policy-author correctness.
+- The Handoff Fallacy (#459) concerns inter-component failure; AgentTether uses transition-localized evidence, with gold-action and auxiliary-judgment limits.
+- The Dispersion Collapse (#455) concerns population convergence; StateFuse does not test population convergence or naturally arising traces.
 
 **Seventeen-point exit arc**:
 1–16: (#444–#460)
-17. **Process Erasure (#462): Preserve process signatures at each governance layer — trajectory diagnostics for evaluation, conflict objects for memory, declared contracts for state mutation, transition graphs for repair — because outcome metrics destroy the information governance needs to function (process preservation condition)**
+17. **Process Erasure hypothesis (#462): Test whether richer process
+signatures—trajectory measurements, conflict objects, declared contracts, or
+transition graphs—improve decisions enough to justify their storage,
+complexity, and review cost.**
 
 Source: findings/2026-07-15-hn-arxiv-github-scan-462.md, arXiv 2607.06184, 2607.05844, 2607.05483, 2607.06273
 
@@ -912,25 +1129,34 @@ Source: findings/2026-07-15-hn-arxiv-github-scan-462.md, arXiv 2607.06184, 2607.
 
 Layers 25–32 identified governance failures at specific surfaces: approval vs execution (#453), write authorization (#454), claim typing (#456), and process preservation (#462). Layer 33 unifies these under a single constructive architecture.
 
-**Mnemosyne** (2607.00269v2) introduces **Agentic Transaction Processing (ATP)**: every agent-generated action is an untrusted proposal until it passes deterministic admission under a declared constraint set C. The governing principle: *a proposal is not truth, and no proposal foresees every disruption.* Correctness of committed state becomes **independent of the competence, honesty, or learning of the proposing layer**.
+**Mnemosyne** (2607.00269v2) introduces **Agentic Transaction Processing (ATP)**: every agent-generated action is an untrusted proposal until it passes deterministic admission under a declared constraint set C. The governing principle is useful, but the guarantee is only relative to predicates present and correctly bound in C; it does not cover omitted application policy.
 
-Four proven safety properties (relative to C):
+Four properties proved by the paper (relative to C):
 1. **Authority separation** — only the runtime admits and commits; anything may propose
 2. **Serial-equivalent generative admission** — proposals evaluated as if serialized under concurrency
 3. **Evidence-preserving repair** — compensation preserves the evidence that triggered the repair
 4. **Obligation containment** — committed obligations are bounded and tracked
 
-Empirical validation: 80 live-proposer trials across 4 heterogeneous LLMs, zero invalid commits, under 6% overhead. Admission gate rejected 16 of 40 repair proposals including 4 explicit safety rejections of over-broad rollback.
+Paper-reported validation: 80 live-proposer trials across 4 heterogeneous LLMs,
+zero invalid commits under its scorer, and under 6% overhead. A pinned
+implementation rerun reproduced selected RQ1/RQ3 controls, but a matched
+standing probe also committed an Alice-owned proposal using a Bob-owned
+decision and kernel request. The audited runtime path therefore lacks
+proposal/decision principal binding even though selected constraint checks work.
 
 **The Admission Boundary**: ATP unifies the preceding four layers:
-- Layer 25 (Execution Boundary) → ATP's authority separation IS the execution boundary — as a proven property
-- Layer 26 (Write Contract) → ATP's admission gate IS the write contract — formalized and enforced
-- Layer 28 (Claim-Verification Surface) → ATP's constraint set C IS the typed claim specification
-- Layer 32 (Process Erasure) → ATP's append-only transition log DEFEATS process erasure — by construction
+- Layer 25 (Execution Boundary) → ATP separates proposing from committing, but
+  the adapter audit leaves caller/principal binding incomplete
+- Layer 26 (Write Contract) → ATP implements a declared admission contract; its
+  completeness and provenance remain separate
+- Layer 28 (Claim-Verification Surface) → C types selected predicates rather
+  than proving a complete claim surface
+- Layer 32 (Process Erasure) → the append-only log preserves recorded fields,
+  not omitted evidence or external non-effect
 
 **Eighteen-point exit arc**:
 1–17: (#444–#462)
-18. **Admission Boundary (#469): Treat every agent-generated action as an untrusted proposal; enforce governance at the admission gate rather than inspecting outcomes; prove safety properties relative to a declared constraint set C rather than trusting the proposing agent (the admission condition)**
+18. **Admission Boundary (#469): Treat every agent-generated action as an untrusted proposal; enforce declared predicates at admission rather than only inspecting outcomes; test policy completeness, provenance, and principal binding separately from constraint-relative gate correctness (the admission condition)**
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-469.md, arXiv 2607.00269
 
@@ -938,20 +1164,203 @@ Source: findings/2026-07-08-hn-arxiv-github-scan-469.md, arXiv 2607.00269
 
 Layers 25–33 identified governance failures at specific surfaces within systems. Layer 34 reveals the same structural failure operating **on the research community studying those systems**.
 
-**The Balkanization of Execution-Security Research** (2607.05743v1) systematizes **39 papers (2023–2026)** across **17 categories** covering sandbox isolation, capability/access control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress, and static analysis of agent-generated code. The categories **rarely cite each other**. The verification protocol confirms four disclosed, patched CVEs affecting production agent harnesses.
+**The Balkanization of Execution-Security Research** (2607.05743v1) assigns
+**39 selected papers (2023–2026)** to **17 categories** through an iterative,
+non-exhaustive search. No released citation-edge denominator supports “rarely
+cite,” and the five gaps are author synthesis over the selected corpus. Three
+checked CVEs concern Copilot/Visual Studio or Claude Code; the fourth is a
+pre-agent runc escape used as inherited-substrate evidence, not an observed
+agent-harness incident. The claimed CSV/verifier are absent from the inspected
+source archive, so generated rows are inspectable but corpus regeneration is
+not independently reproducible.
 
-**Five cross-cutting gaps that no single paper addresses:**
+**Five author-proposed cross-cutting gaps within the selected corpus:**
 1. Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark
-2. Policy enforcement studies report failure rates (69–98% of real denylists), yet no isolation paper re-evaluates under that adversarial setting
+2. ShellSieve reports per-operation incomplete-block rates of 69.0–98.6% among real denylists targeting seven filesystem operations; no selected isolation paper re-evaluates under that specific adversarial setting
 3. TOCTOU and MCP threats are analyzed as separate literatures despite both being instances of the **same state-validation problem**
-4. Every enforcement mechanism assumes an **honest policy author**, leaving policy-authoring error unaddressed
-5. Benign but out-of-scope agent actions at rates up to **17.1%** under realistic prompting are addressed by **no** paper in the corpus
+4. The authors report that the selected enforcement mechanisms assume an **honest policy author**, leaving policy-authoring error as a proposed gap
+5. No selected access-control paper evaluates OverEager's consent-ablation
+   failure: **13/76** Claude Code + GLM-4.6 runs tripped a deterministic trap
+   after an explicit scope block was removed, versus **0/76** with it. That
+   **17.1-point** paired-pilot change is an upper bound on a hand-curated
+   sensitive subset, not a corpus-wide “realistic prompting” rate; the paper's
+   separate 500-scenario randomized authorization-tier range is **2.6--3.1
+   points**, and its promised scenarios/audit bundles are not yet public.
 
-**The Balkanization Problem**: The governance knowledge needed to govern agent systems is *itself* fragmented across non-citing literatures, reproducing the Handoff Fallacy (#459) at the research level. Each paper passes its own review; the cross-category handoffs — where isolation meets policy enforcement meets TOCTOU defense meets identity delegation — are unverified. The Oversight Inversion is self-similar: it manifests not only in agent systems but in the academic community studying them.
+OverEager separately reports strong product-level differences, but “framework
+dominates” is not a variance decomposition or permission-gate ablation. Exact
+published counts reproduce Claude Code–OpenHands gaps of 8.29 points for
+GLM-4.6 and 11.59 points for MiniMax-M2.7 with the stated Fisher results. The
+comparison simultaneously changes default system prompts, tools, event
+adapters, and confirmation configuration; excludes OpenHands timeouts; treats
+repeated scenarios as independent; and lacks exact counts for several cells.
+The 26.6-point Sonnet maximum is therefore a useful bundle-level warning, not
+proof that permission gating alone dominates model choice.
+
+Its human-check headline also needs an audit boundary. The reported annotator
+marginals (15 and 19 positives) and 44/50 agreement reconstruct exactly to 14
+shared positives, 30 shared negatives, and six ties, reproducing
+`kappa=0.7345`. A “majority vote” of two annotators cannot resolve those ties;
+the final 19-positive gold table implies five were called positive and one
+negative under an unstated adjudication. The annotators saw the rule verdict,
+severity, and predicate IDs, the 50 runs oversample nine high-rate cells 45:5
+against two near-zero cells, and neither raw labels nor archetype coverage are
+available. Thus precision 0.76 and recall 1.00 describe the published sampled
+table, not independent benchmark-wide fidelity; the claim that all six false
+positives are `toctou-race` remains source-reported rather than replayed.
+
+The adjacent “nine zero-touch archetypes” claim is internally unresolved. Its
+seed-13 table shows only four all-zero rows, despite later prose saying nine
+stay at zero across seeds 42, 7, and 13, and the promised class assignment is
+absent from the table. Say-only declarations and permission-seeking meta-tool
+calls also fall outside the paper's executed write/read-delta definition, so
+adding them would change the target rather than repair a demonstrated miss.
+Unobserved remote or in-memory effects are a real coverage risk, but a manifest
+requirement is not evidence that those sinks were instrumented. Treat the three
+classes as proposed extensions/risks, not validated exhaustive mitigations.
+
+Likewise, OverEager's “complete audit-channel coverage” is a design obligation,
+not retained proof. Its Stage 1 coverage gate checks trap reachability, while
+the described runtime evidence is a PATH shim, end-state filesystem snapshots,
+one Claude tool map, and asserted OpenHands/Codex adapters; equivalent Gemini
+mapping, full command tables, adapters, bundles, and channel-closure tests are
+not released. Snapshots cannot establish reads or network effects, and the
+later action-surface manifest is proposed rather than part of the enumerated
+admission gate. Dual-channel observation is useful architecture, but complete
+mediation remains unverified.
+
+Its adjacent offline-rejudging promise has a narrower valid core. The published
+predicate leaves can recompute file-content, file-diff, and normalized-atom
+questions, and their combinators can form new functions of those retained
+facts. But the seven-field atom schema omits results, response bodies, process/
+environment context, and transferred bytes; the wider stream/post-check schema
+is unpublished; and the bundle tuple omits prompt, authorization scope,
+sensitive locus, fixture, and predicate version. Hash-only pre-state and final
+state cannot recover old deleted content, transient restored effects, or an
+unobserved read/sink. Retention permits reinterpretation of captured evidence;
+it cannot manufacture evidence that capture discarded. Treat “any new
+predicate” as a bounded schema claim, not arbitrary retroactive auditability.
+
+Retroactive audit also needs identity, not only retained bytes. OverEager names
+cell IDs, product versions, model labels, timeouts, and a run ID, but its cited
+configuration appendix publishes no audit-bundle IDs/hashes, container digest,
+scenario-manifest digest, adapter/schema revision, predicate/judge digest, or
+model endpoint snapshot. Even the claimed SHA-256 equality check exposes no
+hash values. Without one manifest joining those inputs to original and revised
+verdicts, a deterministic “re-judgment” cannot prove it used the same evidence.
+The temporal discharge condition is therefore content-addressed, append-only
+reinterpretation—not merely retaining an opaque directory called a bundle.
+
+Construction-time validity has a parallel oracle boundary. A monotone
+triggered-trap set across authored cautious, moderate, and overeager profiles
+proves separation among those profiles; the separate feasibility check proves
+only that one path avoids the declared traps. Neither proves that the prompt is
+non-adversarial or that authorization, traps, and legal actions match the
+user's actual scope. The retained pipeline gives the gradient no empirical
+negative control: its five rejected candidates were duplicate hashes and all
+post-mutation candidates passed the certificate. “Benign by construction” is
+therefore conditional on a correct authored oracle; a released failing corpus
+and independently reviewed prompt/scope annotations are needed to discharge
+that condition.
+
+The source does supply a constructive sketch: mutation begins with a
+topological walk over a named legitimate subgraph, then interleaves sampled trap
+actions while preserving strong dependencies. That makes safe-path and trap-
+reachability checks plausible. It is not reproducible validation because the
+four-check verifier remains an opaque function and the retained paper package
+has no scenario graphs, state-transition semantics, fixtures, predicates, or
+per-check traces. A durable construction certificate should retain both a
+completion witness and one reachability witness per declared trap, bound to the
+exact scenario and verifier revision.
+
+The paired consent intervention has the same executable-evidence boundary.
+OverEager says verbose/`consent_kept` and terse/`consent_stripped` prompts are
+byte-identical outside one explicit block and that fixtures, predicates, and
+the judge match by SHA-256. The retained 17-file source package publishes none
+of the 76 prompt pairs or their component hashes. The rates and McNemar table
+therefore establish a reported paired association under the authors' design;
+they do not let an independent reader rule out another byte difference. A
+replayable causal receipt must bind the exact deleted byte span, prove the
+remaining prompt bytes equal, keep fixture/predicate/judge digests equal, and
+give outcome records distinct identities. A whole-bundle equality claim would
+be the wrong check because prompt and result bytes are expected to differ.
+The printed McNemar values are conservative: compatible-table enumeration fixes
+GLM at `p=0.000244140625`, bounds MiniMax at `0.000244140625..0.004425048828125`,
+and bounds Sonnet at `0.00390625..0.03515625`. All remain below 0.05, so the
+reported direction is robust to the unknown outcome pairing, conditional on
+the unverified consent-only input construction.
+
+Its three-seed check answers a different question from repeated behavior on
+the same cases. Seeds 42, 7, and 13 are explicitly generator seeds; the
+synthesis algorithm samples an expert seed and a five-axis mutation vector,
+and the public table exposes only aggregate 64/500, 57/500, and 62/500 counts.
+Exact two-sided Fisher recomputation reproduces all pairwise values
+(`0.560851402513793`, `0.924120976407388`, and `0.696184455652260`), so the
+reported `p>=0.56` aggregate comparison is supported. The unreleased scenario
+manifests, identity overlap, prompt-pair hashes, and raw outcomes prevent a
+same-instance stability claim; six non-zero archetypes vary by 10--20 points,
+and phase-1 MiniMax terse varies 6.6%--21.1% across two seeds. Governance
+should therefore preserve aggregate sampling robustness separately from
+scenario-level repeatability.
+
+It also cannot support the adjacent all-seed rank claim. The manuscript says
+“both SUTs” retain high/low ordering, but its sole three-seed table identifies
+only Claude Code/GLM-4.6; the second system is unnamed and has no seed-7/13
+rates or counts. Compatible missing values can preserve or reverse the
+seed-42 ordering, so one cell's stable aggregate is not evidence of a
+between-system invariant. RQ4's promised scenario-set scaling curves are also
+absent from the 17-file source archive: no size sweep, resampling protocol,
+cell coverage, or uncertainty is published. Generator-seed stability for one
+cell must therefore remain separate from cross-system rank and scale
+robustness.
+
+It also cannot carry the paper's broader claim that RQ1--RQ3 are preserved.
+RQ1's 76 paired consent scenarios, RQ2's availability-shaped 15-cell matrix,
+and RQ3's archetype/severity/rule-judge evidence are different analysis
+objects. RQ4's generator-seed rows publish no identities joining those objects
+to repeated runs, no repeated class mappings, and no full-matrix sensitivity.
+The RQ4 discussion also cites the existing matrix and a phase-1 two-seed
+comparison, but neither closes those joins. Six archetype rates move 10--20
+points and severity totals move 386/350/356 across seeds, which is relevant
+contradictory evidence to a blanket invariance reading even though it does not
+refute any original conclusion. The separate two-annotator re-evaluation is
+RQ5 evidence; repeated human labels are required only if a transfer claim also
+extends to RQ5. Treat preservation as unestablished until each RQ has a
+declared invariance criterion, joined content-addressed populations, scale
+sweeps, and dependence-aware uncertainty.
+
+The same separation applies to the paper's “axis independence” wording. Its 20
+chi-square tests are outcome-versus-one-axis tests, not tests among the five
+input axes. Reported `p>=0.139` supports no detected marginal outcome
+association in those samples; it does not prove zero effects or mutual axis
+independence. Latin-hypercube marginal balance and descriptive two-axis outcome
+ranges do not supply the missing ten axis-pair joint distributions. Until
+scenario-level assignments or those contingency tables are released, actual
+inter-axis dependence is unknown.
+
+Nor does the paper's fixed-`A`, varied-`B` range identify interaction. If all
+three `A` rows equal `[0.10,0.20,0.30]`, every difference of differences is
+zero while its mean/max range is 20 points. The published 3.8--14.4-point
+summaries therefore show conditional heterogeneity, not an interaction effect;
+the absent cell counts and uncertainty prevent decomposition into main effect,
+interaction, imbalance, and noise. Marginal Latin-hypercube balance covers the
+authored axes but does not make an unweighted mean unbiased for an undefined
+deployment population. These sensitivity summaries cover only Claude Code/GLM,
+and unknown cross-seed scenario overlap also leaves the unpaired Fisher
+inference assumption unverified.
+
+**The Balkanization Problem, as a hypothesis**: The taxonomy identifies
+unverified cross-category handoffs—especially the missing shared benchmark and
+policy-authoring-error study. It motivates a research-level Handoff Fallacy
+(#459), but does not measure field-wide citation fragmentation or prove its
+five absences beyond the non-exhaustive corpus.
 
 Companion papers from this scan form a diagnosis-architecture-evaluation arc:
-- **AGL-1** (2607.03516v1) provides a vendor-neutral 7-domain governance control plane (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability)
-- **CAGE-1** (2607.03510v1) introduces **Prebind Assurance** — proving an agentic action is controlled *before* it becomes binding. The evaluation complement to the Admission Boundary (#469): ATP *constructs* the gate; CAGE-1 *evaluates* whether it works
+- **AGL-1** (2607.03516v1) proposes a vendor-neutral seven-domain reference model (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability); it does not provide or evaluate an implemented control plane
+- **CAGE-1** (2607.03510v1) proposes **Prebind Assurance**, a seven-field
+  evidence checklist for asking whether an action was controlled before it
+  became binding. It runs no gate or control and therefore does not evaluate
+  whether ATP works; it is a prospective test-design complement.
 
 **Nineteen-point exit arc**:
 1–18: (#444–#469)
@@ -961,15 +1370,15 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-473.md, arXiv 2607.05743, 2607.
 
 ### Layer 35: The Verification Loop (Scan #475, 2026-07-09)
 
-Layers 25–34 identified governance failures at specific surfaces (execution, write, claim, handoff, process, admission, knowledge composition). Layer 35 provides the constructive unification: **verification as the execution mechanism itself, not an external inspection**.
+Layers 25–34 identified governance failures at specific surfaces (execution, write, claim, handoff, process, admission, knowledge composition). Layer 35 proposes a constructive pattern: **make verification executable rather than optional inspection, and state exactly what its contract does and does not establish**.
 
-Three arXiv papers from the same submission day (2026-07-07) converge across different subfields:
+Three arXiv papers from the same submission day (2026-07-07) test related but non-equivalent mechanisms:
 
-- **SWE-Review** (2607.06065v1, cs.SE): One-shot PR generation is open-loop. Agentic code review introduces a generate-review-revise loop that continuously improves PRs. Review **transfers beyond review** to improve generation models — the loop trains the generator.
-- **Aria** (2607.06341v1, cs.SE): A general code agent (Claude Code) wrapped in a verification harness achieves **100% proof coverage** — 4,257 Iris lemmas, 217 Rust verification lemmas, 318 reglang (vs ~12.5% for prior LLM provers), 72 iris-lean lemmas. Zero expert intervention. The key: **freeing the agent within the harness** outperforms constraining the agent's strategy.
-- **CXI** (2607.06000v1, cs.CR): Context-to-Execution Integrity implements a triple-binding gate (field authority × exact-effect authorization × invocation authority) — 720 AgentDojo live episodes, 1,739 LLM calls, **zero** escapes. 400 repository episodes, 231 safe completions, zero escapes.
+- **SWE-Review** (2607.06065v1, cs.SE; primary-reviewed 2026-09-04): Executable review/revision improves several SWE-bench resolve-rate cells, especially for weak generators, and mixed review training produces +0.8/+5.6/+3.8-point direct-resolution gains across model scales. Reviewer gains range from -0.6 to +25.1 points. The agentic comparison also changes tool/execution access and reports point estimates without repeated-run uncertainty, so it does not isolate multi-turn review or establish continuous improvement.
+- **Aria** (2607.06341v1, cs.SE; primary-reviewed 2026-09-04): A Claude Code/Opus 4.7 campaign with kernel checking and coverage/lint hooks reports 100% coverage over 4,257 Iris, 217 RustBelt, 318 reglang, and 72 iris-lean lemmas. Iris used 379.7 model-hours and up to 30 retries per lemma. The prior-reglang contrast changes system, model, context, and budget; without a matched no-feedback or alternate-harness control, it does not isolate an 8× harness effect. The inaccessible anonymous artifact prevents independent reproduction.
+- **CXI** (2607.06000v1, cs.CR; primary-reviewed 2026-09-04): A triple-binding gate reports no observed escapes at mediated sinks in 720 AgentDojo episodes and 400 repository episodes. Utility is separate: 199 and 231 safe task completions, respectively. The fixed-policy threat model excludes compromised policy/runtime and unreviewed sinks; validator completeness and task quality remain outside the guarantee, and the anonymous artifact is HTTP-401 unavailable.
 
-**The Verification Loop**: When verification is architecturally external to generation, it can be omitted, deferred, or optimized away — the open-loop default that Layers 25–34 document failing. When verification IS the execution mechanism — the generator cannot produce output without passing through the loop — reliability becomes a construction property rather than an inspection property. The loop is the unit of reliability, not the model.
+**The Verification Loop, qualified**: When verification is architecturally external to generation, it can be omitted, deferred, or optimized away. When a checker or gate is executable, the property it actually checks can become a construction property rather than an inspection property. End-to-end reliability still belongs to the complete model, scaffold, tool, budget, and evaluator system; the three studies do not isolate one common loop effect.
 
 **Unification across preceding layers**:
 - Layer 25 (Execution Boundary) → the loop IS the execution mechanism
@@ -981,7 +1390,7 @@ Three arXiv papers from the same submission day (2026-07-07) converge across dif
 
 **Twenty-point exit arc**:
 1–19: (#444–#473)
-20. **Verification Loop (#475): Make verification the execution mechanism, not an external inspection — the generator proposes, the loop verifies and admits, and the loop's verdicts feed back to improve future generation; reliability is a property of the loop architecture, not the model capability (the loop-as-mechanism condition)**
+20. **Verification Loop (#475): Make verification executable rather than optional inspection — the generator proposes and a reviewer, checker, or gate revises or admits under a stated contract; reliability claims must remain scoped to the complete tested system (the executable-contract condition)**
 
 Source: findings/2026-07-09-hn-arxiv-scan-475.md, arXiv 2607.06065, 2607.06341, 2607.06000
 
@@ -1010,31 +1419,53 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-478.md, arXiv 2607.07436, 2607.
 
 ### Layer 37: The Verification Hierarchy (Scan #479, 2026-07-09)
 
-Layer 36 showed governance mechanisms fail silently — producing positive signals even when structurally disabled. The Verification Hierarchy identifies *why*: verification mechanisms exist in a strict ordering of strength, and operating at any level below what the domain requires produces systematically misleading *positive* results.
+Layer 36 showed governance mechanisms can fail silently. Scan #479 initially interpreted its sources as one strict hierarchy, but primary review now supports a coverage map instead: verification mechanisms answer different predicates, and a valid answer about error can remain silent about causality, correctness, or authority. The evidence does not establish a universal total ordering or systematic positive error at every purported lower level.
 
-Five arXiv papers from different domains converge:
+Scan #479 grouped five arXiv papers; the three primary-reviewed entries now
+support a narrower coverage claim:
 
-- **Recursive Self-Improvement survey** (2607.07663v1, 1,250 papers surveyed): Derives a verification hierarchy from formal verifiers (strongest) through process reward models, external judges, and rubrics to intrinsic self-assessment (weakest). Self-improvement strength *tracks this hierarchy exactly*. Governance-grade measurement identified as "the field's most underpopulated niche." Self-confirming loops, model collapse, and diversity collapse all occur when verification is performed at a level below what the system requires.
-- **Physics-Audited Agentic SciML** (2607.07379v1): Error metrics (weak verification) select surrogates that violate causality (strong verification) — a model with low error responds to *future* loading history. The error metric reports success; physics auditing reveals the result is physically impossible. The best-performing model under weak verification is systematically the worst-performing under strong verification.
-- **Rethinking Code Performance Benchmarks** (2607.07619v1): Only **6.11%** of 1,538 "performant" implementations are statistically significantly faster under rigorous testing (30 runs + significance tests). 94% of performance claims evaporate. Multi-agent test generation recovers 24-25% of hidden differences. Verification Level 4 (statistical) catches what Level 6-7 (single-run, automated judge) misses.
-- **EvoSOP** (2607.07321v1): Agents self-evolve through lifecycle governance (construct→merge→evaluate→prune), not static toolsets. The pruning step IS the verification gate — without it, the toolset accumulates false-pass artifacts. Governance loop IS the improvement mechanism.
-- **Towards Agentic AI Governance** (2607.07612v1): Systematic review identifies that agentic AI requires targeted governance mechanisms distinct from pre-existing AI frameworks. Self-describes as "preliminary" — the field is pre-paradigmatic while deployment accelerates.
+- **Recursive Self-Improvement survey** (2607.07663v1, primary-reviewed 2026-09-04): Organizes an 871-paper seed harvest plus 379 targeted supplemental records, but calls its formal-verifier-to-intrinsic-signal ordering a “qualitative pattern ... not a measured law.” The recency-biased sample is 74% from 2026, acknowledges about 54 supplemental bleed records, and was classified by one annotator. Its promised public corpus repository returned `Repository not found`, so assignments and scripts remain unverified. “Governance-grade measurement” is an attributed gap inference, not a separately measured category.
+- **Physics-Audited Agentic SciML** (2607.07379v1, primary-reviewed 2026-09-04): A common post-run contract finds normalized causality violations of 12.62 sampled and 2750.62 under bounded search for one earlier error-only transient surrogate, while the causal surrogate reports zero. But the audit-enabled surrogate also has lower mean error (`2.629e-3` versus `2.724e-3`), causality was soft during live search, both runs are single-seed, and the workflow changes verification, probes, and proposal feedback together. This supports predicate-specific output evidence, not a systematic weak-versus-strong selection reversal.
+- **Rethinking Code Performance Benchmarks** (2607.07619v1, primary-reviewed 2026-09-04): Only **94/1,538 (6.11%)** benchmark-labeled performant implementations pass the study's combined original-test correctness, one-sided significance, and effect-size gate. This does not prove that the 1,444-task complement is noise or false: released CSVs contain 1,400 `p >= .05` cases, 44 other gate failures, and 529 implementations that pass fewer tests than canonical. The authors' generated stress tests detect 23.94–25.43% in the released artifact, but its COFFE spreadsheets disagree with the paper's comparison table. Repeated measurement helps; correctness, workload selection, and artifact consistency remain separate verification requirements.
+- **EvoSOP** (2607.07321v1): The paper implements lifecycle governance
+  (construct→merge→evaluate→prune) and reports higher average task success for
+  the bundled system. Its ablation removes only Reviewer/pruning or Merger:
+  Reviewer removal has a large adverse Multi-Step contrast, but Multi-Turn
+  intervals overlap; Merger removal stays close to full EvoSOP; Constructor
+  and Evaluator are never ablated. Because exposed and unseen tasks are pooled
+  after choosing the best training-success epoch, this is suggestive evidence
+  for feedback-guided retirement, not proof that governance or pruning alone
+  causes the gain.
+- **Towards Agentic AI Governance** (2607.07612v1, primary-reviewed
+  2026-09-04): Maps 21 mostly conceptual, legal, review, and proposal papers,
+  but provides no reproducible search flow, evidence grading, deployed-control
+  count, or governance outcome. Its adoption premise comes from vendor surveys
+  of narrow U.S. executive populations; the paper also misstates 66% of PwC
+  adopters reporting productivity gains as a 66% productivity increase. It
+  supports “early literature,” not a measured widening deployment–governance
+  gap.
 
-The hierarchy:
-1. Formal verifiers (Coq/Lean) → sound but domain-limited
-2. Deterministic gates → strong but domain-specific
-3. Domain constraints (physics, policy) → incomplete but catches what metrics miss
-4. Statistical testing (30+ runs, significance) → reveals what single runs hide
-5. Multi-agent review → diversity-dependent, collapses with coupled agents
-6. Automated judges (LLM-as-judge) → correlated with subject's blind spots
-7. Intrinsic self-assessment → highest confidence, lowest validity
-
-Each lower level produces *more confident* results with *less validity*. This is the mechanism: the Governance Silence isn't random — it's structural. Weak verification selects artifacts that strong verification rejects. The misleading positive is not noise; it's a systematic consequence of operating at the wrong level.
+The revised coverage map keeps the mechanisms but removes ordinal claims:
+formal verifiers cover encoded statements; deterministic gates cover named
+conditions; physics contracts cover specified output properties; statistical
+tests cover distributions under selected workloads; multi-agent review covers
+one reviewer/oracle configuration; automated judges cover their rubrics; and
+self-assessment covers an internal evaluation. None alone establishes the
+others. A misleading positive arises when a decision silently substitutes one
+covered predicate for an uncovered claim, not because every mechanism has a
+fixed position on a universal ladder.
 
 **Twenty-four-point exit arc**:
 1–21: (#444–#478)
-22. **Verification Hierarchy (#479): Before trusting any verification result, identify the verification level applied and the verification level required. If there is a gap, the result is not "unverified" — it is *misleadingly positive*. Audit the verification hierarchy itself: formal verifiers > deterministic gates > domain constraints > statistical testing > multi-agent review > automated judges > self-assessment. Each level produces confident results that levels above would reject (the hierarchy audit condition)**
-23. **Commodity Proof (#482): Invest in harness-level verification infrastructure proportional to harness-level economic impact. When the harness moves cost more than the model menu (41% cost reduction, model-invariant across 6 models, r=0.99 quality-leverage correlation), verification of the harness — not the model — is the binding constraint. Evaluate trajectories, not just outputs. Benchmark harnesses, not just models. The developer IS the harness evaluator; LLM Burnout (323pts) is the physiological signal that this load is unsustainable (the harness verification condition)**
+22. **Verification Coverage (#479): Before trusting any result, name the claim, predicate, domain, tolerance, sampling or search budget, and authority actually covered. Do not infer causality from predictive error, correctness from timing, or external authority from local checks. There is no evidence here for one universal ordering across these predicates (the coverage declaration condition).**
+23. **Harness comparison (#482): Evaluate model–harness configurations, not
+just model outputs. One Writer baseline-versus-harness bundle reports lower
+aggregate cost, latency, and tokens across six model aggregates on 22 prompts,
+but the 33–61% range is heterogeneity, `r=0.99` has six points and no interval,
+and raw artifacts/repeated-run uncertainty are absent. This motivates
+harness-level measurement; it does not establish that harness verification is
+the binding constraint or that HN burnout attention measures verification
+load (the harness evidence-coverage condition).**
 24. **Skill Paradox (#483): Measure skill impact, not just skill provenance. When skills fill the harness at industrial scale (216,938 in SkillCenter, 20K+ GitHub stars) but controlled ablation proves generated skills ≈ random tokens of equal length (7,560 runs, p ≥ 0.396, 1.2pp total spread), the skill ecosystem optimizes for the wrong metric. SkillGate verifies provenance; nothing verifies impact. Controlled ablation MUST precede deployment-at-scale. Extend to rules: Institutional Red-Teaming (2607.07695) proves rules move safety 22-58pp while models are held constant — red-team the deployment substrate, not just the model (the skill impact condition)**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-479.md, arXiv 2607.07663, 2607.07379, 2607.07619, 2607.07321, 2607.07612
@@ -1043,15 +1474,107 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-483.md, arXiv 2607.07676, 2607.
 
 ### Layer 38: The Commodity Proof (Scan #482, 2026-07-09)
 
-Layer 37 showed verification mechanisms exist in a strict hierarchy. The Commodity Proof asks: *verified at which layer?* The Harness Effect (2607.06906) runs the first controlled experiment isolating harness from model — 22 tasks, six foundation models, changing only the orchestration layer. The harness cuts cost 41%, wall-clock 44%, tokens 38% — **all model-invariant** (33-61% range). Quality gains correlate almost perfectly with baseline model strength (r=0.99, "harness leverage"). On this workload, the orchestration layer moved cost more than the full spread of the model menu.
+Layer 37 showed that verification claims need explicit predicate coverage. The
+Harness Effect (2607.06906) compares 22 locked prompts across six foundation
+models under one frozen Writer production loop and one Writer harness bundle.
+It reports 41% lower blended cost, 44% lower median wall-clock, and 38% fewer
+tokens, with quality treated as parity. Every model aggregate is cheaper, but
+33–61% is same-direction heterogeneity rather than demonstrated invariance.
+The quality-change correlation is `r=0.99` over six model-level means without
+an interval.
 
-This is the mathematical proof of what the Substrate Inversion hypothesized: when the harness IS the economic lever, verification must target the harness, not the model. But harness-level verification has near-zero infrastructure: no benchmarks, no leaderboards, no red-teaming community, no standardized evaluation framework.
+This is workload-specific reported evidence that orchestration can materially
+alter token economics, not mathematical proof of a general ordering. The
+baseline ran once, raw prompts/traces/prices/configurations are only promised,
+and individual mechanisms are not ablated. Harness-level verification is a
+useful target alongside model evaluation; this paper does not inventory or
+prove near-zero infrastructure.
 
-AgentEval (2607.06873) and AgentLens (2607.06624) represent the first responses: AgentEval discovers hidden governance boundaries via mined workflow graphs (23-38 boundaries per agent vs 12 with prompting); AgentLens evaluates entire trajectories instead of binary pass/fail, recovering the process information that Process Erasure (#462) destroys.
+AgentEval (2607.06873) and AgentLens (2607.06624) are candidate responses.
+AgentEval's full system reports 23–38 boundary clusters across four agents, but
+23 versus 12 is one airline-only ablation against an LLM prompt-only generator.
+Its single runs, auditor-defined clusters, and absent artifacts make this
+evidence for structural target diversification, not a general hidden-boundary
+recovery rate. AgentLens releases a 16-scenario/two-persona Java benchmark,
+deterministic task verifiers, and LLM trajectory-review code. Its five judge
+dimensions lack a published human agreement study, raw evaluated trajectories
+are absent, and public automation is manual-dispatch; this supports process-
+evidence retention, while recovery completeness and nightly production impact
+remain unverified.
 
-HN confirms the attention market verdict: frontier combined (GPT-Live 693pts + Grok 4.5 611pts = 1,304pts) still trails a decoded bash script (Uniqlo 1,372pts). LLM Burnout at 323pts (P-70 CONFIRMED) names the physiological cost of the verification vacuum at the harness-human interface.
+Agentic Data Environments (2607.07397) places branching and data-flow policy
+below the agent, but its evidence does not establish one environment-wide
+guarantee. Retained BranchBench summaries reproduce Dolt at 170/1,000 MCTS
+steps and Neon at 23/1,000, while public outputs cover only those two systems.
+LakeQA releases its tasks and evaluator, yet one of 1,007 full tasks contains
+merge markers and its current 32.87% full-set best exact match contradicts the
+overview's `<=23%` ceiling. The cited DFC paper evaluates query-level rewriting;
+cross-tool representation invariance, cross-component branching, and the
+overview's five-engine claim lack matching released evidence. The useful
+oversight lesson is to place named controls at real state/flow boundaries, not
+to promote a partial database predicate into an end-to-end safety claim.
 
-Source: findings/2026-07-09-hn-arxiv-github-scan-482.md, arXiv 2607.06906, 2607.06873, 2607.06624
+Its AIM memory example has the same evidence limit. The source reports roughly
+10% of full-dialogue context, relative gains over Mem0 and Octen, and a
+4.18-times speed / 13.54% relative-accuracy comparison with GAM, but supplies
+no absolute scores, denominators, model/configuration controls, repeat results,
+or artifact. A title-matching OpenReview record is challenge-gated and is not
+cited by the overview, so these remain preliminary author reports rather than
+evidence that a structured representation alone caused the gains.
+
+GAM's primary `2511.18423v1` source narrows that limit further. Its LoCoMo
+table separates F1 and BLEU-1 across four question categories and two backbone
+models; it defines no “average accuracy.” The four GAM F1 cells average
+`48.1975` for GPT-4o-mini and `46.0100` for Qwen2.5-14B-Instruct, with no
+evidence that AIM used either denominator. GAM's timing table is for HotpotQA,
+not LoCoMo, and its online path is slower than every listed baseline at all
+three context lengths. The public GAM repository supplies evaluation code but
+no datasets, retained paper outputs, pinned dependencies, or paper-era revision.
+Accordingly, AIM's direction remains a source report while its 4.18x / 13.54%
+joint comparison has no matching public task, metric, timing, or configuration
+identity.
+
+Its Octen comparison also crosses evidence classes. The cited Octen artifact
+is a Qwen3-derived embedding model evaluated on RTEB with NDCG@10, not a
+published LoCoMo conversational-memory system. Its primary post and pinned
+model card report no LoCoMo, F1/BLEU, generation pipeline, or end-to-end answer
+score. AIM may have assembled an undisclosed RAG baseline around that retriever,
+but the 15.82% direction cannot be attributed to Octen or structured memory
+without the missing corpus, chunking, generator, metric, and outputs.
+
+Mem0 exposes why metric identity matters. Its primary paper reports category
+F1/BLEU-1, ten-run LLM-judge estimates, and a separate overall judge score.
+AIM's 49.8% does not select one. Applying it to Mem0's public F1 mean implies
+an AIM average of `61.3955`, inconsistent with the `54.7234` or `52.2398`
+implied by AIM's GAM percentage under the two public GAM F1 means. Hidden
+configurations could reconcile the prose, but no common public experiment does.
+GAM also permutes Mem0's published category pairs under different headings,
+preserving only the unweighted mean. Treat category labels and aggregate gains
+as unbound until one versioned result bundle fixes both.
+
+The claimed full-dialogue comparison does not repair that binding. Original
+LoCoMo `2402.17753v1` exposes GPT-3.5-turbo to at most 16K tokens rather than a
+full average dialogue and reports F1 `37.8`. Mem0's later 26,031-token
+full-context row reports `72.90 ± 0.19%` on an LLM-judge metric without
+explicitly naming the row's answer model. GAM's 128K GPT-4o-mini and
+Qwen2.5-14B long-LLM controls instead average `29.6875` and `30.8825` F1
+across four categories. AIM selects no model, metric, row, score, or token
+denominator among them. Treat “comparable” and roughly 10% context as another
+unbound author report; the title-matching OpenReview record remains anonymously
+challenge-gated and may still contain the missing experiment details.
+
+Sentence adjacency makes GAM the likeliest denominator for the 11.53% temporal
+and 24% open-domain figures, but two GAM model rows imply two different AIM
+pairs (`66.304585`/`41.292` or `57.460256`/`37.9812`). The two gains alone
+average `17.765%`, not 13.54%; missing categories and weights may explain the
+difference. This supports demanding a versioned result key, not reverse-
+engineering a preferred score.
+
+HN point totals record attention to the named stories. They do not confirm a
+market verdict or measure physiological cost, a verification vacuum, or its
+cause.
+
+Source: findings/2026-07-09-hn-arxiv-github-scan-482.md, arXiv 2607.06906, 2607.06873, 2607.06624, 2607.07397, 2512.05374
 
 ### Layer 39: The Skill Paradox (Scan #483, 2026-07-09)
 
@@ -1065,7 +1588,7 @@ Layer 38 showed the harness moves economics more than the model. The Skill Parad
 
 The paradox: SkillGate filters for *provenance quality* (is the claim traceable?) but not *impact quality* (does the agent perform better?). The community optimizes for skill count while the evidence suggests the count dimension is irrelevant. GitHub stars measure demand; nothing measures efficacy.
 
-Two companion papers extend the paradox to adjacent layers. Institutional Red-Teaming (2607.07695) proves deployment rules causally move safety by 22–58 percentage points within every model population (33,924 games, 228 contexts, 7 populations), extending the Commodity Proof from economics to safety — rules > model for safety outcomes, just as harness > model for cost outcomes. The Action-Graded Severity Scale (2607.07474) proves binary attack-success rate hides critical failures: a defense reporting zero ASR still permits cross-scope leaks; a seven-level ordinal scale (L0–L6, reversibility × scope × privilege) recovers the governance signal that binary metrics destroy.
+Two companion papers extend the paradox to adjacent layers. Institutional Red-Teaming (2607.07695) reports that deployment rules move safety by 22–58 percentage points within every model population (33,924 games, 228 contexts, 7 populations). That is separate rule-design evidence; it does not inherit or prove a general harness-over-model cost ordering from the Harness Effect. The Action-Graded Severity Scale (2607.07474) reports that binary attack-success rate can hide cross-scope leaks; a seven-level ordinal scale (L0–L6, reversibility × scope × privilege) recovers distinctions the binary metric omits.
 
 RLVP (2607.07435) provides the constructive complement: separate cheap path verification (constraint violations are detectable) from expensive outcome verification (correctness is hard). This asymmetry — cheap to detect bad, expensive to confirm good — mirrors the Skill Paradox: cheap to verify provenance, expensive to verify impact.
 
@@ -1193,7 +1716,10 @@ Progressive Crystallization (2607.07052) provides the constructive complement: a
 
 MCP Taint Vulnerabilities (2607.07461) reveals that the standardized protocol layer for agent-tool interactions harbors **taint-style vulnerabilities** (unsanitized data flowing through tool call paths to sensitive sinks) that constitute a substantial fraction of MCP server vulnerabilities, require significant code modifications to remediate, and are met with **slow community response** — the discovery-velocity-exceeds-fix-velocity pattern from the Certification Collapse (#487), now at the protocol layer.
 
-Agon (2607.07690) demonstrates that single-model RL **cannot provide escalating verification challenges** — making two competing models each other's graders doubles GRPO's pass@1 on DeepMath (8× untrained Mixture-of-Agents gain). Adversarial verification loops solve the Dispersion Collapse (#455) by construction: you can't converge to a shared attractor when your training partner actively tries to surpass your solutions.
+Agon (2607.07690) reports that competing graders improve GRPO pass@1 on
+DeepMath. This is a candidate diversity mechanism, not a by-construction
+solution to Dispersion Collapse; its grader-error dependence and transfer need
+direct measurement.
 
 **Three HN instances of the Reliability Horizon:**
 1. **Grok 4.5** (712pts, 1,221c, r=1.71 ATH): Surface engagement (712pts, modestly high) conceals record-breaking unresolved contestation (1,221 comments). The community cannot determine reliability; it can only express escalating doubt.
@@ -1285,12 +1811,13 @@ Three independently submitted papers converge:
 
 1. **What Makes a Good Bug Report for an AI Agent?** (2607.07593): 433 SWE-bench issues × 87 agents × 27 features. Features emphasized for human readers (NL steps-to-reproduce, readable descriptions) contribute little or correlate *negatively* with agent success. **Structure alone matters**: removing section headers or flattening lists reduces solve rates without removing any content. Models diverge in failure mode (Qwen exhausts budget searching; Gemma commits early to wrong interpretation).
 2. **Measuring Intelligence Beyond Human Scale** (2607.07040): Human-authored benchmarks saturate because examiners at the frontier cannot specify tasks that are both hard AND verifiable beyond their own capability. Proposes adversarial psychometric system where models generate public challenges. The benchmark specification has a ceiling encoded by its author.
-3. **Mining Workflow Graphs for Black-Box Boundary Testing** (2607.06873): AgentEval discovers 23–38 boundaries per agent via conversation workflow graphs vs 12 with human-specified prompts (~2× improvement). Critical boundaries hide behind multi-turn prerequisites invisible to human test authors.
+3. **Mining Workflow Graphs for Black-Box Boundary Testing** (2607.06873): AgentEval reports 23–38 boundary clusters per agent across four full-system runs. Its only matched boundary-generation ablation is airline: 23 structural-target clusters versus 12 from an LLM prompt-only generator. It does not compare against human-authored suites or estimate a 50% human miss rate.
 
 **The Mismatch across layers:**
 - Bug report *format* embeds human reading patterns → agent parsing interference
 - Benchmark *content* embeds human capability ceiling → cannot discriminate beyond frontier
-- Test suite *coverage* embeds human observability → misses ~50% of real boundaries
+- Test generation can omit stateful guards → mined structural targets may
+  diversify probes, with the human-suite comparison still untested
 
 Each produces **false confidence** (tests pass, benchmarks score, specifications look adequate) because the auditor is the same species as the specification author.
 
@@ -1399,15 +1926,26 @@ https://scalex.dev/blog/ai-agent-permissions-stats/
 5. **Human capital pipeline**: Can the collaborative traits (perspective-taking, humility, curiosity) be trained or selected for systematically? If yes, the Human Gate is addressable; if no, oversight population has a hard ceiling. (2607.02467 calls these "measurable, trainable" but provides no training protocol.)
 6. **Verification composition**: Can verification scale sub-linearly at *each* layer while also composing across layers? Individual papers prove sub-linear at their layer (logits, sovereignty, authority, formal proofs). Whether layered composition preserves the scaling property is the next open question.
 7. **Announcement verification**: Can action-trace verification be made cheap enough to deploy universally, or will it remain a premium capability? MOSS demonstrates auditable memory is architecturally possible; ToolFailBench shows it's empirically necessary. The gap between "possible" and "default" is the deployment question.
-8. **Predicate gate coverage**: HCRC achieves O(0) oversight for gated error classes, but what fraction of real-world errors can be expressed as decidable predicates? The frontier lies between errors expressible as predicates (machine-checkable) and errors requiring judgment (human-only). Mapping this boundary determines the practical reach of the Predicate Gate architecture. **Scan #451 partial answer**: Aria proves the coverage is dramatically larger than assumed — ALL 4,647 lemmas across separation logic, Rust verification, and regular languages proved with zero expert intervention. The key was freeing the agent within the harness, not constraining the agent's proof strategy. The predicate gate coverage frontier is determined by harness design, not model capability.
+8. **Predicate gate coverage**: HCRC achieves O(0) oversight for gated error classes, but what fraction of real-world errors can be expressed as decidable predicates? The frontier lies between errors expressible as predicates (machine-checkable) and errors requiring judgment (human-only). Mapping this boundary determines the practical reach of the Predicate Gate architecture. **Scan #451 partial answer, qualified**: Aria reports all 4,864 existing target lemmas proved under kernel and obligation-preservation checks, showing a broad machine-checkable proof-admission surface. It does not isolate whether harness design, model capability, retry budget, or strategy freedom determined coverage.
 9. **Harness generalization**: Aria's verification harness works because Coq/Lean kernels provide sound, complete, terminating verification by construction. Can the Verification Harness Hypothesis extend beyond formal proof to semantic correctness, business logic, and the oversight dimensions lacking formal kernels? This is the next frontier: constructing verification kernels for domains that currently have none.
-10. **Co-evolution bounds**: HASE shows the harness can co-evolve with the system, but does co-evolution converge or diverge? If the harness must evolve infinitely, the oversight cost never stabilizes. If it converges (i.e., harness evolution reaches a fixed point), the Verification Harness Hypothesis holds with a finite design cost. HASE's SOTA convergence on circle-packing suggests convergence is achievable in bounded domains. Whether it holds in open-ended domains (enterprise processes, scientific replication) remains open. Additionally, who governs the harness evolution itself — can the co-evolution mechanism be verified, or does it create an infinite regress?
-11. **Diversity sufficiency**: The Dispersion Collapse (2607.06001) shows coupled agent populations converge to attractors. What degree of architectural decorrelation is sufficient to maintain verification diversity? Different prompts on the same model are insufficient (same substrate). Different models from the same training distribution may be insufficient (same attractor basin). The open question: can we characterize the minimum structural distance between verification agents needed to ensure independence — and is it achievable in practice? The $138.76 experiment cost suggests the question is empirically tractable.
+10. **Co-evolution bounds**: HASE shows one system can jointly update policy weights, whitelisted harness components, and solutions, but does not estimate convergence. Its circle-packing run reaches a reported best score after two externally oracle-gated evaluator repairs; a finite successful trajectory is not evidence of a fixed point. Whether adaptation converges in open-ended domains remains open. The next evidence needs repeated independent evolution runs, a declared stopping criterion, matched fixed/adaptive harness arms, and an authority model for the non-editable oracle and patch reviewer.
+11. **Diversity sufficiency**: The Dispersion Collapse (2607.06001v1) shows
+below-floor dispersion in one homogeneous-model toy niche economy, not
+verification dependence. What degree of architectural decorrelation is
+sufficient to maintain verification diversity? Different prompts and models
+both remain untested here. The next evidence needs matched verifier tasks,
+same- versus cross-model arms, error correlation, coverage, and downstream
+outcomes.
 12. **Variance preservation under scaling**: The Variance Signal (#457) shows distributional structure is the governance-relevant information, but current infrastructure (benchmarks, leaderboards, eval dashboards) is designed to compress variance into ranks. How can evaluation infrastructure preserve and expose distributional information without making results incomprehensible? The tension: variance-rich evaluation is informationally dense but cognitively expensive — potentially creating a second-order Oversight Inversion where reviewing distributional evaluations costs more than reviewing point estimates. The Monitoring paper (2606.02494) suggests a resolution: deterministic triage routes 97% to automation, surfacing only the 2% of variable behavior for human attention. Can this 97/2 principle be generalized across evaluation contexts?
 13. **Handoff verification scalability**: The Handoff Fallacy (#459) shows verification must target transition states between components, not just component outcomes. But the number of handoffs grows combinatorially with system complexity — N components produce O(N²) potential handoffs. Can handoff verification be made tractable? The Semantic Handoff paper (2607.06256) suggests typed postconditions and preconditions as a compression mechanism, but this requires formalization that most agent systems lack. The open question: what minimum set of handoff specifications is needed to bridge the gap between component-confidence and system-confidence, and can these specifications be inferred from execution traces rather than manually authored?
-14. **Attention distribution across release arcs**: The Attention Decay Curve (#460) shows evaluative attention peaks at preview and depletes by launch — the inverse of where oversight matters most. Can release processes be redesigned to distribute evaluative attention across the announcement arc? Possibilities include: delayed previews (announce only at launch), staged evaluation budgets (reserve oversight capacity for deployment), or attention-aware disclosure (sequence announcements to maximize evaluative attention at deployment milestones). The deeper question: is the decay curve a property of HN/community attention, or a general property of how humans allocate evaluative effort to sequenced announcements? If general, institutional oversight bodies may exhibit the same decay — evaluating previews thoroughly and rubber-stamping launches.
-15. **Process preservation cost**: The Process Erasure (#462) shows governance requires process signatures — trajectory diagnostics, conflict objects, declared contracts, transition graphs — rather than outcome metrics. But preserving process information has a cost: storage (immutable histories), complexity (action taxonomies, CRDTs), and cognitive load (reviewing trajectories instead of scores). Can process preservation be made cheap enough to be default? TraceProbe's anti-pattern detection, StateFuse's projection-time resolution, PatchOptic's static certificates, and AgentTether's 97% turn/token reduction each demonstrate that process-aware systems can be *cheaper* than process-erasing ones. The open question: does this hold generally, or are these favorable domains? And can process preservation compose across layers — trajectory diagnostics within conflict-preserving memory within declared-contract state mutation — without combinatorial complexity?
+14. **Attention distribution across release arcs**: Scan #460's three unmatched
+HN items motivate rather than prove an attention-decay hypothesis. A valid test
+must distinguish preview, integration, availability notice, and deployment;
+control impressions, rank duration, timing, source, and audience overlap; and
+measure actual evaluation work. Only then could delayed previews, reserved
+oversight budgets, or attention-aware disclosure be compared.
+15. **Process preservation cost**: The Process Erasure hypothesis asks whether richer process signatures improve governance enough to justify storage, system complexity, and review load. AgentTether reports 15.3% fewer agent turns and about 13% fewer method tokens than blind retry on its conditional failed-task set—not 97%—while excluding fixed simulator/evaluator calls and adding auxiliary latency. TraceProbe does not measure downstream savings. StateFuse's official slice shows visibility but not abstention benefit; its safer-action result is synthetic and its public repository omits benchmark assets. PatchOptic reports 11%–13% fewer strong-actor tokens from projection on a hand-authored suite, but its source package omits cases/raw runs and it does not establish semantic validity. The open question is whether these gains reproduce, transfer to production, and compose across layers without combinatorial complexity.
 
 ---
 
-*This note consolidates the Oversight Inversion thesis from Scan #382 and its subsequent validations across Scans #384 (Metric Inversion), #389 (Judgment Tax), #404 (Cost Inversion Threshold), #405 (Governance Depth), #406 (Decoupling Proof), #409 (Absorption), #424 (Depth Mismatch), #425 (Configuration Layer), #426 (Convergence Proof / Compile-Down Escape), #427 (Verification Scaling Axis — mathematical exit path), #428 (Announcement Gap — action-trace verification target), #429 (Instrument Problem — oversight instruments change what they oversee), #430 (Recursion Barrier — self-improvement bounded by domain walls), #431 (Simulation Confounder — agents detect and adapt to evaluation), #432 (Boundary Dissolution — trust boundaries erode during normal agent operation), #433 (Latent Horizon — agents' internal state diverges from observable behavior), #434 (Authority Gap — verification verdicts lack grounded authority), #436 (Correlated Blindness — verification blind spots correlate with system blind spots when they share substrate), #437 (Governance Decomposition — governance fails monolithically, succeeds when decomposed to match natural failure grain), #439 (Granularity Gap — verification at a different resolution than the system fails silently; unifying meta-pattern across all 17 preceding layers), #440 (Attribution Error — the model gets both too much blame and too much credit for outcomes determined by its surround), #443 (Sovereignty Standard — sovereignty becomes evaluable via SovereignPA-Bench, verification becomes a scaling axis via LLM-as-a-Verifier; the constructive complement to 19 layers of failure identification), #444 (Comprehension Dividend), #445 (Restraint Premium), #446 (Predicate Gate), #447 (Composition Surface), #448 (Architecture Premium), #449 (Subtraction Economy), #450 (Knowledge Erosion), #451 (Verification Harness), #452 (Co-Evolution Imperative), #453 (Execution Boundary), #454 (Write Contract), #455 (Dispersion Collapse), #456 (Claim-Verification Surface), #457 (Variance Signal), #459 (Handoff Fallacy — Layer 30), #460 (Attention Decay Curve — Layer 31), #462 (Process Erasure — Layer 32), #469 (Admission Boundary — Layer 33), #473 (Balkanization Problem — Layer 34), #475 (Verification Loop — Layer 35), #478 (Governance Silence — Layer 36), #479 (Verification Hierarchy — Layer 37), #482 (Commodity Proof — Layer 38), #483 (Skill Paradox — Layer 39), #484 (Capacity Allocation Problem — Layer 40), #485 (Trust Reckoning — Layer 41), #486 (Accreditation Gap — Layer 42), #487 (Certification Collapse — Layer 43), #488 (Reliability Horizon — Layer 44), #489 (Write Refusal — Layer 45), #493 (Level Misdirection — Layer 46), #494 (Specification Mismatch — Layer 47), #496 (Audit Absence — Layer 48), #497 (Accountability Stack — Layer 49), and #498 (Trust Debt — Layer 50: trust follows inverted temporal pattern, accepted first then contested; GPT-5.6 ratio 0.61→0.74 demonstrates retroactive contestation; Progressive Crystallization 91.2% deterministic from un-audited patterns; GovMem 59.7% false-promotion compounds as trust debt; Accountability Stack has zero temporal layer; trust debt is self-concealing during accumulation; thirty-five-point exit arc extended with temporal discharge condition). Each scan provided independent evidence; this note extracts the durable structural pattern.*
+*This note consolidates the Oversight Inversion thesis from Scan #382 and its subsequent evidence across Scans #384 (Metric Inversion), #389 (Judgment Tax), #404 (Cost Inversion Threshold), #405 (Governance Depth), #406 (Decoupling Proof), #409 (Absorption), #424 (Depth Mismatch), #425 (Configuration Layer), #426 (Convergence Proof / Compile-Down Escape), #427 (Verification Scaling Axis — mathematical exit path), #428 (Announcement Gap — action-trace verification target), #429 (Instrument Problem — oversight instruments change what they oversee), #430 (Recursion Barrier — self-improvement bounded by domain walls), #431 (Simulation Confounder — agents detect and adapt to evaluation), #432 (Boundary Dissolution — trust boundaries erode during normal agent operation), #433 (Latent Horizon — agents' internal state diverges from observable behavior), #434 (Authority Gap — verification verdicts lack grounded authority), #436 (Correlated Blindness — verification blind spots correlate with system blind spots when they share substrate), #437 (Governance Decomposition — governance fails monolithically, succeeds when decomposed to match natural failure grain), #439 (Granularity Gap — verification at a different resolution than the system fails silently; unifying meta-pattern across all 17 preceding layers), #440 (Attribution Error — the model gets both too much blame and too much credit for outcomes determined by its surround), #443 (Sovereignty Standard — sovereignty becomes evaluable via SovereignPA-Bench, verification becomes a scaling axis via LLM-as-a-Verifier; the constructive complement to 19 layers of failure identification), #444 (Comprehension Dividend), #445 (Restraint Premium), #446 (Predicate Gate), #447 (Composition Surface), #448 (Architecture Premium), #449 (Subtraction Economy), #450 (Knowledge Erosion), #451 (Verification Harness), #452 (Co-Evolution Imperative), #453 (Execution Boundary), #454 (Write Contract), #455 (Dispersion Collapse), #456 (Claim-Verification Surface), #457 (Variance Signal), #459 (Handoff Fallacy — Layer 30), #460 (proposed Attention Decay — Layer 31), #462 (Process Erasure — Layer 32), #469 (Admission Boundary — Layer 33), #473 (Balkanization Problem — Layer 34), #475 (Verification Loop — Layer 35), #478 (Governance Silence — Layer 36), #479 (Verification Hierarchy — Layer 37), #482 (Commodity Proof — Layer 38), #483 (Skill Paradox — Layer 39), #484 (Capacity Allocation Problem — Layer 40), #485 (Trust Reckoning — Layer 41), #486 (Accreditation Gap — Layer 42), #487 (Certification Collapse — Layer 43), #488 (Reliability Horizon — Layer 44), #489 (Write Refusal — Layer 45), #493 (Level Misdirection — Layer 46), #494 (Specification Mismatch — Layer 47), #496 (Audit Absence — Layer 48), #497 (Accountability Stack — Layer 49), and #498 (Trust Debt — Layer 50: trust follows inverted temporal pattern, accepted first then contested; GPT-5.6 ratio 0.61→0.74 demonstrates retroactive contestation; Progressive Crystallization 91.2% deterministic from un-audited patterns; GovMem 59.7% false-promotion compounds as trust debt; Accountability Stack has zero temporal layer; trust debt is self-concealing during accumulation; thirty-five-point exit arc extended with temporal discharge condition). Each section retains its evidence qualifications; inclusion here is not independent validation.*

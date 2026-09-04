@@ -3,8 +3,10 @@
 This library stores reusable knowledge about AI agents, evaluation, safety,
 runtime systems, protocols, and cross-source research signals.
 
-Use this page when you need to understand where knowledge belongs. Use
-`INDEX.md` when you need the exhaustive file map.
+Use this page when you need to understand where knowledge belongs. Use the
+[exhaustive index](./INDEX.md) to find a specific entry, and use the
+[living Xiaohongshu topic map](./xhs-topic-map.md) to choose among ranked
+unresolved questions and source-lane evidence gaps.
 
 ## How To Read It
 

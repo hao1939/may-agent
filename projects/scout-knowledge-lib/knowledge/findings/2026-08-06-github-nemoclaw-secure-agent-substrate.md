@@ -2,7 +2,7 @@
 title: "NemoClaw — Agent Frameworks Are Becoming Tenants on a Governed Runtime Substrate"
 source: github
 date: 2026-08-06
-last_updated: 2026-08-06
+last_updated: 2026-08-26
 type: finding
 tags: [github, runtime-platforms, sandboxing, governance, inference-routing, network-policy, hermes-agent, openclaw, langchain]
 relevance: high
@@ -57,11 +57,45 @@ This repo sharpens that thesis in a concrete way:
 - **Operations are becoming part of governance.** Snapshots, rebuilds, blueprint compatibility, and managed MCP are treated as safety-relevant surfaces, not just convenience features.
 - **Documentation is becoming executable onboarding.** The product now ships prompts and skills so another agent can help install the runtime without collapsing the control boundary.
 
+## 2026-08-24 update — compile incident invariants into change-path review routing
+
+A new NemoClaw issue and open PR expose a useful mechanism for retaining operational lessons after a repair: turn the lesson into an exact invariant, map every production authority and projection that can violate it, and inject that invariant into review context whenever one of those paths changes.
+
+The triggering incident was a composition failure rather than a locally invalid edit. Issue #10058 traces how PR #8732 chose `169.254.1.2` as a host gateway and later PR #9509 introduced `169.254.1.0/24` as the sandbox subnet. Review established that the gateway and registry differed, but did not check that the explicit sandbox-visible host address was outside the sandbox subnet. Subsequent ordering work exposed the route failure, and later changes repaired both topology and upgrade evidence.
+
+PR #10078 encodes the recovered lesson in the deterministic risk plan:
+
+- `GATEWAY_TOPOLOGY_FILES` inventories 17 production authority/projection paths rather than matching a broad directory glob.
+- A path match selects one `gateway-topology` family and supplies the exact invariant: the explicit sandbox-visible host address must lie outside the sandbox subnet, and all gateway projections must derive from one authority.
+- Table-driven tests cover every included path, representative exclusions, and coalescing of several changed projections into one review family.
+- The family adds no E2E job; existing topology tests remain the behavior authority, while the advisor is asked to inspect the diff, sibling consumers, and checked-in evidence.
+
+The broader pattern is **incident lesson → invariant → authority/projection inventory → deterministic change selector → focused human/model review**. This is stronger than adding the lesson only to prose because relevant edits receive it automatically, and narrower than running a new broad integration suite on every change.
+
+Its limits are important. The PR is open, its `requiredJobs` list is empty, and issue #10058 explicitly says the advisor is not a required merge authority. The selector also depends on a manually maintained exact-path inventory. This mechanism therefore improves review exposure; it does not by itself enforce the invariant or prove that newly added projection paths will be classified. A robust deployment should separately test inventory completeness or make authority/projection registration generate the selector inputs.
+
+## 2026-08-26 update — the inference adapter is part of the sandbox boundary
+
+HN surfaced a disclosed NemoClaw/Ollama attack chain that qualifies the substrate thesis above. In the affected local-inference setup, NemoClaw reportedly started Ollama with `OLLAMA_HOST=0.0.0.0:11434` so a container could reach the host service. Ollama's API has no authentication; according to the researchers, binding to a non-loopback address also disables its Host-header validation. A hostile webpage could therefore use DNS rebinding to make same-origin browser requests reach the local Ollama API.
+
+The attack did not need to escape the OpenShell filesystem or process sandbox. API access allowed the researchers to read model metadata, run inference, delete or replace models, and use `/api/create` to alter a model's Go chat template. Template poisoning is the important layer violation: unlike a stored model `system` field, the template renders every client-supplied message at inference time, so it can append attacker instructions to the agent's own system prompt while remaining invisible to the client. The research demo reports that the altered template persisted across later conversations and affected every consumer of that model.
+
+This yields a more precise trust model for governed agent substrates:
+
+- **Container reachability is an authority grant.** Changing a host service from loopback to `0.0.0.0` is not plumbing; it changes who can invoke an unauthenticated control API.
+- **The inference renderer is executable configuration.** Model weights, system prompts, chat templates, and runtime flags all sit upstream of the policy-observing agent and require integrity checks.
+- **Agent containment and model integrity are separate boundaries.** A sandbox may constrain a hijacked agent's host access, but it cannot make poisoned inference trustworthy; the remaining blast radius is the code, APIs, repositories, and MCP tools intentionally granted to the sandbox.
+- **Proxy-mediated inference needs bidirectional governance.** Credential custody and egress policy protect requests leaving the agent, while authenticated binding, browser/LAN isolation, immutable model manifests, and template attestation protect the inference service feeding instructions back in.
+
+The evidence boundary matters. This is a security-vendor report with a published mechanism and demonstration, and it says the issue was reported to NVIDIA before publication, but this Scout update did not independently reproduce the exploit or locate a linked NVIDIA advisory in the HN submission. The HN item had one point and no comments when checked, so it is a useful primary-source security signal rather than validated community consensus.
+
 ## Scout take
 
 NemoClaw suggests that the next durable vendor layer in open agents is not the chat shell or even the planning loop. It is the **governed substrate** that can host many shells while keeping secrets, egress, and lifecycle state under operator control.
 
 A useful heuristic going forward: when evaluating new agent frameworks, ask whether they are trying to win as the **agent** or as the **runtime that other agents must live inside**. NemoClaw is clearly competing for the latter layer.
+
+The August update adds a review-design heuristic: after a cross-file incident, do not merely document the repaired value. Name the invariant, enumerate all authorities and projections that can break it, and route relevant diffs to focused evidence review—while keeping enforcement status and inventory-completeness risk explicit.
 
 ## Sources
 
@@ -74,3 +108,8 @@ A useful heuristic going forward: when evaluating new agent frameworks, ask whet
 - **OpenClaw ecosystem doc:** https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/docs/about/ecosystem.mdx
 - **Hermes ecosystem doc:** https://raw.githubusercontent.com/NVIDIA/NemoClaw/main/docs/about/ecosystem-hermes.mdx
 - **GitHub API metadata:** https://api.github.com/repos/NVIDIA/NemoClaw
+- **Gateway-topology incident and review requirement:** https://github.com/NVIDIA/NemoClaw/issues/10058
+- **Gateway-topology risk-plan implementation (open PR):** https://github.com/NVIDIA/NemoClaw/pull/10078
+- **Implementation diff:** https://github.com/NVIDIA/NemoClaw/pull/10078.diff
+- **HN:** https://news.ycombinator.com/item?id=49445585
+- **Drive-by hijacking research:** https://www.cyera.com/research/nemoclaw-one-website-visit-to-hijack-your-ai-agent

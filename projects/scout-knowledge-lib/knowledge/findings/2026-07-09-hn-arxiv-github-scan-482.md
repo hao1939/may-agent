@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #482 — The Commodity Proof. Three independent evidence streams prove the model commodity transition is mathematically complete. The Harness Effect (2607.06906) runs the first controlled experiment: 22 tasks, six models, changing only the orchestration layer — harness cuts cost 41%, wall-clock 44%, tokens 38%, all model-invariant (33-61% cheaper for every model). Quality gains correlate with baseline strength at r=0.99. The harness moved cost more than the full spread of the model menu. HN attention confirms: GPT-Live (693pts) + Grok 4.5 (611pts) = 1,304pts still < Uniqlo decoded bash (1,372pts). LLM Burnout at 323pts — P-70 CONFIRMED. AgentEval (2607.06873) and AgentLens (2607.06624) represent the first evaluations targeting the trajectory/harness layer rather than outputs. 38th layer of Oversight Inversion: the Commodity Proof shifts verification from 'which model' to 'which harness' — but harness correctness has no benchmarks, no leaderboards, no red-teaming infrastructure."
+summary: "Scan #482 — The Harness Effect and AgentEval retain workload- and oracle-bounded results. AgentLens does release a 16-scenario, two-persona Java trajectory benchmark and pinned dataset, but its 'formal verification' is deterministic task checking rather than formal methods; GPT-5.4 supplies five of six quality-index components without a published human agreement study. The repository has no raw evaluated trajectories, and its public benchmark workflow is manual-dispatch, so nightly production use remains an author report. HN and GitHub counts remain discovery signals."
 triggers: ["commodity proof", "harness effect", "harness multiplier", "model invariant", "orchestration economics", "harness leverage", "token maxing", "harness evaluation", "AgentLens", "AgentEval", "trajectory evaluation", "model commodity", "LLM burnout", "developer fatigue"]
 </ai_context>
 
@@ -8,29 +8,39 @@ triggers: ["commodity proof", "harness effect", "harness multiplier", "model inv
 **Date:** 2026-07-09  
 **Type:** HN + arXiv + GitHub Exploration  
 **Scan:** #482  
-**Theme:** Three independent evidence streams — controlled experiment, attention market, developer testimony — converge to prove the model commodity transition is mathematically complete. Value has migrated to the harness, the community knows it, and the oversight infrastructure hasn't followed.
+**Theme:** A vendor-authored paired harness swap reports substantial efficiency
+differences on one enterprise-assistant workload. Social attention and
+repository counts identify follow-up topics but do not prove model
+commoditization, community belief, or a governance gap.
 
 ---
 
 ## The Convergence
 
-The Provider Confession (#480) showed model providers themselves producing evidence for the Substrate Inversion. The Crystallization Thesis (#481) identified what replaces model differentiation: managed lifecycle progression. Scan #482 delivers the **mathematical proof**: a controlled experiment isolating the harness from the model, confirming that orchestration design moves economics more than model selection.
+The Provider Confession (#480) and Crystallization Thesis (#481) motivate a
+harness-level comparison. Scan #482 supplies one reported paired bundle swap;
+it does not mathematically prove a model-commodity transition or isolate the
+six harness mechanisms from one another.
 
 Three streams:
 
-1. **arXiv** — The Harness Effect (2607.06906): first controlled experiment proving harness > model for cost
-2. **HN** — Two frontier models launched same-day still can't outperform a decoded bash script  
-3. **Developer testimony** — LLM Burnout at 323pts names the binding constraint: the harness-human verification interface
+1. **arXiv** — The Harness Effect (2607.06906): one paired, vendor-authored harness comparison on a locked workload
+2. **HN** — two frontier-model stories' combined points trail one decoded-bash story in this snapshot
+3. **Developer-attention signal** — an LLM Burnout story reached 323 points;
+   prevalence, cause, and its relation to harness verification are unmeasured
 
 ---
 
 ## arXiv Findings
 
-### The Harness Effect (2607.06906) — The Controlled Proof
+### The Harness Effect (2607.06906) — A qualified paired bundle comparison
 
-**The most important paper this scan.** First controlled swap experiment isolating harness from model:
+The paper compares one frozen production loop with one Writer Agent Harness
+configuration:
 
-- **Design**: 22 locked evaluation tasks, six foundation models (Claude Sonnet 4.6, Gemini 3.1, Gemini Flash 3.5, Qwen 3.6, GLM 5.1, Palmyra X6), changing **only** the orchestration layer — frozen conventional loop vs Writer Agent Harness
+- **Design**: 22 locked prompts executed across six foundation models, with
+  tasks, model identifiers, judges, and price table held fixed while the whole
+  orchestration bundle changes
 - **Cost**: Harness cuts blended cost per task **41%** ($0.21→$0.12)
 - **Speed**: Median wall-clock **44%** reduction (48s→27s)
 - **Tokens**: Tokens per task **38%** reduction (14.2k→8.8k)
@@ -38,42 +48,112 @@ Three streams:
 
 **Two critical findings:**
 
-1. **Efficiency is model-invariant** — every model gets cheaper (33-61% range). The harness multiplier works regardless of which model it wraps.
-2. **Quality gains are capability-dependent** — a model's quality gain from the harness correlates *almost perfectly* with its baseline strength (r=0.99, n=6). They call this **"harness leverage"**: the harness amplifies what the model already has.
+1. **Every reported model aggregate is cheaper**, by 33–61%. Same direction
+   across six named models is useful evidence, but the wide range is
+   heterogeneity and does not establish model invariance or transfer to any
+   model.
+2. **The reported quality relationship is suggestive**: mean quality change
+   correlates with baseline mean at `r=0.99`, but this is only six derived
+   model-level points with no interval or independent replication.
 
-**Structural implication:** The orchestration layer moved cost per task **more than the full spread of the model menu did**. Quality per dollar rises 82%. Task-completions per million tokens rise from 54.9 to 92.0.
+**Workload-specific implication:** The smallest reported harness reduction
+(33%) is compared with a 36% rounded baseline model-menu spread, so even the
+paper's own table does not support an unqualified “any harness move exceeds
+model choice” statement. Its blended derived metrics rise, conditional on the
+unreleased trace, price, and judge inputs.
 
 Six mechanism families identified: cache-shape discipline, context assembly, turn sequencing, delegation routing, failure-spend governance, enterprise observability.
 
-**This is the mathematical proof of the Substrate Inversion.** When changing the harness moves cost more than changing the model, the locus of economic value has formally shifted. The model is electricity; the harness is the machine.
+This is reported evidence that orchestration can materially change token
+economics for this workload and pair. It is not a cross-harness benchmark,
+mechanism ablation, general economic ordering, or proof that verification of
+the harness is the binding constraint.
+
+**Primary-review boundary (2026-09-04):** the paper says the 22 prompts were
+locked but publishes only four exemplars and an eight-capability aggregate
+matrix. The baseline was run once; run-to-run variance is unmeasured. The
+arXiv source contains TeX, figure PDFs, and a plotting script with hard-coded
+aggregates, while its checklist says prompts, traces, price snapshot, judge
+configuration, and manifests are artifacts “to accompany” release. Complete
+GitHub repository searches for the exact arXiv ID and title found only two
+secondary/unattributed repositories, not a paper artifact. The authors disclose
+that they work for Writer, which develops the evaluated harness and one model.
 
 Source: https://arxiv.org/abs/2607.06906
 
 ### AgentEval: Black-Box Boundary Testing (2607.06873) — Discovering the Harness's Hidden Gates
 
-If the harness IS the value, how do you verify the harness? AgentEval offers a first answer:
+AgentEval tests one useful answer to harness verification:
 
 - Mines **conversational workflow graphs** — behavioral models of agent state machines — from black-box interaction
 - Enumerates specific **guards and prerequisites** (identity checks, confirmation gates) as test targets
 - Replays conversational paths to a boundary before applying perturbations
-- On four τ³-bench agents: discovers **23-38 distinct boundaries per agent** vs **12** with prompt-only baseline
-- Lower duplicate and false-alarm rates than unstructured testing
+- Across four τ³-bench text agents, its full system reports **23–38
+  distinct boundary clusters per agent**, with validity `0.78–0.98`, duplicate
+  rates `0.16–0.26`, and false-alarm rates `0.00–0.09`
+- In one airline-only, 50-test ablation, structural graph targets report **23
+  clusters versus 12** for prompt-only generation, while duplicate rate falls
+  `0.56`→`0.26`; this is not a four-domain controlled comparison
 
-**Key connection**: The Governance Silence (#478) showed governance outputs decoupled from governance functions. AgentEval discovers where the governance *boundaries* actually are — not where the system claims they are. Graph structure reveals twice as many boundaries as prompting alone.
+**Qualified connection**: The Governance Silence (#478) motivates testing
+observed workflow guards instead of declared governance. AgentEval supports
+structural target enumeration over loose graph context or prompt-only
+generation in one airline ablation. It does not show that human-authored suites
+miss half of all boundaries or that the same gain transfers across domains.
+
+**Primary-review boundary (2026-09-04):** all configurations run once. A
+GLM-5.2 white-box auditor supplies every reported metric; its coverage labels
+reach `0.94` Jaccard agreement with one expert reference on 26 airline
+scenarios, but its run-audit labels behind false-alarm rates are not
+independently validated. Boundary clusters are LLM-proposed and then counted
+deterministically. The visible-fault check catches 22/27 edited process faults;
+backend-only faults are explicitly out of scope. Full airline testing uses 285
+calls / 1.55M tokens versus 142 / 0.60M for naive discovery. The v1 source
+archive contains TeX and one figure but no code, prompts, test/run data, or
+manifests; it promises release only upon acceptance. Three complete GitHub
+repository searches found no exact-ID, exact-title, or attributable AgentEval
+repository, so the experiment is not independently reproducible yet.
 
 Source: https://arxiv.org/abs/2607.06873
 
 ### AgentLens: Trajectory-Level Evaluation (2607.06624) — Beyond Pass/Fail
 
-The complement to AgentEval: instead of testing boundaries, evaluate the *entire trajectory*:
+The complement to AgentEval evaluates the *entire trajectory*:
 
 - Most benchmarks reduce runs to a single bit (pass/fail). AgentLens evaluates the whole trajectory: instruction following, tool use, self-verification, error recovery, communication quality
-- Pairs formal verification with LLM-written trajectory reviews and side-by-side comparisons
+- Pairs deterministic tests, repository-state checks, regexes, build tasks, and
+  static analysis with LLM-written trajectory reviews and side-by-side
+  comparisons; “formal” does not mean proof-assistant or formal-methods evidence
 - Each run yields a **readable explanation** of why the score is what it is
-- Used in production for nightly evaluation pipelines: diagnose behavior, compare agent versions, catch regressions
-- Released as open source
+- The authors report internal nightly/weekly regression use; the public GitHub
+  workflow is manual `workflow_dispatch`, so production cadence is not
+  independently observed
+- Open source is confirmed at `agent-lens/agent-lens-bench` head
+  `07c563b0c7c38824259a75833ee90e8d2853ceec`, including 16 Java scenarios,
+  two personas, ten verifier classes, and the pinned public dataset commit
+  `2f9537c369ec84326c0aef337ac0948fa0657d55`
 
-**Process Erasure (#462) antidote**: AgentLens recovers exactly the process information that outcome-only metrics destroy. When the harness is the value, evaluating harness trajectories becomes the core verification task.
+**Qualified Process Erasure connection:** the schema and written reviews retain
+tool calls, edits, verification attempts, and communication that a pass bit
+omits. The released repository has leaderboard aggregates but no raw evaluated
+trajectory/report corpus, so it demonstrates a mechanism for retaining process
+evidence rather than proving that every relevant process distinction was
+recovered.
+
+**Primary-review boundary (2026-09-04):** the leaderboard crosses 16 Java
+scenarios with two personas (32 trajectories) and reports 17 model/harness
+setups. Five LLM-judge dimensions plus deterministic verification receive equal
+weight in the Quality Index. GPT-5.4 supplies the judge dimensions; validity
+rests on small informal internal comparisons, with a published human/judge
+agreement study left to future work. Five repeated GLM-5.1 runs report QI
+mean `67.28`, SD `0.94`, but 16/32 scenario-persona points are flaky. A judge
+self-preference check changes the preferred agent on 23% of 157 task-metric
+comparisons, mostly toward the judge's model family. The current v2 source,
+code, scenario prompts, verifier implementations, public pinned dataset, and
+leaderboard CSV are inspectable. Raw evaluated trajectories and generated
+reports are not released; full reruns require external models, provider keys,
+IDE tooling, and material cost (the paper says one Opus 4.7 run can exceed
+`$100`).
 
 Source: https://arxiv.org/abs/2607.06624
 
@@ -86,6 +166,122 @@ Reframes data systems from passive stores into **active substrates for safe, rel
 - "Active substrate" = the environment participates in governance, not just storage
 
 **Connection**: If the harness is the machine and the model is electricity, the data environment is the ground plane. The Admission Boundary (#469) proved deterministic gates work; Agentic Data Environments asks where those gates should live — in the data layer itself.
+
+**Primary-review boundary (2026-09-04):** the paper combines a research agenda
+with preliminary results; “the execution substrate can enforce safety
+guarantees” is not one demonstrated end-to-end guarantee. The attributable
+BranchBench repository reproduces its rounded MCTS completion figures from
+retained summaries: Dolt completed 170/1,000 steps (17%), while Neon completed
+23/1,000 (2.3%, reported as 3%). Public results cover Dolt and Neon, not all
+five named systems, and the repository has no license file. LakeQA publishes
+1,007 full and 135 mini task files plus evaluation code, but exact head
+`507e07de…9c45d14` has an unresolved merge conflict in one full task, so only
+1,006/1,007 full task JSON files parse. Its current paper and leaderboard also
+report 32.87% full-set exact match, contradicting this overview paper's
+`<=23%` statement. The cited DFC paper calls its implementation early work and
+evaluates a subset of TPC-H queries; the overview's five-engine near-zero-
+overhead result has no released artifact here. Cross-tool representation-
+invariant flow control and coherent cross-component branching remain research
+directions, while Checkpoint-lite has only two preliminary comparisons and no
+attributable public repository found. Treat the active-substrate framing as a
+useful systems decomposition, database branching as partially reproducible,
+and environment-wide safety as unproved.
+
+The same source reports a preliminary LoCoMo example for Agentic Information
+Management (AIM): accuracy comparable to full-dialogue context at about 10% of
+the context length, 49.8% and 15.82% relative accuracy gains over Mem0 and
+Octen, and 4.18x speed with 13.54% higher average relative accuracy than GAM.
+Those figures occur only in prose: the archive gives no absolute scores,
+question or run counts, model and prompt identities, repeat/variance results,
+latency environment, or artifact. A search-indexed candidate primary record,
+OpenReview `qFBAlgwkzb`, matches the AIM title and high-level structured-memory
+description, but the overview does not cite it and this environment reaches a
+Cloudflare Turnstile challenge for its forum, API, and PDF. No matching arXiv,
+Crossref, or attributable GitHub result was found. Preserve the figures as
+source-reported preliminary results, not a controlled or independently
+reproducible comparison; representation effects cannot be isolated from the
+unknown model and configuration bundle.
+
+**GAM denominator check (2026-09-04):** GAM's primary arXiv source
+`2511.18423v1` does not define a single LoCoMo “average accuracy.” It reports
+F1 and BLEU-1 separately for single-hop, multi-hop, temporal, and open-domain
+questions under GPT-4o-mini and Qwen2.5-14B-Instruct. The four published GAM
+F1 values average `48.1975` and `46.0100`, respectively, but neither value is
+identified as AIM's denominator. GAM's only timing table is instead HotpotQA:
+its online serving takes `12.43`, `16.65`, and `18.49` seconds at 56K, 224K,
+and 448K, slower than every listed baseline there; total times are `69.32`,
+`269.37`, and `575.65` seconds. Thus AIM's reported 4.18x speed and 13.54%
+higher average relative accuracy cannot be matched to a public GAM task,
+metric, serving definition, or configuration. This is a comparability gap, not
+a direct contradiction, because AIM publishes none of those bindings.
+
+The attributable repository was inspected at
+`VectorSpaceLab/general-agentic-memory@565db2cc2518d377e44389b82aecf3cc129d5fe5`.
+It contains LoCoMo evaluation code but neither datasets nor retained paper-result
+outputs; reproduction requires external data, model credentials, and broadly
+versioned dependencies. Its README asks for `data/locomo10.json`, while the
+provided shell runner uses `data/locomo/locomo10.json`. The paper pins no
+repository revision and the inspected head postdates submission. Public code
+therefore exposes a plausible method, not the exact run underlying AIM's
+comparison.
+
+The Octen comparison is less well bound. AIM cites *Octen Series: Optimizing
+Embedding Models to #1 on RTEB Leaderboard*, whose primary post evaluates a
+Qwen3-derived embedding model on the Retrieval Embedding Benchmark with
+NDCG@10. The post and pinned model card contain no LoCoMo, conversational-
+memory pipeline, F1, BLEU-1, or end-to-end answer metric. The released
+`Octen/Octen-Embedding-8B@5adcfa292e712091dfc30f0e97f0b2282e6cc66c`
+is tagged for sentence similarity/retrieval, not as an agent memory system.
+Calling the cited item a “SOTA RAG-based Octen” therefore conflates a retriever
+component with an undisclosed full RAG baseline. AIM's reported 15.82% direction
+may describe a private pipeline using Octen, but its corpus construction,
+chunking, generator, prompts, metric, and outputs are not public, so neither the
+baseline nor the claimed representation effect can be reproduced from the
+citation.
+
+Mem0's primary `2504.19413v1` record makes AIM's unspecified “accuracy”
+material. Mem0 reports four LoCoMo category F1 values whose unweighted mean is
+`40.985`, four separate BLEU-1 values, ten-run category LLM-judge estimates,
+and an overall LLM-judge score of `66.88`; AIM does not say which it uses. A
+49.8% relative increase over the public F1 mean implies AIM `61.3955`, whereas
+13.54% over GAM's public GPT-4o-mini F1 mean implies `54.7234` (or `52.2398`
+over Qwen2.5-14B). These cannot be one AIM average under one metric and
+configuration. Different hidden runs could reconcile them, so this is not a
+numerical refutation; it is direct evidence that the prose percentages do not
+identify a common public experiment.
+
+The public record also carries category-order drift. Mem0's table orders
+single-hop, multi-hop, open-domain, temporal, while GAM republishes the same
+GPT-4o-mini F1/BLEU pairs as open-domain, single-hop, temporal, multi-hop under
+its single-hop, multi-hop, temporal, open-domain headings. The permutation
+preserves an unweighted mean but not category meaning. Current Mem0 code pins a
+later `memory-benchmarks` submodule result using GPT-5 as both answerer and
+judge, not the paper's GPT-4o-mini run. Neither public artifact identifies
+AIM's baseline.
+
+**Full-dialogue comparator check (2026-09-04):** original LoCoMo
+`2402.17753v1` does not supply the comparator AIM describes. Its long-context
+control is GPT-3.5-turbo-16K, includes only as much dialogue as fits, and
+reports overall F1 `37.8`; its GPT-4-turbo row is a separate 4,096-token
+control at F1 `32.1`. Later public candidates use incompatible measurements.
+Mem0 reports a 26,031-token full-context control at `72.90 ± 0.19%` on its
+binary LLM-judge metric without explicitly naming that row's answer model.
+GAM uses 128K GPT-4o-mini and Qwen2.5-14B long-LLM controls whose four-category
+F1 means are `29.6875` and `30.8825`. AIM cites only the dataset and identifies
+none of these models, metrics, scores, prompts, or context denominators.
+Accordingly, “comparable to adding the full dialogue” and roughly 10% context
+remain an unbound author report, not a comparison to a selectable public
+baseline. A fresh anonymous read of title-matching OpenReview `qFBAlgwkzb`
+still returned HTTP 403 `Challenge verification required`; it could contain
+missing evidence, so this is not a claim that no experiment exists.
+
+The next sentence makes GAM the strongest grammatical denominator for AIM's
+11.53% temporal and 24% open-domain gains, but still supplies no result key.
+Applied to GAM F1, they imply AIM `66.304585`/`41.292` under GPT-4o-mini or
+`57.460256`/`37.9812` under Qwen2.5-14B. AIM chooses neither; the two reported
+gains average `17.765%`, so the 13.54% overall gain also needs undisclosed
+single/multi-hop values and weighting. Preserve adjacency as moderate evidence
+of intent, not as a reconstructed experiment.
 
 Source: https://arxiv.org/abs/2607.07397
 
@@ -127,9 +323,10 @@ Grok 4.5's extraordinary comment ratio (1.38, highest tracked) signals that atte
 
 LLM Burnout crosses 323pts with 260 comments. The prediction from Scan #478 (P-70: LLM Burnout >250pts within 3 scans) confirmed in **2 scans**.
 
-The title — "I think I have LLM burnout" — names the binding constraint of the post-commodity era. The developer isn't burned out from capability limitations. The developer is burned out from the **verification burden at the harness-human interface**. Quote from prior scan: *"I continue to be unable to establish a workflow where reviewing LLM code is faster than writing it myself."*
-
-This is the Oversight Inversion (#382+) experienced as physiology. The harness produces code faster than the developer can verify it. The Commodity Proof makes this structural: if the harness moves economics more than the model, and the harness produces output faster than humans can verify, then **developer verification capacity is the binding constraint on the entire value chain** — not model capability, not token cost, not harness design.
+The title names one author's experience, and a prior quotation describes one
+review workflow. Points and comments establish attention, not burnout
+prevalence, cause, physiology, a harness-specific verification burden, or the
+binding constraint on an entire value chain.
 
 ### Chatto Trajectory: Open Source Sovereignty
 
@@ -159,13 +356,17 @@ Chatto at 945pts (+17.4% from 805pts in Scan #478). The open-source release of a
 2. **Economic optimization** (1K-10K★): codeburn, dao-code, axi — token cost and efficiency tools  
 3. **Verification infrastructure** (100-1K★): agentevals, stepshield — trajectory and temporal evaluation
 
-Tier 3 is the newest and fastest-growing category. The Commodity Proof predicts this will be the dominant growth vector: as value migrates from model to harness, the verification gap at the harness layer creates demand for harness-level evaluation tools.
+This snapshot contains repositories in all three informal categories. Without a
+complete search, stable category rules, or longitudinal rates, it does not show
+which is newest, fastest-growing, or likely to dominate.
 
 ---
 
 ## The 38th Layer of the Oversight Inversion: The Commodity Proof
 
-When the harness moves cost more than the model menu (The Harness Effect, 41% cost reduction, model-invariant), the verification question undergoes a phase transition:
+The Harness Effect reports that one orchestration replacement changes cost
+materially across six model aggregates. That motivates—but does not prove—a
+harness-level verification question:
 
 **Old question**: Which model produces correct output?  
 **New question**: Which harness produces correct trajectories?
@@ -174,20 +375,22 @@ But the verification infrastructure hasn't followed the value migration:
 
 | Dimension | Model-level verification | Harness-level verification |
 |-----------|------------------------|---------------------------|
-| Benchmarks | Hundreds (SWE-bench, HumanEval, etc.) | Near-zero (AgentLens is first) |
+| Benchmarks | Hundreds (SWE-bench, HumanEval, etc.) | AgentLens supplies one compact Java trajectory benchmark; ecosystem completeness is unmeasured |
 | Leaderboards | Multiple, updated daily | None |
 | Red-teaming | Active community, bounties | AgentEval is first attempt |
 | Standardization | MMLU, GPQA, etc. | No standards |
 | Cost comparison | Per-token pricing, model cards | Writer Agent Harness paper is first |
-| Trajectory evaluation | N/A (binary pass/fail) | AgentLens recovering process info |
+| Trajectory evaluation | Many cited benchmarks emphasize final state | AgentLens retains reviews and deterministic checks; recovery completeness is unmeasured |
 
-The Commodity Proof is the condition where:
-1. Model selection is **dominated** by harness design for cost (proven)
-2. Model selection is **amplified** by harness design for quality (r=0.99, proven)
+The qualified evidence is:
+1. One harness pair has same-direction reported cost savings across six models
+2. Its six model-level quality deltas have a strong, unbounded correlation with baseline means
 3. But harness evaluation infrastructure is at **near-zero maturity**
 4. Creating a verification vacuum at exactly the layer where value has concentrated
 
-This is the Oversight Inversion's deepest expression: the component with the most influence on both cost and quality has the least verification infrastructure. The community feels this as LLM Burnout (323pts) — the developer is, effectively, the only harness evaluator, and the load is unsustainable.
+This makes harness evaluation a useful research target. The paper does not
+inventory verification infrastructure, and an HN burnout story's point count
+does not measure developer load, prevalence, cause, or sustainability.
 
 **Twenty-three-point exit arc** (extending the twenty-two-point arc from Scan #479):
 - Comprehension Dividend (#444) through Verification Hierarchy (#479), **plus**:
@@ -220,25 +423,31 @@ This is the Oversight Inversion's deepest expression: the component with the mos
 
 ## Structural Summary
 
-The Commodity Proof closes a three-scan arc:
+The qualified harness comparison extends a three-scan hypothesis arc:
 - **#480** (Provider Confession): Model providers produce evidence against their own differentiation
 - **#481** (Crystallization Thesis): What replaces model differentiation is lifecycle management
-- **#482** (Commodity Proof): Controlled experiment proves the harness, not the model, is the economic lever
+- **#482** (Harness comparison): one vendor pair reports material efficiency differences on one workload
 
-The community has reached the same conclusion from three independent directions:
-- **Experimentally** (Harness Effect: 41% cost reduction, model-invariant)
-- **Attentionally** (frontier combined < decoded bash script)
-- **Physiologically** (LLM Burnout: the verification burden at the harness-human interface)
+The three surfaces have different evidentiary roles:
+- **Experiment**: a reported 41% blended cost reduction for one harness pair
+- **Attention**: point totals for frontier and non-AI stories
+- **Anecdote**: one burnout story and quoted workflow experience
 
-The gap — and the opportunity — is harness-level verification infrastructure. AgentEval and AgentLens are the first shoots. The Commodity Proof predicts this will be the dominant growth category for the next 10-20 scans.
+Together they motivate harness-level evaluation research; they do not measure
+an infrastructure gap or predict which repository category will dominate.
 
 ---
 
 ## Cross-References
 
 - **Extends**: Provider Confession (#480), Crystallization Thesis (#481), Verification Hierarchy (#479)
-- **Deepens**: Substrate Inversion (harness > model now proven experimentally), Oversight Inversion (38th layer — verification vacuum at the value locus), Token Economics Trap (harness as the decisive lever against token maxing)
-- **Validates**: Process Erasure (#462, AgentLens recovers trajectory info), Governance Silence (#478, AgentEval discovers hidden boundaries), Attention Decay Curve (#460, frontier models priced in)
+- **Qualifies**: Substrate Inversion (one harness pair, not a general
+  harness-over-model result), Oversight Inversion (evaluation target, not a
+  measured verification vacuum), Token Economics Trap (one possible lever)
+- **Qualifies**: Process Erasure (#462, AgentLens retains more trajectory
+  evidence but does not establish recovery completeness), Governance Silence
+  (#478, AgentEval diversifies one airline run's targets), Attention Decay
+  Curve (#460, frontier models priced in)
 - **Connected**: LLM Burnout (#479→#482, physiological expression of Oversight Inversion), Slopcode (#476→#482, disposal cost of unverified harness output)
 
 Source: https://arxiv.org/abs/2607.06906, https://arxiv.org/abs/2607.06873, https://arxiv.org/abs/2607.06624, https://arxiv.org/abs/2607.07397, https://news.ycombinator.com/front

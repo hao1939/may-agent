@@ -1,0 +1,23 @@
+{
+  "schema": "herdr.goal/v1",
+  "objective": "Produce a current, read-only structural health assessment of the Scout knowledge library and identify whether any observed fact warrants a separate bounded maintenance goal.",
+  "context": [
+    "The monorepo is expected at /app; the application is /app/projects/scout-knowledge-lib.app and the domain library is /app/projects/scout-knowledge-lib.",
+    "The deterministic observer is implemented in projects/scout-knowledge-lib.app/agents/scout/workflows/library-health.ts, and scripts/library-health-readonly.ts exposes its collection path without writing a runtime packet or emitting an event.",
+    "The starting checkout and every other worker worktree are read-only discovery sources. The worker creates and owns an isolated Git worktree before running commands that may write.",
+    "A health fact is evidence for review, not authority to edit the library or mutate May-agent task state."
+  ],
+  "acceptance": [
+    "The focused library-health tests and read-only command tests pass in the goal-owned worktree.",
+    "The read-only command runs against that worktree's Scout app and domain library and reports its exact roots, generation time, fact count, wake-signal count, truncation state, facts, and wake decisions.",
+    "Git status and filesystem checks show that the assessment did not create app runtime state or change domain knowledge, reports, or digest content.",
+    "The final result classifies each fact kind that appeared, states whether a separate finite maintenance goal is justified, and reports any truncation or evidence limitation without treating an observation as a completed repair."
+  ],
+  "constraints": [
+    "Do not edit the starting /app checkout or another worker's worktree; create an isolated goal-owned worktree for all execution.",
+    "Do not run the hosted library-health workflow because it writes .state/library-health-packets.jsonl and emits an event; use the read-only command.",
+    "Do not change Scout knowledge, reports, digest content, task state, credentials, schedules, or external services.",
+    "Do not simulate source data, expose credentials, or treat a clean command exit as proof that reported health facts were repaired.",
+    "Use the actual current date for the assessment and include the exact commands and revision in the final evidence."
+  ]
+}

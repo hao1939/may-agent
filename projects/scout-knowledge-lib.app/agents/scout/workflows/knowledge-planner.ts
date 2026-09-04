@@ -81,7 +81,13 @@ Start by reading:
 - ${appDir}/project.json
 - the bounded reconciliation packet below
 - ${projectDir}/README.md
-- ${projectDir}/knowledge/INDEX.md
+- ${projectDir}/knowledge/README.md
+
+Open ${projectDir}/knowledge/INDEX.md only when the trigger does not identify
+the relevant file or an exhaustive file map is necessary. Open
+${projectDir}/knowledge/xhs-topic-map.md only when choosing among ranked
+unresolved questions or source-lane evidence gaps. Do not load either large
+artifact merely as a heartbeat.
 
 Valid durable outcomes:
 - update an existing knowledge note to reduce duplication or improve reuse
@@ -119,6 +125,10 @@ Health-signal closure rules:
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
+- When compacting duplicated material into one authoritative note, leave an
+  inline relative link at the omission point to the exact retained heading. A
+  file-level mention elsewhere is not a substitute; verify the link after the
+  edit.
 - Treat /app/shared/knowledge as external source material. Link, summarize, or
   promote only durable reusable knowledge; do not bulk-copy the corpus.
 - Keep source-grounded <ai_context> preambles where the library already uses them.

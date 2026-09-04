@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera, PIMiner), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, MCP TAG-Block concealment (protocol-level encoding gap), adversarial hallucination squatting (HalluSquatting — supply-chain botnet via predictable hallucinations, 2607.07433), and behavior leverage imbalance (training-time mode drift via structural token positions, 2607.07050). These represent boundary-expanding research rather than enumerable defense patterns."
-triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "PIMiner", "Agent Against Agent", "prompt injection red teaming", "low-query transfer attack", "IPIArena", "AgentDojo", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap", "HalluSquatting", "hallucination squatting", "agentic botnet", "promptware", "behavior leverage", "Soft Clamp", "over-calling", "mode drift"]
-last_updated: "2026-08-06"
-source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). HalluSquatting (2607.07433) and Behavior Leverage (2607.07050) added from scan #490. PIMiner / Agent Against Agent (2608.05108) added 2026-08-06 from arXiv API query id_list=2608.05108 and arxiv.org/abs/2608.05108. Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block), 2607.07433 (HalluSquatting), 2607.07050 (Behavior Leverage), 2608.05108 (PIMiner). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453, #490, plus arXiv maintain run 2026-08-06."
+summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera, PIMiner), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, self-poisoning through agent-authored skill descendants (EvoMal), action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI) including a spreadsheet field demonstration, cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, MCP TAG-Block concealment (protocol-level encoding gap), adversarial hallucination squatting (HalluSquatting — supply-chain botnet via predictable hallucinations, 2607.07433), and behavior leverage imbalance (training-time mode drift via structural token positions, 2607.07050). These represent boundary-expanding research rather than enumerable defense patterns."
+triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "PIMiner", "Agent Against Agent", "prompt injection red teaming", "low-query transfer attack", "IPIArena", "AgentDojo", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "EvoMal", "self-poisoning", "create-path", "signed quarantine", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap", "HalluSquatting", "hallucination squatting", "agentic botnet", "promptware", "behavior leverage", "Soft Clamp", "over-calling", "mode drift"]
+last_updated: "2026-08-27"
+source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). HalluSquatting (2607.07433) and Behavior Leverage (2607.07050) added from scan #490. PIMiner / Agent Against Agent (2608.05108) added 2026-08-06 from arXiv API query id_list=2608.05108 and arxiv.org/abs/2608.05108. EvoMal self-poisoning (2608.25776) added 2026-08-27 from the arXiv API record, abstract page, and HTML paper. ADI field demonstration added 2026-08-27 from HN item 49468107, its linked ShiftMag walkthrough, and the companion Antolius/prompt-injection-example repository artifacts. Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block), 2607.07433 (HalluSquatting), 2607.07050 (Behavior Leverage), 2608.05108 (PIMiner), 2608.25776 (EvoMal). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453, #490, plus source-specific maintain runs 2026-08-06 and 2026-08-27."
 </ai_context>
 
 # Agent Security: Research Frontiers
@@ -82,7 +82,7 @@ not a single mechanism fix.
 alignment, classifier-based filtering, prompt hardening) are *mitigations*,
 not solutions. The structural fix requires architectural channel separation.
 
-See: [findings/2026-10-31-arxiv-scan-236.md](./findings/2026-10-31-arxiv-scan-236.md)
+See: [findings/2026-06-29-arxiv-scan-236.md](./findings/2026-06-29-arxiv-scan-236.md)
 
 ---
 
@@ -237,6 +237,56 @@ per-target retraining will understate deploy-time risk.
 
 Source: [arXiv 2608.05108](https://arxiv.org/abs/2608.05108)
 
+### EvoMal — Agent-Authored Skill Descendants Bypass Reuse-Path Screening (2026-08-27)
+
+**Paper**: [arXiv 2608.25776](https://arxiv.org/abs/2608.25776) — “EvoMal:
+Self-Poisoning in Self-Evolving Coding Agents”
+
+EvoMal identifies a distinct **create-path** supply-chain failure. An attacker
+with publish-only access plants an executable skill but never needs that skill
+to be invoked. When a self-evolving coding agent retrieves it as an authoring
+example, the agent can reproduce the payload inside a newly named skill, store
+that descendant, and later retrieve it as its own artifact. Removing the
+external seed therefore does not remove the compromise.
+
+On 153 tool-relevant SWE-bench Verified tasks across six models, the paper
+reports an agent self-poisoning rate (ASPR) of **20.3–41.8%** and libraries with
+**4.9–9.0×** as many malicious skills as were initially planted. Task-family
+specific descriptions raised ASPR to **86.7%**. In the multi-round test, Qwen3
+still had **68% round-five ASPR after the planted entries were removed** because
+agent-authored copies remained. A payload without the attack's imitation banner
+still reached **11.1% ASPR** on DeepSeek-V4-Pro, so the result is not solely a
+prompt-wrapper effect.
+
+The important boundary is provenance direction:
+
+- name blocklists, submitted-code scanners, retrieval thresholds, and signer
+  checks examine the **artifact entering from the attacker**;
+- self-evolution creates a second admission path in which the **agent writes a
+  descendant back into the trusted library**; and
+- a fresh local name or nominal agent authorship does not cleanse inherited
+  code provenance.
+
+The proposed counter-prompt reduced reported ASPR to at most **6.7%** without a
+statistically significant task-completion loss, but the paper describes it as a
+soft, model-dependent mitigation. Its stronger structural design is a signed
+quarantine gate: agent-authored skills remain non-retrievable until curator
+review and signature. That stops descendant amplification by separating
+creation from admission, though it also deliberately limits autonomous
+self-evolution.
+
+**Operational implication:** skill registries need transitive derivation
+lineage and an admission gate on agent-authored writes, not only screening on
+community submissions. Revocation must traverse descendants; otherwise deleting
+the original seed produces a false recovery signal. Track infection prevalence
+by lineage and round, not just the count of currently known external artifacts.
+
+**Caveat:** this is a controlled benchmark study with sandboxed malware stubs
+and a specific retrieve-author-store loop. The reported rates should not be
+projected directly to every skill system. The demonstrated mechanism applies
+when retrieved executable artifacts can influence new executable artifacts that
+re-enter the same retrieval pool.
+
 ### Behind the Refusal — Guardrail Reconnaissance (Scan #368)
 
 First black-box guardrail detection methodology: 100% presence detection,
@@ -350,7 +400,40 @@ click attacks on web agents. Bypasses all existing IPI defenses because they
 only filter instructions, not data. Fundamental gap: agents don't isolate
 trusted from untrusted data.
 
-Source: [arXiv 2607.05120](https://arxiv.org/abs/2607.05120)
+**Field demonstration (HN, 2026-08-27):** A ShiftMag walkthrough and its
+inspectable companion repository narrow this pattern to an ordinary purchasing
+task. The author placed a false `1.00 USD = 0.68 EUR` conversion rate in a cloud
+price spreadsheet. Unlike the overt injected instructions in an earlier
+workbook, the false rate looks like task-relevant data: the analysis agent needs
+an exchange rate to compare offers, so using the supplied value produces the
+wrong winner without requiring an imperative such as “ignore previous
+instructions.” The checked-in `offers_3` and `offers_4` XLSX artifacts do contain
+that exact value; the latter embeds it in a cell styled to be visually hidden.
+
+This example adds two operational boundaries to ADI:
+
+1. **Instruction scanners do not validate decision inputs.** A scanner prompt in
+   the repository looks for imperatives, role directives, obfuscation, and tool
+   invocation. A plausible but false rate can pass that semantic category even
+   though it controls the decision. Volatile values—rates, dates, prices,
+   weather, market data—need provenance and freshness checks against an
+   independent authority, not only injection classification.
+2. **Output schemas can suppress evidence.** The analysis prompt requires only
+   the winner and three prices in JSON; it has no field for conversion rate,
+   source, freshness, or uncertainty. A syntactically valid result can therefore
+   hide the decisive untrusted input. High-stakes structured outputs should
+   carry the material input lineage needed to recompute the decision.
+
+The model outcomes remain an author report, not an independently reproduced
+benchmark: the repository commits prompts, workbooks, and Promptfoo assertions,
+but no raw evaluation results, and its correctness checks use an LLM rubric.
+The durable evidence is therefore the attack construction and missing
+provenance surface—not a general success-rate claim.
+
+Sources: [arXiv 2607.05120](https://arxiv.org/abs/2607.05120);
+[HN item 49468107](https://news.ycombinator.com/item?id=49468107);
+[ShiftMag walkthrough](https://shiftmag.dev/ai-agents-arent-safe-from-prompt-injection-and-spreadsheets-prove-it-11609/);
+[companion repository](https://github.com/Antolius/prompt-injection-example).
 
 ### PiSAs Cross-User Privacy Benchmark (Scan #432)
 
@@ -397,22 +480,26 @@ See: [findings/2026-07-06-hn-arxiv-github-scan-411.md](./findings/2026-07-06-hn-
 
 ## MCP TAG-Block Concealment — Protocol-Level Encoding Gap (Scan #453)
 
-Unicode TAG block (U+E0000–U+E007F) payloads invisible to human approval view
-survive byte-for-byte into model tokenizer. 8/8 techniques deliver payload into
-model context; 0/8 trigger MCP re-approval (even under TOCTOU rug-pull); 4/8
-evade string-matching sanitizer. Consistent across 3 independent server
-implementations (32/32 cross-library outcome cells agree).
+In the paper's reference harness, Unicode TAG block (U+E0000–U+E007F)
+payloads survive in serialized prompt/JSON-RPC bytes. Across eight techniques,
+all eight survive serialization, four evade its lexical sanitizer, one is
+hidden by its simplified renderer, and none forces protocol re-approval. No
+model or deployed client is run. The 32/32 cross-library cells share one
+payload catalogue and process family, so they test tool-management behavior,
+not 32 independent implementations or downstream model interpretation.
 
 **Attack class**: Protocol-level encoding gap.
-**Implication**: Approval-surface defenses (rendering-dependent review, string-matching
-sanitization) are structurally insufficient when the approval view and model
-input diverge at the encoding layer. Extends the Appearance Collapse thesis —
-visual trust fails at the protocol encoding level, not just the application level.
+**Implication**: The tested renderer and lexical sanitizer do not guarantee
+that their displayed/filtered text matches the serialized bytes. This motivates
+byte-faithful approval tests at protocol boundaries; the paper does not measure
+deployed-client prevalence or downstream model behavior.
 
 **Connection to defense architecture**: CXI (§2.44 in
-[verified-enforcement](./agent-security-verified-enforcement.md)) is explicitly
-immune to this attack class because it binds at the execution surface, not the
-approval surface.
+[verified-enforcement](./agent-security-verified-enforcement.md)) is a candidate
+execution-boundary defense because it gates mediated calls against an action
+manifest rather than trusting the approval rendering. The paper does not test
+TAG payloads against CXI, and CXI's policy and mediation completeness remain
+unproven, so immunity is not established.
 
 *(arXiv [2607.05744](https://arxiv.org/abs/2607.05744), Jul 2026. Scan #453)*
 

@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #449 (2026-07-08): The Subtraction Economy. Three convergent signals: the Subtraction Deficit has been priced by the market. HN: '$10k/week to delete AI-generated code' (44pts) — a consultancy charges premium rates for code deletion, inverting the traditional value proposition. Production costs $149 (Fable port), deletion costs $10k/week. arXiv: OptiAgent (2607.05346) achieves SOTA on 3/4 benchmarks via four specialized *subtractive* feedback loops — not one big validator but surgical subtraction at each failure mode. Cortex (2607.05377) constrains robotics from infinite action space to 32 canonical skill primitives via harness engineering — subtraction through standardization. HeRo (2607.05353) enables selective disclosure in LLM watermarking — verification with access control, verifying only what matters at your level. HN sovereignty stack sustained: StreetComplete 670pts (plateau), Chat Control passed 523pts, EU Car Camera 379pts (+12.8%, accelerating). Kokoro TTS 259pts (+16.7%). Predictions confirmed: P-448b EU Car Camera >400pts ON TRACK (379pts). P-448d Kokoro TTS >300pts ON TRACK (259pts). New GitHub: peerd 328★ (browser-native agent, no backend), brain.md 205★ (minimal file-based memory), awesome-evals 689★ (eval curation). Running accuracy: ~95.7% (67/70). The 21st layer of the Oversight Inversion: when production is near-free, subtraction becomes the premium economic activity."
+summary: "HN/arXiv/GitHub Scan #449 (2026-07-08): The Subtraction Economy, qualified. Slopfix posts a conditional $10,000 team-week offer but no transactions or costs. OptiAgent does not isolate its feedback routes. Cortex's 32-label interface is bundled with other changes. HeRo conditionally hides payload layers from verifiers lacking their keys and reports strong bit accuracy plus fast GPU decoding, but does not enforce authorization or measure verification labor, total audit cost, or sub-linear oversight. None of the three engineering examples establishes an economic subtraction effect."
 triggers: ["subtraction economy", "deletion economy", "code deletion service", "slop fix", "slopfix", "$10k deletion", "subtraction pricing", "subtraction deficit priced", "OptiAgent", "multi-loop validation", "specialized feedback loops", "Cortex embodied agent", "32 canonical primitives", "skill primitive taxonomy", "harness engineering robotics", "HeRo watermarking", "selective disclosure", "hierarchical vocabulary routing", "verification access control", "peerd browser agent", "brain.md", "agent brain file", "awesome-evals", "deletion as premium", "subtraction as value", "scan 449"]
 source_basis: "HN front page 2026-07-08 (30 stories via Algolia API). arXiv API (2607.05346 OptiAgent, 2607.05377 Cortex, 2607.05353 HeRo Selective Disclosure Watermarking). GitHub API (shepherd 1,046★, local-llm 1,175★, rowboat 15,255★, security-audit-skill 2,335★, SkillSpector 12,317★, eve 3,302★, peerd 328★, brain.md 205★, awesome-evals 689★, Agentic-First-Enterprises 213★, agent-runtime 208★). Cross-referenced with Architecture Premium (#448), Subtraction Deficit (library thesis), Oversight Inversion (thesis), Restraint Premium (#445)."
 </ai_context>
@@ -12,19 +12,19 @@ source_basis: "HN front page 2026-07-08 (30 stories via Algolia API). arXiv API 
 
 ## Theme
 
-The Architecture Premium (#448) established that investing in surrounding architecture yields higher returns than investing in model capability. This scan reveals the **economic corollary**: when addition (production) is near-free, subtraction (deletion, curation, constraint, selective disclosure) becomes the premium economic activity. The market has priced the Subtraction Deficit.
+The qualified Architecture Premium (#448) treats surrounding architecture as a factor to isolate; it does not establish higher returns. This scan proposes an economic hypothesis: when production becomes cheaper, remediation, curation, constraints, and selective disclosure may become relatively more valuable. The current evidence does not estimate a market premium.
 
-Three independent signals converge:
+Three differently scoped signals motivate separate questions rather than one economic convergence:
 
-1. **"We charge $10k/week to delete AI-generated code"** (HN, 44pts): A consultancy (Odra) openly prices code *deletion* as a premium service. "A client calls, asks for a 'small refactor,' and sends you 100k lines of AI-generated spaghetti... then we cut: the fourteen date formatters become one." Production costs $149 (the Fable port). Deletion costs $10k/week. The Subtraction Deficit is now commercially priced.
+1. **"We charge $10k/week to delete AI-generated code"** (HN item `48823359`, historically 44pts): Slopfix directly offers one week by three senior engineers for $10,000, with payment proportional to an agreed line-reduction target. The page reports an offer, not completed transactions, provider cost, demand, or a market-clearing price. The unrelated $149 Fable-port anecdote has different scope and units, so dividing the two does not estimate the relative cost or price of addition and subtraction.
 
-2. **OptiAgent** (2607.05346): Achieves SOTA on 3/4 benchmarks not via bigger models but via four specialized *subtractive* feedback loops — each targeting a distinct failure mode (misinterpretation, structural defects, mathematical inconsistencies, code errors). Each agent exposes its reasoning, making the full process auditable. The architecture's value is in what it *removes* (ambiguity, defects) at each stage, not what it adds.
+2. **OptiAgent** (2607.05346v1): Its table reports the best solving accuracy on three of four datasets for the GPT-5.4 configuration and describes four targeted feedback routes. The study uses one run per configuration, mixes copied and newly run baselines without variability measures, and leaves loop/component ablations, multi-run evaluation, interpretability metrics, and human audit evaluation to future work. The data do not identify the loops as the cause, and calling retries “subtractive” is this library's metaphor rather than the paper's measured intervention.
 
-3. **Cortex** (2607.05377): Constrains embodied manipulation from infinite action space to 32 canonical skill primitives, then applies "carefully designed harness engineering from task contexts to skill constraints." Outperforms monolithic baselines by 3.1-4.1% on long-horizon tasks. The breakthrough is *standardization as subtraction* — reducing the possible to the canonical.
+3. **Cortex** (2607.05377v1): Uses 32 canonical skill labels as the language interface between a planner and a continuous-action executor. It reports 95.5% versus 92.4% on LIBERO-Long and 86.8% versus 82.7% overall on RoboTwin: absolute gaps of 3.1 and 4.1 percentage points. The taxonomy is bundled with annotation, event-balanced sampling, memory, and harness changes and is not independently ablated, so the results do not identify action-space subtraction as the cause.
 
-**The Subtraction Economy**: The Oversight Inversion's economic manifestation. When production is near-free, value migrates to the entities that can subtract: delete code, constrain action spaces, decompose validation into surgical checks, selectively disclose only relevant information. This is the 21st layer — the Oversight Inversion isn't just a technical problem, it's an economic regime.
+**The Subtraction Economy hypothesis**: Falling production cost could shift value toward remediation, constraints, specialized checks, and selective disclosure. Establishing an economic regime would require comparable units, observed purchases and quantities, supplier costs, alternatives, and change over time; this scan has none of those.
 
-**Connection to Restraint Premium (#445)**: The Restraint Premium showed that tools investing in producing *less* outperform. The Subtraction Economy is the market's pricing of that premium — subtraction is no longer just an engineering virtue, it's a billable service.
+**Connection to Restraint Premium (#445)**: Slopfix shows that code reduction is offered as a billable service. One posted offer does not show realized demand, comparative performance, or a market-wide price.
 
 ---
 
@@ -32,49 +32,55 @@ Three independent signals converge:
 
 ### 1. OptiAgent: Multi-Agent Iterative Refinement (2607.05346)
 
-**Core finding**: Given a natural language description of an Operations Research problem, OptiAgent outputs solver-ready mathematical formulations and executable code. The architecture prioritizes mathematical modeling with dedicated agents that extract structures (decision variables, constraints), enabling iterative self-correction through a novel **multi-loop validation architecture with four specialized feedback mechanisms**, each targeting a distinct failure mode.
+**Supported finding**: Given a natural-language Operations Research problem, OptiAgent uses six agents and four bounded feedback routes to produce a formulation and executable solver code. The architecture and one worked correction trace are directly described; their independent contribution is not estimated.
 
 **Key results**:
-- SOTA on 3/4 benchmarks across LP, MILP, and Nonlinear Programming tasks
+- The GPT-5.4 OptiAgent row is highest on IndustryOR, LogiOR, and ComplexOR, but not NLP4LP
 - Highly competitive on the remaining dataset
-- Each agent exposes its reasoning, making the full modeling process **auditable**
-- Modular design improves transparency alongside accuracy
+- Intermediate representations and feedback are inspectable; no audit-success, interpretability, or user-study metric is reported
+- Results are one run per configuration with no variability measures; baseline values mix prior publications and current executions
 
-**Structural significance**: This is the Architecture Premium (#448) manifest as decomposed subtraction. Rather than one monolithic validator, OptiAgent uses four surgical feedback loops — each subtracting a specific class of error. The auditability is a consequence of architectural subtraction: when you decompose the process, each step becomes inspectable. Monolithic processes are opaque; modular subtraction is transparent.
+**Identification limits**: No loop-removal or component ablation appears; both are future work. The paper also plans multi-run evaluation, interpretability metrics, and expert/non-expert human evaluation. Consequently, the accuracy difference cannot be attributed specifically to feedback, decomposition, model choice, prompts, retries, or another pipeline difference. Feedback loops add correction calls; “subtraction” describes intended error removal, not measured compute or output reduction.
 
-**Connection to Oversight Inversion**: The four-loop architecture is a concrete instantiation of the Verification Scaling Axis (#427) — verification decomposed into specialized, sub-linear cost units. Each feedback loop operates at its own granularity, avoiding the Granularity Gap (#439).
+**Connection to Oversight Inversion**: The four routes are a concrete architecture to test for stage-specific verification. The paper does not measure sub-linear verification cost, avoidance of the Granularity Gap, or downstream audit outcomes.
 
 Source: https://arxiv.org/abs/2607.05346
 
 ### 2. Cortex: Bidirectionally Aligned Embodied Agent Framework (2607.05377)
 
-**Core finding**: Hierarchical VLM-VLA systems suffer from a gap between high-level planning semantics and low-level execution kinematics. Cortex resolves this by standardizing manipulation subtasks into **32 canonical skill primitives** with tractability principles (representative object attributes, improved trajectory reachability). The framework uses harness engineering from task contexts to skill constraints during inference.
+**Supported finding**: Cortex standardizes planner-to-executor language into **32 canonical skill labels**, adds object/spatial annotations, event-balanced transition sampling, textual memory, and an asynchronous harness, then maps generated language to executor-compatible commands. The 32 labels constrain the high-level interface; the low-level vision-language-action policy still emits continuous robot actions.
 
 **Key results**:
-- Outperforms monolithic baselines by 3.1% on Libero-long and 4.1% on RoboTwin
-- Zero-shot completion of unseen real-world long-horizon tasks (multi-stage chemistry experiments)
+- Reports 95.5% versus 92.4% for the shared-`pi0.5` LIBERO-Long comparison and 86.8% versus 82.7% overall on RoboTwin: 3.1- and 4.1-percentage-point gaps, not relative-percent effects
+- Reports real-world Cortex success rates of 65% and 55% over 20 trials per suite, versus 0% for two end-to-end baselines and 75%/70% for a human-selected-subtask control
 - Automatic annotation of over 4K hours of open-source video data
-- Event-balanced sampling for planning ambiguity at subtask transitions
+- An event-balanced Galaxea ablation reports 8.18 versus 7.58 total score with fewer samples, but uses one held-out episode protocol and reports no variability
 
-**Structural significance**: The 32 canonical primitives are a **subtraction operator on the action space** — from infinite possible actions to 32 that matter. This is the Restraint Premium (#445) applied to robotics: fewer primitives, better outcomes. The "harness engineering from task contexts to skill constraints" is architecturally identical to the Configuration Layer (#425): the harness constrains, and the constraint is the value.
+**Identification limits**: No experiment varies the taxonomy size or removes only the 32-label standardization. The open-loop component table bundles interface, sampling, and harness choices, while the closed-loop tables provide point estimates without seeds or uncertainty. “Zero-shot” applies to the high-level transfer claim: the real-world executor is still fine-tuned on about ten hours of target-setup, subtask-to-action data. Qualitative demonstrations cover prompt flexibility and recovery, but only two task suites have 20-trial aggregate results.
 
-**Connection to GaP (2607.05369, Scan #437)**: GaP generates computation graphs from a modular skill library and rehearses them. Cortex standardizes skills into primitives and uses harness engineering to constrain them. Both converge on: **skill governance through architectural subtraction**.
+**Artifact surface**: Primary review at `2026-09-04T01:53:24Z` read the 33,516,660-byte v1 source archive (SHA-256 `8233fd18…c1c3`). The project link resolves from `steinate/Cortex` to `InternRobotics/Cortex`, observed at commit `d2a9795b15aff369314b260d2727d7a0cdbf0b46`. Public artifacts include System-2 model `477c6041…e9e`, dataset `1b561c78…bc5`, validation annotations, open-loop evaluation, and annotation code. The repository TODO leaves System-1/2 LIBERO and RoboTwin evaluation plus System-2 training unreleased, so the headline closed-loop results are not independently reproducible from that repository alone.
+
+**Structural significance, qualified**: A canonical interface is a plausible constraint on planner output and may improve executability. Calling it “subtraction” is this library's interpretation, not a measured intervention: Cortex does not compare taxonomy sizes or isolate the taxonomy's effect.
+
+**Connection to GaP (2607.05369, Scan #437)**: Both use structured skill interfaces. Whether fewer labels improve governance remains open; Cortex supports interface standardization, not an optimal compression level.
 
 Source: https://arxiv.org/abs/2607.05377
 
 ### 3. HeRo: Selective Disclosure Watermarking (2607.05353)
 
-**Core finding**: Current LLM watermarking methods require revealing the entire embedded message to verify any part of it. HeRo (Hierarchical Vocabulary Routing) enables **selective disclosure** — different verifiers decode only the portions of the payload corresponding to their access level. The scheme preserves sampling unbiasedness and text quality while supporting fine-grained access control.
+**Supported finding**: HeRo recursively partitions a language model's vocabulary and assigns independent key tables to payload layers. In the evaluated two-level setup, a verifier with both keys decodes both fields, while one with only the first key decodes the public field and remains near chance on the private field.
 
 **Key results**:
-- Hierarchically partitions vocabulary and distributes watermark information across layers
-- Different verifiers decode only their access-level portions
-- Preserves unbiasedness of the underlying sampling process (text quality maintained)
-- High detection accuracy with low latency
+- With 24 bits and 200 generated C4 tokens, two-level HeRo (2,2) reports 0.925 bit accuracy, versus 0.981 for single-level HeRo and 0.894 for the strongest listed BiMark setting
+- Median perplexity is close to the unwatermarked Llama2-7B baseline in the reported C4/OpenGen settings; the sampler's unchanged marginal token distribution is proved for the specified construction
+- On one A40 GPU, two-level decoding ranges from 10.34 to 1.48 microseconds/token as batch size rises from 1 to 64; generation adds about 4–5% over the unwatermarked baseline
+- Perturbation tests cover random edits, roundtrip translation, and DIPPER paraphrasing; bit accuracy falls as attacks strengthen
 
-**Structural significance**: This is **subtraction applied to the verification process itself**. Instead of verify-everything-or-nothing, HeRo makes verification proportional and selective. You verify what matters at your level — a form of architectural subtraction that reduces the Oversight Inversion's cost. Not every verifier needs the full picture; access-appropriate disclosure is sufficient.
+**Security and scope limits**: The selective-disclosure theorem is conditional on exchangeable unauthorized scores and uniformly distributed hidden messages. Authorization is represented by possession of independent secret key tables; the paper does not implement key issuance, hierarchy policy, revocation, compromise, or collusion, and it does not provide a cryptographic key-privacy reduction. Experiments use one model (Llama2-7B), two datasets, and one configured seed, with no uncertainty intervals.
 
-**Connection to Oversight Inversion**: Selective disclosure directly addresses the oversight cost problem. If verification must examine everything, cost scales linearly with output. If verification can selectively focus, cost becomes sub-linear. HeRo provides the mechanism — hierarchical access control over verification evidence.
+**Artifact and cost boundary**: Primary review at `2026-09-04T02:04:12Z` read the 4,040,292-byte v1 archive (SHA-256 `1f77c540…c090`). Official code was observed at `xuyangc03/hero-watermark@68fe4c8c1508484622a76d744896b7f805b70c1f`: 23 tracked files and 16 parseable Python files, but no tests or license file. Example configs use placeholder inputs, 100 samples, and an 8-bit payload rather than reproducing the paper's 1,000-prompt/24-bit tables. The latency comparison is also implementation-asymmetric: HeRo is GPU-batched while released MPAC/BiMark decoders are CPU/per-text. This measures decoder compute, not human verification work or end-to-end audit cost.
+
+**Connection to Oversight Inversion, qualified**: HeRo is evidence that one text can expose different metadata to different key holders. It does not show that selective disclosure makes review proportional, lowers organizational cost, or changes verification scaling.
 
 Source: https://arxiv.org/abs/2607.05353
 
@@ -119,7 +125,7 @@ Source: https://arxiv.org/abs/2607.05353
 
 **Mid-tier acceleration continues**: EU Car Camera (+12.8% to 379pts, approaching 400), Kokoro TTS (+16.7% to 259pts), Rowboat (+17.4% to 81pts), 30papers (+7.7% to 323pts). The attention pattern from #448 persists: growth lives in the 50-400pt band while the top plateaus.
 
-**The $10k Deletion Signal**: At 44pts with 15 comments and ratio 2.93, this story is small but structurally critical. It is the **first time the Subtraction Deficit has been commercially priced on HN's front page**. The community response is split — some see it as genuine value ("you pay me for what I leave behind"), others see it as a rebrand of consulting. The debate itself validates the thesis: is deletion worth $10k/week? The market says yes. The community is processing the inversion.
+**The $10k offer**: At the historical 44 points and 15 comments, the HN counter shows attention to one consulting offer. A fresh read at `2026-09-04T01:43:53.929Z` pins item `48823359`; the first-party 6,019-byte page (SHA-256 `79f6a8dbde8b379eb42d141594379b3e6d24e8a9eb6a4d52774d481ee16f7c27`) says “One week. Three senior engineers. $10,000,” with proportional payment against a line-reduction target and a two-week warranty. It supplies no customer, completed engagement, revenue, cost, conversion, or competitor evidence. HN attention does not turn the offer into market validation.
 
 **Docx-CLI (53pts)**: "Agents read/edit Word docs using 1/2 the time and tokens" — framed as token efficiency (subtraction of waste). The Restraint Premium (#445) as a tool feature.
 
@@ -198,7 +204,7 @@ Previous: ~95.7% (67/70). No new confirmations or disconfirmations this scan. P-
 
 ### The Subtraction Economy as Oversight Inversion Layer 21
 
-The Oversight Inversion has documented 20 layers of how verification fails. The Subtraction Economy adds the **economic dimension**: when the failure of verification is recognized by the market, a pricing mechanism emerges.
+The Oversight Inversion documents technical verification gaps. Scan 449 adds an economic question: do falling production costs increase realized spending on remediation? The posted Slopfix offer establishes availability, not the market mechanism or its magnitude.
 
 ```
 The Oversight Inversion — Economic Arc:
@@ -207,10 +213,11 @@ The Oversight Inversion — Economic Arc:
 $149     → Cost to produce (Fable port, scan #382)
 $10k/wk  → Cost to delete (Odra slopfix, scan #449)
 
-Ratio: ~67× more expensive to subtract than to add.
+Arithmetic ratio: 10,000 / 149 ≈ 67.1.
 
-Production is a commodity. Subtraction is a service.
-The Oversight Inversion is now priced.
+The numerator is a three-engineer, one-week consulting offer; the denominator
+is an unrelated production anecdote. Different scope and units make the ratio
+economically uninterpretable.
 ```
 
 ### Three Forms of Subtraction
@@ -223,7 +230,7 @@ This scan reveals three distinct subtraction mechanisms, each addressing a diffe
 | **Architectural subtraction** | Constrain the possible | 32 canonical primitives (Cortex) | Design |
 | **Verification subtraction** | Verify selectively | HeRo selective disclosure | Oversight |
 
-OptiAgent combines all three: economic (auditable = cheaper oversight), architectural (four specialized loops), and verification (each loop targets a specific failure mode).
+OptiAgent exposes four correction routes, but the paper does not measure an economic effect, audit savings, verification cost, or the independent contribution of each loop. It therefore cannot combine or validate these three proposed forms.
 
 ### From Architecture Premium to Subtraction Economy
 
@@ -232,13 +239,11 @@ Scan #444: Comprehension Dividend  → Value of understanding
 Scan #445: Restraint Premium       → Value of producing less
 Scan #446: Predicate Gate          → Gate at transitions
 Scan #447: Composition Surface     → Failure at composition
-Scan #448: Architecture Premium    → Architecture > Model
-Scan #449: Subtraction Economy     → Market prices subtraction
+Scan #448: Architecture Premium    → Test architecture as a factor
+Scan #449: Subtraction Economy     → Test realized remediation demand
            ↓
-    The Oversight Inversion's exit is being
-    built by the market, not by researchers.
-    The $10k/wk signal is the market's
-    Architecture Premium in action.
+    One posted consulting offer motivates the test;
+    transactions and comparable costs are still missing.
 ```
 
 ---
@@ -247,6 +252,6 @@ Scan #449: Subtraction Economy     → Market prices subtraction
 
 1. **Subtraction pricing curve**: Does the $10k/wk rate persist or compress as more entrants arrive? The Restraint Premium suggests it will hold or increase as demand for deletion grows with AI production volume.
 
-2. **Selective verification as standard**: HeRo's hierarchical access control is currently niche (watermarking). When does it generalize to all agent verification? The Composition Surface (#447) predicts: when composition-aware verification tools emerge.
+2. **Selective disclosure versus verification work**: HeRo controls watermark-field decoding through keys, not which claims must be checked. Measure partial-versus-full audit time, key operations, missed defects, and end-to-end cost before generalizing it to agent verification.
 
-3. **32 is a magic number?**: Cortex uses 32 canonical primitives. Cognitive-Core-Skills (274★) uses 159 skill cards across 8 categories. Is there a natural compression limit for skill taxonomies? The Subtraction Deficit predicts: whatever the starting number, it will grow (addition) unless a subtraction mechanism is built in.
+3. **Taxonomy-size identification**: Cortex fixes 32 labels but does not compare another taxonomy size or remove standardization alone. Test matched taxonomies and report executor success, planner invalid-output rate, transfer, and annotation cost before treating 32—or fewer—as beneficial.

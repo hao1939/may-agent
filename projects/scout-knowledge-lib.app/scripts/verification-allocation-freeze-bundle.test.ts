@@ -1,0 +1,1358 @@
+import { afterEach, describe, expect, it } from "bun:test";
+import {
+  copyFile,
+  lstat,
+  link,
+  mkdtemp,
+  mkdir,
+  readdir,
+  rename,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { verifyExecutionFreezeBundle } from "./verification-allocation-freeze-bundle";
+import { freezeArtifactSha256 } from "./verification-allocation-freeze";
+import {
+  buildSyntheticFactorialSchedule,
+  buildToyFactorialSchedule,
+} from "./verification-allocation-factorial";
+
+const temporaryRoots: string[] = [];
+
+async function fixture() {
+  const root = await mkdtemp(join(tmpdir(), "scout-freeze-bundle-"));
+  temporaryRoots.push(root);
+  const schedule = JSON.stringify(buildToyFactorialSchedule());
+  const bundleBytes = "fixture bundle bytes";
+  const contents = {
+    "schedule.json": schedule,
+    "evidence/model-resolution.json": JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "content-addressed",
+    }),
+    "seed-policy.json": JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    }),
+    "bundle.zip": bundleBytes,
+    "MANIFEST.sha256": `${freezeArtifactSha256(bundleBytes)}  bundle.zip\n`,
+    "MANIFEST.sha256.ots": "fixture timestamp proof",
+  };
+  const hash = (name: keyof typeof contents) =>
+    freezeArtifactSha256(contents[name]);
+  const manifest = {
+    schema: "scout.verification-allocation-freeze/v1",
+    evidenceClass: "offline-execution-preparation",
+    providerCallsAuthorized: false,
+    results: [],
+    models: [
+      {
+        requestedId: "fixture-model",
+        resolvedId: "fixture-model-a",
+        resolutionKind: "content-addressed",
+        resolutionEvidenceArtifact: "evidence/model-resolution.json",
+      },
+    ],
+    seedPolicy: {
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      policyArtifact: "seed-policy.json",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    },
+    schedule: {
+      artifact: "schedule.json",
+      sha256: hash("schedule.json"),
+      schema: "scout.verification-allocation-schedule/v1",
+      modelIds: ["fixture-model-a"],
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+      cellsPerModelSeed: 32,
+      episodeCount: 64,
+    },
+    artifacts: Object.entries(contents).map(([name, bytes]) => ({
+      name,
+      sha256: freezeArtifactSha256(bytes),
+    })),
+    externalRegistration: {
+      status: "verified",
+      url: "https://example.invalid/scout-freeze/fixture",
+      identifier: "fixture-registration",
+      depositTimestampUtc: "2026-09-02T00:00:00Z",
+      artifactName: "bundle.zip",
+      artifactSha256: hash("bundle.zip"),
+      manifestArtifact: "MANIFEST.sha256",
+      manifestSha256: hash("MANIFEST.sha256"),
+      proofArtifact: "MANIFEST.sha256.ots",
+      proofTargetArtifact: "MANIFEST.sha256",
+      proofTargetSha256: hash("MANIFEST.sha256"),
+    },
+  };
+
+  await mkdir(join(root, "evidence"));
+  await Promise.all(
+    Object.entries(contents).map(([name, bytes]) =>
+      writeFile(join(root, name), bytes),
+    ),
+  );
+  await writeFile(join(root, "freeze-manifest.json"), JSON.stringify(manifest));
+  return { root, manifest };
+}
+
+async function addPeerModel(
+  root: string,
+  manifest: Awaited<ReturnType<typeof fixture>>["manifest"],
+) {
+  const peerArtifact = "evidence/peer-model-resolution.json";
+  const peerEvidence = JSON.stringify({
+    schema: "scout.verification-allocation-model-resolution/v1",
+    requestedId: "fixture-model-peer",
+    resolvedId: "fixture-model-b",
+    resolutionKind: "content-addressed",
+  });
+  await writeFile(join(root, peerArtifact), peerEvidence);
+  manifest.artifacts.push({
+    name: peerArtifact,
+    sha256: freezeArtifactSha256(peerEvidence),
+  });
+  manifest.models.push({
+    requestedId: "fixture-model-peer",
+    resolvedId: "fixture-model-b",
+    resolutionKind: "content-addressed" as const,
+    resolutionEvidenceArtifact: peerArtifact,
+  });
+
+  const schedule = JSON.stringify(
+    buildSyntheticFactorialSchedule(
+      manifest.models.map((model) => model.resolvedId),
+      manifest.seedPolicy.seedIds,
+    ),
+  );
+  await writeFile(join(root, "schedule.json"), schedule);
+  const scheduleSha256 = freezeArtifactSha256(schedule);
+  manifest.schedule.sha256 = scheduleSha256;
+  manifest.schedule.modelIds = manifest.models.map((model) => model.resolvedId);
+  manifest.schedule.episodeCount = 128;
+  manifest.artifacts.find(
+    (artifact) => artifact.name === "schedule.json",
+  )!.sha256 = scheduleSha256;
+  await writeFile(join(root, "freeze-manifest.json"), JSON.stringify(manifest));
+  return peerArtifact;
+}
+
+async function partialRollbackResult(
+  kind: "record" | "declaration" | "schedule",
+) {
+  const { root, manifest } = await fixture();
+  const peerArtifact = await addPeerModel(root, manifest);
+  expect((await verifyExecutionFreezeBundle(root)).ok, kind).toBe(true);
+
+  if (kind === "record") {
+    await rm(join(root, peerArtifact));
+    manifest.artifacts = manifest.artifacts.filter(
+      (artifact) => artifact.name !== peerArtifact,
+    );
+  } else if (kind === "declaration") {
+    manifest.models = manifest.models.filter(
+      (model) => model.resolvedId !== "fixture-model-b",
+    );
+  } else {
+    const schedule = JSON.stringify(buildToyFactorialSchedule());
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = ["fixture-model-a"];
+    manifest.schedule.episodeCount = 64;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+  }
+
+  await writeFile(join(root, "freeze-manifest.json"), JSON.stringify(manifest));
+  return verifyExecutionFreezeBundle(root);
+}
+
+afterEach(async () => {
+  await Promise.all(
+    temporaryRoots.splice(0).map((root) => rm(root, { recursive: true })),
+  );
+});
+
+describe("verification-allocation freeze bundle", () => {
+  it("loads an explicit byte-bound directory without provider authority", async () => {
+    const { root } = await fixture();
+    const result = await verifyExecutionFreezeBundle(root);
+
+    expect(result).toMatchObject({
+      ok: true,
+      errors: [],
+      artifactCount: 6,
+      modelCount: 1,
+      seedCount: 2,
+      episodeCount: 64,
+      providerCallsAuthorized: false,
+    });
+    expect(result.policyScope?.protocolReference).toMatch(
+      /^freeze-protocol-sha256:[0-9a-f]{64}$/,
+    );
+    expect(result.policyScope?.modelScopeReference).toMatch(
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
+    );
+  });
+
+  it("preserves content-addressed aliases through descriptor-safe directory reads", async () => {
+    const { root, manifest } = await fixture();
+    const baseline = await verifyExecutionFreezeBundle(root);
+    const aliases = new Map([
+      [
+        "evidence/model-resolution.json",
+        "evidence/aliased-model-resolution.json",
+      ],
+      ["seed-policy.json", "aliased-seed-policy.json"],
+      ["schedule.json", "aliased-schedule.json"],
+      ["MANIFEST.sha256", "aliased-MANIFEST.sha256"],
+      ["MANIFEST.sha256.ots", "aliased-MANIFEST.sha256.ots"],
+    ]);
+    for (const [original, alias] of aliases) {
+      await rename(join(root, original), join(root, alias));
+      manifest.artifacts.find((artifact) => artifact.name === original)!.name =
+        alias;
+    }
+    manifest.models[0].resolutionEvidenceArtifact = aliases.get(
+      "evidence/model-resolution.json",
+    )!;
+    manifest.seedPolicy.policyArtifact = aliases.get("seed-policy.json")!;
+    manifest.schedule.artifact = aliases.get("schedule.json")!;
+    manifest.externalRegistration.manifestArtifact =
+      aliases.get("MANIFEST.sha256")!;
+    manifest.externalRegistration.proofArtifact = aliases.get(
+      "MANIFEST.sha256.ots",
+    )!;
+    manifest.externalRegistration.proofTargetArtifact =
+      aliases.get("MANIFEST.sha256")!;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const aliased = await verifyExecutionFreezeBundle(root);
+    expect(aliased).toMatchObject({
+      ok: true,
+      errors: [],
+      artifactCount: 6,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      timestampProofEvidenceStatus: "local-byte-presence-unverified",
+      providerCallsAuthorized: false,
+    });
+    expect(aliased.policyScope).toEqual(baseline.policyScope);
+  });
+
+  it("keeps descriptor-safe control and Unicode aliases literal", async () => {
+    const { root, manifest } = await fixture();
+    const aliases = [
+      "proof\tartifact.ots",
+      "proof\nartifact.ots",
+      "caf\u00e9.ots",
+      "cafe\u0301.ots",
+      "PROOF.OTS",
+      "proof.ots",
+      "CON",
+      "proof.",
+      "a".repeat(255),
+    ];
+    let current = "MANIFEST.sha256.ots";
+
+    for (const alias of aliases) {
+      await rename(join(root, current), join(root, alias));
+      manifest.artifacts.find((artifact) => artifact.name === current)!.name =
+        alias;
+      manifest.externalRegistration.proofArtifact = alias;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok, JSON.stringify(alias)).toBe(true);
+      expect(result.errors).toEqual([]);
+      expect(result.providerCallsAuthorized).toBe(false);
+      current = alias;
+    }
+  });
+
+  it("keeps simultaneous platform-colliding names distinct on this host", async () => {
+    const pairs = [
+      ["proof.ots", "PROOF.OTS"],
+      ["caf\u00e9.ots", "cafe\u0301.ots"],
+      ["proof", "proof."],
+    ] as const;
+
+    for (const [left, right] of pairs) {
+      const { root, manifest } = await fixture();
+      await rename(join(root, "MANIFEST.sha256.ots"), join(root, left));
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "MANIFEST.sha256.ots",
+      )!.name = left;
+      manifest.externalRegistration.proofArtifact = left;
+
+      const rightBytes = `distinct peer for ${right}`;
+      await writeFile(join(root, right), rightBytes);
+      manifest.artifacts.push({
+        name: right,
+        sha256: freezeArtifactSha256(rightBytes),
+      });
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok, JSON.stringify([left, right])).toBe(true);
+      expect(result.errors).toEqual([]);
+      expect(result.artifactCount).toBe(7);
+      expect(result.providerCallsAuthorized).toBe(false);
+    }
+  });
+
+  it("treats hard-linked and copied same-byte artifacts as content aliases", async () => {
+    const buildAlias = async (hardLinked: boolean) => {
+      const { root, manifest } = await fixture();
+      const source = "MANIFEST.sha256.ots";
+      const alias = hardLinked ? "hard-link-proof.ots" : "copied-proof.ots";
+      const proofBytes = "fixture timestamp proof";
+      if (hardLinked) {
+        await link(join(root, source), join(root, alias));
+      } else {
+        await writeFile(join(root, alias), proofBytes);
+      }
+      manifest.artifacts.push({
+        name: alias,
+        sha256: freezeArtifactSha256(proofBytes),
+      });
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const [sourceStat, aliasStat] = await Promise.all([
+        stat(join(root, source)),
+        stat(join(root, alias)),
+      ]);
+      expect(sourceStat.ino === aliasStat.ino).toBe(hardLinked);
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result).toMatchObject({
+        ok: true,
+        errors: [],
+        artifactCount: 7,
+        providerCallsAuthorized: false,
+      });
+      return result;
+    };
+
+    const hardLinked = await buildAlias(true);
+    const copied = await buildAlias(false);
+    expect(hardLinked.policyScope).toEqual(copied.policyScope);
+    expect(hardLinked.externalRegistrationEvidenceStatus).toBe(
+      copied.externalRegistrationEvidenceStatus,
+    );
+    expect(hardLinked.timestampProofEvidenceStatus).toBe(
+      copied.timestampProofEvidenceStatus,
+    );
+  });
+
+  it("keeps a copied model-resolution alias as one model identity", async () => {
+    const { root, manifest } = await fixture();
+    const source = "evidence/model-resolution.json";
+    const alias = "evidence/copied-model-resolution.json";
+    await copyFile(join(root, source), join(root, alias));
+    const sourceArtifact = manifest.artifacts.find(
+      (artifact) => artifact.name === source,
+    )!;
+    manifest.artifacts.push({
+      name: alias,
+      sha256: sourceArtifact.sha256,
+    });
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const [sourceStatus, aliasStatus] = await Promise.all([
+      stat(join(root, source)),
+      stat(join(root, alias)),
+    ]);
+    expect(aliasStatus.ino).not.toBe(sourceStatus.ino);
+    expect(
+      manifest.artifacts.filter(
+        (artifact) => artifact.sha256 === sourceArtifact.sha256,
+      ),
+    ).toHaveLength(2);
+
+    const originalReferenced = await verifyExecutionFreezeBundle(root);
+    manifest.models[0]!.resolutionEvidenceArtifact = alias;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    const aliasReferenced = await verifyExecutionFreezeBundle(root);
+
+    for (const result of [originalReferenced, aliasReferenced]) {
+      expect(result).toMatchObject({
+        ok: true,
+        errors: [],
+        artifactCount: 7,
+        modelCount: 1,
+        externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+        timestampProofEvidenceStatus: "local-byte-presence-unverified",
+        providerCallsAuthorized: false,
+      });
+    }
+    expect(aliasReferenced.policyScope).toEqual(originalReferenced.policyScope);
+  });
+
+  it("rejects a copied resolution alias reused by a distinct model", async () => {
+    const { root, manifest } = await fixture();
+    const source = "evidence/model-resolution.json";
+    const alias = "evidence/copied-model-resolution.json";
+    await copyFile(join(root, source), join(root, alias));
+    const sourceArtifact = manifest.artifacts.find(
+      (artifact) => artifact.name === source,
+    )!;
+    manifest.artifacts.push({
+      name: alias,
+      sha256: sourceArtifact.sha256,
+    });
+    manifest.models.push({
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed" as const,
+      resolutionEvidenceArtifact: alias,
+    });
+
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        manifest.models.map((model) => model.resolvedId),
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 128;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const [sourceStatus, aliasStatus] = await Promise.all([
+      stat(join(root, source)),
+      stat(join(root, alias)),
+    ]);
+    expect(aliasStatus.ino).not.toBe(sourceStatus.ino);
+    expect(
+      manifest.artifacts.filter(
+        (artifact) => artifact.sha256 === sourceArtifact.sha256,
+      ),
+    ).toHaveLength(2);
+    expect(
+      manifest.models.map((model) => model.resolutionEvidenceArtifact),
+    ).toEqual([source, alias]);
+
+    expect(await verifyExecutionFreezeBundle(root)).toMatchObject({
+      ok: false,
+      errors: ["models[1] resolution evidence does not match declaration"],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
+  it("accepts distinct matching resolution records for distinct models", async () => {
+    const { root, manifest } = await fixture();
+    const baseline = await verifyExecutionFreezeBundle(root);
+    const peerArtifact = await addPeerModel(root, manifest);
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: true,
+      errors: [],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      externalRegistrationEvidenceStatus: "local-byte-match-unverified",
+      timestampProofEvidenceStatus: "local-byte-presence-unverified",
+      providerCallsAuthorized: false,
+    });
+    expect(result.policyScope?.modelScopeReference).toMatch(
+      /^freeze-model-scope-sha256:[0-9a-f]{64}$/,
+    );
+
+    await rm(join(root, peerArtifact));
+    manifest.artifacts = manifest.artifacts.filter(
+      (artifact) => artifact.name !== peerArtifact,
+    );
+    manifest.models = manifest.models.filter(
+      (model) => model.resolvedId !== "fixture-model-b",
+    );
+    const rollbackSchedule = JSON.stringify(buildToyFactorialSchedule());
+    await writeFile(join(root, "schedule.json"), rollbackSchedule);
+    const rollbackScheduleSha256 = freezeArtifactSha256(rollbackSchedule);
+    manifest.schedule.sha256 = rollbackScheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 64;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = rollbackScheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(baseline);
+  });
+
+  it("rejects every partial per-model rollback", async () => {
+    const cases = [
+      ["record", "models[1] has no bound resolution evidence"],
+      ["declaration", "schedule episode count must be 64, found 128"],
+      ["schedule", "schedule episode count must be 128, found 64"],
+    ] as const;
+
+    for (const [kind, expectedError] of cases) {
+      const result = await partialRollbackResult(kind);
+      expect(result.ok, kind).toBe(false);
+      expect(result.errors, kind).toContain(expectedError);
+      expect(result.policyScope, kind).toBeNull();
+      expect(result.providerCallsAuthorized, kind).toBe(false);
+    }
+  });
+
+  it("binds coherent model order into reversible policy scope", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    const writeCurrentSchedule = async () => {
+      const schedule = JSON.stringify(
+        buildSyntheticFactorialSchedule(
+          manifest.models.map((model) => model.resolvedId),
+          manifest.seedPolicy.seedIds,
+        ),
+      );
+      await writeFile(join(root, "schedule.json"), schedule);
+      const scheduleSha256 = freezeArtifactSha256(schedule);
+      manifest.schedule.sha256 = scheduleSha256;
+      manifest.schedule.modelIds = manifest.models.map(
+        (model) => model.resolvedId,
+      );
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "schedule.json",
+      )!.sha256 = scheduleSha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    manifest.models.reverse();
+    await writeCurrentSchedule();
+    const reversed = await verifyExecutionFreezeBundle(root);
+    expect(reversed.ok).toBe(true);
+    expect(reversed.policyScope?.modelScopeReference).not.toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reversed.policyScope?.protocolReference).not.toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reversed.providerCallsAuthorized).toBe(false);
+
+    manifest.models.reverse();
+    await writeCurrentSchedule();
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("keeps artifact declaration order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    manifest.artifacts.reverse();
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("binds coherent seed order into reversible protocol scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+
+    const writeCurrentSeedOrder = async () => {
+      const seedPolicy = JSON.stringify({
+        schema: "scout.verification-allocation-seed-policy/v1",
+        namespace: manifest.seedPolicy.namespace,
+        algorithm: manifest.seedPolicy.algorithm,
+        seedIds: manifest.seedPolicy.seedIds,
+      });
+      await writeFile(join(root, "seed-policy.json"), seedPolicy);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "seed-policy.json",
+      )!.sha256 = freezeArtifactSha256(seedPolicy);
+
+      const schedule = JSON.stringify(
+        buildSyntheticFactorialSchedule(
+          manifest.models.map((model) => model.resolvedId),
+          manifest.seedPolicy.seedIds,
+        ),
+      );
+      await writeFile(join(root, "schedule.json"), schedule);
+      const scheduleSha256 = freezeArtifactSha256(schedule);
+      manifest.schedule.sha256 = scheduleSha256;
+      manifest.schedule.seedIds = [...manifest.seedPolicy.seedIds];
+      manifest.artifacts.find(
+        (artifact) => artifact.name === "schedule.json",
+      )!.sha256 = scheduleSha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    manifest.seedPolicy.seedIds.reverse();
+    await writeCurrentSeedOrder();
+    const reversed = await verifyExecutionFreezeBundle(root);
+    expect(reversed.ok).toBe(true);
+    expect(reversed.policyScope?.protocolReference).not.toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reversed.policyScope?.modelScopeReference).toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reversed.providerCallsAuthorized).toBe(false);
+
+    manifest.seedPolicy.seedIds.reverse();
+    await writeCurrentSeedOrder();
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("binds canonical model-resolution key order into reversible model scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const resolutionArtifact = "evidence/model-resolution.json";
+    const artifact = manifest.artifacts.find(
+      (candidate) => candidate.name === resolutionArtifact,
+    )!;
+    const originalEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: "fixture-model",
+      resolvedId: "fixture-model-a",
+      resolutionKind: "content-addressed",
+    });
+    const reorderedEvidence = JSON.stringify({
+      requestedId: "fixture-model",
+      schema: "scout.verification-allocation-model-resolution/v1",
+      resolutionKind: "content-addressed",
+      resolvedId: "fixture-model-a",
+    });
+
+    expect(artifact.sha256).toBe(
+      "87914189362ed9119e7331c41bdad50fbb13adf9bf1c12e106b12868bf36708b",
+    );
+    expect(ordered.policyScope?.modelScopeReference).toBe(
+      "freeze-model-scope-sha256:ac29ae22b51124c1624904fbb6a8d44b426c585365ff084046a15fcb6847c5bf",
+    );
+    expect(JSON.parse(reorderedEvidence)).toEqual(JSON.parse(originalEvidence));
+    expect(freezeArtifactSha256(reorderedEvidence)).toBe(
+      "3e5e4a775903301ac47c08b198e0c0e3b87451e2d9025c5ca32aabf466962116",
+    );
+    await writeFile(join(root, resolutionArtifact), reorderedEvidence);
+    artifact.sha256 = freezeArtifactSha256(reorderedEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const reordered = await verifyExecutionFreezeBundle(root);
+    expect(reordered.ok).toBe(true);
+    expect(reordered.policyScope?.modelScopeReference).toBe(
+      "freeze-model-scope-sha256:0760afdd02d402ca3c94bcb96e46dfb63037207f84c0b1c391bd7de0d1480b31",
+    );
+    expect(reordered.policyScope?.protocolReference).toBe(
+      ordered.policyScope?.protocolReference,
+    );
+    expect(reordered.providerCallsAuthorized).toBe(false);
+
+    await writeFile(join(root, resolutionArtifact), originalEvidence);
+    artifact.sha256 = freezeArtifactSha256(originalEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("binds canonical seed-policy key order into reversible protocol scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const policyArtifact = "seed-policy.json";
+    const artifact = manifest.artifacts.find(
+      (candidate) => candidate.name === policyArtifact,
+    )!;
+    const originalEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-seed-policy/v1",
+      namespace: "scout.verification-allocation/v1",
+      algorithm: "enumerated-fixture-v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+    });
+    const reorderedEvidence = JSON.stringify({
+      namespace: "scout.verification-allocation/v1",
+      schema: "scout.verification-allocation-seed-policy/v1",
+      seedIds: ["fixture-seed-00", "fixture-seed-01"],
+      algorithm: "enumerated-fixture-v1",
+    });
+
+    expect(artifact.sha256).toBe(
+      "ea06290802e91f0ac3daa5c70bedfcea52e3ee1de84d4670e57eb7bd840e0495",
+    );
+    expect(ordered.policyScope?.protocolReference).toBe(
+      "freeze-protocol-sha256:bdee2f38ae63fccf3d67a4eb4e95d418fa3e8a752ef91ebab6c7592e7e8e6ee8",
+    );
+    expect(JSON.parse(reorderedEvidence)).toEqual(JSON.parse(originalEvidence));
+    expect(freezeArtifactSha256(reorderedEvidence)).toBe(
+      "b117778287e6c6ad7ecec3ffe41dfa91cac1fa55954abc492b21995ca6603fc3",
+    );
+    await writeFile(join(root, policyArtifact), reorderedEvidence);
+    artifact.sha256 = freezeArtifactSha256(reorderedEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const reordered = await verifyExecutionFreezeBundle(root);
+    expect(reordered.ok).toBe(true);
+    expect(reordered.policyScope?.protocolReference).toBe(
+      "freeze-protocol-sha256:f2d5446c9dc9e317ba485d559ee0f75a30293ea29fefa528997e8a4939286d91",
+    );
+    expect(reordered.policyScope?.modelScopeReference).toBe(
+      ordered.policyScope?.modelScopeReference,
+    );
+    expect(reordered.providerCallsAuthorized).toBe(false);
+
+    await writeFile(join(root, policyArtifact), originalEvidence);
+    artifact.sha256 = freezeArtifactSha256(originalEvidence);
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("keeps top-level freeze-manifest key order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reorderedManifest = JSON.stringify({
+      externalRegistration: manifest.externalRegistration,
+      artifacts: manifest.artifacts,
+      schedule: manifest.schedule,
+      seedPolicy: manifest.seedPolicy,
+      models: manifest.models,
+      results: manifest.results,
+      providerCallsAuthorized: manifest.providerCallsAuthorized,
+      evidenceClass: manifest.evidenceClass,
+      schema: manifest.schema,
+    });
+
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "a951e9ec8bd546c4c436766604bc9891c068b93db04eb81447d5ed24a0878572",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "07bd1ee68034f9e5af0234b3acab8ea60e12c9e1b57edf19f696a4bada421174",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("keeps nested freeze-manifest key order out of policy scope", async () => {
+    const { root, manifest } = await fixture();
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reorderedManifest = JSON.stringify({
+      schema: manifest.schema,
+      evidenceClass: manifest.evidenceClass,
+      providerCallsAuthorized: manifest.providerCallsAuthorized,
+      results: manifest.results,
+      models: manifest.models.map((model) => ({
+        resolutionEvidenceArtifact: model.resolutionEvidenceArtifact,
+        resolutionKind: model.resolutionKind,
+        resolvedId: model.resolvedId,
+        requestedId: model.requestedId,
+      })),
+      seedPolicy: {
+        seedIds: manifest.seedPolicy.seedIds,
+        policyArtifact: manifest.seedPolicy.policyArtifact,
+        algorithm: manifest.seedPolicy.algorithm,
+        namespace: manifest.seedPolicy.namespace,
+      },
+      schedule: {
+        episodeCount: manifest.schedule.episodeCount,
+        cellsPerModelSeed: manifest.schedule.cellsPerModelSeed,
+        seedIds: manifest.schedule.seedIds,
+        modelIds: manifest.schedule.modelIds,
+        schema: manifest.schedule.schema,
+        sha256: manifest.schedule.sha256,
+        artifact: manifest.schedule.artifact,
+      },
+      artifacts: manifest.artifacts.map((artifact) => ({
+        sha256: artifact.sha256,
+        name: artifact.name,
+      })),
+      externalRegistration: {
+        proofTargetSha256: manifest.externalRegistration.proofTargetSha256,
+        proofTargetArtifact: manifest.externalRegistration.proofTargetArtifact,
+        proofArtifact: manifest.externalRegistration.proofArtifact,
+        manifestSha256: manifest.externalRegistration.manifestSha256,
+        manifestArtifact: manifest.externalRegistration.manifestArtifact,
+        artifactSha256: manifest.externalRegistration.artifactSha256,
+        artifactName: manifest.externalRegistration.artifactName,
+        depositTimestampUtc: manifest.externalRegistration.depositTimestampUtc,
+        identifier: manifest.externalRegistration.identifier,
+        url: manifest.externalRegistration.url,
+        status: manifest.externalRegistration.status,
+      },
+    });
+
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "a951e9ec8bd546c4c436766604bc9891c068b93db04eb81447d5ed24a0878572",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "d9fb263a34827b7112767ea0eb4d4235c47a0dc440ab4ee56860513e28ee00a8",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("keeps recursive manifest key order presentational for two models", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const ordered = await verifyExecutionFreezeBundle(root);
+    const orderedManifest = JSON.stringify(manifest);
+    const reverseRecordKeys = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(reverseRecordKeys);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(
+          Object.entries(value)
+            .reverse()
+            .map(([key, nested]) => [key, reverseRecordKeys(nested)]),
+        );
+      }
+      return value;
+    };
+    const reorderedManifest = JSON.stringify(reverseRecordKeys(manifest));
+
+    expect(ordered.ok).toBe(true);
+    expect(ordered.modelCount).toBe(2);
+    expect(JSON.parse(reorderedManifest)).toEqual(JSON.parse(orderedManifest));
+    expect(freezeArtifactSha256(orderedManifest)).toBe(
+      "98277001e1d16111e43130d2bd4197b0056af12b566a0fcb92e1bbed2013f850",
+    );
+    expect(freezeArtifactSha256(reorderedManifest)).toBe(
+      "2ae3c6fec1874c0a9df51d9455e6d8dd0d96a3d8601ff3d9f44cb1a6ccc08a9c",
+    );
+    await writeFile(join(root, "freeze-manifest.json"), reorderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+
+    await writeFile(join(root, "freeze-manifest.json"), orderedManifest);
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(ordered);
+  });
+
+  it("keeps failed model identity in the bound manifest, not the result", async () => {
+    const cases = [
+      {
+        artifact: "evidence/model-resolution.json",
+        index: 0,
+        requestedId: "fixture-model",
+        resolvedId: "fixture-model-a",
+      },
+      {
+        artifact: "evidence/peer-model-resolution.json",
+        index: 1,
+        requestedId: "fixture-model-peer",
+        resolvedId: "fixture-model-b",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { root, manifest } = await fixture();
+      await addPeerModel(root, manifest);
+      const mismatchedEvidence = JSON.stringify({
+        schema: "scout.verification-allocation-model-resolution/v1",
+        requestedId: `${testCase.requestedId}-substitute`,
+        resolvedId: testCase.resolvedId,
+        resolutionKind: "content-addressed",
+      });
+      await writeFile(join(root, testCase.artifact), mismatchedEvidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.artifact,
+      )!.sha256 = freezeArtifactSha256(mismatchedEvidence);
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      expect(manifest.models[testCase.index]).toMatchObject({
+        requestedId: testCase.requestedId,
+        resolvedId: testCase.resolvedId,
+        resolutionEvidenceArtifact: testCase.artifact,
+      });
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result).toMatchObject({
+        ok: false,
+        errors: [
+          `models[${testCase.index}] resolution evidence does not match declaration`,
+        ],
+        artifactCount: 7,
+        modelCount: 2,
+        seedCount: 2,
+        episodeCount: 128,
+        policyScope: null,
+        providerCallsAuthorized: false,
+      });
+      expect(JSON.stringify(result)).not.toContain(testCase.requestedId);
+      expect(JSON.stringify(result)).not.toContain(testCase.resolvedId);
+      expect(JSON.stringify(result)).not.toContain(testCase.artifact);
+    }
+  });
+
+  it("reports every failed model in stable manifest order", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const substitute = async (index: 0 | 1) => {
+      const model = manifest.models[index];
+      const evidence = JSON.stringify({
+        schema: "scout.verification-allocation-model-resolution/v1",
+        requestedId: `${model.requestedId}-substitute`,
+        resolvedId: model.resolvedId,
+        resolutionKind: model.resolutionKind,
+      });
+      await writeFile(join(root, model.resolutionEvidenceArtifact), evidence);
+      manifest.artifacts.find(
+        (artifact) => artifact.name === model.resolutionEvidenceArtifact,
+      )!.sha256 = freezeArtifactSha256(evidence);
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+    };
+
+    await substitute(1);
+    expect((await verifyExecutionFreezeBundle(root)).errors).toEqual([
+      "models[1] resolution evidence does not match declaration",
+    ]);
+    await substitute(0);
+    const bothFailed = await verifyExecutionFreezeBundle(root);
+    expect(bothFailed).toMatchObject({
+      ok: false,
+      errors: [
+        "models[0] resolution evidence does not match declaration",
+        "models[1] resolution evidence does not match declaration",
+      ],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(bothFailed);
+  });
+
+  it("retains model and schedule failures across validation layers", async () => {
+    const { root, manifest } = await fixture();
+    await addPeerModel(root, manifest);
+    const model = manifest.models[0];
+    const mismatchedEvidence = JSON.stringify({
+      schema: "scout.verification-allocation-model-resolution/v1",
+      requestedId: `${model.requestedId}-substitute`,
+      resolvedId: model.resolvedId,
+      resolutionKind: model.resolutionKind,
+    });
+    await writeFile(
+      join(root, model.resolutionEvidenceArtifact),
+      mismatchedEvidence,
+    );
+    manifest.artifacts.find(
+      (artifact) => artifact.name === model.resolutionEvidenceArtifact,
+    )!.sha256 = freezeArtifactSha256(mismatchedEvidence);
+
+    const reversedModelIds = manifest.models
+      .map((candidate) => candidate.resolvedId)
+      .reverse();
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        reversedModelIds,
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.modelIds = reversedModelIds;
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: false,
+      errors: [
+        "models[0] resolution evidence does not match declaration",
+        "schedule model IDs do not match immutable resolutions",
+      ],
+      artifactCount: 7,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+    expect(await verifyExecutionFreezeBundle(root)).toEqual(result);
+  });
+
+  it("rejects one hard-linked digest reused across semantic roles", async () => {
+    const cases = [
+      {
+        source: "evidence/model-resolution.json",
+        target: "seed-policy.json",
+        errors: [
+          "seed policy evidence contains unsupported fields",
+          "seed policy evidence schema changed",
+          "seed policy evidence does not match declaration",
+        ],
+      },
+      {
+        source: "seed-policy.json",
+        target: "evidence/model-resolution.json",
+        errors: [
+          "models[0] resolution evidence contains unsupported fields",
+          "models[0] resolution evidence schema changed",
+          "models[0] resolution evidence does not match declaration",
+        ],
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { root, manifest } = await fixture();
+      await rm(join(root, testCase.target));
+      await link(join(root, testCase.source), join(root, testCase.target));
+      const sourceArtifact = manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.source,
+      )!;
+      manifest.artifacts.find(
+        (artifact) => artifact.name === testCase.target,
+      )!.sha256 = sourceArtifact.sha256;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      const [sourceStatus, targetStatus] = await Promise.all([
+        stat(join(root, testCase.source)),
+        stat(join(root, testCase.target)),
+      ]);
+      expect(targetStatus.ino).toBe(sourceStatus.ino);
+
+      const result = await verifyExecutionFreezeBundle(root);
+      expect(result.ok).toBe(false);
+      expect(result.policyScope).toBeNull();
+      expect(result.providerCallsAuthorized).toBe(false);
+      for (const error of testCase.errors) {
+        expect(result.errors).toContain(error);
+      }
+    }
+  });
+
+  it("rejects one resolution object reused across distinct model declarations", async () => {
+    const { root, manifest } = await fixture();
+    const peerModel = {
+      requestedId: "fixture-model-peer",
+      resolvedId: "fixture-model-b",
+      resolutionKind: "content-addressed" as const,
+      resolutionEvidenceArtifact: "evidence/model-resolution.json",
+    };
+    manifest.models.push(peerModel);
+
+    const schedule = JSON.stringify(
+      buildSyntheticFactorialSchedule(
+        manifest.models.map((model) => model.resolvedId),
+        manifest.seedPolicy.seedIds,
+      ),
+    );
+    await writeFile(join(root, "schedule.json"), schedule);
+    const scheduleSha256 = freezeArtifactSha256(schedule);
+    manifest.schedule.sha256 = scheduleSha256;
+    manifest.schedule.modelIds = manifest.models.map(
+      (model) => model.resolvedId,
+    );
+    manifest.schedule.episodeCount = 128;
+    manifest.artifacts.find(
+      (artifact) => artifact.name === "schedule.json",
+    )!.sha256 = scheduleSha256;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect(manifest.models[0].resolutionEvidenceArtifact).toBe(
+      peerModel.resolutionEvidenceArtifact,
+    );
+    expect(
+      manifest.artifacts.filter(
+        (artifact) => artifact.name === peerModel.resolutionEvidenceArtifact,
+      ),
+    ).toHaveLength(1);
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result).toMatchObject({
+      ok: false,
+      errors: ["models[1] resolution evidence does not match declaration"],
+      artifactCount: 6,
+      modelCount: 2,
+      seedCount: 2,
+      episodeCount: 128,
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
+  it("rejects duplicate keys in the raw freeze-manifest JSON", async () => {
+    const { root, manifest } = await fixture();
+    const rawManifest = JSON.stringify(manifest).replace(
+      '"providerCallsAuthorized":false',
+      '"providerCallsAuthorized":false,"providerCallsAuthorized":false',
+    );
+    await writeFile(join(root, "freeze-manifest.json"), rawManifest);
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(
+      "freeze-manifest.json is not canonical verifiable JSON",
+    );
+    expect(result.providerCallsAuthorized).toBe(false);
+  });
+
+  it("rejects an implicit relative root", async () => {
+    expect(await verifyExecutionFreezeBundle("fixture")).toEqual({
+      ok: false,
+      errors: ["bundle root must be an explicit absolute path"],
+      artifactCount: 0,
+      modelCount: 0,
+      seedCount: 0,
+      episodeCount: 0,
+      externalRegistrationEvidenceStatus: "",
+      timestampProofEvidenceStatus: "",
+      policyScope: null,
+      providerCallsAuthorized: false,
+    });
+  });
+
+  it("rejects traversal-shaped artifact names before reading them", async () => {
+    const { root, manifest } = await fixture();
+    manifest.artifacts[0]!.name = "../schedule.json";
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
+      "artifact name is not a canonical relative path: ../schedule.json",
+    );
+  });
+
+  it("rejects NUL and backslash artifact names before reading them", async () => {
+    for (const name of ["schedule\0.json", "evidence\\schedule.json"]) {
+      const { root, manifest } = await fixture();
+      manifest.artifacts[0]!.name = name;
+      await writeFile(
+        join(root, "freeze-manifest.json"),
+        JSON.stringify(manifest),
+      );
+
+      expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
+        `artifact name is not a canonical relative path: ${name}`,
+      );
+    }
+  });
+
+  it("rejects symlinks even when their target is readable", async () => {
+    const { root } = await fixture();
+    await symlink(
+      join(root, "seed-policy.json"),
+      join(root, "linked-policy.json"),
+    );
+
+    expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
+      "symbolic links are not allowed in a freeze bundle: linked-policy.json",
+    );
+  });
+
+  it("rejects an entry replaced by a symlink during directory inventory", async () => {
+    const { root, manifest } = await fixture();
+    const fillerNames = Array.from(
+      { length: 1_500 },
+      (_, index) => `filler-${index.toString().padStart(4, "0")}.txt`,
+    );
+    await Promise.all(
+      fillerNames.map((name) => writeFile(join(root, name), "same")),
+    );
+    manifest.artifacts.push(
+      ...fillerNames.map((name) => ({
+        name,
+        sha256: freezeArtifactSha256("same"),
+      })),
+    );
+    const inventoryOrder = await readdir(root);
+    const target = inventoryOrder.findLast((name) =>
+      fillerNames.includes(name),
+    )!;
+    const source = fillerNames.find((name) => name !== target)!;
+    manifest.seedPolicy.policyArtifact = target;
+    manifest.models[0]!.resolutionEvidenceArtifact = source;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const resultPromise = verifyExecutionFreezeBundle(root);
+    await Bun.sleep(5);
+    const swap = join(root, ".swap-link");
+    await symlink(source, swap);
+    await rename(swap, join(root, target));
+    const result = await resultPromise;
+
+    expect((await lstat(join(root, target))).isSymbolicLink()).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(
+      result.errors.some((error) =>
+        [
+          `symbolic links are not allowed in a freeze bundle: ${target}`,
+          `bundle entry could not be opened without following symbolic links: ${target}`,
+        ].some((expected) => error.includes(expected)),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a directory replaced by a symlink after root inventory", async () => {
+    const { root, manifest } = await fixture();
+    const directoryNames = Array.from(
+      { length: 500 },
+      (_, index) => `entry-${index.toString().padStart(4, "0")}`,
+    );
+    await Promise.all(
+      directoryNames.map(async (name) => {
+        const directory = join(root, name);
+        await mkdir(directory);
+        await writeFile(join(directory, "payload.txt"), "same");
+      }),
+    );
+    manifest.artifacts.push(
+      ...directoryNames.map((name) => ({
+        name: `${name}/payload.txt`,
+        sha256: freezeArtifactSha256("same"),
+      })),
+    );
+    const inventoryOrder = await readdir(root);
+    const target = inventoryOrder.findLast((name) =>
+      directoryNames.includes(name),
+    )!;
+    const source = directoryNames.find((name) => name !== target)!;
+    manifest.seedPolicy.policyArtifact = `${target}/payload.txt`;
+    manifest.models[0]!.resolutionEvidenceArtifact = `${source}/payload.txt`;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const replacementRoot = await mkdtemp(
+      join(tmpdir(), "scout-freeze-directory-swap-"),
+    );
+    temporaryRoots.push(replacementRoot);
+    const replacement = join(replacementRoot, "replacement");
+    await mkdir(replacement);
+    await writeFile(join(replacement, "payload.txt"), "same");
+
+    const resultPromise = verifyExecutionFreezeBundle(root);
+    await Bun.sleep(5);
+    await rename(join(root, target), join(replacementRoot, "moved"));
+    await rename(replacement, join(root, ".replacement"));
+    await symlink(".replacement", join(root, target));
+    const result = await resultPromise;
+
+    expect((await lstat(join(root, target))).isSymbolicLink()).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(
+      result.errors.some((error) =>
+        error.includes(
+          `bundle directory could not be opened without following symbolic links: ${target}`,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects undeclared files discovered by the directory inventory", async () => {
+    const { root } = await fixture();
+    await writeFile(join(root, "undeclared.txt"), "not in the manifest");
+
+    expect((await verifyExecutionFreezeBundle(root)).errors).toContain(
+      "undeclared artifact bytes: undeclared.txt",
+    );
+  });
+
+  it("preserves the underlying provider-call denial", async () => {
+    const { root, manifest } = await fixture();
+    manifest.providerCallsAuthorized = true;
+    await writeFile(
+      join(root, "freeze-manifest.json"),
+      JSON.stringify(manifest),
+    );
+
+    const result = await verifyExecutionFreezeBundle(root);
+    expect(result.ok).toBe(false);
+    expect(result.providerCallsAuthorized).toBe(false);
+    expect(result.errors).toContain(
+      "manifest must remain offline preparation with provider calls denied and empty results",
+    );
+  });
+});

@@ -1,12 +1,14 @@
 <ai_context>
-summary: "Scan #494 — The Specification Mismatch. Three arXiv papers converge: every specification layer (bug reports, benchmarks, test cases) assumes a human consumer and systematically degrades when consumed by agents. Bug reports for agents ≠ bug reports for humans (structure changes alone reduce solve rates). Human benchmarks saturate because they specify for human capability. Agent testing must mine the agent's own workflow graph. GPT-5.6 at 531pts (r=0.66, lowest-contestation frontier launch). AI Buildout Slowdown at 46pts/96c (r=2.09, most contested per-point). Chat Control persists at 640pts. P-106 confirmed (GPT-5.6 ≤500pts within 3 scans — actually 531pts, disconfirmed). P-99 at risk (Muse Spark 233pts recovery)."
+summary: "Scan #494 — The Specification Mismatch. Three arXiv papers motivate testing specifications against their actual consumer, with different evidence strengths. AgentEval reports a 23-vs-12 structural-target advantage only in one airline ablation against prompt-only generation; it does not compare graph-derived tests with human-authored suites or estimate how many real boundaries humans miss. GPT-5.6 at 531pts and AI Buildout Slowdown at 46pts/96c are attention snapshots, not confirmations of the research claims."
 triggers: ["specification mismatch", "bug reports for agents", "agent specification", "human specification", "benchmark saturation", "workflow graph testing", "agent testing", "AgentEval", "boundary testing", "relative measurement", "adversarial psychometrics", "scan 494"]
 </ai_context>
 
 # HN/arXiv/GitHub Exploration: The Specification Mismatch
 
 **Scan #494** | 2026-07-09 | Source: HN front page + arXiv cs.SE/cs.AI/cs.MA + GitHub trending  
-**Theme**: Every specification layer in the agent ecosystem — bug reports, benchmarks, test suites — was authored for a human consumer. Three independent papers prove the mismatch is systematic, measurable, and actionable.
+**Theme**: Specifications should be evaluated against their actual consumer.
+Three independent papers motivate that design rule, but they do not jointly
+prove a universal human-to-agent specification mismatch.
 
 ---
 
@@ -41,10 +43,21 @@ Source: https://arxiv.org/abs/2607.07040
 ### 3. Mining Workflow Graphs for Black-Box Boundary Testing (2607.06873)
 
 - AgentEval: discovers agent behavioral boundaries via conversation workflow graphs, then generates targeted tests.
-- **23–38 distinct boundaries** discovered per agent vs **12** with prompt-only baseline (human-specified test strategy).
+- The full system reports **23–38 distinct boundary clusters** across four
+  text-domain agents; **23 versus 12** is an airline-only ablation against an
+  LLM prompt-only generator, not a human-specified test suite.
 - Key insight: critical boundaries (identity checks, confirmation gates) are *hidden behind multi-turn conversational prerequisites* that human testers don't know to traverse.
-- Tests derived from the agent's own behavioral graph beat tests derived from human specification by ~2×.
-- **Implication**: Human-specified test suites for agents miss roughly half the failure boundaries because they cannot specify what they cannot observe.
+- Structural graph-location targeting beats loose graph context and
+  prompt-only generation in that one run. Cross-domain comparative gain is
+  unknown.
+- **Implication**: mined structure can diversify boundary targets; the paper
+  does not estimate the fraction of boundaries missed by human test authors.
+
+All metrics come from a white-box LLM auditor. Its coverage labels were checked
+against one expert reference, but false-alarm labels and LLM-proposed boundary
+clusters were not independently validated. There is one run per configuration,
+visible-trace faults only, and no released code, prompts, or run artifacts as of
+the 2026-09-04 primary review.
 
 Source: https://arxiv.org/abs/2607.06873
 

@@ -2,7 +2,7 @@
 title: "HN — Externalized Agent Hardening Stack"
 source: hn
 date: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-27
 type: finding
 tags: [hn, agent-security, runtime-hardening, observability, secretless, verified-enforcement]
 relevance: high
@@ -49,12 +49,19 @@ The triggering negative signal is also on HN: **"Claude Code can read plaintext 
 - **Benchmarks disclosed in README:** across **56 real Claude Code sessions**, **2,992 tool calls** over **9 projects / 20 days**, it found **1 in 7 tool calls failed or was a repeat**, **62.5% of sessions had a failed call**, and wall-clock time overstated active agent time by **41×**.
 - **Signal:** the failure surface is increasingly diagnosed through **post-run telemetry**, not user intuition.
 
+### 6) HN 49465316 — Forkbench binds a credential to caller and destination
+- **HN:** https://news.ycombinator.com/item?id=49465316
+- **Source:** https://forkbench.com/security
+- **Vendor security-model evidence:** a destination-bound secret is represented by a per-terminal, per-secret stand-in; a local proxy substitutes the credential only for its configured destination. Forkbench says the broker derives the calling terminal from the kernel audit token, re-checks it before use, and makes the substitution proxy non-bypassable with a sandbox profile.
+- **Explicit limits:** the terminal itself is not a contained execution environment. A secret without a destination falls back to process-environment injection and remains readable by that process. Even on the stronger proxy path, non-disclosure of the value does not prevent the agent from making destructive calls with the credential's authority.
+- **Signal:** “the agent never sees the key” is meaningful only when both caller identity and destination routing are enforced outside the agent; it still does not imply action-level least privilege.
+
 ## Pattern
 
 | Control point | Example | What moves outside the model |
 |---|---|---|
 | Execution boundary | Isolade | Isolation, secret substitution, parallel-agent containment |
-| Credential boundary | Vultrino | Secret handling and auth injection |
+| Credential boundary | Vultrino, Forkbench | Secret handling, caller binding, destination binding, and auth injection |
 | Evidence boundary | Av9n | Truth of completion claims |
 | Telemetry boundary | Agentxray | Cost/failure diagnosis from transcripts |
 

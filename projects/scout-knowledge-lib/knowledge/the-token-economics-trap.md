@@ -315,16 +315,26 @@ The Goldman 24× token consumption projection (from chat → agentic workflows) 
 
 **Source**: https://arxiv.org/abs/2607.06906
 
-The Harness Effect (2607.06906) identifies the structural response to token maxing: the orchestration layer. Across 22 tasks × 6 foundation models, changing ONLY the harness:
+The Harness Effect (2607.06906) reports one paired comparison between a frozen
+Writer production loop and Writer's harness. Twenty-two locked prompts are run
+across six foundation models while the whole orchestration bundle changes:
 - Cuts cost per task **41%** ($0.21 → $0.12)
 - Cuts tokens per task **38%** (14.2k → 8.8k)
 - Maintains quality parity (0.78 → 0.81)
 
-Key insight: **efficiency is model-invariant** (every model gets 33-61% cheaper), while quality is capability-dependent (r=0.99 with baseline). This means the harness is the one component whose efficiency multiplies across every model an organization runs — present and future.
+All six model aggregates are cheaper by 33–61%, which is a same-direction
+result with substantial heterogeneity—not model invariance or evidence about
+future models. The quality-change correlation is `r=0.99` over six derived
+model means, without an interval, and the paper calls it suggestive.
 
 The paper names six mechanism families: cache-shape discipline, failure-spend governance, turn-count compression, tool-payload pruning, delegation routing, context-window management.
 
-**Resolution of the trap**: The Token Economics Trap's Layer 1 (predictability collapse) now has a structural answer: govern the harness, not the model. Token maxing is the default; harness discipline is the intervention. The prediction problem shifts from "how many tokens will the model use?" to "how well does the harness control token allocation?" — a question that's architecturally answerable.
+**Qualified implication**: harness design can be a material token-allocation
+lever on this workload. The baseline ran once; the paper releases neither the
+full prompts/traces/price snapshot nor the configuration manifests promised in
+its checklist, and it does not isolate the six mechanisms. The result supports
+measuring both harness and model configuration, not replacing model governance
+with a universal harness prescription.
 
 ## Cost Control Becomes Routing Policy, Not a Hard Cap (HN, 2026-08-07)
 
@@ -431,4 +441,4 @@ A curated map of what AI tokens actually cost and where they're wasted vs. well 
 
 ---
 
-*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof. Updated Jul 2026 with awesome-ai-tokenomics community resource.*
+*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Sep 2026 to qualify The Harness Effect as a workload-specific, artifact-incomplete comparison. Updated Jul 2026 with awesome-ai-tokenomics community resource.*

@@ -53,7 +53,7 @@ concentrates value.
   when uncertainty is high; skip when confidence is high. Connects to
   Bayesian Control for Coding Agents ([2606.24453], scan #161).
 - **Sources**: [2606.27226] BinEval; [2606.26978] To Run or Not to Run;
-  [HN Scan #171](./findings/2026-10-10-hn-scan-171.md). Added 2026-10-10.
+  [HN Scan #171](./findings/2026-06-26-hn-scan-171.md). Added 2026-10-10.
 
 ## §13 The Grounding Gap in Evaluation
 
@@ -86,7 +86,7 @@ at it through a verifiable, causal process. This extends BinEval (§12) from
 "decompose the judgment" to "decompose the reasoning chain."
 
 - **Sources**: [2606.26935]; [2606.27154]; [2606.27009];
-  [HN Scan #174](./findings/2026-10-12-hn-scan-174.md). Added 2026-10-12.
+  [HN Scan #174](./findings/2026-06-26-hn-scan-174.md). Added 2026-10-12.
 
 ## §14 The Composition Tax on Evaluation
 
@@ -356,7 +356,7 @@ tracking (RQGM epoch boundaries), (c) rule-policy alignment monitoring (JERP),
 criterion.
 
 - **Sources**: [2606.26859]; [2606.27136]; HN 48696585;
-  [HN Scan #213](./findings/2026-10-18-hn-scan-213.md). Added 2026-10-18.
+  [HN Scan #213](./findings/2026-06-28-hn-scan-213.md). Source activity through 2026-06-28; exact retrieval time unverifiable; repository-observed by 2026-06-29T18:40:50Z.
 
 ## §21 The Evaluation Decomposition: Why Holistic Scoring Fails for Agents
 
@@ -490,7 +490,7 @@ boundary (convergence criterion) would suffice.
 
 - **Sources**: [arXiv 2606.25960](https://arxiv.org/abs/2606.25960);
   [arXiv 2606.27009](https://arxiv.org/abs/2606.27009).
-  [Scan #222](./findings/2026-10-28-hn-arxiv-scan-222.md). Added 2026-10-28.
+  [Scan #222](./findings/2026-06-28-hn-arxiv-scan-222.md). Added 2026-10-28.
 
 ## §23–§35 — Evaluation Beyond Outputs (July 2026+)
 
@@ -516,7 +516,7 @@ boundary (convergence criterion) would suffice.
 - [Agent Security & Governance](./agent-security-governance.md) — containment tools also relevant to security
 - [Agent Architectures](./agent-architectures.md) — Layer-Isolated Evaluation also described in §architecture
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — AgentBeats evaluation-via-protocols pattern
-- [Scan #240: Capability Mutual Exclusion](./findings/2026-11-01-arxiv-scan-240.md) — full synthesis of isolated-vs-joint evaluation gap
+- [Scan #240: Capability Mutual Exclusion](./findings/2026-06-29-arxiv-scan-240.md) — full synthesis of isolated-vs-joint evaluation gap
 - [Scan #264: The Incompleteness Constraint](./findings/2026-06-30-arxiv-scan-264.md) — governance impossibility results + EMPATH safety variance
 
 ---

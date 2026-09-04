@@ -6,9 +6,19 @@
   the abstract before writing a summary or implication.
 - Hacker News: use `https://hn.algolia.com/api/v1/search`.
 - GitHub: use `https://api.github.com/search/repositories`.
+- Reddit: start topic-led discovery with the read-only public Atom feed at
+  `https://www.reddit.com/search.rss`, using a descriptive User-Agent and
+  bounded connection and total timeouts. Preserve stable post IDs, and do not
+  treat feed metadata as body-level evidence. If Reddit returns an
+  authentication, network-security, or rate-limit boundary, record the exact
+  endpoint and HTTP status; do not log in, bypass it, or substitute another
+  source.
 - XHS: use
   `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs`
   with `feed`, `search <keyword>`, `read <url>`, or `scroll`.
+  The browser adapter defaults to Chrome DevTools at `localhost:9222`; when the
+  observational browser runs behind explicit container or host wiring, set
+  `SCOUT_XHS_CDP_HOST` and `SCOUT_XHS_CDP_PORT` instead of copying credentials.
 
 Use real current source data. Never simulate or mock a source. Preserve a URL,
 repository, paper ID, post ID, or other stable source reference for claims. If

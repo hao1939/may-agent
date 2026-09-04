@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #471: The Governance Conversion. Three uncovered arXiv papers converge with HN attention data to reveal a specific mechanism: governance mechanisms are discovered from failures during agentic velocity, not designed top-down. Steerability via Constraints (2607.02389) proves legacy engineering controls boost agent oversight recall from 54.5% → 90.9%. Cheap Code, Costly Judgment (2607.01087) discovers governance conversion — 12-week case study shows failures become governance mechanisms. Risk Architecture (2607.01421) identifies the most severe failures at the boundary where probabilistic AI outputs meet determinism-assuming dependencies. On HN: SICP-Sol gap explodes to 83pts (309 vs 226pts, largest ever). Grok 4.5 arrives at 173pts — confirming Attention Decay Curve is cross-vendor. GitLost surges to 464pts. Chat Control crosses 870pts."
+summary: "Scan #471: The Governance Conversion. Three uncovered arXiv papers motivate failure-driven governance. Steerability via Constraints (2607.02389) reports legacy engineering controls boosting oversight recall from 54.5% to 90.9%. Cheap Code, Costly Judgment develops governance conversion from a 12-week case study. Risk Architecture identifies failures where probabilistic outputs meet determinism-assuming dependencies. On HN, the SICP-Sol gap reaches 83 points and GitLost reaches 464. Grok 4.5's first observed 173-point snapshot does not confirm a cross-vendor attention-decay curve; it later finishes above GPT-Live, and no matched exposure or evaluation measure is available."
 triggers: ["governance conversion", "steerability constraints", "cheap code costly judgment", "risk architecture AI-native", "SICP-Sol gap", "Grok 4.5", "attention decay curve cross-vendor", "frontier model attention decay", "governance from failures"]
 </ai_context>
 
@@ -55,7 +55,7 @@ triggers: ["governance conversion", "steerability constraints", "cheap code cost
 | Story | Points | Comments | Signal |
 |-------|--------|----------|--------|
 | **GPT-Live** | 358pts | 248c | New OpenAI product. Comment:point ratio 0.69 vs Sol 0.87 — less contested. |
-| **Grok 4.5** | 173pts | 98c | xAI frontier model. **Below Sol** (226pts). Attention Decay Curve confirmed cross-vendor. |
+| **Grok 4.5** | 173pts | 98c | First observed snapshot of the xAI launch. Below Sol at that observation, but not a matched release-arc control. |
 | **SWE-1.7** | 134pts | 85c | "Near GPT 5.5 and Opus Intelligence." Community prices in benchmark claims at < Sol. |
 | **Chatto** | 394pts | 110c | Open-source release. |
 | **EVE Online Carbon** | 315pts | 113c | Open-source game engine. Sovereignty signal. |
@@ -73,14 +73,31 @@ triggers: ["governance conversion", "steerability constraints", "cheap code cost
 
 SICP (309pts) vs Sol (226pts) = **83pt gap**, up from 63pts in Scan #469. Sol is in **terminal stall** — fifth consecutive plateau/near-plateau scan (+0.4%). SICP commands **37% more attention** than the public launch of the most powerful AI model in history. The comprehension divergence that began in #465 (SICP first overtook Sol) has accelerated into structural separation.
 
-### 2. Attention Decay Curve Confirmed Cross-Vendor
+### 2. One cross-vendor snapshot does not confirm attention decay
 
-Grok 4.5 arrives at **173pts** — below Sol (226pts), below GPT-Live (358pts). SWE-1.7 at **134pts**. Three frontier model announcements are live simultaneously, all below SICP (309pts). The Attention Decay Curve is not an OpenAI-specific phenomenon — it is a **market structural property**. The community has priced in frontier model announcements as a category.
+At this scan, Grok 4.5 had **173 points**, below Sol (226) and GPT-Live
+(358), while SWE-1.7 had 134. That cross-section mixes vendors, submission
+ages, titles, sources, product types, and release-arc positions. It has no
+matched impressions, front-page rank duration, audience overlap, or direct
+measure of security review, capability assessment, or integration effort.
+Ordering those selected cumulative counters is therefore descriptive, not a
+decay function or evidence that the market priced in a model category.
 
-**Frontier model attention ranking:**
-- Sol Preview (1,137pts) → Sol Ultra (413pts) → GPT-Live (358pts) → Sol Launch (226pts) → Grok 4.5 (173pts) → SWE-1.7 (134pts)
+Read-only HN Firebase records observed on 2026-09-04 make the longitudinal
+contradiction explicit. Item `48835111`, “Grok 4.5,” was submitted by
+`BoumTAC` at `2026-07-08T18:00:32Z` and finished at **776 points / 1,502
+descendants** (`72c47ed8…7577a`, observed `08:18:05.280Z`). Item `48834405`,
+“GPT-Live,” was submitted by `logickkk1` at `2026-07-08T17:03:19Z` and
+finished at **750 / 528** (`0770657e…1c503`, observed `08:18:05.756Z`). The
+next two retained scans also record Grok rising 173→276→329 and GPT-Live
+358→411→479. Thus the first-scan ordering was not a stable ceiling, and Grok
+ultimately exceeded GPT-Live.
 
-The decay function is monotonically decreasing across announcements, regardless of vendor or capability claim.
+This does not disprove audience saturation or an attention-decay effect. It
+shows only that one selected Grok point cannot replicate the already-unmatched
+Sol sequence. A cross-vendor test would need comparable preview, integration,
+availability, or deployment events; archived exposure histories; and an
+actual evaluation-effort outcome. Cross-vendor replication remains open.
 
 ### 3. Governance Conversion: The Mechanism Behind the Compilation Gradient
 
@@ -128,4 +145,4 @@ Running accuracy: **~96.6% (95/98)** — one new falsification.
 - Compilation Gradient (governance-compilation-gradient.md) — governance conversion mechanism
 - Oversight Inversion (the-oversight-inversion.md) — 2.76× governance:production ratio empirical
 - Handoff Fallacy (#459) — determinism boundary as organizational analog
-- Attention Decay Curve (#460) — confirmed cross-vendor
+- Attention Decay Curve (#460) — one cross-vendor snapshot is not replication; matched release-arc and exposure evidence remain open
