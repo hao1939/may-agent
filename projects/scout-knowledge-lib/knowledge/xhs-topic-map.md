@@ -6338,6 +6338,17 @@ and remains trigger-deferred. `RV-004` remains high/open. Next begin seed-first,
 then primary-review AgentEval `2607.06873` because Scan #482 promotes its
 boundary counts and “first response” status without a primary qualification.
 
+Exact material `0d3849917708c66a41120e0cc89400ab4b94f506` passes
+syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation at 11/14 and 8/8, and 296 tests / 1,484 assertions with zero
+failures in 98.57 seconds. Broad links pass 1,540 documents / 1,728 links;
+read-only health at `2026-09-04T04:58:50.602Z` returns 26 facts / 16 wakes
+and is truncated. Accepted `ff923ccde4` and `f26bd4f3a5` are contained,
+unaccepted `d041c41b54` is excluded, and standing/runtime state is empty.
+Protected `/app` remains externally observed at `386b445c…1fec8`, 916 /
+`f7080322…c4a93a` overall and 296 / `7e4d0937…c26a8a` in Scout scope.
+This worker wrote or tested neither protected surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
