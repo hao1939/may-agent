@@ -14261,6 +14261,48 @@ seed-first, primary-review Claimed or Attested `2607.06194`, the highest
 accessible unreviewed Scan #456 result; audit the commit population, signature
 parser, trust-tier evidence, denominator semantics, and public artifacts.
 
+Exact Cycle 355 material
+`3d0fbac70a223ab5b6ddc96435d87e68999ed151` passes syntax, TypeScript,
+tracked source formatting, Cycle 341 projection, 90 scoped links, navigation
+11/14 and 8/8, and the complete 296-test / 1,484-assertion gate with zero
+failures in 106.98 seconds. The correctly scoped broad audit passes all 1,540
+tracked Scout Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T07:09:16.602Z` returns 26 facts / 16 wake signals and
+`truncated:true`.
+
+At resumption, requested historical session `26240` returned `Unknown process
+id 26240`; it was not restarted. Exact `f26bd4f3a590b59d241536326199e805777df1be`
+already has its preserved Cycle 305 terminal receipt of 296 tests / 1,483
+assertions, 1,540 documents / 1,726 links, 26/16 health, clean status, accepted
+`ff923ccde4` contained, and unaccepted `d041c41b54` excluded. Current result
+`3d0fbac70a` contains `f26bd4f3`, accepted `ff923ccde4`, and Cycle 353
+`f88b309737`; it excludes `d041c41b54` and is clean.
+
+Protected `/app` is unchanged from the pre-checkpoint observation: HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 918 short-status records /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`
+overall, and 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+for Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 356 seed-first start — distinguish signatures from identity proof
+
+At `2026-09-04T07:10Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS requests:
+additions and changes remain unknown, removals are `[]`, all 132 seeds remain
+unavailable, and account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without a
+protected query/rank -> selection -> later-outcome join; (2) Memory in the
+Loop's missing provider result; (3) Claimed or Attested `2607.06194`, highest
+accessible because Scan #456 currently converts a signature-presence rate into
+identity-trust advice without primary review; (4) VAORA and other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit until
+its relevant-thread/access trigger; (6) compaction. Select `2607.06194` and
+inspect World of Code population construction, signature extraction, signature
+presence versus verification, trust-tier evidence, biases, uncertainty, and
+attributable public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

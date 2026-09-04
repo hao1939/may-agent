@@ -7319,6 +7319,35 @@ outcome join appears. Next seed-first, primary-review Claimed or Attested
 population, signature parsing/coverage, trust-tier evidence, and public
 artifacts rather than treating 17.59% as identity verification.
 
+Exact Cycle 355 material
+`3d0fbac70a223ab5b6ddc96435d87e68999ed151` passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and all 296 tests / 1,484 assertions in 106.98 seconds. The broad audit
+passes 1,540 Scout Markdown documents / 1,728 local prose links. Read-only
+health at `2026-09-04T07:09:16.602Z` returns 26 facts / 16 wakes and is
+truncated. `f26bd4f3a5`, accepted `ff923ccde4`, and Cycle 353 `f88b309737`
+are ancestors; unaccepted `d041c41b54` remains excluded. The standing tree is
+clean. Protected `/app` remains externally unchanged at `386b445c…1fec8`,
+918 records / `0d1ab91f…a932` overall and 296 / `7e4d0937…6a8a` in Scout
+scope. The unavailable historical validation session `26240` was not
+restarted; its exact `f26bd4f3` terminal receipt remains preserved in Cycle
+305.
+
+### Cycle 356 seed-first start — distinguish signatures from identity proof
+
+At `2026-09-04T07:10Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` remains inside cadence. Make zero XHS requests: additions and
+changes remain unknown, observed removals are `[]`, all 132 seeds remain
+unavailable, and account state is unchanged. Expected value ranks (1) high/open
+`RV-004`, inaccessible without a protected query/rank -> selection -> later-
+outcome join; (2) Memory in the Loop's missing provider result; (3) Claimed or
+Attested `2607.06194`, highest accessible because Scan #456 currently turns a
+signature-presence rate into identity-trust advice without primary review; (4)
+VAORA and other primary, contradiction, reproducibility, retrieval, and
+synthesis gaps; (5) Reddit until trigger; (6) compaction. Select `2607.06194`
+and audit population construction, signature extraction, verified-versus-
+present semantics, trust tiers, biases, uncertainty, and public artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
