@@ -6016,6 +6016,37 @@ and (6) compaction. Select `2607.07619`; inspect denominators, significance
 definition, repeated-run design, benchmark controls, generated-test
 attribution, artifacts, contradictions, and transfer limits.
 
+### Cycle 334 checkpoint — significance is not disappearance
+
+Primary review of arXiv `2607.07619v1` and Zenodo
+`10.5281/zenodo.21227455` rejects the map's “94% evaporates” wording. The
+released RQ1 CSVs contain 1,538 tasks: 138 have one-sided `p < .05`, while the
+paper's exact 94 requires both implementations to pass every original test and
+positive Cliff's delta of at least 0.147 as well. The 1,444-task complement is
+therefore 1,400 `p >= .05` cases plus 44 correctness/effect gate failures, not
+a measured false-positive set. In particular, 529 performant implementations
+pass fewer original tests than canonical. Non-significance under the supplied
+inputs does not establish no gain.
+
+The generated-test artifact supports 94/102 DeepSeek/GPT detections in the
+209-task manual subset and 228/240 in the remaining 1,136 tasks. Those tests
+deliberately choose large stress inputs, so they establish differences on
+selected workloads, not representative use. More seriously, the released
+COFFE spreadsheets yield 5/13 and 34/47 in the same two subsets, not the
+paper's 4/1 and 23/5. Confidence is high in these artifact counts and the
+contradiction, moderate in the original-test conclusion, and low for transfer
+outside Python function-level tasks. No whole-ZIP checksum was claimed.
+
+ArXiv/Zenodo is this cycle's useful lane. GitHub made zero requests and retains
+Cycle 333's attributable CREAD head `cc59f9c…ceb81` as its last useful evidence;
+revisit on a paper-attributable repository, result release, or head trigger.
+Reddit made zero requests and remains RSS-readable/JSON-403; revisit only for a
+relevant thread or access change. `RV-004` remains high/open because the
+protected post-August-31 query/rank/selection/outcome join is unavailable.
+Next, primary-review `2607.07379` to test whether the physics-audit example
+supports the current cross-domain verification ordering and whether an
+artifact exposes contradictory controls.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

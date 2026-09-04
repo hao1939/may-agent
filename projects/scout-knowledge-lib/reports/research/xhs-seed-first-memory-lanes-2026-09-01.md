@@ -12423,6 +12423,61 @@ relevant thread or access change; and (6) byte/line compaction. Select
 benchmark/task controls, generated-test attribution, artifact retention,
 contradictory evidence, and transfer limits.
 
+## Cycle 334 checkpoint — PerformanceBench needs three separate gates
+
+The problem was stronger than a missing citation: Scan #479 called the
+1,444-task complement noise and said its improvements “evaporate.” Primary
+review does not support that interpretation. ArXiv `2607.07619v1` Atom
+metadata and source were observed at `2026-09-04T04:05:47.354Z`: 3,564 bytes
+with SHA-256 `87ebde8d60e8b81ef4ae7583944df5d5e8afa0042e6bade5ccb9842258303419`,
+and 275,431 bytes with SHA-256
+`5d0357a418639d0cad7bb120f09c3b5ea05933d0d575557f514e911ea43babbf`.
+Zenodo record `10.5281/zenodo.21227455`, observed at
+`2026-09-04T04:06:21.338Z`, advertises a 296,611,757-byte, 427-entry ZIP with
+MD5 `e9e69897e4063f69c9971f9c29b999f5`. Selective range retrieval exposed the
+README, RQ1 CSVs, source, and all four RQ3 workbooks. The whole archive was not
+downloaded and its advertised checksum was not verified.
+
+The four RQ1 CSVs reproduce 94/1,538 only when three conditions hold together:
+both implementations pass every original test, the one-sided Mann–Whitney
+result has `p < .05`, and positive Cliff's delta is at least 0.147. Significance
+alone gives 138. The reported 1,444 complement contains 1,400 `p >= .05` tasks
+and 44 other correctness/effect failures; 529 performant implementations pass
+fewer tests than canonical. The authors' 308-task stratified manual subset
+finds 99 without meaningful performance changes and 209 with plausible
+changes hidden by weak inputs. Thus 6.11% pass this complete gate under the
+provided tests; the evidence does not say 93.89% are false or have no gain.
+
+The RQ3 spreadsheets reproduce the authors' own approach at 94 DeepSeek / 102
+GPT detections on the 209 tasks. On the remaining 1,136 they give 228/240,
+where the paper prints 229/240. Across both subsets the released artifact thus
+supports 322/1,345 (23.94%) and 342/1,345 (25.43%). These are deliberately
+stress-selected generated inputs—for example strings of length 500,000 and
+1,000,000—not evidence about representative workload frequency. No explicit
+equal call/token budget comparison or multiple-comparison correction was
+observed.
+
+The released COFFE comparison is contradictory. After resolving p-value and
+delta columns by header because some sheets shift them, the same complete gate
+gives DeepSeek/GPT counts of 5/13 on the 209-task subset and 34/47 on the
+1,136-task subset. The paper reports 4/1 and 23/5. Until that mismatch is
+explained, the package cannot reproduce the stated between-framework
+advantage. Confidence is high in the CSV/workbook counts and mismatch,
+moderate in the paper's original-test conclusion, and low for transfer to
+representative, repository-scale, concurrent, I/O-bound, or production code.
+
+ArXiv/Zenodo won the source rubric and corrected Scan #479 plus its synthesis.
+GitHub made zero public requests; Cycle 333's CREAD repository
+`ruizhengu/CREAD` at `cc59f9c622c721146637c3a8a1648b38ed7ceb81` remains its
+last useful evidence, with a revisit on an attributable repository, result
+release, or head change. Reddit made zero requests and remains
+RSS-readable/JSON-403; revisit on a relevant thread or access change. The
+unreleased Memory in the Loop provider result remains inaccessible, and
+high/open `RV-004` still lacks the protected post-August-31
+query/rank/selection/outcome join. Next primary-review `2607.07379` and its
+artifact, if any, to test the physics-audit claim and the cross-domain
+verification ordering before doing lower-value compaction.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
