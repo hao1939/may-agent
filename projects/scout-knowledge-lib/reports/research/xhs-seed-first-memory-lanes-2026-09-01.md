@@ -10125,6 +10125,31 @@ blocked until a stable repository identity appears. Reddit made zero requests
 and retains its RSS-readable/JSON-403 boundary. This improves source quality,
 not a user outcome; `RV-004` remains high/open.
 
+Material `bee6972245059e1e57e5c17236688dd8af3bc881` passes the full
+current-revision gate: syntax, TypeScript, source formatting, Cycle 292
+projection, 90 scoped links, navigation v1 11/14, navigation v2 8/8, and 296
+tests / 1,484 assertions. The broad audit passes all 1,540 tracked Markdown
+documents / 1,728 local prose links. Read-only health at
+`2026-09-04T00:25:22.293Z` returns 26 facts, 16 wakes, and `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing worktree is clean.
+
+Read-only protected-source proof records `/app` HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its status changed externally
+from 915 to 916 records, now SHA-256
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`;
+the 296-record Scout scope remains unchanged at
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker did not write or test the protected checkout.
+
+The ideal next experiment—an otherwise matched PROBE memory factorial—is not
+currently reproducible: the paper exposes only `github.com/anonymized`, and no
+authority-bearing model run is available. A newly resolved primary artifact is
+accessible instead: Memory in the Loop v2 links
+`Egoist-Machines/LodeDB`. Inspecting its exact revision for experiment code,
+frozen inputs, and latency controls ranks above another unsourced summary or
+line compaction. Begin that work only after the next bounded seed-first record.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

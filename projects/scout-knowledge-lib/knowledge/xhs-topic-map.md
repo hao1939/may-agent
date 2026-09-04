@@ -4279,6 +4279,26 @@ boundary until a relevant thread or access change appears. `RV-004` remains
 high/open because this corrects knowledge scope but supplies no retained user
 outcome.
 
+Exact material `bee6972245059e1e57e5c17236688dd8af3bc881` passes syntax,
+TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions. The broad audit passes 1,540 tracked Markdown documents / 1,728
+local prose links; read-only health at `2026-09-04T00:25:22.293Z` returns 26
+facts / 16 wakes with `truncated:true`. Accepted `ff923ccde4` is contained,
+unaccepted `d041c41b54` excluded, and the standing worktree is clean.
+
+Protected `/app` remains at HEAD `386b445c…41fec8`; its externally owned
+status changed from 915 to 916 records and whole-checkout fingerprint to
+`f7080322…a93a`, while its 296-record Scout scope remains exact at
+`7e4d0937…26a8a`. This worker did not write or test that checkout.
+
+The next ranked causal test cannot run faithfully: PROBE publishes only
+`github.com/anonymized` and this goal has no authority-bearing model execution.
+Memory in the Loop v2 does link the stable public repository
+`Egoist-Machines/LodeDB`. After the next seed-first record, inspect that exact
+artifact for experiment code, frozen inputs, and latency-control
+reproducibility before considering a new local harness or design.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
