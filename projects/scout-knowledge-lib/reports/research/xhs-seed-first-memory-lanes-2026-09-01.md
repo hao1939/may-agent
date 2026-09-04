@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 405's observation and Cycle 406's no-request reconciliation qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but it does not entail preservation of the paired consent pilot, full 15-cell matrix, or archetype/severity/human-label conclusions."
+summary: "Seed-first Scout continuity through Cycle 405's observation and Cycles 406-407's no-request reconciliations qualifies OverEager's sensitivity claims: one-cell aggregate stability reproduces, but no predeclared RQ-specific invariance rule makes that stability preserve the paired consent pilot, full 15-cell matrix, or archetype/severity/judge conclusions."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405. Cycle 406 reused this receipt without another request because the cadence had not elapsed."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycle 406; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer evidence qualified through Cycle 406; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 405. Cycles 406-407 reused this receipt without another request because the cadence had not elapsed."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycles 406-407; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19406,6 +19406,85 @@ TypeScript, source formatting, the latest seed projection, scoped links, both
 navigation fixtures, and the full Scout gate before committing; then bind
 broad links, read-only health, review lineage, clean state, and protected
 fingerprints to the exact result.
+
+## Cycle 407 checkpoint — RQ4 has no predeclared survival rule
+
+What was wrong: the retained paper labels its scenario predicate
+“pre-registered,” while the adjacent RQ4 result says RQ1--RQ3 survive design
+freedoms. Without checking the referent, retrieval could transfer that
+preregistration from scenario admission to the study's broad invariance claim.
+
+What changes: this checkpoint preserves the authored admission guarantee but
+separates it from an undeclared RQ4 decision rule. It uses retained exact
+source only, makes no new provider request, and adds no outcome claim.
+
+### Seed-first reconciliation and lane continuity
+
+Cycle 407 begins from exact clean reviewed integration tip
+`6787e1673695ce5ea82faa7b7f9c279df1fa36ae`. At
+`2026-09-04T20:56:50.038Z`, Cycle 405's XHS receipt through
+`17:12:00.404Z` was 3:44:49.634 old and the six-hour cadence did not end until
+`23:12:00.404Z`. No access, collection, or account trigger fired, so the
+bounded reconciliation made zero browser requests: additions/changes remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and Cycle 405 stays exact access provenance. No account state
+changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at the protected
+outcome-join and external-runtime boundaries; Memory in the Loop remains
+unreleased. The exact Cycle 406 criterion question was highest accessible.
+The audit reused the retained 1,431,318-byte `2605.18583v1` source archive at
+SHA-256
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`.
+GitHub, arXiv, and Reddit made zero requests and retain their prior evidence,
+access boundaries, and change-bearing triggers.
+
+### Exact decision-rule audit
+
+All ten TeX sources were searched and their methods/result passages inspected.
+The only `pre-registered` occurrence is in the introduction: it describes the
+deterministic trap predicate and strict monotone-by-inclusion behavioral
+gradient used for scenario admission. The design section gives that admission
+criterion explicitly. No RQ4 hypothesis, tolerance, or decision is registered
+there.
+
+The archive contains no `equivalence`, `non-inferiority`, `invariance`,
+`predeclared`, or `multiple comparison` term. Every “power” use refers to
+scenario discriminative power, not statistical power. The experimental setup
+declares Wilson intervals, two-sided Fisher tests, McNemar for paired phase-1
+fixtures, and an independent-run assumption. It does not declare an
+equivalence/non-inferiority margin, power target, multiplicity rule, cluster
+unit, or per-RQ survival function.
+
+Instead the RQ4 paragraph applies heterogeneous prose after observing results:
+RQ1 “replicates” on every Claude Code model; RQ2 “holds” in three of four
+frameworks; and the RQ3 long tail is “preserved.” The package supplies no
+common acceptable effect drift, rank agreement, top-archetype overlap,
+severity/judge tolerance, missingness policy, or all-of/exception rule. The
+one-cell three-seed result (64/500, 57/500, 62/500; 1.4-point range) and the
+existing matrix/phase-1 comparison remain positive descriptive support. They
+do not define what would have failed RQ4.
+
+Nor can non-rejection fill that role. Pairwise generator-seed Fisher
+`p>=0.56` and twenty outcome-versus-one-axis tests at `p>=0.139` establish no
+detected difference or marginal association under their assumptions. With no
+equivalence margin or power contract they do not establish sameness; because
+the latter tests do not compare input axes to each other, they also cannot
+establish mutual axis independence.
+
+Confidence is high in the complete retained-source inventory, exact term
+locations, and missing declared rule; moderate in calling the prose a
+post-result survival interpretation; and low in any unpublished protocol or
+artifact. A sufficient future contract must bind each RQ's estimand and
+population, exact join into each sensitivity run, acceptable effect/rank/class
+drift, missingness and dependence unit, interval/test and multiplicity rule,
+and combined decision before results. This does not refute RQ1--RQ3 or erase
+the scenario-admission certificate.
+
+The next cycle should re-rank away from the now-exhausted OverEager manuscript
+and prefer a retained primary or contradictory claim with a released
+denominator or executable artifact. Do not observe XHS again before
+`2026-09-04T23:12:00.404Z` unless a material access trigger arrives.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

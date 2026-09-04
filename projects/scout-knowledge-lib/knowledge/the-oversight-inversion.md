@@ -1329,6 +1329,16 @@ extends to RQ5. Treat preservation as unestablished until each RQ has a
 declared invariance criterion, joined content-addressed populations, scale
 sweeps, and dependence-aware uncertainty.
 
+The retained source's one `pre-registered` statement does not supply that
+criterion: it binds the deterministic trap predicate and monotone behavioral
+gradient used to admit scenarios. An audit of all ten TeX sources finds no
+RQ-specific equivalence/non-inferiority margin, statistical-power target,
+multiplicity rule, acceptable rank/archetype/severity drift, or combined RQ4
+decision. RQ1 “replicates” everywhere, RQ2 “holds” in three of four
+frameworks, and RQ3 is “preserved” under different unstated tolerances. Credit
+the construction-time admission rule, but do not transfer its preregistration
+to the later global survival claim.
+
 The same separation applies to the paper's “axis independence” wording. Its 20
 chi-square tests are outcome-versus-one-axis tests, not tests among the five
 input axes. Reported `p>=0.139` supports no detected marginal outcome
