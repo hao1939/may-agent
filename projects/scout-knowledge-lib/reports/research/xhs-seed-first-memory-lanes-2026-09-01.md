@@ -3,7 +3,7 @@ summary: "Seed-first Scout continuity through Cycle 341: the canonical seed ledg
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 342; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 342; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 343; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -13169,6 +13169,77 @@ evidence; (4) other primary, contradiction, reproducibility, retrieval, and
 synthesis gaps; (5) Reddit until a relevant thread/access change; and (6)
 static compaction. GitHub, arXiv, Reddit, and accepted refs make zero requests
 or checks in this seed record. Commit it before reading the primary paper.
+
+## Cycle 343 checkpoint — the data layer has evidence, not an end-to-end guarantee
+
+The current record is arXiv `2607.07397v1`. Retrieval through
+`2026-09-04T05:19:15.234Z` yielded a 3,062-byte Atom response,
+`8fa9810c352d8f69c08cd51084fc04a177caf4a6f95986a89b61f08e06ebd693`,
+and an 815,219-byte source archive,
+`83e29086bbb8fcf49beb13160c53de0992d9420e11cb37353d5914ec0486b758`.
+The paper is both a systems agenda and a summary of preliminary projects. Its
+capability side separates information management, retrieval, and elicitation;
+its safety side separates state branching from data-flow control. That is a
+useful decomposition, but the pieces are not evaluated as one composed
+environment guarantee.
+
+Read-only GitHub evidence through `2026-09-04T05:21:04.469Z` found two
+attributable releases. `ElaineAng/db-fork` was pinned to
+`20d34994b2f95073199da1f30d80aa2b46675a11`; its 3,300,689-byte archive
+hashes `7a98815e5903ae678584aa16a38d44399857825f8b4facbd1d144404e50d3954`
+and contains 786 files. It supplies BranchBench code and 702 retained result
+files, but its full macro results cover Dolt and Neon rather than all five
+systems named in the overview, and it has no license file. Directly summing
+the exact MCTS summaries reproduces 170/1,000 completed Dolt steps (17%) and
+23/1,000 Neon steps (2.3%, rounded to the paper's 3%). Re-running requires
+installs plus local/cloud database backends and credentials, so the retained
+results were inspected rather than invoking those systems.
+
+The LakeQA site was pinned at
+`9513498d44829ba84b5e23457b91293abafbb781` (1,172,844-byte archive /
+`4485949649380123317e27a379bf085334a8e6928fde06411787921db03ffad7`),
+and its public code at
+`507e07deaed4e6dc895a4c1f2c29658da9c45d14` (2,273,818 bytes /
+`893bc449295932a3998d07397b50af85b392db38d706d0a99e009a295b58024f`).
+The code contains exactly 1,007 full and 135 mini task files plus an MIT-
+licensed evaluator. All 135 mini tasks parse. Full task
+`lakeqa-full/k-5-d-3/task_37.json` contains unresolved Git conflict markers,
+so only 1,006/1,007 full task files parse. The current benchmark paper and
+leaderboard report 32.87% best full-set exact match and 45.93% on mini. That
+directly contradicts the overview paper's claim that all seven frontier-model
+results are at or below 23%; even its cited benchmark has the 32.87% result.
+
+The overview's data-flow-control statement also outruns its cited evidence.
+Current `2512.05374v1` source is 1,171,599 bytes /
+`441998704592f29c1391ba4f6e2572fb21a88ed1fc45be194fd8468b1f9a65d1`.
+It labels the implementation early work and evaluates rewrite-based policy
+enforcement on a subset of TPC-H queries against provenance baselines. It does
+not release or demonstrate the overview's claimed near-zero overhead across
+DuckDB, Umbra, PostgreSQL, DataFusion, and SQL Server. Cross-tool
+representation invariance is a long-term research direction, as are coherent
+branches across databases, filesystems, processes, and external services.
+Exact-title GitHub searches found no Checkpoint-lite repository; its two
+preliminary timing comparisons lack released methods, hardware, repetitions,
+or uncertainty.
+
+Bounded GitHub searches for exact arXiv ID and title returned HTTP 200 with
+zero repositories. BranchBench and LakeQA queries found the attributable
+artifacts above; exact Checkpoint-lite, DFC-title, and AIM/LoCoMo repository
+queries returned zero. ArXiv and GitHub were useful. Reddit made zero requests
+because no relevant thread/access trigger changed and remains RSS-readable /
+JSON-403. `RV-004` stays high/open because this cycle has no protected Scout
+query/rank -> selection -> later-outcome join.
+
+The supported conclusion is narrower than Scan #482: environment-level state
+and flow boundaries are appropriate control points; one database benchmark is
+partially reproducible and one query-level DFC design has early evidence.
+There is no released composed guarantee across tools or components. Confidence
+is high in exact source identities, the reproduced MCTS rates, LakeQA task
+parse failure, and the <=23% contradiction; moderate in public artifact
+completeness; low in the uncited AIM gains, five-engine portability,
+Checkpoint-lite comparisons, representation-invariant enforcement, or
+environment-wide safety. Next start seed-first, then audit AIM's LoCoMo
+relative gains and representation/model controls if it remains highest.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

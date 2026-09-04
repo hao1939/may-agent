@@ -167,6 +167,26 @@ Reframes data systems from passive stores into **active substrates for safe, rel
 
 **Connection**: If the harness is the machine and the model is electricity, the data environment is the ground plane. The Admission Boundary (#469) proved deterministic gates work; Agentic Data Environments asks where those gates should live — in the data layer itself.
 
+**Primary-review boundary (2026-09-04):** the paper combines a research agenda
+with preliminary results; “the execution substrate can enforce safety
+guarantees” is not one demonstrated end-to-end guarantee. The attributable
+BranchBench repository reproduces its rounded MCTS completion figures from
+retained summaries: Dolt completed 170/1,000 steps (17%), while Neon completed
+23/1,000 (2.3%, reported as 3%). Public results cover Dolt and Neon, not all
+five named systems, and the repository has no license file. LakeQA publishes
+1,007 full and 135 mini task files plus evaluation code, but exact head
+`507e07de…9c45d14` has an unresolved merge conflict in one full task, so only
+1,006/1,007 full task JSON files parse. Its current paper and leaderboard also
+report 32.87% full-set exact match, contradicting this overview paper's
+`<=23%` statement. The cited DFC paper calls its implementation early work and
+evaluates a subset of TPC-H queries; the overview's five-engine near-zero-
+overhead result has no released artifact here. Cross-tool representation-
+invariant flow control and coherent cross-component branching remain research
+directions, while Checkpoint-lite has only two preliminary comparisons and no
+attributable public repository found. Treat the active-substrate framing as a
+useful systems decomposition, database branching as partially reproducible,
+and environment-wide safety as unproved.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

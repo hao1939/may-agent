@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 342; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 342 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 343 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -6517,6 +6517,51 @@ measurement, and active-data-substrate claims from abstract-level evidence;
 synthesis gaps; (5) Reddit until a relevant thread/access trigger; and (6)
 static compaction. GitHub, arXiv, Reddit, and accepted refs make zero requests
 or checks in this seed record. Commit it before reviewing the primary paper.
+
+### Cycle 343 checkpoint — active substrate, partial guarantees
+
+Current arXiv `2607.07397v1` and source were retrieved through
+`2026-09-04T05:19:15.234Z`: Atom is 3,062 bytes / `8fa9810c…bd693`, and
+the 815,219-byte source archive is `83e29086…6b758`. The paper usefully splits
+the substrate into capability preparation (AIM/AIR/ADE), state branching, and
+data-flow control. It does not demonstrate these pieces as one composed safety
+boundary.
+
+Attributable `ElaineAng/db-fork@20d34994…75a11` was observed through
+`05:20:41.103Z`. Its 3,300,689-byte archive (`7a98815e…d3954`) contains 786
+files: benchmark code and retained results for Dolt and Neon, but not all five
+systems named in the paper and no license file. Direct calculation from its
+MCTS summaries reproduces Dolt at 170/1,000 steps (17%) and Neon at 23/1,000
+(2.3%, rounded to 3%). This supports the quoted narrow database result, not
+coherent cross-component branching or external-side-effect rollback.
+
+LakeQA's site `9513498d…bb781` and code `507e07de…9c45d14` are public. Their
+archives are respectively 1,172,844 bytes / `44859496…ffad7` and 2,273,818 /
+`893bc449…58024`. The code holds exactly 1,007 full and 135 mini task files plus
+evaluation code. All mini tasks parse, but full task `k-5-d-3/task_37.json`
+contains unresolved Git merge markers: 1,006/1,007 full tasks parse. The
+current paper/site reports 32.87% best full-set exact match and 45.93% on mini;
+the overview's claim that seven frontier models remain at or below 23% is
+therefore false for the cited current benchmark.
+
+The current cited DFC primary source is `2512.05374v1` (1,171,599 bytes /
+`44199870…a65d1`). It describes early rewrite-based work on a subset of TPC-H
+queries. It does not supply the overview's five-engine near-zero-overhead
+artifact. Representation-invariant flow control beyond the database and
+cross-component state closure are explicitly future work; exact GitHub
+searches found no Checkpoint-lite repository. Thus “active substrate” is a
+useful architecture, BranchBench has partial reproducibility, and environment-
+wide deterministic safety remains unproved.
+
+ArXiv and GitHub were useful; Reddit made zero requests under its unchanged
+relevant-thread/RSS-access trigger. `RV-004` remains high/open because no
+protected query/rank -> selection -> later-outcome join changed. Confidence is
+high in source/revision identity, the two reproduced MCTS rates, the malformed
+task, and the LakeQA contradiction; moderate in public artifact completeness;
+low in AIM gains, five-engine portability, cross-tool policy enforcement, and
+composed safety. Next seed-first, then audit the uncited AIM LoCoMo gains and
+their representation/model controls if that remains the highest accessible
+gap.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

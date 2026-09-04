@@ -1133,11 +1133,23 @@ are absent, and public automation is manual-dispatch; this supports process-
 evidence retention, while recovery completeness and nightly production impact
 remain unverified.
 
+Agentic Data Environments (2607.07397) places branching and data-flow policy
+below the agent, but its evidence does not establish one environment-wide
+guarantee. Retained BranchBench summaries reproduce Dolt at 170/1,000 MCTS
+steps and Neon at 23/1,000, while public outputs cover only those two systems.
+LakeQA releases its tasks and evaluator, yet one of 1,007 full tasks contains
+merge markers and its current 32.87% full-set best exact match contradicts the
+overview's `<=23%` ceiling. The cited DFC paper evaluates query-level rewriting;
+cross-tool representation invariance, cross-component branching, and the
+overview's five-engine claim lack matching released evidence. The useful
+oversight lesson is to place named controls at real state/flow boundaries, not
+to promote a partial database predicate into an end-to-end safety claim.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.
 
-Source: findings/2026-07-09-hn-arxiv-github-scan-482.md, arXiv 2607.06906, 2607.06873, 2607.06624
+Source: findings/2026-07-09-hn-arxiv-github-scan-482.md, arXiv 2607.06906, 2607.06873, 2607.06624, 2607.07397, 2512.05374
 
 ### Layer 39: The Skill Paradox (Scan #483, 2026-07-09)
 
