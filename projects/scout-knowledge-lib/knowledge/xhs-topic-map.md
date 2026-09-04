@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 385 bounded reconciliation at 2026-09-04T13:22:28.576Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 385; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 385; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, and HASE cross-system/oracle evidence qualified in Cycle 385; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 386 bounded reconciliation at 2026-09-04T13:34:39Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 386; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 386; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, and VERITAS evaluation/artifact evidence qualified in Cycle 386; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9500,6 +9500,111 @@ or a matched fixed/adaptive harness arm. Next seed-first, primary-review
 VERITAS `2607.02931`: test which claims it actually reruns, its success and
 failure denominator, judge independence, artifact retention, and whether
 “general-purpose” is evaluated across domains rather than proposed.
+
+### Cycle 386 seed-first start — preserve cadence; audit VERITAS generality
+
+Cycle 386 starts from clean validated tip
+`02ae7286bcbe8d66c18ca4f56b1e23d095a93549` at approximately
+`2026-09-04T13:34:39Z`. Cycle 375 remains the last supported XHS observation
+through `2026-09-04T11:09:20.326Z`; its next scheduled boundary is
+`2026-09-04T17:09:20.326Z`, and no collection, access, or account trigger fired.
+Make zero XHS requests. Additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and no account
+state changes. Provenance remains the Cycle 375 browser receipt and seed-ledger
+row 375; this cycle does not reinterpret an unavailable collection as unchanged.
+
+Re-rank after reconciliation: (1) high/open `RV-004` remains inaccessible
+without the protected query/rank-to-selection-to-later-outcome join; (2)
+high/open `RV-034` remains outside Scout's authority at the external runtime;
+(3) VERITAS `2607.02931` is the highest accessible unresolved claim because
+Scan #452 describes an end-to-end general-purpose verifier without primary
+evidence for which phases, denominators, judges, and artifacts the evaluation
+actually covers. Select VERITAS only after recording the seed boundary.
+
+### Cycle 386 checkpoint — strong replication core, untested general pipeline
+
+VERITAS is a real public CLI-agent pipeline, but the paper does not evaluate
+its advertised end-to-end path. Both benchmarks supply task questions directly
+as hand-authored claims. The `analyze` phase, importance-weighted Replication
+Score, severity-rated fix assessment, and user-facing report are bypassed; the
+reported rows test `plan`, `replicate`, and `verify`. CORE-Bench spans computer
+science, social science, and medicine, and ReplicationBench spans 20
+astrophysics papers, so this is useful cross-domain evidence for the replication
+core rather than evidence that automatic claim extraction and product scoring
+generalize.
+
+Under CORE-Bench's official scorer, VERITAS passes 40/45 public Hard capsules
+(`88.9%`), versus retry's 38/45 (`84.4%`) and zero-shot's 36/45 (`80.0%`): two
+and four additional capsules. The `97.8%` headline is 44/45 under an author-
+added rule that accepts up to 1% relative error when three ground-truth runs
+have zero variance. It is system-blind, but flips four VERITAS failures and no
+baseline failures; the paper correctly states it is not directly comparable
+with published official-score results.
+
+On ReplicationBench paper-only, VERITAS matches 37/111 tasks (`0.333`) versus
+35/111 (`0.315`) for both baselines, a two-task or 1.8-point gain. On the 35
+tasks from seven preparable public repositories, full mode matches 21/35
+(`0.600`) versus retry's 20/35 (`0.571`), a one-task or 2.9-point gain. It leaves
+six paper-only tasks unattempted, five for absent required data, while 68 more
+miss; wrong quantities, omitted procedures, and underscaled runs remain. These
+small incremental differences have no repeated-run uncertainty.
+
+Every arm uses Claude Code with Claude Opus 4.8 on the same within-benchmark
+machine and runtime. This controls model family and environment, not total
+calls, tokens, or wall time: VERITAS adds plan and verification agents and a
+potential manager loop, while baselines use one or up to three resumed
+sessions. No cost-matched comparison is reported. Seeds are unset and Claude
+Code exposes no temperature. Cheating uses GPT-5.4 with three-vote majority;
+faithfulness uses one GPT-5.4-mini pass and excludes infrastructure-failed
+trajectories from its denominator. A cheating verdict zeroes an otherwise
+successful task. One VERITAS flag follows the benchmark's own instruction to
+load a published pretrained model, exposing a task-policy conflict rather than
+fabricated computation.
+
+The public implementation establishes capability but not exact replay.
+`ChicagoHAI/veritas` main was read at
+`2026-09-04T13:37:13.824Z–13:38:39Z`; head
+`f7283fa70e74d62d5a0ff398134436faa7063ee3` has 213 tracked files, including
+pipeline source, prompts, and 12 tests, but no benchmark trajectories, answers,
+raw judge votes, patched scorer, per-run usage, or regeneration bundle. The
+repository has no Git tags or GitHub releases. Its current `latest` and
+`v0.1.0` container tags both resolve to
+`sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f`
+with image creation time `2026-08-31T12:49:19.479317809Z`; the paper names only
+the abbreviated experimental digest `e00fd604`, built 2026-06-04 from main.
+That is insufficient to map the exact evaluated image after mutable tags moved.
+
+The last public main commit on the stated build date is
+`ebdd7a4487d78596ced491e38d6cece4d0284df6`. Current head differs from it
+across 81 files (`8,794` insertions, `3,659` deletions). In particular, commit
+`d17f4f5506a3bbd31086f93e1966800ded13bb26` replaced the paper's LLM
+comparator plus deterministic numeric grader with an evidence-reading grader
+agent. Current code still aggregates per-claim verdict values deterministically,
+but the current release is not the paper's per-claim mechanism or an exact
+benchmark replay artifact.
+
+ArXiv was selected and useful. At
+`2026-09-04T13:34:54.108Z–13:34:56.086Z`, the 2,756-byte Atom record had
+SHA-256 `fe40b6d984f94c5e04b697af8c60b16e389935cb36f9612f8e52305ee522c61c`
+and identified only `2607.02931v1`, published and updated
+`2026-07-03T03:55:59Z`. Explicit v1 and current source archives were identical,
+94,514 bytes, SHA-256
+`ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb`.
+GitHub supplied the attributable implementation, revision history, and artifact
+boundary. Reddit made zero requests and stays RSS-readable/JSON-403 until a
+relevant thread or access change.
+
+Confidence is high in source/repository identity, archive and tree contents,
+denominators, arithmetic, and bypassed phases; moderate in the reported
+official-score rows and within-run trajectory judgments; low in run-to-run
+stability, compute-matched pipeline advantage, judge transfer, automatic-claim
+coverage, and independent result regeneration. `RV-004` and `RV-034` remain
+high/open. Revisit VERITAS when an immutable experimental image, raw
+trajectories/results and judge votes, repeated seeds, cost-matched controls, or
+an end-to-end extracted-claim evaluation appears. Next seed-first, primary-audit
+Organizational Memory `2607.03228`: determine whether shared, governed,
+evolving memory is measured in a deployed process or proposed as an
+architecture, and inspect any attributable implementation and result bundle.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

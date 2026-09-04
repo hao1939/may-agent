@@ -765,7 +765,21 @@ The eight-scan exit arc assumed the harness is designed once and applied thereaf
 
 **HASE — Harness-Aware Self-Evolving** (2607.03935): One **Qwen3-8B** system jointly updates policy weights, whitelisted harness components, and solutions. It reports Symptom2Disease accuracy `86.98 ± 0.38%` against an imported **GPT-OSS-120B/Meta-Harness** value of `86.8%`, and stronger alpha-mining profitability than imported CogAlpha rows. These are cross-system, cross-paper comparisons: model, proposer, orchestration, implementation, and search/training budget change together. The direct Heilbronn control is narrower—FULL policy updates reach `0.036082` after evaluator repair versus FREEZE at `0.021880`. HASE demonstrates feasible endogenous harness edits, not that harness quality consumed a 15× model-size advantage or that a previously adequate fixed harness degraded.
 
-**VERITAS** (2607.02931): The first general-purpose scientific replication tool — extracts claims from papers, runs methodology via CLI coding agents, judges each claim against experimental evidence. Prior replication agents only ran inside their benchmark's own pipeline. The critical design choice: VERITAS must be domain-agnostic because the papers it verifies span ever-expanding domains. A fixed replication harness would fall behind the frontier of what needs replicating.
+**VERITAS** (2607.02931): A released CLI-agent pipeline accepts a paper,
+repository, or both and is designed to extract claims, run and repair the
+methodology, verify each claim, and write a Replication Score and report. Its
+evaluation is narrower. Hand-authored benchmark tasks bypass claim extraction,
+the tool's own score, fix assessment, and the user report. Under CORE-Bench's
+official scorer it passes 40/45 capsules, two more than an up-to-three-session
+retry baseline; its 44/45 headline adds four VERITAS-only passes under an
+author-added zero-variance rule. On ReplicationBench it gains two of 111
+paper-only tasks and one of 35 full-mode tasks over the strongest matched
+baseline. All rows are single-run with no cost-matched control. The current
+public release retains source and prompts but no raw benchmark result bundle,
+and later replaced the paper's deterministic numeric grader with an
+evidence-reading agent. This supports a concrete replication pipeline and
+cross-domain core coverage, not end-to-end generality, exact independent
+replay, or a claim that its harness must continually evolve.
 
 **Doubly-Efficient Interactive Proofs for AI Safety** (2607.03561): Shows how to *avoid debate* — the dominant AI safety verification paradigm assumes two competing provers of equal ability, one truthful. This paper replaces the fixed dual-prover assumption with single-prover interactive proofs where a computationally weak verifier validates a powerful prover's claims. The honest-opponent requirement was a fixed structural constraint that doesn't survive in practice.
 
@@ -797,7 +811,7 @@ Supporting evidence:
 8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
 9. **Co-Evolution Imperative (#452): Test governed harness adaptation (sustainability hypothesis)**
 
-Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://arxiv.org/abs/2607.03561
+Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://github.com/ChicagoHAI/veritas, https://arxiv.org/abs/2607.03561
 
 ### Layer 25: The Execution Boundary (Scan #453, 2026-07-09)
 

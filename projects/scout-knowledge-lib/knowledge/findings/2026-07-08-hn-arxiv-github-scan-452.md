@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative, qualified. HASE (2607.03935) reports one system that jointly changes an 8B policy, selected harness components, and solutions. Its 8B/120B rows are imported cross-system comparisons, not harness-only or model-size controls; the direct Heilbronn control instead compares FULL policy updates with FREEZE after evaluator repair. Evaluator repair is externally oracle-gated. VERITAS (2607.02931) proposes domain-agnostic scientific replication. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
+summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative, qualified. HASE (2607.03935) reports one system that jointly changes an 8B policy, selected harness components, and solutions. Its 8B/120B rows are imported cross-system comparisons, not harness-only or model-size controls; the direct Heilbronn control instead compares FULL policy updates with FREEZE after evaluator repair. Evaluator repair is externally oracle-gated. VERITAS (2607.02931) reports strong CORE-Bench replication, but evaluates only its plan/replicate/verify core on hand-authored benchmark claims: claim extraction, its own Replication Score, fix assessment, and the user report are bypassed. Its official CORE gain over the three-session retry baseline is two capsules, while the 97.8% headline adds four VERITAS-only passes under an author-added rule. ReplicationBench gains are one or two tasks and single-run. The current public release is not an exact experiment replay: it retains no raw benchmark bundle and has replaced the paper's deterministic numeric grader with an evidence-reading agent. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
 triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "scan 452"]
-source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HASE 2607.03935 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746; four bounded GitHub repository searches found no attributable release and anonymous code search returned HTTP 401. How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HASE 2607.03935 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746; four bounded GitHub repository searches found no attributable release and anonymous code search returned HTTP 401. VERITAS 2607.02931 primary-reviewed 2026-09-04 from identical v1/current 94,514-byte source archives, SHA-256 ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb, and attributable public repository ChicagoHAI/veritas at head f7283fa70e74d62d5a0ff398134436faa7063ee3. The repository has source, prompts, and tests but no benchmark trajectories/results; no Git tags or releases; current GHCR latest/v0.1.0 resolves to sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f rather than the paper's abbreviated e00fd604 experimental digest. How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #452: The Co-Evolution Imperative
@@ -22,7 +22,12 @@ conditions and supplies no longitudinal or co-evolution result:
 
 1. **HASE** (2607.03935): Harness-Aware Self-Evolving — one Qwen3-8B system jointly updates policy weights, selected harness components, and task solutions. Its text-classification score is close to a reported GPT-OSS-120B/Meta-Harness score, but model, proposer, training/search budget, and implementation all change together. This supports feasibility of endogenous harness edits, not a harness-only cause or fixed-harness degradation result.
 
-2. **VERITAS** (2607.02931): The first general-purpose scientific replication tool — extracts claims from papers, runs methodology using CLI coding agents, and judges each claim against experimental evidence. But the framework must evolve with the papers it verifies: new domains, new methodologies, new claim structures. No fixed replication pipeline survives the expanding frontier of what needs replicating.
+2. **VERITAS** (2607.02931): A public scientific-replication pipeline that
+   extracts claims, runs methodology with CLI coding agents, and judges claims
+   against experimental evidence. Its benchmark covers only the
+   `plan`/`replicate`/`verify` core on hand-authored claims, and the current
+   product is not the paper's exact experiment artifact. Whether the broader
+   pipeline generalizes or must evolve remains untested.
 
 3. **Doubly-Efficient Interactive Proofs** (2607.03561): Proves
    single-prover protocols for two structured oracle-computation classes. It
@@ -66,21 +71,90 @@ Source: https://arxiv.org/abs/2607.03935
 
 ### 2. VERITAS: Towards a General-Purpose Replication Tool for Scientific Research (2607.02931)
 
-**Core finding**: AI tools accelerate scientific publication while review systems struggle to keep pace. Manual replication is slow and expensive. Existing automated efforts are packaged as benchmarks with companion agents that only run inside the benchmark's own pipeline — no general-purpose replication tool exists.
+**Core finding**: VERITAS is a released CLI-agent pipeline with paper-plus-code,
+paper-only, and repository-only modes. Its proposed end-to-end path extracts
+claims, generates code when needed, plans and executes a replication, assesses
+fixes, verifies each claim, and emits an importance-weighted Replication Score
+and report. The paper does not evaluate that end-to-end claim. Both benchmarks
+supply hand-authored task questions as claims, bypassing claim extraction and
+the tool's own score; the experiments test only `plan`, `replicate`, and
+`verify`, not fix-severity assessment or the user-facing report.
 
-VERITAS is a domain-agnostic replication framework built around CLI coding agents:
-- Given a paper, code repository, or both
-- Extracts the paper's claims
-- Runs the methodology while resolving issues as they arise
-- Judges each claim against evidence from experiment runs
+**Reported results and controls**:
+- CORE-Bench Hard covers 45 public capsules spanning computer science, social
+  science, and medicine. Under the official scorer, VERITAS passes 40/45
+  (`88.9%`), versus 38/45 (`84.4%`) for the up-to-three-session retry baseline
+  and 36/45 (`80.0%`) for zero-shot: gains of two and four capsules. The
+  paper's `97.8%` headline is 44/45 under a new 1% relative-error rule for
+  zero-variance references. It re-credits four VERITAS failures and no baseline
+  failures. The rule is system-blind, but the paper itself correctly says the
+  result is not comparable with published official-score systems.
+- ReplicationBench covers 20 astrophysics papers and 111 paper-only tasks.
+  VERITAS matches 37/111 (`0.333`) against 35/111 (`0.315`) for both baselines,
+  a two-task or 1.8-point gain. On the 35 tasks from seven preparable public
+  repositories, full mode matches 21/35 (`0.600`) against retry's 20/35
+  (`0.571`), a one-task or 2.9-point gain. It leaves six paper-only tasks
+  unattempted, including five requiring unavailable data; 68 further tasks
+  miss, with conceptual or procedural errors dominant.
+- Every arm uses Claude Code with Claude Opus 4.8 and the same within-benchmark
+  runtime. That controls model family and machine, but not total agent calls,
+  tokens, or wall time: VERITAS adds planning, verification, and potentially a
+  manager loop, while the baselines use one or up to three resumed sessions.
+  The paper reports no cost- or call-matched comparison.
+- All results are single-run, random seeds are unset, and the Claude Code CLI
+  exposes no temperature. Cheating is judged by GPT-5.4 with three-vote
+  majority; faithfulness uses one GPT-5.4-mini pass and excludes
+  infrastructure-failed trajectories from its denominator. A cheating flag
+  forces an otherwise successful task to fail. One VERITAS flag is for obeying
+  the benchmark instruction to load a published pretrained model, exposing a
+  policy-versus-task-instruction boundary.
 
-**Why this matters**: VERITAS proposes an instantiation of the Verification Harness Hypothesis in scientific research. Unlike a proof kernel, scientific replication must handle changing domains, methods, and claim structures. Whether its replication harness generalizes or requires continual evolution remains an empirical question pending primary review.
+**Artifact and version boundary**: arXiv v1 and current are the same
+94,514-byte source archive, SHA-256
+`ff589d3ad188893037bdcd65d7e9fd4019c470de6f8bec56a3e4c65d7c2744eb`.
+The attributable public repository is `ChicagoHAI/veritas`; its inspected main
+head is `f7283fa70e74d62d5a0ff398134436faa7063ee3`. That 213-file tree contains
+pipeline source, prompts, and 12 test files, but no benchmark trajectories,
+answers, raw judge votes, patched benchmark scorer, per-run usage, or result
+regeneration bundle. It has no Git tags or GitHub releases. The paper identifies
+its experimental image only as `ghcr.io/chicagohai/veritas` digest prefix
+`e00fd604`, built 2026-06-04 from main. The current mutable `latest` and
+`v0.1.0` tags instead resolve to
+`sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f`,
+built 2026-08-31, so the exact evaluated image cannot be recovered from the
+paper's prefix alone.
 
-**Connection to the Oversight Inversion**: Scientific publication exhibits the same inversion — production (writing papers with AI assistance) has collapsed in cost while verification (replication) remains expensive and manual. VERITAS is an attempt to close the gap, but its success depends on whether a domain-agnostic framework can keep pace with domain-specific claims.
+The public implementation has also evolved materially. The last public main
+commit on the stated build date is
+`ebdd7a4487d78596ced491e38d6cece4d0284df6`; current head differs across 81
+files (`8,794` insertions, `3,659` deletions). Commit
+`d17f4f5506a3bbd31086f93e1966800ded13bb26` explicitly replaced the paper's
+LLM comparator plus deterministic numeric grader with one evidence-reading
+grader agent. Current code still aggregates verdict values deterministically,
+but it is not the paper's exact per-claim verification mechanism or an exact
+experiment replay artifact.
 
-**Connection to Evaluation Mirage**: Existing replication agents "only run inside the benchmark's own pipeline" — the evaluation instrument is coupled to the evaluated system. VERITAS breaks this coupling by using general-purpose CLI agents, validating the Granularity Gap (#439) finding that verification resolution must match the system's resolution.
+**Why this matters**: VERITAS provides a concrete persistence-and-evidence
+pipeline and strong reported CORE-Bench performance. It does not yet establish
+general-purpose end-to-end verification: its claim extraction, Replication
+Score, fix assessment, and report were bypassed, its incremental
+ReplicationBench gains are small and unreplicated, and the released artifacts
+do not permit independent regeneration of the reported rows.
 
-Source: https://arxiv.org/abs/2607.02931
+**Connection to the Oversight Inversion**: The system makes replication output
+more inspectable by retaining plans, diffs, evidence, verdicts, and reports in a
+normal product run. The paper's evaluation nevertheless relies on unpublished
+trajectories and judge outputs, illustrating that a verification product still
+needs a versioned verification artifact for its own claims.
+
+**Connection to Evaluation Mirage**: A general CLI scaffold is less coupled to
+either benchmark than a benchmark-specific companion agent, but the evaluated
+claim set and final scores still come from each benchmark. Cross-domain task
+coverage supports breadth of the replication core; it does not validate the
+general claim-extraction and scoring path.
+
+Source: https://arxiv.org/abs/2607.02931,
+https://github.com/ChicagoHAI/veritas
 
 ### 3. How to Avoid Debate: Scalable AI Safety via Doubly-Efficient Interactive Proofs (2607.03561)
 
@@ -250,7 +324,9 @@ for one capability level may degrade at another. Treat this as the proposed
 
 **Candidate evidence and boundaries**:
 - HASE: one 8B system jointly evolves policy, selected harness components, and solutions; its imported 120B comparisons do not isolate harness or model size
-- VERITAS: Scientific replication requires domain-agnostic frameworks that evolve with new domains
+- VERITAS: a general CLI replication core reports strong CORE performance,
+  but its end-to-end claim extraction and scoring path is not evaluated and its
+  public release does not retain an exact experiment replay bundle
 - Doubly-Efficient Interactive Proofs: an honest opponent is unnecessary for
   robust or low-degree oracle computation under the paper's formal access and
   soundness conditions; general deployment and co-evolution remain untested
@@ -312,6 +388,12 @@ This has three structural implications:
 
 **Third**, the Fable 5 extension story (48pts vs C&C Generals port at 687pts) confirms the Attribution Error at the attention level: the community values what the model produces 14× more than the model's availability. The product layer is the unit of community investment, not the model layer.
 
-The arXiv papers motivate a broader pattern across replication, enterprise knowledge, and exploration architecture: systems may need adaptation when their context changes. Because VERITAS and Organizational Memory remain unsourced here and the reviewed papers do not share a longitudinal fixed-versus-adaptive control, this is cross-domain synthesis rather than a convergent causal finding.
+The arXiv papers motivate a broader pattern across replication, enterprise
+knowledge, and exploration architecture: systems may need adaptation when
+their context changes. VERITAS is now primary-reviewed, but its experiments
+bypass the general claim-extraction and product-scoring path and compare no
+fixed-versus-adaptive harness over time. Organizational Memory remains
+unreviewed here, and the papers still share no longitudinal control. This is
+cross-domain synthesis rather than a convergent causal finding.
 
 Future scans will test whether co-evolution can be bounded (does the harness need to evolve *infinitely*, or does it converge?) and whether the co-evolution mechanism can itself be verified (who watches the watchers of the watchers?).

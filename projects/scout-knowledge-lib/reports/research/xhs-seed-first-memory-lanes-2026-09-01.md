@@ -17443,6 +17443,128 @@ recorded as external drift, not attributed to this worker. This worker ran no
 test, generator, formatter, install, clean, or write in `/app` or any peer
 worktree; recheck these exact fingerprints after committing.
 
+## Cycle 386 seed-first start — preserve the XHS cadence
+
+Cycle 386 starts from clean validated source tip
+`02ae7286bcbe8d66c18ca4f56b1e23d095a93549` at approximately
+`2026-09-04T13:34:39Z`. The last supported XHS observation remains Cycle 375
+through `2026-09-04T11:09:20.326Z`; the next scheduled boundary is
+`2026-09-04T17:09:20.326Z`. No collection, access, or account trigger fired,
+so this reconciliation makes zero XHS requests. Additions and changes remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and no account state changes. Provenance stays with Cycle 375's
+browser receipt and seed-ledger row 375.
+
+`RV-004` remains highest consequence but inaccessible without the protected
+query/rank-to-selection-to-later-outcome join; `RV-034` remains outside Scout's
+authority. VERITAS `2607.02931` is the highest accessible unresolved claim
+because Scan #452 called it general-purpose without recording which phases,
+denominators, judges, or artifacts the evaluation actually covered. Select it
+after the seed reconciliation.
+
+## Cycle 386 checkpoint — qualify VERITAS evaluation and replay evidence
+
+What was wrong: Scan #452 described VERITAS's whole paper-to-report pipeline as
+if the benchmark results tested it. The benchmarks actually bypass claim
+extraction, the tool's own Replication Score, fix assessment, and the user
+report. It also presented `97.8%` as the main CORE result without retaining
+that the official score is `88.9%` or that the extra four passes all come from
+an author-added rescoring rule.
+
+What changes: VERITAS is retained as a concrete public replication pipeline
+with useful cross-domain evidence for its `plan`/`replicate`/`verify` core, not
+as established end-to-end general-purpose verification. Official CORE-Bench
+passes are 40/45 for VERITAS, 38/45 for the up-to-three-session retry baseline,
+and 36/45 for zero-shot. The 44/45 headline applies a system-blind 1% rule to
+zero-variance reference answers, but flips four VERITAS failures and no
+baseline failures. On ReplicationBench, the incremental gains are 37/111
+versus 35/111 paper-only tasks and 21/35 versus 20/35 full-mode tasks. Every
+row is single-run, with unset seeds and no cost-matched agent-call comparison.
+
+The auxiliary judgments are not independent deterministic proof. Cheating uses
+GPT-5.4 with three-vote majority and forces flagged successes to fail;
+faithfulness uses one GPT-5.4-mini pass and excludes infrastructure-failed
+trajectories from its denominator. One VERITAS cheat flag comes from obeying a
+task instruction to load a published pretrained model. The paper reports six
+unattempted and 68 missed paper-only tasks; conceptual/procedural errors and
+downscaled computation remain material.
+
+### Exact provenance and lane continuity
+
+ArXiv `2607.02931` was read at
+`2026-09-04T13:34:54.108Z–13:34:56.086Z`. Its 2,756-byte Atom record, SHA-256
+`fe40b6d984f94c5e04b697af8c60b16e389935cb36f9612f8e52305ee522c61c`,
+identifies only v1, published/updated `2026-07-03T03:55:59Z`. Explicit v1 and
+current source archives are identical, 94,514 bytes, SHA-256
+`ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb`.
+
+The attributable GitHub repository `ChicagoHAI/veritas` was inspected at
+`2026-09-04T13:37:13.824Z–13:38:39Z`. Main head
+`f7283fa70e74d62d5a0ff398134436faa7063ee3` contains source, prompts, and 12
+test files in a 213-file tree, but no benchmark trajectories, answers, raw
+judge votes, patched scorer, usage records, or result regeneration bundle. It
+has no Git tags or GitHub releases. Current mutable `latest` and `v0.1.0`
+container tags both resolve to
+`sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f`
+with creation time `2026-08-31T12:49:19.479317809Z`; the paper supplies only
+the experimental prefix `e00fd604`, so the evaluated image is not recoverable
+from that citation alone.
+
+The last public main commit on the stated build date,
+`ebdd7a4487d78596ced491e38d6cece4d0284df6`, differs from current head across
+81 files (`8,794` insertions, `3,659` deletions). Commit
+`d17f4f5506a3bbd31086f93e1966800ded13bb26` later replaced the paper's
+comparator-plus-deterministic-numeric-grader design with one evidence-reading
+grader agent. The current release is capability evidence, not an exact replay
+artifact for the paper's mechanism or results.
+
+ArXiv and GitHub were both useful; Reddit made zero requests and retains its
+RSS-readable/JSON-403 boundary until a relevant thread or access change.
+Confidence is high in source identity, denominators, arithmetic, bypassed
+phases, and artifact/version boundaries; moderate in the reported official
+benchmark rows; low in run stability, cost-matched pipeline effect, judge
+transfer, extracted-claim coverage, and independent regeneration. `RV-004` and
+`RV-034` remain high/open.
+
+Revisit VERITAS on an immutable experimental image, raw trajectories/results
+and judge votes, repeated seeds, cost-matched controls, or an end-to-end
+extracted-claim evaluation. Next seed-first, primary-review Organizational
+Memory `2607.03228`: determine whether shared, governed, evolving memory is
+measured in a deployed process or only proposed, and look for an attributable
+implementation and result bundle.
+
+### Cycle 384 exact-commit validation boundary
+
+Before another research cycle, Cycle 384 was revalidated from its exact
+detached result tree at `2026-09-04T13:47:48.565Z–13:49:39.618Z`. Its result is
+`83a35e8e0f66c46f3e1c66a54132991ba311cf14`, its sole parent/source is
+`fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c`, and its tree is
+`1a8ea9c904eb439b53703e1067cfa5172dc8072a`. The complete repository gate
+passes syntax, TypeScript, tracked-source formatting, Cycle 375 projection,
+94 scoped links, navigation v1 at 11/14 and v2 at 8/8, and 296 tests / 1,486
+assertions with zero failures in 100.87 seconds. The correctly scoped broad
+audit passes 1,540 tracked Scout-library Markdown documents / 1,733 local prose
+links with zero errors. Read-only health returns 26 facts / 16 wake signals
+with `truncated:true` and creates no runtime packet.
+
+Accepted reviewer commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` are ancestors of the exact result; unaccepted `d041c41b54` is not.
+The isolated validation checkout is clean after removal of its temporary local
+dependency-resolution link; no install ran. The standing branch retains Cycle
+384 as an ancestor and preserves the later Cycle 385 commit plus this already-
+collected Cycle 386 evidence. The latter's public-project/current-product
+observations remain capability and version-drift evidence only: without the
+paper's immutable image and raw benchmark bundle, they are not replay proof.
+
+The protected source checkout was re-observed read-only at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`: 893 complete short-status records,
+SHA-256 `1bbf77b3c02e7892da7c28a451176e144421662616758f40f74fc44e441c5c90`,
+and 293 Scout-library-scope records, SHA-256
+`85b5ef213fbc94ad7b86de22697ce154fe09bbe864da01564492bbf666d6ee49`.
+Relative to Cycle 385's 893/296 observation, this is externally observed drift,
+not attributed to this worker. No command in that checkout or a peer worktree
+performed tests, generation, formatting, installation, cleanup, or writes.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
