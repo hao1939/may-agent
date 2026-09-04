@@ -2,22 +2,24 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 292 observational reconciliation through 2026-09-03T22:59:03.253Z; exact access evidence and uncertainty are in seed-ledger row 292."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable Scan 449–450 artifact reads through 2026-09-04; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary Scan 449–450 source reads through 2026-09-04 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 292 read-only XHS boundary through 2026-09-03T22:59:03.253Z."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; exact access evidence and uncertainty are in seed-ledger row 341."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 340; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 340 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 292 used the established direct localhost Chrome
+authenticated window. Cycle 341 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
-effective-UID-0 connector launched by worker UID 1000 (`hao`). Public Explore
+effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
+worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
 retained the 46,763-byte login response and zero attributable items. Only the
-body hash changed. This is not a comparable collection inventory. Added and
-changed sets remain unknown, proven removals are `[]`, and all 132 durable seed
+body hash changed from Cycle 292. This is not a comparable collection
+inventory. Added and changed sets remain unknown, proven removals are `[]`,
+and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
 available to read and no XHS state was changed.
 
@@ -6348,6 +6350,27 @@ unaccepted `d041c41b54` is excluded, and standing/runtime state is empty.
 Protected `/app` remains externally observed at `386b445c…1fec8`, 916 /
 `f7080322…c4a93a` overall and 296 / `7e4d0937…c26a8a` in Scout scope.
 This worker wrote or tested neither protected surface.
+
+### Cycle 341 seed-first start — scheduled access pass is semantically unchanged
+
+Cycle 341 starts from clean `a4011b083d`. The scheduled observation ran first
+at `2026-09-04T05:00:01.983Z–05:00:03.241Z`: direct localhost 9222 refused
+worker UID 1000, then the existing passwordless `sudo nsenter` connector ran
+as effective UID 0 in root-owned Chrome PID 2136's network namespace. Exactly
+one public `status` and one non-navigating `saved-status` ran. Explore remained
+ready with 30 notes; saved status remained HTTP 200, `login`, 46,763 bytes,
+access `3dab1b6d…af420`, zero items, and a login wall. Only body SHA changed
+`3eae646c…6e819`→`5be9a393…c67d1`. Added/changed stay unknown, removals are
+`[]`, and all 132 seeds remain unavailable. No representative saved post was
+supported and no account mutation occurred.
+
+Re-rank after reconciliation: (1) high/open `RV-004`, still inaccessible at
+the missing protected query/rank -> selection -> later-outcome join; (2)
+Memory in the Loop's unreleased provider result; (3) AgentEval `2607.06873`,
+highest accessible because Scan #482 promotes its boundary counts and “first
+response” status without primary review; (4) other primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until its trigger;
+and (6) compaction. Commit this receipt before reading AgentEval.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
