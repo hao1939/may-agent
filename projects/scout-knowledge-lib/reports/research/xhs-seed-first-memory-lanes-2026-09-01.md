@@ -13323,6 +13323,43 @@ causality or transfer. Next seed-first, then audit the highest-impact remaining
 unqualified capability-preparation claim without another XHS request inside
 the current cadence.
 
+Exact Cycle 344 material `2c931cdfca90075e3e28397693efa15c8b161f78`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 102.19 seconds. The broad audit passes 1,540
+tracked Markdown documents / 1,728 local prose links with zero errors.
+Read-only health at `2026-09-04T05:35:08.501Z` returns 26 facts / 16 wakes and
+is truncated. Accepted `ff923ccde4` and historical `f26bd4f3a5` are ancestors;
+unaccepted `d041c41b54` remains excluded. Standing status, `.goal-runtime`,
+and App runtime state are empty.
+
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+overall and 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e` in
+Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 345 seed-first start — match AIM's GAM comparison
+
+At `2026-09-04T05:36:04.839Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 36 minutes old and remains inside the six-hour
+cadence. This bounded reconciliation makes zero XHS requests. Added/changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+seeds remain unavailable, and exact ledger row 341 remains provenance. No
+account state changes.
+
+Re-rank the complete queue by expected knowledge value: (1) high/open
+`RV-004`, inaccessible without the protected post-August-31 query/rank ->
+selection -> later-outcome join; (2) Memory in the Loop's unreleased authority-
+bearing result; (3) AIM-to-GAM benchmark comparability, highest accessible
+because GAM's public primary paper may expose the task, model, metric, and
+timing basis hidden by `2607.07397`'s strongest joint speed/accuracy claim;
+(4) other primary, contradiction, reproducibility, retrieval, and synthesis
+gaps; (5) Reddit until a relevant-thread/access trigger; and (6) compaction.
+GitHub, arXiv, Reddit, and accepted refs make zero requests/checks in this seed
+record. Commit this ordering before retrieving GAM.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -6636,6 +6636,38 @@ transfer. Next seed-first, then primary-review the highest-impact remaining
 unqualified claim in the capability-preparation chain without making another
 XHS request inside the current cadence.
 
+Exact Cycle 344 material `2c931cdfca90075e3e28397693efa15c8b161f78`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 102.19 seconds. The broad audit passes 1,540
+tracked Markdown documents / 1,728 local prose links with zero errors.
+Read-only health at `2026-09-04T05:35:08.501Z` returns 26 facts / 16 wakes and
+is truncated. Accepted `ff923ccde4` and historical `f26bd4f3a5` are ancestors;
+unaccepted `d041c41b54` is excluded. Standing status, `.goal-runtime`, and App
+runtime state are empty. Protected `/app` remains externally observed at
+`386b445c…1fec8`, with 916 records / `8e3558f4…e8a36` overall and 296 /
+`a430d0c9…2f7e` in Scout scope. This worker wrote or tested neither protected
+surface.
+
+### Cycle 345 seed-first start — match AIM's GAM comparison
+
+At `2026-09-04T05:36:04.839Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 36 minutes old and remains inside the six-hour
+cadence. Make zero XHS requests: additions/changes remain unknown, observed
+removals are `[]`, all 132 durable seeds remain unavailable, and ledger row
+341 remains exact provenance. No account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible without the protected post-August-31 query/rank -> selection ->
+later-outcome join; (2) Memory in the Loop's unreleased authority-bearing
+result; (3) AIM-to-GAM benchmark comparability, highest accessible because
+GAM's public primary paper may expose the task, model, metric, and timing basis
+hidden by `2607.07397`'s strongest joint speed/accuracy claim; (4) other
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until a relevant-thread/access trigger; and (6) compaction. GitHub,
+arXiv, Reddit, and accepted refs make zero requests/checks in this seed record.
+Commit this ordering before retrieving GAM.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
