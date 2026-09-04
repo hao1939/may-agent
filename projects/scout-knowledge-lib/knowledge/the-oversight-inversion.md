@@ -569,16 +569,16 @@ Source: findings/2026-07-19-hn-arxiv-github-scan-447.md, https://arxiv.org/abs/2
 
 ## The Architecture Premium (#448) — ROI Principle
 
-Scan #448 completes the five-scan exit arc by establishing the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — actively invest in the architecture. Two uncovered arXiv papers converge:
+Scan #448 proposes the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — test the surrounding architecture as a candidate factor. Two arXiv papers provide different bounded signals:
 
 - **Three-Phase Evaluation** (2607.05125v1, cs.SE): One four-student team reimplemented the same app in three fixed-order phases. Later Kiro values were directionally better on several measures, while mental-demand means fell and frustration means rose. Platform, workflow, order, accumulated familiarity, and unarchived runtime identity are confounded; n=4 workload values are descriptive, and evaluator blinding is internally inconsistent. This is a pilot hypothesis for a randomized architecture comparison, not an independent architecture effect or a confirmed individual-level Oversight Inversion.
-- **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846, cs.LG): Training order determines governance surface. Imbalanced curricula produce **disentangled neural circuits** enabling precise safety fine-tuning; balanced training creates shared pathways where suppressing one capability degrades another. The curriculum is the architecture of learning — governance costs are determined at training time.
+- **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846v1, cs.LG): Small synthetic transformers show schedule-dependent generalization, component use, and selective fine-tuning. The main text's 100-seed report conflicts with 30 seeds in methods, refusal analysis conditions on successful models, and the linked repository is empty. This supports curriculum as a factor to test, not the claim that it determines governance cost or transfers to large models.
 
-**The Architecture Premium is fractal** — it applies at every phase:
+**The Architecture Premium hypothesis spans multiple phases**, but each phase needs its own identified comparison:
 
 | Phase | Architecture Premium Manifestation |
 |-------|-----------------------------------|
-| **Training** | Curriculum design (04846) — imbalanced learning → governable circuits |
+| **Training** | Curriculum schedule (04846v1) — synthetic directional effect; governance-cost transfer unknown |
 | **Configuration** | Scaffold design (#425, #440) — tooling > model for outcomes |
 | **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
 | **Deployment** | Governance layers (GitHub: fable-soul, sail-skill) — architecture > capability |
@@ -594,7 +594,7 @@ Source: findings/2026-07-20-hn-arxiv-github-scan-448.md, https://arxiv.org/abs/2
 
 ## The Subtraction Economy (#449) — Market Pricing
 
-The Architecture Premium (#448) established that investing in architecture yields higher returns than investing in capability. Scan #449 reveals the **economic corollary**: the market has priced the Subtraction Deficit. When production is near-free, subtraction becomes the premium economic activity.
+The Architecture Premium (#448) hypothesizes that architecture can yield returns distinct from capability. Scan #449 proposes the **economic corollary**: the market has priced the Subtraction Deficit. When production is near-free, subtraction may become the premium economic activity.
 
 - **"$10k/week to delete AI-generated code"** (HN, 44pts): Odra openly prices code *deletion* as a premium service. "A client calls, asks for a 'small refactor,' and sends you 100k lines of AI-generated spaghetti." Production costs $149 (Fable port). Deletion costs $10k/week. The **67× ratio** between production cost and subtraction cost is the Oversight Inversion expressed in dollars.
 - **OptiAgent** (2607.05346, cs.AI): SOTA on 3/4 benchmarks via four specialized *subtractive* feedback loops — each targeting a distinct failure mode (misinterpretation, structural defects, mathematical inconsistencies, code errors). Architecture's value is in what it *removes* at each stage, not what it adds. Modular subtraction is transparent; monolithic validation is opaque.

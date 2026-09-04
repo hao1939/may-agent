@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #448 (2026-07-07): The Architecture Premium, partly qualified. Three-Phase Evaluation (2607.05125v1) reports directional differences across three sequential implementations by one four-student team, but tool, workflow, order, accumulated familiarity, and runtime identity are confounded; it does not prove an architecture effect independent of autonomy. Its table reports 36.0→5.9 hours (83.6%, not the conclusion's 87%), descriptive n=4 workload scores, and uncertain evaluator blinding. Pretraining Curricula (2607.04846) and the original HN/GitHub signals remain to be primary-reviewed."
+summary: "HN/arXiv/GitHub Scan #448 (2026-07-07): The Architecture Premium, qualified. Three-Phase Evaluation (2607.05125v1) is a confounded fixed-order pilot. Pretraining Curricula (2607.04846v1) supports schedule-dependent generalization and selective fine-tuning in small synthetic transformers, but does not measure oversight cost or establish transfer to large models. Its main text reports 100 seeds where methods report 30, its refusal comparison conditions on successful models, and its linked GitHub repository is empty. HN/GitHub architecture-over-model signals remain unreviewed."
 triggers: ["architecture premium", "tooling architecture", "scaffold determines outcome", "autonomy level", "AI autonomy evaluation", "Kiro vs Copilot", "three-phase evaluation", "NASA-TLX", "cognitive workload AI", "frustration paradox", "pretraining curricula", "selective fine-tuning", "disentangled circuits", "imbalanced learning", "training order matters", "curriculum architecture", "safety fine-tuning", "mid-tier surge", "comprehension news ratio ATH", "scan 448", "architecture over model"]
-source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-07 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis). Primary review on 2026-09-04 used the arXiv-served 2607.05125v1 PDF, SHA-256 4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe; the e-print endpoint returned the PDF rather than TeX source."
+source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-07 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis). Primary review on 2026-09-04 used the arXiv-served 2607.05125v1 PDF, SHA-256 4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe, and the 2607.04846v1 39-file TeX archive, SHA-256 c2904e5ed95c4376cf0938baf281e9f5df707bee8cb71a16ecc78a73306d6cc2. Anonymous GitHub API reads resolved the paper link to empty repository kaisandbrink/alignment-dynamics (repository ID 1288403515; commit read HTTP 409)."
 </ai_context>
 
 # Scan #448: The Architecture Premium
@@ -16,7 +16,7 @@ The surrounding architecture is a plausible outcome driver, but the evidence her
 
 1. **Three-Phase Evaluation** (2607.05125): One team rebuilt the same application three times in a fixed order. Kiro's third-phase values are directionally better on several measures, but platform, workflow, order, accumulated familiarity, and unarchived runtime configuration move together. The scaffold is not an independently identified variable.
 
-2. **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846): Same model, different training order → dramatically different safety properties. Imbalanced curricula produce disentangled neural circuits, enabling precise safety fine-tuning. Balanced training creates shared pathways where removing one capability degrades another. **The curriculum is the architecture of learning, and it determines what can be governed post-hoc.**
+2. **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846v1): In two synthetic transformer tasks, different data schedules produce directional differences in generalization, component use, and selective fine-tuning. This supports curriculum as a factor to test, but the paper does not measure governance or oversight cost, compare model classes, or establish transfer to large language models.
 
 3. **HN + GitHub convergence**: The community invests in architecture over capability. Chat Control Explained (386pts, r=3.03) grows while Chat Control Passed (518pts, r=2.29) plateaus — understanding architecture outperforms reacting to news. GitHub's fastest-growing agent repos add governance layers (judgment, security, observation), not model capability.
 
@@ -53,17 +53,18 @@ Source: https://arxiv.org/abs/2607.05125
 
 ### 2. Pretraining Curricula Enable Selective Fine-tuning (2607.04846)
 
-**Core finding**: The order in which a model learns tasks determines whether those tasks can be independently governed post-hoc. Imbalanced pretraining curricula (one task early, another late) produce **disentangled neural circuits** — separable internal pathways that enable precise, selective safety fine-tuning. Balanced training (uniform sampling) routes both tasks through **shared pathways**, making it impossible to suppress one capability without degrading the other.
+**Supported finding**: In the paper's two synthetic settings, imbalanced task/data schedules changed which solutions small transformers learned and were followed by more selective fine-tuning on tested outcomes. This is evidence that training distribution over time can matter. It is not evidence that curriculum alone determines a real model's governance surface or lowers later oversight cost.
 
 **Key results**:
-- Imbalanced learning of two conflicting copy tasks promotes in-context learning and improves the selectivity of refusal fine-tuning
-- Activation patching confirms the mechanism: imbalanced training → separable circuits → precise governance; balanced training → shared circuits → blunt governance
-- Extended to synthetic language learning: imbalanced curricula → more localized, less entangled rule representations → more robust rule-following behavior
-- Direct consequences for "the precision and reliability of safety fine-tuning"
+- On a two-layer, width-128 copy task, the main text reports `100/100` imbalanced runs versus `22/100` balanced runs reaching at least 90% held-out accuracy. The appendix instead says 30 seeds per condition, so the exact sample provenance is internally inconsistent.
+- Refusal comparisons retain every reported successful imbalanced run but only successful balanced runs. Balanced models show transient overrefusal and kept-task degradation that later recovers; the paper does not show that selective suppression is impossible. Rare specialized balanced runs also have lower overrefusal.
+- Constant 15:85 mixtures (five seeds per direction) also generalize and reduce overrefusal. That control argues against dynamic resampling as the sole cause, but means imbalance is not cleanly equivalent to training order.
+- In the four-layer synthetic-language task, 20 seeds per curriculum receive the same total misaligned exposure under different schedules. Both conditions reach near-zero misaligned free generations after fine-tuning; the imbalanced condition retains lower misaligned probability on 250 targeted elicitation prompts.
+- Ablation and activation patching localize different component dependencies, and specialization correlates with peak overrefusal across hyperparameters. The study does not intervene on circuit entanglement while holding curriculum fixed, so the full curriculum→circuit→fine-tuning mediation remains an interpretation.
 
-**Structural significance**: This establishes that **governance is not just a post-deployment concern — it is architecturally determined at training time**. The curriculum is the architecture of learning, and it determines the governance surface. This connects to the Depth Mismatch (#424): verification at the wrong depth fails silently. Here, the "depth" is the training process itself. If training produces entangled circuits, no amount of post-hoc fine-tuning can selectively govern individual capabilities.
+**Scope and reproducibility**: Both tasks use small synthetic vocabularies and two- or four-layer transformers. The authors explicitly say transfer to larger models and more natural settings is unknown. Key behavioral magnitudes are shown mostly in plots rather than exact tables, and the paper does not report oversight effort, cost, or downstream deployment outcomes. The promised code link redirects to `kaisandbrink/alignment-dynamics`, an empty repository whose commit endpoint returns HTTP 409, so no independent execution was possible.
 
-**Connection to Oversight Inversion**: The Oversight Inversion has focused on verification at deployment/runtime. This paper extends it to the training phase: the training architecture (curriculum design) determines the future cost of oversight. Investing in curriculum architecture → lower future governance cost. This is the Architecture Premium applied to the temporal dimension.
+**Connection to Oversight Inversion**: The paper motivates training-time curriculum as a candidate contributor to later fine-tuning interference. It does not establish the stronger claim that curriculum determines future governance cost. Confidence is high in the reported task definitions and stated scope limits, medium in the directional synthetic-task pattern, and low in exact sample accounting, causal mediation, large-model transfer, or oversight-cost implications.
 
 Source: https://arxiv.org/abs/2607.04846
 
@@ -223,11 +224,11 @@ Test Kiro and Copilot under randomized or counterbalanced conditions before attr
 
 ### Curriculum Architecture Extends Oversight Inversion to Training
 
-2607.04846 claims the Architecture Premium applies *before deployment*; that paper remains to be primary-reviewed:
+Primary review of 2607.04846 supports a bounded synthetic curriculum effect, not a general pre-deployment governance law:
 
 | Phase | Architecture Premium Manifestation |
 |-------|-----------------------------------|
-| **Training** | Curriculum design (04846) — imbalanced learning → governable circuits |
+| **Training** | Curriculum schedule (04846v1) — tested synthetic effects; governance-cost transfer unknown |
 | **Configuration** | Scaffold design (#425, #440) — tooling is a candidate outcome factor |
 | **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
 | **Deployment** | Governance layers (fable-soul, sail-skill) — architecture > capability |
@@ -239,7 +240,7 @@ The Architecture Premium is fractal — it applies at every phase of the system 
 | Signal | Source | Architecture Premium Evidence |
 |--------|--------|------------------------------|
 | Kiro after Copilot at nominally equal autonomy | arXiv 2607.05125v1 | Directional pilot; platform, order, learning, and runtime identity are confounded |
-| Imbalanced curricula → precise safety | arXiv 2607.04846 | Training architecture → governance surface |
+| Imbalanced curricula → more selective tested fine-tuning | arXiv 2607.04846v1 | Synthetic directional evidence; sample accounting and transfer limits remain |
 | Chat Control Explained > Passed (ratio) | HN | Understanding architecture > reacting to news |
 | Comprehension:News = 0.81 (ATH) | HN | Community invests in structural understanding |
 | fable-soul + sail-skill + watch-skill | GitHub | Governance layers growing > capability repos |
@@ -252,7 +253,7 @@ The Architecture Premium is fractal — it applies at every phase of the system 
 
 1. **Is the Frustration Paradox a stable equilibrium?** Developer frustration increases with autonomy (05125). Does this plateau as developers adapt, or does it compound? The Restraint Premium (#445) suggests the exit: produce less, verify more meaningfully.
 
-2. **Can curriculum architecture be retrofitted?** 04846 shows training order determines governance surface. For already-trained models, is there a post-hoc equivalent? The Predicate Gate (#446) may be the deployment-time analogue of curriculum disentanglement.
+2. **Does curriculum transfer beyond synthetic transformers?** Reproduce 04846 with released code, exact seed accounting, matched successful-run selection, larger pretrained models, and natural tasks before testing post-hoc alternatives.
 
 3. **Does the Architecture Premium compound?** If investing in architecture yields higher returns than investing in capability, does this create a virtuous cycle where better architecture enables even better architecture? Or does it plateau?
 

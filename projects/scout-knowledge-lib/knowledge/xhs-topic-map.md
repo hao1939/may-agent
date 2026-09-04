@@ -4714,6 +4714,47 @@ synthesis; (5) Reddit, deferred until a relevant thread or access change; and
 evidence. Select item 3 and test its intervention, controls, estimand,
 replication artifacts, and causal scope.
 
+### Cycle 314 checkpoint — curriculum is a factor, not an oversight-cost result
+
+Anonymous arXiv reads at `2026-09-04T01:24:37Z–01:24:47.451Z` returned
+`2607.04846v1` and its 39-file, 9,572,894-byte TeX archive at SHA-256
+`c2904e5e…d6cc2`. The paper tests two- or four-layer, width-128 transformers
+on copy and synthetic-profile tasks. It does not compare model classes,
+natural tasks, deployment outcomes, oversight effort, or cost.
+
+The copy task's main text reports 100/100 imbalanced versus 22/100 balanced
+runs reaching 90% held-out accuracy, while methods say 30 seeds per condition.
+Refusal analysis keeps all successful imbalanced runs but only successful
+balanced runs; balanced overrefusal and kept-task degradation are transient,
+not impossibility. Constant 15:85 mixtures also reduce interference, so
+imbalance and order are not interchangeable. In the 20-seed-per-condition
+synthetic-language task, total misaligned exposure is matched; both curricula
+reach near-zero misaligned free generations after fine-tuning, while the
+imbalanced schedule is better on targeted elicitation probabilities.
+
+Ablations and activation patching support different component dependencies,
+but no intervention on entanglement holds curriculum fixed, so the complete
+mediation remains inferred. The paper itself says larger-model and natural-task
+transfer is unknown. Its promised code link redirects to repository ID
+`1288403515`, `kaisandbrink/alignment-dynamics`; anonymous GitHub reads through
+`2026-09-04T01:25:39.673Z` found it empty and the commit endpoint returned HTTP
+409. No independent execution was possible.
+
+The two Scan 448 variants, index, and Oversight Inversion now retain the
+synthetic directional effect while retracting curriculum-determines-governance
+and lower-oversight-cost claims. Confidence is high in task/scope extraction,
+medium in the directional reported pattern, and low in exact sample accounting,
+causal mediation, large-model transfer, or cost implications. arXiv and GitHub
+supplied the selected evidence; revisit on v2 or nonempty attributable code.
+Reddit made zero requests and remains RSS-readable/JSON-403 until a relevant
+thread or access change. `RV-004` remains high/open because this is claim
+correction, not a protected query-to-later-outcome join.
+
+Next begin seed-first and audit the remaining HN/GitHub Architecture Premium
+convergence claim: recover stable item/repository identities where possible,
+separate attention and popularity observations from causal investment claims,
+and retract any comparison whose original denominator cannot be reproduced.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

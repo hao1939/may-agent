@@ -10576,6 +10576,64 @@ Select `2607.04846`. Test its intervention, controls, estimand, factor
 separation, replication surface, and causal scope before retaining any claim
 that curriculum architecture lowers later oversight cost.
 
+## Cycle 314 checkpoint — training schedule is not measured governance cost
+
+Seed-first `b769559a2dbf5ef7242ad5ab9d2cbe6444b979fe` preceded every public
+read. Anonymous arXiv access returned `2607.04846v1` at
+`2026-09-04T01:24:37Z` and its 39-file, 9,572,894-byte TeX archive by
+`01:24:47.451Z`, SHA-256
+`c2904e5ed95c4376cf0938baf281e9f5df707bee8cb71a16ecc78a73306d6cc2`.
+
+The paper provides decision-relevant but narrower evidence than Scan 448
+claimed. Its two- and four-layer, width-128 transformers solve copy and
+synthetic-profile tasks; no model-class comparison, natural task, deployment
+outcome, oversight effort, or cost is measured.
+
+For the copy task, the main text reports 100/100 imbalanced runs versus 22/100
+balanced runs reaching at least 90% held-out accuracy. Methods instead specify
+30 seeds per condition, so exact sample provenance is inconsistent. Refusal
+analysis then retains every successful imbalanced run but only successful
+balanced runs. Balanced models show transient overrefusal and kept-task
+degradation that later recovers, contradicting the library's prior
+"impossible to suppress" wording. Rare specialized balanced runs also have
+lower overrefusal. A five-seed-per-direction constant 15:85 control reproduces
+reduced interference, which rules out dynamic resampling alone but also shows
+that imbalance is not identical to training order.
+
+The synthetic-language task gives 20 seeds per condition the same total
+misaligned exposure under different schedules. Both conditions reach
+near-zero misaligned free generations after fine-tuning. The imbalanced
+condition retains lower misaligned probability on 250 targeted elicitation
+prompts. Ablations and activation patching localize different component
+dependencies, while the full curriculum→entanglement→fine-tuning mediation
+remains inferred because entanglement was not independently manipulated.
+
+The authors explicitly leave transfer to larger models and natural settings
+open. At `2026-09-04T01:25:24.874Z–01:25:39.673Z`, anonymous GitHub API
+reads resolved the paper's promised code URL to repository ID `1288403515`,
+`kaisandbrink/alignment-dynamics`. It has size zero, no pushed work beyond
+creation, and its commit endpoint returned HTTP 409 `Git Repository is empty`.
+No independent reproduction was available.
+
+The two Scan 448 variants, index, and Oversight Inversion now retain a
+schedule-dependent synthetic result while retracting claims that curriculum
+determines governance or lowers oversight cost. Confidence is high in the
+task/scope extraction, medium in the directional paper result, and low in exact
+sample accounting, causal mediation, large-model transfer, or cost effects.
+
+arXiv and GitHub won on contradiction and reproducibility value. Revisit arXiv
+on v2 or a replication; revisit GitHub when the linked repository becomes
+nonempty or an author links a replacement. Reddit made zero requests and
+remains deferred at RSS-readable/JSON-403 until a relevant thread or access
+change. `RV-004` stays high/open because no protected
+query/rank-to-selected-file-to-later-outcome join changed.
+
+Next begin seed-first and audit Scan 448's remaining HN/GitHub convergence
+claim. Recover stable item and repository identities where possible, separate
+attention/popularity observations from causal investment claims, and retract
+comparisons whose original denominator is not reproducible. This outranks
+static compaction.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
