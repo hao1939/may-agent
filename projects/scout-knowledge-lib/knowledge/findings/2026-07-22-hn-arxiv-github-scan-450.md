@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #450 (2026-07-22): The Knowledge Erosion, partly qualified. Observability-Aware Code (2607.05785v1) reports weak recovery of human instrumentation and 4.95–13.99% fault-signal rates for generated Kubernetes microservices, but does not test application correctness, longitudinal erosion, test-driven incentives, or a human-written runtime baseline. Its static and runtime studies are separate and its advertised anonymous artifact is unavailable. The other two proposed erosion mechanisms and two corrective systems remain pending primary review. HN and repository counters remain discovery signals, not economic or causal confirmation."
+summary: "HN/arXiv/GitHub Scan #450 (2026-07-22), partly qualified. TraceProbe (2607.06184v1) supports deterministic trajectory description, same-task localization, and bounded search-loop transfer, but not luck-versus-skill labels, failure prediction, reliability, review-cost, remediation, or evidence-destruction claims. Observability-Aware Code (2607.05785v1) reports weak lexical restoration and low explicit fault-signal rates without testing correctness or longitudinal erosion. The expertise and corrective-system claims remain pending primary review. HN and repository counters remain discovery signals, not economic or causal confirmation."
 triggers: ["knowledge erosion", "skill atrophy", "knowledge debt", "incidental learning loss", "developer deskilling", "resolve rate hides", "trajectory diagnostics", "TraceProbe", "trajectory opacity", "observability-aware code", "diagnostic evidence", "agent observability gap", "AgentTether", "runtime repair", "task graph repair", "LogicHunter", "agentic oracle", "framework testing", "silent attrition", "remediation debt", "knowledge infrastructure", "human authorship premium", "expertise erosion", "learning pathway disruption", "process evidence loss", "scan 450"]
 source_basis: "HN front page 2026-07-22 (30 stories via Firebase API). arXiv API (2607.06101 Agents That Teach, 2607.06184 What Resolve Rate Hides, 2607.05785 Observability-Aware Code, 2607.06273 AgentTether, 2607.06195 LogicHunter). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,315★, eve 3,303★, rowboat 15,273★, horizon 34★, agent-apprenticeship 1,295★). Cross-referenced with Subtraction Economy (#449), Architecture Premium (#448), Oversight Inversion (thesis), Comprehension Dividend (#444)."
 </ai_context>
@@ -58,19 +58,46 @@ Source: https://arxiv.org/abs/2607.06101
 
 ### 2. What Resolve Rate Hides: Trajectory Structure Diagnostics for Coding Agents (2607.06184)
 
-**Core finding**: The dominant metric for coding agents — resolve rate (did the patch pass tests?) — compresses trajectory quality into a single binary. **TraceProbe** recovers what resolve rate discards: two agents with identical resolve rates can have wildly different trajectory structures — one navigating efficiently, the other thrashing through extra steps, wasted reads, and unnecessary reverts. The framework recovers searches, reads, edits, tool calls, validations, and reversions from raw traces.
+**Supported finding**: Resolve rate records one final binary and omits process
+measurements. **TraceProbe** normalizes heterogeneous raw runs into a canonical
+nine-action representation with deterministic effect labels. One motivating
+same-task example fixes outcome; the setting-level result compares similar,
+not identical, resolve rates.
 
 **Key results**:
 - Raw traces are "heterogeneous and hard to compare across runs"
-- TraceProbe standardizes trajectory analysis: search breadth, edit precision, tool efficiency, revert frequency
-- Process evidence reveals which agents are *lucky* (reaching correct output through chaotic paths) vs. *skilled* (reaching correct output through efficient paths)
-- Same resolve rate, radically different operational cost and reliability profiles
+- The main corpus has 2,500 single runs: 500 SWE-Bench Verified tasks under five
+  settings. A declared 750-trajectory repeat set has no reported repeat
+  variance in the results section.
+- OpenCode/GLM and OpenCode/Opus resolve 71.6% and 71.4%, while reporting 33 vs
+  17 median steps, 33 vs 16.5 tool calls, 8.3% vs 4.4% failed actions, and 18.1%
+  vs 10.2% off-anchor actions.
+- Search-loop direction transfers to SWE-Bench Pro. Task difficulty confounds
+  aggregate prevalence, and several other detectors weaken or reverse.
+- Gold patch anchors ground some measures; the study has no human-validated
+  diagnostic labels or practitioner-outcome evaluation.
 
-**Structural significance**: This is the Attribution Error (#440) applied to agent metrics. Resolve rate attributes success to the agent when the trajectory reveals success was partially accidental. More critically: **resolve rate is itself a knowledge-eroding metric** — by compressing process into outcome, it destroys the process evidence that would enable diagnosis and improvement. The metric instrument erodes the knowledge it claims to measure.
+**Artifact check (2026-09-04)**: The 280,395,618-byte public Zenodo archive
+(MD5 `d7d442aeb712bd5f31351b91ce51b124`) contains code, 2,500 Verified
+trajectories, outcome files, patches, and reproduction scripts. Without
+installs, the complete structural pass processed 2,500/2,500 runs with zero
+errors and reproduced all five resolve rates plus search-loop prevalence
+(41.1% resolved, 56.1% failed). The paper's motivating `pytest-7982` pair
+reproduced at 10 vs 49 raw steps and 0 vs 8 failed canonical actions. Semantic
+labels, the declared repeat-run corpus/results, and raw Pro trajectories are
+not included, so those surfaces remain unreproduced.
 
-**Connection to Granularity Gap (#439)**: The Granularity Gap showed verification at wrong resolution fails silently. TraceProbe is the first tool explicitly designed to *restore* the resolution that resolve rate compresses away.
+**Scope limit**: The paper supports reporting process profiles beside outcomes.
+It does not label runs lucky or skilled, predict future reliability, measure
+review cost, explain a particular failure, automate remediation, or show that
+resolve-rate reporting destroys otherwise retained trajectory evidence.
+
+**Connection to Granularity Gap (#439)**: TraceProbe supplies a finer
+measurement view. Whether it improves human diagnosis or intervention remains
+untested.
 
 Source: https://arxiv.org/abs/2607.06184
+Artifact: https://doi.org/10.5281/zenodo.20789918
 
 ### 3. Can Large Language Models Generate Observability-Aware Code? (2607.05785)
 
@@ -272,12 +299,14 @@ evidence:
 | Knowledge Layer | What's Lost | How | Paper |
 |----------------|-------------|-----|-------|
 | Developer expertise | Skills atrophy | Delegation bypasses learning-by-doing | 2607.06101 |
-| Process evidence | Trajectory quality invisible | Metrics compress process into outcome | 2607.06184 |
+| Process evidence | Process detail absent from outcome-only reports | TraceProbe adds deterministic profiles; diagnosis and intervention effects untested | 2607.06184v1 |
 | Diagnostic content | Low restoration F1 and fault-signal rate in two benchmark settings | Longitudinal erosion and application correctness untested | 2607.05785v1 |
 
 The correction requires making knowledge preservation an architectural responsibility, not a human habit. AgentTether (2607.06273) externalizes process knowledge into task graphs. LogicHunter (2607.06195) externalizes framework testing into agentic oracles. horizon (34★) externalizes verification into symbolic checking. agent-apprenticeship (1,295★) externalizes work experience into reusable data.
 
-**The structural lesson**: The exit from the Oversight Inversion cannot rely on the very human capacities that the Inversion is eroding. The exit must be *architectural* — baked into the system, not dependent on operators who are becoming less capable of executing it.
+**Proposed structural lesson**: Architectural support may reduce dependence on
+human capacities, but the reviewed evidence does not establish that operators
+are becoming less capable or that these systems preserve that capability.
 
 ---
 
@@ -285,10 +314,10 @@ The correction requires making knowledge preservation an architectural responsib
 
 | This Scan | Connects To | How |
 |-----------|-------------|-----|
-| Knowledge Erosion (epistemic cost) | Oversight Inversion Layer 2 (physiological cost) | Layer 2 = stress from reviewing; Knowledge Erosion = losing the ability to review |
-| TraceProbe (trajectory diagnostics) | Granularity Gap (#439) | TraceProbe restores the resolution that resolve rate compresses away |
+| Knowledge Erosion hypothesis | Oversight Inversion Layer 2 | Connects possible epistemic loss to review burden; no ability loss measured here |
+| TraceProbe (trajectory diagnostics) | Granularity Gap (#439) | TraceProbe adds a finer process view; downstream diagnostic value remains untested |
 | Observability-Aware Code | Subtraction Economy (#449) | You can't delete what you can't diagnose — observability is a prerequisite for subtraction |
 | AgentTether (graph-guided repair) | Predicate Gate (#446) | Both prevent bad states; AgentTether at runtime, Predicate Gate at execution |
 | horizon (7B=671B via verification) | Convergence Proof (#426, PAW) | Both close model gaps through verification/compilation, not scale |
 | agent-apprenticeship (work-as-data) | Agents That Teach (2607.06101) | Counter-architecture to the Knowledge Erosion |
-| $10k deletion surge (+211%) | Subtraction Economy (#449) | Market continues to price the erosion gap |
+| $10k deletion item (+211% attention) | Subtraction Economy (#449) | Discovery signal only; no transaction, cost, or causal erosion evidence |

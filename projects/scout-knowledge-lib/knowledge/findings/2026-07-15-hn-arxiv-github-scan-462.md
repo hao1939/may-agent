@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #462 (2026-07-15): The Process Erasure. Four converging arXiv papers demonstrate that outcome metrics systematically erase the process information governance requires — resolve rate hides trajectory structure (TraceProbe, 2607.06184), collapsed memory hides conflict structure (StateFuse, 2607.05844), unconstrained writes hide authorization structure (PatchOptic, 2607.05483), and blind retry hides failure localization (AgentTether, 2607.06273). On HN, three major milestones: SICP (204pts) overtakes Sol public launch (197pts) — a 40-year-old lecture series now has MORE attention than the most powerful AI model's public launch. Foundations Turn crosses 1,000pt milestone (1,030pts, 5.23× Sol). Chat Control crosses 700pts (702pts). Uniqo decode surges +94.3% to 340pts. GitLost continues to 250pts (+22.5%). Sol is flat at 197pts — the Attention Decay Curve has reached terminal plateau."
+summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe (2607.06184v1) adds deterministic process profiles and same-task localization to resolve-rate reporting, but does not show that outcome metrics erase evidence, distinguish luck from skill, predict failure or reliability, or reduce review cost. The other three proposed Process Erasure components remain pending their own primary reviews. HN counters are attention observations, not value or causal evidence."
 triggers: ["process erasure", "trajectory diagnostics", "TraceProbe", "StateFuse", "conflict-preserving memory", "PatchOptic", "verified patches", "AgentTether", "runtime repair", "LogicHunter", "agentic oracle", "PiSAs", "contextual integrity", "SICP overtakes Sol", "foundations turn 1000", "chat control 700", "scan 462", "resolve rate", "outcome metrics"]
 source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 48818311 (Chat Control 702pts), 48823557 (EU Car Camera 675pts), 48819608 (30papers 546pts), 48821576 (Kokoro 433pts), 48829312 (Uniqlo 340pts), 48821848 (Davit 322pts), 48756578 (Herdr 303pts), 48827858 (GitLost 250pts), 48825749 (Tenda 238pts), 48824826 (GAO 216pts), 48827325 (ZFS 216pts), 48825664 (SICP 204pts), 48819308 (Postgres 202pts), 48827402 (Sol 197pts), 48820119 (QR Font 189pts), 48819808 (Rowboat 168pts), 48821378 (l runtime 151pts). arXiv API: 2607.06184 (TraceProbe), 2607.05844 (StateFuse), 2607.05483 (PatchOptic), 2607.06273 (AgentTether), 2607.06195 (LogicHunter), 2607.05318 (PiSAs). GitHub API: omnigent 6,715★, Horizon 34★, memclaw-cross-fleet-gov 21★."
 </ai_context>
@@ -12,16 +12,25 @@ source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 
 
 ## Theme
 
-Outcome metrics systematically erase the process information governance requires.
+This scan proposes that outcome-only reporting can omit process information
+useful for governance. The reviewed TraceProbe evidence establishes added
+measurement detail, not systematic erasure or downstream governance benefit.
 
-Four uncovered arXiv papers converge on the same structural error from different domains:
+Four arXiv papers are grouped under that hypothesis from different domains;
+only the TraceProbe component has been primary-reviewed here:
 
-- **TraceProbe** (2607.06184): Resolve rate (pass/fail) hides trajectory structure — function selection, completion behavior, and search loops are the real diagnostics. 2,500 trajectories across 5 production settings on SWE-Bench Verified.
+- **TraceProbe** (2607.06184v1): Resolve rate omits trajectory measurements.
+  Across 2,500 SWE-Bench Verified runs, deterministic process profiles and
+  same-task comparisons add descriptive localization; they are not failure
+  predictors or causal diagnostics.
 - **StateFuse** (2607.05844): Collapsed memory hides conflict structure — CRDT-based memory that preserves contradictions as explicit conflict objects enables safer abstention and correction than early collapse. 282-question MemoryAgentBench evaluation.
 - **PatchOptic** (2607.05483): Unconstrained writes hide authorization structure — an optic-inspired interface that declares projected read views, authorized write regions, and patch-source regions for each workflow step. 46-case PatchBench evaluation.
 - **AgentTether** (2607.06273): Blind retry hides failure localization — Transition Units + Critical Transition Graphs localize failure-critical subtrajectories. Repairs 59–65% of initially failed tasks on tau-bench.
 
-These are four instances of the same structural error: **compressing a rich process into a scalar outcome destroys the information needed for governance**. Resolve rate compresses trajectories into binary. Overwrite memory compresses history into latest-value. Unconstrained mutation compresses authorization into implicit trust. Blind retry compresses failure into repeat.
+The scan proposes that these are four instances of one structural error. The
+reviewed TraceProbe evidence establishes additional measurement detail, not
+that a scalar outcome destroys source trajectories or that the detail changes
+governance outcomes. The remaining components require separate primary review.
 
 On HN, the Foundations Turn crosses the **1,000pt milestone** (1,030pts) and SICP **overtakes** Sol's public launch — the convergence predicted in Scan #461 is confirmed. Chat Control crosses 700pts. The Accretive Signal (#461) is compounding.
 
@@ -121,16 +130,38 @@ Running accuracy: **~96.5% (82/85)** — three new confirmations (SICP>Sol, FT>1
 
 ### Paper 1: TraceProbe — What Resolve Rate Hides (2607.06184)
 
-**Core finding**: Coding agents are ranked almost entirely by resolve rate (binary pass/fail), but two agents with identical resolve rates can reach outcomes through radically different processes. TraceProbe normalizes raw trajectories into a canonical 9-type action taxonomy with deterministic effect labels, then applies two diagnostic modules: Insight (names single-trajectory anti-patterns: search loops, verification skips) and Converge (aligns pairs and classifies behavioral divergences).
+**Supported finding**: TraceProbe normalizes raw trajectories into a canonical
+nine-action taxonomy with deterministic effect labels. Insight applies fixed
+pattern rules; Converge aligns runs against explicit references. One
+motivating example fixes task and outcome. The main setting-level comparison
+uses similar rather than identical resolve rates.
 
-**Key results** (2,500 trajectories, 5 production settings, SWE-Bench Verified):
-- File choice is too coarse to separate success from failure; function selection and completion behavior localize it
-- Anti-patterns act as corpus-level difficulty clues, with search loops the most stable diagnostic
-- Even *resolved* runs differ in how quickly they reach relevant code and how much failed work they incur
+**Key results and limits** (500 tasks × 5 settings, SWE-Bench Verified):
+- OpenCode/GLM and OpenCode/Opus resolve 71.6% and 71.4%, while differing in
+  descriptive steps, tool calls, failed-action share, and off-anchor share.
+- Function-level, same-task comparisons localize divergence more finely than
+  file-only views, but gold patch anchors make several measures oracle-grounded.
+- Search loops remain more common in failed runs on SWE-Bench Pro. Task
+  difficulty confounds aggregate prevalence, and several other detectors weaken
+  or reverse.
+- Main task/setting pairs run once. A declared 750-trajectory repeat set has no
+  repeat-variance result in the paper's results section.
 
-**Structural significance**: Resolve rate is the ultimate variance-destroying metric. It compresses a rich trajectory — searches, reads, edits, tool calls, validations, reversions — into a single binary. TraceProbe demonstrates that the process signature is where diagnostic information lives. This directly validates the Variance Signal (#457): the distributional structure destroyed by outcome metrics is precisely the information governance needs.
+**Artifact check (2026-09-04)**: Zenodo supplies code and all 2,500 Verified
+trajectories. The structural pipeline completed all 2,500 runs without error,
+reproduced the five resolve rates and the 41.1%/56.1% resolved/failed
+search-loop prevalence, and reproduced the motivating same-task contrast at 10
+vs 49 steps and 0 vs 8 failed canonical actions. Semantic labels, repeat-run
+data/results, and raw Pro trajectories are not shipped.
+
+**Scope limit**: TraceProbe supports deterministic inspection and controlled
+comparison beside resolve rate. It expressly stops short of a per-run causal
+oracle or remediation method and does not test human-validated labels,
+practitioner outcomes, future reliability, or review-cost reduction. The paper
+does not show that reporting resolve rate destroys the retained traces.
 
 Source: https://arxiv.org/abs/2607.06184
+Artifact: https://doi.org/10.5281/zenodo.20789918
 
 ### Paper 2: StateFuse — Conflict-Preserving Memory (2607.05844)
 

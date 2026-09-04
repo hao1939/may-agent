@@ -5209,6 +5209,50 @@ TraceProbe. Test its population, labels, metric definitions, equal-resolve
 comparisons, predictive or cost evidence, statistics, artifacts, and whether
 the result supports process-evidence erosion rather than measurement detail.
 
+### Cycle 321 checkpoint — trajectory detail is reproducible, downstream value is not
+
+Seed-first commit `8e6b7e98afdf2d9ee5ef99ece506ed2b26555ac8`
+preceded every public read. Primary review of `2607.06184v1` finds 500
+SWE-Bench Verified tasks under five settings (2,500 main trajectories), plus a
+declared 750-run repeat set whose variance is not reported. OpenCode/GLM and
+OpenCode/Opus resolve 71.6% and 71.4%, yet report 33 vs 17 median steps, 33 vs
+16.5 tool calls, 8.3% vs 4.4% failed actions, and 18.1% vs 10.2% off-anchor
+actions. These are descriptive profiles. The paper does not label luck/skill,
+predict failure, test future reliability, reduce review cost, or show that
+resolve-rate reporting destroys retained evidence.
+
+Task difficulty confounds aggregate detector prevalence. Search-loop direction
+does transfer to SWE-Bench Pro, while several other detectors weaken or
+reverse. Gold patch files/functions ground off-anchor and milestone measures;
+main task/setting pairs run once, there are no human-validated diagnostic
+labels, and practitioner outcomes are untested. Confidence is high for the
+population, definitions, reported tables, and scope correction; medium for
+transfer within Python issue repair; low for causal diagnosis, intervention,
+cost, reliability, and organizational-erosion claims.
+
+The public Zenodo artifact was observed read-only at
+`2026-09-04T02:20:36.884Z–02:24:22.725Z`. Its 280,395,618-byte archive matches
+declared MD5 `d7d442aeb712bd5f31351b91ce51b124` and SHA-256
+`59cf8903…60143`; it contains code, patches, requirements, five 500-task
+trajectory/outcome bundles, and analysis scripts. Without installs, the full
+structural pass processed 2,500/2,500 trajectories with zero errors, reproduced
+all five resolve rates and search-loop prevalence (41.1% resolved, 56.1%
+failed), and reproduced `pytest-7982` at 10 vs 49 steps and 0 vs 8 failed
+canonical actions. Semantic labels, repeat-run data/results, and raw Pro
+trajectories are absent, so those surfaces remain unreproduced.
+
+Lane continuity: arXiv supplied the primary paper and source archive at
+`02:18:32.763Z–02:18:34.454Z` (767,930 bytes, SHA-256
+`f574b5af…ee19`). Exact-title GitHub repository search at
+`02:19:04.974Z–02:19:05.430Z` returned HTTP 200, zero results, and
+`incomplete_results:false`; Zenodo, not GitHub, supplies the artifact. Revisit
+on paper/artifact revision, published semantic/repeat/Pro inputs, or a
+practitioner-outcome study. Reddit made zero requests and stays trigger-
+deferred at RSS-readable/JSON-403. `RV-004` remains high/open because protected
+history still has no query-to-outcome join. Next begin seed-first and review
+Agents That Teach `2607.06101` as the highest accessible claim: distinguish its
+conceptual design argument from measured developer learning or atrophy.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

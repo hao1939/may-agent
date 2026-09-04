@@ -635,7 +635,10 @@ Source: findings/2026-07-21-hn-arxiv-github-scan-449.md, https://arxiv.org/abs/2
 
 ## The Knowledge Erosion (#450) — Exit-Arc Complication
 
-The six-scan exit arc (#444–#449) assumed the organizational capacity to subtract, verify, and comprehend already exists. Three arXiv papers reveal this assumption is false — agents systematically erode the very knowledge infrastructure that makes the exit strategies executable.
+The six-scan exit arc (#444–#449) assumed the organizational capacity to
+subtract, verify, and comprehend already exists. Scan #450 proposes that agent
+delegation can weaken that capacity; the reviewed papers do not establish one
+systematic organizational-erosion effect.
 
 The scan proposes three knowledge effects—expertise accrual, process evidence,
 and diagnostic capacity—but does not establish that human authorship supplies
@@ -643,7 +646,14 @@ all three for free or that agent authorship removes all three. Primary review
 currently supports only the narrower benchmark evidence below.
 
 - **"Agents That Teach"** (2607.06101): Names **Knowledge Debt** — the silent accumulation of skill gaps when developers over-delegate. Unlike technical debt (visible in code), knowledge debt is invisible until the developer faces a problem the agent can't solve. Incidental learning was never designed; it was a free byproduct of human authorship. Proposes designing learning *back into* agent workflows.
-- **"What Resolve Rate Hides"** (2607.06184): The dominant metric — resolve rate — compresses trajectory quality into a single binary. **TraceProbe** recovers what resolve rate discards: search breadth, edit precision, tool efficiency, revert frequency. Process evidence is eroded by the very metrics that claim to measure it. Two agents with identical resolve rates can have wildly different trajectory structures.
+- **"What Resolve Rate Hides"** (2607.06184v1): **TraceProbe** maps
+  heterogeneous runs into nine canonical action types and deterministic effect
+  labels. OpenCode/GLM and OpenCode/Opus have similar resolve rates (71.6% vs
+  71.4%) but different descriptive process profiles. Task difficulty confounds
+  aggregate failure associations, several detectors weaken or reverse on
+  SWE-Bench Pro, and some measures use gold-patch anchors. The paper supports
+  process reporting beside outcomes, not luck/skill labels, prediction,
+  remediation, cost savings, future reliability, or evidence-destruction.
 - **"Observability-Aware Code"** (2607.05785v1): Static restoration produces Position F1 0.278–0.633 and lexical KeyBag F1 0.197–0.398; a separate generated-microservice study reports 4.95–13.99% explicit fault-signal rates, or 6.56–20.62% among runnable services. It does not test application correctness, developer diagnosis, test-driven incentives, rising agent-authored share, or longitudinal erosion, and supplies no human-written runtime control.
 
 **Corrective architectures emerging**: AgentTether (2607.06273) externalizes diagnostic structure into task graphs — diagnosis becomes a system property, not an operator skill. LogicHunter (2607.06195) uses agents to test agent frameworks — detecting silent semantic failures in LangChain, LlamaIndex, CrewAI that manifest as "ordinary exceptions" not crashes. horizon (34★) achieves 7B=671B parity through verification architecture (hard test execution + symbolic checking + agentic repair). agent-apprenticeship (1,295★) turns completed work into reusable experience data.
@@ -908,7 +918,7 @@ Four uncovered arXiv papers converge on the same structural error from different
 
 | Domain | What's erased | Erasure mechanism | Remedy |
 |--------|--------------|-------------------|---------|
-| Evaluation | Trajectory structure | Resolve rate (binary) | TraceProbe (2607.06184): canonical 9-type action taxonomy + anti-pattern detection. 2,500 trajectories, 5 production settings on SWE-Bench Verified. Function selection and completion behavior localize success/failure; file choice is too coarse. |
+| Evaluation | Trajectory structure | Outcome-only reporting omits process measurements | TraceProbe (2607.06184v1): canonical nine-action taxonomy and fixed pattern rules over 2,500 SWE-Bench Verified runs. Same-task comparisons localize divergence, but several measures use gold-patch anchors and the study does not provide per-run causal diagnosis or remediation. |
 | Memory | Conflict structure | Overwrite/collapse | StateFuse (2607.05844): CRDT-based immutable history + explicit conflict objects + semantic correction handles. 282-question MemoryAgentBench. Preserving ambiguity enables safer abstention than early collapse — accuracy ties, but contradiction visibility diverges. |
 | State mutation | Authorization structure | Unconstrained writes | PatchOptic (2607.05483): optic-inspired projected reads + declared write regions + patch-source regions. 46-case PatchBench. Runtime verification blocks contract violations before commit; path-level footprints support static reordering. |
 | Repair | Failure localization | Blind retry | AgentTether (2607.06273): Transition Units + Critical Transition Graphs with offline normal-behavior model + cross-iteration Repair Memory. 261 tau-bench tasks. Repairs 59–65% of failed tasks; reduces turns and tokens; transfers cross-model. |

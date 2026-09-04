@@ -11179,6 +11179,86 @@ metric definitions, equal-resolve comparisons, predictive or cost evidence,
 statistics, artifacts, and whether it establishes process-evidence erosion
 rather than adding measurement detail.
 
+## Cycle 321 checkpoint — process profiles reproduce; luck, reliability, and savings do not follow
+
+Seed-first commit `8e6b7e98afdf2d9ee5ef99ece506ed2b26555ac8`
+preceded every public read. Anonymous arXiv observation ran from
+`2026-09-04T02:18:32.763Z` through `02:18:34.454Z`. The v1 source archive is
+767,930 bytes with SHA-256
+`f574b5af050222d64434f6bccf1e60f2b77923274ee20a7db172787a53eeee19`;
+the 43,132-byte abstract receipt has SHA-256
+`8f070320688c5b849f21fcd0bb41d282180fecd950787c591f2b8652e02315ef`.
+
+The main corpus is 500 SWE-Bench Verified tasks under five model/scaffold
+settings, one run per task/setting, for 2,500 trajectories. The methods declare
+a separate 50-task stratified sample repeated three times under all five
+settings (750 more trajectories), but the results section reports no
+repeat-variance output. A transfer check uses derived records for 266
+SWE-Bench Pro Python tasks under five settings (1,330 runs).
+
+The closest setting-level resolve rates are OpenCode/GLM at 71.6% and
+OpenCode/Opus at 71.4%. Their reported profiles differ: 33 vs 17 median raw
+steps, 33 vs 16.5 tool calls, 8.3% vs 4.4% failed actions, and 18.1% vs 10.2%
+off-anchor actions. The motivating same-task `pytest-7982` pair fixes both task
+and successful outcome, then shows 10 vs 49 steps. These observations establish
+descriptive process differences, not whether one run was lucky, another
+skilled, either will be more reliable later, or either costs less to review.
+
+Search loops occur in 41.1% of resolved and 56.1% of failed Verified runs and
+retain the failure-associated direction on Pro. Task difficulty rises with both
+detector prevalence and failure, however, so the aggregate difference is not a
+failure predictor. Re-read churn weakens on Pro; tool oscillation, no-formal-
+tail-validation, unsupported-completion-claim, and redundant-search directions
+reverse. Gold patch files/functions ground off-anchor labels, milestones, and
+some comparisons. The paper expressly scopes TraceProbe as inspection and
+comparison, not a per-run causal oracle or remediation method; it has no
+human-validated diagnostic labels or practitioner-outcome study.
+
+The source names public Zenodo DOI `10.5281/zenodo.20789918`. Read-only landing
+and API access ran at `02:20:36.884Z–02:20:40.589Z`; the bounded archive read
+completed at `02:24:22.725Z`. The 280,395,618-byte archive matches its declared
+MD5 `d7d442aeb712bd5f31351b91ce51b124` and has SHA-256
+`59cf890303d58232c603563e127001f0b530f77952ac9ee2c148cd840cf60143`.
+It contains 5,617 files: code, patches, requirements, outcome maps, and all
+2,500 main Verified trajectories.
+
+Without installs, Python 3.12.3 loaded the structural package. The full
+`run_insight.py` pass completed 2,500/2,500 trajectories with zero errors in
+14.52 seconds. It reproduced all five exact resolve rates and the paper's
+41.1%/56.1% resolved/failed search-loop prevalence. The documented feature
+builder reproduced the GLM/Opus medians above. The motivating `pytest-7982`
+pair reproduced at 10 vs 49 raw steps and 0 vs 8 failed canonical actions.
+Default fixed-reference Converge completed 500/500 comparisons and the
+most-efficient reference run completed 435/435. Semantic labels require an API
+key and are not shipped; repeat-run data/results and raw Pro trajectories are
+also absent. No packages were installed, so dependency-requiring inferential
+and chart scripts were not claimed as reproduced.
+
+This supports deterministic trajectory normalization, structural rules,
+descriptive setting profiles, same-task localization, and bounded search-loop
+transfer. It does not support the scans' prior claims about identical setting
+resolve rates, lucky versus skilled agents, process-evidence destruction,
+failure prediction, future reliability, operational/review cost, or restored
+diagnostic outcomes. Confidence is high for extraction, artifact identity, and
+the reproduced structural surface; medium for transfer within Python issue-to-
+patch work; low for causal diagnosis, intervention value, other languages,
+practitioner outcomes, and organizational knowledge erosion.
+
+Lane continuity: arXiv supplied the selected primary source. A complete exact-
+title GitHub repository search at `02:19:04.974Z–02:19:05.430Z` returned HTTP
+200, zero results, and `incomplete_results:false`; the public artifact is on
+Zenodo rather than GitHub. Revisit GitHub on an attributable repository and
+revisit the paper/artifact on a revision, published semantic labels, repeat
+outputs, raw Pro traces, or practitioner-outcome evaluation. Reddit made zero
+requests and retains its RSS-readable/JSON-403 boundary until a relevant thread
+or access change. `RV-004` remains high/open: neither this evidence nor the
+protected history supplies its missing query/rank-to-selection-to-outcome join.
+
+Next begin seed-first and review Agents That Teach `2607.06101`, now the
+highest accessible item. Test whether it reports developer learning/atrophy or
+only proposes design principles, and what evidence could distinguish
+short-term assistance from longitudinal skill loss.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
