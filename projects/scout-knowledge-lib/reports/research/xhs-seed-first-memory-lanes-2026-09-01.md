@@ -12175,6 +12175,43 @@ history is unavailable; RuBench cannot supply that join. The next exploration
 is Danus: test whether its fact graph retains independently checkable proofs and
 dependencies and what its six case studies actually evaluate.
 
+Exact Cycle 331 material `bee1114e84ae63a806fc71e41fd4fe05a5ce47d5`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at
+296 tests / 1,484 assertions with zero failures in 112.49 seconds. The broad
+offline audit passes 1,540 tracked Markdown documents / 1,728 local prose
+links. Read-only health at `2026-09-04T03:46:48.795Z` returns 26 facts, 16
+wakes, and `truncated:true`. Accepted `ff923ccde4` and historical
+`f26bd4f3a590b59d241536326199e805777df1be` are contained; unaccepted
+`d041c41b54` is excluded. Standing porcelain-v2 and `.goal-runtime` are empty.
+
+Protected `/app` is still externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its whole NUL-delimited
+porcelain-v2 surface remains 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+Scout scope remains 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not write, test, clean, or otherwise mutate that checkout.
+
+## Cycle 332 seed-first start — test fact-graph verification scope
+
+At `2026-09-04T03:46:48.795Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` is still inside its six-hour cadence. This bounded
+reconciliation makes zero XHS requests: additions and changes remain unknown,
+observed removals are `[]`, all 132 durable seeds remain unavailable, and no
+account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible because protected post-August-31 query/rank/selection/outcome
+history is absent; (2) unreleased Memory in the Loop provider result; (3) Danus
+`2607.06447`, highest accessible because its unreviewed stateless-verifier,
+proof/dependency, and six-case-study claims still support Scan #451; (4) other
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until a relevant trigger; (6) byte/line compaction. Select Danus. Test
+the primary source, attributable artifacts, admission semantics, proof and
+dependency receipts, actual case-study outcomes, controls, and generalization
+limits.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

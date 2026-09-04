@@ -5861,6 +5861,29 @@ access change. `RV-004` remains high/open because RuBench contains no protected
 Scout query/rank/selection/outcome join. Next begin seed-first and primary-
 review Danus's fact-graph admission, proof/dependency, and evaluation claims.
 
+Exact Cycle 331 material `bee1114e84ae63a806fc71e41fd4fe05a5ce47d5`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions with zero failures
+in 112.49 seconds. Broad links pass 1,540 documents / 1,728 links; health at
+`2026-09-04T03:46:48.795Z` is 26 facts / 16 wakes, truncated. Accepted
+`ff923ccde4` and historical `f26bd4f3a590b59d241536326199e805777df1be`
+are contained; unaccepted `d041c41b54` is excluded. Standing porcelain and
+runtime state are empty. Protected `/app` remains at `386b445c…1fec8`, with
+916 records / `8e3558f4…848a36` overall and 296 /
+`a430d0c9…32d7e` in Scout scope.
+
+### Cycle 332 seed-first start — test fact-graph verification scope
+
+At `2026-09-04T03:46:48.795Z`, the XHS receipt remains inside cadence. This
+bounded reconciliation makes zero XHS requests: additions/changes unknown,
+removals `[]`, all 132 seeds unavailable, account state unchanged. Rank
+`RV-004` and unreleased Memory in the Loop first but inaccessible. Danus
+`2607.06447` is highest accessible because its unreviewed proof/dependency and
+six-case-study claims still anchor Scan #451. Other primary contradictions and
+reproducibility gaps follow, then Reddit and compaction. Select Danus; inspect
+primary source, attributable artifacts, verifier semantics, retained proof
+receipts, case-study outcomes, controls, and limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
