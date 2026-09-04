@@ -7460,6 +7460,32 @@ no protected outcome join changed. Next seed-first, primary-review
 actually supports treating agents as stochastic model-discovery operators and
 variance as governance evidence.
 
+Exact Cycle 357 material
+`6d4fbf2fd1d8bd4fca77fb21d27e41de40064a59` passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and all 296 tests / 1,484 assertions with zero failures in 98.63 seconds.
+The broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T07:25:01.271Z` is 26 facts / 16 wakes and truncated. Historical
+`f26bd4f3a5`, accepted `ff923ccde4`, Cycle 353 `f88b309737`, and result source
+`2d69cc7650` are contained; `d041c41b54` is excluded. The standing tree is
+clean. Protected `/app` remains externally exact at `386b445c…1fec8`, 918 /
+`0d1ab91f…a932` overall and 296 / `7e4d0937…6a8a` in Scout scope.
+
+### Cycle 358 seed-first start — qualify variance as evidence
+
+At `2026-09-04T07:25:10.708Z`, reuse the supported Cycle 341 XHS observation
+through `05:00:03.241Z`, still inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 seeds
+remain unavailable, and account state is unchanged. Re-rank (1) high/open
+`RV-004`, unavailable without the protected outcome join; (2) Memory in the
+Loop's missing frozen provider result; (3) `2607.06413`, highest accessible
+because Scan #457's stochastic-operator and dominant-direction claims remain
+primary-unreviewed; (4) `2606.02494` and other primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until trigger; (6)
+compaction. Select `2607.06413` and audit experimental units, replication,
+utility construction, model/task coverage, uncertainty, comparisons, and
+artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

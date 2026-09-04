@@ -14479,6 +14479,40 @@ accessible Scan #457 claim: audit its operator definition, experimental units,
 replication, utility decomposition, uncertainty, and artifacts before treating
 variance as governance evidence.
 
+Exact Cycle 357 result
+`6d4fbf2fd1d8bd4fca77fb21d27e41de40064a59` contains seed source
+`2d69cc7650` and passes syntax, TypeScript, tracked-source formatting, Cycle 341
+projection, 90 scoped links, navigation 11/14 and 8/8, and the full 296-test /
+1,484-assertion gate with zero failures in 98.63 seconds. The broad audit passes
+1,540 tracked Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T07:25:01.271Z` returns 26 facts / 16 wakes and is truncated.
+Historical `f26bd4f3a590b59d241536326199e805777df1be`, accepted
+`ff923ccde428270db699aefe4c38c2a9a51e3314`, and Cycle 353
+`f88b30973782c7bfd7a219af7006b9e32722a98b` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` is excluded. The standing tree is
+clean. Protected `/app` remains externally unchanged at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 918 /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 358 seed-first start — test the variance claim
+
+At `2026-09-04T07:25:10.708Z`, the supported Cycle 341 XHS observation through
+`05:00:03.241Z` remains inside cadence. Make zero XHS requests: additions and
+changes remain unknown, observed removals are `[]`, all 132 durable seeds remain
+unavailable, and account state is unchanged. Expected value ranks (1)
+high/open `RV-004`, inaccessible without the protected query/rank -> selection
+-> later-outcome join; (2) Memory in the Loop's missing frozen provider result;
+(3) `2607.06413`, highest accessible because Scan #457 currently promotes one
+experimental-design claim into a general stochastic-operator principle without
+primary review; (4) `2606.02494` and other primary-evidence, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until a relevant-
+thread/access trigger; and (6) compaction. Select `2607.06413`. Audit the
+experimental unit, replication, tasks/models, utility construction, dominant-
+direction calculation, uncertainty, comparisons, and attributable artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
