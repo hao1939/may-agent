@@ -13877,6 +13877,44 @@ no protected query/rank-to-later-outcome join. Next seed-first, rank the
 remaining substantive primary, contradiction, reproducibility, retrieval, and
 synthesis gaps above optional compaction.
 
+Exact material `b6bf4292de525ca6d4020b7d4bbcf645521f33fe` passes the full
+Scout gate: syntax, TypeScript, source formatting, Cycle 341 projection, 90
+scoped links, navigation v1 11/14, navigation v2 8/8, and 296 tests / 1,484
+assertions with zero failures in 126.11 seconds. The broad audit passes 1,540
+Markdown documents / 1,728 links / zero errors. Read-only health at
+`2026-09-04T06:27:40.294Z` returns 26 facts / 16 wakes and `truncated:true`.
+Historical `f26bd4f3a590b59d241536326199e805777df1be` and accepted
+`ff923ccde4` remain ancestors; unaccepted `d041c41b54` remains excluded. The
+standing worktree is clean.
+
+Protected `/app` remains read-only at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with the same comparable
+all-file status as Cycle 350: 918 records / SHA-256
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`.
+Its Scout scope also remains exact at 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+No protected checkout was written or tested.
+
+## Cycle 352 seed-first start — qualify the population-collapse claim
+
+At `2026-09-04T06:28:38.822Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` remains within the six-hour cadence. Make zero XHS requests:
+additions and changes remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, and no account state changes.
+
+Expected knowledge value ranks the complete accessible queue: (1) high/open
+`RV-004`, still inaccessible because protected history lacks query/rank ->
+selection -> later outcome; (2) Memory in the Loop's missing provider result,
+last bounded-check unchanged in Cycle 350; (3) Scan #455's unreviewed claim
+that one Claude Opus 4.8 economic experiment proves general multi-agent
+dispersion collapse, highest accessible because the causal/generalization
+claim is carried into the Oversight Inversion; (4) other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit at
+its unchanged relevant-thread/RSS-access trigger; (6) compaction. Select arXiv
+`2607.06001` and inspect preregistration, tested populations and tasks, run/cell
+denominators, dispersion metric and floor, controls, artifact provenance, and
+what evidence can generalize beyond this economy.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

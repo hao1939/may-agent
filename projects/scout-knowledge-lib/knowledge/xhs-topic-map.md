@@ -7042,6 +7042,34 @@ query/rank -> selection -> later-outcome join appeared. Next seed-first,
 re-rank substantive primary, contradiction, reproducibility, retrieval, and
 synthesis gaps ahead of compaction.
 
+Exact Cycle 351 material
+`b6bf4292de525ca6d4020b7d4bbcf645521f33fe` passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation at 11/14
+and 8/8, and all 296 tests / 1,484 assertions with zero failures in 126.11
+seconds. The broad audit passes 1,540 documents / 1,728 links / zero errors;
+read-only health at `2026-09-04T06:27:40.294Z` is 26 facts / 16 wakes and
+truncated. `f26bd4f3…f1be` and accepted `ff923ccde4` are contained;
+unaccepted `d041c41b54` is excluded. The standing tree is clean. Protected
+`/app` is unchanged from Cycle 350 at HEAD `386b445c…1fec8`, 918 all-file
+records / `0d1ab91f…a932`, and 296 Scout records / `7e4d0937…6a8a`.
+
+### Cycle 352 seed-first start — test whether one economy generalizes to agent populations
+
+At `2026-09-04T06:28:38.822Z`, reuse Cycle 341's supported XHS observation
+through `05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 seeds remain unavailable, and no account state changes. Rank the complete
+queue by expected knowledge value: (1) high/open `RV-004`, inaccessible without
+the protected query/rank -> selection -> later-outcome join; (2) Memory in the
+Loop's missing provider result, bounded-check unchanged in Cycle 350; (3) Scan
+#455's unreviewed claim that one Claude Opus 4.8 economic experiment proves
+general multi-agent dispersion collapse, highest accessible because it is a
+causal/generalization claim embedded in the Oversight Inversion; (4) other
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until its relevant-thread/access trigger; (6) compaction. Select arXiv
+`2607.06001` and test preregistration, population/model/task scope, run counts,
+dispersion definition, controls, artifact support, and generalization limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
