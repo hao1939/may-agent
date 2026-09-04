@@ -5618,6 +5618,24 @@ outcome study. Reddit made zero requests and remains trigger-deferred.
 `2607.06065`, the highest accessible pending claim from the same synthesis,
 before inaccessible Cortex ablation, other unsourced scans, or compaction.
 
+Exact Cycle 327 material `35f2d5778671e18c0b54f8f635bdebb1f627feef`
+passes the full Scout gate at 296 tests / 1,484 assertions with zero failures in
+99.82 seconds. The broad audit passes 1,540 documents / 1,728 links; read-only
+health at `2026-09-04T03:15:58.277Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, `d041c41b54` excluded, standing status/runtime state
+are empty, and protected fingerprints remain exact.
+
+### Cycle 328 seed-first start — test review-loop causality and transfer
+
+The XHS receipt through `2026-09-03T22:59:03.253Z` remains inside cadence, so
+this bounded reconciliation makes zero XHS or public requests: additions/
+changes remain unknown, removals `[]`, all 132 seeds unavailable, and account
+state unchanged. Rank (1) inaccessible high/open `RV-004`; (2) unreleased
+Memory in the Loop result; (3) SWE-Review `2607.06065`, highest accessible;
+(4) inaccessible Cortex ablation; (5) other primary/reproduction gaps; (6)
+Reddit; (7) compaction. Select SWE-Review and test its baselines, revision
+intervention, evaluation authority, uncertainty, transfer, and artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -11853,6 +11853,39 @@ the decision and resolve-rate baselines, revision loop, transfer claim,
 statistical uncertainty, evaluator authority, and public artifact before
 retaining the categorical generate-review-revise result.
 
+Exact Cycle 327 material `35f2d5778671e18c0b54f8f635bdebb1f627feef`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 99.82 seconds. The broad audit passes 1,540
+documents / 1,728 links. Read-only health at `2026-09-04T03:15:58.277Z`
+returns 26 facts / 16 wakes with `truncated:true`. Accepted `ff923ccde4` is
+contained, unaccepted `d041c41b54` excluded, and standing status/runtime state
+are empty. Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+overall and 296 / `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
+for Scout scope. Neither protected surface was mutated.
+
+## Cycle 328 seed-first start — test review-loop causality and transfer
+
+At `2026-09-04T03:15:58.277Z`, the last observational XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence. This bounded
+reconciliation makes zero XHS, GitHub, arXiv, Reddit, or other public requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and no account state changes.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected post-August-31 outcome join; (2) Memory in the Loop's unreleased
+authority-bearing result; (3) SWE-Review `2607.06065`, highest accessible
+because the Write Contract synthesis retains a categorical claim that review
+continuously improves resolve rate and transfers; (4) Cortex's unavailable
+taxonomy-size ablation; (5) other unsourced primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (6) Reddit until a relevant
+thread/access change; and (7) compaction. Select SWE-Review. Test decision and
+resolve-rate baselines, revision intervention, evaluator authority, repeated-
+run uncertainty, transfer definition, and public artifacts.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
