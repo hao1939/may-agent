@@ -8201,6 +8201,31 @@ stays high/open. Next seed-first, primary-review Scan 473's CAGE-1
 from an implemented benchmark, empirical action-control proof, or enterprise
 deployment-readiness result.
 
+### Cycle 369 seed-first start — test CAGE-1's assurance boundary
+
+Exact Cycle 368 result
+`4f16469adb49c00664e6147d8a8f6d5db7a2543c` contains its seed-ordering
+commit and passes syntax, TypeScript, formatting, Cycle 341 projection, 90
+scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484 assertions with
+zero failures in 108.23 seconds. The broad audit passes 1,540 documents /
+1,728 links. Read-only health at `2026-09-04T08:38:39.416Z` returns 26 facts /
+16 wakes and is truncated. Accepted `ff923ccde4` and historical `f26bd4f3a5`
+remain ancestors; unaccepted `d041c41b54` is excluded; runtime state and the
+standing status are empty. Protected `/app` retains HEAD `386b445c…41fec8` and
+the preceding externally observed fingerprints: 919 records /
+`be01f801…a42b6` overall and 296 / `7e4d0937…c26a8a` in Scout scope.
+
+At `2026-09-04T08:39:32.834Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable identities remain unavailable, and prior browser receipt plus the
+seed ledger remain provenance. `RV-004` and the unreleased provider result
+remain higher-value but inaccessible at their recorded evidence boundaries.
+CAGE-1 `2607.03510v1` is highest accessible. Retrieve its exact primary
+version and determine whether Prebind Assurance is a proposed evaluation
+schema, an implemented benchmark, empirical proof of action control, or an
+enterprise-readiness result; inspect evaluation artifacts and stated limits.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

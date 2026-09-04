@@ -15332,6 +15332,39 @@ remains high/open. Next begin seed-first, then primary-review CAGE-1
 implemented benchmark, empirical action-control proof, or enterprise-
 readiness result. Compaction remains last.
 
+## Cycle 369 seed-first start — test CAGE-1's assurance boundary
+
+Cycle 368 result `4f16469adb49c00664e6147d8a8f6d5db7a2543c` contains its
+seed-ordering commit. Syntax, TypeScript, source formatting, Cycle 341
+projection, 90 scoped links, navigation 11/14 and 8/8, and all 296 tests /
+1,484 assertions pass with zero failures in 108.23 seconds. The broad audit
+passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:38:39.416Z` is 26 facts / 16 wakes with truncation. Accepted
+`ff923ccde4` and historical `f26bd4f3a5` are ancestors, unaccepted
+`d041c41b54` is excluded, runtime state is empty, and the standing tree is
+clean. Protected `/app` remains externally observed at unchanged HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 919 records /
+`be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker wrote or tested neither protected surface.
+
+At `2026-09-04T08:39:32.834Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests. Added/changed identities remain unknown, observed removals are `[]`,
+all 132 durable identities remain unavailable, provenance remains the prior
+browser receipt and canonical ledger, and no account state changes.
+
+Re-rank the queue: high/open `RV-004` and the unreleased Memory in the Loop
+provider result remain first and second but inaccessible at their exact
+recorded evidence boundaries. CAGE-1 `2607.03510v1` is highest accessible.
+Retrieve the exact primary version and distinguish its proposed Prebind
+Assurance evaluation schema from an implemented benchmark, empirical action-
+control proof, or enterprise-deployment readiness. Inspect artifacts,
+evaluation subjects, measurement basis, and stated limitations. Other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps follow; Reddit
+remains trigger-deferred and compaction stays last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
