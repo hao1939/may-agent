@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. HexStrike's released row-level logs reproduce a 154/258 versus 72/258 DeepSeek client contrast, but client-specific defaults, a rolling model alias, and an undocumented execution schedule prevent clean client-only causality. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
+summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. HexStrike's released row-level logs reproduce a large client-associated contrast but not clean client-only causality. SkillOpt-Lite reports 23 wins, three ties, and four losses against SkillOpt in 30 within-model cells, while its smaller-model headlines compare different optimization methods and do not reverse the scale ordering under matched methods. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, and HexStrike-AI primary-reviewed 2026-09-04; SkillOpt-Lite remains pending separate primary review. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, HexStrike-AI, and SkillOpt-Lite primary-reviewed 2026-09-04. Exact SkillOpt-Lite v1 Atom SHA-256 b94c249f5ede26cb57f10c98055bb9abf3ea8ffe0b26337e1e7b57eb0582a574, source-archive SHA-256 20a29acf82e86eb374b777d2f2f2033c78bee63416b80f279f028894cecce938, author repository EvolvingLMMs-Lab/SkillOpt-Lite commit 4cb4eeef1f95375a9179737ab94cf5e64b9647c6, and Hugging Face size response SHA-256 d479ba529d7da03313d6c0d86e2c883d6d8152235d2c7acf766ddb407343027d. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -16,13 +16,12 @@ The original scan grouped five sources under a structural hypothesis: **model
 configuration can materially affect risk and performance**. They do not share
 one task, intervention, comparator, or outcome, so they do not by themselves
 show that configuration universally dominates model choice or determines
-economic value. AGL-1, CAGE-1, CONTRA, and HexStrike-AI have now been
-primary-reviewed; SkillOpt-Lite remains a scan-reported claim pending separate
-review.
+economic value. AGL-1, CAGE-1, CONTRA, HexStrike-AI, and SkillOpt-Lite have
+now been primary-reviewed.
 
 - **CONTRA** (2607.03220): 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged search. This is a skill-level search yield, not configuration or incident prevalence.
 - **HexStrike-AI** (2607.02873): Released row-level logs reproduce a **154/258 versus 72/258** DeepSeek client contrast (2.139×) over matched challenge/regime cells. This is strong client-associated evidence in the study, not clean client-only causality or evidence of general client dominance.
-- **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. In the reported cells, a nano model with an optimized skill or harness outperforms a larger sibling under a standard pipeline; this is a task-specific comparison, not a general ordering of configuration over parameters.
+- **SkillOpt-Lite** (2607.03451): Reports 23 wins, three ties, and four losses against SkillOpt across 30 within-model cells. Its two smaller-model headlines change the optimization method as well as model scale; matched-method rows preserve the larger model's advantage.
 - **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
 - **self-learning-skills** (843★): Agents that configure *themselves*. Recognizes golden paths in sessions and harvests them as reusable skills.
 
@@ -187,12 +186,47 @@ Source: https://arxiv.org/abs/2607.02873
 
 ### HIGH: SkillOpt-Lite — Minimal Viable Skill Optimization (2607.03451)
 
-**Finding**: Formalizes agent skill optimization via zeroth-order (ZO) optimization, mapping classical counterparts (central difference, trust regions) to recent agent literature. Three convergence principles: file-system-based trajectory exploration, consensus attribute mining, independent validation gating. SkillOpt-Lite improves LiveMath by +8.8 points on GPT-5.5 and **+25.4 points on GPT-5.4-nano**, allowing the nano model to surpass standard GPT-5.4 optimized by full SkillOpt. Extends to HarnessOpt: GPT-5.4-nano achieves 0.7758 accuracy on SpreadsheetBench, outperforming larger GPT-5.5 under standard pipelines (0.7620).
+**Primary-reviewed result:** The paper maps text-skill editing to zeroth-order
+optimization and compares SkillOpt-Lite with initial skills and full SkillOpt
+over five models and six benchmarks. Reading its 30 within-model
+SkillOpt-versus-Lite cells gives 23 Lite wins, three ties, and four losses. The
+named LiveMath differences reproduce from Table 1: GPT-5.5 is 73.6 versus
+64.8 (+8.8 points) and GPT-5.4-nano is 55.7 versus 30.3 (+25.4). On
+Spreadsheet, the five-model mean is 69.7 versus 57.1 (+12.6). This is useful
+task-specific evidence that the lighter pipeline can outperform the full one;
+it is not a universal win.
 
-**Original scan interpretation, pending primary review**: The reported cells
-motivate a matched skill/harness-versus-model-scale comparison. They do not by
-themselves establish a general return-on-investment ordering between
-configuration work and parameter scaling.
+**Cross-scale qualification:** The nano LiveMath headline compares
+SkillOpt-Lite/nano at 55.7 with SkillOpt/GPT-5.4 at 54.0, only +1.7 points
+while changing both model scale and optimization method. The SpreadsheetBench
+headline similarly compares HarnessOpt-with-skill/nano at 0.7758 with
+SkillOpt/GPT-5.5 at 0.7620, +0.0138 under different harnesses. Under the same
+reported method, scale still wins: SkillOpt-Lite/GPT-5.5 reaches 0.7972 versus
+0.6619 for nano, and HarnessOpt-with-skill/GPT-5.5 reaches 0.8577 versus
+0.7758. The results therefore support co-optimizing harness and skill, not a
+general configuration-over-model-scale ordering.
+
+**Uncertainty and cost boundary:** SkillOpt runs for `max(4 epochs, 10
+batches)` while Lite runs for ten batches, but the paper reports no token,
+model-call, wall-time, or monetary totals. It provides no repeated seeds,
+intervals, significance tests, or per-example outcome rows. LiveMath and
+OfficeQA use changed 2:2:6 splits; the published dataset currently exposes 36/35/106
+and 49/49/148 train/validation/test rows respectively. The paper says the
+optimizer model is held fixed between methods but does not name it or bind a
+run manifest. Claims of faster or cheaper optimization are consequently not
+independently quantified.
+
+**Artifact boundary:** The author repository
+`EvolvingLMMs-Lab/SkillOpt-Lite` is public and MIT-licensed at
+`4cb4eeef1f95375a9179737ab94cf5e64b9647c6`. Its untruncated 491-entry tree
+contains implementation code, dataset hydration, and optimized skill/harness
+snapshots, but no tests and no LiveMath or Spreadsheet result rows. Four
+`eval_summary.json` files cover SearchQA only. The README and run scripts name
+`scripts/eval_only.py`, yet the exact tree has no `scripts/` directory; the
+main config also points LiveMath at a stale 2:1:7 path while the run script and
+dataset use 2:2:6. Thus the current public artifact supports code and checkpoint
+inspection but cannot independently reproduce the headline cells without
+missing entry points, provider credentials, and outcome records.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning architecture > raw capability. Cost Inversion Threshold (#404) — smaller models with better configuration as economic escape. Discipline Import — optimization discipline applied to agent skills.
 
@@ -215,7 +249,7 @@ Source: https://arxiv.org/abs/2607.03523
 ### self-learning-skills: 843★ (Kulaxyz)
 Agent self-configuration productized. Recognizes hard-won golden paths in coding sessions and harvests them as reusable skills/rules. Same developer as token-diet (596★). Combined ecosystem = agents that learn to optimize both their skills AND their token budget.
 
-**Structural significance**: This is the Configuration Layer as product. The agent doesn't wait for a human to configure it — it *configures itself* from experience. Combined with SkillOpt-Lite's theoretical framework, self-configuration is crossing from research to deployment.
+**Structural significance**: This is the Configuration Layer as product. The agent doesn't wait for a human to configure it — it *configures itself* from experience. SkillOpt-Lite separately publishes an alpha implementation and checkpoint skills, but its current public head does not reproduce the headline results; that is an artifact release rather than evidence of production deployment.
 
 Source: https://github.com/Kulaxyz/self-learning-skills
 
@@ -285,7 +319,7 @@ results; they have not yet been shown to measure one shared causal construct.
 The original scan summarized three reported results:
 1. **Risk**: 75.1% of 473 selected skills had at least one successful generated target under CONTRA's simulated search
 2. **Performance**: 2.1× gap from client configuration for a fixed model in the evaluated cells (HexStrike)
-3. **Optimization**: In the reported cells, a smaller model with optimized configuration outperforms a larger model under the standard pipeline (SkillOpt-Lite)
+3. **Optimization**: SkillOpt-Lite beats full SkillOpt in 23 of 30 reported within-model cells, while its smaller-model headlines compare different optimization methods and do not isolate scale from configuration
 
 ### Connection to Prior Theses
 

@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 373 reuses that still-current receipt without an early account request and reproduces HexStrike's large client-associated baseline contrast from matched row-level logs while bounding client-only causality."
+summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 374 reuses that still-current receipt without an early account request and qualifies SkillOpt-Lite's within-model gains, cross-scale headlines, and current public reproduction boundary."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 373 bounded reconciliation at 2026-09-04T10:39:25.749Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 373; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, and HexStrike-AI primary evidence resolved in Cycle 373; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 374 bounded reconciliation at 2026-09-04T10:54:02.932Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 374; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, and SkillOpt-Lite primary evidence resolved in Cycle 374; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -15922,6 +15922,145 @@ broad offline audit passes 1,540 tracked Markdown documents / 1,732 local prose
 links with zero errors. Read-only health at `2026-09-04T10:50:33.654Z`
 returns 26 facts, 16 wake signals, and `truncated:true`; those existing health
 signals are not new research claims.
+
+## Cycle 374 seed-first start — test SkillOpt-Lite's smaller-model comparison
+
+Cycle 374 begins from clean validated tip
+`b7d2a647c7217a47b63ab533bb3687e34606ebca`. At
+`2026-09-04T10:54:02.932Z`, Cycle 341's exact XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. This bounded
+reconciliation makes zero XHS requests: additions and changes remain unknown,
+observed removals are `[]`, all 132 durable identities remain unavailable, no
+representative saved post is supported, and no account state changes. The next
+scheduled observation remains no earlier than `2026-09-04T11:00:03.241Z`
+unless a material access trigger arrives.
+
+Expected knowledge value now ranks (1) high/open `RV-004`, inaccessible
+without the protected query/rank-to-selection-to-later-outcome join; (2)
+high/open `RV-034`, reproduced at the pinned external runtime but outside
+Scout's documentation-only repair scope; (3) the unreleased Memory in the Loop
+provider result; (4) SkillOpt-Lite `2607.03451`, now the highest accessible
+primary-evidence gap after HexStrike; (5) remaining Scan #425 synthesis and
+reproduction gaps; (6) Reddit until a relevant-thread/access trigger; and (7)
+compaction. Select SkillOpt-Lite and inspect exact LiveMath and
+SpreadsheetBench cells, base models, skill/harness pipelines, inference and
+optimization budgets, train/evaluation reuse, validation gates, uncertainty,
+released artifacts, and whether any matched comparison supports a
+configuration-over-scale conclusion.
+
+## Cycle 374 checkpoint — skill optimization helps; scale substitution is unproved
+
+### Primary paper and direct table comparison
+
+Read-only arXiv retrieval at `2026-09-04T10:54:29.754Z–10:54:30.847Z`
+observed `2607.03451v1`. The 3,191-byte Atom response is SHA-256
+`b94c249f5ede26cb57f10c98055bb9abf3ea8ffe0b26337e1e7b57eb0582a574`;
+the 595,313-byte source archive is SHA-256
+`20a29acf82e86eb374b777d2f2f2033c78bee63416b80f279f028894cecce938`.
+It extracts to 19 files / 801,538 bytes. Extracted `main.tex` is SHA-256
+`6405c6418352bef71b006743aabc76a1c2fb611e1a9233f2905e6762e2cad9df`;
+the experiments and harness sections are respectively SHA-256
+`09441df0e6f59294cf0aaf4645b5686cfc17e4001997e60314c45cfd18a92a17`
+and `8f7a24b484ae015eb216138ac11b9dd80d20987128f309672e2025953fb6af5b`.
+
+Across the paper's 30 same-model SkillOpt-versus-Lite cells, direct table
+reading gives 23 Lite wins, three ties, and four losses. The named LiveMath
+gains reproduce: GPT-5.5 is 73.6 versus 64.8 (+8.8 points) and GPT-5.4-nano
+is 55.7 versus 30.3 (+25.4). Spreadsheet's five-model mean is 69.7 versus
+57.1 (+12.6). These are meaningful task-specific fixed-model improvements,
+not a universal win.
+
+The two smaller-model headlines do not hold method and pipeline fixed.
+LiveMath's Lite/nano score of 55.7 exceeds SkillOpt/GPT-5.4 at 54.0 by only
+1.7 points while changing both model and optimization method. Spreadsheet's
+HarnessOpt-with-skill/nano 0.7758 exceeds SkillOpt/GPT-5.5 0.7620 by 0.0138
+while changing model, harness, and skill method. Matched-method comparisons
+retain the scale ordering: SkillOpt-Lite/GPT-5.5 is 0.7972 versus nano
+0.6619, HarnessOpt-with-skill/GPT-5.5 is 0.8577 versus nano 0.7758, and
+GPT-5.5/Lite exceeds nano/Lite on all six benchmarks. The supported result is
+that skill/harness optimization can materially improve a fixed model in these
+tasks; the reported cells do not establish that configuration generally
+substitutes for model scale.
+
+### Artifact, cost, and reproduction boundary
+
+Read-only GitHub observations at `2026-09-04T10:55:11.532Z–10:55:23.027Z`
+pin the public MIT repository `EvolvingLMMs-Lab/SkillOpt-Lite` to exact `main`
+head `4cb4eeef1f95375a9179737ab94cf5e64b9647c6`. Its recursive tree has 491
+entries / 360 blobs / 17,015,769 declared bytes, `truncated:false`, with
+tree-response SHA-256
+`83becd74555da0574a9040f78aa569ea2b20a78af2deb7640a5ac08215b6b347`.
+A goal-owned filtered no-checkout clone supplied committed objects for local
+inspection; no repository code, benchmark, installer, or provider call ran.
+
+The repository contains implementation code and optimized skill/harness
+snapshots, but zero test paths. Its four `eval_summary.json` files are all
+SearchQA; no LiveMath or Spreadsheet headline outcome rows are present. The
+README and multiple `run.sh` files invoke `scripts/eval_only.py`, but the exact
+untruncated tree contains no `scripts/` directory. Base LiveMath config and
+`data/README.md` say 2:1:7 while the run script and downloader use 2:2:6.
+Current head also postdates paper v1, and no run manifest binds repository
+defaults, checkpoints, optimizer model, or provider settings to the paper's
+tables.
+
+A read-only Hugging Face size response for
+`yshenaw/SkillOpt_Lite_Benchmarks`, observed at
+`2026-09-04T10:56:15.479Z`, is SHA-256
+`d479ba529d7da03313d6c0d86e2c883d6d8152235d2c7acf766ddb407343027d`
+and reports 3,831 rows. LiveMath has 36/35/106 and OfficeQA 49/49/148
+train/validation/test rows; SpreadsheetBench has 80/39/281. The current
+dataset therefore supports the paper's 2:2:6 LiveMath/OfficeQA statement but
+does not independently reproduce its outcomes.
+
+The paper says SkillOpt runs for `max(4 epochs, 10 batches)` and Lite for ten
+batches, but reports no model-call, token, wall-time, or monetary totals. It
+also reports no repeated seeds, confidence intervals, significance tests, or
+per-example outcome rows, and says only that the optimizer model is matched
+across methods without naming or binding it. Confidence is high in source identity
+and the table arithmetic, moderate that Lite's fixed-model gains generalize
+within these six tasks, low in general configuration-for-scale substitution,
+and absent for the claimed relative execution cost.
+
+### Lane continuity and next decision
+
+- **arXiv:** exact v1 source is the last useful evidence. Revisit on v2, a
+  changed comparison, or added repeated-run/cost evidence.
+- **GitHub:** exact public head `4cb4eeef1f...` and its artifact gaps are the
+  last useful evidence. Revisit on head advance, restoration of the named
+  evaluator, a paper-bound manifest, tests, or released headline rows.
+- **Hugging Face:** exact size metadata confirms current splits, not outcomes.
+  Revisit on versioned outcome rows or a manifest binding them to the paper.
+- **Reddit:** zero requests. Preserve the prior RSS-readable/JSON-403 boundary
+  and revisit only on a relevant-thread or access-change trigger.
+- **XHS:** zero requests because the six-hour cadence was not due. Cycle 341
+  remains the exact observation; additions/changes are unknown, removals are
+  `[]`, all 132 durable identities are unavailable, and no account mutation
+  occurred.
+
+`RV-004` stays high/open because this cycle has no protected query/rank-to-
+selection-to-later-outcome join. `RV-034` stays high/open at its pinned
+external runtime boundary. Next seed-first, primary-review Anchored Self-Play
+`2607.03523`, with emphasis on whether its claimed mitigation transfer
+supports self-configuration or only the measured game setting.
+
+The exact reviewed working tree passes syntax, TypeScript, source formatting,
+Cycle 341 projection, 94 scoped links, navigation v1 at 11/14, navigation v2
+at 8/8, and all 296 Scout tests / 1,486 assertions with zero failures in
+104.15 seconds. The broad offline audit passes 1,540 tracked Markdown
+documents / 1,732 local prose links with zero errors. Read-only health at
+`2026-09-04T11:04:46.275Z` returns 26 facts, 16 wake signals, and
+`truncated:true`; runtime state stays empty.
+
+All nine canonical accepted result commits plus accepted reviewer commits
+`bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and `cb07aedc4e` remain ancestors.
+Unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains outside the
+standing lineage. Read-only protected-checkout inspection records unchanged
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 386 NUL-delimited whole-
+status records / SHA-256
+`00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`,
+and 296 Scout-scope records / SHA-256
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker ran no tests or writes in that checkout or any peer worktree.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

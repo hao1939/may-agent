@@ -311,7 +311,7 @@ questions; their tasks, interventions, and outcomes are not directly
 comparable:
 - **Risk configuration**: CONTRA (2607.03220) reports that 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged configuration search. This is not configuration or live-incident prevalence.
 - **Driving-client performance**: HexStrike-AI (2607.02873) releases matched logs reproducing DeepSeek/RooCode 154/258 versus DeepSeek/5ire 72/258 (2.139×). The direction is strong, but rolling-model, client-default, and schedule confounds make it client-associated rather than clean client-only evidence.
-- **Skill/harness optimization**: SkillOpt-Lite (2607.03451) reports a nano model with optimized configuration outperforming its larger sibling under standard pipelines (+25.4 points LiveMath).
+- **Skill/harness optimization**: SkillOpt-Lite (2607.03451) reports 23 wins, three ties, and four losses against SkillOpt across 30 within-model cells. Its smaller-model headlines change optimization method as well as scale; matched-method rows retain the larger model's advantage.
 
 Enterprise governance reports AGL-1 (2607.03516) and CAGE-1 (2607.03510) propose vocabulary for this surface: seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability) and a seven-field prebind checklist. Neither report implements or empirically validates the proposed control plane.
 
