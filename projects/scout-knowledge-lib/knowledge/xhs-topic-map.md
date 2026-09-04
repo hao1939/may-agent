@@ -6498,6 +6498,26 @@ porcelain-v2 records / `8e3558f4…e8a36` overall and 296 /
 recorded protected state but were only read here; this worker did not write,
 test, clean, or mutate either protected surface.
 
+### Cycle 343 seed-first start — reuse the fresh exact receipt
+
+Cycle 343 begins from clean validation handoff `d226853ba6`. At
+`2026-09-04T05:18:46.239Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is under 19 minutes old and inside the six-hour cadence. Make
+zero XHS requests: additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable seeds remain unavailable, and the exact Cycle 341
+ledger row remains provenance. No account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+still inaccessible because protected history has no retained query/rank ->
+selection -> later-outcome join; (2) Memory in the Loop's unreleased
+authority-bearing provider result; (3) Agentic Data Environments `2607.07397`,
+highest accessible because Scan #482 promotes specification, relative
+measurement, and active-data-substrate claims from abstract-level evidence;
+(4) other primary-evidence, contradiction, reproducibility, retrieval, and
+synthesis gaps; (5) Reddit until a relevant thread/access trigger; and (6)
+static compaction. GitHub, arXiv, Reddit, and accepted refs make zero requests
+or checks in this seed record. Commit it before reviewing the primary paper.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
