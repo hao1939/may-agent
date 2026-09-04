@@ -3675,7 +3675,7 @@ local-main landing or resource cleanup.
 | `RV-044` | Medium | Cycle 406 protected transition procedure, integrated `local-main-overlay-plan.ts`, and Cycle 408 material `ff9b60a4bcafb993836d861444a4f7980900d436` | Rename detection collapsed two preflight dirty records into one `R100`, and the first rollback handler passed candidate additions to an old-main restore, leaving 140 candidate paths behind until guarded repair. The integrated planner disables renames, compares worktree/tree bytes, rejects staged indexes, and emits distinct restore/remove sets. Cycle 408 independently replays a planner-driven mixed-index forward transition and rollback across rename, deletion, candidate-identical, human-divergent, clean restore/remove, and unrelated-dirty classes; it reaches the expected postflight and exactly reproduces preflight. | **Resolved for the isolated-use criterion; accept with recurring release guards.** The rehearsal closes the concrete planner-admission gap without erasing the historical failure. It does not authorize `/app`; every protected landing still requires fresh exact candidate review, fingerprints, object/byte guards, and rollback proof. Never reuse the failed bulk pathspec restore. |
 | `RV-045` | Low | Hermes/OpenClaw evidence table and Cycle 409 integration report at `a179a58bff62749a8be56f26ba9adab61ae61b7e` | The Hermes value `2026-09-02 10:43:27 -07:00` is the pinned object's author time, while its committer time is `10:55:57`; labeling it `Commit time` makes exact provenance ambiguous. The Cycle 409 report also records a 1,544-document/1,757-link audit taken before the final report and four integration links, while exact current standing contains 1,545 documents/1,759 links. Neither defect changes the research conclusion or link validity, but both weaken exact replay. | **Resolved on standing; accept exact integration `a76726f370`.** Standing is patch-equivalent to reviewer `07b3db591a` at stable patch ID `34ab393107aaf4e9d874a2afb3f471fcf4021f96`; both have parent `a179a58bff` and tree `9b67ed255694ae7ebeba8f56301b246fe5f9e67a`. |
 | `RV-046` | Medium | Cycle 410 fixture `scout-navigation-heldout-v3.json`, topic-map checkpoint, and retrieval report at exact standing `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9` | Fixture and routes first appear together in `0073f95ded`; no earlier object contains the selected queries. The original `frozen_at` value `06:14:00+08:00` is later than the commit's exact `06:03:19+08:00` author/committer time and was still future-dated during independent review. Calling this protected or independently frozen evidence would let adaptive selection masquerade as promotion proof, although the parent replay itself is valid post-hoc regression evidence. | **Resolved on standing at `3fd5c82a84`.** Reviewer `e1e1c25090` is integrated patch-equivalently at stable patch ID `c747dd9eb230b526a6ef8f9f011b8a4dd27381f6`; the fixture/report/map now use the exact first durable commit boundary and label v3 producer-authored matched post-hoc evidence. Genuinely protected selection remains required before resolving RV-004 or authorizing compaction. |
-| `RV-047` | High | Cycle 411 harness, topic-map checkpoint, and projection report at exact standing material `3917ea3f709e2b524174a5564965641e7377b04d` | The harness loads tracked files, blame, projected documents, INDEX, and links from `HEAD`. After its report is committed, that report itself repeats all six supposedly absent provenance refs. Independent exact-candidate replay therefore returns `commit_refs: []` and 1,547 documents / 1,775 links, contradicting the durable 6-ref and 1,546/1,774 claims. A self-satisfying loss test could authorize destructive compaction while hiding evidence removed from the declared source corpus. | **Revise; resolved in reviewer result, pending standing integration.** Bind every projected corpus read to exact `fixture.frozen_against_tip`, keep current candidate HEAD separate, and regression-pin the exact source, six refs, and 1,546/1,774 boundary. The corrected result still rejects compaction; no deletion is authorized. |
+| `RV-047` | High | Cycle 411 harness, topic-map checkpoint, and projection report at exact standing material `3917ea3f709e2b524174a5564965641e7377b04d` | The harness loads tracked files, blame, projected documents, INDEX, and links from `HEAD`. After its report is committed, that report itself repeats all six supposedly absent provenance refs. Independent exact-candidate replay therefore returns `commit_refs: []` and 1,547 documents / 1,775 links, contradicting the durable 6-ref and 1,546/1,774 claims. A self-satisfying loss test could authorize destructive compaction while hiding evidence removed from the declared source corpus. | **Resolved on standing at `199856526457a080b50a965a6c72fe017788f191`.** Reviewer `8650d3eca708586851a0dc0860767acf6b3c6de3` is integrated patch-equivalently at stable patch ID `823ae2dfb8c703eb2bc56fde5f84314fc9908fb5`; corpus reads bind to exact `fixture.frozen_against_tip`, candidate HEAD stays separate, and the regression pins the exact source, six refs, and 1,546/1,774 boundary. The corrected result still rejects compaction; no deletion is authorized. |
 
 ## Reviewer source/result and integration status
 
@@ -3699,10 +3699,12 @@ local-main landing or resource cleanup.
   `3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d` integrates reviewer RV-046
   patch-equivalently at stable patch ID
   `c747dd9eb230b526a6ef8f9f011b8a4dd27381f6`; ledger child `d54a7f15d7`
-  records that status but does not correct the Cycle 411 harness. RV-047 is
-  pending standing integration. Roll back the correction first, then revert
-  material `3917ea3f70`; no historical evidence, local main, or worktree is
-  deleted by either revert.
+  records that status but does not correct the Cycle 411 harness. Reviewer
+  `8650d3eca708586851a0dc0860767acf6b3c6de3` is integrated as standing
+  `199856526457a080b50a965a6c72fe017788f191`; both share stable patch ID
+  `823ae2dfb8c703eb2bc56fde5f84314fc9908fb5`. Roll back standing
+  `1998565264` first, then revert material `3917ea3f70`; no historical
+  evidence, local main, or worktree is deleted by either revert.
 
 - Producer Cycle 409 integration `a179a58bff62749a8be56f26ba9adab61ae61b7e`
   and patch-equivalent standing results `d1a443c6408014aaf83cea0664ac9b336e8b44ef`
@@ -4266,10 +4268,9 @@ and the unreleased Memory in the Loop result.
 ## Next trigger
 
 Wait directly on producer pane `w1:p6C` and peer goal
-`g_c1b31972-1674-47cb-96d8-c797d768010d` for patch-equivalent or exact
-integration of the RV-047 reviewer result after exact reviewed standing
-`d54a7f15d712a63a71bbf8484363d0a2a4f52a3f`; the next genuinely material
-producer checkpoint beyond that cursor; a fresh protected maintenance outcome
+`g_c1b31972-1674-47cb-96d8-c797d768010d` for the next genuinely material
+producer checkpoint after patch-equivalent RV-047 integration
+`199856526457a080b50a965a6c72fe017788f191`; a fresh protected maintenance outcome
 that joins the route used to a later decision; evidence changing RV-004 or
 RV-034; a compact provenance replacement and scoped retrieval/cost comparison
 for RV-036; another same-artifact batching recurrence under RV-038; recurrence
