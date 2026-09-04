@@ -11302,6 +11302,78 @@ That Teach. Test the paper's evidence type, population, measured outcomes,
 design proposals, citations, and whether it establishes longitudinal skill loss
 or instead defines a research agenda.
 
+## Cycle 322 checkpoint — Agents That Teach proposes; its citation measures one hour
+
+What was wrong was a category error. Scan 450 and Scan 461 treated Agents That
+Teach as if it measured developer atrophy, inability to review, compounding
+Knowledge Debt, and a working mitigation. For users of the library, those
+claims are now split into the conceptual paper's proposals, the separate
+controlled study's actual result, and the outcomes neither source measured.
+
+ArXiv was the selected primary-evidence lane. At
+`2026-09-04T02:34:01.074Z–02:34:03.834Z`, Agents That Teach
+`2607.06101v1` returned a 43,090-byte abstract page with SHA-256
+`18dfe8565c7d8657524fdb5a0812b07c57fd343c73f3b19d8fa0834a5e2d133b`
+and a 2,896,579-byte source archive with SHA-256
+`a94c9bc9ae13b938efab5e325f1a7492e6405b62f220eb9bcbc538bd298618ce`.
+The source proposes six principles: Contextual, Grounded, Ambient, Selective,
+Adaptive, and Closed-Loop. SHIELD is an early VS Code prototype built with
+CrewAI, Azure, Neo4j, and GPT-5.1 and instrumented for Claude Code telemetry.
+Its architecture observes a coding agent, triages concepts, queues probes and
+microlearning, assesses answers, and updates a developer concept map.
+
+Those are design and implementation claims, not evaluation results. The paper
+says only that internal stakeholder demonstrations generated "promising
+feedback," without a population, protocol, measures, or results. Its data-
+availability statement says no dataset accompanies the paper because empirical
+evaluation is future work. It explicitly defers user studies, Knowledge Debt
+operationalization, and pedagogical-quality evaluation. Two important design
+assumptions remain untested: that agent telemetry faithfully exposes rationale,
+alternatives, and confidence, and that concepts found in human-authored code
+imply developer familiarity.
+
+The paper cites How AI Impacts Skill Formation for its 17% statement. At
+`2026-09-04T02:35:00.292Z–02:35:02.627Z`, the current
+`2601.20245v2` API record was 2,757 bytes with SHA-256
+`1523ae8ac17d65be745402a7b1e3410e3c36421b4f841d55969937be4d452e98`;
+its source archive was 2,744,302 bytes with SHA-256
+`73e820bb88f129ea4c2a504fa3e311819c1747c69c211d361a3afdaf9f741689`.
+The randomized study assigned 52 Python-experienced, Trio-naive participants
+to AI or no-AI conditions for a one-hour unfamiliar-library task. Its authors
+report a 4.15-point difference on a 27-point quiz, described as 17% or two
+grade points (Cohen's d=0.738, p=0.010), with no significant average
+completion-time gain. The post-task quiz covered conceptual understanding,
+code reading, and debugging. An exploratory qualitative analysis derived six
+AI-interaction patterns, but its clusters are small.
+
+This is direct randomized evidence for an immediate, task-bounded learning-
+score effect. It also contradicts the simple claim that assistance necessarily
+produced a productivity-learning tradeoff: mean speed did not significantly
+improve. The study tests one chat interface and one unfamiliar library, not an
+agentic coding workflow; it says months-to-years retention, workplace realism,
+alternative evaluation, prompting skill, and human-assistance controls remain
+future work. Neither paper measures longitudinal atrophy, compounding
+Knowledge Debt, loss of review ability, organizational maintenance cost, or
+SHIELD effectiveness. Confidence is high for the immediate randomized effect
+and for SHIELD's unevaluated status; confidence is low for longitudinal and
+organizational transfer.
+
+The reviewed scope is the two Scan 450 variants, Scan 461, the Oversight
+Inversion synthesis, and the library index. GitHub made zero requests and
+retains the last useful TraceProbe artifact/code provenance until an
+attributable SHIELD repository, implementation revision, or evaluation
+artifact appears. Reddit made zero requests and stays RSS-readable/JSON-403
+until a relevant thread or access change. Revisit arXiv on a new paper version,
+SHIELD user study, Knowledge Debt operationalization, or released pedagogical
+artifact. `RV-004` remains high/open: neither record supplies Scout's missing
+post-August-31 query/rank-to-selection-to-outcome join.
+
+Next begin seed-first and rank again. AgentTether `2607.06273` is the expected
+highest accessible item because Scan 450 currently treats it as a proven
+corrective architecture; test its task population, controls, graph-repair
+mechanism, outcome definitions, artifacts, and transfer limits before carrying
+that claim forward.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

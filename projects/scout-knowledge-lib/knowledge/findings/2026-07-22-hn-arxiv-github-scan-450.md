@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #450 (2026-07-22), partly qualified. TraceProbe (2607.06184v1) supports deterministic trajectory description, same-task localization, and bounded search-loop transfer, but not luck-versus-skill labels, failure prediction, reliability, review-cost, remediation, or evidence-destruction claims. Observability-Aware Code (2607.05785v1) reports weak lexical restoration and low explicit fault-signal rates without testing correctness or longitudinal erosion. The expertise and corrective-system claims remain pending primary review. HN and repository counters remain discovery signals, not economic or causal confirmation."
+summary: "HN/arXiv/GitHub Scan #450 (2026-07-22), primary-qualified in 2026-09. A separate randomized study (2601.20245) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task with AI; Agents That Teach (2607.06101v1) uses that result to motivate Knowledge Debt and six proposed design principles but does not measure longitudinal atrophy or evaluate SHIELD. TraceProbe supports deterministic trajectory description, and Observability-Aware Code reports weak lexical restoration and low explicit fault-signal rates. HN and repository counters remain discovery signals, not economic or causal confirmation."
 triggers: ["knowledge erosion", "skill atrophy", "knowledge debt", "incidental learning loss", "developer deskilling", "resolve rate hides", "trajectory diagnostics", "TraceProbe", "trajectory opacity", "observability-aware code", "diagnostic evidence", "agent observability gap", "AgentTether", "runtime repair", "task graph repair", "LogicHunter", "agentic oracle", "framework testing", "silent attrition", "remediation debt", "knowledge infrastructure", "human authorship premium", "expertise erosion", "learning pathway disruption", "process evidence loss", "scan 450"]
 source_basis: "HN front page 2026-07-22 (30 stories via Firebase API). arXiv API (2607.06101 Agents That Teach, 2607.06184 What Resolve Rate Hides, 2607.05785 Observability-Aware Code, 2607.06273 AgentTether, 2607.06195 LogicHunter). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,315★, eve 3,303★, rowboat 15,273★, horizon 34★, agent-apprenticeship 1,295★). Cross-referenced with Subtraction Economy (#449), Architecture Premium (#448), Oversight Inversion (thesis), Comprehension Dividend (#444)."
 </ai_context>
@@ -18,7 +18,7 @@ hypothesis. Primary evidence currently supports only one narrower component:
 generated observability often misses reference diagnostic content and explicit
 fault strings under the tested benchmarks.
 
-When a developer writes code, three knowledge byproducts emerge for free:
+This scan assumes that human authorship can produce three byproducts:
 1. **Expertise accrual** — the developer learns from the act of writing
 2. **Process evidence** — the developer knows *how* and *why* the code was written
 3. **Diagnostic capacity** — the developer builds in observability because they'll debug it themselves
@@ -27,14 +27,15 @@ The scan proposes that agent delegation can weaken all three, but the papers do
 not yet establish one shared causal process. Primary review of `2607.05785v1`
 supports a narrower diagnostic-content gap in two benchmark settings; it does
 not establish functionally correct output, longitudinal codebase erosion, or
-organizational knowledge loss. The expertise and process-evidence components
-remain pending their own primary reviews.
+organizational knowledge loss. The expertise component now has a separate,
+one-hour randomized learning-score result; longitudinal expertise erosion and
+the process-evidence component remain unestablished.
 
 The HN item's +211% score change is an attention signal. It does not show a
 transaction, remediation cost, depleted internal expertise, or why a customer
 would buy the service.
 
-**Connection to Subtraction Economy (#449)**: The Subtraction Economy named subtraction as the premium economic activity. The Knowledge Erosion explains *why* subtraction is expensive: the expertise to execute it is being eroded by the very delegation that creates the surplus. This is a structural trap — the problem accelerates its own remediation cost.
+**Connection to Subtraction Economy (#449), proposed**: Knowledge erosion is one possible explanation for costly remediation, but this scan does not measure remediation cost or establish that delegation caused an expertise loss.
 
 ---
 
@@ -42,17 +43,19 @@ would buy the service.
 
 ### 1. Agents That Teach: Designing Incidental Learning Back into AI-Assisted Development (2607.06101)
 
-**Core finding**: Developers historically acquired expertise through *incidental learning* — informal knowledge gained as a byproduct of effortful problem-solving. AI coding agents short-circuit this learning pathway. The paper names **Knowledge Debt**: the silent accumulation of skill gaps when developers over-delegate to agents. Unlike technical debt (visible in code), knowledge debt is invisible until the developer faces a problem the agent can't solve.
+**Source claim, not a measured finding**: The paper argues that developers historically acquired expertise through *incidental learning* and that agent delegation can bypass this pathway. It names the hypothesized accumulation of gaps **Knowledge Debt**. The paper itself is a design paper: it reports no SHIELD user study or Knowledge Debt measure and says empirical evaluation is future work.
 
 **Key concepts**:
-- Incidental learning was never designed; it was a free byproduct of human authorship
-- Over-reliance on agents produces "unpracticed skills [that] could atrophy silently over time"
-- The paper proposes designing learning *back into* agent workflows — making agents teach while they code
-- This inverts the optimization target: from "agent produces code fastest" to "agent produces code while preserving developer learning"
+- Six proposed principles are **Contextual, Grounded, Ambient, Selective, Adaptive, and Closed-Loop**.
+- SHIELD is an early VS Code prototype built with CrewAI, Azure, Neo4j, and GPT-5.1 and instrumented for Claude Code telemetry.
+- Its grounding assumes an agent faithfully emits rationale, alternatives, and confidence; its cold-start concept map assumes concepts in human-authored code imply familiarity. Neither assumption is validated here.
+- Internal stakeholder demonstrations produced unspecified "promising feedback"; there is no population, protocol, outcome, or dataset.
 
-**Structural significance**: This is the Oversight Inversion at the individual developer level. The developer can't verify what the agent produced because delegating the production eroded the expertise needed for verification. Layer 2 of the Oversight Inversion documented the *physiological* cost (meditation, stress). Knowledge Debt names the *epistemic* cost — not just "reviewing is stressful" but "the developer is losing the ability to review at all."
+**Separate supporting experiment**: The cited randomized study (2601.20245v2) assigned 52 Python-experienced, Trio-naive participants to AI or no-AI conditions for a one-hour unfamiliar-library task. Its authors report a 4.15-point/27-point, 17% immediate quiz-score reduction with AI (Cohen's d=0.738, p=0.010) and no significant mean completion-time gain. This supports a short-task learning effect, not longitudinal skill loss: the paper explicitly calls for months-to-years follow-up, tests one chat interface and one library, and does not evaluate agentic coding or SHIELD.
 
-**Connection to Comprehension Dividend (#444)**: #444 showed comprehension outperforms consumption as a scaling mechanism. 2607.06101 reveals the converse: when comprehension infrastructure erodes, the capacity to scale degrades silently.
+**Structural significance, qualified**: Knowledge Debt is a useful hypothesis for the individual-developer side of the Oversight Inversion. The sources do not show that a developer has lost the ability to review, that debt compounds, or that SHIELD prevents either outcome.
+
+**Connection to Comprehension Dividend (#444), proposed**: The immediate quiz gap makes preserved comprehension worth testing. Neither source measures whether comprehension infrastructure degrades over time or limits scaling.
 
 Source: https://arxiv.org/abs/2607.06101
 
@@ -148,32 +151,32 @@ Source: https://arxiv.org/abs/2607.06195
 
 ---
 
-## The Knowledge Erosion — Structural Model
+## The Knowledge Erosion — Hypothesized Structural Model
 
 ```
 ┌─ HUMAN AUTHORSHIP ────────────────────────────────┐
 │  Code written by developer                         │
-│  + Expertise accrual (FREE — byproduct of effort)  │
-│  + Process evidence (FREE — developer knows how)   │
-│  + Diagnostic capacity (FREE — will debug it)      │
+│  + Possible expertise accrual through effort  │
+│  + Possible process evidence from participation   │
+│  + Possible diagnostic capacity through debugging      │
 │  = Code + three knowledge layers for future use    │
 └────────────────────────────────────────────────────┘
 
 ┌─ AGENT AUTHORSHIP ────────────────────────────────┐
 │  Code written by agent                              │
-│  - Expertise erosion (developer didn't solve it)    │
-│  - Process compression (resolve rate = pass/fail)   │
-│  - Diagnostic absence (no observability built in)   │
-│  = Code alone — three knowledge layers ERODED       │
+│  - Proposed expertise gap from bypassed practice    │
+│  - Process detail absent from outcome-only reports   │
+│  - Possible diagnostic-content gap   │
+│  = Code plus effects that require separate tests       │
 └────────────────────────────────────────────────────┘
 
 ┌─ THE STRUCTURAL TRAP ─────────────────────────────┐
 │  Surplus requires subtraction (#449)                │
 │  Subtraction requires expertise (diagnostic,        │
 │    process knowledge, domain understanding)          │
-│  Delegation erodes that expertise                    │
-│  → Remediation cost rises WITH delegation volume    │
-│  → $10k/week ← market prices the erosion gap        │
+│  Delegation may weaken that expertise                    │
+│  → Remediation cost could rise with delegation volume    │
+│  → $10k/week item ← attention signal, not price proof        │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -298,7 +301,7 @@ evidence:
 
 | Knowledge Layer | What's Lost | How | Paper |
 |----------------|-------------|-----|-------|
-| Developer expertise | Skills atrophy | Delegation bypasses learning-by-doing | 2607.06101 |
+| Developer expertise | Immediate unfamiliar-library quiz gap; longitudinal atrophy proposed | 52-person randomized one-hour task in separate 2601.20245; 2607.06101 proposes Knowledge Debt and unevaluated SHIELD | 2601.20245v2; 2607.06101v1 |
 | Process evidence | Process detail absent from outcome-only reports | TraceProbe adds deterministic profiles; diagnosis and intervention effects untested | 2607.06184v1 |
 | Diagnostic content | Low restoration F1 and fault-signal rate in two benchmark settings | Longitudinal erosion and application correctness untested | 2607.05785v1 |
 

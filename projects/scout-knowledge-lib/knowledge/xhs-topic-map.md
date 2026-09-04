@@ -5289,6 +5289,42 @@ change; and (9) compaction. Select Agents That Teach. Test its evidence type,
 population, measured outcomes, design proposals, citations, and whether it
 supports longitudinal skill loss or only a research agenda.
 
+### Cycle 322 checkpoint — short-task learning evidence is not longitudinal debt
+
+At `2026-09-04T02:34:01.074Z–02:35:02.627Z`, arXiv was the selected
+primary-evidence lane. Agents That Teach `2607.06101v1` supplied a 43,090-byte
+abstract page (`18dfe856…2d133b`) and 2,896,579-byte source archive
+(`a94c9bc9…618ce`). Its six principles—Contextual, Grounded, Ambient,
+Selective, Adaptive, and Closed-Loop—and its VS Code/CrewAI/Azure/Neo4j/
+GPT-5.1/Claude Code architecture are source claims. The paper reports only
+unspecified internal stakeholder feedback, explicitly leaves empirical user
+studies, Knowledge Debt measurement, and pedagogical quality to future work,
+and supplies no dataset. Confidence is high that SHIELD is an unevaluated
+design proposal, not evidence of effectiveness.
+
+The cited primary study's current `2601.20245v2` source is 2,744,302 bytes
+(`73e820bb…41689`). It randomized 52 Python-experienced, Trio-naive
+participants to AI or no-AI conditions for a one-hour library task. Its authors
+report a 4.15-point/27-point, 17% immediate quiz-score reduction with AI
+(Cohen's d=0.738, p=0.010), no significant average completion-time gain, and
+an exploratory six-pattern analysis with small clusters. This directly
+supports a task-bounded learning-score effect. It contradicts a blanket
+productivity-learning tradeoff and does not test agentic coding, workplace
+retention, months-to-years atrophy, compounding debt, lost review ability, or
+SHIELD. Confidence is high for the randomized immediate effect and low for
+longitudinal or organizational transfer.
+
+GitHub made zero requests and retains its last useful TraceProbe artifact/code
+provenance until an attributable SHIELD repository, implementation revision,
+or evaluation artifact appears. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. ArXiv supplied
+the two primary records above; revisit on a new version, SHIELD user study,
+Knowledge Debt operationalization, or released pedagogical artifact. `RV-004`
+remains high/open because neither study supplies Scout's missing query/rank-to-
+selection-to-outcome join. Next begin seed-first, then review AgentTether
+`2607.06273` as the highest accessible remaining corrective-system claim,
+unless the bounded ranking reveals a higher-value change.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

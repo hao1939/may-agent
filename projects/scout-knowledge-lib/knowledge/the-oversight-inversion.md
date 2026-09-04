@@ -645,7 +645,7 @@ and diagnostic capacity—but does not establish that human authorship supplies
 all three for free or that agent authorship removes all three. Primary review
 currently supports only the narrower benchmark evidence below.
 
-- **"Agents That Teach"** (2607.06101): Names **Knowledge Debt** — the silent accumulation of skill gaps when developers over-delegate. Unlike technical debt (visible in code), knowledge debt is invisible until the developer faces a problem the agent can't solve. Incidental learning was never designed; it was a free byproduct of human authorship. Proposes designing learning *back into* agent workflows.
+- **"Agents That Teach"** (2607.06101v1): Proposes **Knowledge Debt** and six learning-aware design principles—Contextual, Grounded, Ambient, Selective, Adaptive, and Closed-Loop—then instantiates them in an early, unevaluated SHIELD prototype. A separate cited randomized study (2601.20245v2; n=52) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task with AI (Cohen's d=0.738, p=0.010), but no significant mean completion-time gain. That supports a task-bounded learning concern, not longitudinal atrophy, compounding debt, loss of review ability, or SHIELD effectiveness. SHIELD's use of agent reasoning as ground truth and human-authored code as evidence of familiarity remain unvalidated assumptions.
 - **"What Resolve Rate Hides"** (2607.06184v1): **TraceProbe** maps
   heterogeneous runs into nine canonical action types and deterministic effect
   labels. OpenCode/GLM and OpenCode/Opus have similar resolve rates (71.6% vs
@@ -674,7 +674,7 @@ internal expertise measure, so this does not economically confirm erosion.
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. **Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)**
 
-Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
+Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2601.20245, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
 
 ## The Verification Harness (#451) — Exit-Arc Instantiation
 
