@@ -275,6 +275,14 @@ baseline. A fresh anonymous read of title-matching OpenReview `qFBAlgwkzb`
 still returned HTTP 403 `Challenge verification required`; it could contain
 missing evidence, so this is not a claim that no experiment exists.
 
+The next sentence makes GAM the strongest grammatical denominator for AIM's
+11.53% temporal and 24% open-domain gains, but still supplies no result key.
+Applied to GAM F1, they imply AIM `66.304585`/`41.292` under GPT-4o-mini or
+`57.460256`/`37.9812` under Qwen2.5-14B. AIM chooses neither; the two reported
+gains average `17.765%`, so the 13.54% overall gain also needs undisclosed
+single/multi-hop values and weighting. Preserve adjacency as moderate evidence
+of intent, not as a reconstructed experiment.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

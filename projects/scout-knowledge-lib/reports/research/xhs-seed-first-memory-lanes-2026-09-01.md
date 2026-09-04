@@ -13686,6 +13686,26 @@ the highest accessible question: determine whether AIM's 11.53% temporal and
 24% open-domain claims identify a denominator and category mapping. Public
 lanes and accepted refs make zero requests in this ordering record.
 
+## Cycle 349 checkpoint — category prose suggests GAM but does not bind it
+
+The retained exact AIM sentence places the 11.53% temporal and 24% open-domain
+figures immediately after its GAM comparison, so GAM is the strongest
+grammatical reading, not an explicit experiment key. Applying those relative
+gains to GAM's published F1 rows yields temporal/open-domain AIM candidates of
+`66.304585`/`41.292` for GPT-4o-mini and `57.460256`/`37.9812` for
+Qwen2.5-14B. AIM selects neither model or pair. The equal mean of the two
+reported gains is `17.765%`, not the reported `13.54%` overall; missing
+single-hop/multi-hop gains, question weights, and aggregation could reconcile
+them. The known Mem0-category permutation further prevents borrowing labels
+from copied rows. This is missing binding, not a numerical refutation.
+
+No public request was needed: the exact AIM, GAM, and Mem0 source archives are
+retained. GitHub and Reddit remain at their recorded boundaries, and `RV-004`
+remains high/open. Confidence is high in the arithmetic and source adjacency,
+moderate that GAM is the intended denominator, and low in any reconstructed
+AIM score. Next seed-first, move to the highest accessible non-AIM primary-
+evidence gap rather than multiplying reconstructions of the same hidden run.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

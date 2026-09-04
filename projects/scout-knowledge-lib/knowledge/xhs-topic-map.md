@@ -6913,6 +6913,17 @@ the highest accessible question: whether AIM's 11.53% temporal and 24% open-
 domain gains identify one denominator and category mapping. Public lanes and
 accepted refs make zero requests in this ordering record.
 
+### Cycle 349 checkpoint — category gains remain model-dependent
+
+The retained AIM prose makes GAM the strongest grammatical denominator, but
+not an explicit result key. Applying 11.53% temporal / 24% open-domain gains to
+GAM F1 yields `66.304585`/`41.292` under GPT-4o-mini or
+`57.460256`/`37.9812` under Qwen2.5-14B. AIM chooses neither. The two-gain
+simple mean is `17.765%`, not 13.54%; missing other-category gains and weights
+could reconcile it. Confidence is high in arithmetic, moderate in denominator
+identity, and low in reconstructed scores. Retained sources sufficed; no
+public requests. `RV-004` remains high/open. Next select a non-AIM primary gap.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

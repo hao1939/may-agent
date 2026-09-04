@@ -1194,6 +1194,13 @@ denominator among them. Treat “comparable” and roughly 10% context as anothe
 unbound author report; the title-matching OpenReview record remains anonymously
 challenge-gated and may still contain the missing experiment details.
 
+Sentence adjacency makes GAM the likeliest denominator for the 11.53% temporal
+and 24% open-domain figures, but two GAM model rows imply two different AIM
+pairs (`66.304585`/`41.292` or `57.460256`/`37.9812`). The two gains alone
+average `17.765%`, not 13.54%; missing categories and weights may explain the
+difference. This supports demanding a versioned result key, not reverse-
+engineering a preferred score.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.
