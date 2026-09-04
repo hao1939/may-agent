@@ -761,26 +761,26 @@ Source: findings/2026-07-22-hn-arxiv-github-scan-451.md, https://arxiv.org/abs/2
 
 ### Layer 24: The Co-Evolution Imperative (Scan #452, 2026-07-08)
 
-The eight-scan exit arc assumed the harness is designed once and applied thereafter. Three arXiv papers from reinforcement learning, scientific replication, and theoretical computer science converge to demonstrate that **a fixed harness degrades as the system it governs evolves**.
+The eight-scan exit arc assumed the harness is designed once and applied thereafter. Three arXiv papers from reinforcement learning, scientific replication, and theoretical computer science motivate—but do not jointly demonstrate—the hypothesis that **a harness may need to adapt as its task or governed system changes**.
 
-**HASE — Harness-Aware Self-Evolving** (2607.03935): A single **Qwen3-8B** model that co-evolves its own harness matches the performance of **GPT-OSS-120B** using a fixed Claude Code harness in text classification, and **outperforms** it in alpha factor mining. The 15× model-size advantage is entirely consumed by harness quality. Harness authorship is an endogenous capability, not an external design activity — a fixed harness designed for one capability level becomes a constraint at the next.
+**HASE — Harness-Aware Self-Evolving** (2607.03935): One **Qwen3-8B** system jointly updates policy weights, whitelisted harness components, and solutions. It reports Symptom2Disease accuracy `86.98 ± 0.38%` against an imported **GPT-OSS-120B/Meta-Harness** value of `86.8%`, and stronger alpha-mining profitability than imported CogAlpha rows. These are cross-system, cross-paper comparisons: model, proposer, orchestration, implementation, and search/training budget change together. The direct Heilbronn control is narrower—FULL policy updates reach `0.036082` after evaluator repair versus FREEZE at `0.021880`. HASE demonstrates feasible endogenous harness edits, not that harness quality consumed a 15× model-size advantage or that a previously adequate fixed harness degraded.
 
 **VERITAS** (2607.02931): The first general-purpose scientific replication tool — extracts claims from papers, runs methodology via CLI coding agents, judges each claim against experimental evidence. Prior replication agents only ran inside their benchmark's own pipeline. The critical design choice: VERITAS must be domain-agnostic because the papers it verifies span ever-expanding domains. A fixed replication harness would fall behind the frontier of what needs replicating.
 
 **Doubly-Efficient Interactive Proofs for AI Safety** (2607.03561): Shows how to *avoid debate* — the dominant AI safety verification paradigm assumes two competing provers of equal ability, one truthful. This paper replaces the fixed dual-prover assumption with single-prover interactive proofs where a computationally weak verifier validates a powerful prover's claims. The honest-opponent requirement was a fixed structural constraint that doesn't survive in practice.
 
-**The Co-Evolution Imperative**: A verification harness that does not co-evolve with the system it governs becomes the 24th layer of the Oversight Inversion. The harness is subject to the same dynamics as every preceding layer: designed for one capability level, it degrades at the next.
+**The Co-Evolution Imperative hypothesis**: A verification harness that does not adapt may become the 24th layer of the Oversight Inversion. HASE makes this a testable system-design question, but its bounded runs do not observe temporal degradation of an initially adequate fixed harness. Its evaluator repair also depends on an immutable external oracle assumed accurate; agreement is only established on observed mismatches.
 
 Supporting evidence:
 - **Organizational Memory for Agentic Business Process Execution** (2607.03228): Enterprise governance knowledge (policies, SOPs) encoded once in prompts creates knowledge silos. Organizational memory must be shared, governed, and *evolving*.
 - **SwarmResearch** (2607.02807): Single-context harness causes exploration convergence failure. Multi-branch orchestration with a Shepherd Agent is a structural harness evolution that achieves SOTA on 13/15 tasks.
-- **Aggregate Alignment Misleads** (2607.03386): Aggregate verification metrics hide per-state divergence — the audit resolution must co-evolve to match the policy's actual granularity.
+- **Aggregate Alignment Misleads** (2607.03386): In one hotel-pricing simulator, pooled/reference-state distances and closed-loop revenue rank two repairs differently. This supports multi-resolution audit, not exact per-state divergence or audit co-evolution over time.
 
 **Connection to preceding layers**:
-- Extends the Verification Harness (#451): The harness is the exit, but only if it co-evolves
-- Deepens the Architecture Premium (#448): Architecture determines outcomes at deployment time; co-evolution determines outcomes *across time*
-- Explains why the Knowledge Erosion (#450) is self-reinforcing: knowledge migrating into a fixed harness degrades when the harness can't evolve
-- Resolves the Recursion Barrier (#430): Self-improvement is domain-bounded precisely because the harness is fixed; co-evolution relaxes the domain bound
+- Extends the Verification Harness (#451): a checker may need governed updates, but the update mechanism still needs a named authority
+- Qualifies the Architecture Premium (#448): HASE changes model, harness, training, and search together, so it does not isolate architecture from capability
+- Raises a Knowledge Erosion (#450) question: if knowledge migrates into a harness, what evidence should trigger a governed update rather than assuming either permanence or degradation?
+- Reopens the Recursion Barrier (#430): expanding an editable surface may relax one fixed constraint, while oracle authority and patch review introduce another boundary
 
 **HN confirmation**: Full sovereignty stack plateau — all top-tier stories grow <4% (StreetComplete 694→702 +1.2%, Chat Control 444→455 +2.5%, EU Car Camera 433→447 +3.2%, Microsoft idTech 539→551 +2.2%). ✅ Kokoro TTS crosses 300pts (293→300). Fable 5 extension story (48pts) vs C&C Generals port (687pts) confirms Attribution Error at the attention level: the product of the model matters 14× more than model access. Comprehension:News ratio 0.825 (near ATH).
 
@@ -795,7 +795,7 @@ Supporting evidence:
 6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
-9. **Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)**
+9. **Co-Evolution Imperative (#452): Test governed harness adaptation (sustainability hypothesis)**
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://arxiv.org/abs/2607.03561
 
@@ -837,7 +837,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
-9. Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)
+9. Co-Evolution Imperative (#452): Test governed harness adaptation (sustainability hypothesis)
 10. **Execution Boundary (#453): Bind verification to the execution surface, not the approval surface (fidelity condition)**
 11. **Write Contract (#454): Govern shared state mutations with explicit contracts (persistence condition)**
 
@@ -1728,7 +1728,7 @@ https://scalex.dev/blog/ai-agent-permissions-stats/
 7. **Announcement verification**: Can action-trace verification be made cheap enough to deploy universally, or will it remain a premium capability? MOSS demonstrates auditable memory is architecturally possible; ToolFailBench shows it's empirically necessary. The gap between "possible" and "default" is the deployment question.
 8. **Predicate gate coverage**: HCRC achieves O(0) oversight for gated error classes, but what fraction of real-world errors can be expressed as decidable predicates? The frontier lies between errors expressible as predicates (machine-checkable) and errors requiring judgment (human-only). Mapping this boundary determines the practical reach of the Predicate Gate architecture. **Scan #451 partial answer, qualified**: Aria reports all 4,864 existing target lemmas proved under kernel and obligation-preservation checks, showing a broad machine-checkable proof-admission surface. It does not isolate whether harness design, model capability, retry budget, or strategy freedom determined coverage.
 9. **Harness generalization**: Aria's verification harness works because Coq/Lean kernels provide sound, complete, terminating verification by construction. Can the Verification Harness Hypothesis extend beyond formal proof to semantic correctness, business logic, and the oversight dimensions lacking formal kernels? This is the next frontier: constructing verification kernels for domains that currently have none.
-10. **Co-evolution bounds**: HASE shows the harness can co-evolve with the system, but does co-evolution converge or diverge? If the harness must evolve infinitely, the oversight cost never stabilizes. If it converges (i.e., harness evolution reaches a fixed point), the Verification Harness Hypothesis holds with a finite design cost. HASE's SOTA convergence on circle-packing suggests convergence is achievable in bounded domains. Whether it holds in open-ended domains (enterprise processes, scientific replication) remains open. Additionally, who governs the harness evolution itself — can the co-evolution mechanism be verified, or does it create an infinite regress?
+10. **Co-evolution bounds**: HASE shows one system can jointly update policy weights, whitelisted harness components, and solutions, but does not estimate convergence. Its circle-packing run reaches a reported best score after two externally oracle-gated evaluator repairs; a finite successful trajectory is not evidence of a fixed point. Whether adaptation converges in open-ended domains remains open. The next evidence needs repeated independent evolution runs, a declared stopping criterion, matched fixed/adaptive harness arms, and an authority model for the non-editable oracle and patch reviewer.
 11. **Diversity sufficiency**: The Dispersion Collapse (2607.06001v1) shows
 below-floor dispersion in one homogeneous-model toy niche economy, not
 verification dependence. What degree of architectural decorrelation is

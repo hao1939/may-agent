@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 384 bounded reconciliation at 2026-09-04T13:09:46.946Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 384; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 384; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, and aggregate policy-repair audit evidence qualified in Cycle 384; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 385 bounded reconciliation at 2026-09-04T13:22:28.576Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 385; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 385; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, and HASE cross-system/oracle evidence qualified in Cycle 385; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9429,6 +9429,77 @@ or benchmark policy, or an independent replay. `RV-004` and `RV-034` remain
 high/open. Next seed-first, audit HASE `2607.03935`: test whether its 8B versus
 120B comparison isolates harness co-evolution or changes model, harness,
 budget, task, and selection together.
+
+### Cycle 385 seed-first start — reuse the supported access receipt
+
+Cycle 385 starts from clean validated tip
+`83a35e8e0f66c46f3e1c66a54132991ba311cf14` at
+`2026-09-04T13:22:28.576Z`. Cycle 375 remains the last supported XHS
+observation through `2026-09-04T11:09:20.326Z`; neither cadence nor access
+changed before `2026-09-04T17:09:20.326Z`. Make zero XHS requests. Added and
+changed identities remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and no account state changes.
+Provenance remains the Cycle 375 browser receipt and seed-ledger row 375;
+uncertainty is unchanged.
+
+`RV-004` remains highest consequence but inaccessible without the protected
+query/rank-to-selection-to-later-outcome join, and `RV-034` remains outside
+Scout's authority. HASE `2607.03935` is the highest accessible unresolved
+claim because Scan #452 attributes an 8B/120B gap to harness quality without a
+primary control audit. Select it after seed reconciliation.
+
+### Cycle 385 checkpoint — HASE is joint evolution, not a harness-only ablation
+
+HASE demonstrates one system in which Qwen3-8B can propose solutions or edit
+whitelisted harness components in the same reinforcement-learning action
+space. Its headline cross-model comparisons do not isolate that mechanism.
+On Symptom2Disease, frozen HASE/Qwen3-8B reports `86.98 ± 0.38%` over 212
+test cases versus imported Meta-Harness/GPT-OSS-120B `86.8%`; Qwen3-8B
+five-shot is `59.4%`. The split is 200 train / 50 validation / 212 test, 22
+classes. Candidate harnesses are validation-selected and final inference is
+single-attempt greedy. Five evaluations reuse the same final policy/harness,
+so they are not independent evolution-run uncertainty.
+
+Alpha mining reports RankIC `0.0302`, annual excess return `14.35%`, and
+information ratio `1.70`, versus imported CogAlpha/GPT-OSS-120B `0.0318`,
+`7.89%`, and `0.8015`. HASE uses a 2011–2019 / 2020 / 2021–2024 split and
+four GPUs for three phases × three epochs. CogAlpha rows are referenced, not
+rerun. Thirty selected factors pass a seeded invariance leakage detector and
+receive 120/120 CLEAN labels from four LLM judges, but no independent
+training repetitions, paired baseline run, or raw result bundle is released.
+
+The direct Heilbronn control is narrower and more useful: after evaluator
+repair, continued policy updates reach `0.036082` by Phase 8 versus FREEZE
+at `0.021880`, with 32 prompts × 32 trajectories per phase. Repetition and
+matched-seed uncertainty are not reported. Circle packing repairs two known
+validator defects and reports `2.635983`, but each repair is triggered and
+judged by a non-editable external oracle assumed accurate. Agreement covers
+observed mismatch cases, not permanent evaluator correctness. The manuscript's
+“8 × NVIDIA H20 nodes” wording leaves the exact accelerator count ambiguous.
+
+ArXiv `2607.03935v1` and current were read at
+`2026-09-04T13:22:35.263Z–13:22:37.271Z`; both are the same 389,032-byte
+archive, SHA-256
+`40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746`.
+It contains 12 manuscript/figure files and representative evolved snippets,
+but no runnable training/evaluation repository, checkpoints, factor sources,
+raw per-run outcomes, or project URL. Four bounded GitHub repository searches
+by title, arXiv ID, method/model, and author returned zero matches through
+`2026-09-04T13:25:02.837Z`; anonymous code search returned HTTP 401. This is
+a bounded attributable-artifact/access result, not proof no repository exists.
+Reddit made zero requests and remains RSS-readable/JSON-403 pending a relevant
+thread or access trigger.
+
+Confidence is high in source identity, protocol/table transcription, and the
+cross-system confound; moderate in the reported within-setup point results;
+low in independent-run stability, compute-matched advantage, model-size or
+harness-only causality, oracle transfer, and convergence. `RV-004` and
+`RV-034` remain high/open. Revisit HASE on author code/results, independent
+evolution seeds, equal-budget/model controls, explicit oracle implementation,
+or a matched fixed/adaptive harness arm. Next seed-first, primary-review
+VERITAS `2607.02931`: test which claims it actually reruns, its success and
+failure denominator, judge independence, artifact retention, and whether
+“general-purpose” is evaluated across domains rather than proposed.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

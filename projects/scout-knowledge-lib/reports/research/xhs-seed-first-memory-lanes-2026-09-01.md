@@ -17327,6 +17327,122 @@ does not attribute that drift. It ran no test, generator, formatter, install,
 clean, or write in `/app` or any peer worktree; recheck exact fingerprints
 after the standing commit.
 
+## Cycle 385 seed-first start — reuse the supported XHS boundary
+
+Cycle 385 starts from clean validated source tip
+`83a35e8e0f66c46f3e1c66a54132991ba311cf14` at
+`2026-09-04T13:22:28.576Z`. The last supported XHS observation remains Cycle
+375 through `2026-09-04T11:09:20.326Z`; the next scheduled boundary is
+`2026-09-04T17:09:20.326Z`, and no cadence, collection, or access trigger
+fired. This bounded reconciliation therefore makes zero XHS requests.
+Additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, no representative saved post is
+readable, and no account state changes. Provenance remains the Cycle 375
+browser receipt and seed-ledger row 375; uncertainty is unchanged.
+
+`RV-004` remains highest consequence but cannot advance without the protected
+query/rank-to-selection-to-later-outcome join. `RV-034` remains pinned outside
+Scout's authority. HASE `2607.03935` is the highest accessible unresolved
+claim: Scan #452 says harness quality consumed a 15× model-size difference,
+but had not inspected whether the comparison controlled model, proposer,
+training/search budget, implementation, or candidate selection. Select HASE
+after the seed reconciliation.
+
+## Cycle 385 checkpoint — qualify joint harness and policy evolution
+
+What was wrong: Scan #452 and the Oversight Inversion treated HASE's 8B/120B
+rows as a harness-quality ablation and inferred temporal fixed-harness
+degradation. The paper compares separately built systems and does not observe
+a once-adequate fixed harness losing quality over time.
+
+What changes: HASE supports the narrower feasibility claim that one
+Qwen3-8B policy can emit task solutions and whitelisted harness edits in a
+shared reinforcement-learning action space. On Symptom2Disease, its frozen
+final system reports `86.98 ± 0.38%` accuracy on 212 test cases versus an
+imported Meta-Harness/GPT-OSS-120B value of `86.8%`; Qwen3-8B five-shot is
+`59.4%`. The data comprise 200 training, 50 validation, and 212 test examples
+across 22 classes. Training permits up to three discounted attempts, candidate
+harnesses are selected on validation, and final testing is single-attempt
+greedy inference. The five reported evaluations use the same final policy and
+committed harness, so their standard deviation does not cover independent
+training or harness-evolution runs.
+
+For alpha mining, HASE reports RankIC `0.0302`, annual excess return `14.35%`,
+and information ratio `1.70`; imported CogAlpha/GPT-OSS-120B values are
+`0.0318`, `7.89%`, and `0.8015`. HASE uses a chronological 2011–2019 train,
+2020 validation, and 2021–2024 test split, Qwen3-8B over four GPUs, and three
+phases × three epochs. The paper references rather than reruns CogAlpha. Its
+30 selected factors pass an asymmetric future-perturbation plus truncation
+detector and receive 120/120 CLEAN labels from four LLM judges, but it reports
+no repeated evolution-run uncertainty and releases no factor/result bundle.
+
+The stronger direct control is narrower. In Heilbronn, after evaluator repair,
+FULL policy updating reaches `0.036082` by Phase 8 while FREEZE stops at
+`0.021880`; each phase uses 32 prompts × 32 trajectories. No repeated seeds or
+paired uncertainty are reported, and “8 × NVIDIA H20 nodes” is ambiguous
+about the accelerator count. In circle packing, a deliberately weak local
+evaluator is exploited twice, then repaired to the stated `10^-12` tolerance
+before the reported `2.635983` score. Each repair depends on a non-editable
+external evaluator whose oracle score is assumed accurate. The paper itself
+limits agreement to observed mismatch cases, not all future candidates. This
+is externally anchored repair, not autonomous correctness or convergence.
+
+### Exact provenance and lane continuity
+
+At `2026-09-04T13:22:35.263Z–13:22:37.271Z`, the 2,514-byte Atom record for
+`2607.03935` had SHA-256
+`5adea708a9f3ef24c86b99b0b520ca9b72a64422f553439cc97e4c6243635533`
+and identified only v1, published/updated `2026-07-04T16:04:30Z`. Explicit v1
+and current retrievals returned the same 389,032-byte archive, SHA-256
+`40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746`.
+Its 12 files include manuscript source, figures, representative evolved
+validator/retrieval/prompt snippets, and stated protocol. They do not include
+runnable training/evaluation code, checkpoints, factor sources, raw run
+outcomes, a regeneration script, or a project URL.
+
+Four bounded public GitHub repository searches by exact title, arXiv ID,
+method/model, and author returned zero matches at
+`2026-09-04T13:25:00.962Z–13:25:02.837Z`. Anonymous GitHub code search for the
+arXiv ID returned HTTP 401 (`Requires authentication`). This establishes the
+public repository-search/access boundary, not proof that an unattributable or
+private repository does not exist. Reddit made zero requests; its last useful
+evidence and RSS-readable/JSON-403 boundary remain unchanged, with revisit
+only on a relevant thread or access change.
+
+Confidence is high in arXiv identity, archive contents, protocol/table
+transcription, and the cross-system confound; moderate in the paper's reported
+within-setup point results; low in independent-run stability, compute-matched
+advantage, harness-only or model-size causality, oracle transfer, and
+convergence. `RV-004` and `RV-034` stay high/open. Revisit HASE when author
+code or raw results appear, independent evolution seeds are reported, budgets
+and models are matched, oracle implementation is exposed, or fixed/adaptive
+harness arms are compared. Next seed-first, primary-audit VERITAS
+`2607.02931`: inspect which claims it reruns, success/failure denominator,
+judge independence, retained artifacts, and whether cross-domain generality
+is measured rather than proposed.
+
+### Validation and preservation
+
+The reviewed five-file candidate passes `git diff --check`, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 current-state projection,
+94 scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 Scout tests
+/ 1,486 assertions with zero failures in 95.69 seconds. The correctly scoped
+broad audit passes all 1,540 tracked Scout Markdown documents / 1,733 local
+prose links. Read-only health at `2026-09-04T13:31:34.626Z` returns 26 facts /
+16 wake signals with `truncated:true`; no runtime state is created.
+
+Accepted commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors, while unaccepted `d041c41b54` remains excluded.
+The protected checkout is externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 893 whole short-status records /
+SHA-256 `dcd3fd63d33f2039b0426941ce42c1b288fdab5383229013892604684ee0223d`,
+and 296 Scout-scope records / SHA-256
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+That whole-tree fingerprint differs from Cycle 384's final observation and is
+recorded as external drift, not attributed to this worker. This worker ran no
+test, generator, formatter, install, clean, or write in `/app` or any peer
+worktree; recheck these exact fingerprints after committing.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
