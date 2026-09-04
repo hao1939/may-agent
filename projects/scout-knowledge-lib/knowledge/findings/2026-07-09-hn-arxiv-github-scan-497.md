@@ -65,9 +65,16 @@ Source: https://github.com/Delego-Dev/delego
 - Anti-patterns (search loops, verification skips) are corpus-level difficulty clues
 - Even resolved runs differ in how quickly they reach relevant code and how much **failed work** they incur
 
-**AgentLens** (open-sourced at agent-lens/agent-lens-bench): Production-assessed benchmark that evaluates the entire trajectory — instruction following, tool use, self-verification, mistake recovery, communication. Pairs formal verification with LLM-written trajectory reviews and side-by-side comparisons. Used in nightly evaluation pipelines.
+**AgentLens** (open-sourced at agent-lens/agent-lens-bench): a 16-scenario,
+two-persona Java benchmark retains complete trajectory fields and pairs
+deterministic task checks with GPT-5.4-written reviews and side-by-side
+comparisons. The authors report nightly internal use; the public workflow is
+manual-dispatch and contains no raw evaluated trajectory corpus. Its published
+human/judge agreement study is still future work.
 
-**Combined significance**: Resolve rate (binary pass/fail) is to trajectory evaluation what BMI is to health — a coarse indicator that hides actionable detail. Both projects recover the hidden detail.
+**Combined significance**: Resolve rate is a coarse indicator. These projects
+retain additional diagnostic fields; how completely or accurately the LLM
+reviews recover actionable detail remains unmeasured.
 
 Source: https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.06624
 

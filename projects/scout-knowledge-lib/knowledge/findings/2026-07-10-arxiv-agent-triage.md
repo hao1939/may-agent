@@ -55,6 +55,12 @@ specific to one vendor pair pending replication and mechanism ablation.
 **Assessment:** ★★ — Clean theoretical result. The "localize early mistakes" condition is the key discriminant.
 
 ### AgentLens: Trajectory-Level Evaluation (2607.06624)
-**Claim:** Benchmark that evaluates entire agent trajectories (instruction following, tool use, verification, recovery, communication) rather than pass/fail. Pairs formal verification with LLM-written trajectory reviews.
+**Claim:** A released 16-scenario/two-persona Java benchmark evaluates trajectory
+fields alongside deterministic task checks and LLM-written reviews. Here
+“formal verification” means tests, state/regex/build checks, and validators,
+not formal proof. Raw evaluated trajectories are not released.
 **Library links:** Agent Evaluation Research: Beyond Outputs (trajectory evaluation as methodological advance), The Evaluation Mirage (addresses single-bit reduction problem).
-**Assessment:** ★★ — Practical implementation of the "evaluate the trajectory not the output" thesis we've been tracking.
+**Assessment:** ★★ — Inspectable implementation of “evaluate the trajectory,
+not only the output,” bounded by GPT-5.4 judge validity, Java/Explyt scope,
+external rerun cost, and an author-reported rather than publicly demonstrated
+nightly deployment.

@@ -3,7 +3,7 @@ summary: "Seed-first Scout continuity through Cycle 341: the canonical seed ledg
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 341; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 341; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 342; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 342; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -13071,6 +13071,62 @@ contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit
 until a relevant thread/access change; and (6) static compaction. GitHub,
 arXiv, Reddit, and accepted refs make zero requests/checks in this seed record.
 Commit it before reading AgentLens.
+
+## Cycle 342 checkpoint — AgentLens is inspectable but not judge-validated
+
+The current arXiv record is `2607.06624v2`. Retrieval through
+`2026-09-04T05:11:24.452Z` yielded a 2,767-byte Atom response,
+`01b4dd2c6fa9204dadd58f7f5c828dcc3bdde1a6bc057946d59595c2cb1edf0c`,
+and 268,878-byte source archive,
+`1d1d9e1ea869fd29366524c981364c1f28dae16ce49457b9978b81f1ef34b79c`.
+The v2 source differs from v1 only in a corresponding-author address and table
+column widths; the reported design/results are unchanged.
+
+AgentLens releases 16 Java scenarios crossed with neutral and toxic personas,
+or 32 trajectories/configuration. Each dump is designed to retain chat, tool
+calls, edits, commands, verification attempts, final response, and repository
+state. Deterministic tests, file-state checks, regexes, build tasks, and static
+analysis are called “formal verification”; they are not proof-assistant or
+formal-semantics guarantees. Five GPT-5.4 review dimensions and the deterministic
+pass rate receive equal weight in the Quality Index. That decomposition is
+more diagnostic than one pass bit, but it also places five-sixths of the index
+under an LLM judge.
+
+Five repeated self-hosted GLM-5.1 runs report QI mean `67.28`, SD `0.94`.
+However, only 15/32 scenario-persona points pass formal checks in all five,
+one fails all five, and 16 are flaky. In 157 task-metric comparisons, swapping
+between GPT-5.5 and Sonnet 4.6 judges changes the preferred agent 23% of the
+time: 18% self-family preference and 5% opposite preference. The paper's human
+comparison is explicitly small and informal; no published human/judge or
+judge/judge agreement study validates the main review scores.
+
+Read-only GitHub evidence at `2026-09-04T05:11:48.834Z–05:12:35.068Z`
+resolves `agent-lens/agent-lens-bench` to
+`07c563b0c7c38824259a75833ee90e8d2853ceec`. Its 266,559-byte archive hashes
+`d2b535d3ecd5c3f8abdd25248ac2d6b9ace57e6224b8d685fb60e33a6e5e48ff`
+and expands to 315 files, including 16 scenario configs, two personas, ten
+verifier classes, judge/report code, and a leaderboard CSV. Its config pins
+the public dataset at `2f9537c369ec84326c0aef337ac0948fa0657d55`;
+that 46,340,900-byte archive hashes
+`107cd8aa5a30290ce45ec893e87b0a46e03105592066cf56cf6df6a02ae1725f`
+and contains 5,008 files.
+
+The repository has no raw evaluated trajectory or generated report corpus.
+Its public benchmark action accepts only manual `workflow_dispatch`; this does
+not independently prove the paper's internal nightly/weekly deployment or
+race-regression story. Full reproduction would require installs, a headless IDE
+runtime, simulator/judge/agent credentials, and paid calls; the paper reports
+over `$100` for one Opus 4.7 run. Those are proportionality and external-
+authority boundaries, not missing public source or dataset capability.
+
+Scan #482, Scan #497, the arXiv triage, and the Oversight Inversion now preserve
+the distinction: trajectory fields and cited reviews retain more process
+evidence than pass/fail, while judge accuracy, completeness, neutrality, and
+production impact remain unknown. ArXiv and GitHub were useful. Reddit made
+zero requests and remains trigger-deferred. `RV-004` stays high/open because no
+protected query/rank -> selection -> later-outcome join changed. Next start
+seed-first, then primary-review Agentic Data Environments `2607.07397` if its
+specification/relative-measurement claims remain highest accessible.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

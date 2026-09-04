@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #482 — The Harness Effect reports a paired one-vendor bundle comparison over 22 prompts and six models: lower aggregate tokens, cost, and latency under Writer's harness, with quality treated as parity. AgentEval reports 23–38 graph-guided boundaries across four agents, but its 23-vs-12 comparison is one airline ablation against prompt-only generation; one run, LLM-defined boundary clusters, unvalidated run-audit labels, and absent code/data bound the result. HN and GitHub counts remain discovery signals."
+summary: "Scan #482 — The Harness Effect and AgentEval retain workload- and oracle-bounded results. AgentLens does release a 16-scenario, two-persona Java trajectory benchmark and pinned dataset, but its 'formal verification' is deterministic task checking rather than formal methods; GPT-5.4 supplies five of six quality-index components without a published human agreement study. The repository has no raw evaluated trajectories, and its public benchmark workflow is manual-dispatch, so nightly production use remains an author report. HN and GitHub counts remain discovery signals."
 triggers: ["commodity proof", "harness effect", "harness multiplier", "model invariant", "orchestration economics", "harness leverage", "token maxing", "harness evaluation", "AgentLens", "AgentEval", "trajectory evaluation", "model commodity", "LLM burnout", "developer fatigue"]
 </ai_context>
 
@@ -118,15 +118,42 @@ Source: https://arxiv.org/abs/2607.06873
 
 ### AgentLens: Trajectory-Level Evaluation (2607.06624) — Beyond Pass/Fail
 
-The complement to AgentEval: instead of testing boundaries, evaluate the *entire trajectory*:
+The complement to AgentEval evaluates the *entire trajectory*:
 
 - Most benchmarks reduce runs to a single bit (pass/fail). AgentLens evaluates the whole trajectory: instruction following, tool use, self-verification, error recovery, communication quality
-- Pairs formal verification with LLM-written trajectory reviews and side-by-side comparisons
+- Pairs deterministic tests, repository-state checks, regexes, build tasks, and
+  static analysis with LLM-written trajectory reviews and side-by-side
+  comparisons; “formal” does not mean proof-assistant or formal-methods evidence
 - Each run yields a **readable explanation** of why the score is what it is
-- Used in production for nightly evaluation pipelines: diagnose behavior, compare agent versions, catch regressions
-- Released as open source
+- The authors report internal nightly/weekly regression use; the public GitHub
+  workflow is manual `workflow_dispatch`, so production cadence is not
+  independently observed
+- Open source is confirmed at `agent-lens/agent-lens-bench` head
+  `07c563b0c7c38824259a75833ee90e8d2853ceec`, including 16 Java scenarios,
+  two personas, ten verifier classes, and the pinned public dataset commit
+  `2f9537c369ec84326c0aef337ac0948fa0657d55`
 
-**Process Erasure (#462) antidote**: AgentLens recovers exactly the process information that outcome-only metrics destroy. When the harness is the value, evaluating harness trajectories becomes the core verification task.
+**Qualified Process Erasure connection:** the schema and written reviews retain
+tool calls, edits, verification attempts, and communication that a pass bit
+omits. The released repository has leaderboard aggregates but no raw evaluated
+trajectory/report corpus, so it demonstrates a mechanism for retaining process
+evidence rather than proving that every relevant process distinction was
+recovered.
+
+**Primary-review boundary (2026-09-04):** the leaderboard crosses 16 Java
+scenarios with two personas (32 trajectories) and reports 17 model/harness
+setups. Five LLM-judge dimensions plus deterministic verification receive equal
+weight in the Quality Index. GPT-5.4 supplies the judge dimensions; validity
+rests on small informal internal comparisons, with a published human/judge
+agreement study left to future work. Five repeated GLM-5.1 runs report QI
+mean `67.28`, SD `0.94`, but 16/32 scenario-persona points are flaky. A judge
+self-preference check changes the preferred agent on 23% of 157 task-metric
+comparisons, mostly toward the judge's model family. The current v2 source,
+code, scenario prompts, verifier implementations, public pinned dataset, and
+leaderboard CSV are inspectable. Raw evaluated trajectories and generated
+reports are not released; full reruns require external models, provider keys,
+IDE tooling, and material cost (the paper says one Opus 4.7 run can exceed
+`$100`).
 
 Source: https://arxiv.org/abs/2607.06624
 
@@ -232,12 +259,12 @@ But the verification infrastructure hasn't followed the value migration:
 
 | Dimension | Model-level verification | Harness-level verification |
 |-----------|------------------------|---------------------------|
-| Benchmarks | Hundreds (SWE-bench, HumanEval, etc.) | Near-zero (AgentLens is first) |
+| Benchmarks | Hundreds (SWE-bench, HumanEval, etc.) | AgentLens supplies one compact Java trajectory benchmark; ecosystem completeness is unmeasured |
 | Leaderboards | Multiple, updated daily | None |
 | Red-teaming | Active community, bounties | AgentEval is first attempt |
 | Standardization | MMLU, GPQA, etc. | No standards |
 | Cost comparison | Per-token pricing, model cards | Writer Agent Harness paper is first |
-| Trajectory evaluation | N/A (binary pass/fail) | AgentLens recovering process info |
+| Trajectory evaluation | Many cited benchmarks emphasize final state | AgentLens retains reviews and deterministic checks; recovery completeness is unmeasured |
 
 The qualified evidence is:
 1. One harness pair has same-direction reported cost savings across six models
@@ -301,7 +328,10 @@ an infrastructure gap or predict which repository category will dominate.
 - **Qualifies**: Substrate Inversion (one harness pair, not a general
   harness-over-model result), Oversight Inversion (evaluation target, not a
   measured verification vacuum), Token Economics Trap (one possible lever)
-- **Validates**: Process Erasure (#462, AgentLens recovers trajectory info), Governance Silence (#478, AgentEval discovers hidden boundaries), Attention Decay Curve (#460, frontier models priced in)
+- **Qualifies**: Process Erasure (#462, AgentLens retains more trajectory
+  evidence but does not establish recovery completeness), Governance Silence
+  (#478, AgentEval diversifies one airline run's targets), Attention Decay
+  Curve (#460, frontier models priced in)
 - **Connected**: LLM Burnout (#479→#482, physiological expression of Oversight Inversion), Slopcode (#476→#482, disposal cost of unverified harness output)
 
 Source: https://arxiv.org/abs/2607.06906, https://arxiv.org/abs/2607.06873, https://arxiv.org/abs/2607.06624, https://arxiv.org/abs/2607.07397, https://news.ycombinator.com/front

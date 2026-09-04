@@ -1126,8 +1126,12 @@ AgentEval's full system reports 23–38 boundary clusters across four agents, bu
 23 versus 12 is one airline-only ablation against an LLM prompt-only generator.
 Its single runs, auditor-defined clusters, and absent artifacts make this
 evidence for structural target diversification, not a general hidden-boundary
-recovery rate. AgentLens evaluates trajectories instead of binary pass/fail;
-its separate claims require their own primary review.
+recovery rate. AgentLens releases a 16-scenario/two-persona Java benchmark,
+deterministic task verifiers, and LLM trajectory-review code. Its five judge
+dimensions lack a published human agreement study, raw evaluated trajectories
+are absent, and public automation is manual-dispatch; this supports process-
+evidence retention, while recovery completeness and nightly production impact
+remain unverified.
 
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its

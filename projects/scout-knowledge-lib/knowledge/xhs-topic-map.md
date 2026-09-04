@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 341; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 341 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 342; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 342 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -6442,6 +6442,46 @@ open-source claims; (4) other primary-evidence, contradiction,
 reproducibility, retrieval, and synthesis gaps; (5) Reddit until a relevant
 thread/access trigger; and (6) static compaction. Commit this ordering before
 reading AgentLens.
+
+### Cycle 342 checkpoint — trajectories are retained, judge validity is not proved
+
+Current arXiv `2607.06624v2` and source were retrieved through
+`2026-09-04T05:11:24.452Z`: Atom is 2,767 bytes /
+`01b4dd2c…1edf0c`, and the 268,878-byte source archive is
+`1d1d9e1e…34b79c`. AgentLens crosses 16 Java coding scenarios with neutral and
+toxic personas, yielding 32 trajectories/configuration. It retains chat, tool
+calls, edits, commands, validation, final response, and repository state. Its
+“formal verification” is deterministic tests/state/regex/build/static checks,
+complemented by five GPT-5.4 judge dimensions; their unweighted mean with the
+deterministic rate forms the Quality Index.
+
+The paper reports five GLM-5.1 repetitions at QI `67.28 ± 0.94`, while 16/32
+scenario-persona points are flaky. Its judge-family check flips the preferred
+agent on 23% of 157 comparisons, 18% toward each judge's own family versus 5%
+the other way. The only human comparison is described as small and informal;
+published human/judge agreement remains future work. Thus readable reviews can
+retain evidence a pass bit erases, but accuracy and recovery completeness are
+not established.
+
+GitHub head `07c563b0c7c38824259a75833ee90e8d2853ceec` was observed at
+`2026-09-04T05:11:48.834Z–05:11:50.253Z`. Its 315-file archive
+(`d2b535d3…5e48ff`) contains the 16 scenario configs, two personas, ten
+verifier classes, judge/report code, and leaderboard CSV. The config pins
+public `agent-lens/dataset` commit `2f9537c3…0657d55`; its 46,340,900-byte
+archive (`107cd8aa…1725f`) contains 5,008 files. The benchmark repo has no raw
+evaluated trajectory/report corpus, and its public workflow is manual
+`workflow_dispatch`. Nightly/weekly production use and the race-regression
+example remain author reports. Reproduction was not attempted because it
+requires installs, IDE/runtime setup, several provider credentials, and paid
+model calls; the paper says one Opus 4.7 run can exceed `$100`.
+
+ArXiv and GitHub both supplied useful primary evidence; Reddit made zero
+requests under its unchanged trigger. `RV-004` remains high/open because this
+adds no protected query/rank-to-outcome join. Confidence is high in artifact
+identity, schema, and code presence; moderate that the design retains more
+diagnostic evidence than a bit; low in judge validity, neutrality, external
+transfer, and production outcome. Next seed-first, then primary-review the
+adjacent Agentic Data Environments claim `2607.07397` if it remains highest.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
