@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 406 local-main preparation has a sound 295-path reconciliation manifest and a clean validated candidate, but candidate be902d03fc97da1998ebbb9492cf5393853d91c2 was built from canonical ec9549e90511817b80912bbdc769c677c70129d6 and does not contain current canonical tip 577ba279885308c05feb8abf4ff00f949cc82694. Independent review accepts the preparation evidence and two bounded worktree removals but blocks landing until a current-tip candidate and a tested 23-path overlay-preservation operation are reviewed."
-triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "Cycle 406", "release boundary", "merge diff hygiene"]
+summary: "Cycle 406 local-main preparation now has a current-tip candidate and independently validated overlay transition. Regenerated candidate 803240b27fa4b40373524a1ed42d0b9bee7e890c merges exact main 8554a5718cfa051bf4fb827c974423380614e5a7 with exact canonical 1d25aaadd544e89c74666a888771b4c9b49d4638; all 295 overlaps are accounted for, exactly 23 ancestor-version files remain visibly modified, and rollback reconstructs the original state. Independent review accepts a guarded landing at this unchanged boundary; main remains unlanded and RV-041 stays open through postflight proof."
+triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "RV-043", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Read-only protected-checkout observations through 2026-09-05T04:11:44+08:00; exact main, canonical, merge, tree, status, overlap, blob, ancestor, worktree-registry, and retained-commit identities; a mechanically verified 295-row path manifest; independent full validation on both the isolated merge candidate and exact current canonical tip."
+source_basis: "Read-only protected-checkout observations through 2026-09-05T04:32:59+08:00; exact main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, regenerated merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, tree, status, overlap, blob, ancestor, worktree-registry, and retained-commit identities; mechanically verified 295-row manifest; producer forward/rollback exercise; independent 765-path state model and full candidate validation."
 </ai_context>
 
 # Cycle 406 isolated local-main preparation
@@ -44,11 +44,23 @@ not close RV-041 or authorize moving main.
 | Candidate branch | `codex/g-c1b31972-main-integration-406` |
 | Retained protected-blob ancestor | `9a5c3f9393ba20dbaf3d17fd0af3f23671f62d1b` |
 
-Both exact parents are ancestors of the candidate. The candidate changes 433
-main-relative paths and is clean. A separate goal-owned overlay probe remains
-clean at the same candidate after an atomic whole-diff replay failed closed on
-already-absent deletions and successor-content conflicts; no protected bytes
-were copied or committed there.
+The table above records the first candidate, which remains historical and
+rejected. The independently accepted regenerated boundary is:
+
+| Role | Exact identity |
+| --- | --- |
+| Current canonical Scout source | `1d25aaadd544e89c74666a888771b4c9b49d4638` |
+| Regenerated merge candidate | `803240b27fa4b40373524a1ed42d0b9bee7e890c` |
+| Candidate parents, in order | `8554a5718cfa051bf4fb827c974423380614e5a7`, `1d25aaadd544e89c74666a888771b4c9b49d4638` |
+| Candidate tree | `b6864abee20f01e750edd835c9992b9b95f037bf` |
+
+The regenerated candidate changes 435 main-relative paths and is clean.
+
+Both exact parents are ancestors of the historical candidate. That candidate
+changes 433 main-relative paths and is clean. A separate goal-owned overlay
+probe remains clean at the same candidate after an atomic whole-diff replay
+failed closed on already-absent deletions and successor-content conflicts; no
+protected bytes were copied or committed there.
 
 ## Protected overlay evidence
 
@@ -125,6 +137,37 @@ rerun exact-candidate validation. Stop on any drift. Rollback of this review
 disposition is one ordinary revert of its reviewer commit; rollback of any
 future landed merge must revert that exact merge without cleaning or replacing
 the protected overlay.
+
+### Regenerated-candidate independent disposition
+
+Those requirements are now satisfied for exact regenerated candidate
+`803240b27fa4b40373524a1ed42d0b9bee7e890c`. Its parents are exact main
+`8554a5718cfa051bf4fb827c974423380614e5a7` and exact canonical
+`1d25aaadd544e89c74666a888771b4c9b49d4638`; both are ancestors, and every
+Scout path in the candidate equals the canonical parent.
+
+Independent validation passes 296 tests / 1,486 assertions, syntax,
+TypeScript, formatting, Cycle 405 projection, 101 scoped links, navigation
+11/14 and 8/8, a 1,541-document / 1,743-link broad audit, and bounded read-only
+health. A separate no-write model over all 765 protected records and all 435
+candidate-diff paths reproduces exactly 295 overlaps with zero errors: 139
+identical deletions and 133 byte matches become clean, exactly 23 retained
+ancestor blobs stay visibly modified, and 470 unrelated dirty paths remain
+disjoint. Comparing the unchanged worktree bytes back to exact main restores
+the original 120 modified / 139 deleted / 36 untracked overlap status.
+
+Disposition: **accept one guarded landing at this exact unchanged boundary.**
+Immediately before execution, require the exact main, canonical, candidate,
+and protected fingerprints recorded here. Use only the exercised mixed-index
+transition; afterward require main HEAD `803240b27f`, exactly the 23 intended
+overlap modifications, all unrelated dirty bytes preserved, and the rollback
+anchor retained. Stop on any mismatch. Historical `be902d03fc` remains
+rejected and RV-043 is resolved for candidate admission. RV-041 remains
+high/open until the actual protected transition and postflight evidence pass.
+
+Integrate the reviewer documentation only after landing `803240b27f` while
+standing remains `1d25aaadd5`; integrating it first would change canonical and
+stale the approved candidate. Local main has not moved at this review point.
 
 Because the candidate is not landed, rollback is to retain both source commits
 and remove the isolated candidate worktree/branch only after no active or saved
