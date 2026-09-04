@@ -6351,6 +6351,25 @@ Protected `/app` remains externally observed at `386b445c…1fec8`, 916 /
 `f7080322…c4a93a` overall and 296 / `7e4d0937…c26a8a` in Scout scope.
 This worker wrote or tested neither protected surface.
 
+### Cycle 342 seed-first start — reuse the minutes-old exact boundary
+
+Cycle 342 starts from clean validation handoff `f7fa2c5ea5`. At
+`2026-09-04T05:09:44.710Z`, Cycle 341's supported observation through
+`05:00:03.241Z` is under ten minutes old and inside the six-hour cadence. Make
+zero XHS requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 durable seeds remain unavailable, and the exact Cycle 341 ledger
+receipt remains provenance. No account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+still inaccessible because the protected history has no retained query/rank ->
+selection -> later-outcome join; (2) Memory in the Loop's unreleased provider
+result; (3) AgentLens `2607.06624`, highest accessible because Scan #482 makes
+unqualified trajectory diagnosis, formal-verification, production-use, and
+open-source claims; (4) other primary-evidence, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until a relevant
+thread/access trigger; and (6) static compaction. Commit this ordering before
+reading AgentLens.
+
 ### Cycle 341 seed-first start — scheduled access pass is semantically unchanged
 
 Cycle 341 starts from clean `a4011b083d`. The scheduled observation ran first
