@@ -3708,6 +3708,13 @@ does not authorize a local-main landing or resource cleanup.
   first, then revert material `3917ea3f70`; no historical evidence, local
   main, or worktree is deleted by either revert.
 
+- Reviewer cursor `3a672dce7f2b6b19b5daf82d34f70b2bf8c71666`
+  is **reconciled as standing `ceba626b39`** after producer ledger
+  `756dce8901`; its resulting cursor blob is exact `cb8d72a054e1d343c7e7165388d6b098613d2b10`.
+  The reviewer source patch ID is `465796eb92df3179946d51edae6525cd99aaed7d`;
+  the standing commit is content-equivalent, not claimed patch-equivalent,
+  because it also supersedes the overlapping interim producer wording.
+
 - Producer Cycle 409 integration `a179a58bff62749a8be56f26ba9adab61ae61b7e`
   and patch-equivalent standing results `d1a443c6408014aaf83cea0664ac9b336e8b44ef`
   / `a76092b3186e6bc0124b0ec4c7ae7d16216d0e46` are **accepted after
