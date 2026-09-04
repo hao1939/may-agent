@@ -11477,6 +11477,44 @@ testing result into a necessity claim. Test the baseline definitions, bug-
 confirmation provenance, artifact availability, repeated-run uncertainty, and
 whether the evidence supports necessity or only comparative performance.
 
+Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
+syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 98.33 seconds. The broad offline
+audit passes 1,540 tracked Markdown documents / 1,728 local prose links with
+zero errors. Read-only health at `2026-09-04T02:51:47.336Z` returns 26 facts,
+16 wakes, and `truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` is excluded, and the standing status and runtime state are empty.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its whole porcelain-v2 status is
+916 records with SHA-256
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+the combined Scout scope is 296 records with SHA-256
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker wrote, tested, cleaned, or otherwise mutated neither protected
+surface.
+
+## Cycle 324 seed-first start — test necessity against comparison
+
+At `2026-09-04T02:51:47.336Z`, the last XHS observation still ended at
+`2026-09-03T22:59:03.253Z`, inside the six-hour cadence. This bounded
+reconciliation makes zero XHS, GitHub, arXiv, Reddit, or other public requests.
+Added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and no account state changes.
+
+The complete expected-value queue is: (1) high/open `RV-004`, inaccessible
+without a readable post-August-31 query/rank-to-selection-to-outcome join; (2)
+Memory in the Loop's unreleased provider artifact/result; (3) LogicHunter
+`2607.06195`, highest accessible because Scan 462 turns a comparative
+framework-testing result into the necessity of active agentic testing; (4)
+Cortex's unreleased taxonomy-size ablation; (5) other unsourced scans; (6)
+Reddit until a relevant-thread/access change; and (7) compaction. Select
+LogicHunter. Test baseline definitions, defect-confirmation provenance,
+artifact availability, repeated-run uncertainty, and whether the evidence
+supports necessity or only comparative performance.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

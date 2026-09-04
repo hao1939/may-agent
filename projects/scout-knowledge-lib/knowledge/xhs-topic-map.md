@@ -5394,6 +5394,33 @@ and primary-review LogicHunter `2607.06195`, the highest accessible claim,
 testing its baseline definition, bug-confirmation provenance, artifacts, and
 whether its evidence justifies necessity rather than comparative performance.
 
+Exact Cycle 323 material `0237879678849e6402270517f4ee51c9ea49bc71`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions in 98.33
+seconds. The broad audit passes 1,540 documents / 1,728 links. Read-only health
+at `2026-09-04T02:51:47.336Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the standing
+tree and runtime state are clean. Protected `/app` remains externally observed
+at `386b445c236e4609cd8870d22cc773cc4641fec8`: whole status is 916 records /
+`8e3558f4…8a36`, and Scout scope is 296 / `a430d0c9…f7e`.
+
+### Cycle 324 seed-first start — test the agentic-oracle necessity claim
+
+At the same boundary, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence. The bounded
+reconciliation makes zero XHS or public requests: additions/changes remain
+unknown, observed removals are `[]`, all 132 seeds remain unavailable, and no
+account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible without a post-August-31 query-to-outcome join; (2) Memory in the
+Loop's unreleased provider artifact/result; (3) LogicHunter `2607.06195`, now
+the highest accessible claim; (4) Cortex's unreleased taxonomy-size ablation;
+(5) other unsourced scans; (6) Reddit until a relevant-thread/access change;
+and (7) compaction. Select LogicHunter. Test baseline definitions, defect-
+confirmation provenance, artifact availability, repeated-run uncertainty, and
+whether the evidence supports necessity or only comparative performance.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
