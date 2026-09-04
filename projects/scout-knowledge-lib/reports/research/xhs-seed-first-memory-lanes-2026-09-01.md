@@ -15133,6 +15133,46 @@ request, then test Scan 472's category-wide “Frozen Frontier” inference
 against its selected basket, later crossings, and alternative exposure and
 selection explanations. Static compaction remains lower value.
 
+Exact Cycle 365 result
+`da1051ee9653cc3b1d58ae16460ffa1c55cc3c8b` contains seed-ordering commit
+`d434eec0a1dc99ebf00824e8441b6bb61c705472`. Syntax, TypeScript, formatting,
+Cycle 341 projection, 90 scoped links, and navigation 11/14 plus 8/8 pass. The
+full gate passes 296 tests / 1,484 assertions with zero failures in 121.81
+seconds. The broad audit passes 1,540 documents / 1,728 links. Read-only health
+at `2026-09-04T08:23:41.022Z` returns 26 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` and historical `f26bd4f3a5` are
+ancestors; unaccepted `d041c41b54` is excluded; the standing tree is clean.
+
+Protected `/app` remains at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` but is externally observed at 919
+status records / `be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a` in
+Scout scope. Both hashes differ from the prior receipt. This worker did not
+write or test `/app`; the drift is external observation with no inferred cause.
+
+## Cycle 366 seed-first start — test the category-wide attention inference
+
+At `2026-09-04T08:24:28.436Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside its six-hour cadence. This bounded
+reconciliation makes zero XHS requests: additions/changes remain unknown,
+observed removals are `[]`, all 132 durable identities remain unavailable,
+provenance remains the last browser receipt plus durable ledger, and no account
+state changes.
+
+Rank the complete queue by expected knowledge value: (1) high/open `RV-004`,
+which could alter maintenance policy but lacks the protected post-August-31
+query/rank→selection→later-outcome join; (2) Memory in the Loop's unreleased
+authority-bearing provider result; (3) Scan 472's category-wide “Frozen
+Frontier” inference, now the highest accessible gap because later retained
+crossings and stable HN records can test it; (4) remaining unsourced attention,
+market, and causal scan claims; (5) primary-evidence, reproducibility,
+retrieval, and synthesis gaps; (6) GitHub/arXiv/Reddit only on their recorded
+revision, relevant-thread, or access triggers; and (7) byte/line compaction.
+Select item 3. Test the named final items and later crossing, then distinguish
+a selected cumulative basket from a denominator, exposure study, preference
+measure, or causal category-reallocation result.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

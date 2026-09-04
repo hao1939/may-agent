@@ -8023,6 +8023,43 @@ test whether a selected cumulative story basket and one Uniqlo comparator can
 support category-wide attention reallocation, preserving later crossings and
 alternative selection/exposure explanations.
 
+Exact Cycle 365 result
+`da1051ee9653cc3b1d58ae16460ffa1c55cc3c8b` contains seed-ordering commit
+`d434eec0a1dc99ebf00824e8441b6bb61c705472`. It passes syntax, TypeScript,
+formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8,
+and all 296 tests / 1,484 assertions with zero failures in 121.81 seconds. The
+broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T08:23:41.022Z` returns 26 facts / 16 wakes and is truncated.
+Accepted `ff923ccde4` and historical `f26bd4f3a5` are ancestors; unaccepted
+`d041c41b54` is excluded. The standing tree is clean.
+
+Protected `/app` is now externally observed at unchanged HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 919 records /
+`be01f801ac63…c2a744a42b6` overall and 296 /
+`7e4d09379a93…b3ea3e60fe` in Scout scope. These differ from the prior receipt;
+this worker wrote or tested neither protected surface and assigns no cause.
+
+### Cycle 366 seed-first start — test the category-wide attention inference
+
+At `2026-09-04T08:24:28.436Z`, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable identities remain unavailable, and account state is unchanged.
+
+Expected knowledge value ranks the complete accessible queue as: (1)
+high/open `RV-004`, which could change library maintenance policy but cannot
+move without the protected query/rank→selection→later-outcome join; (2) the
+unreleased Memory in the Loop provider result, unavailable without its
+authority-bearing bundle; (3) Scan 472's selected-basket inference that the
+community reallocated attention away from a category, highest accessible
+because later retained crossings and stable HN records can test it; (4) other
+unsourced attention, market, and causal scan claims; (5) reproducibility,
+primary-evidence, retrieval, and synthesis gaps; (6) GitHub/arXiv refresh only
+on recorded revision triggers and Reddit on relevant-thread/access change;
+and (7) byte/line compaction last. Select item 3 and test final item identities,
+the later crossing, denominator/selection limits, and alternative exposure
+explanations before retaining a category-wide conclusion.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
