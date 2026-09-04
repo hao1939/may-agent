@@ -7602,6 +7602,36 @@ highest accessible broad synthesis claim: verify its review protocol, paper and
 benchmark counts, evidence coding, nonlinear-compounding basis, and whether
 component-to-system failure claims trace to primary results.
 
+Exact Cycle 359 result
+`56bb6a33c74811a82791ea8840ce8b4553ff99cb` contains seed source
+`61001844c5ecd3c089836834a5ba8b7b54d2d511` and passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and all 296 tests / 1,484 assertions with zero failures in 108.20 seconds.
+The broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T07:41:58.880Z` is 26 facts / 16 wakes and truncated. Cycle 358,
+accepted `ff923ccde4`, and Cycle 353 `f88b309737` are contained;
+`d041c41b54` is excluded. The standing tree is clean. Protected `/app` HEAD
+remains `386b445c…1fec8`; its Scout scope remains exact at 296 /
+`7e4d0937…6a8a`. Wider dirty status advanced externally from 918 /
+`0d1ab91f…a932` to 919 / `be01f801…a42b6`; record the observation without
+attributing its cause. This worker wrote or tested neither protected surface.
+
+### Cycle 360 seed-first start — test the handoff synthesis
+
+At the post-validation boundary, the supported XHS observation through
+`2026-09-04T05:00:03.241Z` remains inside cadence; make zero XHS requests.
+Additions/changes remain unknown, observed removals are `[]`, all 132 seeds
+remain unavailable, and account state is unchanged. Re-rank (1) high/open
+`RV-004`, still inaccessible without the protected outcome join; (2) Memory in
+the Loop's missing frozen-provider result, inaccessible without result and
+authority; (3) `2607.05775`, highest accessible because Scan #459 turns a
+claimed 27-paper synthesis into general nonlinear and component-to-system
+failure conclusions without primary review; (4) `2607.06256` and other
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until trigger; and (6) compaction. Select `2607.05775`. Audit its search
+and inclusion protocol, corpus and benchmark counts, evidence coding,
+nonlinear-compounding sources, and traceability of the handoff claim.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

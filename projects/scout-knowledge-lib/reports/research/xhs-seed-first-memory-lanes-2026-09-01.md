@@ -14668,6 +14668,46 @@ primary-review `2607.05775`: test the review protocol, corpus counts, evidence
 coding, nonlinear-compounding basis, and traceability of component-to-system
 failure claims before retaining Scan #459's broad synthesis.
 
+Exact Cycle 359 result
+`56bb6a33c74811a82791ea8840ce8b4553ff99cb` contains seed-ordering commit
+`61001844c5ecd3c089836834a5ba8b7b54d2d511`. It passes the repository-defined
+syntax, TypeScript, tracked-source formatting, Cycle 341 projection, 90 scoped
+links, navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions with zero
+failures in 108.20 seconds. The broad audit passes 1,540 tracked Markdown
+documents / 1,728 local prose links. Read-only health at
+`2026-09-04T07:41:58.880Z` returns 26 facts / 16 wakes and is truncated. Cycle
+358 result `21f7db953e`, accepted `ff923ccde4`, and Cycle 353
+`f88b309737` are ancestors; unaccepted `d041c41b54` is excluded. The exact
+standing tip is clean.
+
+Protected `/app` HEAD remains
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Scout scope remains exact at 296
+records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+The wider dirty status advanced externally from 918 /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`
+to 919 /
+`be01f801ac63ffe241022cf0b18b1da8db6db4e6c2b0757f80d01c2a744a42b6`.
+Record this as an external observation without assigning cause. This worker
+wrote or tested neither protected surface.
+
+## Cycle 360 seed-first start — inspect the handoff review method
+
+At the post-validation boundary, reuse the supported XHS observation through
+`2026-09-04T05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable seeds remain unavailable, and account state is unchanged.
+Expected value ranks (1) high/open `RV-004`, inaccessible without the protected
+query/rank -> selection -> later-outcome join; (2) Memory in the Loop's missing
+frozen-provider result, inaccessible without result and authority; (3)
+`2607.05775`, highest accessible because Scan #459 promotes a claimed 27-paper
+synthesis into nonlinear-compounding and component-to-system conclusions
+without primary review; (4) `2607.06256` and other primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until trigger; and
+(6) compaction. Select `2607.05775`. Audit search and inclusion protocol,
+paper/benchmark counts, evidence coding, sources for nonlinear compounding,
+and traceability of the handoff claim.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
