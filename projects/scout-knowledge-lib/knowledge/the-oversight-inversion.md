@@ -279,10 +279,19 @@ Source: findings/2026-07-07-hn-arxiv-github-scan-423.md, https://arxiv.org/abs/2
 
 ## The Depth Mismatch — Root Cause Identified (2026-07-07, Scan #424)
 
-Eight arXiv papers converge on a single structural finding: **verification at the wrong depth fails silently** — and this is the root cause of the Oversight Inversion itself. Oversight costs scale super-linearly not because verification is inherently expensive, but because the default monitoring depth (behavioral surface) contains zero-to-low information about the actual computation.
+Eight arXiv papers motivate a structural hypothesis: **verification at the
+wrong depth can fail silently**. They provide candidate mechanisms for the
+Oversight Inversion, not proof of one universal root cause or cost law. The
+default behavioral surface can omit task-relevant internal signal, but the
+amount and recoverability must be measured per setting.
 
 Key evidence:
-- **Hidden computation** (2607.03502, ICML 2026): Frontier LLMs compute over content-free filler tokens. Behavioral CoT monitoring captures zero information. But the residual stream reveals **80-95%** of intermediate values via unsupervised decoding. Monitorability is a property of depth, not surface.
+- **Hidden computation** (2607.03502, ICML 2026): On constructed tasks with
+  discrete intermediates, filler-token surfaces do not verbalize the hidden
+  steps. Residual tokens plus the strongest LLM judge recover 82.3--94.3% at
+  top-2 on correct examples; direct top-2 recovery spans 35.2--84.8%. This is
+  partial white-box auditability, not measured zero surface information or
+  general monitorability.
 - **Single-prover proofs** (2607.03561, ICML 2026): The debate paradigm for AI safety (two provers, weak verifier) is verification at the "adversarial pair" depth. Single-prover interactive proofs work when oracle access is structured — eliminating the doubled verification cost.
 - **Compositional taint** (2607.03423): Per-tool guardrails (individual depth) miss 79.2% of policy-violating tool pairs. Chain-level taint tracking (compositional depth) catches them with a monotonicity invariant.
 - **Code review rejection** (2607.03316): 56.3% of agentic code reviews rejected across 31K review-feedback pairs — agents verify functional concerns (wrong depth) while developers evaluate intent alignment (correct depth).
@@ -295,7 +304,13 @@ Key evidence:
 - Repair: detecting at surface (wrong) vs. repairing at the failure's own layer (right)
 - Persistence: stateless snapshot (wrong) vs. stateful history tracking (right)
 
-**Design implication**: Before deploying oversight, audit the depth. If the mechanism operates at a different depth than the phenomenon it monitors, it will fail silently. Moving to the correct depth is usually possible (80-95% for residual stream, 79.2% for compositional taint, 76% for review rejection prediction). The barrier is architectural habit, not fundamental limitation.
+**Design implication**: Before deploying oversight, audit both the depth and
+the access assumptions. A deeper readout may expose signal missed at the
+surface, but coverage must be measured for the target, model, and threat model.
+In 2607.03502, strong recovery requires open weights, discrete nameable values,
+4-bit frontier checkpoints, substantial compute, and an LLM judge; diffuse or
+adversarial computation remains unresolved. The barrier is not shown to be
+architectural habit alone.
 
 Source: findings/2026-07-07-arxiv-scan-424.md, https://arxiv.org/abs/2607.03502, https://arxiv.org/abs/2607.03561, https://arxiv.org/abs/2607.03423, https://arxiv.org/abs/2607.03316, https://arxiv.org/abs/2607.03528
 

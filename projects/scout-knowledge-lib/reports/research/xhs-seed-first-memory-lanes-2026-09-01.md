@@ -16440,6 +16440,145 @@ and 296 Scout-scope records /
 Those fingerprints match the Cycle 376 baseline. This worker ran no test,
 generator, formatter, install, or write in `/app` or a peer worktree.
 
+## Cycle 378 seed-first start — preserve cadence; audit hidden computation
+
+Cycle 378 begins from clean validated tip
+`1cfeda1e1767acd3feb7ee935aa112413eefba4f` at
+`2026-09-04T11:44:45.172Z`. The supported Cycle 375 XHS observation is still
+inside the six-hour cadence and no access-change trigger is present; the next
+scheduled boundary remains `2026-09-04T17:09:20.326Z`. Make zero browser or
+public XHS requests. Additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and no account
+state changes.
+
+Re-rank after that bounded reconciliation: `RV-004` remains high/open without
+the protected selection-to-outcome join; `RV-034` remains high/open without
+external runtime evidence; Memory in the Loop remains unreleased. Hidden-
+computation paper `2607.03502` is the highest accessible primary-claim gap
+because Scan #424 currently generalizes its 80--95% recovery and “zero
+information” language to behavioral monitoring. Select it before retrieval and
+audit exact tasks, models, metrics, baselines, controls, causal interventions,
+and transfer limits. Reddit remains deferred at RSS-readable/JSON-403.
+
+## Cycle 378 checkpoint — hidden computation is partly, not generally, readable
+
+What was wrong: Scan #424 turned a best-judge accuracy range into “80--95% of
+the computation,” treated content-free filler as measured zero information,
+called residual access near-complete visibility, and transferred the result to
+agent trajectories. What changes: the finding, index, and Oversight Inversion
+now bind the result to its task, target, subset, metric, access, judge, and
+artifact limits. The trajectory analogy remains a question to test.
+
+ArXiv latest resolved to `2607.03502v1` during the read from
+`2026-09-04T11:45:01.937Z` through `11:45:06.060Z`. The 3,039-byte Atom
+response has SHA-256
+`6def72eaf8b6b0b7d43536fb08a282b314c18894c5e23be1716aa017d79e05dd`;
+the 2,658,598-byte source archive has SHA-256
+`119fb62735de165ddd5c08d467750e64765edd0eb6e7c5c58f0eb2f314442129`.
+The source names four constructed task families with discrete intermediates:
+1-fact and 2-fact addition, element/capital letter position, and a synthetic
+system of equations. Mechanistic and decoder work uses 4-bit DeepSeek V3 and
+Kimi K2 checkpoints; some behavioral runs use APIs.
+
+Behavioral uplift is real but uneven. DeepSeek 1-fact rises 54% to about 72%,
+whereas DeepSeek 2-fact moves 21.1% to 24.1% and Kimi 27.3% to 35.6%. The
+equation task roughly doubles in the named conditions. Qwen 3 480B improves
+43% to 47% on letter position but not addition, and filler before the question
+does not help. Filler-only KV-cache transplants causally improve donor-answer
+ranks, but full donor answers replace the target only 13% for DeepSeek 1-fact
+with 100 dots and 6.4% on the matched equation condition. Position-selected
+2-fact interventions recover much of the rank shift, but those positions were
+defined with ground-truth values on correct examples rather than discovered by
+the label-free decoder.
+
+The headline decoding range is now explicit. On model-correct examples, the
+strongest Claude judge's pooled top-2 accuracy is 94.3% for DeepSeek 1-fact,
+82.3%/90.0% for DeepSeek/Kimi 2-fact, 92.7%/90.2% across the two
+letter-position domains, and 82.6% for the named DeepSeek equation
+intermediate. Direct top-2 residual-token recovery instead ranges
+35.2%--84.8%. The decoder is not trained with target labels, but it aggregates
+cross-example residuals, gives 50 tokens to Haiku or Sonnet, and is evaluated
+against predeclared ground truth; prompts tell the judge whether to return one
+number, two numbers, or an entity, and chemistry/geography framing improves
+some groups. Same-condition shuffled-token controls collapse near zero, which
+supports example-specific residual signal rather than prompt-only guessing.
+
+“Surface tokens carry zero information” is not an information-theoretic result.
+The filler does not verbalize the intermediate, but the paper does not estimate
+mutual information, compare general trajectory monitors, or remove the prompt
+and final answer. Its own result is partial auditability: logit-lens
+residualization hurts some counting conditions by up to 11.5 points; diffuse
+strategies and intent, vocabulary-orthogonal computation, adversarial hiding,
+and closed-weight models remain outside scope. Full extraction uses 3--4 H200
+GPUs, about 840 GB of quantized weights, roughly 1 TB of cache, and around
+$10^4$ API judge calls per task. “Cheap interpretability” describes downstream
+readout relative to the model run, not demonstrated end-to-end cost.
+
+GitHub evidence was collected from
+`2026-09-04T11:45:31.519Z–11:45:35.558Z`. The public repository
+`kaleybrauer/filler-token-reasoning` was at exact head
+`4ba4c75d5d9f04248749ec46b8bed8661b746715`, parent
+`300ff7ea03469d7c3d7f07ef3427089eb57785a2`. Its 203-file release is
+129,906,582 bytes with sorted manifest digest
+`29153abef2d472b592b39af750c054e360f6d2e7ed686b146423a76ecebe08ba`.
+All 202 JSON files parse. An independent reaggregation matches every one of
+138 accuracy groups to 36,358 judge rows exactly and retains the one disclosed
+judge refusal.
+
+Artifact coverage is incomplete. No released file contains the equation,
+shuffled-control, KV-transplant, attention, or behavioral-uplift results, even
+though the paper and repository provide code for those paths. The release can
+therefore recompute the published retrieval-task judge summaries but not all
+headline causal and control claims. All 156 Python files parse as syntax; the
+environment lacks pytest, so no dependency install or behavior-suite run was
+attempted. The repository has no tag, public release, or declared license.
+
+Confidence is high for exact source and repository identities, displayed
+results, released JSON integrity, aggregate equivalence, and missing artifact
+classes; moderate for partial auditability on these non-adversarial tasks; low
+for transfer to general reasoning, intent, closed models, or agent trajectory
+verification. Supporting evidence is the controlled residual signal, shuffled
+baseline, and causal rank movement. Contradictory or limiting evidence is weak
+direct recovery in DeepSeek 2-fact, small full swaps, Qwen task dependence,
+residualization reversals, high access cost, and incomplete release coverage.
+
+Lane continuity: arXiv v1 is selected and qualified; revisit on v2 or new
+scope/controls. GitHub retains exact head `4ba4c75` as last useful evidence;
+revisit on head, tag, release, license, or missing-output publication. Reddit
+made zero requests and remains at RSS-readable/JSON-403 until a relevant
+thread or access change. XHS made zero requests and retains Cycle 375's exact
+provenance: additions/changes unknown, removals `[]`, all 132 IDs unavailable,
+next scheduled boundary `2026-09-04T17:09:20.326Z`. `RV-004` and `RV-034`
+remain high/open. Next ranked accessible work is `2607.03561`: audit the
+structured-oracle, robustness, efficiency, and verifier assumptions behind
+Scan #424's “eliminates debate assumptions” summary.
+
+### Validation and preservation
+
+The exact reviewed candidate passes syntax, TypeScript, tracked-source
+formatting, Cycle 375 seed projection, 94 scoped links, navigation 11/14 and
+8/8, and all 296 Scout tests / 1,486 assertions with zero failures in 103.22
+seconds. The broad offline audit passes 1,540 tracked Markdown documents and
+1,732 local prose links. Read-only health at
+`2026-09-04T11:52:52.952Z` reports 26 facts / 16 wake signals with
+`truncated:true`; the runtime-state file remains absent.
+
+Accepted commits `bb2daa3213161e1b43b0bd45b541f67de0b9adbc`,
+`e8b91a8963bf81d08fc54f3334c87fbe1026c6cf`,
+`b76d6c0737472565db26505d0b2b8e09777ba8eb`, and
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701` remain standing ancestors;
+unaccepted `d041c41b54` remains excluded. Final read-only inspection at
+`2026-09-04T11:57:04.288Z` retains protected `/app` HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` and the same 386 porcelain-v1 /
+296 Scout-scope record counts, but both status surfaces moved externally after
+the earlier Cycle 378 snapshot: whole status is
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`
+and Scout scope is
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+Those are previously observed protected-checkout states, not changes
+attributable to this worker. This worker ran no test, generator, formatter,
+install, or write in `/app` or a peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

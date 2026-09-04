@@ -8925,6 +8925,90 @@ externally observed at unchanged HEAD `386b445c23`, 386 records /
 `3afed0a6...ef5a`, and 296 Scout-scope records / `59974094...f4b9f`; no test or
 write ran there or in a peer worktree.
 
+### Cycle 378 seed-first start — preserve cadence; audit hidden computation
+
+Cycle 378 begins from clean validated tip
+`1cfeda1e1767acd3feb7ee935aa112413eefba4f` at
+`2026-09-04T11:44:45.172Z`. The supported Cycle 375 XHS observation is still
+inside the six-hour cadence and no access-change trigger is present; the next
+scheduled boundary remains `2026-09-04T17:09:20.326Z`. Make zero browser or
+public XHS requests. Additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and no account
+state changes.
+
+Re-rank after that bounded reconciliation: `RV-004` remains high/open without
+the protected selection-to-outcome join; `RV-034` remains high/open without
+external runtime evidence; Memory in the Loop remains unreleased. Hidden-
+computation paper `2607.03502` is the highest accessible primary-claim gap
+because Scan #424 currently generalizes its 80--95% recovery and “zero
+information” language to behavioral monitoring. Select it before retrieval and
+audit exact tasks, models, metrics, baselines, controls, causal interventions,
+and transfer limits. Reddit remains deferred at RSS-readable/JSON-403.
+
+### Cycle 378 checkpoint — white-box signal is strong but task-scoped
+
+ArXiv latest remained `2607.03502v1` during the
+`2026-09-04T11:45:01.937Z–11:45:06.060Z` read. Exact 2,658,598-byte source
+archive SHA-256 is `119fb627...442129`. The paper supports three narrower
+claims. Filler improves some constructed tasks on DeepSeek V3 and Kimi K2 but
+not universally: Qwen 3 480B gains on letter position and not addition.
+Filler-only KV-cache transplants move the donor answer upward causally, while
+full answer swaps remain 13% for one named 1-fact condition and 6.4% for the
+system-of-equations condition. Residual tokens contain substantial information
+about discrete, predeclared intermediates.
+
+The advertised 80--95% is rounded best-judge top-2 accuracy on correct
+examples, not a fraction of all computation. Exact pooled values are 94.3% for
+DeepSeek 1-fact, 82.3%/90.0% for DeepSeek/Kimi 2-fact, 92.7%/90.2% across the
+two letter-position domains, and 82.6% for DeepSeek's named equation
+intermediate. Direct top-2 token recovery ranges 35.2--84.8%; the decoder gives
+50 residual tokens to Claude, ground truth defines and scores targets, and
+task-aware prompts improve some results. Same-condition shuffled controls near
+zero support example-specific signal, but the paper never measures zero mutual
+information at the surface or general behavioral-monitor coverage.
+
+GitHub's last useful evidence is public repository
+`kaleybrauer/filler-token-reasoning` at exact head
+`4ba4c75d5d9f04248749ec46b8bed8661b746715` (parent `300ff7ea...57785a2`).
+All 202 release JSON files parse, and 138 published aggregates exactly match
+36,358 judge rows, including one disclosed refusal. The 203-file,
+129,906,582-byte release hashes to `29153abe...08ba`, but it omits the paper's
+system-of-equations, shuffled-control, transplant, attention, and behavioral-
+uplift outputs; those claims remain manuscript-table evidence rather than
+artifact-recomputable. Python syntax passes across 156 files; pytest is absent
+and no install was attempted. The repository declares no license.
+
+Conclusion: high confidence in source/repository identity, released aggregate
+consistency, and the metric qualification; moderate confidence in partial
+white-box auditability for non-adversarial tasks with nameable intermediates;
+low confidence in transfer to diffuse intent, evasive computation, closed
+weights, or agent trajectories. The method needs 3--4 H200 GPUs, about 840 GB
+of weights, roughly 1 TB of caches, and around $10^4$ judge calls per task, so
+the full pipeline is not demonstrated as cheap. Scan #424 and the Oversight
+Inversion now treat trajectory-depth transfer as a hypothesis, not a result.
+
+Lane continuity: arXiv v1 and GitHub head `4ba4c75` are selected; revisit on a
+paper revision, repository head/release/license change, or publication of the
+missing result classes. Reddit made zero requests and remains deferred until a
+relevant thread or access change. XHS made zero requests, retains all 132 IDs
+as unavailable, and remains due `2026-09-04T17:09:20.326Z`. `RV-004` and
+`RV-034` remain high/open. The next accessible primary-claim audit is
+`2607.03561`: test Scan #424's “eliminates debate assumptions” statement
+against its oracle, robustness, efficiency, and verifier conditions.
+
+The reviewed candidate passes syntax, TypeScript, tracked-source formatting,
+Cycle 375 projection, 94 scoped links, navigation 11/14 and 8/8, and all 296
+Scout tests / 1,486 assertions in 103.22 seconds. The broad audit passes 1,540
+Markdown documents / 1,732 local prose links. Read-only health at
+`2026-09-04T11:52:52.952Z` remains 26 facts / 16 wake signals with truncation
+and no runtime-state file. Accepted Cycle 371 commits remain ancestors and
+unaccepted `d041c41b54` remains excluded. Final read-only inspection at
+`2026-09-04T11:57:04.288Z` retains protected `/app` HEAD `386b445c23` and
+the 386 whole-status / 296 Scout-scope record counts, while their fingerprints
+moved externally after the earlier snapshot to `7c285c09...ca01b` and
+`7e4d0937...26a8a`. These are previously observed protected states, not this
+worker's changes; no test or write ran there or in a peer worktree.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
