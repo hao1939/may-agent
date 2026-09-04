@@ -10959,6 +10959,48 @@ and primary-review HeRo `2607.05353`: test its access hierarchy, security
 assumptions, selective-disclosure evidence, and any measured verification-cost
 effect before preserving the Oversight Inversion claim.
 
+Exact material `976f343ca6c922ec09e8297c5931b680233a36f4` passes
+the full Scout gate from the correct app package: syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
+navigation v2 at 8/8, and all 296 tests / 1,484 assertions. Before that pass,
+`bun run check` from the library directory exited with `Script not found
+"check"` without running a gate, and a direct suite invocation with Bun's
+5-second default timed out on two factorial cases whose bodies took 6.5 and
+15.0 seconds. The repository package uses a 30-second timeout; its complete
+gate passed.
+
+The broad audit passes 1,540 tracked Markdown documents / 1,728 local prose
+links. Read-only health at `2026-09-04T02:03:27.363Z` returns 26 facts, 16 wake
+signals, and `truncated:true`. Accepted `ff923ccde4` is contained and
+unaccepted `d041c41b54` excluded. The standing branch has zero tracked diff
+and zero runtime-state files. Protected `/app` remains at
+`386b445c236e4609cd8870d22cc773cc4641fec8`: 386 status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`
+overall and 296 records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+for Scout scope.
+
+## Cycle 319 seed-first start — primary-check HeRo
+
+At `2026-09-04T02:03:37.400Z`, the last observational XHS receipt through
+`2026-09-03T22:59:03.253Z` was still inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance remains the last browser receipt plus the
+ledger, and no account state changed.
+
+Expected knowledge value now ranks: (1) high/open `RV-004`, inaccessible
+because protected query/rank-to-selection-to-outcome history ends August 31;
+(2) Memory in the Loop's unreleased frozen provider artifact and
+authority-bearing result; (3) HeRo `2607.05353`, the highest accessible gap
+because Scan 449 currently infers sub-linear verification cost from selective
+watermark disclosure without primary evidence; (4) Cortex taxonomy-size
+identification pending a matched alternative; (5) other unsourced scans; (6)
+Reddit until a relevant-thread/access trigger; and (7) compaction. Select HeRo.
+Test its construction, verifier secret and disclosure scope, threat model,
+detection/quality/latency comparisons, and whether it measures verification
+work or cost.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

@@ -5022,6 +5022,33 @@ Next begin seed-first and primary-review HeRo `2607.05353`, testing whether
 selective disclosure actually reduces verification cost and what security
 assumptions its hierarchy requires.
 
+Exact Cycle 318 material `976f343ca6c922ec09e8297c5931b680233a36f4`
+passes the app's full gate: syntax, TypeScript, formatting, Cycle 292
+projection, 90 scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484
+assertions. An initial direct test used Bun's 5-second default and timed out on
+two otherwise-passing 6.5- and 15-second factorial cases; the package's
+30-second gate passed all cases. The broad audit passes 1,540 documents /
+1,728 links. Read-only health at `2026-09-04T02:03:27.363Z` returns 26 facts /
+16 wakes. Accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+excluded, and the standing tree and runtime state are clean. Protected
+fingerprints remain 386 / `7c285c09…ca01b` overall and 296 /
+`7e4d0937…26a8a` for Scout scope.
+
+### Cycle 319 seed-first start — audit selective-disclosure evidence
+
+At `2026-09-04T02:03:37.400Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. Reconciliation
+made zero XHS or public requests: additions/changes remain unknown, observed
+removals are `[]`, all 132 seeds remain unavailable, and no account state
+changed. Re-rank (1) `RV-004`, inaccessible at the August 31 protected-history
+boundary; (2) Memory in the Loop's unreleased authority-bearing provider
+result; (3) HeRo `2607.05353`, highest accessible because Scan 449 currently
+turns selective disclosure into lower verification cost without primary
+support; (4) Cortex taxonomy-size identification pending a matched ablation;
+(5) other unsourced scans; (6) Reddit until its relevance/access trigger; and
+(7) compaction. Select HeRo and test the construction, verifier knowledge,
+threat model, detection/quality/latency evidence, and whether cost is measured.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
