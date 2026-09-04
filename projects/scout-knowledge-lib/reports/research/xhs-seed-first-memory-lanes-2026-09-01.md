@@ -13574,6 +13574,26 @@ the unpublished AIM run. Next seed-first, then determine whether AIM's “full
 dialogue” comparator maps to a cited public LoCoMo baseline or remains another
 unbound configuration.
 
+Exact Cycle 347 material `599db1675ddf59d600051a6621c7126bfb6dca19`
+passes all 296 tests / 1,484 assertions with zero failures in 102.88 seconds.
+Requested validation session `26240` had already been reaped and returned
+`Unknown process id 26240`; the surviving same-tip session `42251` was polled
+to its terminal exit without restart. The broad audit passes 1,540 tracked
+Markdown documents / 1,728 local prose links with zero errors. Read-only
+health at `2026-09-04T05:57:37.234Z` returns 26 facts, 16 wake signals, and
+`truncated:true`. Accepted `ff923ccde4` and historical `f26bd4f3a5` are
+ancestors; unaccepted `d041c41b54` remains excluded. Standing status, root
+goal runtime, and App runtime state are empty.
+
+Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its whole porcelain-v2 status is
+917 NUL records /
+`90006815b4ea47d2ea69f3788b0d1f7e64b445d3e9be2c83fb07dbb7c1383f70`;
+this unrelated drift is recorded as external observation, not attributed to
+this worker. The combined Scout scope remains unchanged at 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker wrote or tested neither protected surface.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

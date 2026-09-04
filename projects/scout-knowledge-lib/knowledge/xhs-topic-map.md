@@ -6839,6 +6839,18 @@ join. Next seed-first, then audit whether AIM's “full dialogue” comparator c
 be identified from the cited LoCoMo/public baselines or must remain another
 unbound configuration.
 
+Exact Cycle 347 material `599db1675ddf59d600051a6621c7126bfb6dca19`
+passes 296 tests / 1,484 assertions with zero failures in 102.88 seconds. The
+requested old session was already reaped; the surviving same-tip process was
+polled to terminal without restart. The broad 1,540-document / 1,728-link
+audit passes, and read-only health at `2026-09-04T05:57:37.234Z` remains 26
+facts / 16 wakes with truncation. Accepted `ff923ccde4` and historical
+`f26bd4f3a5` are contained; unaccepted `d041c41b54` is excluded. Standing and
+runtime state are empty. Protected `/app` remains externally observed at
+`386b445c…1fec8`, 917 records / `90006815…3f70` overall and an unchanged 296 /
+`a430d0c9…2f7e` in Scout scope. This worker wrote or tested neither protected
+surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
