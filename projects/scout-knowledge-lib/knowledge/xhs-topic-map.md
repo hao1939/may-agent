@@ -4864,6 +4864,39 @@ relevant-thread/access trigger; and (7) byte/line compaction. Select item 3
 because it directly extends the corrected Architecture Premium into economic
 advice and can be checked from a stable HN identity and first-party page.
 
+### Cycle 316 checkpoint — one consulting offer is not a market estimate
+
+Seed-first `f17577efe3cb6644fae46df960c29959c9c334db` preceded both public
+reads. At `2026-09-04T01:43:53.929Z`, the read-only HN Firebase endpoint pinned
+item `48823359`, “We charge $10k a week to delete AI-generated code,” and its
+first-party target `https://odra.dev/slopfix/`. The 6,019-byte page at SHA-256
+`79f6a8dbde8b379eb42d141594379b3e6d24e8a9eb6a4d52774d481ee16f7c27`
+offers one week by three senior engineers for $10,000, with payment
+proportional to an agreed line-reduction target and a two-week warranty.
+
+This directly supports offer availability. It provides no named customer,
+completed engagement, revenue, provider cost, conversion, competitor, demand
+curve, or market-clearing quantity. The $149 Fable-port anecdote is a different
+project, unit, and scope; `10,000 / 149 ≈ 67.1` is arithmetic, not an estimate
+that subtraction costs or is priced 67× above production. The two Scan 449
+variants, index, and Oversight Inversion now state the narrower hypothesis:
+cheaper production may increase remediation value, but realized comparable
+evidence is missing. Confidence is high in the posted terms, medium in its
+relevance as a demand hypothesis, and low in market magnitude or causality.
+
+HN/first-party web supplied the selected evidence. GitHub made zero requests
+and retains Cycle 315's exact heads and missing-denominator boundary. arXiv
+made zero requests; OptiAgent `2607.05346`, Cortex `2607.05377`, and HeRo
+`2607.05353` remain separate engineering claims pending primary review rather
+than economic confirmations. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because no retained protected outcome join changed.
+
+Next begin seed-first and primary-review OptiAgent's four-loop, 3/4-benchmark,
+and auditability claims. Test whether the loops are genuinely subtractive,
+what baselines and statistics support the reported ranking, and whether any
+artifact permits reproduction before carrying it into governance advice.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

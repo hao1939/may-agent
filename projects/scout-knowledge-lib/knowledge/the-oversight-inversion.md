@@ -601,11 +601,11 @@ return estimate.
 
 Source: findings/2026-07-20-hn-arxiv-github-scan-448.md, https://arxiv.org/abs/2607.05125, https://arxiv.org/abs/2607.04846
 
-## The Subtraction Economy (#449) — Market Pricing
+## The Subtraction Economy (#449) — economic hypothesis
 
-The Architecture Premium (#448) hypothesizes that architecture can yield returns distinct from capability. Scan #449 proposes the **economic corollary**: the market has priced the Subtraction Deficit. When production is near-free, subtraction may become the premium economic activity.
+The Architecture Premium (#448) treats architecture as a factor to isolate. Scan #449 proposes an economic question: when production becomes cheaper, does realized spending shift toward remediation and constraint? The current evidence does not estimate that market effect.
 
-- **"$10k/week to delete AI-generated code"** (HN, 44pts): Odra openly prices code *deletion* as a premium service. "A client calls, asks for a 'small refactor,' and sends you 100k lines of AI-generated spaghetti." Production costs $149 (Fable port). Deletion costs $10k/week. The **67× ratio** between production cost and subtraction cost is the Oversight Inversion expressed in dollars.
+- **"$10k/week to delete AI-generated code"** (HN item `48823359`): Slopfix's first-party page offers one week by three senior engineers for a conditional $10,000, with proportional payment against a line-reduction target. It reports no customer, completed engagement, revenue, supplier cost, conversion, competitor, or quantity evidence. The unrelated $149 Fable-port anecdote has different scope and units; `10,000 / 149 ≈ 67.1` is arithmetic, not a comparative price or cost estimate.
 - **OptiAgent** (2607.05346, cs.AI): SOTA on 3/4 benchmarks via four specialized *subtractive* feedback loops — each targeting a distinct failure mode (misinterpretation, structural defects, mathematical inconsistencies, code errors). Architecture's value is in what it *removes* at each stage, not what it adds. Modular subtraction is transparent; monolithic validation is opaque.
 - **Cortex** (2607.05377, cs.AI): Constrains robotics from infinite action space to **32 canonical skill primitives** via "harness engineering from task contexts to skill constraints." Outperforms monolithic baselines by 3.1–4.1%. Standardization as subtraction — reducing the possible to the canonical.
 - **HeRo** (2607.05353, cs.CR): Selective disclosure in LLM watermarking — different verifiers decode only their access-level portions. Verification itself can be subtracted: not verify-everything, but verify-what-matters-at-your-level.
@@ -617,6 +617,11 @@ Three forms of subtraction:
 | **Economic** | Delete what was added | $10k/wk code deletion | Market |
 | **Architectural** | Constrain the possible | 32 canonical primitives | Design |
 | **Verification** | Verify selectively | HeRo hierarchical disclosure | Oversight |
+
+The service offer establishes that remediation is available for sale, not that
+the market cleared at that price or that subtraction is more expensive or
+valuable than production. The engineering papers motivate mechanism-specific
+tests; they are not independent economic observations.
 
 **Six-scan exit arc**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)

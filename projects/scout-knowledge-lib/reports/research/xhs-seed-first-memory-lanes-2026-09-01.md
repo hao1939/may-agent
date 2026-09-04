@@ -10759,6 +10759,44 @@ Select the pricing claim; recover its stable HN identity, read the first-party
 offer, and distinguish a posted consulting rate from transactions, costs,
 comparable units, market clearing, and causal demand.
 
+## Cycle 316 checkpoint — the $10k page proves an offer, not a market
+
+Seed-first `f17577efe3cb6644fae46df960c29959c9c334db` preceded all public
+reads. At `2026-09-04T01:43:53.929Z`, a read-only HN Firebase request pinned
+item `48823359`, “We charge $10k a week to delete AI-generated code,” to
+`https://odra.dev/slopfix/`. The first-party response was 6,019 bytes at
+SHA-256 `79f6a8dbde8b379eb42d141594379b3e6d24e8a9eb6a4d52774d481ee16f7c27`.
+
+The page directly offers one week by three senior engineers for $10,000. It
+commits to a line-reduction target, makes payment proportional to target
+attainment, bans code golf, and includes a two-week breakage warranty. It does
+not name a customer or completed engagement and reports no revenue, provider
+cost, conversion, competitor, quantity, repeat-purchase, or demand evidence.
+
+The library's 67× claim divides this team-week consulting offer by a separate
+$149 Fable-port production anecdote. Although `10,000 / 149 ≈ 67.1`, the
+projects, units, labor scope, and measured concepts differ. The quotient does
+not estimate relative production/remediation cost, realized price, value, or
+market clearing. The two Scan 449 variants, index, and Oversight Inversion now
+retain a testable hypothesis—cheaper production may increase remediation
+value—without calling one offer a priced economic regime. Confidence is high
+in the posted terms, medium in their value for hypothesis generation, and low
+in market magnitude, demand, or causality.
+
+HN and the first-party page supplied the selected evidence. GitHub made zero
+requests and retains Cycle 315's exact heads plus its missing-denominator
+boundary. arXiv made zero requests; OptiAgent `2607.05346`, Cortex
+`2607.05377`, and HeRo `2607.05353` remain unreviewed engineering examples,
+not economic confirmations. Reddit made zero requests and remains deferred at
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because this offers no protected
+query/rank-to-selected-file-to-later-outcome join.
+
+Next begin seed-first and primary-review OptiAgent's four-loop,
+3/4-benchmark, and auditability claims. Test whether the loops are genuinely
+subtractive, whether baselines/statistics support the ranking, and whether an
+artifact permits reproduction before carrying it into governance guidance.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
