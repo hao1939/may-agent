@@ -4157,6 +4157,18 @@ remaining active 13-line early internal coordination observation against the
 canonical note. Preserve any unique provenance; retire it only if the canonical
 note demonstrably retains its domain, event, and health-signal distinctions.
 
+## Cycle 306 seed-first start — validated retrieval result carried forward
+
+Cycle 306 began from clean validated `4151805fea8f3fe815853b406d46dd0168db578e`
+at `2026-09-04T00:10:08.259Z`. The Cycle 292 receipt was about 71 minutes old,
+inside cadence, so this bounded reconciliation made zero browser or public
+requests. Added/changed identities remain unknown, removals are `[]`, and all
+132 durable seeds remain unavailable. Cycle 305 passed 296 tests / 1,484
+assertions, 1,540 documents / 1,727 links, and health at 26 facts / 16 wakes.
+Protected `/app` changed externally from 914 to 915 records at unchanged HEAD;
+its 296-record Scout fingerprint stayed `7e4d0937…26a8a`. Begin the claimed
+three-distinction preservation audit only after this ordering record.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
