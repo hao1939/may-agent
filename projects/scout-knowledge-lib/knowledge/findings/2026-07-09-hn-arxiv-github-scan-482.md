@@ -239,6 +239,26 @@ chunking, generator, prompts, metric, and outputs are not public, so neither the
 baseline nor the claimed representation effect can be reproduced from the
 citation.
 
+Mem0's primary `2504.19413v1` record makes AIM's unspecified “accuracy”
+material. Mem0 reports four LoCoMo category F1 values whose unweighted mean is
+`40.985`, four separate BLEU-1 values, ten-run category LLM-judge estimates,
+and an overall LLM-judge score of `66.88`; AIM does not say which it uses. A
+49.8% relative increase over the public F1 mean implies AIM `61.3955`, whereas
+13.54% over GAM's public GPT-4o-mini F1 mean implies `54.7234` (or `52.2398`
+over Qwen2.5-14B). These cannot be one AIM average under one metric and
+configuration. Different hidden runs could reconcile them, so this is not a
+numerical refutation; it is direct evidence that the prose percentages do not
+identify a common public experiment.
+
+The public record also carries category-order drift. Mem0's table orders
+single-hop, multi-hop, open-domain, temporal, while GAM republishes the same
+GPT-4o-mini F1/BLEU pairs as open-domain, single-hop, temporal, multi-hop under
+its single-hop, multi-hop, temporal, open-domain headings. The permutation
+preserves an unweighted mean but not category meaning. Current Mem0 code pins a
+later `memory-benchmarks` submodule result using GPT-5 as both answerer and
+judge, not the paper's GPT-4o-mini run. Neither public artifact identifies
+AIM's baseline.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

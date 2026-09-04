@@ -13528,6 +13528,52 @@ synthesis gaps; (5) Reddit until a relevant-thread/access trigger; and (6)
 compaction. Public lanes and accepted refs make zero requests/checks in this
 seed record. Commit this ordering before retrieving Mem0 evidence.
 
+## Cycle 347 checkpoint — AIM's Mem0 and GAM percentages lack one public metric
+
+At `2026-09-04T05:48:53Z`, arXiv returned exact `2504.19413v1` metadata
+(3,558 bytes / SHA-256
+`8c607b25ca580525db5c36d75ad70ee6b274a98af3370004fb3985e9e054f409`)
+and source (969,156 bytes /
+`1dae3aede2be3a87203a8e701a7c0902fc82c0b21c7d135b4e423fb0336d3c20`).
+Mem0 uses GPT-4o-mini for its LoCoMo inference and reports three distinct
+metric families: F1, BLEU-1, and a binary LLM-as-a-judge score. Its four F1
+category values `38.72`, `28.64`, `47.65`, and `48.93` have unweighted mean
+`40.985`. The separate overall judge score is `66.88 ± 0.15%`; category judge
+scores are means of ten runs. AIM does not identify which metric, category
+weighting, judge, model, or run set underlies its 49.8% claim.
+
+Applying 49.8% to Mem0's public F1 mean implies AIM `61.3955`. Applying AIM's
+separate 13.54% GAM advantage to the public GAM GPT-4o-mini and Qwen2.5-14B F1
+means implies AIM `54.7234` and `52.2398`, respectively. One AIM average under
+one public metric/configuration cannot satisfy both claims. Different hidden
+models, task subsets, or metric aggregations could reconcile them, so this is
+not evidence that the reported directions are false. It is exact evidence that
+the prose does not identify a common public comparison.
+
+The sources also disagree on category mapping. Mem0's table orders single-hop,
+multi-hop, open-domain, temporal. GAM reproduces the same GPT-4o-mini F1/BLEU
+pairs but places them, in order, under single-hop, multi-hop, temporal,
+open-domain as open-domain, single-hop, temporal, multi-hop. An unweighted
+mean survives this permutation; category conclusions do not.
+
+At `2026-09-04T05:49:32Z`, GitHub resolved
+`mem0ai/mem0@9a7924befd7026e41e445ba809370009e5e985a6`. Its evaluation
+submodule pins
+`mem0ai/memory-benchmarks@4b61c5d31b9c668a12b4f5e78064248a02c82d2b`.
+The pinned tree has 99 entries and a retained 1,068,458-byte LoCoMo result, but
+that result dates from 2026, uses GPT-5 as answerer and judge, 1,540 questions,
+and top-200 retrieval. It is useful current provenance, not the paper's 2025
+GPT-4o-mini result or AIM's hidden baseline.
+
+ArXiv and GitHub were useful. Reddit made zero requests and remains deferred
+until a relevant-thread/access trigger. `RV-004` stays high/open because no
+protected Scout query/rank -> selection -> later-outcome join appeared.
+Confidence is high in the public metric arithmetic and category permutation,
+moderate in current-code continuity with Mem0, and low in any inference about
+the unpublished AIM run. Next seed-first, then determine whether AIM's “full
+dialogue” comparator maps to a cited public LoCoMo baseline or remains another
+unbound configuration.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -1173,6 +1173,16 @@ score. AIM may have assembled an undisclosed RAG baseline around that retriever,
 but the 15.82% direction cannot be attributed to Octen or structured memory
 without the missing corpus, chunking, generator, metric, and outputs.
 
+Mem0 exposes why metric identity matters. Its primary paper reports category
+F1/BLEU-1, ten-run LLM-judge estimates, and a separate overall judge score.
+AIM's 49.8% does not select one. Applying it to Mem0's public F1 mean implies
+an AIM average of `61.3955`, inconsistent with the `54.7234` or `52.2398`
+implied by AIM's GAM percentage under the two public GAM F1 means. Hidden
+configurations could reconcile the prose, but no common public experiment does.
+GAM also permutes Mem0's published category pairs under different headings,
+preserving only the unweighted mean. Treat category labels and aggregate gains
+as unbound until one versioned result bundle fixes both.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.

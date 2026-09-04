@@ -6804,6 +6804,41 @@ synthesis gaps; (5) Reddit until a relevant-thread/access trigger; and (6)
 compaction. Public lanes and accepted refs make zero requests/checks in this
 seed record. Commit this ordering before retrieving Mem0 evidence.
 
+### Cycle 347 checkpoint — AIM's public percentages do not share one Mem0/GAM metric
+
+ArXiv returned exact `2504.19413v1` metadata and source at
+`2026-09-04T05:48:53Z` (3,558 bytes / `8c607b25…f409`; 969,156 bytes /
+`1dae3aed…3c20`). Mem0 evaluates GPT-4o-mini on LoCoMo and reports F1, BLEU-1,
+and a binary LLM-as-judge metric. Its four F1 category values average `40.985`;
+the paper separately reports overall judge `66.88 ± 0.15%`, with ten judge
+runs for each method. AIM does not identify either metric, category weighting,
+judge, model, or run set for its 49.8% claim.
+
+If 49.8% applies to Mem0's public F1 mean, AIM would average `61.3955`. If the
+same AIM average is 13.54% above GAM, GAM's public GPT-4o-mini and
+Qwen2.5-14B F1 means instead imply AIM `54.7234` and `52.2398`. No one public
+metric/configuration satisfies both percentages. Hidden model or evaluation
+bundles could reconcile them, so confidence is high in missing common binding
+but low that either unpublished result is false.
+
+Category provenance is also unstable. Mem0 orders its published pairs as
+single-hop, multi-hop, open-domain, temporal. GAM places the same GPT-4o-mini
+pairs under single-hop, multi-hop, temporal, open-domain in the order
+open-domain, single-hop, temporal, multi-hop. This preserves the unweighted
+mean but changes category meaning. Public GitHub at
+`mem0ai/mem0@9a7924befd7026e41e445ba809370009e5e985a6` pins evaluation
+submodule `mem0ai/memory-benchmarks@4b61c5d31b9c668a12b4f5e78064248a02c82d2b`.
+That later retained LoCoMo output uses GPT-5 for answerer and judge, 1,540
+questions, and top-200 retrieval; it postdates and does not reproduce the v1
+paper configuration.
+
+ArXiv and GitHub were useful. Reddit made zero requests and remains deferred
+until a relevant-thread/access trigger. `RV-004` stays high/open because this
+comparison audit supplies no protected query/rank -> selection -> later-outcome
+join. Next seed-first, then audit whether AIM's “full dialogue” comparator can
+be identified from the cited LoCoMo/public baselines or must remain another
+unbound configuration.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
