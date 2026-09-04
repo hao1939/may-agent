@@ -13451,6 +13451,45 @@ compaction. GitHub, arXiv, Reddit, and accepted refs make zero requests/checks
 in this seed record. Commit this ordering before reading the Octen citation and
 artifacts.
 
+## Cycle 346 checkpoint — AIM's Octen citation names a retriever, not a memory run
+
+At `2026-09-04T05:44:53Z`, the exact AIM-cited Octen page returned HTTP 200.
+The 84,468-byte body has SHA-256
+`efc2239ca2bace04e7b995ec20f91f0173a3ffa12a439c05a67aa756cae7bced`.
+It describes Qwen3-derived embedding models evaluated on the Retrieval
+Embedding Benchmark (RTEB), with NDCG@10 as the core metric. Its 22,231-
+character article body contains 18 RTEB references and zero LoCoMo,
+conversation, F1, or BLEU references. All six “memory” occurrences concern
+training or device memory rather than an agent memory system.
+
+At `2026-09-04T05:45:10Z–05:45:20Z`, Hugging Face resolved
+`Octen/Octen-Embedding-8B@5adcfa292e712091dfc30f0e97f0b2282e6cc66c`.
+The 7,833-byte pinned model card has SHA-256
+`7cd2b4a58884ff2e35e102b8057f7ca346bcb72e1f5b995096c70847bf3779b2`.
+It identifies a 7.6B Qwen3-derived sentence-similarity/retrieval model and
+reports RTEB mean public `0.7953`, mean private `0.8157`, and mean task
+`0.8045`. It contains no LoCoMo, conversational-memory pipeline, F1, BLEU-1,
+or end-to-end answer result. GitHub resolves the source blog to
+`Octen-Team/octen_blog@8a27411b42aa83084d60bcbdbb98b50de68a8987`.
+
+The citation therefore cannot support AIM's label “SOTA RAG-based Octen” as a
+complete LoCoMo baseline. It supports an embedding retriever. AIM may have
+privately assembled a RAG system around it, but the corpus construction,
+chunking, generator, prompts, metric aggregation, model versions, and outputs
+are not identified. Its reported 15.82% direction remains an author claim;
+neither the comparison nor attribution to structured memory versus the
+undisclosed pipeline can be reproduced from the cited artifact. Confidence is
+high in this evidence-class mismatch and missing denominator, and low in any
+claim that the unpublished result is false.
+
+GitHub, the primary Octen page, and Hugging Face were useful. ArXiv made no new
+request because exact overview source was already retained. Reddit made zero
+requests and remains deferred until a relevant-thread/access trigger.
+`RV-004` stays high/open because this correction supplies no protected Scout
+query/rank -> selection -> later-outcome join. Next seed-first, then choose the
+highest-ranked remaining claim with an identifiable cross-system metric or
+released output rather than another unbound author comparison.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

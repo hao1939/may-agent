@@ -225,6 +225,20 @@ repository revision and the inspected head postdates submission. Public code
 therefore exposes a plausible method, not the exact run underlying AIM's
 comparison.
 
+The Octen comparison is less well bound. AIM cites *Octen Series: Optimizing
+Embedding Models to #1 on RTEB Leaderboard*, whose primary post evaluates a
+Qwen3-derived embedding model on the Retrieval Embedding Benchmark with
+NDCG@10. The post and pinned model card contain no LoCoMo, conversational-
+memory pipeline, F1, BLEU-1, or end-to-end answer metric. The released
+`Octen/Octen-Embedding-8B@5adcfa292e712091dfc30f0e97f0b2282e6cc66c`
+is tagged for sentence similarity/retrieval, not as an agent memory system.
+Calling the cited item a “SOTA RAG-based Octen” therefore conflates a retriever
+component with an undisclosed full RAG baseline. AIM's reported 15.82% direction
+may describe a private pipeline using Octen, but its corpus construction,
+chunking, generator, prompts, metric, and outputs are not public, so neither the
+baseline nor the claimed representation effect can be reproduced from the
+citation.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

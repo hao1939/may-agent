@@ -1165,6 +1165,14 @@ Accordingly, AIM's direction remains a source report while its 4.18x / 13.54%
 joint comparison has no matching public task, metric, timing, or configuration
 identity.
 
+Its Octen comparison also crosses evidence classes. The cited Octen artifact
+is a Qwen3-derived embedding model evaluated on RTEB with NDCG@10, not a
+published LoCoMo conversational-memory system. Its primary post and pinned
+model card report no LoCoMo, F1/BLEU, generation pipeline, or end-to-end answer
+score. AIM may have assembled an undisclosed RAG baseline around that retriever,
+but the 15.82% direction cannot be attributed to Octen or structured memory
+without the missing corpus, chunking, generator, metric, and outputs.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.

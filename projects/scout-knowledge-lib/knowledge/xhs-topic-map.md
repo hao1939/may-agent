@@ -6741,6 +6741,39 @@ gaps; (5) Reddit until a relevant-thread/access trigger; and (6) compaction.
 GitHub, arXiv, Reddit, and accepted refs make zero requests/checks in this seed
 record. Commit this ordering before reading the Octen citation and artifacts.
 
+### Cycle 346 checkpoint — AIM cites an embedding model as a RAG memory baseline
+
+At `2026-09-04T05:44:53Z`, the cited Octen primary page returned HTTP 200
+(84,468 bytes / `efc2239c…7bced`). It describes a Qwen3-derived embedding-model
+family evaluated on the Retrieval Embedding Benchmark (RTEB), whose core metric
+is NDCG@10. Its 22,231-character article body contains 18 RTEB references and
+zero LoCoMo, conversation, F1, or BLEU references. The six uses of “memory”
+refer to hardware/training memory, not conversational memory.
+
+Hugging Face resolved the released model at
+`Octen/Octen-Embedding-8B@5adcfa292e712091dfc30f0e97f0b2282e6cc66c`
+at `2026-09-04T05:45:10Z–05:45:20Z`. Its pinned 7,833-byte model card
+(`7cd2b4a5…779b2`) identifies a 7.6B Qwen3-derived sentence-similarity/retrieval
+model and reports RTEB mean-task `0.8045`; it has no LoCoMo or end-to-end
+memory result. The source blog is pinned at
+`Octen-Team/octen_blog@8a27411b42aa83084d60bcbdbb98b50de68a8987`.
+
+AIM's cited evidence therefore does not identify the “SOTA RAG-based Octen”
+system behind its reported 15.82% relative accuracy gain. A private RAG
+pipeline could use Octen embeddings, but its corpus, chunking, generator,
+prompt, LoCoMo metric, and outputs remain undisclosed. Confidence is high in
+the citation-class mismatch and absent public denominator, but low on whether
+the unpublished comparison itself would reproduce. Preserve the direction as
+an author report; reject attribution to the embedding model or structured
+representation alone.
+
+GitHub, the Octen primary page, and Hugging Face were useful. ArXiv made no new
+request because the exact overview source was already retained. Reddit made
+zero requests and remains trigger-deferred. `RV-004` stays high/open because
+this evidence correction has no protected query/rank -> selection -> later-
+outcome join. Next seed-first, then test the highest-ranked remaining promoted
+claim with an identifiable cross-system metric or released output.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
