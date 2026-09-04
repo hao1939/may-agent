@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces the login-class collection boundary; exact access evidence, wrapper correction, and uncertainty are in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 380; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, and DSCC composition evidence qualified in Cycle 380; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 381; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, and agentic-code-review sampling and predictor evidence qualified in Cycle 381; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9133,6 +9133,82 @@ made zero requests and retains the `2026-09-04T17:09:20.326Z` boundary.
 `2607.03316` against its 31,073-pair sampling, acceptance/rejection labels,
 56.3% interpretation, predictor evaluation, causal language, and public
 artifact coverage.
+
+### Cycle 381 seed-first start — preserve cadence; audit reply selection
+
+Cycle 381 starts from clean validated tip
+`37cd39f6434d8464d771c783ef61fb6a051b821a` at
+`2026-09-04T12:20:57.604Z`. Cycle 375 remains the supported XHS observation
+through `2026-09-04T11:09:20.326Z`, about 72 minutes old, so this bounded
+reconciliation makes zero XHS requests. Added and changed identities remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and no account state changes. The next scheduled boundary remains
+`2026-09-04T17:09:20.326Z`.
+
+`RV-004` and `RV-034` remain higher-consequence but inaccessible at their
+recorded protected-join and external-runtime boundaries. The highest accessible
+primary gap is the already-ranked arXiv `2607.03316`: test whether 56.3% applies
+to the review population, whether rejection means intent mismatch, and whether
+the released 76% F1 establishes a transferable quality gate. Select it before
+retrieval. Reddit remains deferred at its RSS-readable/JSON-403 boundary.
+
+### Cycle 381 checkpoint — replies reveal two failure modes, not one
+
+Primary review of `2607.03316v2` and Zenodo record `21095394` materially
+qualifies the scan. The paper first retains 332,693 eligible CodeRabbit reviews,
+then analyzes only the 31,073 that received a developer reply: 9.34% of the
+eligible set. The released rows reproduce 10,191 pull requests and 31,073 unique
+comment IDs but contain 215 repositories, while 239 is the preceding project-
+selection count. The study therefore measures explicit reply outcomes, not the
+prevalence or effect of all CodeRabbit comments.
+
+The labels reproduce exactly: 11,297 accepted, 2,276 discussion, and 17,500
+rejected. “Discussion” requires an explicit reference to another human, while
+“rejected” is the residual category. Within rejected rows, 58% are classified
+invalid and 42% valid but misaligned, so the prior “right about the wrong thing”
+reading reverses the majority category. Functional and evolvability reviews
+have nearly equal overall rejection (56.2% versus 56.7%), but functional reviews
+have more invalid labels (35.1% versus 25.1%). This supports distinct technical-
+validity and intent-alignment failure modes; it does not attribute the aggregate
+56.3% to depth mismatch or quantify reviewer time.
+
+Only 297 comments were manually coded, 0.956% of 31,073 despite the manuscript's
+“10%” statement. GPT-5.1 labels the remaining 30,776. The 297 released test IDs
+match `manual_codes.csv`, but packaged lower-level category and reason fields are
+automated; the published manual tables reconstruct only after replacing those
+fields with the separate manual codes. Confidence is high for these artifact
+identities and arithmetic, moderate for the operational label semantics, and
+absent for the unobserved no-reply population.
+
+The best released Qwen prediction reproduces at 134 true positives, 64 false
+positives, 20 false negatives, and 79 true negatives: 67.7% precision, 87.0%
+recall, and 76.1% F1. An always-reject control on the same test prevalence
+already reaches 68.3% F1, so the gain is 7.8 points. More importantly, all 108
+test repositories occur in training and 228 of 282 test pull requests recur in
+training. The artifact contains no repository-, pull-request-, or time-held-out
+evaluation and no repeated-run uncertainty. It supports learnability within
+this overlapping split, not transfer to unseen projects or future reviews.
+
+Exact provenance: the 5,417,938-byte v2 source archive has SHA-256
+`91d81b5e9e229c7358ddd853f9bd27b369f340bcf7e1f8b72408bf9d81db2424`;
+the 3,044-byte Atom response has SHA-256
+`2b0cbe789495ea3785da9f60dc30f45870f0a0fc9258de9a74a23a3474c77da9`.
+Zenodo dataset and result archives have SHA-256
+`484d8368985941d4fc23f2b0887f6362a44186a3f38a28ff9885238ca3f333ba`
+and `f2c24786382a31f2532978e821bc9ae1568c1d1a0b563f67ffb994fab66c5018`;
+manual labels have SHA-256
+`8e6a52d5c203be54763a1f42a30b5ff96f8068ccdb530dd3cd621c2aa020ea1e`.
+
+ArXiv/Zenodo won the rubric and now revisits on a reply-denominator analysis,
+held-out repository/PR/time evaluation, repeated runs, or corrected sampling
+claim. GitHub's last useful evidence is the released repository identities and
+artifact URLs embedded in the Zenodo rows; they are dataset provenance, not a
+fresh repository search or independent replication. Revisit on an author code
+revision or evaluation split release. Reddit makes zero requests and retains
+its relevant-thread/access trigger. XHS retains the scheduled boundary above.
+`RV-004` and `RV-034` remain high/open. Next seed-first, primary-audit arXiv
+`2607.03528`: verify the risk-coverage objective, baselines, out-of-distribution
+claim, abstention semantics, uncertainty, and released-artifact coverage.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

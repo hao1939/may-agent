@@ -303,7 +303,12 @@ Key evidence:
   evaluated. Its monotonicity result applies to represented policy fields;
   policy truth, resource classification, legitimate-workflow loss, and
   unrepresented flows remain outside the evidence.
-- **Code review rejection** (2607.03316): 56.3% of agentic code reviews rejected across 31K review-feedback pairs — agents verify functional concerns (wrong depth) while developers evaluate intent alignment (correct depth).
+- **Code review replies** (2607.03316): 56.3% of 31,073 CodeRabbit comments
+  with a developer reply were labeled rejected, but these comments are only
+  9.34% of the 332,693 eligible reviews. Invalidity is the majority rejection
+  class (58%); intent/practice misalignment is 42%. This supports separate
+  technical and depth-mismatch failure modes, not attribution of the aggregate
+  rejection rate to intent depth.
 - **Selective prediction** (2607.03528, ICML 2026): Training for correctness (wrong depth) causes abstention to decay. Training for risk-coverage AURC (correct depth) preserves the ability to stop.
 
 **The Depth Mismatch unifies five layers of the Oversight Inversion**:
