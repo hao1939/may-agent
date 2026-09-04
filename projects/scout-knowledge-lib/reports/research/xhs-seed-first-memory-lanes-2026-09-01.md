@@ -12121,6 +12121,60 @@ a relevant trigger; (7) compaction. Select RuBench. Test task/model
 denominators, fallback evidence and disclosure, comparison validity, artifact
 availability, and the boundary of model-versus-product attribution.
 
+## Cycle 331 checkpoint — RuBench needs an executing-model receipt
+
+What was wrong: two canonical Scan #451 copies, Scan #472, and the index treated
+five fallback trajectories as directly reproducible and generalized one routed
+configuration into “the product, not the model, is the unit measured.” The
+public evidence is narrower.
+
+ArXiv `2607.06411v2` was observed through
+`2026-09-04T03:36:54.582Z`: 3,864 abstract bytes at SHA-256
+`ab5b9e0b0727376bc3c704d854a237b4a58a5d385572d7801b0fc313b6009e3b`
+and 31,796 source bytes at
+`7dd857cab52b7c5b8ec33b952db1dd69917688b780fd5d2126adb338a0a6ec85`.
+It reports 25 tasks, four ranked configurations, three runs each, and 300
+ranked rollouts. The 78.7% best row is a point estimate; only gaps to the
+weakest configuration have paired intervals excluding zero. Fable has one
+hors-concours run and a reported 17/20 result after five excluded tasks.
+
+GitHub `eugeneshilow/rubench` resolved to
+`3cf010895c20c5e6d3b9a0eacd37e7cd207be412`. Its 157,219,362-byte release
+tarball has SHA-256
+`f62dba030ce1288a9019265051634f7ca29caee7bf94d9b7146aecd1dc6d649b`.
+The runner at SHA-256 `71d0a324…62d0d5` scans every trajectory message and
+deletes a cell on a requested/executing-model mismatch. The released Fable log
+is 10,072 bytes at `fef4156028fbc6817804f7b324f31ce02427abf7da4da4424d48cbaed8631444`;
+it directly records one AIOH1 `MODEL-SUBSTITUTION` rejection. Exactly 20 Fable
+task directories remain, and all 1,585 model-bearing messages in their
+trajectories identify `claude-fable-5`.
+
+The contradictory boundary matters: no rejected Fable trajectory is in the
+public Git history, so the explicit fallback records for AIOH4, AIOH6, AIOH8,
+and LARA1 and the claimed AIOH1 2/2 rerun cannot be independently checked.
+The five-task list is repeated in the 2,975-byte `RESULTS.md` at SHA-256
+`77904a8bbc227afbfec830a9f0256f5df46414039434aed3c598a0404194347c`
+and in the paper, making it an attributable author claim, not five reproduced
+traces. Earlier outcome entries for those tasks do not establish which model
+executed them.
+
+What changes for readers: the library now retains a high-confidence,
+operational rule—report product, requested model, effort, versions, and task
+slice, then verify the executing model per trajectory. It records one directly
+observable rejection plus 20 clean retained traces, medium confidence in the
+reported five-task incidence, and low confidence in universal product-over-
+model attribution. A future runner should preserve a compact mismatch receipt
+or redacted invalid trace instead of deleting all model-identity evidence.
+
+ArXiv is revisited on a paper revision or uncertainty disclosure. GitHub is
+revisited on a head/release change or publication of the rejected traces or
+receipts. Reddit made zero requests and remains deferred at its RSS-readable/
+JSON-403 boundary until a relevant thread or access change. `RV-004` stays
+high/open because protected post-August-31 Scout query/rank/selection/outcome
+history is unavailable; RuBench cannot supply that join. The next exploration
+is Danus: test whether its fact graph retains independently checkable proofs and
+dependencies and what its six case studies actually evaluate.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

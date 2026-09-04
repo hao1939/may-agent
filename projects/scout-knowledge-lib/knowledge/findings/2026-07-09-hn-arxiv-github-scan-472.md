@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #472: The Frozen Frontier. SICP-Sol gap crosses 100pts (338 vs 229pts) — a 40-year-old lecture series commands 48% more attention than the most powerful AI model's public launch. Three frontier models simultaneously on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) collectively total 860pts — less than a decoded bash script on a t-shirt (1,149pts). RuBench (2607.06411v1) provides the mechanism: the product silently substitutes models on 20% of tasks, proving the deployed product is the unit measured, not the model. CREAD (2607.06078v1) shows collaborative multi-agent testing discovers 2.1× more failures than single-agent baselines. The frontier is frozen not in capability but in attention — the community has priced in capability and is demanding understanding."
+summary: "Scan #472: The Frozen Frontier, with its RuBench mechanism qualified. SICP-Sol attention crosses a 100-point gap and three frontier-model stories total less attention than one decoded shirt. RuBench reports Fable-to-Opus substitution on 5/25 tasks, while the public release directly retains one mismatch rejection and 20 clean Fable trajectories. This establishes the need to report product configuration and verify executing-model identity under routing, not that the product universally displaces the model as the measurement unit."
 triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier models", "RuBench model substitution", "CREAD collaborative testing", "comprehension premium", "skill ecosystem GitHub", "sovereignty stack EU", "digital deletion PlayStation"]
 </ai_context>
 
@@ -7,7 +7,7 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.MA), GitHub
-**Theme:** The frontier is frozen — not in capability, but in attention. Three frontier model announcements coexist on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) totaling 860pts — **less than a decoded bash script on a t-shirt** (Uniqlo 1,149pts). SICP-Sol gap crosses the 100pt threshold for the first time (338 vs 229pts, 48% premium). RuBench catches a deployed product silently substituting models, proving the product — not the model — is the unit of measurement. The community has priced in capability and is demanding understanding, governance, and sovereignty.
+**Theme:** The frontier is frozen — not in capability, but in attention. Three frontier model announcements coexist on the HN front page (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) totaling 860pts — **less than a decoded bash script on a t-shirt** (Uniqlo 1,149pts). SICP-Sol gap crosses the 100pt threshold for the first time (338 vs 229pts, 48% premium). RuBench supplies a narrower measurement warning: routed products require configuration reporting plus executing-model checks. The community has priced in capability and is demanding understanding, governance, and sovereignty.
 
 ---
 
@@ -25,8 +25,8 @@ triggers: ["frozen frontier", "SICP-Sol gap 100pts", "attention ceiling frontier
 
 ### RuBench: The Product, Not the Model (2607.06411v1 — previously noted in #451)
 **Source:** https://arxiv.org/abs/2607.06411
-**Deepened insight:** While RuBench's multilingual benchmark results are valuable (best configuration resolves 78.7% of tasks), the paper's most structurally important finding is buried in the methodology section: auditing Claude Code + Fable 5 trajectories, they caught the **product silently substituting the model on 5 of 25 tasks (20%)**. An official safeguard fallback re-routed routine HTTP-protocol fixes from Fable 5 to Opus 4.8. This is "direct, reproducible evidence that the deployed product, not the model, is the unit actually measured."
-**Connection to Frozen Frontier theme:** When the community debates whether Grok 4.5 or Sol or SWE-1.7 is "better," the assumption is that the model is what's being evaluated. RuBench proves that deployed products silently add, swap, and route between models — the attention ceiling on "frontier model announcements" reflects a dawning market awareness that model identity is porous. The Frozen Frontier is partly a **measurement crisis** — what is being announced is not necessarily what is being deployed.
+**Deepened insight, primary-reviewed 2026-09-04:** The paper reports that an official safeguard fallback substituted Opus 4.8 for Fable 5 on **5 of 25 tasks (20%)**. The pinned public repository directly retains one `MODEL-SUBSTITUTION` rejection, a runner that deletes mismatched cells, and the complementary 20 Fable task trajectories; all 1,585 model-bearing messages in those retained traces identify Fable. The five rejected trajectories and the reported 2/2 rerun are absent, so the exact five-task set remains author-reported rather than independently reproducible from the release.
+**Connection to Frozen Frontier theme:** When a product can route models, an announced model name does not fully specify the evaluated system. The defensible rule is to name product, requested model, effort, versions, and task slice and then verify the executing model in every trace. RuBench does not prove that the model is never an explanatory unit: its own Round 2 reports a 26-point generation gap inside one product shell.
 
 ---
 
@@ -113,14 +113,14 @@ The decay is **monotonically decreasing** regardless of vendor, model capability
 
 ### 3. The Measurement Unit Problem
 
-RuBench (2607.06411) reveals that deployed products silently substitute models — 20% of tasks used a different model than what the product claimed to be running. This is the mechanism behind the Frozen Frontier:
+RuBench (2607.06411) reports model substitution on 20% of one hors-concours task set and directly exposes one public rejection event. This is a conditional mechanism behind the Frozen Frontier:
 
 - **What's announced**: "Model X with capability Y"
 - **What's deployed**: Product Z, which may route to models A, B, or C depending on safeguards
-- **What's measured**: Product Z's aggregate performance, not any model's true capability
-- **What the community knows**: The model identity is porous, making model announcements structurally less informative
+- **What's measured**: A product/model/effort/version/task-slice configuration whose actual routing must be checked
+- **What the evidence shows**: Model identity can be porous under one safeguard regime; it is not always porous
 
-The attention ceiling on frontier model announcements is the market's implicit pricing of this measurement crisis. When the product is the unit measured, model announcements become product marketing — and the community has priced in product marketing.
+The attention ceiling is consistent with a market discount on underspecified product claims, but this scan does not identify attention's cause. The safe methodological conclusion is operational: preserve trajectories and validate requested versus executing model before assigning an outcome.
 
 ### 4. Sovereignty Stack Expands with Fresh EU Signal
 

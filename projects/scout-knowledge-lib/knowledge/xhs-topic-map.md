@@ -5819,6 +5819,48 @@ unit measured. Danus follows, then other primary gaps, Reddit, and compaction.
 Select RuBench; test task/model denominators, fallback evidence, disclosure,
 comparison validity, artifact access, and attribution scope.
 
+### Cycle 331 checkpoint — one retained mismatch supports the gate, not five reproduced traces
+
+ArXiv `2607.06411v2` and its full source were observed through
+`2026-09-04T03:36:54.582Z`. The paper reports four ranked product
+configurations over 25 tasks and three runs each (300 rollouts), with a 78.7%
+best point estimate; only comparisons with the weakest row have paired
+intervals excluding zero. Fable is hors concours, has one run, and is reported
+as 17/20 after five safeguard-fallback exclusions.
+
+The attributable GitHub release at `eugeneshilow/rubench`
+`3cf010895c20c5e6d3b9a0eacd37e7cd207be412` supplies the decision-relevant
+contradiction. Its fail-closed runner rejects and deletes a cell if any
+trajectory message identifies a non-requested model. The public Fable lane log
+(10,072 bytes, SHA-256 `fef41560…631444`) preserves one explicit
+`MODEL-SUBSTITUTION` rejection for AIOH1. The tree retains exactly the other 20
+Fable task directories, whose 1,585 model-bearing messages all identify
+`claude-fable-5`. It does not retain the five rejected trajectories, their
+fallback records, or the paper's reported AIOH1 2/2 rerun. `RESULTS.md`
+(SHA-256 `77904a8b…4194347c`) and the paper name AIOH1, AIOH4, AIOH6, AIOH8,
+and LARA1, so that exact five-task set remains author-reported rather than
+independently reproducible from the release.
+
+The supported high-confidence rule is conditional: routed products require
+product/model/effort/version/task-slice reporting plus per-trajectory
+requested-versus-executing-model validation. Confidence is medium in the
+reported five-task incidence and low in the earlier universal claim that the
+product, never the model, is the measured unit. The same paper reports a
+26-point generation gap inside one SourceCraft shell, contradicting that
+universal reading. Outcome-only scoring cannot diagnose the one retained
+mismatch, but the current delete-on-reject design also prevents later
+independent audit of the other rejected traces; a compact rejection receipt or
+redacted invalid trace would close that provenance gap.
+
+Lane continuity: arXiv supplied v2 and source and is revisited on revision or
+new uncertainty disclosure. GitHub supplied the exact runner, lane log, result
+summary, and 20 retained cells; revisit on a repository head/release change or
+publication of rejection receipts. Reddit made zero requests and remains
+deferred at its RSS-readable/JSON-403 boundary until a relevant thread or
+access change. `RV-004` remains high/open because RuBench contains no protected
+Scout query/rank/selection/outcome join. Next begin seed-first and primary-
+review Danus's fact-graph admission, proof/dependency, and evaluation claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

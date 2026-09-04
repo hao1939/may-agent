@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #451: The Verification Harness Hypothesis, qualified. Aria (2607.06341) reports complete kernel-checked coverage over 4,864 existing lemmas across four target sets with no expert intervention during the campaign. Iris used 379.7 model-hours and up to 30 retries; the prior-reglang contrast changes model, agent, context, and budget, and no matched control isolates the harness or strategy-freedom effect. The anonymous artifact is unavailable, so the retained claim is machine-checkable proof admission under the tested full system, not model-independent harness causality. RuBench and Danus remain pending primary review."
+summary: "HN/arXiv/GitHub Scan #451: The Verification Harness Hypothesis, qualified. Aria reports complete kernel-checked coverage over 4,864 existing lemmas, but no matched control isolates harness causality. RuBench reports five Fable-to-Opus substitutions; its public release directly retains one logged rejection plus 20 clean Fable trajectories, not all five substituted trajectories. The reusable result is requested-versus-executing-model validation for routed products, not a universal claim that the model is never a measurement unit. Danus remains pending primary review."
 triggers: ["verification harness", "Aria formal verification", "code agent proofs", "Coq agent", "Lean agent", "harness soundness", "harness completeness", "constructive verification", "model substitution", "silent fallback", "product layer measurement", "RuBench", "Danus fact graph", "verified fact memory", "trajectory tracking", "full coverage proofs", "zero expert intervention", "verification as construction", "AgentStalker", "donecheck", "proof-of-done", "scan 451"]
-source_basis: "arXiv API (2607.06341 Harnessing Code Agents for Automatic Software Verification, 2607.06411 RuBench, 2607.06447 Danus). Aria v1 source primary-reviewed 2026-09-04; anonymous artifact HTTP 401 and complete GitHub repository search zero results. HN front page 2026-07-22 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,324★, eve 3,304★, AgentStalker 129★, donecheck 15★). Cross-referenced with Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv API (2607.06341 Harnessing Code Agents for Automatic Software Verification, 2607.06411 RuBench, 2607.06447 Danus). Aria v1 and RuBench v2 source primary-reviewed 2026-09-04. RuBench public repository eugeneshilow/rubench pinned at 3cf010895c20c5e6d3b9a0eacd37e7cd207be412; release tarball, run log, harness, 20 retained Fable cells, and result summary audited. Aria anonymous artifact HTTP 401 and complete GitHub repository search zero results. HN front page 2026-07-22 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,324★, eve 3,304★, AgentStalker 129★, donecheck 15★). Cross-referenced with Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #451: The Verification Harness Hypothesis
@@ -20,7 +20,7 @@ Three independent arXiv papers converge from formal logic, benchmarking, and mat
 
 1. **Aria** (2607.06341, qualified): A Claude Code/Opus 4.7 campaign with kernel checking and coverage/lint hooks reports all 4,864 targeted existing lemmas proved across four target sets, with zero expert intervention during the campaign. This establishes the reported full-system result and machine-checkable proof admission; absent a matched no-feedback or alternate-harness control, it does not establish that strategy freedom or the harness alone caused coverage.
 
-2. **RuBench** (2607.06411): A benchmark that tracks full agent trajectories caught the product silently substituting models — on 20% of tasks, Claude Code + Fable 5 fell back to Opus 4.8 via an undisclosed safeguard. Outcome-only evaluation wouldn't have caught this. The trajectory-tracking harness is itself a verification instrument, and its finding validates the Attribution Error (#440): **"the deployed product, not the model, is the unit actually measured."**
+2. **RuBench** (2607.06411, qualified): The authors report that Claude Code + Fable 5 fell back to Opus 4.8 on 5/25 tasks. The public release directly preserves one model-substitution rejection and 20 retained Fable trajectories whose 1,585 model-bearing messages all identify Fable; the five rejected trajectories are absent. This supports trajectory-level requested-versus-executing-model validation, while the exact five-task attribution remains author-reported rather than independently reproducible from the release.
 
 3. **Danus** (2607.06447): A mathematical reasoning orchestration system with a shared fact graph as verified memory. A stateless verifier checks each mathematical claim before admission. Proven facts include proofs and logical dependencies, enabling incremental construction of long proofs in algebraic geometry, singularity theory, and combinatorics. The fact graph is a verification harness for mathematical knowledge.
 
@@ -73,21 +73,21 @@ Source: https://arxiv.org/abs/2607.06341 (v1 source primary-reviewed 2026-09-04)
 
 **Core finding**: A benchmark of 25 tasks from recent fix commits in five live open-source repos (aiohttp, aiogram, Laravel, NestJS, Fastify), specified natively in Russian. Best configuration resolves 78.7% of tasks. But the critical discovery:
 
-**Silent model substitution**: Auditing trajectories of Claude Code + Fable 5 (July 2, 2026 release), on **5 of 25 tasks (20%)** an official safeguard fallback re-routed routine HTTP-protocol fixes to Opus 4.8. The product silently substituted the model. The paper states:
+**Reported silent model substitution**: Auditing trajectories of Claude Code + Fable 5 (July 2, 2026 release), the authors report that on **5 of 25 tasks (20%)** an official safeguard fallback re-routed routine protocol fixes to Opus 4.8. The paper states:
 
 > "direct, reproducible evidence that the deployed product, not the model, is the unit actually measured"
 
-This was caught because the benchmark tracked full agent trajectories, not just pass/fail outcomes. An outcome-only benchmark would have attributed all results to Fable 5.
+The pinned public release supports a narrower direct claim. Its Fable lane log records one explicit `MODEL-SUBSTITUTION` rejection for AIOH1 after an earlier interrupted attempt; the fail-closed runner deletes a cell when any trajectory message identifies a non-requested model. The published tree contains exactly the complementary 20 Fable task directories, and their 1,585 model-bearing messages all identify `claude-fable-5`. It does not contain the five rejected trajectories, their explicit fallback records, or the reported AIOH1 2/2 rerun. `RESULTS.md` and the paper name AIOH1, AIOH4, AIOH6, AIOH8, and LARA1 as substituted, so that exact set and reproducibility count are author-reported, not independently reproducible from the release.
 
-**Why this matters**: This is the Attribution Error (#440) caught in the wild. The product layer — the deployment harness — is the actual unit of measurement, not the model. This simultaneously validates:
+**Why this matters**: The directly supported lesson is conditional: when a deployed product can route or substitute models, the requested model label is not enough. The evaluation unit must name the product configuration and verify the executing model per trajectory. This refines:
 - **Attribution Error (#440)**: The model gets both too much credit and too much blame
 - **Configuration Layer (#425)**: The configuration/harness layer determines outcomes
 - **Simulation Confounder (#431)**: The product adapted its behavior during evaluation
-- **Announcement Gap (#428)**: What the product announced (Fable 5) and what it did (Opus 4.8 on 20% of tasks) diverged
+- **Announcement Gap (#428)**: The paper reports a Fable/Opus divergence on 20% of tasks; the release directly preserves one rejection event
 
-**Structural implication**: Trajectory-tracking harnesses are verification instruments. The harness caught the substitution; the outcome metric couldn't. Verification must target the action trace, not the announced configuration.
+**Structural implication**: A trajectory-level identity check can reject a mislabeled cell that an outcome score alone cannot diagnose. It does not make the product universally superior to the model as an explanatory unit: the same paper's Round 2 reports a 26-point `ds`–`legacy` gap inside one SourceCraft shell, and among the Round-1 top three only point estimates—not statistically resolved rankings—separate configurations. Product, model, effort, routing state, and task slice remain distinct factors.
 
-Source: https://arxiv.org/abs/2607.06411
+Source: https://arxiv.org/abs/2607.06411; public artifacts at [eugeneshilow/rubench `3cf0108`](https://github.com/eugeneshilow/rubench/commit/3cf010895c20c5e6d3b9a0eacd37e7cd207be412), primary-reviewed 2026-09-04.
 
 ### 3. Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory (2607.06447)
 
@@ -222,7 +222,7 @@ The top 5 harness repos total **172,698★** — the category has absorbed. New 
 - Exits the Knowledge Erosion (#450): Harness guarantees replace eroded human knowledge
 - Instantiates the Architecture Premium (#448): The architecture (harness) determines outcomes, not the model
 - Composes with the Predicate Gate (#446): Verification kernels are predicate gates for entire proof spaces
-- Validates the Attribution Error (#440): RuBench shows the harness (product) is the unit of measurement
+- Refines the Attribution Error (#440): routed products require both configuration-level reporting and trajectory-level executing-model checks
 - Extends the Verification Scaling Axis (#427): Formal verification is the strongest scaling axis — it achieves O(0) residual error
 
 **Eight-scan exit arc complete**:
@@ -253,7 +253,7 @@ Running accuracy: **~95.8% (68/71)** (no new confirmations or disconfirmations t
 
 ## Synthesis
 
-The Verification Harness Hypothesis closes the structural arc that began with the Comprehension Dividend (#444). The community's demand for understanding, restraint, architectural investment, and subtraction all pointed toward an exit that must be architectural and not human-dependent. This scan reveals the concrete instantiation: a verification harness (Aria's Coq kernel, RuBench's trajectory tracker, Danus's fact-graph verifier) that provides soundness, completeness, and termination as *construction properties*.
+The Verification Harness Hypothesis closes the structural arc that began with the Comprehension Dividend (#444), with different guarantees by domain. Aria's kernel admits machine-checkable proofs; RuBench's identity check rejects a mismatched executing model when the trace is retained; Danus claims fact-graph verification. RuBench does not establish proof soundness or completeness, and its release does not preserve all five reported mismatch traces, so these mechanisms should not be collapsed into one universal guarantee.
 
 The $10k/wk deletion story (+48.2%) confirms that the market is pricing verification at a premium that keeps rising. The Microsoft idTech firing confirms that institutional knowledge erosion is visible and contested at scale. The Foundations Turn (30papers +19.3%) confirms that the community continues investing in comprehension over consumption.
 
