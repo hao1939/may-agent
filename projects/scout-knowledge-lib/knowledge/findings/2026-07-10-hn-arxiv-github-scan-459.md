@@ -230,7 +230,10 @@ component and system outcomes.
 
 **GPT-5.6 Sol at 178pts** — growing (+22.8%) but structurally depressed. **4.3× less** than StreetComplete alone. **4.8× less** than the Foundations Turn total. The community prices comprehension of existing knowledge 5× higher than the announcement of a new frontier model.
 
-**GitLost surges +131.6%** (57→132pts). GitHub's AI agent tricked into leaking private repos via prompt injection is the fastest-growing story on the page. The Execution Boundary (#453) confirmed in production at GitHub scale is resonating deeply — this is not theoretical anymore.
+**GitLost surges +131.6%** (57→132pts). The story about a Noma-owned GitHub
+Agentic Workflow publishing a private test README is the fastest-growing story
+on the page. It provides a public hosted proof of the Execution Boundary, not
+a GitHub internal or third-party production incident.
 
 **Sovereignty stack ~3,480pts**: StreetComplete 754pts, Chat Control 630pts, EU Car Camera 615pts, Davit 301pts, GAO Nuclear 198pts, Tenda backdoor 187pts, ZFS NAS 171pts, Rowboat 157pts, LineageOS 73pts. Nine domains.
 
@@ -253,7 +256,7 @@ component and system outcomes.
 - Chat Control Explained >700pts (3 scans, MED-HIGH)
 - EU Car Camera >700pts (3 scans, MED-HIGH)
 - Foundations Turn total >1,000pts (3 scans, MED — needs new foundational story to enter page)
-- GitLost >150pts (1 scan, HIGH — production security breach stories tend to compound)
+- GitLost >150pts (1 scan, HIGH — agent security proof stories can compound)
 
 ---
 

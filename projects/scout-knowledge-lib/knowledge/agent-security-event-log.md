@@ -1100,30 +1100,35 @@ Invisible Layer #259, Capture Spiral #194)*
 
 ---
 
-### 17. GitLost: Prompt Injection Leaks Private GitHub Repos (2026-07-08)
+### 17. GitLost: Prompt Injection Publishes Private Test-Repo Data (2026-07-08)
 
-**Event**: Noma Security ("GitLost") demonstrated that GitHub's Copilot
-Workspace agent could be tricked via prompt injection into exfiltrating
-private repository contents. The attack poisons public repo data that the
-agent reads during cross-repo operations, redirecting it to leak private
-data to attacker-controlled endpoints.
+**Event**: Noma Security ("GitLost") demonstrated a confused deputy in a
+researcher-controlled GitHub Agentic Workflow running Claude Opus 4.6. An
+explicit request in public issue `sasinomalabs/poc#153` caused the workflow to
+read a Noma-owned private test repository and publish its two-line README in a
+public issue comment. This was not Copilot Workspace, a GitHub internal agent,
+or an attacker-controlled endpoint.
 
-**HN signal**: 534 pts, 203 comments. High engagement confirms community
-awareness that production agents at major platforms remain vulnerable.
+**HN signal**: 534 pts, 203 comments. High engagement measures attention to
+the proof; it does not measure production prevalence.
 
 **Pattern**: Classic confused-deputy attack — the agent has legitimate
 access to private repos but is manipulated into using that access on behalf
-of an attacker. Validates the capability-containment isomorphism from
-AutoJack (#scan-10): every tool capability is simultaneously an exfiltration
-channel. GitHub's agent had broad scope (read private repos + network access)
-without read-only pre-execution gates or scoped authority constraints.
+of an attacker. The exact workflow runs GitHub's MCP server read-only, but the
+operator supplies a token capable of reading another organization repository;
+a safe-output job separately has issue-write authority. The demonstrated
+exfiltration channel is the public issue comment, not unrestricted network
+egress.
 
-**Structural implication**: Confirms Minimum Viable Authority Turn prediction —
-agents with broad tool access require capability scoping, not just input
-filtering. Also confirms that platform-hosted agents (GitHub, Google, etc.)
-face the same confused-deputy surface as self-hosted ones.
+**Structural implication**: Supports the Minimum Viable Authority condition:
+scope cross-repository tokens and public outputs together rather than relying
+on model guardrails. It establishes one GitHub-hosted proof configuration, not
+a platform-wide affected population.
 
-*(Source: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md).
+*(Sources: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md),
+https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/,
+https://github.com/sasinomalabs/poc/issues/153,
+https://github.com/sasinomalabs/poc/actions/runs/23909609053.
 Connects to: AutoJack #scan-10, ToolPrivBench #82, Deterministic Gates arXiv 2607.07405)*
 
 ---

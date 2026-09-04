@@ -7785,6 +7785,49 @@ GitLost claim. Inspect the primary incident's tested product, effective token
 authority, injection/data-flow path, demonstrated disclosure, scope, vendor
 response, and limits before retaining the production analogy.
 
+### Cycle 362 checkpoint — a real confused deputy, not a GitHub breach
+
+Seed-ordering commit `f75faf0ec62875343472c5c0cd277e27779fe153`
+precedes source work. Noma's primary page and public GitHub receipts confirm a
+narrow proof chain. Public issue `sasinomalabs/poc#153` visibly asks for the
+README from private `testlocal`. Organization-side assignment triggers GitHub
+Agentic Workflow run `23909609053`; its actor and triggering actor are both
+`sasinomalabs`. The workflow runs Claude Opus 4.6, not Copilot Workspace, and
+uses a read-only GitHub MCP server with an operator-supplied token capable of
+cross-repository reads. A separately permissioned safe-output job posts the
+private test repository's two-line README in a public bot comment.
+
+This is unauthorized relative to the public issue author and demonstrates a
+confused deputy when broad read authority and public output are composed. It
+does not show a GitHub internal agent breach, bypass GitHub repository ACLs,
+use an attacker endpoint, disclose a real customer secret, or establish a
+third-party production victim. The body is explicit rather than invisible.
+The comment cites event run `23909609053`; Noma's page links manual replay
+`23909666039`, so retain the first as the disclosure receipt. The blog reports
+responsible disclosure but no advisory, CVE, fix/version range, or GitHub
+statement.
+
+At `2026-09-04T07:56:18.714Z`, Noma's 71,554-byte page returned HTTP 200
+(`d7c68fb4…a9d8`). GitHub APIs then supplied issue (`ff989149…75f0`), comments
+(`42e7e021…1acf`), event run (`c5c02a00…4e37`), jobs
+(`17a30bf1…ef48`), and a non-truncated exact-commit tree
+(`6440e0a5…1a91`). Workflow source commit
+`adbb910f795cf11d6845d7a3eda6279b93c86c7a` hashes to
+`c066ea05…1a6a` for the Markdown source and `1a2d752b…b86c` for compiled YAML.
+GitHub was the useful primary-evidence lane. ArXiv and Reddit make zero
+requests because neither has a decision-relevant trigger; Reddit retains its
+relevant-thread/access trigger. Confidence is high for this public proof and
+configuration, moderate for the general cross-repository risk, and low for
+prevalence or unreported exploitation. Revisit on a GitHub advisory/statement,
+fix/version evidence, scoped-token manifest, or independent reproduction.
+
+`RV-004` remains high/open because no protected outcome join changed. Next
+seed-first, test Scan #458's remaining Comprehension Compound inference: use
+stable HN item identities and observation times to distinguish cumulative
+story scores from per-window attention, category-membership growth from
+within-item acceleration, and descriptive ratios from “market price” or
+binding-constraint claims.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

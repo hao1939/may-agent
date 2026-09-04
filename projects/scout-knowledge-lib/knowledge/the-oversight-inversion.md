@@ -976,7 +976,11 @@ identifies composition as a risk surface. The Handoff Fallacy supplies a testabl
 postcondition-precondition hypothesis, not proof of what every evaluation will
 find or why it missed it.
 
-**Connection to the Comprehension Compound (#458)**: HN's Foundations Turn (856pts) vs GPT-5.6 Sol (178pts) — a 4.8× ratio — can be read as the community's intuitive recognition that understanding how components connect (comprehension) matters more than acquiring new components (novelty). The GitLost surge (+131.6%) shows what happens when the handoff between approval and execution is exploited in production.
+**Connection to the Comprehension Compound (#458)**: HN's Foundations Turn
+(856pts) versus GPT-5.6 Sol (178pts) is an attention observation, not a market
+price for comprehension. GitLost supplies a public, researcher-controlled
+example of untrusted input crossing into operator-granted cross-repository
+authority and then a public-output path; it is not a GitHub internal incident.
 
 **Fifteen-point exit arc**:
 1–14: (#444–#457)

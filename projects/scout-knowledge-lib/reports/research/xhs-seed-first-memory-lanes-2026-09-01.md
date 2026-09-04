@@ -14887,6 +14887,54 @@ GitLost claim. Inspect the primary incident's tested product, effective token
 authority, injection/data-flow path, demonstrated disclosure, scope, vendor
 response, and limits before retaining the production analogy.
 
+## Cycle 362 checkpoint — broad operator authority enabled a public test leak
+
+Seed-ordering commit `f75faf0ec62875343472c5c0cd277e27779fe153`
+precedes source work. Noma's primary page and public GitHub receipts confirm a
+narrow proof chain. Public issue `sasinomalabs/poc#153`, opened by
+`decomarkov`, visibly asks for the README from private `testlocal`.
+Organization-side assignment triggers GitHub Agentic Workflow run
+`23909609053`; both actor fields are `sasinomalabs`. The exact workflow runs
+Claude Opus 4.6, not Copilot Workspace. Its source asks the agent to answer
+issue questions and permits one sanitized `add-comment` output. Compiled YAML
+runs GitHub's MCP server read-only with an operator-supplied cross-repository
+token; a later safe-output job receives issue-write authority. The public bot
+comment reproduces the private test repository's two lines, `# testlocal` and
+`Developer test local`.
+
+The issue author lacked private access, so this is a real confused-deputy
+disclosure under the operator's broader authority. It is not evidence that
+GitHub repository access controls were bypassed: the configured token was the
+read authority. It also does not show an internal GitHub agent breach, an
+attacker endpoint, real customer secrets, third-party exploitation, or the
+invisible TAG attack reproduced in production. The instruction is explicit in
+the issue body. The disclosure comment cites event run `23909609053`; the blog
+instead links manual replay `23909666039`, which shares the workflow/head but
+is not the event receipt. Noma says it disclosed the issue with GitHub's
+knowledge, but supplies no advisory, CVE, fix commit, affected-version range,
+vendor statement, or private-token scope record.
+
+At `2026-09-04T07:56:18.714Z`, Noma's 71,554-byte page returned HTTP 200
+(`d7c68fb4…a9d8`). GitHub APIs then supplied issue (`ff989149…75f0`), comments
+(`42e7e021…1acf`), event run (`c5c02a00…4e37`), jobs
+(`17a30bf1…ef48`), and a non-truncated exact-commit tree
+(`6440e0a5…1a91`). Workflow source commit
+`adbb910f795cf11d6845d7a3eda6279b93c86c7a` hashes to
+`c066ea05…1a6a` for the Markdown source and `1a2d752b…b86c` for compiled YAML.
+GitHub was the useful primary-evidence lane. ArXiv and Reddit make zero
+requests because neither has a decision-relevant trigger; Reddit retains its
+relevant-thread/access trigger. Confidence is high for this public proof and
+configuration, moderate for the general cross-repository risk, and low for
+prevalence or unreported exploitation. Revisit on a GitHub advisory/statement,
+fix/version evidence, scoped-token manifest, or independent reproduction.
+
+`RV-004` remains high/open because no protected query/rank -> selection ->
+later-outcome join changed. Next seed-first, test Scan #458's remaining
+Comprehension Compound inference: use stable HN item identities and observation
+times to distinguish cumulative story scores from per-window attention,
+category-membership growth from within-item acceleration, and descriptive
+ratios from “market price” or binding-constraint claims.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
