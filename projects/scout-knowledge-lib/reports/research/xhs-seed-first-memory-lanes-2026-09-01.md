@@ -12320,6 +12320,71 @@ single- and two-agent controls, environment variation, model and role identity,
 scenario-generation budget, repeated-run uncertainty, artifact retention, and
 whether collaboration rather than budget explains the result.
 
+## Cycle 333 checkpoint — one environment supports collaboration and one contradicts it
+
+Seed commit `dfb13d7f29a89fa763292068e158796b20c0fbff` preceded the
+primary review. At `2026-09-04T03:58:18.077Z`, the arXiv exact record returned
+`2607.06078v1`; its 3,196-byte body has SHA-256
+`86ec156e03b803156b5b64e1abf2c8938355b0f5bf178cd929a2e740c889556e`,
+and the 183,869-byte source archive has SHA-256
+`ceb79d848eca5d046555d64561ec6272dee786e75d5297c7734ace0f0bc54234`.
+
+The work-in-progress paper runs each of three configurations for 50 iterations
+in Highway and Roundabout. Its failures-per-100 table is 52/14/12 in Highway
+and 52/58/38 in Roundabout for collaborative/non-collaborative/single-agent.
+The collaboration effect against the same-role non-collaborative arm is +38
+points in Highway but -6 points in Roundabout. The approximately 2.1x headline
+is the collaborative cross-environment average, 52, divided by the
+single-agent average, 25. It is not a consistent collaboration multiplier.
+
+The architecture labels also need qualification. Only the Perception Fuzzer
+uses `GLM-5-Turbo`; the Metamorphic Validator is a rule-based behavioral
+inconsistency indicator, and the Orchestrator is heuristic archive search. The
+system perturbs simulator-derived state consumed by a deterministic heuristic
+ego policy in HighwayEnv. It does not test camera/LiDAR perception, a learned
+controller, a production autonomous-driving stack, or a formal failure oracle.
+Collaborative versus non-collaborative keeps fuzzer and validator roles common,
+but single-agent also removes the validator, so that contrast changes
+functionality as well as coordination.
+
+At `2026-09-04T03:59:25Z`, unauthenticated Git and GitHub API reads observed
+the attributable `ruizhengu/CREAD` repository at main
+`cc59f9c622c721146637c3a8a1648b38ed7ceb81`. The runner and metrics files have
+SHA-256 `f6c215823466ad36d6982dbbcf1ed49eb59f5a17db143adb56e1b61d408f3313`
+and `6846918095e02d76548f7d27c13496cd1786e507ee0b3dd3a223d59348784af9`.
+The 34-file tree publishes its runner and output schema but no result JSON.
+The repository has zero tags, releases, release assets, or GitHub Actions
+artifacts. Results are gitignored, and no fixed Python, NumPy, or simulator
+seed is set. No repeated-run distribution, confidence interval, LLM
+prompt/response trace, or token/cost equality ledger is retained publicly.
+
+Because each episode's failure metric is binary 0/100, the table implies
+26/7/6 failures in Highway and 26/29/19 in Roundabout. Descriptive 95% Wilson
+intervals are 38.5%–65.2% for each 26/50 arm, 7.0%–26.2% for Highway
+non-collaborative, 5.6%–23.8% for Highway single-agent, 44.2%–70.6% for
+Roundabout non-collaborative, and 25.9%–51.8% for Roundabout single-agent.
+These calculations characterize sampling width only; the unseeded, unrepeated
+runs and missing artifacts prevent an independent inferential or reproduction
+claim.
+
+Scan #472 now retains an environment-specific coordination result and rejects
+its general orthogonal-agent explanation. Scan #479 likewise treats CREAD as a
+testing-role proxy whose coordination effect and oracle authority are
+configuration-specific. Confidence is high for the primary table, exact code
+structure, sign reversal, and current artifact absence; low for repeatability,
+budget equality, a general collaboration effect, and transfer beyond this
+lightweight proxy.
+
+GitHub last useful evidence is exact repository/code provenance and absent
+result artifacts; revisit on head, tag, release, action-artifact, or retained
+experiment change. ArXiv last useful evidence is v1 paper/source; revisit on a
+revision, supplement, or seeded repeated ablation. Reddit made zero requests
+and remains at RSS-readable/JSON-403 until a relevant thread or access change.
+`RV-004` remains high/open because no protected Scout
+query/rank/selection/outcome join appeared. Next begin seed-first and rank the
+remaining primary contradiction, artifact-reproducibility, and synthesis gaps
+above byte/line compaction.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

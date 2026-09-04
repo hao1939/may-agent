@@ -23,7 +23,7 @@ The hierarchy, synthesized across papers:
 | 2 | Deterministic gates | CXI (#475): zero escapes | Strong but domain-specific |
 | 3 | Physics/domain constraints | PA-SciML: causality, boundary conditions | Incomplete but meaningful — catches what metrics miss |
 | 4 | Statistical testing (30+ runs, significance tests) | Rethinking Benchmarks: 6.11% significant | Reveals what single runs hide |
-| 5 | Multi-agent review | SWE-Review (#475), CREAD (#472) | Diversity-dependent — collapses with coupled agents (#455) |
+| 5 | Multi-agent review or coordinated testing | SWE-Review (#475); CREAD (#472) is an environment-dependent testing-role proxy | Independence, coordination effect, and oracle authority are configuration-specific; CREAD wins one environment and loses the other |
 | 6 | Automated judges (LLM-as-judge) | Blind Curator (#478): false-pass bias | Correlated with subject's own blind spots |
 | 7 (Weakest) | Intrinsic self-assessment | RSI survey: self-confirming loops | Produces highest confidence with lowest validity |
 

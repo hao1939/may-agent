@@ -5947,6 +5947,49 @@ environment variation, role/model separation, repeated-run uncertainty, artifact
 retention, and whether collaboration rather than budget or generated scenarios
 explains the result.
 
+### Cycle 333 checkpoint — CREAD's coordination effect changes sign by environment
+
+ArXiv `2607.06078v1` and its source were observed at
+`2026-09-04T03:58:18.077Z` (abstract 3,196 bytes, SHA-256
+`86ec156e…9556e`; source 183,869 bytes, SHA-256 `ceb79d84…4234`). The paper
+reports one 50-iteration run per arm in Highway and Roundabout. Failures per
+100 scenarios are respectively 52/14/12 and 52/58/38 for collaborative,
+non-collaborative, and single-agent. Collaboration therefore improves the
+primary metric against the same-role control only in Highway; in Roundabout it
+loses 52 to 58. The advertised approximately 2.1x is 52 divided by the
+cross-environment single-agent average of 25, not a stable collaboration
+effect.
+
+Only the Perception Fuzzer uses `GLM-5-Turbo`. The validator applies rules and
+the orchestrator performs heuristic archive search. The test subject is a
+deterministic heuristic controller under simulated state corruption in
+HighwayEnv; it is neither a production controller nor sensor-level perception.
+The same-role collaborative/non-collaborative comparison isolates the added
+blackboard and orchestrator more closely, while the single-agent arm also
+removes the validator role.
+
+Unauthenticated Git observed the paper-linked `ruizhengu/CREAD` repository at
+main `cc59f9c622c721146637c3a8a1648b38ed7ceb81` through
+`2026-09-04T03:59:25Z`. Its runner and metrics SHA-256 values are
+`f6c21582…f3313` and `68469180…af9`. The 34-file tree contains no result JSON;
+GitHub exposes zero releases, tags, and action artifacts. The runner records a
+commit and output layout but sets no Python, NumPy, or simulator seed, and the
+release provides no repeated runs, uncertainty, equal-budget LLM ledger, or
+retained prompts/responses. The reported rates imply failure counts 26/7/6 in
+Highway and 26/29/19 in Roundabout. Descriptive 95% Wilson intervals include
+38.5%–65.2% for 26/50 and 44.2%–70.6% for 29/50; inference across unseeded
+single runs remains weak.
+
+Qualify Scan #472 and the Scan #479 synthesis. Confidence is high for the
+reported table, code structure, environment-dependent sign, and current
+artifact absence; low for repeatability, statistical effect, causal
+attribution beyond this runner, and transfer. GitHub and arXiv supplied exact
+primary evidence. Reddit made zero requests and remains trigger-deferred at
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because this source correction supplies no protected
+query/rank/selection/outcome join. Next begin seed-first and rank the remaining
+primary-evidence and reproducibility gaps above compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
