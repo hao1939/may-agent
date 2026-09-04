@@ -9746,6 +9746,74 @@ navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486 assertions in
 local prose links. Read-only health at `2026-09-04T14:29:05.374Z` returns 26
 facts / 16 wake signals with `truncated:true` and creates no runtime packet.
 
+### Cycle 389 seed-first start — preserve cadence; audit TAG-block scope
+
+Cycle 389 starts from clean validated Cycle 388 result
+`3891aa18051622e4865493308ea3f8ff79ad3fef`. The scheduled XHS boundary
+remains `2026-09-04T17:09:20.326Z`; no collection or access trigger fired
+before source selection. Reuse the Cycle 375 browser receipt and seed ledger
+without another account request: added and changed identities remain unknown,
+observed removals remain `[]`, all 132 durable identities remain unavailable,
+and no account state changed. This preserves seed-first ordering while naming
+the uncertainty; it is not evidence that the live collection is unchanged.
+
+Ranked after that record: (1) high/open `RV-004`, still inaccessible without
+the protected query/rank-to-selection-to-later-outcome join; (2) high/open
+`RV-034`, still at an external runtime boundary; (3) Memory in the Loop's
+unreleased provider result; and (4) the promoted TAG-block claim in arXiv
+`2607.05744`, highest accessible because the library currently treats
+serialized delivery as model receipt and three related implementations as
+fully independent. Select the fourth item and test protocol outcomes, model
+behavior, deployed-client scope, cross-library independence, and artifact
+availability separately.
+
+### Cycle 389 checkpoint — delivery is measured; model action is not
+
+The [canonical Scan #453 finding](./findings/2026-07-09-hn-arxiv-github-scan-453.md)
+now preserves the useful approval-fidelity result while narrowing its security
+scope. The generated tables support 8/8 payloads retained in serialized
+prompt/JSON-RPC bytes, 4/8 evasions of the conjunctive lexical sanitizer, 1/8
+concealments under the simplified human renderer, and 0/8 protocol-forced
+reapprovals. Those are deterministic reference-harness outcomes, not attack
+success rates: the paper runs no model and measures neither semantic decoding,
+instruction following, nor tool action.
+
+The three Python server paths agree in all 32 reported cells, but share one
+payload catalogue/process family and two share wire-protocol types. Agreement
+therefore argues most directly against tool-management-layer artifacts, not
+every common implementation error. The 25 benign descriptions are hand-written
+rather than sampled production traffic, and the sanitizer/renderer are
+deliberately simple approximations rather than audits of named clients. The
+supported conclusion is that a non-byte-faithful approval view can diverge
+from serialized model input; prevalence and downstream effect remain unknown.
+
+ArXiv v1 was observed read-only at
+`2026-09-04T14:33:26.860Z–14:33:28.538Z`. The 3,835-byte Atom response has
+SHA-256 `29e8fe46bd8f0f9d661ed5b304c6033408ceba29131346a729291e1988cbced3`;
+the 578,201-byte source archive has SHA-256
+`41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c`
+and identifies v1 published/updated `2026-07-07T02:01:44Z`. The paper says a
+driver, data, and fail-closed verifier are released, but the inspected source
+contains only manuscript material and generated tables/macros; `/ancillary`
+returned the identical archive.
+
+Exact-title and arXiv-ID GitHub repository searches at
+`2026-09-04T14:34:23.509Z–14:34:24.286Z` each returned zero repositories
+(combined SHA-256
+`74b11f33fae52e94cf1e0e0451eecfa24e76c503e4abb885e0310b622ed0fb94`).
+This is an availability boundary, not proof that no artifact exists. Reddit
+made zero requests and retains its RSS-readable/JSON-403 boundary until a
+relevant thread or access change.
+
+Confidence is high in source identity, table arithmetic, and the paper's
+declared measurement; moderate in the approval-fidelity mechanism for clients
+that drop TAG glyphs; low in deployed prevalence, model interpretation/action,
+or cross-client effect. `RV-004` and `RV-034` stay high/open; `RV-036` stays
+medium/open. Revisit on an attributable artifact, a named client audit, a
+production metadata sample, or a model/action experiment. Next seed-first,
+audit the strongest remaining execution-boundary claim whose result still
+conflates a protocol/reference outcome with deployed security effect.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

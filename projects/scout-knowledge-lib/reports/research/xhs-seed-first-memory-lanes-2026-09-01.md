@@ -17794,6 +17794,112 @@ The 19 other registered worktrees had aggregate HEAD/status fingerprint
 These are observational baselines; no command tested, generated, formatted,
 installed, cleaned, or wrote in a protected or peer worktree.
 
+## Cycle 389 checkpoint — qualify TAG-block delivery and security scope
+
+What was wrong: Scan #453 promoted an approval-fidelity experiment into a
+model and deployment claim. It said all eight payloads reached a model, called
+three related Python paths fully independent, and treated the encoding gap as
+implementation-independent. The experiment actually stops at serialized
+prompt/JSON-RPC bytes and simplified reference defenses.
+
+What changes: the
+[canonical Scan #453 finding](../../knowledge/findings/2026-07-09-hn-arxiv-github-scan-453.md)
+and Oversight Inversion synthesis now preserve the measured protocol result
+without claiming downstream compromise. The generated tables report 8/8
+payloads present in serialized prompt/JSON-RPC bytes, 4/8 evasions of a
+conjunctive lexical sanitizer, 1/8 concealments under the simplified renderer,
+0/8 protocol-forced reapprovals, and 32/32 cross-library agreement cells. No
+model runs; semantic decoding, instruction following, and tool action are not
+measured.
+
+### Seed order and ranked decision
+
+Cycle 389 began from clean validated Cycle 388 result
+`3891aa18051622e4865493308ea3f8ff79ad3fef`. Before source work, the bounded
+reconciliation reused the supported collection boundary because the scheduled
+XHS observation remains `2026-09-04T17:09:20.326Z` and no trigger fired. It
+made zero account requests: added and changed identities remain unknown,
+observed removals remain `[]`, all 132 durable identities remain unavailable,
+and no account state changed. Cycle 375's browser receipt and seed ledger remain
+the provenance. This is an access-qualified unknown, not evidence that the
+live collection is unchanged.
+
+High/open `RV-004` still ranks first but cannot move without the protected
+query/rank-to-selection-to-later-outcome join. High/open `RV-034` remains at an
+external runtime boundary. Memory in the Loop still lacks its provider result.
+TAG-block paper `2607.05744` was therefore the highest accessible unresolved
+claim: the library used serialized delivery as model receipt and treated three
+related implementations as fully independent. It was selected only after the
+seed record.
+
+### Exact source and lane evidence
+
+ArXiv was read-only at `2026-09-04T14:33:26.860Z–14:33:28.538Z`. The
+3,835-byte Atom response has SHA-256
+`29e8fe46bd8f0f9d661ed5b304c6033408ceba29131346a729291e1988cbced3`;
+the 578,201-byte v1 source archive has SHA-256
+`41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c`.
+It identifies arXiv v1 published and updated `2026-07-07T02:01:44Z`.
+
+The paper operationalizes “reaches model context” as presence in the text/JSON
+that an agent serializes into its prompt. TAG codepoints are valid UTF-8 and
+tokenizable, but no tested model is shown decoding or following the mapped
+instruction. The sanitizer and human renderer are deliberately simple
+approximations, not audits of named shipping clients. The three server paths
+share one payload catalogue and process family; two share wire-protocol types.
+Their 32/32 agreement is strongest evidence against tool-management-layer
+artifacts and weaker evidence against shared wire-layer defects. The 25 benign
+descriptions are hand-written rather than sampled production traffic.
+
+The manuscript says a driver script, raw results, and independent fail-closed
+verifier are released. The inspected source contains `Paper.tex`, generated
+tables/macros, figures, and bibliography but none of those runnable artifacts.
+The arXiv `/ancillary` endpoint returned the same 578,201 bytes and source
+hash. Exact-title and arXiv-ID GitHub repository searches at
+`2026-09-04T14:34:23.509Z–14:34:24.286Z` each returned zero repositories;
+their combined response is 110 bytes with SHA-256
+`74b11f33fae52e94cf1e0e0451eecfa24e76c503e4abb885e0310b622ed0fb94`.
+That is the inspected availability boundary, not proof that the artifact does
+not exist elsewhere. Generated counts are inspectable; independent generation
+and fail-closed replay are unavailable.
+
+Reddit made zero requests and retains its RSS-readable/JSON-403 boundary until
+a relevant thread or access change. Confidence is high in arXiv identity,
+table arithmetic, and the declared measurement; moderate in the mechanism for
+clients that drop TAG glyphs; low in deployed prevalence, model
+interpretation/action, or cross-client effect. `RV-004` and `RV-034` remain
+high/open; `RV-036` remains medium/open.
+
+Revisit when an attributable driver/data/verifier artifact, a named client
+audit, a sampled production metadata corpus, or a model/action experiment is
+available. The next seed-first investigation should audit the strongest
+remaining execution-boundary result that still conflates a protocol/reference
+outcome with deployed security effect.
+
+### Cycle 389 validation and preservation
+
+The four-document candidate from source
+`3891aa18051622e4865493308ea3f8ff79ad3fef` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 seed projection, 100
+scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 99.50 seconds. The broad offline audit passes
+1,540 tracked Markdown documents / 1,740 local prose links. Read-only health at
+`2026-09-04T14:39:55.951Z` returns 26 facts / 16 wake signals with
+`truncated:true` and creates no runtime packet.
+
+Before the final exact-tip pass, the protected checkout was observed read-only
+at HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`: 894 whole short-status
+records / SHA-256
+`a0a1663760657d91bfbcaec1d8e989d4bf1266a9aa8110729c98372b31e1ae7f`, and
+296 Scout-scope records / SHA-256
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+The 18 other currently registered worktrees had aggregate path/HEAD/status
+fingerprint
+`33a4ba11e6f8587c20c5a85a91ae66cd37f1c533038f6b70273d70a04745b464`.
+The changed count from Cycle 388's 19 peers is external worktree-registry
+drift, not attributed to this worker. No command tested, generated, formatted,
+installed, cleaned, or wrote in `/app` or a peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
