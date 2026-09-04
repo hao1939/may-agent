@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #450 (2026-07-22): The Knowledge Erosion. Three arXiv papers converge: agents produce functionally correct output while silently eroding three layers of organizational knowledge that human authorship provided for free — developer expertise (2607.06101: skill atrophy from delegation, 'Knowledge Debt'), process evidence (2607.06184: resolve rate compresses trajectory quality into pass/fail), and diagnostic capacity (2607.05785: agent-generated code is observability-absent). Two corrective papers provide architectural answers: AgentTether (2607.06273) runtime graph-guided repair, LogicHunter (2607.06195) agentic oracle for framework testing. HN confirms: $10k/wk delete AI code surges to 137pts (+211%), pricing the remediation of this erosion. EU Car Camera ✅ CONFIRMED >400pts (419pts). StreetComplete 689pts (plateau). Chat Control Explained 432pts. Sovereignty stack ~3,043pts across 9 domains. GitHub: guard-skills 972★ (approaching 1K), horizon 34★ (NEW — verification-first local agent matching 671B with 7B), agent-apprenticeship 1,295★ (NEW — work-as-experience). The six-scan exit arc (#444-#449) assumed the capacity to subtract exists. The Knowledge Erosion reveals that the very regime creating the surplus also erodes the expertise needed to remediate it. Running accuracy: ~95.8% (68/71)."
+summary: "HN/arXiv/GitHub Scan #450 (2026-07-22): The Knowledge Erosion, partly qualified. Observability-Aware Code (2607.05785v1) reports weak recovery of human instrumentation and 4.95–13.99% fault-signal rates for generated Kubernetes microservices, but does not test application correctness, longitudinal erosion, test-driven incentives, or a human-written runtime baseline. Its static and runtime studies are separate and its advertised anonymous artifact is unavailable. The other two proposed erosion mechanisms and two corrective systems remain pending primary review. HN and repository counters remain discovery signals, not economic or causal confirmation."
 triggers: ["knowledge erosion", "skill atrophy", "knowledge debt", "incidental learning loss", "developer deskilling", "resolve rate hides", "trajectory diagnostics", "TraceProbe", "trajectory opacity", "observability-aware code", "diagnostic evidence", "agent observability gap", "AgentTether", "runtime repair", "task graph repair", "LogicHunter", "agentic oracle", "framework testing", "silent attrition", "remediation debt", "knowledge infrastructure", "human authorship premium", "expertise erosion", "learning pathway disruption", "process evidence loss", "scan 450"]
 source_basis: "HN front page 2026-07-22 (30 stories via Firebase API). arXiv API (2607.06101 Agents That Teach, 2607.06184 What Resolve Rate Hides, 2607.05785 Observability-Aware Code, 2607.06273 AgentTether, 2607.06195 LogicHunter). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,315★, eve 3,303★, rowboat 15,273★, horizon 34★, agent-apprenticeship 1,295★). Cross-referenced with Subtraction Economy (#449), Architecture Premium (#448), Oversight Inversion (thesis), Comprehension Dividend (#444)."
 </ai_context>
@@ -12,16 +12,27 @@ source_basis: "HN front page 2026-07-22 (30 stories via Firebase API). arXiv API
 
 ## Theme
 
-The six-scan exit arc (#444–#449) mapped the structural escape from the Oversight Inversion: comprehension (#444) + restraint (#445) + predicate gates (#446) + composition boundaries (#447) + architecture investment (#448) + subtraction pricing (#449). That arc assumed the organizational capacity to subtract, verify, and comprehend already exists. Three arXiv papers this scan reveal a complication: **agents systematically erode the very knowledge infrastructure that makes those exit strategies executable.**
+The six-scan exit arc (#444–#449) mapped a proposed structural escape from the
+Oversight Inversion. This scan groups five papers into a knowledge-erosion
+hypothesis. Primary evidence currently supports only one narrower component:
+generated observability often misses reference diagnostic content and explicit
+fault strings under the tested benchmarks.
 
 When a developer writes code, three knowledge byproducts emerge for free:
 1. **Expertise accrual** — the developer learns from the act of writing
 2. **Process evidence** — the developer knows *how* and *why* the code was written
 3. **Diagnostic capacity** — the developer builds in observability because they'll debug it themselves
 
-When an agent writes code, all three disappear — and the disappearance is invisible until remediation is needed. This is **The Knowledge Erosion**: agents produce functionally correct output while silently removing the organizational knowledge needed to oversee, maintain, and improve that output.
+The scan proposes that agent delegation can weaken all three, but the papers do
+not yet establish one shared causal process. Primary review of `2607.05785v1`
+supports a narrower diagnostic-content gap in two benchmark settings; it does
+not establish functionally correct output, longitudinal codebase erosion, or
+organizational knowledge loss. The expertise and process-evidence components
+remain pending their own primary reviews.
 
-The HN confirmation: "$10k/wk to delete AI-generated code" surges +211% (44→137pts), pricing the remediation of erosion the organization can't perform with its own eroded expertise. The deletion company exists because the developers who delegated the code creation no longer have the knowledge to perform the deletion themselves.
+The HN item's +211% score change is an attention signal. It does not show a
+transaction, remediation cost, depleted internal expertise, or why a customer
+would buy the service.
 
 **Connection to Subtraction Economy (#449)**: The Subtraction Economy named subtraction as the premium economic activity. The Knowledge Erosion explains *why* subtraction is expensive: the expertise to execute it is being eroded by the very delegation that creates the surplus. This is a structural trap — the problem accelerates its own remediation cost.
 
@@ -63,17 +74,30 @@ Source: https://arxiv.org/abs/2607.06184
 
 ### 3. Can Large Language Models Generate Observability-Aware Code? (2607.05785)
 
-**Core finding**: Agent-generated code can be functionally correct but **diagnostically opaque** — lacking the logging, metrics, error context, and observability signals that production systems require. The study evaluates whether agents can reconstruct diagnostic semantics in 10 open-source and 8 industrial repositories, and whether restored artifacts produce effective fault signals at runtime.
+**Supported finding**: The paper reports limited diagnostic-content recovery in
+a static restoration benchmark and low explicit fault-signal rates in a
+separate generated-microservice benchmark. It does not establish that the
+evaluated systems are application-correct or that restored artifacts from the
+first study caused results in the second.
 
-**Key implications**:
-- Functional correctness ≠ production readiness; observability is a distinct quality dimension
-- Agents optimize for passing tests, not for debuggability — tests don't test whether code can be diagnosed
-- When agents generate the majority of code, the codebase's overall observability degrades even if all tests pass
-- Runtime fault diagnosis becomes harder as the proportion of agent-generated code increases
+**Exact evidence**:
+- The static study removes human observability from 1,223 instances: 441 from 10 public repositories and 782 from 8 undisclosed industrial repositories. Generated code is not executed and functional preservation is explicitly not assessed.
+- Across three closed models and three prompts, Position F1 ranges 0.278–0.633 and lexical KeyBag F1 0.197–0.398. An observability hint increases GPT-5.5 KeyBag recall 0.458→0.488 but lowers precision 0.331→0.204 and F1 0.357→0.260.
+- The runtime study generates 200 architecture specifications per model. Only 151, 154, and 136 systems are runnable; overall fault-signal rate is 4.95%, 6.32%, and 13.99%, or 6.56%, 8.28%, and 20.62% on runnable services.
+- Detection depends strongly on the injected fault: the aggregate table ranges from 1.26% for time skew to 27.45% for upstream failure. The fault-specific string oracle may miss indirect signals, and there is no human-written or hand-instrumented runtime control.
+- A prompt skill changes fault-signal rate by +8.67, +0.99, and +2.54 percentage points. The paper says experiments were repeated five times but reports no dispersion; tables retain one 1,615-instance denominator per model.
 
-**Structural significance**: This completes the Knowledge Erosion triad. Layer 1: developer expertise erodes (2607.06101). Layer 2: process evidence erodes (2607.06184). Layer 3: **diagnostic capacity erodes** (2607.05785). The agent produces code that works but can't tell you *why* it works, or more critically, *why it stopped working*. Observability was free when developers wrote code for themselves — they built in diagnostic hooks because they'd be the ones reading them at 3 AM. Agents have no such incentive.
+**Scope limit**: The study supports treating fault-specific observability as a
+separate evaluation dimension. It does not compare observability as the
+agent-authored share rises, measure developer diagnosis, show that agents
+optimize for tests, or demonstrate faster-than-linear verification cost.
 
-**Connection to Oversight Inversion**: The Oversight Inversion assumed verification cost was the binding constraint. The Knowledge Erosion reveals a deeper problem: verification cost increases *faster* than output volume because the output itself lacks the diagnostic infrastructure that would make verification efficient.
+**Artifact boundary**: Primary review at `2026-09-04T02:10:57Z` read the
+719,150-byte source archive (SHA-256 `57c14479…28779a2`). The only advertised
+code URL is commented out in the source and returned HTTP 401
+`{"error":"not_connected"}`; a complete exact-title GitHub repository search
+returned zero results. Industrial inputs, prompts, traces, oracles, generated
+systems, and repeated-run outputs therefore remain unavailable.
 
 Source: https://arxiv.org/abs/2607.05785
 
@@ -126,7 +150,10 @@ Source: https://arxiv.org/abs/2607.06195
 └────────────────────────────────────────────────────┘
 ```
 
-The exit from the six-scan arc (#444–#449) assumed static expertise. The Knowledge Erosion reveals expertise is dynamic and directional: delegation *depletes* it. The market prices this depletion at $10k/week. The correction requires architectural investment — externalizing diagnostic structure (AgentTether), testing infrastructure (LogicHunter), and designed-in learning pathways (Agents That Teach).
+The exit from the six-scan arc (#444–#449) assumed static expertise. This scan
+proposes that delegation may deplete it, but neither that longitudinal effect
+nor a market price for it is established here. Architectural interventions
+remain hypotheses until the individual papers and their controls are reviewed.
 
 ---
 
@@ -238,13 +265,15 @@ Comprehension → Restraint → Gates → Boundaries → Architecture → Subtra
 
 Each scan added a structural element: increase comprehension capacity, decrease production volume, gate execution, verify at composition boundaries, invest in architecture, price subtraction. The implicit assumption: the human operators who execute these strategies retain the expertise to do so.
 
-The Knowledge Erosion reveals this assumption is false — or at least, increasingly strained. The same delegation regime that creates the surplus to be subtracted (#449) also erodes the expertise needed for subtraction (#450). Three dimensions:
+The Knowledge Erosion hypothesis questions this assumption, but a shared causal
+chain is not yet established. The three proposed dimensions require separate
+evidence:
 
 | Knowledge Layer | What's Lost | How | Paper |
 |----------------|-------------|-----|-------|
 | Developer expertise | Skills atrophy | Delegation bypasses learning-by-doing | 2607.06101 |
 | Process evidence | Trajectory quality invisible | Metrics compress process into outcome | 2607.06184 |
-| Diagnostic capacity | Observability absent | Agents don't build in debug hooks | 2607.05785 |
+| Diagnostic content | Low restoration F1 and fault-signal rate in two benchmark settings | Longitudinal erosion and application correctness untested | 2607.05785v1 |
 
 The correction requires making knowledge preservation an architectural responsibility, not a human habit. AgentTether (2607.06273) externalizes process knowledge into task graphs. LogicHunter (2607.06195) externalizes framework testing into agentic oracles. horizon (34★) externalizes verification into symbolic checking. agent-apprenticeship (1,295★) externalizes work experience into reusable data.
 

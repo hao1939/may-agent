@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 292 observational reconciliation through 2026-09-03T22:59:03.253Z; exact access evidence and uncertainty are in seed-ledger row 292."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable Scan 449 artifact reads through 2026-09-04; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary Scan 449 source reads through 2026-09-04 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable Scan 449–450 artifact reads through 2026-09-04; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary Scan 449–450 source reads through 2026-09-04 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 292 read-only XHS boundary through 2026-09-03T22:59:03.253Z."
 </ai_context>
 
@@ -5131,6 +5131,52 @@ a relevant-thread/access trigger; and (8) compaction. Select `2607.05785`.
 Test the study population, task construction, controls, correctness and
 observability criteria, runtime evidence, statistics, artifacts, and whether
 the evidence supports longitudinal or system-wide erosion.
+
+### Cycle 320 checkpoint — runnable does not mean correct or longitudinal
+
+Seed-first `e7714b8bd86d2be70573ee16ba1060c4abfe6f71` preceded every
+public read. Anonymous arXiv access ran at
+`2026-09-04T02:10:57.581Z–02:10:59.102Z`. The `2607.05785v1` archive is
+719,150 bytes with SHA-256
+`57c1447967033bd2626e59ac7675516d3e0455d95526e5b929421f00728779a2`;
+the 43,358-byte abstract receipt has SHA-256
+`1b7e6f2231865c4c0be21f1fcf56408da915a729dcafc30f53e39ea9294f0544`.
+
+The static experiment removes human observability from 1,223 instances—441
+from 10 public repositories and 782 from 8 undisclosed industrial
+repositories—but never executes the generated code or checks functional
+preservation. Position F1 spans 0.278–0.633 and lexical KeyBag F1 0.197–0.398.
+An explicit observability hint raises GPT-5.5 KeyBag recall 0.458→0.488 while
+lowering precision 0.331→0.204 and F1 0.357→0.260.
+
+The separate runtime experiment generates the same 200 architecture
+specifications with three closed models. Only 151, 154, and 136 services are
+runnable. Explicit fault-signal rate is 4.95%, 6.32%, and 13.99% over intended
+faults, or 6.56%, 8.28%, and 20.62% among runnable services. Aggregate
+fault-class detection ranges from 1.26% for time skew to 27.45% for upstream
+failure. There is no application-correctness gate, human-written runtime
+control, or causal reuse of the static restorations. The string oracle may
+miss indirect signals, and the claimed five repeats have no reported
+dispersion or public run outputs.
+
+This is high-confidence evidence for a fault-specific-log evaluation gap under
+the tested harness. It is not evidence that the systems are functionally
+correct, that agents optimize for tests, that observability declines with
+agent-authored share, or that developer knowledge and verification cost erode
+over time. Confidence is medium in unreplicated point estimates and low in
+organizational or longitudinal transfer.
+
+Lane continuity: arXiv supplied the selected primary evidence. The source's
+commented `anonymous.4open.science/r/Observability-7401` endpoint returned HTTP
+401 `not_connected` at `02:11:40Z`; a complete exact-title GitHub repository
+search at `02:11:54.737Z–02:11:55.185Z` returned zero results. Revisit on a
+paper revision or public prompts, inputs, traces, oracle, systems, and repeat
+outputs. Reddit made zero requests and retains its RSS-readable/JSON-403
+boundary. `RV-004` remains high/open. Next begin seed-first and primary-review
+TraceProbe `2607.06184` ahead of the conceptual knowledge-debt paper: test
+whether equal resolve rate actually hides decision-relevant trajectory
+differences, whether the diagnostics predict outcomes or cost, and what
+artifacts reproduce them.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

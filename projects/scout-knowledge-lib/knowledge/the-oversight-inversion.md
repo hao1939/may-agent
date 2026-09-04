@@ -637,15 +637,20 @@ Source: findings/2026-07-21-hn-arxiv-github-scan-449.md, https://arxiv.org/abs/2
 
 The six-scan exit arc (#444–#449) assumed the organizational capacity to subtract, verify, and comprehend already exists. Three arXiv papers reveal this assumption is false — agents systematically erode the very knowledge infrastructure that makes the exit strategies executable.
 
-When a developer writes code, three knowledge byproducts emerge for free: (1) expertise accrual — the developer learns from the act of writing; (2) process evidence — the developer knows *how* and *why*; (3) diagnostic capacity — the developer builds in observability because they'll debug it. When an agent writes code, all three disappear, and the disappearance is invisible until remediation is needed.
+The scan proposes three knowledge effects—expertise accrual, process evidence,
+and diagnostic capacity—but does not establish that human authorship supplies
+all three for free or that agent authorship removes all three. Primary review
+currently supports only the narrower benchmark evidence below.
 
 - **"Agents That Teach"** (2607.06101): Names **Knowledge Debt** — the silent accumulation of skill gaps when developers over-delegate. Unlike technical debt (visible in code), knowledge debt is invisible until the developer faces a problem the agent can't solve. Incidental learning was never designed; it was a free byproduct of human authorship. Proposes designing learning *back into* agent workflows.
 - **"What Resolve Rate Hides"** (2607.06184): The dominant metric — resolve rate — compresses trajectory quality into a single binary. **TraceProbe** recovers what resolve rate discards: search breadth, edit precision, tool efficiency, revert frequency. Process evidence is eroded by the very metrics that claim to measure it. Two agents with identical resolve rates can have wildly different trajectory structures.
-- **"Observability-Aware Code"** (2607.05785): Agent-generated code is functionally correct but **diagnostically opaque** — lacking logging, metrics, error context, and observability signals. Agents optimize for passing tests, not for debuggability. As agent-authored code proportion increases, codebase observability degrades even if all tests pass.
+- **"Observability-Aware Code"** (2607.05785v1): Static restoration produces Position F1 0.278–0.633 and lexical KeyBag F1 0.197–0.398; a separate generated-microservice study reports 4.95–13.99% explicit fault-signal rates, or 6.56–20.62% among runnable services. It does not test application correctness, developer diagnosis, test-driven incentives, rising agent-authored share, or longitudinal erosion, and supplies no human-written runtime control.
 
 **Corrective architectures emerging**: AgentTether (2607.06273) externalizes diagnostic structure into task graphs — diagnosis becomes a system property, not an operator skill. LogicHunter (2607.06195) uses agents to test agent frameworks — detecting silent semantic failures in LangChain, LlamaIndex, CrewAI that manifest as "ordinary exceptions" not crashes. horizon (34★) achieves 7B=671B parity through verification architecture (hard test execution + symbolic checking + agentic repair). agent-apprenticeship (1,295★) turns completed work into reusable experience data.
 
-**HN confirmation**: "$10k/wk to delete AI-generated code" surges +211% to 137pts, pricing the remediation of an erosion the organization can't perform with its own depleted expertise. The deletion company exists because the developers who delegated the code creation no longer have the knowledge to perform the deletion themselves.
+**HN discovery signal**: “$10k/wk to delete AI-generated code” rose to 137
+points. The service page reports no transaction, cost, customer motive, or
+internal expertise measure, so this does not economically confirm erosion.
 
 **HN confirmation (Aug 2026)**: Two current front-page threads make the same erosion visible at the workflow level. In **"LLMs reward expertise"** (HN 49161518), practitioners converge that the scarce input is no longer typing speed but architecture and supervision skill: walrus01 says LLMs reward knowing "how to structure things," natsucks says good agent use requires asking the right questions with deep domain expertise, and asdfman123 frames the human as "team lead to the LLM's junior dev." In **"Prevent cognitive debt by manually retyping LLM-generated code"** (HN 49153374), commenters describe retyping or question-only workflows as a way to rebuild mental models and counter code-review fatigue. The synthesis is sharper than "experts use tools better": once production is cheap, teams must deliberately spend effort preserving comprehension, or the expertise required for verification disappears.
 

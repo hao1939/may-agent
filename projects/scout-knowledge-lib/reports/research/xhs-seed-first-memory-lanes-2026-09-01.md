@@ -11094,6 +11094,57 @@ correctness and observability criteria, runtime evidence, statistics,
 artifacts, and whether the evidence supports longitudinal or system-wide
 erosion.
 
+## Cycle 320 checkpoint — the benchmark tests fault strings, not correctness or erosion
+
+Seed-first commit `e7714b8bd86d2be70573ee16ba1060c4abfe6f71`
+preceded every public read. Anonymous arXiv observation ran from
+`2026-09-04T02:10:57.581Z` through `02:10:59.102Z`. The v1 source archive is
+719,150 bytes with SHA-256
+`57c1447967033bd2626e59ac7675516d3e0455d95526e5b929421f00728779a2`;
+the 43,358-byte abstract receipt has SHA-256
+`1b7e6f2231865c4c0be21f1fcf56408da915a729dcafc30f53e39ea9294f0544`.
+
+RQ1 removes human observability from 1,223 instances: 441 from 10 public
+repositories and 782 from 8 undisclosed industrial repositories. It does not
+execute regenerated code or assess functional preservation. Across three
+closed models and three prompts, Position F1 spans 0.278–0.633 and lexical
+KeyBag F1 0.197–0.398. An observability hint raises GPT-5.5 KeyBag recall from
+0.458 to 0.488 but lowers precision 0.331→0.204 and F1 0.357→0.260.
+
+RQ2 is a separate population: each model receives the same 200 architecture
+specifications, but only 151, 154, and 136 generated services are runnable.
+Overall explicit fault-signal rates are 4.95%, 6.32%, and 13.99%; conditioning
+on runnable services gives 6.56%, 8.28%, and 20.62%. Aggregate fault-class
+detection ranges from 1.26% for time skew to 27.45% for upstream failure.
+The study has no application correctness test, human-written runtime control,
+or causal link from RQ1 restorations to RQ2 systems. Its conservative string
+oracle may miss indirect evidence. It says experiments were repeated five
+times, but tables report no dispersion and retain one 1,615-fault denominator
+per model.
+
+The benchmark therefore supports a narrower claim: explicit fault-specific
+logs are weak under the tested harness and deserve their own evaluation gate.
+It does not show functionally correct systems, test-optimization incentives,
+declining observability as agent-authored share grows, longitudinal developer
+knowledge loss, or faster-growing verification cost. Confidence is high in
+the extraction and correction, medium in the unreplicated point estimates,
+and low in organizational or longitudinal transfer.
+
+Lane continuity: arXiv supplied the primary method/results evidence. The only
+advertised code URL is commented in the source;
+`anonymous.4open.science/r/Observability-7401` returned HTTP 401
+`{"error":"not_connected"}` at `2026-09-04T02:11:40.225Z–02:11:41.446Z`.
+A complete exact-title GitHub repository search at
+`02:11:54.737Z–02:11:55.185Z` returned HTTP 200, zero results, and
+`incomplete_results:false`. Revisit on paper revision or public prompts,
+inputs, traces, oracle, generated systems, and repeat outputs. Reddit made zero
+requests and remains RSS-readable/JSON-403 until a relevant thread or access
+change. `RV-004` remains high/open because no protected outcome join appeared.
+Next begin seed-first and primary-review TraceProbe `2607.06184` ahead of the
+conceptual knowledge-debt paper, testing whether equal resolve rate actually
+hides outcome- or cost-relevant trajectory differences and what artifacts
+reproduce them.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
