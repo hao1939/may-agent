@@ -13915,6 +13915,56 @@ its unchanged relevant-thread/RSS-access trigger; (6) compaction. Select arXiv
 denominators, dispersion metric and floor, controls, artifact provenance, and
 what evidence can generalize beyond this economy.
 
+## Cycle 352 checkpoint — the preregistered verdict is CAP, not population proof
+
+Seed-ordering commit `c3c871bfc9aeadb3265a76266e8281faa12a179f`
+preceded Cycle 352 source work. At `2026-09-04T06:29:11.498Z`, arXiv
+`2607.06001v1` returned a 3,436-byte Atom record with SHA-256
+`ed44850422603d3a01f967ba6748b82f9526aca087859ced8ebe5ead6a2b8b33`
+and a 35,744-byte source archive with SHA-256
+`2c1fc0392441951111d1ab4ce5571bd0fa19588e786b2ffc4a7d48a759680319`.
+
+At `2026-09-04T06:29:29.993Z`, GitHub exposed `macrokit/value` at exact
+head `34405681799a0ca7a82c1f0a8f614e3198b19a73`. The 7,328,645-byte archive
+has SHA-256 `5524826e9bd31fe58339288cef69b018eca7312d819348b253b9360c546c3f7c`.
+Repository history verifies the paper's ordered chain: gate preregistration
+`a159ca9`, provider amendment `4a8c376`, gate result `0759c4b`, full-grid
+preregistration `4c0a7a1`, amendment `c79f8fe`, frozen analyzer `2b2c010`,
+scoped rerun amendment `9d685f8`, and result commits `f8b902d` then `a7e639b`.
+
+The committed `stage2b_raw.json` is 18,994 bytes with SHA-256
+`9be89bab07722b1745011a697a42f434cd3f11ae0fd7602f347a07dda045e7f6`.
+A Python-stdlib-only check finds exactly nine grid conditions × eight seeds,
+all parse rates 1.0, median `V=0`, maximum `V=4.848541666666667`, and zero of
+72 runs at or above the frozen 5.31 floor. Thus zero conditions enter the full
+regime. The preregistered scaling outcome is CAP for insufficient in-regime
+span, not confirmation or falsification; the direction result is inconclusive
+because its frozen noise floor is undefined.
+
+The separate information-law bundle passes P1 at 0.0457 versus a 0.05 band,
+P2 at -0.0193 versus -0.03, its XOR control at 0.6212, the joint ceiling, and
+wealth ordering in 4/5 seeds. Supporting clone equality fails: only two seeds
+have zero gap, two have 50%/100% gaps, and one is undefined. The exact analyzer
+stops locally with `ModuleNotFoundError: No module named 'numpy'`; no install
+was attempted. The raw-bundle check supports the population denominator and
+dispersion boundary, not a full independent recalculation of every metric.
+
+This is strong evidence that one `claude-opus-4-8`, 20-agent, 16-niche,
+18-round prompt environment does not hold the dispersion its mean-field law
+requires. It does not test verifier independence, debate, voting, red-teaming,
+error correlation, cross-model populations, or deployments. Confidence is
+high in preregistration chronology, raw denominator, and scoped conclusion;
+low in general population or governance transfer.
+
+ArXiv was accessible and should be revisited on `2607.06001v2+`. GitHub was
+accessible for exact preregistration/results provenance and should be revisited
+on repository-head or cross-vendor-result change. Reddit made zero requests and
+remains RSS-readable/JSON-403 until a relevant-thread/access trigger. `RV-004`
+stays high/open because no protected query/rank-to-outcome join appeared. Next
+seed-first, primary-review `2607.06503`; its first-round prediction and claimed
+zero incremental behavioral value are the highest accessible causal claims in
+the same thesis.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

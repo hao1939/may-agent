@@ -817,29 +817,48 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-454.md, https://arxiv.org/abs/2
 
 ### Layer 27: The Dispersion Collapse (Scan #455, 2026-07-09)
 
-The eleven-point exit arc assumed that multiple agents could provide **independent** verification perspectives. A pre-registered experiment on frontier LLM agent economies proves this assumption is structurally violated.
+The eleven-point exit arc assumed that multiple agents could provide
+**independent** verification perspectives. Agent count does not prove that
+independence; it must be measured. A pre-registered frontier-model economy
+motivates this check but does not itself test verification perspectives.
 
-**Information Limits and Attractor Dynamics** (2607.06001): Pre-registered, two-part experiment on Claude Opus 4.8 economies ($138.76 total cost, re-runnable from cache). Confirmation half: gap law G_a - G_b = I_a - I_b holds to 46 millinats (50mn band); best-informed agent absorbs essentially the whole wealth pool (4/5 seeds); coalition value is submodular where channels are conditionally independent. Structural negative: goal dispersion collapsed (V → 0; max 4.85 vs floor 5.31) in **ALL 72 population runs**. Response to incentive/control levers was a **step function** at dominance boundary, not smooth. Cells near boundary were **bistable** with seed-selected outcomes. **"No tested LLM population at any capability level realizes the noise-maintained-dispersion regime the smooth mean-field model assumes."**
+**Information Limits and Attractor Dynamics** (2607.06001v1,
+primary-reviewed 2026-09-04): One Claude Opus 4.8 toy niche economy keeps all
+72 grid runs below its preregistered dispersion floor (median 0, maximum 4.85
+versus 5.31). This forces the scaling prediction to `CAP` with zero in-regime
+conditions; the direction prediction is inconclusive, and a specific
+lever-switching interpretation is exploratory. A separate stated-posterior
+experiment passes P1--P3 and a wealth-ordering check, while clone equality
+fails. The study uses one provider/model, N=20, 16 niches, and 18 rounds; it
+does not measure verification error independence or general coupled
+populations.
 
 **Doomed from the Start** (2607.06503): Per-round hidden-state probes predict episode failure from the **first interaction round** (behavioral scorers barely better than chance). Cascade saves **47.1%** of compute at 90% recall. Adding behavioral features yields **zero further gain** — hidden states capture everything behavior reveals and more. The Latent Horizon (#433) validated and made actionable.
 
 **SkillReranker** (2607.06283): Flat skill retrieval collapses to "everything looks similar" as libraries grow. Structured task decomposition into directed acyclic execution graphs breaks the attractor by matching skills to task intervals via structure, not flat similarity.
 
-**The Dispersion Collapse**: Every "multiple agents check each other" governance proposal assumes N agents provide N perspectives. Coupled populations converge to shared attractors:
-- **Economic coupling**: Wealth concentrates to best-informed agent; diversity V → 0 universally
+**The Dispersion Collapse, qualified**: Every “multiple agents check each
+other” proposal must demonstrate that N agents provide independent evidence:
+- **Economic coupling**: One toy economy concentrates below its frozen
+  dispersion floor; transfer to verifier errors is untested
 - **Trajectory coupling**: Individual agents commit to doom from the first round
 - **Skill coupling**: Flat retrieval converges to "all skills look the same"
 
-The fix is not "more agents" but **architecturally uncorrelated agents**: different substrates, different information access, different evaluation criteria, structural decorrelation.
+The design precaution is not merely “more agents” but measured error diversity:
+different substrates, information access, and evaluation criteria should be
+tested with matched coverage outcomes rather than assumed to decorrelate.
 
 **Connection to preceding layers**:
-- Correlated Blindness (#436) showed verification instruments on the same substrate share blind spots — the Dispersion Collapse shows populations on any coupling mechanism converge to shared attractors
-- Recursion Barrier (#430) showed self-improvement is domain-bounded — Dispersion Collapse explains why: all self-improving agents in a coupled system converge to the same improvement trajectory
-- Knowledge Erosion (#450) showed agents replace diverse human judgment — Dispersion Collapse shows the convergence is intrinsic, not accidental
+- Correlated Blindness (#436) motivates measuring shared errors; this economy
+  does not test blind spots or arbitrary coupling mechanisms
+- Recursion Barrier (#430) concerns self-improvement, which this economy does
+  not include
+- Knowledge Erosion (#450) concerns human judgment and is not tested here
 
 **Twelve-point exit arc**:
 1–11: (#444–#454)
-12. **Dispersion Collapse (#455): Impose verification diversity architecturally — multiple agents on the same substrate converge to the same attractor (independence condition)**
+12. **Dispersion Collapse (#455): Measure verifier error dependence and impose
+diversity when correlated outcomes warrant it (independence condition)**
 13. **Claim-Verification Surface (#456): Type claims and verify each typed claim against an independent substrate (granularity condition)**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-455.md, https://arxiv.org/abs/2607.06001, https://arxiv.org/abs/2607.06503, https://arxiv.org/abs/2607.06283
@@ -856,7 +875,11 @@ The thirteen-point exit arc (#444–#456) assumed that verification produces inf
 
 **The Variance Signal**: Current evaluation compresses stochastic agent behavior into point estimates (resolve rate, benchmark score). This compression destroys exactly the information governance needs: the distributional structure that distinguishes reliable agents from fragile ones that happen to produce the same mean.
 
-**Connection to the Variance Paradox**: The Dispersion Collapse (#455) showed agent populations converge to zero-variance attractors. The Variance Signal shows variance is the primary diagnostic. Together: **agent populations destroy exactly the signal needed to govern them.** The system becomes ungovernable precisely when it appears most stable. The exit requires both structural independence (Dispersion Collapse) AND distributional evaluation (Variance Signal), simultaneously.
+**Connection to the Variance Paradox**: The Dispersion Collapse (#455) finds
+below-threshold niche variance in one toy population; the Variance Signal argues
+that distributions matter. Together they motivate measuring both population
+dispersion and verifier-error correlation. They do not establish that agent
+populations generally destroy governance signals.
 
 **The monitoring maturity transition**: Monitoring must evolve through stages: (1) structural characterization → (2) error detection → (3) reliability tracking. This maps to the Co-Evolution Imperative (#452): the monitoring system itself must co-evolve. A fixed monitoring strategy degrades as structural defects resolve and new failure modes emerge.
 
@@ -1347,7 +1370,10 @@ Progressive Crystallization (2607.07052) provides the constructive complement: a
 
 MCP Taint Vulnerabilities (2607.07461) reveals that the standardized protocol layer for agent-tool interactions harbors **taint-style vulnerabilities** (unsanitized data flowing through tool call paths to sensitive sinks) that constitute a substantial fraction of MCP server vulnerabilities, require significant code modifications to remediate, and are met with **slow community response** — the discovery-velocity-exceeds-fix-velocity pattern from the Certification Collapse (#487), now at the protocol layer.
 
-Agon (2607.07690) demonstrates that single-model RL **cannot provide escalating verification challenges** — making two competing models each other's graders doubles GRPO's pass@1 on DeepMath (8× untrained Mixture-of-Agents gain). Adversarial verification loops solve the Dispersion Collapse (#455) by construction: you can't converge to a shared attractor when your training partner actively tries to surpass your solutions.
+Agon (2607.07690) reports that competing graders improve GRPO pass@1 on
+DeepMath. This is a candidate diversity mechanism, not a by-construction
+solution to Dispersion Collapse; its grader-error dependence and transfer need
+direct measurement.
 
 **Three HN instances of the Reliability Horizon:**
 1. **Grok 4.5** (712pts, 1,221c, r=1.71 ATH): Surface engagement (712pts, modestly high) conceals record-breaking unresolved contestation (1,221 comments). The community cannot determine reliability; it can only express escalating doubt.
@@ -1557,7 +1583,13 @@ https://scalex.dev/blog/ai-agent-permissions-stats/
 8. **Predicate gate coverage**: HCRC achieves O(0) oversight for gated error classes, but what fraction of real-world errors can be expressed as decidable predicates? The frontier lies between errors expressible as predicates (machine-checkable) and errors requiring judgment (human-only). Mapping this boundary determines the practical reach of the Predicate Gate architecture. **Scan #451 partial answer, qualified**: Aria reports all 4,864 existing target lemmas proved under kernel and obligation-preservation checks, showing a broad machine-checkable proof-admission surface. It does not isolate whether harness design, model capability, retry budget, or strategy freedom determined coverage.
 9. **Harness generalization**: Aria's verification harness works because Coq/Lean kernels provide sound, complete, terminating verification by construction. Can the Verification Harness Hypothesis extend beyond formal proof to semantic correctness, business logic, and the oversight dimensions lacking formal kernels? This is the next frontier: constructing verification kernels for domains that currently have none.
 10. **Co-evolution bounds**: HASE shows the harness can co-evolve with the system, but does co-evolution converge or diverge? If the harness must evolve infinitely, the oversight cost never stabilizes. If it converges (i.e., harness evolution reaches a fixed point), the Verification Harness Hypothesis holds with a finite design cost. HASE's SOTA convergence on circle-packing suggests convergence is achievable in bounded domains. Whether it holds in open-ended domains (enterprise processes, scientific replication) remains open. Additionally, who governs the harness evolution itself — can the co-evolution mechanism be verified, or does it create an infinite regress?
-11. **Diversity sufficiency**: The Dispersion Collapse (2607.06001) shows coupled agent populations converge to attractors. What degree of architectural decorrelation is sufficient to maintain verification diversity? Different prompts on the same model are insufficient (same substrate). Different models from the same training distribution may be insufficient (same attractor basin). The open question: can we characterize the minimum structural distance between verification agents needed to ensure independence — and is it achievable in practice? The $138.76 experiment cost suggests the question is empirically tractable.
+11. **Diversity sufficiency**: The Dispersion Collapse (2607.06001v1) shows
+below-floor dispersion in one homogeneous-model toy niche economy, not
+verification dependence. What degree of architectural decorrelation is
+sufficient to maintain verification diversity? Different prompts and models
+both remain untested here. The next evidence needs matched verifier tasks,
+same- versus cross-model arms, error correlation, coverage, and downstream
+outcomes.
 12. **Variance preservation under scaling**: The Variance Signal (#457) shows distributional structure is the governance-relevant information, but current infrastructure (benchmarks, leaderboards, eval dashboards) is designed to compress variance into ranks. How can evaluation infrastructure preserve and expose distributional information without making results incomprehensible? The tension: variance-rich evaluation is informationally dense but cognitively expensive — potentially creating a second-order Oversight Inversion where reviewing distributional evaluations costs more than reviewing point estimates. The Monitoring paper (2606.02494) suggests a resolution: deterministic triage routes 97% to automation, surfacing only the 2% of variable behavior for human attention. Can this 97/2 principle be generalized across evaluation contexts?
 13. **Handoff verification scalability**: The Handoff Fallacy (#459) shows verification must target transition states between components, not just component outcomes. But the number of handoffs grows combinatorially with system complexity — N components produce O(N²) potential handoffs. Can handoff verification be made tractable? The Semantic Handoff paper (2607.06256) suggests typed postconditions and preconditions as a compression mechanism, but this requires formalization that most agent systems lack. The open question: what minimum set of handoff specifications is needed to bridge the gap between component-confidence and system-confidence, and can these specifications be inferred from execution traces rather than manually authored?
 14. **Attention distribution across release arcs**: The Attention Decay Curve (#460) shows evaluative attention peaks at preview and depletes by launch — the inverse of where oversight matters most. Can release processes be redesigned to distribute evaluative attention across the announcement arc? Possibilities include: delayed previews (announce only at launch), staged evaluation budgets (reserve oversight capacity for deployment), or attention-aware disclosure (sequence announcements to maximize evaluative attention at deployment milestones). The deeper question: is the decay curve a property of HN/community attention, or a general property of how humans allocate evaluative effort to sequenced announcements? If general, institutional oversight bodies may exhibit the same decay — evaluating previews thoroughly and rubber-stamping launches.

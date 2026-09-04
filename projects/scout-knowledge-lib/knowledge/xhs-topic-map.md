@@ -7070,6 +7070,35 @@ Reddit until its relevant-thread/access trigger; (6) compaction. Select arXiv
 `2607.06001` and test preregistration, population/model/task scope, run counts,
 dispersion definition, controls, artifact support, and generalization limits.
 
+### Cycle 352 checkpoint — low niche dispersion does not prove verifier dependence
+
+At `2026-09-04T06:29:11.498Z`, arXiv `2607.06001v1` supplied a
+3,436-byte Atom record (SHA-256 `ed448504…8b33`) and 35,744-byte source archive
+(`2c1fc039…0319`). The public repository was accessible at
+`macrokit/value@34405681799a0ca7a82c1f0a8f614e3198b19a73`; its chain orders
+gate preregistration `a159ca9`, full-grid preregistration `4c0a7a1`, disclosed
+amendments, and result commits `f8b902d` / `a7e639b`.
+
+The committed raw grid independently contains nine conditions × eight seeds.
+All 72 run-level `V` values are below the frozen 5.31 floor (median 0, maximum
+4.8485), so zero conditions enter the preregistered regime. The correct P5
+outcome is CAP, not confirmation or falsification; P6 is inconclusive because
+its noise floor is undefined. The separate information tests pass P1--P3 and
+P4a, while clone equality P4b fails. This is high-confidence evidence for the
+tested one-model, 20-agent, 16-niche prompt economy. It is low-confidence
+evidence for cross-model populations and no evidence about voting, debate,
+red-teaming, verifier error correlation, or coverage.
+
+The exact analyzer first requires absent local `numpy`; no install was made.
+A stdlib-only read of committed `stage2b_raw.json` verified the denominator,
+median, maximum, floor count, and parse minimum, but not every information
+metric. ArXiv supplied primary scope; revisit on `2607.06001v2+`. GitHub
+supplied exact code/results/preregistration provenance; revisit on repository
+head or cross-vendor result. Reddit made zero requests and remains
+RSS-readable/JSON-403 until its trigger. `RV-004` remains high/open. Next
+seed-first, primary-review `2607.06503` because its first-round/zero-behavior-
+gain claims remain the highest accessible causal evidence in the same thesis.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
