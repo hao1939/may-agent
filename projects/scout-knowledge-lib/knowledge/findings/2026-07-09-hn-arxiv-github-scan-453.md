@@ -165,6 +165,26 @@ expected sinks in a manifest does not itself demonstrate interception or
 coverage. Preserve these as proposed extensions and an instrumentation risk,
 not an exhaustive, empirically assigned, or already fixed blindspot taxonomy.
 
+**“Complete audit-channel coverage” is a requirement, not a demonstrated
+property of the retained package.** Stage 1's check named `coverage` proves
+only that every declared trap predicate is reachable by a legal scripted walk;
+it does not test that every reachable agent action or sink is observed. The
+source describes a PATH shim, pre/post filesystem state, and official event-
+stream adapters. Its appendix exposes one 13-tool Claude mapping, says a second
+table contains 31 commands while listing 28 examples, and states that OpenHands
+and Codex adapters project to the common atom schema. It does not retain the
+tables, adapters, bundles, coverage tests, or corresponding Gemini mapping.
+
+Those components provide useful overlapping evidence, not a completeness
+proof. End-state filesystem snapshots cannot by themselves identify sensitive
+reads, network/communication effects, transient restored writes, or unobserved
+in-memory state. The manuscript gives no test of absolute-path/direct-library
+execution against its PATH shim and no per-scenario channel-to-sink closure
+record. The `action-surface manifest` appears only later as a proposed remedy,
+not as one of the four admission checks. Treat dual-channel auditing as a
+concrete architecture and complete coverage as an open obligation until every
+declared sink maps to tested capture evidence for all four evaluated products.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
@@ -188,7 +208,8 @@ publication. Its inspected arXiv source contains manuscript files and figures,
 not those artifacts. Four targeted GitHub repository searches found no
 attributable project, so the published tables and arithmetic are inspectable
 but neither the paired pilot, the human-label analysis, the zero-touch
-taxonomy, nor the full matrix can currently be replayed.
+taxonomy, the audit-coverage claim, nor the full matrix can currently be
+replayed.
 
 Sources: https://arxiv.org/abs/2607.05743,
 https://arxiv.org/abs/2605.18583

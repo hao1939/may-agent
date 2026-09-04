@@ -1219,6 +1219,16 @@ Unobserved remote or in-memory effects are a real coverage risk, but a manifest
 requirement is not evidence that those sinks were instrumented. Treat the three
 classes as proposed extensions/risks, not validated exhaustive mitigations.
 
+Likewise, OverEager's “complete audit-channel coverage” is a design obligation,
+not retained proof. Its Stage 1 coverage gate checks trap reachability, while
+the described runtime evidence is a PATH shim, end-state filesystem snapshots,
+one Claude tool map, and asserted OpenHands/Codex adapters; equivalent Gemini
+mapping, full command tables, adapters, bundles, and channel-closure tests are
+not released. Snapshots cannot establish reads or network effects, and the
+later action-surface manifest is proposed rather than part of the enumerated
+admission gate. Dual-channel observation is useful architecture, but complete
+mediation remains unverified.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

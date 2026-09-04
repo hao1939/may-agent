@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 396 qualifies OverEager's pilot, product, human-label, and zero-touch claims: its seed-13 table has four all-zero rows rather than the claimed nine, and its blindspot classes cross outcome and instrumentation boundaries."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 397 qualifies OverEager's pilot, product, human-label, zero-touch, and audit-coverage claims: dual-channel architecture is concrete, while complete mediation remains untested."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 396; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch evidence qualified through Cycle 396; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 397; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage evidence qualified through Cycle 397; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18521,6 +18521,75 @@ scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
 assertions with zero failures in 120.53 seconds. Commit the reviewed result,
 then bind its broad links, read-only health, lineage, clean state, and protected
 fingerprints to the exact tip.
+
+## Cycle 397 checkpoint — dual-channel evidence is not complete mediation
+
+What was wrong: the retained synthesis could still let readers treat
+OverEager's two observer channels as proof that every declared action path was
+captured. The paper's own admission semantics and missing artifacts do not
+support that universal conclusion.
+
+What changes: the canonical finding, Oversight synthesis, and topic map now
+retain the concrete shell/event/filesystem architecture while identifying the
+exact missing channel-to-sink closure evidence.
+
+### Seed order, ranking, and source lanes
+
+Cycle 397 began from clean validated Cycle 396 result
+`54237dda30b020827f228b0e89f5ec5eef42d888`. At
+`2026-09-04T15:44:18.258Z`, the next XHS observation remained
+`2026-09-04T17:09:20.326Z`; no trigger had fired. The bounded pass made zero
+account requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 identities remain unavailable, and Cycle 375 remains exact
+provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries. The complete-coverage claim was highest accessible and reused
+Cycle 393's source archive at SHA-256 `eb6ca423…408f`. GitHub, arXiv, Reddit,
+and all other public lanes made zero requests; their prior evidence and revisit
+triggers remain unchanged.
+
+### Supported layers and missing closure proof
+
+The runtime design combines a PATH command shim, official per-agent event
+streams, SHA-256 pre/post filesystem snapshots, and a full post-run directory
+copy. The appendix describes 55 semantic atoms; 13 named Claude internal tools;
+a 31-command shim mapping with 28 printed examples; and asserted OpenHands and
+Codex adapters onto the normalized atom record. These layers directly address
+known shell-only blind spots and are stronger than one observer.
+
+However, the construction gate's check named `coverage` proves trap-predicate
+reachability under a scripted legal walk. It does not test observer coverage.
+The four admission checks contain no channel-to-sink manifest or capture
+challenge; that manifest appears only later as a proposed sink-misalignment
+mitigation. The promised mapping tables, adapters, bundles, and audit suite are
+absent, and the mapping paragraph does not explain the evaluated Gemini adapter.
+
+Final filesystem state cannot itself prove sensitive reads, network or
+communication effects, in-memory changes, or transient writes restored before
+the snapshot. The source supplies no absolute-path, shell-builtin, or direct-
+library challenge to the PATH shim and no evidence that every agent event type
+survives normalization. Event streams may capture these paths, but the current
+package does not let an independent reader test closure.
+
+Confidence is high in the described layers and distinction between predicate
+reachability and observer completeness; moderate in listed-path capture; low in
+complete mediation across four products or arbitrary offline re-judging. The
+supported claim is improved overlapping observation, not complete coverage.
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit on
+released mappings/adapters/bundles, per-product bypass tests, or a tested sink
+manifest. Next seed-first, audit offline re-judgability against the normalized
+record's retained fields and context requirements if it remains highest.
+
+### Cycle 397 candidate validation
+
+The four-document candidate from source
+`54237dda30b020827f228b0e89f5ec5eef42d888` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 projection, 101 scoped
+links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 116.05 seconds. The committed exact-tip audit
+binds broad links, read-only health, lineage, clean state, and protected
+fingerprints without promoting the source's missing runtime evidence.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

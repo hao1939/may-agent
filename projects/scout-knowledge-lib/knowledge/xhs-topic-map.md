@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 396 bounded reconciliation at 2026-09-04T15:36:50.747Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 396; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch evidence qualified through Cycle 396; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 397 bounded reconciliation at 2026-09-04T15:44:18.258Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 397; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage evidence qualified through Cycle 397; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10208,6 +10208,60 @@ scenario-to-archetype rows, an explicit class column, full traces, or tested
 sink instrumentation. Next seed-first, audit the source's “complete
 audit-channel coverage” claim against its enumerated tools, commands, and
 unobserved sink admission rule if it remains the highest accessible gap.
+
+### Cycle 397 seed-first start — test channel closure, not channel count
+
+Cycle 397 starts from clean validated Cycle 396 result
+`54237dda30b020827f228b0e89f5ec5eef42d888`. At
+`2026-09-04T15:44:18.258Z`, XHS remained before its scheduled
+`2026-09-04T17:09:20.326Z` observation and no trigger had fired. Make zero
+account requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 identities remain unavailable, and Cycle 375's receipt/ledger
+remain provenance. `RV-004` and `RV-034` stay higher-value but inaccessible.
+Reuse the checksum-matching OverEager source and select complete audit-channel
+coverage as the highest accessible architecture/evidence gap.
+
+### Cycle 397 checkpoint — two channels do not prove every sink is closed
+
+The paper correctly identifies why one channel is insufficient. Its PATH shim
+records shell commands; official agent event streams add internal tools; SHA-
+256 pre/post snapshots and a post-run directory copy retain filesystem effects.
+The appendix further describes 55 semantic atoms, a 13-name Claude tool map,
+a 31-command shim table (28 examples are printed), and approximately 100-line
+OpenHands and Codex adapters. This is concrete architecture-level evidence.
+
+It is not the claimed completeness evidence. Stage 1's four admission checks
+are structural validity, trap reachability, safe feasibility, and behavioral
+gradient. Its check called `coverage` means a declared predicate is reachable
+by some legal walk; it does not test that the runtime observer captures every
+reachable action or expected sink. The later action-surface manifest is named
+only as a proposed fix for sink misalignment and is absent from those four
+checks. The retained source has no manifest schema, per-scenario closure row,
+or capture challenge.
+
+The exposed mappings are also incomplete as proof. The full two tables,
+adapters, and audit bundles are promised artifacts rather than source files;
+the mapping paragraph specifically names OpenHands and Codex but not the five
+evaluated Gemini cells. No retained test challenges the PATH shim with absolute
+binary paths, shell builtins, or direct runtime-library calls. Filesystem end-
+state comparison can preserve net writes but does not by itself evidence
+sensitive reads, network/communication effects, in-memory effects, or a write
+that is restored before the final snapshot. Event streams may cover some of
+those paths, but source assertions are not per-channel closure evidence.
+
+The supported conclusion is that shell, event, and filesystem views are useful
+overlapping layers and likely improve recall over a shell-only observer.
+“Complete” remains an unverified universal claim. Confidence is high in the
+described components and admission semantics; moderate in coverage of the
+listed tools/commands; low in cross-product complete mediation, undeclared-sink
+detection, and offline re-judging of facts the normalized record never kept.
+GitHub/arXiv retain Cycle 393's last useful evidence; Reddit makes zero requests
+and remains RSS-readable/JSON-403. `RV-004` and `RV-034` remain high/open and
+`RV-036` medium/open. Revisit on released mappings/adapters/bundles, per-product
+capture challenges, a channel-to-sink manifest with tested closure, or an
+independent bypass audit. Next seed-first, test the narrower offline re-
+judgability claim against the exact normalized fields and predicates that need
+unretained context if it remains the highest accessible gap.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
