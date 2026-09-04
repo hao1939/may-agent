@@ -5922,6 +5922,31 @@ query/rank/selection/outcome join appeared. Next begin seed-first without an
 early XHS request and primary-review the highest-ranked remaining verifier or
 artifact-reproducibility claim rather than compacting prose.
 
+Exact Cycle 332 material `b2b482b626a874d09c2098d1eb46daceadab596e`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions with zero failures
+in 110.60 seconds. Broad links pass 1,540 documents / 1,728 links; health at
+`2026-09-04T03:57:12.907Z` is 26 facts / 16 wakes, truncated. Accepted
+`ff923ccde4` and historical `f26bd4f3a5` are contained; unaccepted
+`d041c41b54` is excluded. Standing and runtime state are empty. Protected
+`/app` remains at `386b445c…1fec8`, with 916 records / `8e3558f4…848a36`
+overall and 296 / `a430d0c9…32d7e` in Scout scope.
+
+### Cycle 333 seed-first start — test collaborative-testing attribution
+
+At `2026-09-04T03:57:12.907Z`, the XHS receipt remains inside cadence. This
+bounded reconciliation makes zero XHS requests: additions/changes unknown,
+removals `[]`, all 132 seeds unavailable, account state unchanged. Rank (1)
+high/open `RV-004`, inaccessible because the protected outcome join is absent;
+(2) the unreleased Memory in the Loop provider result; (3) CREAD `2607.06078`,
+highest accessible because Scan #472 turns a reported 2.1× failure-discovery
+rate into a general orthogonal-role conclusion without primary qualification;
+(4) other primary contradictions and reproducibility gaps; (5) Reddit until a
+relevant trigger; and (6) compaction. Select CREAD; test denominators, controls,
+environment variation, role/model separation, repeated-run uncertainty, artifact
+retention, and whether collaboration rather than budget or generated scenarios
+explains the result.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
