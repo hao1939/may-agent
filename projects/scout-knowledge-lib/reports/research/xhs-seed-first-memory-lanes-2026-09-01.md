@@ -11145,6 +11145,40 @@ conceptual knowledge-debt paper, testing whether equal resolve rate actually
 hides outcome- or cost-relevant trajectory differences and what artifacts
 reproduce them.
 
+Exact Cycle 320 material
+`721372ef69027da4116735a357f7a6461db80056` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
+navigation v2 at 8/8, and all 296 tests / 1,484 assertions in 97.53 seconds.
+The broad audit passes 1,540 Markdown documents / 1,728 local prose links.
+Read-only health at `2026-09-04T02:17:50.767Z` returns 26 facts, 16 wakes,
+and `truncated:true`. Accepted `ff923ccde4` is contained and unaccepted
+`d041c41b54` excluded. The standing tree has zero status records and zero
+runtime-state files. At `02:17:59.450Z`, protected `/app` retains HEAD
+`386b445c…4641fec8`, 916 records / `f7080322…4a93a` overall, and unchanged
+Scout scope at 296 / `7e4d0937…26a8a`.
+
+## Cycle 321 seed-first start — primary-check TraceProbe
+
+At `2026-09-04T02:17:59.450Z`, the last observational XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance remains the last browser receipt plus the
+ledger, and no account state changed.
+
+The complete queue ranks by expected knowledge value: (1) high/open `RV-004`,
+inaccessible because the protected query-to-outcome history ends August 31;
+(2) Memory in the Loop's unreleased provider artifact/result; (3) TraceProbe
+`2607.06184`, highest accessible because Scan 450 currently promotes
+trajectory description into luck, skill, evidence-destruction, cost, and
+reliability claims; (4) the conceptual Agents That Teach paper; (5)
+AgentTether and LogicHunter; (6) Cortex's unavailable taxonomy-size ablation;
+(7) other unsourced scans; (8) Reddit until a relevant-thread/access change;
+and (9) byte/line compaction. Select TraceProbe. Test its population, labels,
+metric definitions, equal-resolve comparisons, predictive or cost evidence,
+statistics, artifacts, and whether it establishes process-evidence erosion
+rather than adding measurement detail.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

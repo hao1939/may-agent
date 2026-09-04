@@ -5178,6 +5178,37 @@ whether equal resolve rate actually hides decision-relevant trajectory
 differences, whether the diagnostics predict outcomes or cost, and what
 artifacts reproduce them.
 
+Exact Cycle 320 material
+`721372ef69027da4116735a357f7a6461db80056` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions in 97.53 seconds. The broad audit passes
+1,540 documents / 1,728 links; read-only health at
+`2026-09-04T02:17:50.767Z` returns 26 facts / 16 wakes. Accepted `ff923ccde4`
+is contained, unaccepted `d041c41b54` excluded, and the standing tree and
+runtime state are clean. Protected `/app` at `02:17:59.450Z` retains HEAD
+`386b445c…4641fec8`, 916 records / `f7080322…4a93a` overall, and the
+unchanged Scout scope at 296 / `7e4d0937…26a8a`.
+
+### Cycle 321 seed-first start — test what resolve rate actually hides
+
+At `2026-09-04T02:17:59.450Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. Reconciliation
+made zero XHS or public requests: additions/changes remain unknown, observed
+removals are `[]`, all 132 durable seeds remain unavailable, and no account
+state changed.
+
+Expected knowledge value ranks the complete queue: (1) `RV-004`'s missing
+protected query-to-outcome join, inaccessible past August 31; (2) Memory in
+the Loop's unreleased provider artifact/result; (3) TraceProbe `2607.06184`,
+highest accessible because Scan 450 currently turns trajectory description
+into claims about luck, skill, evidence destruction, cost, and reliability;
+(4) the conceptual Agents That Teach paper; (5) AgentTether and LogicHunter;
+(6) Cortex's unavailable taxonomy-size ablation; (7) other unsourced scans;
+(8) Reddit until a relevant-thread/access trigger; and (9) compaction. Select
+TraceProbe. Test its population, labels, metric definitions, equal-resolve
+comparisons, predictive or cost evidence, statistics, artifacts, and whether
+the result supports process-evidence erosion rather than measurement detail.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
