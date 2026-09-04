@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 341: the canonical seed ledger holds the latest exact receipt, the Cycle 206–214 compaction preserves incomplete seed provenance, and current-state projections match the ledger."
+summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 371 reuses that still-current receipt without an early account request, and retained AGL-1 primary evidence qualifies its seven-domain governance layer as a proposal rather than an implemented control plane."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 343; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 371 bounded reconciliation at 2026-09-04T10:14:03.755Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, and retained AGL-1 primary evidence resolved in Cycle 371; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -15619,6 +15619,79 @@ same PDF bytes. Local text extraction produced 713 lines / 6,343 words /
 request was made; no primary-review synthesis or conclusion was finalized.
 The seed-first commit remains intact, Cycle 371 is explicitly incomplete, and
 normal research is paused.
+
+### Cycle 371 resumed checkpoint — AGL-1 is design vocabulary, not deployment evidence
+
+Production resumed from accepted clean cursor-only tip
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701`. The bounded reconciliation at
+`2026-09-04T10:14:03.755Z` reused Cycle 341's exact observation through
+`2026-09-04T05:00:03.241Z`, still inside the six-hour cadence. It made zero
+XHS requests: additions and changes remain unknown, observed removals are
+`[]`, all 132 durable identities remain unavailable, no representative saved
+post was supported, and no account state changed. The next scheduled
+observation remains no earlier than `2026-09-04T11:00:03.241Z` unless a
+material access trigger arrives.
+
+The retained AGL-1 `2607.03516v1` artifacts were sufficient for primary review,
+so no new source request was needed. Exact provenance is:
+
+- Atom: 3,456 bytes, SHA-256
+  `90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47`;
+- PDF and e-print response: byte-identical 401,365-byte files, SHA-256
+  `11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba`;
+- extracted text: 713 lines / 6,343 words / 54,164 bytes, SHA-256
+  `ccb12e6e9014b3c9addeb53657cc0c9b9fe94197151fb4f14fa34797d4156023`.
+
+AGL-1 proposes seven governance domains, minimum evidence fields, seven
+artifact classes, a roadmap, and maturity questions. It explicitly describes
+a vendor-neutral reference model rather than a product specification or an
+empirical benchmark. The paper reports no named organization, evaluated agent,
+integrated control plane, intervention, comparison, outcome, or implementation
+artifact. Its sector examples are hypothetical, while scenario evaluation,
+comparative implementation analysis, telemetry schemas, and reference
+blueprints are future work. The industry-platform section synthesizes cited
+vendor and standards documents; it is not an observation of those components
+operating as one AGL-1 deployment.
+
+This resolves the narrow selection question: AGL-1 is a useful conceptual
+inventory and audit vocabulary, not control-plane implementation or
+effectiveness evidence. Confidence is high for exact artifact identity,
+enumerated content, and explicit non-claims; medium for diagnostic usefulness;
+and absent for completeness, reliability, deployment effect, or enterprise
+value. The Scan #473 finding, Scan #425 summary, index, and Oversight Inversion
+now preserve that distinction instead of treating AGL-1/CAGE-1 as an empirical
+enterprise layer.
+
+Lane continuity is explicit:
+
+- **GitHub:** zero requests. No attributable AGL-1 implementation is named and
+  no repository-change trigger fired. Last useful evidence remains the pinned
+  Mnemosyne/CAGE implementation comparison. Revisit on an author-linked AGL-1
+  artifact, implementation revision, or independent deployment evidence.
+- **arXiv:** selected from retained local primary evidence. Revisit on an AGL-1
+  version, linked artifact, empirical comparison, or deployment study.
+- **Reddit:** zero requests and low incremental value. The last useful boundary
+  remains RSS-readable/JSON-403; revisit on a relevant thread, content delta,
+  or access change.
+
+`RV-004` remains high/open because no protected query/rank-to-selection-to-
+later-outcome join appeared. `RV-034` remains high/open at the pinned external
+runtime boundary. The next ranked accessible investigation is the remaining
+Scan #425 configuration-layer synthesis: primary-review CONTRA `2607.03220`,
+HexStrike-AI `2607.02873`, and SkillOpt-Lite `2607.03451` separately, testing
+whether their distinct tasks and interventions justify any shared universal
+inference.
+
+The first candidate gate correctly rejected frontmatter that replaced three
+Cycle 341 projection phrases with Cycle 371 wording. The final wording retains
+the canonical observation identity and appends the bounded-reuse context. The
+reviewed candidate then passes syntax, TypeScript, source formatting, Cycle 341
+projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests /
+1,486 assertions with zero failures in 102.57 seconds. The project-wide link
+audit passes 1,539 tracked Markdown documents / 1,730 links with zero errors.
+Read-only health at `2026-09-04T10:20:27.686Z` remains 26 facts / 16 wakes and
+`truncated:true`; those existing facts are health evidence, not new research
+claims.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

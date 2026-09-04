@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. Five independent sources converge: the locus of both risk and optimization has shifted from the model to its configuration. CONTRA (2607.03220) proves 75.1% of agent skills have at least one configuration leading to malicious action execution — danger lives in the config, not the intent. HexStrike-AI (2607.02873) shows the driving client is a 2.1× factor over model choice — performance lives in orchestrator configuration. SkillOpt-Lite (2607.03451) formalizes skill evolution via ZO optimization and shows one line of vibe can outperform complex pipelines. AGL-1 (2607.03516) and CAGE-1 (2607.03510) define enterprise governance as a control plane over the configuration surface — seven governance domains from identity to execution control. On GitHub, self-learning-skills (843★) productizes self-configuring agents. On HN, ROI skepticism cluster emerges (AI ROI 51pts + GLM 5.2 150pts + Learn to code 98pts = ~299pts combined) — the community questions whether current AI configuration is economically sustainable. CoMaps ✅ crosses 300pts. Riddle surges +78.3% to 123pts."
+summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1 and CAGE-1 primary-reviewed 2026-09-04; the other paper claims remain pending separate primary review. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -12,15 +12,24 @@ source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.032
 
 ## Theme
 
-Five independent sources converge on a structural finding: **the locus of both risk and optimization has shifted from the model to its configuration**. The model is increasingly commodity; the configuration surface — how skills are composed, how the orchestrator drives execution, how governance constrains the control plane — is where safety, performance, and economic value are determined.
+The original scan grouped five sources under a structural hypothesis: **model
+configuration can materially affect risk and performance**. They do not share
+one task, intervention, comparator, or outcome, so they do not by themselves
+show that configuration universally dominates model choice or determines
+economic value. AGL-1 and CAGE-1 have now been primary-reviewed; the other
+three paper results below remain scan-reported claims pending separate review.
 
 - **CONTRA** (2607.03220): 75.1% of agent skills have at least one configuration leading to malicious action execution. Existing scans don't catch it. The danger isn't in the skill — it's in how the skill is *configured*.
 - **HexStrike-AI** (2607.02873): The driving client is a **2.1× factor** over model choice for a fixed model. Performance lives in orchestrator configuration, not model capability.
 - **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. One line of vibe enables a nano model to outperform its larger sibling under standard pipelines. Configuration > parameters.
-- **AGL-1/CAGE-1** (2607.03516, 2607.03510): Enterprise governance is governance of the configuration surface — seven domains from identity-aware retrieval to agentic execution control. Prebind Assurance = proving configuration is safe *before* consequence forms.
+- **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
 - **self-learning-skills** (843★): Agents that configure *themselves*. Recognizes golden paths in sessions and harvests them as reusable skills.
 
-**Design principle**: Model capability is necessary but insufficient. The configuration layer — skill composition, orchestrator behavior, governance controls, self-evolution rules — is where safety, performance, and value are determined. Verify the configuration, not just the model.
+**Qualified design principle**: Evaluate configuration alongside the model and
+task. Skill composition, orchestrator behavior, governance controls, and
+self-evolution rules are plausible decision variables, but their importance
+must be established within matched experiments rather than assumed across
+systems.
 
 ---
 
@@ -100,7 +109,10 @@ Source: https://arxiv.org/abs/2607.03220
 
 **Finding**: Using HexStrikeAI (150+ tools, 86 picoCTF challenges, 774 trials), the driving client creates a **2.1× performance gap** for a fixed model (DeepSeek). Three tool-access regimes and three model/client configurations tested. Overall solve rate rises from 55.4% to 72.0% with targeted corrections. Residual failures are reasoning- or environment-bound, not missing-tool.
 
-**Why this matters**: This empirically proves that the orchestrator configuration — how the client drives the model — matters more than model capability for tool-use tasks. The 2.1× gap from client choice dwarfs typical model-to-model gaps. Configuration of the *harness* is the dominant variable, not the model inside it.
+**Original scan interpretation, pending primary review**: The reported 2.1×
+contrast makes the driving client a plausible first-order factor in this task.
+It does not yet establish that harness configuration dominates model choice
+outside the paper's specific cells or against matched model-to-model controls.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning effort > tool access. Verification Stack (#412) — architecture layer. Oversight Inversion (#382) — harness design as verification substrate.
 
@@ -110,7 +122,10 @@ Source: https://arxiv.org/abs/2607.02873
 
 **Finding**: Formalizes agent skill optimization via zeroth-order (ZO) optimization, mapping classical counterparts (central difference, trust regions) to recent agent literature. Three convergence principles: file-system-based trajectory exploration, consensus attribute mining, independent validation gating. SkillOpt-Lite improves LiveMath by +8.8 points on GPT-5.5 and **+25.4 points on GPT-5.4-nano**, allowing the nano model to surpass standard GPT-5.4 optimized by full SkillOpt. Extends to HarnessOpt: GPT-5.4-nano achieves 0.7758 accuracy on SpreadsheetBench, outperforming larger GPT-5.5 under standard pipelines (0.7620).
 
-**Why this matters**: Configuration optimization > parameter scaling. A smaller model with optimized skills/harness outperforms a larger model with standard configuration. This empirically validates the Configuration Layer thesis: investment in configuration yields higher returns than investment in model scale.
+**Original scan interpretation, pending primary review**: The reported cells
+motivate a matched skill/harness-versus-model-scale comparison. They do not by
+themselves establish a general return-on-investment ordering between
+configuration work and parameter scaling.
 
 **Connects to**: Reasoning Precedence (#416) — reasoning architecture > raw capability. Cost Inversion Threshold (#404) — smaller models with better configuration as economic escape. Discipline Import — optimization discipline applied to agent skills.
 
@@ -195,9 +210,12 @@ Source: https://github.com/rzhub/GateMem
 
 ### Thesis Statement
 
-After the Depth Mismatch (#424) showed that verification fails when it operates at the wrong depth, this scan reveals *which depth matters most*: the **configuration layer** — between the model (below) and the user intent (above).
+After the Depth Mismatch (#424), this scan proposes the **configuration layer**
+— between the model and user intent — as another important evaluation surface.
+The three quantitative papers report different configuration-sensitive
+results; they have not yet been shown to measure one shared causal construct.
 
-Three independent measurements prove this:
+The original scan summarized three reported results:
 1. **Risk**: 75.1% of skills are configurable into dangerous actions (CONTRA)
 2. **Performance**: 2.1× gap from client configuration, dwarfing model-to-model differences (HexStrike)
 3. **Optimization**: Smaller model + optimized configuration > larger model + standard configuration (SkillOpt-Lite)
@@ -209,17 +227,24 @@ Three independent measurements prove this:
 | Oversight Inversion (#382) | You can't oversee what you can't configure — governance IS configuration governance |
 | Depth Mismatch (#424) | Configuration is the correct depth for most practical verification |
 | Cost Inversion (#404) | Optimizing configuration (free) beats scaling parameters (expensive) |
-| Governance Depth (#405) | AGL-1/CAGE-1 define governance as control-plane configuration |
+| Governance Depth (#405) | AGL-1/CAGE-1 propose control-plane and prebind vocabularies; neither validates an implementation |
 | Persistence Attack Surface (#423) | Configurations persist — every persisted config is an attack surface |
 | Verification Stack (#412) | Configuration verification is the missing layer in the stack |
 | Repair Turn (#419) | Repairing configuration is easier than repairing model weights |
 
 ### The Self-Configuration Risk
 
-self-learning-skills (843★) and SkillOpt-Lite both show agents beginning to configure *themselves*. Combined with CONTRA's finding that 75.1% of configurations can be dangerous, self-configuration introduces a recursive risk: **agents optimizing their own configuration may optimize toward dangerous configurations that pass their own validation gates**.
+self-learning-skills (843★) and SkillOpt-Lite describe systems that modify
+their reusable skills or harnesses. Combined with CONTRA's reported finding
+that 75.1% of tested skills have at least one dangerous configuration, this
+motivates a recursive-risk test: **can self-optimization select a dangerous
+configuration that still passes its own validation gate?** The current scan
+does not run that test.
 
 ASP (Anchored Self-Play, 2607.03523) provides the mitigation template: anchor self-optimization to realistic distributions. Without anchoring, self-play (and by extension self-configuration) drifts toward synthetic optima.
 
 ### Design Principle
 
-> Before evaluating a model, evaluate its configuration. Before securing a skill, secure its configuration space. Before optimizing parameters, optimize the configuration. The model is the engine; the configuration is the steering.
+> Evaluate the model, task, and configuration together. Treat skill composition,
+> orchestration, and self-evolution rules as testable factors, not as a universal
+> substitute for model-level evidence.

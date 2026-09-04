@@ -1,13 +1,14 @@
 <ai_context>
-summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories, but uses a non-exhaustive search and releases no citation-edge denominator. CAGE-1 2607.03510v1 contributes a 12-dimension assurance framework and seven-element consequence-boundary proof surface. It explicitly is not a benchmark: its three cases and scores are illustrative, it runs no agent or enforcement control, and it releases no implementation artifact. AGL-1 remains a separate proposal pending primary review."
+summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories, but uses a non-exhaustive search and releases no citation-edge denominator. CAGE-1 2607.03510v1 contributes a 12-dimension assurance framework and seven-element consequence-boundary proof surface. AGL-1 2607.03516v1 contributes a seven-domain reference model, evidence-record inventory, roadmap, and maturity questions. Both explicitly are proposals rather than empirical benchmarks: neither runs an agent, integrated control plane, or deployment comparison, and neither releases an implementation artifact."
 triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind assurance", "AGL-1 governance layer", "Fable criticism", "research-level task failure", "security literature systematization", "five cross-cutting gaps", "TOCTOU MCP unified", "benign out-of-scope actions", "honest policy author assumption", "EasyLastSkill", "Horizon verification harness", "Fortress stealth browser"]
+source_basis: "Primary review on 2026-09-04 of arXiv 2607.05743v1, CAGE-1 2607.03510v1, and AGL-1 2607.03516v1. AGL-1 metadata was observed through the arXiv API at 2026-09-04T09:29:54.166Z (SHA-256 90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47); its PDF and e-print endpoint returned identical 401,365-byte PDF content (SHA-256 11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba). Industry-platform statements in AGL-1 are author synthesis over cited vendor/standards documents, not an observed integrated deployment result."
 </ai_context>
 
 # Scan #473: The Balkanization Problem
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.CR), GitHub
-**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. CAGE-1 adds a useful consequence-boundary evidence vocabulary, but its cases, scores, readiness levels, and 90-day path are proposed evaluation materials rather than an implemented or validated benchmark. AGL-1 remains pending primary review.
+**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. CAGE-1 adds a consequence-boundary evidence vocabulary, while AGL-1 adds seven governance domains, evidence-record fields, a roadmap, and maturity questions. Both are proposed evaluation/design materials rather than implemented or validated benchmarks.
 
 ---
 
@@ -132,7 +133,30 @@ controls and report-byte checks passed without installing packages.
 
 **Recurring failure modes identified:** unauthorized retrieval, stale grounding, unmanaged memory, weak provenance, policy drift, fragmented observability, uncontrolled autonomous execution.
 
-**Significance:** AGL-1's central claim — "trust is not a property of the model alone; it is a property of the system around the model" — is the enterprise formulation of the Oversight Inversion's core thesis. The seven domains map onto the Oversight Inversion's layer structure (memory governance → Memory Loop Gap #470; identity-aware retrieval → Claim-Verification Surface #456; trust observability → Variance Signal #457; agentic execution control → Admission Boundary #469). AGL-1 provides the enterprise vocabulary for what the Oversight Inversion demonstrates through community attention patterns.
+**Primary-review qualification (2026-09-04):** AGL-1 is an independent
+technical report and explicitly calls itself a vendor-neutral reference model,
+not a product specification or empirical benchmark. It defines the seven
+domains, minimum evidence fields, seven artifact classes, a staged roadmap,
+and a 0–3 maturity rubric. Its industry section cites vendor and standards
+documents as signals that component capabilities exist; it does not evaluate
+their integration. The sector examples are hypothetical. No organization,
+agent, control plane, intervention, comparison, outcome, or implementation
+artifact is reported. The limitations section leaves scenario evaluation,
+comparative implementation analysis, telemetry schemas, and reference
+blueprints to future work.
+
+**Significance:** The direct evidence supports a vocabulary and design-audit
+checklist, not a deployed architecture or effectiveness claim. AGL-1's central
+claim — "trust is not a property of the model alone; it is a property of the
+system around the model" — is the author's enterprise formulation of a system
+boundary. Its seven domains can organize questions already present in the
+Oversight Inversion (memory governance → Memory Loop Gap #470; identity-aware
+retrieval → Claim-Verification Surface #456; trust observability → Variance
+Signal #457; agentic execution control → Admission Boundary #469), but that
+mapping is Scout synthesis. Confidence is high in the paper's version, bytes,
+enumerated model, and explicit non-claims; medium in the vocabulary's
+diagnostic usefulness; absent for coverage completeness, implementation
+reliability, deployment effect, or enterprise value.
 
 ---
 
@@ -207,10 +231,10 @@ Chatto's surge from 454pts to 531pts (+17.0%) makes it the highest-growth tracke
 
 The arXiv findings from this scan form a constructive arc:
 - **Balkanization** (2607.05743): The problem — security research is fragmented, five cross-cutting gaps are invisible to individual papers
-- **AGL-1** (2607.03516): The architecture — seven governance domains providing a unified control plane
+- **AGL-1** (2607.03516): The proposed architecture vocabulary — seven governance domains for reasoning about a control plane, without an implementation or deployment evaluation
 - **CAGE-1** (2607.03510): The proposed evaluation schema — Prebind Assurance names evidence to request before consequences form, but no implementation is tested
 
-The three papers offer diagnosis, architecture, and evaluation concepts for a related structural problem. They do not empirically compose: Balkanization's corpus is non-exhaustive, AGL-1 remains pending review, and CAGE-1 does not run the control plane or evaluate whether the integration works. Treat the “nineteen-point exit arc” as Scout synthesis, not a demonstrated construction-evaluation closure.
+The three papers offer diagnosis, architecture vocabulary, and evaluation concepts for a related structural problem. They do not empirically compose: Balkanization's corpus is non-exhaustive, AGL-1 does not implement or evaluate its proposed control plane, and CAGE-1 does not run a control or test whether the integration works. Treat the “nineteen-point exit arc” as Scout synthesis, not a demonstrated construction-evaluation closure.
 
 ---
 

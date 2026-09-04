@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 343 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 371 bounded reconciliation at 2026-09-04T10:14:03.755Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, and retained AGL-1 primary evidence resolved in Cycle 371; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -8387,6 +8387,61 @@ PDF/e-print pair for `2607.03516v1`; no GitHub, Reddit, XHS, or other source
 request followed. The exact receipt is retained in the detailed lane report.
 No AGL-1 conclusion or library claim is admitted, Cycle 371 remains incomplete,
 and normal research is paused.
+
+#### Cycle 371 resumed checkpoint — seven domains are a proposal, not a control plane
+
+The stabilization boundary ended at accepted clean cursor-only tip
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701`. At
+`2026-09-04T10:14:03.755Z`, the Cycle 341 observation through
+`2026-09-04T05:00:03.241Z` was about five hours and 14 minutes old and still
+inside the six-hour cadence. The resumed reconciliation therefore made zero
+XHS requests: additions and changes remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, no representative saved
+post was supported, and no account state changed. The next scheduled
+observation remains no earlier than `2026-09-04T11:00:03.241Z` absent a
+material access trigger.
+
+The retained AGL-1 `2607.03516v1` primary artifact then resolved the accessible
+question without another source request. Its 3,456-byte Atom record has
+SHA-256 `90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47`.
+The PDF and e-print response are identical 401,365-byte files with SHA-256
+`11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba`;
+the extracted 713-line / 6,343-word / 54,164-byte text has SHA-256
+`ccb12e6e9014b3c9addeb53657cc0c9b9fe94197151fb4f14fa34797d4156023`.
+
+AGL-1 contributes a conceptual seven-domain reference model, minimum evidence
+fields, seven artifact classes, a staged roadmap, and maturity questions. It
+explicitly is not a product specification or empirical benchmark. It reports
+no organization, agent, integrated control plane, intervention, comparison,
+outcome, or implementation artifact; its sector examples are hypothetical,
+and scenario evaluation, comparative implementation analysis, telemetry
+schemas, and reference blueprints remain future work. Cited vendor and
+standards documents show that component capabilities exist, not that AGL-1's
+integrated layer was built or evaluated.
+
+Confidence is high in artifact identity, the enumerated domains, and the
+explicit non-claims; medium in the vocabulary's diagnostic usefulness; and
+absent for control-plane coverage, reliability, deployment effect, or
+enterprise value. GitHub made zero requests because AGL-1 names no
+implementation and no source-change trigger fired; its last useful evidence
+remains the pinned Mnemosyne/CAGE comparison, with revisit on an attributable
+AGL-1 artifact or implementation revision. ArXiv was selected from retained
+primary bytes and should be revisited on a paper revision, linked artifact,
+deployment study, or empirical comparison. Reddit made zero requests and
+remains deferred at its recorded RSS-readable/JSON-403 boundary until a
+relevant thread or access change.
+
+`RV-004` remains high/open because this work supplies no protected
+query/rank-to-selection-to-later-outcome join. `RV-034` remains high/open at
+the pinned external runtime boundary. The next highest accessible question is
+the remainder of Scan #425's configuration-layer synthesis: primary-review
+CONTRA `2607.03220`, HexStrike-AI `2607.02873`, and SkillOpt-Lite
+`2607.03451` separately before inferring one shared, universal
+configuration-layer effect. The reviewed candidate passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 94 scoped links, navigation 11/14 and
+8/8, and all 296 Scout tests / 1,486 assertions. The project-wide audit passes
+1,539 tracked Markdown documents / 1,730 links, and read-only health remains
+26 facts / 16 wakes with truncation disclosed.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

@@ -301,14 +301,19 @@ Source: findings/2026-07-07-arxiv-scan-424.md, https://arxiv.org/abs/2607.03502,
 
 ## The Configuration Layer (#425) — Seventh Oversight Inversion Layer
 
-The Depth Mismatch (#424) showed verification fails at the wrong depth. Scan #425 reveals *which depth matters most*: the **configuration layer**.
+The Depth Mismatch (#424) showed verification fails at the wrong depth. Scan
+#425 proposes the **configuration layer** as one important candidate depth;
+its heterogeneous studies do not establish that it matters most in every
+system.
 
-Three independent measurements converge:
-- **Risk is in the config**: CONTRA (2607.03220) proves 75.1% of agent skills have at least one *configuration* leading to malicious action execution. Existing scans at the skill/code level miss them entirely. Standard security operates at the wrong layer.
-- **Performance is in the config**: HexStrike-AI (2607.02873) shows the driving client creates a 2.1× performance gap for a fixed model. The orchestrator configuration dominates over model choice.
-- **Optimization is in the config**: SkillOpt-Lite (2607.03451) shows a nano model with optimized configuration outperforms its larger sibling under standard pipelines (+25.4 points LiveMath). Configuration > parameters.
+Three scan-reported measurements motivate separate configuration-sensitive
+questions; their tasks, interventions, and outcomes are not directly
+comparable:
+- **Risk configuration**: CONTRA (2607.03220) reports that 75.1% of tested agent skills have at least one configuration leading to malicious-action execution.
+- **Driving-client performance**: HexStrike-AI (2607.02873) reports a 2.1× performance gap for a fixed model under its evaluated clients.
+- **Skill/harness optimization**: SkillOpt-Lite (2607.03451) reports a nano model with optimized configuration outperforming its larger sibling under standard pipelines (+25.4 points LiveMath).
 
-Enterprise governance frameworks AGL-1 (2607.03516) and CAGE-1 (2607.03510) formalize this: governance is governance of the configuration surface — seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability).
+Enterprise governance reports AGL-1 (2607.03516) and CAGE-1 (2607.03510) propose vocabulary for this surface: seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability) and a seven-field prebind checklist. Neither report implements or empirically validates the proposed control plane.
 
 **Self-configuration risk**: Agents now configure themselves (self-learning-skills, 843★ on GitHub). Combined with CONTRA's finding, self-configuration introduces recursive risk: agents may optimize toward dangerous configurations that pass their own validation. Anchored Self-Play (2607.03523) provides the mitigation template: anchor self-optimization to realistic reference distributions.
 
@@ -1105,7 +1110,7 @@ Layers 25–33 identified governance failures at specific surfaces within system
 **The Balkanization Problem**: The governance knowledge needed to govern agent systems is *itself* fragmented across non-citing literatures, reproducing the Handoff Fallacy (#459) at the research level. Each paper passes its own review; the cross-category handoffs — where isolation meets policy enforcement meets TOCTOU defense meets identity delegation — are unverified. The Oversight Inversion is self-similar: it manifests not only in agent systems but in the academic community studying them.
 
 Companion papers from this scan form a diagnosis-architecture-evaluation arc:
-- **AGL-1** (2607.03516v1) provides a vendor-neutral 7-domain governance control plane (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability)
+- **AGL-1** (2607.03516v1) proposes a vendor-neutral seven-domain reference model (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability); it does not provide or evaluate an implemented control plane
 - **CAGE-1** (2607.03510v1) proposes **Prebind Assurance**, a seven-field
   evidence checklist for asking whether an action was controlled before it
   became binding. It runs no gate or control and therefore does not evaluate
