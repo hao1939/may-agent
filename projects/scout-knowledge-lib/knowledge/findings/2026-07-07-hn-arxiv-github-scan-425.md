@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. HexStrike's released row-level logs reproduce a large client-associated contrast but not clean client-only causality. SkillOpt-Lite reports 23 wins, three ties, and four losses against SkillOpt in 30 within-model cells, while its smaller-model headlines compare different optimization methods and do not reverse the scale ordering under matched methods. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
+summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), SkillOpt-Lite (2607.03451), and Anchored Self-Play (2607.03523) report distinct task-specific results. Anchored Self-Play improves one paper-reported code-repair average from 29.1% to 36.1%, but bundles two interventions, has no repeated main-run uncertainty, transfers only +1.6 points to DebugBench without in-domain retraining, and does not test self-configuration. Its repaired public repository exposes code and benchmark rows, but no paper result artifacts, and its current default launcher differs from the paper's main setup. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, HexStrike-AI, and SkillOpt-Lite primary-reviewed 2026-09-04. Exact SkillOpt-Lite v1 Atom SHA-256 b94c249f5ede26cb57f10c98055bb9abf3ea8ffe0b26337e1e7b57eb0582a574, source-archive SHA-256 20a29acf82e86eb374b777d2f2f2033c78bee63416b80f279f028894cecce938, author repository EvolvingLMMs-Lab/SkillOpt-Lite commit 4cb4eeef1f95375a9179737ab94cf5e64b9647c6, and Hugging Face size response SHA-256 d479ba529d7da03313d6c0d86e2c883d6d8152235d2c7acf766ddb407343027d. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, CONTRA, HexStrike-AI, SkillOpt-Lite, and Anchored Self-Play primary-reviewed 2026-09-04. Anchored Self-Play exact v1 Atom SHA-256 aadc41125c1b80ec1d901d23254bad7ea5a7540fdfdbf319f6e4db41b786b7a3, source-archive SHA-256 c89f173e77c758e5f7f9a239614601365f7958fd30dc60018b909a7ae4c665f1, and cchoi1/anchored_self_play commit 60fc9af2323e06f798a1af5b08d6a0ea30242fa9. Exact SkillOpt-Lite v1 Atom SHA-256 b94c249f5ede26cb57f10c98055bb9abf3ea8ffe0b26337e1e7b57eb0582a574, source-archive SHA-256 20a29acf82e86eb374b777d2f2f2033c78bee63416b80f279f028894cecce938, author repository EvolvingLMMs-Lab/SkillOpt-Lite commit 4cb4eeef1f95375a9179737ab94cf5e64b9647c6, and Hugging Face size response SHA-256 d479ba529d7da03313d6c0d86e2c883d6d8152235d2c7acf766ddb407343027d. Exact HexStrike v1 Atom SHA-256 1513fd201ad080c1cf8985616ce34bf4daaa423f1314fd812160aab7eb23536d, source-archive SHA-256 5f2b376781a0117d41d8fcb1700e79e15177c996f69e794627b01b94c9c5b77f, and paper-linked BreadyBred/hexstrike-eval commit 83290b00c8fdd748f468072d903f4c0d0ff02c71. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -234,9 +234,44 @@ Source: https://arxiv.org/abs/2607.03451
 
 ### MEDIUM: Anchored Self-Play for Code Repair (2607.03523)
 
-**Finding**: Generator-fixer self-play for code repair drifts toward difficult but unrealistic bugs. Anchored Self-Play (ASP) adds a code-embedding similarity reward and reference-bug mixing, improving average fix rate over standard self-play by +24% relative / +7.0pp absolute. Introduces BugSourceBench spanning realistic bug sources: human-written, LM-generated, and human-edited LM-generated code.
+**Finding**: In the paper's Qwen2.5-Coder-7B experiment, Anchored
+Self-Play (ASP) raises the reported average one-shot fix rate from 29.1% for
+standard self-play to 36.1% (+7.0 points, about +24% relative). The 127 held-out
+tasks are shared across four bug sources. The gains are heterogeneous: +1.3
+points on human bugs, +5.5 on human-edited LM bugs, +12.6 on Qwen bugs, and
++8.7 on GPT-OSS bugs. An alternate DeepSeek-Coder-6.7B experiment reports
+30.5% versus 21.6%, but out-of-domain DebugBench transfer is only 60.3% versus
+58.7%; training directly on DebugBench reaches 66.3%.
 
-**Why this matters**: Self-play without anchoring produces drift toward synthetic difficulty. Anchoring to realistic distributions is essential — this parallels how agent self-evolution (SkillOpt-Lite, self-learning-skills) requires grounding to avoid optimizing for artificial benchmarks.
+ASP combines two interventions: reference-bug mixing and an
+embedding-similarity reward. The paper's component table reports 29.5% with
+mixing alone and 30.9% with similarity alone, versus 36.1% together. That
+supports complementarity in this run, not identification of either component
+as independently sufficient. The main table reports no repeated training
+seeds, confidence intervals, or significance test. The setting is Python
+function repair with unit-test feedback; it excludes repository localization,
+dependencies, build systems, and long-horizon tool use.
+
+**Artifact qualification**: The author repository is public and Apache-2.0 at
+`60fc9af2323e06f798a1af5b08d6a0ea30242fa9`. The initial paper release
+`736e6d578f7c90af86ed6dec36dba25a196abc39` was not fresh-clone runnable;
+later commits restored omitted modules, configuration, data preparation, and
+dependencies. The current tree contains the 127-row, four-source benchmark and
+four narrow API-evaluation regression tests, which pass locally, but no paper
+checkpoints or result outputs. Its default main launcher also differs from the
+paper: one human-edited-LM reference source rather than equal representation
+from four sources, 50% rather than 20% reference mixing, and 20 rather than 10
+epochs. Reproducing the headline therefore still requires reconstructing the
+paper-bound configuration, eight H100-class GPUs for the reported roughly
+48-hour/120-step run, Voyage API access, and unreleased checkpoint-selection
+and outcome artifacts.
+
+**Why this matters**: The measured result supports the narrower hypothesis
+that reference-distribution anchoring can mitigate synthetic-bug drift in this
+code-repair setup. It does not show that anchoring is universally essential or
+that the intervention transfers to autonomous self-configuration. For
+self-evolving agents it is a candidate experimental design, not a validated
+mitigation.
 
 **Connects to**: Repair Turn (#419) — code repair as structural bottleneck. Behavioral Baseline (#421) — proof absorption requires grounding. Abstention Decay — training for one objective erases another unless anchored.
 
@@ -343,7 +378,12 @@ motivates a recursive-risk test: **can self-optimization select a dangerous
 configuration that still passes its own validation gate?** The current scan
 does not run that test.
 
-ASP (Anchored Self-Play, 2607.03523) provides the mitigation template: anchor self-optimization to realistic distributions. Without anchoring, self-play (and by extension self-configuration) drifts toward synthetic optima.
+ASP (Anchored Self-Play, 2607.03523) provides a candidate experiment design:
+compare self-optimization with and without reference-distribution anchoring.
+Its measured evidence is limited to function-level code repair, bundles two
+anchoring interventions, and transfers weakly to DebugBench without in-domain
+retraining. It does not establish that self-configuration drifts by the same
+mechanism or that ASP mitigates it.
 
 ### Design Principle
 

@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 374 reuses that still-current receipt without an early account request and qualifies SkillOpt-Lite's within-model gains, cross-scale headlines, and current public reproduction boundary."
+summary: "Seed-first Scout continuity through Cycle 375 reproduces the login-class collection boundary, then qualifies Anchored Self-Play as a two-intervention function-repair result whose public launcher and artifacts do not reproduce the paper-bound setup or establish transfer to self-configuration."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 374 bounded reconciliation at 2026-09-04T10:54:02.932Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 374; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, and SkillOpt-Lite primary evidence resolved in Cycle 374; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 375; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, and Anchored Self-Play primary evidence resolved in Cycle 375; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -16061,6 +16061,175 @@ status records / SHA-256
 and 296 Scout-scope records / SHA-256
 `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
 This worker ran no tests or writes in that checkout or any peer worktree.
+
+## Cycle 375 seed-first start — access is unchanged; audit Anchored Self-Play
+
+Cycle 375 begins from clean validated tip
+`55aa18a884d097d71d3e70e7270fe5351e591798`. The scheduled XHS observation
+preceded all research-source work. Worker UID 1000 (`hao`) observed direct
+localhost 9222 refuse at `2026-09-04T11:08:30.983Z`, then used the existing
+passwordless `sudo nsenter` connector as effective UID 0 inside root-owned
+Chrome PID 2136's network namespace. The default root `/usr/bin/node` v18.19.1
+has no global `WebSocket`; both initial adapter wrappers consequently returned
+empty stdout and the downstream parser reported `JSON Parse error: Unexpected
+EOF`. Explicit Node v22.19.0 supplied `WebSocket` and corrected that local
+execution boundary without changing Chrome or account state.
+
+The supported pass ran `2026-09-04T11:09:18.840Z–11:09:20.326Z`: exactly one
+public `status` found Explore ready with 30 notes and no login wall, and one
+non-navigating `saved-status` returned HTTP 200, final class `login`, 46,763
+bytes, target evidence `e860da4650…906e`, semantic access
+`3dab1b6d…af420`, zero attributable items, empty-set identity fingerprint
+`e3b0c442…b855`, a login wall, and `ready:false`. Against Cycle 341, semantic
+access, byte length, target evidence, and the empty identity set are unchanged;
+only body SHA changed `5be9a393…c67d1`→`9d1169da…3186d` as response
+provenance. Added/changed identities remain unknown, observed removals are
+`[]`, and all 132 durable identities remain unavailable. No representative
+saved-post read was supported and no XHS mutation occurred.
+
+Re-rank after reconciliation: (1) high/open `RV-004`, inaccessible without
+the protected query/rank-to-selection-to-later-outcome join; (2) high/open
+`RV-034`, pinned at the external runtime boundary; (3) the unreleased Memory
+in the Loop result; (4) Anchored Self-Play `2607.03523`, highest accessible
+because Scan #425 promotes mitigation transfer from one game-like code-repair
+setup without a primary qualification; (5) remaining primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (6) Reddit until a relevant-
+thread or access-change trigger; and (7) compaction. Select Anchored Self-Play
+and inspect the exact task, realism measure, baselines, transfer design,
+uncertainty, released artifacts, and what the result can support about self-
+configuration.
+
+## Cycle 375 checkpoint — qualify Anchored Self-Play and its public artifact
+
+### Primary paper evidence
+
+ArXiv `2607.03523v1` was observed
+`2026-09-04T11:10:44.299Z–11:10:46.125Z`. The 3,020-byte Atom response has
+SHA-256 `aadc41125c1b80ec1d901d23254bad7ea5a7540fdfdbf319f6e4db41b786b7a3`;
+the 6,537,287-byte source archive has SHA-256
+`c89f173e77c758e5f7f9a239614601365f7958fd30dc60018b909a7ae4c665f1`.
+Extraction produced 26 files / 7,721,314 bytes. The main source
+`icml2026.tex` hashes to
+`642d01230d6d6a1b4f16dc64b9aba6ccb1cc4d8994dee6cd76abf2d8636d365a`;
+the benchmark, method, experiments, conclusion, and appendix section hashes
+are respectively `a901d770...0053`, `ccfd8db0...e028`,
+`c90a11a9...a865`, `d87cdeb8...229d`, and `662fb407...f4371`.
+
+On Qwen2.5-Coder-7B, the main table reports Base 25.8%, Fixer-Only 27.9%,
+Self-Play 29.1%, and Anchored Self-Play (ASP) 36.1%. The +7.0-point / about
++24%-relative gain is not uniform: ASP versus Self-Play is 65.0 versus 63.7
+on human bugs (+1.3), 37.0 versus 31.5 on human-edited LM bugs (+5.5), 21.3
+versus 8.7 on Qwen bugs (+12.6), and 21.3 versus 12.6 on GPT-OSS bugs (+8.7).
+All four sources use the same 127 held-out tasks and one greedy repair per bug.
+
+ASP bundles reference-bug mixing and an embedding-similarity generator reward.
+The ablation reports 29.1% for Self-Play, 29.5% with mixing, 30.9% with
+similarity shaping, and 36.1% with both. An alternate
+DeepSeek-Coder-6.7B run reports 30.5% versus 21.6%, supporting direction on a
+second model. External DebugBench transfer is much smaller—60.3% versus
+58.7%—while training directly on DebugBench reaches 66.3%. The main 127-task
+result reports no repeated training seeds, confidence interval, or
+significance test. Confidence intervals appear for a separate similarity-bin
+diagnostic and must not be transferred to the main comparison.
+
+Training uses 900 BigCodeBench tasks, 81 validation tasks for checkpoint
+selection, and a 900-bug reference pool equally representing the four sources.
+The reported main run uses Qwen2.5-Coder-7B, eight H100 GPUs, approximately 48
+hours / 120 steps, 10 epochs, and 20% reference mixing. Scope is Python
+function repair with unit-test feedback; the paper explicitly excludes
+repository-level localization, dependencies, build systems, and long-horizon
+tool use. This supports a qualified conclusion: reference-distribution
+anchoring can mitigate drift in this specific synthetic-bug repair setup. It
+does not identify either component as sufficient, establish general transfer,
+or validate a mitigation for autonomous self-configuration.
+
+### Public code and reproducibility boundary
+
+GitHub reads `2026-09-04T11:11:22.729Z–11:11:24.281Z` pin public,
+Apache-2.0 `cchoi1/anchored_self_play` `main` to
+`60fc9af2323e06f798a1af5b08d6a0ea30242fa9`. The untruncated tree has 214
+entries / 171 blobs / 3,636,591 declared bytes. Repository, commit, and tree
+API receipts hash to `6ac4af86...5403`, `93e043a8...05f0`, and
+`8f0099c6...9fab`.
+
+The current head is materially newer than paper release
+`736e6d578f7c90af86ed6dec36dba25a196abc39`. Commit `8b8f7179cf` explains
+that the release omitted modules and trainer configuration matched by broad
+ignore rules, had no data-preparation path for launcher dataset names, and
+could silently turn missing BigCodeBench dependencies into failed reward
+signals. Later commits restore those pieces, rename datasets, prune dead eval
+scripts, and add a frozen-generator launcher. This makes current code more
+usable, but it is not the exact released experiment state.
+
+The released `bugsourcebench.csv` is 1,252,237 bytes, SHA-256
+`5164e5e8c44dcc3ae080eba339e1ffa1365d2dc1761a670a2b0286aa62bc694d`,
+with 127 rows, 12 columns, 127 unique IDs, and four bug columns matching the
+paper's sources. A fresh goal-owned detached worktree ran the repository's
+four release-regression tests successfully: two verify API-evaluation resume
+coverage/duplicate rejection, and two verify test-feedback materialization.
+They do not validate training, paper hyperparameters, checkpoint selection, or
+the headline result.
+
+No result, metric, output, or checkpoint artifact matching the paper tables is
+present. More importantly, the current default main launcher sets only
+`bugs_human_edited_lm` as its target source rather than equal representation
+from all four sources, uses 50% reference mixing rather than the paper's 20%,
+and runs 20 rather than 10 epochs. Other main hyperparameters—including
+Qwen2.5-Coder-7B, learning rate, batch sizes, sequence lengths, four training
+rollouts, k=5, similarity weight 0.20, margin temperature 5.0, and EMA decay
+0.99—are represented in code. Exact outcome reproduction still requires a
+paper-bound configuration/manifest, the reported GPU and Voyage resources,
+selected checkpoints, and result rows; no install, training, provider, or GPU
+call was attempted.
+
+### Source lanes, confidence, and next work
+
+- **arXiv:** exact v1 source is selected and primary-qualified. Revisit on v2,
+  repeated-run uncertainty, or a changed transfer result.
+- **GitHub:** exact head `60fc9af2...` is the last useful evidence. Revisit on
+  a head advance, paper-bound manifest/configuration, checkpoint, or outcome
+  release.
+- **Reddit:** zero requests. Preserve the prior RSS-readable/JSON-403 boundary;
+  revisit only on a relevant-thread or access-change trigger.
+- **XHS:** Cycle 375's supported pass remains the seed basis: additions and
+  changes unknown, removals `[]`, all 132 durable identities unavailable, and
+  no account mutation.
+
+Confidence is high in the source hashes, table arithmetic, repository identity,
+CSV structure, launcher comparison, and four local tests; moderate that the
+two-part ASP method mitigates drift in this exact setup; low for component-
+specific causality and broad transfer; absent for self-configuration. `RV-004`
+and `RV-034` remain high/open. The next highest-value accessible investigation
+is GameEngineBench `2607.03525`: primary-check the claimed 55.5% best pass@1,
+31/110 all-system failures, configuration comparability, and released artifact
+before retaining Scan #424's runtime-environment generalization.
+
+### Validation and preservation
+
+The reviewed working tree passes syntax, TypeScript, source formatting, Cycle
+375 current-state projection, 94 scoped links, navigation v1 at 11/14,
+navigation v2 at 8/8, and all 296 Scout tests / 1,486 assertions with zero
+failures in 97.39 seconds. The broad offline audit passes 1,540 tracked
+Markdown documents / 1,732 local prose links with zero errors. Read-only
+health at `2026-09-04T11:19:38.510Z` returns 26 facts / 16 wake signals with
+`truncated:true`; the application runtime state remains empty.
+
+The prior validated tip `55aa18a884d097d71d3e70e7270fe5351e591798`
+already contains all nine canonical accepted finite results. Reviewer commits
+`bb2daa3213161e1b43b0bd45b541f67de0b9adbc`,
+`e8b91a8963bf81d08fc54f3334c87fbe1026c6cf`,
+`b76d6c0737472565db26505d0b2b8e09777ba8eb`, and
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701` remain ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` remains excluded.
+
+Read-only protected-checkout inspection at `2026-09-04T11:20:18.566Z`
+records unchanged HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`,
+386 whole-status records, and 296 Scout-scope records. Their fingerprints have
+changed externally since the previous checkpoint to
+`3afed0a685447122af00548a840d143d5c1fa6ea61f4ff0d9608e1088857ef5a`
+and `59974094d30cf9d3947d4b96c7ac9a75dc4e0d70955ab479cfc4c85a93df4b9f`.
+This worker did not run tests, generators, formatters, installers, or writes in
+that checkout or any peer worktree.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

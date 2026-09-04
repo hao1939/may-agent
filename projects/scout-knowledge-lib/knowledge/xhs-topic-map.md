@@ -2,22 +2,22 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 374 bounded reconciliation at 2026-09-04T10:54:02.932Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 374; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, and SkillOpt-Lite primary evidence resolved in Cycle 374; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces the login-class collection boundary; exact access evidence, wrapper correction, and uncertainty are in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 375; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, and Anchored Self-Play primary evidence resolved in Cycle 375; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 341 used the established direct localhost Chrome
+authenticated window. Cycle 375 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
 worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
 retained the 46,763-byte login response and zero attributable items. Only the
-body hash changed from Cycle 292. This is not a comparable collection
+body hash changed from Cycle 341. This is not a comparable collection
 inventory. Added and changed sets remain unknown, proven removals are `[]`,
 and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
@@ -8693,6 +8693,84 @@ accepted Cycle 371 reviewer lineage remain ancestors; unaccepted `d041c41b54`
 remains excluded. Protected `/app` is externally observed at unchanged HEAD
 `386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
 `00bcc281…c5ed4`, and 296 Scout-scope records / `a430d0c9…4322f7e`.
+
+### Cycle 375 seed-first start — access is unchanged; audit Anchored Self-Play
+
+Cycle 375 begins from clean validated tip
+`55aa18a884d097d71d3e70e7270fe5351e591798`. The scheduled XHS pass ran
+before any research source at `2026-09-04T11:09:18.840Z–11:09:20.326Z`.
+Worker-local 9222 first refused; passwordless `sudo nsenter` then ran as UID 0
+in root-owned Chrome PID 2136's network namespace. A Node 18 wrapper exposed
+no global `WebSocket` and produced empty adapter stdout; explicit Node 22
+corrected that local execution boundary. Exactly one supported public status
+and one supported non-navigating saved-status then ran. Explore remains ready
+with 30 notes. Saved access remains HTTP 200, `login`, 46,763 bytes, semantic
+access `3dab1b6d…af420`, zero attributable items, and a login wall. Only body
+SHA changed `5be9a393…c67d1`→`9d1169da…3186d`.
+
+This is response provenance, not a seed change: added/changed identities stay
+unknown, observed removals are `[]`, and all 132 durable identities remain
+unavailable. No representative saved post was supported and no account state
+changed. Re-rank: (1) high/open `RV-004`, inaccessible without the protected
+query/rank-to-selection-to-later-outcome join; (2) high/open `RV-034`, pinned
+at the external runtime boundary; (3) the unreleased Memory in the Loop result;
+(4) Anchored Self-Play `2607.03523`, highest accessible because Scan #425
+promotes mitigation transfer from one game-like code-repair setup without
+primary qualification; (5) other contradiction, reproducibility, retrieval,
+and synthesis gaps; (6) Reddit until its trigger; (7) compaction. Select item
+4 and test the exact task, baselines, realism measure, transfer design,
+uncertainty, released artifacts, and limits on inference to self-configuration.
+
+### Cycle 375 checkpoint — ASP mitigates one repair drift, not self-configuration
+
+Exact arXiv `2607.03523v1` source supports the reported Qwen2.5-Coder-7B
+average: Base 25.8%, Fixer-Only 27.9%, Self-Play 29.1%, and Anchored Self-Play
+(ASP) 36.1%. ASP's +7.0-point gain over Self-Play is heterogeneous across the
+four shared bug sources (+1.3 human, +5.5 human-edited LM, +12.6 Qwen, +8.7
+GPT-OSS). The component table reaches only 29.5% for reference mixing and
+30.9% for similarity shaping alone, so the headline binds a two-intervention
+bundle. DeepSeek-Coder-6.7B supports direction with 30.5% versus 21.6%, while
+external DebugBench transfer narrows to 60.3% versus 58.7%; retraining in
+domain reaches 66.3%. The 127-task main table has no reported repeated
+training seeds, confidence intervals, or significance test.
+
+The paper studies one-shot Python function repair with unit-test feedback. It
+explicitly excludes repository localization, dependency/build failures, and
+long-horizon tool use. Confidence is high in the exact paper-table extraction
+and moderate that the bundled anchoring method mitigates synthetic-bug drift
+in this setup; it is low for either component alone and absent for transfer to
+autonomous self-configuration.
+
+Public `cchoi1/anchored_self_play` at exact head
+`60fc9af2323e06f798a1af5b08d6a0ea30242fa9` supplies a 127-row/four-source
+benchmark and now passes four narrow release-regression tests. The original
+paper release was missing imported modules, configuration, and data setup;
+later commits repaired those boundaries. No paper checkpoints or result files
+are present. The current default launcher still differs from the paper-bound
+setup: one human-edited-LM reference source rather than four equally
+represented sources, 50% rather than 20% reference mixing, and 20 rather than
+10 epochs. Code availability therefore does not reproduce the outcome.
+
+Lane continuity: arXiv v1 is selected and qualified; revisit on v2 or added
+repeated-run uncertainty. GitHub head `60fc9af2...` is selected as artifact
+evidence; revisit on head advance, paper-bound manifest/configuration,
+checkpoint, or result release. Reddit made zero requests and remains deferred
+at the prior RSS-readable/JSON-403 boundary until a relevant thread or access
+change. XHS remains login-class/unavailable under row 375. `RV-004` and
+`RV-034` remain high/open. Next ranked accessible investigation is
+GameEngineBench `2607.03525`: primary-check its 55.5% best pass@1 and 31/110
+all-system failures before retaining Scan #424's runtime-environment
+generalization.
+
+The reviewed working tree passes the complete Scout gate: 296 tests / 1,486
+assertions, syntax, TypeScript, formatting, Cycle 375 projection, 94 scoped
+links, and navigation 11/14 plus 8/8. The broad audit passes 1,540 documents /
+1,732 links; read-only health at `2026-09-04T11:19:38.510Z` remains 26 facts /
+16 wakes with truncation. Accepted reviewer lineage remains contained and
+unaccepted `d041c41b54` remains excluded. Protected `/app` stays at HEAD
+`386b445c23` with 386 whole-status and 296 Scout-scope records, but its status
+fingerprints changed externally to `3afed0a6...ef5a` and
+`59974094...f4b9f`; this worker ran no test or write there.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

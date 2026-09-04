@@ -320,9 +320,13 @@ session patterns into reusable skills, while CONTRA reports dangerous
 configurations in a separate simulated benchmark. Together they motivate a
 test of whether a self-modifying system can select a dangerous configuration
 that still passes its own validation gate; the current evidence does not run
-that joined test. Anchored Self-Play (2607.03523) separately reports that
-reference-distribution anchoring reduces drift in its code-repair setting, so
-it is a candidate comparison rather than a demonstrated mitigation here.
+that joined test. Anchored Self-Play (2607.03523) separately reports 36.1%
+versus 29.1% average fix rate after combining reference mixing and similarity
+shaping in function-level code repair. The main result lacks repeated-run
+uncertainty, transfers only +1.6 points to DebugBench without in-domain
+retraining, and the public default launcher does not reproduce the paper-bound
+configuration. ASP is therefore a candidate comparison design rather than a
+demonstrated self-configuration mitigation.
 
 **Configuration Layer completes the Oversight Inversion depth stack**:
 - Economic: monitoring output volume (wrong) vs. monitoring production cost (right)
