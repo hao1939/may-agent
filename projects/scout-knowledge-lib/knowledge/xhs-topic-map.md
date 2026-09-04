@@ -5570,6 +5570,28 @@ seed-first and primary-review the still-pending OSS contribution study
 `2607.05677`, now the highest accessible evidence gap before inaccessible
 Cortex ablation, other scans, Reddit, or compaction.
 
+Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
+passes the full Scout gate at 296 tests / 1,484 assertions with zero failures in
+99.21 seconds. The broad audit passes 1,540 documents / 1,728 links; read-only
+health at `2026-09-04T03:10:58.398Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` and requested historical `f26bd4f3a5` are contained, unaccepted
+`d041c41b54` excluded, and standing status/runtime state are empty. Protected
+fingerprints remain exact at 916 / `8e3558f4…8a36` overall and 296 /
+`a430d0c9…f7e` for Scout scope.
+
+### Cycle 327 seed-first start — test the maintenance asymmetry claim
+
+At the same boundary, the last XHS observation through
+`2026-09-03T22:59:03.253Z` remains inside cadence. This reconciliation makes
+zero XHS or public requests: additions/changes remain unknown, observed
+removals are `[]`, all 132 seeds remain unavailable, and account state is
+unchanged. The complete queue ranks (1) high/open `RV-004`, inaccessible at
+the missing protected outcome join; (2) Memory in the Loop's unreleased result;
+(3) `2607.05677`, highest accessible; (4) Cortex's unavailable taxonomy-size
+ablation; (5) other unsourced primary/reproducibility gaps; (6) Reddit; and (7)
+compaction. Select `2607.05677` and test population, maintainability estimand,
+survey denominator, self/other comparison, identification, and artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

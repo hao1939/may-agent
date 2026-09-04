@@ -11778,6 +11778,46 @@ scale maintenance and comprehension claims affect the same synthesis and have
 not yet been checked against estimands, survey denominators, identification,
 and released artifacts.
 
+Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 99.21 seconds. The broad offline
+audit passes 1,540 tracked Markdown documents / 1,728 local prose links.
+Read-only health at `2026-09-04T03:10:58.398Z` returns 26 facts, 16 wakes, and
+`truncated:true`. Accepted `ff923ccde4` and requested historical checkpoint
+`f26bd4f3a590b59d241536326199e805777df1be` are contained; unaccepted
+`d041c41b54` is excluded. Standing status and runtime state are empty.
+
+Protected `/app` is still externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its NUL-delimited porcelain-v2
+surface remains 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+the combined Scout scope remains 296 records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker did not write, test, clean, or otherwise mutate either protected
+surface.
+
+## Cycle 327 seed-first start — test the maintenance asymmetry claim
+
+At `2026-09-04T03:10:58.398Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence, so this bounded
+reconciliation makes zero XHS, GitHub, arXiv, Reddit, or other public requests.
+Added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and no account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible because protected post-August-31 query/rank-to-selection-to-
+outcome history is absent; (2) Memory in the Loop's unreleased authority-
+bearing provider result; (3) `2607.05677`, highest accessible because its
+population-scale maintenance-asymmetry and comprehension claims still anchor
+the Write Contract synthesis; (4) Cortex's unavailable taxonomy-size ablation;
+(5) other unsourced primary, contradiction, reproducibility, retrieval, and
+synthesis gaps; (6) Reddit until a relevant-thread/access change; and (7)
+byte/line compaction. Select `2607.05677`. Test its population construction,
+maintainability estimand, survey denominator, own-versus-others comparison,
+adoption identification, causal scope, and attributable artifacts.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
