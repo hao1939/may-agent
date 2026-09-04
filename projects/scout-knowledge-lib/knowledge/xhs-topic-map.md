@@ -6147,6 +6147,16 @@ taxonomy, and low in unverified corpus counts or the ordering. Next
 primary-review EvoSOP `2607.07321` to test whether construct/merge/evaluate/
 prune is experimentally isolated as the improvement mechanism.
 
+Exact material `7048df3d3c3ea39289a5f2a6c5bef0022ef2bf77` passes syntax,
+TypeScript, formatting, Cycle 292 projection, 90 scoped links, navigation v1
+at 11/14, navigation v2 at 8/8, and 296 tests / 1,484 assertions with zero
+failures in 97.32 seconds. Broad links pass 1,540 documents / 1,728 links;
+health at `2026-09-04T04:29:58.204Z` is 26 facts / 16 wakes, truncated.
+Accepted `ff923ccde4` and `f26bd4f3a5` are contained; unaccepted `d041c41b54`
+is excluded. Standing status and runtime state are empty. Protected `/app`
+remains `386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
+`a430d0c9…32d7e` in Scout scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

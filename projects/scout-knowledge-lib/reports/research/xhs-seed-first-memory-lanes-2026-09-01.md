@@ -12652,6 +12652,24 @@ query/rank/selection/outcome join is absent. Next primary-review EvoSOP
 `2607.07321` to test whether the construct/merge/evaluate/prune lifecycle is
 isolated as the improvement mechanism or only described as a bundled system.
 
+Exact material `7048df3d3c3ea39289a5f2a6c5bef0022ef2bf77` passes syntax,
+TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
+tests / 1,484 assertions with zero failures in 97.32 seconds. The broad audit
+passes 1,540 tracked Markdown documents / 1,728 local prose links with zero
+errors. Read-only health at `2026-09-04T04:29:58.204Z` returns 26 facts, 16
+wakes, and `truncated:true`.
+
+Accepted `ff923ccde428270db699aefe4c38c2a9a51e3314` and
+`f26bd4f3a590b59d241536326199e805777df1be` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` is excluded. Standing status and
+`.goal-runtime` are empty. Protected `/app` remains externally observed at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 records /
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+overall and 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e` in
+Scout scope. This worker did not write, test, clean, or mutate it.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
