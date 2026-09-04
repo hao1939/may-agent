@@ -4789,6 +4789,48 @@ static compaction. Start with local provenance: recover stable item/repository
 identities, reconstruct denominators, and distinguish observation from causal
 or preference inference before issuing any necessary bounded read.
 
+### Cycle 315 checkpoint — popularity does not identify an architecture premium
+
+Seed-first `0749927c5327947ea82187270bbff9fce9ad1645` preceded the bounded
+reads. At `2026-09-04T01:33:36.661Z`, read-only Hacker News item requests
+resolved Chat Control Explained to item `48818311` and Passed to `48819008`.
+The Scan 447→448 arithmetic is 357→386 (+8.1%) and 503→518 (+3.0%), not
++1.0% and +0.4%; only three of the four claimed plateau stories exceed 400
+points. The 817/1,007 = 0.81 basket is arithmetically valid but manually
+classified and lacks a complete front-page denominator, so it cannot establish
+community investment or preference.
+
+Anonymous GitHub reads through `2026-09-04T01:33:51.789Z` pinned
+`akseolabs-seo/fable-soul@643ae8b39d19e83a4f48d5c95e32942b6f14444a`,
+`pillar-labs/sail-skill@67e1691ac64586b0abea96c74f511ea5628f62ed`,
+`oxbshw/watch-skill@994ee7514c64a9ec4980eeabef789b5e10ea28be`, and
+`elder-plinius/T3MP3ST@0cdbef08ce82edca65f9fe0c615f6f21be6b5854`.
+This preserves identities and freshness, not the missing original search
+result. `watch-skill` adds video understanding as well as self-verification,
+and the sample has neither a complete denominator nor a matched capability
+cohort. T3MP3ST's +222★ basis comes from Scan 438 rather than Scan 447.
+
+The two Scan 448 variants, index, and Oversight Inversion now retain a bounded
+hypothesis—architecture is a factor worth isolating—while rejecting a causal
+or market architecture-over-capability ranking. Confidence is high in the
+identities and arithmetic, medium in the descriptive counters, and low in any
+preference or return inference. GitHub and HN supplied the selected evidence;
+arXiv retains the reviewed `2607.05125v1` and `2607.04846v1` limits; Reddit
+made zero requests and remains RSS-readable/JSON-403 until a relevant thread
+or access change. `RV-004` remains high/open because the protected
+query/rank-to-selected-file-to-later-outcome join is still unavailable.
+
+The requested old validation session `26240` was no longer addressable
+(`Unknown process id 26240`) and was not restarted. Its target
+`f26bd4f3a590b59d241536326199e805777df1be` already has terminal Cycle 305
+evidence: 296 tests / 1,483 assertions, 1,540 documents / 1,726 links, health
+26/16, accepted `ff923ccde4` contained, unaccepted `d041c41b54` excluded, and
+a clean worktree. The current checkpoint requires its own exact-tip validation.
+
+Next begin seed-first without an early XHS request and audit the next
+highest-impact unsourced causal scan claim. Prefer a claim whose primary or
+local evidence can change durable advice; keep byte/line compaction last.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

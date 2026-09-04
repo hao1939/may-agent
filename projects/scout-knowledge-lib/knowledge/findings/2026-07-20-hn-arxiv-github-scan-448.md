@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #448 (2026-07-20): The Architecture Premium, qualified. Three-Phase Evaluation (2607.05125v1) is a confounded fixed-order pilot. Pretraining Curricula (2607.04846v1) supports schedule-dependent generalization and selective fine-tuning in small synthetic transformers, but does not measure oversight cost or establish transfer to large models. Its main text reports 100 seeds where methods report 30, its refusal comparison conditions on successful models, and its linked GitHub repository is empty. HN/GitHub architecture-over-model signals remain unreviewed."
+summary: "HN/arXiv/GitHub Scan #448 (2026-07-20): The Architecture Premium, qualified. Three-Phase Evaluation (2607.05125v1) is a confounded fixed-order pilot. Pretraining Curricula (2607.04846v1) supports schedule-dependent generalization and selective fine-tuning in small synthetic transformers, but does not measure oversight cost or establish transfer to large models. Its main text reports 100 seeds where methods report 30, its refusal comparison conditions on successful models, and its linked GitHub repository is empty. Stable HN and GitHub identities preserve the popularity observations, but arithmetic corrections, a mixed capability/governance sample, and missing denominators do not support an architecture-over-capability preference claim."
 triggers: ["architecture premium", "tooling architecture", "scaffold determines outcome", "autonomy level", "AI autonomy evaluation", "Kiro vs Copilot", "three-phase evaluation", "NASA-TLX", "cognitive workload AI", "frustration paradox", "pretraining curricula", "selective fine-tuning", "disentangled circuits", "imbalanced learning", "training order matters", "curriculum architecture", "safety fine-tuning", "mid-tier surge", "comprehension news ratio ATH", "scan 448", "architecture over model"]
-source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-20 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis). Primary review on 2026-09-04 used the arXiv-served 2607.05125v1 PDF, SHA-256 4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe, and the 2607.04846v1 39-file TeX archive, SHA-256 c2904e5ed95c4376cf0938baf281e9f5df707bee8cb71a16ecc78a73306d6cc2. Anonymous GitHub API reads resolved the paper link to empty repository kaisandbrink/alignment-dynamics (repository ID 1288403515; commit read HTTP 409)."
+source_basis: "arXiv API (2607.05125 Three-Phase Evaluation, 2607.04846 Pretraining Curricula Enable Selective Fine-tuning). HN front page 2026-07-20 (30 stories via Algolia, item-level verification for 13 tracked stories). GitHub API (shepherd 1,041★, halo-record 30★, rowboat 15,226★, security-audit-skill 2,335★, SkillSpector 12,311★, local-llm 1,170★, omnigent 6,636★, mex 1,151★, eve 3,302★, T3MP3ST 3,284★). GitHub search for agent+skill repos created >2026-07-01. Cross-referenced with Composition Surface (#447), Attribution Error (#440), Configuration Layer (#425), Oversight Inversion (thesis). Primary review on 2026-09-04 used the arXiv-served 2607.05125v1 PDF, SHA-256 4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe, and the 2607.04846v1 39-file TeX archive, SHA-256 c2904e5ed95c4376cf0938baf281e9f5df707bee8cb71a16ecc78a73306d6cc2. Anonymous GitHub API reads resolved the paper link to empty repository kaisandbrink/alignment-dynamics (repository ID 1288403515; commit read HTTP 409). Cycle 315 read-only HN/GitHub provenance through 2026-09-04T01:33:51.789Z is pinned in the body."
 </ai_context>
 
 # Scan #448: The Architecture Premium
@@ -18,7 +18,7 @@ The surrounding architecture is a plausible outcome driver, but the evidence her
 
 2. **Pretraining Curricula Enable Selective Fine-tuning** (2607.04846v1): In two synthetic transformer tasks, different data schedules produce directional differences in generalization, component use, and selective fine-tuning. This supports curriculum as a factor to test, but the paper does not measure governance or oversight cost, compare model classes, or establish transfer to large language models.
 
-3. **HN + GitHub convergence**: The community invests in architecture over capability. Chat Control Explained (386pts, r=3.03) grows while Chat Control Passed (518pts, r=2.29) plateaus — understanding architecture outperforms reacting to news. GitHub's fastest-growing agent repos add governance layers (judgment, security, observation), not model capability.
+3. **HN + GitHub observations**: Stable identities preserve the recorded attention and repository counters, but they do not identify an architecture-over-capability preference. Chat Control Explained is HN item `48818311`; Chat Control Passed is `48819008`. From Scan 447's baselines, their historical changes are 357→386 (+8.1%) and 503→518 (+3.0%), not +1.0% and +0.4%. The selected GitHub basket has no complete search denominator or matched capability-repository control, and `watch-skill` explicitly adds video-understanding capability as well as self-verification.
 
 **The Architecture Premium hypothesis**: Treat surrounding architecture as an explicit factor to test rather than attributing every result to model capability. This scan does not establish that architecture always yields higher returns than model capability or autonomy.
 
@@ -27,7 +27,7 @@ This extends the five-scan structural arc:
 - **#445 Restraint Premium**: Invest in producing less
 - **#446 Predicate Gate**: Gate at transitions
 - **#447 Composition Surface**: Transitions are where failure lives
-- **#448 Architecture Premium**: The architecture around transitions determines outcomes
+- **#448 Architecture Premium**: Test the architecture around transitions as a separate factor
 
 ---
 
@@ -99,23 +99,23 @@ Source: https://arxiv.org/abs/2607.04846
 
 ### Key Movements
 
-**Top-tier plateau**: StreetComplete (+2.7%), Chat Control passed (+0.4%), 98% isn't much (+0.7%), Chat Control Explained (+1.0%) — all four >400pts stories grow <3%. The attention has been distributed; these are structurally absorbed.
+**Mixed tracked movement**: StreetComplete (+2.7%), Chat Control passed (+3.0%), 98% isn't much (+0.7%), and Chat Control Explained (+8.1%) do not form a uniform plateau. Only three of the four are above 400 points, and the Explained story grew materially faster than the others on these two snapshots. This is a counter observation, not evidence about why attention moved.
 
-**Mid-tier surge**: Kokoro TTS (+26.9% to 222pts), EU Car Camera (+18.7% to 336pts), Rowboat (+27.8% to 69pts) — the growth is in the 50-350pt band. Attention flows from top-tier stories to mid-tier topics that expand the sovereignty stack's *width*, not its *amplitude*.
+**Selected mid-tier growth**: Kokoro TTS (+26.9% to 222pts), EU Car Camera (+18.7% to 336pts), and Rowboat (+27.8% to 69pts) grew faster than several selected higher-point stories. Without a complete, consistently tracked front-page cohort, this does not demonstrate attention flowing between tiers.
 
 **The Comprehension:News Ratio Deepens**: 
 - Comprehension stories: Chat Control Explained (386) + 30papers (300) + Philosophy majors (131) = **817pts**
 - News stories: Chat Control passed (518) + EU Car Camera (336) + Germany skilled workers (153) = **1,007pts**  
-- **Ratio: 0.81** — new all-time high, up from 0.71 in scan #447
-- The community's investment in understanding continues to grow faster than its reaction to news
+- **Ratio: 0.81** — arithmetically correct for this manually classified six-story basket, up from a differently defined 0.71 two-story ratio in Scan 447
+- The classification is not a complete front-page denominator and cannot establish community investment, preference, or causal attention movement
 
 **EU Car Camera as Sovereignty Expansion**: At 336pts with ratio 0.79 (below 1.0), this is the most *contested* sovereignty story. 425 comments for 336pts means intense debate. Surveillance sovereignty (digital privacy → physical surveillance → mandatory car cameras) is the newest and most contentious sovereignty domain.
 
-**Rowboat validates Local-First Agent Desktop**: 69pts on HN + 15,226★ on GitHub = significant traction for "open-source, local-first alternative to Claude Desktop." The local-first agent infrastructure category is crossing from builder enthusiasm (GitHub stars) to community validation (HN engagement).
+**Rowboat across two counters**: The same project had 69 HN points and 15,226 GitHub stars. That is cross-platform popularity evidence for one repository, not validation of the category, product quality, user identity overlap, or causal demand.
 
 ### Sovereignty Stack Summary
 
-Total sovereignty-relevant points: ~3,074pts across 13 tracked stories. Sovereignty:AI ratio not directly computable this scan (no clear AI-only stories on front page). The front page is remarkably sovereignty-heavy — the Architecture Premium manifests as community preference for controllable, understandable systems over autonomous ones.
+Total sovereignty-relevant points: ~3,074pts across 13 manually tracked stories. Sovereignty:AI ratio is not directly computable this scan (no predeclared AI-only comparison basket). The selected stories show substantial attention to sovereignty topics, but they do not measure preference for controllable systems over autonomous ones.
 
 ---
 
@@ -177,16 +177,18 @@ Previous: ~95.4% (65/69). This scan adds 2 confirmations (EU Car Camera >300, 30
 
 | Repo | Stars | Description | Significance |
 |------|-------|-------------|--------------|
-| akseolabs-seo/fable-soul | 89★ | "A judgment layer for AI coding agents — make your AI think, verify, and communicate like a senior engineer" | Architecture over capability — adds judgment *around* the model |
+| akseolabs-seo/fable-soul | 89★ | "A judgment layer for AI coding agents — make your AI think, verify, and communicate like a senior engineer" | A surrounding judgment layer; no matched capability comparison |
 | pillar-labs/sail-skill | 116★ | "SAIL V2 (Secure AI Lifecycle) as an agent skill — the full 91-risk catalog for AI/agent gap assessments" | Security as governance architecture, not model capability |
-| oxbshw/watch-skill | 100★ | "Give any AI agent the ability to watch video — and to watch its own work and fix it" | Self-observation as architectural layer |
+| oxbshw/watch-skill | 100★ | "Give any AI agent the ability to watch video — and to watch its own work and fix it" | Mixed intervention: adds video capability and self-observation |
 | fernandomenuk/canvas-flow | 63★ | "Local HTML-artifact review tool for coding agents — render a plan as HTML, annotate in browser" | Human-in-the-loop as architectural pattern |
 | Pluviobyte/rnskill | 360★ | 雪踏乌云的 AI Agent Skills Collection | Chinese agent skill ecosystem growing |
 | eli-labz/Cognitive-Core-Skills | 274★ | "Universal, industry-neutral taxonomy of cognitive core skills" | Taxonomy = architecture of the skill space |
 
-**Architecture Premium in GitHub**: The fastest-growing new repos don't add model capability — they add *layers around models*: judgment (fable-soul), security assessment (sail-skill), self-observation (watch-skill), review infrastructure (canvas-flow). The premium is in the surround, not the center.
+**Bounded GitHub observation**: The selected repositories include surrounding judgment, security-assessment, self-verification, and review layers. They are not a reproducible sample of all new agent repositories, and the basket mixes interventions: `watch-skill` adds video understanding as a capability. Without a complete search result, denominator, or matched capability cohort, star changes cannot estimate an architecture premium.
 
-**T3MP3ST Accelerating**: +222★ (+7.2%) — the only tracked repo with significant growth this scan. Red teaming (adversarial architecture testing) grows while capability repos plateau. The market values architectural stress-testing over capability addition.
+**T3MP3ST counter**: The recorded +222★ (+7.2%) uses a 3,062★ baseline from Scan 438 rather than Scan 447, so it is not a one-scan matched growth comparison. A fresh anonymous read pins `elder-plinius/T3MP3ST` at `0cdbef08ce82edca65f9fe0c615f6f21be6b5854`, but neither its growth nor the selected capability-repository counters establish market preference.
+
+**Provenance refresh (2026-09-04T01:33:36.661Z–01:33:51.789Z)**: Read-only Hacker News item reads resolved Explained to `48818311` and Passed to `48819008`; their later counters were 916/352 and 637/259 points/comments and are not substituted for the historical snapshots. Anonymous GitHub reads pinned `akseolabs-seo/fable-soul@643ae8b39d19e83a4f48d5c95e32942b6f14444a` (106★), `pillar-labs/sail-skill@67e1691ac64586b0abea96c74f511ea5628f62ed` (118★), `oxbshw/watch-skill@994ee7514c64a9ec4980eeabef789b5e10ea28be` (331★), and `elder-plinius/T3MP3ST@0cdbef08ce82edca65f9fe0c615f6f21be6b5854` (5,973★). These are identity/freshness observations, not a reconstructed original search result.
 
 ---
 
@@ -194,7 +196,7 @@ Previous: ~95.4% (65/69). This scan adds 2 confirmations (EU Car Camera >300, 30
 
 ### The Architecture Premium as Completion of the Five-Scan Arc
 
-The Oversight Inversion's four-part exit (#444–#447) assumed that better gates and composition awareness could solve the verification bottleneck. The Architecture Premium adds the meta-insight: **the return on investment in architecture exceeds the return on investment in model capability or autonomy**.
+The Oversight Inversion's four-part exit (#444–#447) motivates testing gates and composition boundaries. Scan 448 adds a hypothesis: surrounding architecture may contribute to outcomes independently of model capability or autonomy. Its current evidence does not rank the returns.
 
 ```
 Five-Scan Exit Arc from the Oversight Inversion:
@@ -231,21 +233,21 @@ Primary review of 2607.04846 supports a bounded synthetic curriculum effect, not
 | **Training** | Curriculum schedule (04846v1) — tested synthetic effects; governance-cost transfer unknown |
 | **Configuration** | Scaffold design (#425, #440) — tooling is a candidate outcome factor |
 | **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
-| **Deployment** | Governance layers (fable-soul, sail-skill) — architecture > capability |
+| **Deployment** | Governance layers (fable-soul, sail-skill) — descriptive examples, not a capability-controlled comparison |
 
-The Architecture Premium is fractal — it applies at every phase of the system lifecycle. The common mechanism: **structure determines what can be verified, and what can be verified determines what can be governed.**
+The Architecture Premium hypothesis can be posed at every phase of the system lifecycle. Whether structure changes verification and governance outcomes remains a phase-specific empirical question.
 
-### Cross-Source Convergence
+### Cross-source evidence inventory
 
 | Signal | Source | Architecture Premium Evidence |
 |--------|--------|------------------------------|
 | Kiro after Copilot at nominally equal autonomy | arXiv 2607.05125v1 | Directional pilot; platform, order, learning, and runtime identity are confounded |
 | Imbalanced curricula → more selective tested fine-tuning | arXiv 2607.04846v1 | Synthetic directional evidence; sample accounting and transfer limits remain |
-| Chat Control Explained > Passed (ratio) | HN | Understanding architecture > reacting to news |
-| Comprehension:News = 0.81 (ATH) | HN | Community invests in structural understanding |
-| fable-soul + sail-skill + watch-skill | GitHub | Governance layers growing > capability repos |
-| T3MP3ST +7.2% (only growing tracker) | GitHub | Architectural stress-testing valued most |
-| Top-tier plateau, mid-tier surge | HN | Attention distributes to architectural diversity |
+| Chat Control Explained and Passed counters | HN | Stable item observations; classifications and causal preference remain unproved |
+| Comprehension:News = 0.81 | HN | Valid arithmetic for a manual basket, not a complete denominator |
+| fable-soul + sail-skill + watch-skill | GitHub | Selected mixed-function examples; no matched capability cohort |
+| T3MP3ST recorded growth | GitHub | Multi-scan observation; baseline is not a matched Scan 447 comparison |
+| Mixed tracked-story movement | HN | Descriptive counters; mechanism and preference remain unknown |
 
 ---
 
@@ -255,7 +257,7 @@ The Architecture Premium is fractal — it applies at every phase of the system 
 
 2. **Does curriculum transfer beyond synthetic transformers?** Reproduce 04846 with released code, exact seed accounting, matched successful-run selection, larger pretrained models, and natural tasks before testing post-hoc alternatives.
 
-3. **Does the Architecture Premium compound?** If investing in architecture yields higher returns than investing in capability, does this create a virtuous cycle where better architecture enables even better architecture? Or does it plateau?
+3. **Does an identified architecture effect compound?** If a matched comparison first establishes an architecture effect, test whether it persists, compounds, or plateaus rather than assuming higher returns.
 
 4. **What is the Comprehension:News ratio ceiling?** It jumped from 0.71 to 0.81 in one scan. Is there a structural ceiling, or will comprehension investment continue to outpace news consumption?
 

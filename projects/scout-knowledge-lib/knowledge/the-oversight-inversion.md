@@ -567,7 +567,7 @@ The 20th layer of the Oversight Inversion: **verification of individual componen
 
 Source: findings/2026-07-19-hn-arxiv-github-scan-447.md, https://arxiv.org/abs/2607.02857, https://arxiv.org/abs/2607.02911, https://arxiv.org/abs/2607.04034
 
-## The Architecture Premium (#448) — ROI Principle
+## The Architecture Premium (#448) — testable factor hypothesis
 
 Scan #448 proposes the **positive corollary** of the Attribution Error (#440): don't just stop blaming the model — test the surrounding architecture as a candidate factor. Two arXiv papers provide different bounded signals:
 
@@ -579,9 +579,18 @@ Scan #448 proposes the **positive corollary** of the Attribution Error (#440): d
 | Phase | Architecture Premium Manifestation |
 |-------|-----------------------------------|
 | **Training** | Curriculum schedule (04846v1) — synthetic directional effect; governance-cost transfer unknown |
-| **Configuration** | Scaffold design (#425, #440) — tooling > model for outcomes |
-| **Composition** | Gate placement (#446, #447) — composition boundaries > component boundaries |
-| **Deployment** | Governance layers (GitHub: fable-soul, sail-skill) — architecture > capability |
+| **Configuration** | Scaffold design (#425, #440) — a factor to separate from model choice |
+| **Composition** | Gate placement (#446, #447) — test boundaries against component-only controls |
+| **Deployment** | Governance layers (GitHub: fable-soul, sail-skill) — examples, not a capability-controlled comparison |
+
+The HN and GitHub popularity observations do not supply that comparison. The
+two Chat Control items are now identity-pinned and their historical changes
+corrected to +8.1% and +3.0%, but the 0.81 basket is manually classified rather
+than a complete denominator. The selected repositories mix governance and
+capability—`watch-skill` adds video understanding—and the original search
+result and matched capability cohort are unavailable. Popularity therefore
+supports discovery and revisit decisions, not a market-preference or causal
+return estimate.
 
 **Five-scan exit arc complete**:
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)

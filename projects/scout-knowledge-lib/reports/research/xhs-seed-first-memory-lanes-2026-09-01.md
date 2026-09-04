@@ -10671,6 +10671,56 @@ provenance, recover stable item/repository identities and denominators where
 possible, and separate direct observations from preference or outcome
 inference before any bounded public read.
 
+## Cycle 315 checkpoint — counters are discovery evidence, not preference
+
+Seed-first `0749927c5327947ea82187270bbff9fce9ad1645` preceded all bounded
+reads. Read-only Hacker News requests at `2026-09-04T01:33:36.661Z` resolved
+Chat Control Explained to item `48818311` and Passed to item `48819008`.
+Comparing the historical Scan 447 and 448 counters yields 357→386 (+8.1%) and
+503→518 (+3.0%), not +1.0% and +0.4%. Only three of the four claimed plateau
+stories were above 400 points. The 817/1,007 = 0.81 ratio is mathematically
+correct for its manually classified basket, but there is no complete
+front-page denominator or evidence that the basket measures investment,
+preference, or causal attention movement.
+
+Anonymous GitHub reads through `2026-09-04T01:33:51.789Z` pinned
+`akseolabs-seo/fable-soul@643ae8b39d19e83a4f48d5c95e32942b6f14444a`
+(106★), `pillar-labs/sail-skill@67e1691ac64586b0abea96c74f511ea5628f62ed`
+(118★), `oxbshw/watch-skill@994ee7514c64a9ec4980eeabef789b5e10ea28be`
+(331★), and
+`elder-plinius/T3MP3ST@0cdbef08ce82edca65f9fe0c615f6f21be6b5854`
+(5,973★). These reads preserve stable identities and current heads; they do
+not reconstruct the original GitHub search. The selected sample lacks a
+complete denominator and matched capability cohort, `watch-skill` adds video
+capability as well as verification, and T3MP3ST's recorded +222★ baseline
+comes from Scan 438 rather than Scan 447.
+
+The two Scan 448 variants, index, and Oversight Inversion now retain only the
+supported conclusion: architecture is a plausible factor that future matched
+comparisons should isolate. They reject the stronger community/market
+architecture-over-capability inference. Confidence is high in identities and
+arithmetic, medium in descriptive popularity observations, and low in
+preference, mechanism, or return claims.
+
+GitHub and HN supplied the selected primary observations. arXiv retains the
+already reviewed `2607.05125v1` fixed-order-pilot and `2607.04846v1`
+small-synthetic-task limits. Reddit made zero requests and remains deferred at
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open: the protected query/rank-to-selected-file-to-later-outcome
+join is unavailable, and this popularity audit cannot substitute for it.
+
+The requested old validation session `26240` returned `Unknown process id
+26240`; it was not restarted. Exact source
+`f26bd4f3a590b59d241536326199e805777df1be` already has the terminal Cycle 305
+receipt: 296 tests / 1,483 assertions, 1,540 documents / 1,726 links, read-only
+health 26 facts / 16 wakes, accepted `ff923ccde4` contained, unaccepted
+`d041c41b54` excluded, and a clean worktree. This material change will be
+validated again on its exact resulting commit.
+
+Next begin seed-first without an early XHS request, re-rank the full queue, and
+audit the highest-impact accessible unsourced causal scan claim. Static
+compaction remains last because it does not add primary or outcome evidence.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
