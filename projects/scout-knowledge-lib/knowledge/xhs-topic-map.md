@@ -5457,6 +5457,29 @@ Scout query-to-outcome join. Next begin seed-first and primary-review StateFuse
 before PatchOptic, Cortex's unavailable ablation, other scans, Reddit, or
 compaction.
 
+Exact Cycle 324 material `dd361d0331463b160805a2255ebc293f2e3d890d`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions in 97.20 seconds.
+The broad audit passes 1,540 documents / 1,728 links; read-only health at
+`2026-09-04T02:58:22.607Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the standing
+tree/runtime state are clean. Protected `/app` remains at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 916 whole-status records /
+`8e3558f4…8a36`, and 296 Scout-scope records / `a430d0c9…f7e`.
+
+### Cycle 325 seed-first start — distinguish preserved conflict from safer action
+
+At the same boundary, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside cadence. The bounded reconciliation
+makes zero XHS or public requests: additions/changes remain unknown, observed
+removals are `[]`, all 132 seeds remain unavailable, and no account state
+changes. The complete queue ranks (1) high/open `RV-004`, blocked on its
+missing query-to-outcome join; (2) Memory in the Loop's unreleased result; (3)
+StateFuse `2607.05844`, highest accessible; (4) PatchOptic; (5) Cortex's
+unavailable ablation; (6) other unsourced scans; (7) Reddit; and (8)
+compaction. Select StateFuse. Test the evaluated population, accuracy-tie and
+abstention claims, conflict interface, artifact, and causal scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -11551,6 +11551,43 @@ categorically by the same synthesis. Test its benchmark slice, accuracy-tie
 claim, conflict visibility, artifact, and whether preservation actually causes
 safer abstention or only exposes another interface.
 
+Exact Cycle 324 material `dd361d0331463b160805a2255ebc293f2e3d890d`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 97.20 seconds. The broad offline audit passes
+1,540 tracked Markdown documents / 1,728 local prose links with zero errors.
+Read-only health at `2026-09-04T02:58:22.607Z` returns 26 facts, 16 wakes, and
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+is excluded, and standing status and runtime state are empty.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, with 916 whole porcelain-v2
+records / SHA-256
+`8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`
+and 296 combined Scout-scope records /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+No protected surface was written, tested, cleaned, or otherwise mutated.
+
+## Cycle 325 seed-first start — test safer abstention as an outcome
+
+At `2026-09-04T02:58:22.607Z`, the last XHS observation still ended at
+`2026-09-03T22:59:03.253Z`, inside the six-hour cadence. This bounded
+reconciliation makes zero XHS, GitHub, arXiv, Reddit, or other public requests.
+Added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and no account state changes.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+inaccessible without a readable post-August-31 query/rank-to-selection-to-
+outcome join; (2) Memory in the Loop's unreleased provider result; (3)
+StateFuse `2607.05844`, highest accessible because the same synthesis treats
+conflict preservation as demonstrated safer abstention; (4) PatchOptic; (5)
+Cortex's unavailable taxonomy-size ablation; (6) other unsourced scans; (7)
+Reddit until a relevant-thread/access change; and (8) compaction. Select
+StateFuse. Test the evaluated population, accuracy-tie and abstention claims,
+conflict interface, artifact, and whether preservation causes safer action or
+only exposes another interface.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
