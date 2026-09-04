@@ -6924,6 +6924,24 @@ could reconcile it. Confidence is high in arithmetic, moderate in denominator
 identity, and low in reconstructed scores. Retained sources sufficed; no
 public requests. `RV-004` remains high/open. Next select a non-AIM primary gap.
 
+Exact Cycle 349 material `8437eb107c9b9cbc44141c7c5dc96e85407ff08c`
+passes syntax, TypeScript, formatting, Cycle 341 projection, 90 scoped links,
+navigation 11/14 plus 8/8, and 296 tests / 1,484 assertions with zero failures
+in 105.67 seconds. The tree is clean; Cycle 348's broad/health/containment and
+protected-scope proof remains directly applicable because no path or link
+changed.
+
+### Cycle 350 seed-first start — recheck the promised provider artifact
+
+At `2026-09-04T06:10:26.723Z`, reuse Cycle 341's supported observation through
+`05:00:03.241Z` without an XHS request: additions/changes unknown, removals
+`[]`, all 132 seeds unavailable. Rank (1) inaccessible high/open `RV-004`; (2)
+Memory in the Loop's missing Docker/scripts/workloads/per-run result artifact,
+highest accessible because one bounded revision/release check can change
+reproducibility; (3) other non-AIM primary/synthesis gaps; (4) Reddit until a
+relevant trigger; (5) compaction. Commit before checking exact arXiv and vxdb
+publication surfaces.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -13706,6 +13706,29 @@ moderate that GAM is the intended denominator, and low in any reconstructed
 AIM score. Next seed-first, move to the highest accessible non-AIM primary-
 evidence gap rather than multiplying reconstructions of the same hidden run.
 
+Exact Cycle 349 material `8437eb107c9b9cbc44141c7c5dc96e85407ff08c`
+passes syntax, TypeScript, source formatting, Cycle 341 projection, 90 scoped
+links, navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions with zero failures in 105.67 seconds. The standing tree is clean;
+Cycle 348's broad-link, health, lineage, and protected-scope proof remains the
+direct pre-cycle checkpoint because Cycle 349 added no paths or links.
+
+## Cycle 350 seed-first start — recheck the promised provider artifact
+
+At `2026-09-04T06:10:26.723Z`, Cycle 341's supported XHS observation through
+`05:00:03.241Z` is about 70 minutes old and remains inside the six-hour
+cadence. Make zero XHS requests: additions/changes remain unknown, observed
+removals `[]`, all 132 durable seeds unavailable, and ledger row 341 remains
+provenance. The complete queue ranks (1) high/open `RV-004`, inaccessible at
+the missing protected query/rank -> selection -> later-outcome join; (2)
+Memory in the Loop's promised Docker/scripts/workloads/per-run result artifact,
+highest accessible because its last exact public inspection is several hours
+old and one bounded revision/release check can change reproducibility; (3)
+other non-AIM primary contradictions and synthesis gaps; (4) Reddit until a
+relevant trigger; and (5) compaction. Commit this ordering before any public
+request, then check only arXiv revision and the attributable vxdb release/head
+surfaces for a newly published experiment.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
