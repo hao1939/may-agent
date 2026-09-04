@@ -1183,6 +1183,17 @@ GAM also permutes Mem0's published category pairs under different headings,
 preserving only the unweighted mean. Treat category labels and aggregate gains
 as unbound until one versioned result bundle fixes both.
 
+The claimed full-dialogue comparison does not repair that binding. Original
+LoCoMo `2402.17753v1` exposes GPT-3.5-turbo to at most 16K tokens rather than a
+full average dialogue and reports F1 `37.8`. Mem0's later 26,031-token
+full-context row reports `72.90 ± 0.19%` on an LLM-judge metric without
+explicitly naming the row's answer model. GAM's 128K GPT-4o-mini and
+Qwen2.5-14B long-LLM controls instead average `29.6875` and `30.8825` F1
+across four categories. AIM selects no model, metric, row, score, or token
+denominator among them. Treat “comparable” and roughly 10% context as another
+unbound author report; the title-matching OpenReview record remains anonymously
+challenge-gated and may still contain the missing experiment details.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.

@@ -259,6 +259,22 @@ later `memory-benchmarks` submodule result using GPT-5 as both answerer and
 judge, not the paper's GPT-4o-mini run. Neither public artifact identifies
 AIM's baseline.
 
+**Full-dialogue comparator check (2026-09-04):** original LoCoMo
+`2402.17753v1` does not supply the comparator AIM describes. Its long-context
+control is GPT-3.5-turbo-16K, includes only as much dialogue as fits, and
+reports overall F1 `37.8`; its GPT-4-turbo row is a separate 4,096-token
+control at F1 `32.1`. Later public candidates use incompatible measurements.
+Mem0 reports a 26,031-token full-context control at `72.90 ± 0.19%` on its
+binary LLM-judge metric without explicitly naming that row's answer model.
+GAM uses 128K GPT-4o-mini and Qwen2.5-14B long-LLM controls whose four-category
+F1 means are `29.6875` and `30.8825`. AIM cites only the dataset and identifies
+none of these models, metrics, scores, prompts, or context denominators.
+Accordingly, “comparable to adding the full dialogue” and roughly 10% context
+remain an unbound author report, not a comparison to a selectable public
+baseline. A fresh anonymous read of title-matching OpenReview `qFBAlgwkzb`
+still returned HTTP 403 `Challenge verification required`; it could contain
+missing evidence, so this is not a claim that no experiment exists.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

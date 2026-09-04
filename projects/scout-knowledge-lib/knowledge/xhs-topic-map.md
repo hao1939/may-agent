@@ -6871,6 +6871,32 @@ expected knowledge value than another byte/line reduction. Public lanes and
 accepted refs make zero requests/checks in this seed record. Commit this
 ordering before retrieval.
 
+### Cycle 348 checkpoint — “full dialogue” remains unbound
+
+ArXiv resolved original LoCoMo as exact `2402.17753v1` at
+`2026-09-04T05:59:50Z–05:59:57Z` (metadata 3,313 bytes / `4e7ac707…65d07`;
+source 1,105,707 bytes / `7f8a4826…66192`). Its long-context control is
+GPT-3.5-turbo-16K, sees only as much dialogue as fits, and reports overall F1
+`37.8`; its GPT-4-turbo control is 4,096 tokens / F1 `32.1`. Neither is a
+full-dialogue 2026 frontier control.
+
+Later candidates are not equivalent. Mem0 `2504.19413v1` reports a 26,031-
+token no-retrieval control at `72.90 ± 0.19%` on a binary LLM-judge metric but
+does not explicitly name that row's answer model. GAM `2511.18423v1` reports
+128K GPT-4o-mini and Qwen2.5-14B `long-LLM` controls whose four-category F1
+means are `29.6875` and `30.8825`. AIM names none of these, nor an absolute
+score, model, metric, prompt, dialogue count, or token denominator. Its
+“comparable” / roughly 10% statement is therefore not publicly reproducible.
+
+Anonymous reads of title-matching OpenReview `qFBAlgwkzb` returned HTTP 403
+`Challenge verification required (2026-09-04-2592240)` at
+`06:01:31Z–06:01:32Z`. Confidence is high in the public candidate distinction,
+moderate that the gated paper could add binding, and low about AIM's hidden
+run. ArXiv was useful; GitHub's fresh zero-artifact search and Reddit's
+trigger-deferred boundary warranted zero new requests. `RV-004` remains
+high/open. Next seed-first, test whether temporal/open-domain gains survive one
+exact public category mapping.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

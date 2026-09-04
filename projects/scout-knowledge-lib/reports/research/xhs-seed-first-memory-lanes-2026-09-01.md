@@ -13619,6 +13619,51 @@ primary evidence, while compaction cannot advance RV-004 or benchmark truth.
 GitHub, arXiv, Reddit, and accepted refs make zero requests/checks in this seed
 record. Commit this ordering before retrieving comparator evidence.
 
+## Cycle 348 checkpoint — “full dialogue” is not one public comparator
+
+At `2026-09-04T05:59:50Z–05:59:57Z`, arXiv title search resolved the original
+LoCoMo paper as exact `2402.17753v1`. Its 3,313-byte metadata response has
+SHA-256 `4e7ac707ccfcbe5baad13fcceec0897a7f2a41620b2e7c0aea439eee7d265d07`;
+the 1,105,707-byte source archive has SHA-256
+`7f8a482611aeacf17be5d2bbed831f118665e8b89f46228ef1b2a4a635566192`.
+That paper does not define a full-dialogue frontier baseline. Its long-context
+row is `gpt-3.5-turbo-16k`, exposes only as much dialogue as fits, and reports
+overall answer F1 `37.8` at 16K. The paper's separate base GPT-4-turbo row is
+limited to 4,096 tokens and reports overall F1 `32.1`.
+
+Two later public sources expose different, non-interchangeable candidates.
+Mem0 `2504.19413v1` passes an average 26,031-token conversation without
+retrieval and reports `72.90 ± 0.19%` on its binary LLM-judge metric, with
+total response p50/p95 of `9.870`/`17.117` seconds; its full-context paragraph
+does not explicitly identify the answer model. GAM `2511.18423v1` instead
+defines 128K `long-LLM` controls using GPT-4o-mini and Qwen2.5-14B-Instruct.
+Their four-category LoCoMo F1 means are `29.6875` and `30.8825`, respectively.
+These differ in model, metric, category set, and aggregation from Mem0's
+full-context judge score and the original LoCoMo 16K row.
+
+AIM `2607.07397v1` cites only LoCoMo at the “frontier model” sentence and
+names no one of these controls, absolute score, model, metric, prompt,
+dialogue count, or context-token denominator. Its roughly 10% context claim
+therefore cannot be converted into a reproducible token or accuracy ratio
+from the public papers. At `2026-09-04T06:01:31Z–06:01:32Z`, anonymous API and
+PDF reads of title-matching OpenReview forum `qFBAlgwkzb` again returned HTTP
+403; the API error was `Challenge verification required
+(2026-09-04-2592240)`. That is an anonymous-public access boundary, not
+evidence about the hidden experiment.
+
+ArXiv primary evidence was useful. GitHub made zero new requests because the
+complete Cycle 344 exact-title/ID searches remain fresh and found no
+attributable AIM repository; revisit on a repository, paper revision, or
+OpenReview-access change. Reddit made zero requests and remains deferred until
+a relevant-thread/access trigger. `RV-004` remains high/open: this comparator
+audit cannot supply the missing protected query/rank -> selection -> later-
+outcome join. Confidence is high that no reviewed public baseline identifies
+AIM's comparator, moderate that the challenge-gated OpenReview paper could
+supply it, and low in any score, model, or causal inference about AIM's hidden
+run. Next seed-first, then test whether the reported temporal/open-domain gains
+can be bound to one public category ordering without inheriting Mem0/GAM's
+known label permutation.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
