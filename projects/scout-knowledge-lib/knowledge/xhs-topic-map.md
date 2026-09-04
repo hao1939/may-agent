@@ -11076,6 +11076,32 @@ real compaction remains rejected. Next, implement the schema only in an
 isolated candidate record, reject missing/ambiguous fields, and rerun the
 source-bound loss projection before considering any deletion.
 
+### Cycle 413 checkpoint — provenance replacement becomes executable
+
+Cycle 413 began from reviewed RV-049 correction `86502d9927`. Cycle 409's XHS
+observation through `2026-09-04T21:36:26.369Z` was about 80 minutes old and
+inside the six-hour cadence, so the bounded seed reconciliation made zero XHS
+or public-source requests. Additions and changes remain unknown, removals
+remain `[]`, all 132 durable identities remain login-class unavailable, and
+no account state changed.
+
+The [Cycle 413 executable replacement](../reports/review/scout-provenance-replacement-cycle413-2026-09-05.md)
+turns Cycle 412's schema into a versioned fail-closed fixture and validator.
+Against exact Cycle 411 source `73088d8c91`, the no-replacement baseline loses
+six commit references and 67 timestamps. The candidate retains all six refs
+and 48 receipt/review/reproduction/decision timestamps; only nineteen
+explicitly enumerated operational times remain absent. It validates all
+fourteen producer parent/result pairs, the direct-child range review, and
+exactly one project-owned Markdown fragment per accepted entry. The
+source-bound 1,546-document / 1,774-link result is unchanged.
+
+The same comparison still leaves 61 classified structural headings absent,
+and the retained/omitted classifications have no protected retrieval or
+later-decision outcome. RV-036 remains mitigated medium/open, RV-004 remains
+high/open, and real compaction remains rejected. Next, seek a genuinely
+held-out or protected reconstruction/retrieval comparison for the replacement;
+do not delete historical prose, move local main, or claim user-value evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

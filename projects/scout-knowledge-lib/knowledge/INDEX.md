@@ -48,6 +48,7 @@ evidence or substitutes for the detailed source records.
 - [HASE harness-co-evolution audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — cross-system rows do not isolate harness quality from model and policy changes.
 - [VERITAS replication-bundle audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — current public artifacts omit the paper result bundle and changed a grader.
 - [Cycles 373-386 compact provenance replacement design](../reports/review/scout-provenance-replacement-design-cycle412-2026-09-05.md) — exact producer/reviewer lineage, normalized seed receipts, accepted evidence anchors, limitations, and rollback required before any historical compaction.
+- [Cycles 373-386 executable provenance replacement](../reports/review/scout-provenance-replacement-cycle413-2026-09-05.md) — fail-closed source-bound comparison retains six commit identities and 48 decision-bearing timestamps while deletion remains rejected.
 
 Migration and project-operation artifacts live outside `knowledge/`:
 

@@ -1,0 +1,332 @@
+{
+  "schema": "scout.provenance-replacement/v1",
+  "frozen_against_tip": "86502d99271207d872057c4874326296d57255b4",
+  "evidence_tip": "73088d8c912fadb2fb6b3e6e1e721c854ce70ff9",
+  "projection_fixture": "scout-history-projection-cycle410.json",
+  "review": {
+    "id": "cycles-373-386-review",
+    "source": "08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80",
+    "result": "2379a9fabb619c653cbabda04e60066b5c473aa4"
+  },
+  "seed_receipts": [
+    {
+      "id": "cycle-341-receipt",
+      "observed_through": "2026-09-04T05:00:03.241Z",
+      "stable_identity_count": 132,
+      "observed_removals": [],
+      "access": "login-class-unavailable-observational-only"
+    },
+    {
+      "id": "cycle-375-receipt",
+      "observed_through": "2026-09-04T11:09:20.326Z",
+      "stable_identity_count": 132,
+      "observed_removals": [],
+      "access": "login-class-unavailable-observational-only"
+    }
+  ],
+  "record": {
+    "entries": [
+      {
+        "entry_id": "cycle-373-hexstrike",
+        "producer_source": "3ea02c3c767a77a1fb5fae7b176210edf6156ff6",
+        "producer_result": "b7d2a647c7217a47b63ab533bb3687e34606ebca",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-hn-arxiv-github-scan-425.md",
+          "fragment": "high-hexstrike-ai--a-strong-qualified-client-contrast-260702873"
+        },
+        "seed_receipt": "cycle-341-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Matched rows support a client-associated contrast, not client-only causality.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-374-skillopt-lite",
+        "producer_source": "b7d2a647c7217a47b63ab533bb3687e34606ebca",
+        "producer_result": "55aa18a884d097d71d3e70e7270fe5351e591798",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-hn-arxiv-github-scan-425.md",
+          "fragment": "high-skillopt-lite--minimal-viable-skill-optimization-260703451"
+        },
+        "seed_receipt": "cycle-341-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "The scale headline also changes optimization method, and the public artifact omits headline results.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-375-anchored-self-play",
+        "producer_source": "55aa18a884d097d71d3e70e7270fe5351e591798",
+        "producer_result": "ea3ca60daaecd86da482fc6f04c7a99d6a9c2635",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-hn-arxiv-github-scan-425.md",
+          "fragment": "medium-anchored-self-play-for-code-repair-260703523"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "The result bundles two interventions, lacks repeated-run uncertainty, and does not test self-configuration.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-376-gameenginebench",
+        "producer_source": "ea3ca60daaecd86da482fc6f04c7a99d6a9c2635",
+        "producer_result": "165db64db9dd3c0d355948ff33eb010e410e919e",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "gameenginebench--runtime-environments-expose-agent-limits-260703525"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "The named repository was unavailable; the 31-task result does not establish general runtime impossibility.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-377-atomiccommitbench",
+        "producer_source": "165db64db9dd3c0d355948ff33eb010e410e919e",
+        "producer_result": "1cfeda1e1767acd3feb7ee935aa112413eefba4f",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "atomiccommitbench--commit-history-reconstruction-260703332"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Manuscript and released summary counts disagree; replay saturation and grouping remain distinct.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-378-hidden-computation",
+        "producer_source": "1cfeda1e1767acd3feb7ee935aa112413eefba4f",
+        "producer_result": "7baa4d39971df7f4d3f5277bad5897ccc4f9b93c",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "critical-reading-between-the-dots--hidden-computation-is-readable-260703502"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Recovery is partial and task-scoped, not general monitorability or zero-information evidence.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-379-single-prover",
+        "producer_source": "7baa4d39971df7f4d3f5277bad5897ccc4f9b93c",
+        "producer_result": "bf0ec2e3f4773c8f3969f017f3b56d9b88928bb5",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md",
+          "fragment": "3-how-to-avoid-debate-scalable-ai-safety-via-doubly-efficient-interactive-proofs-260703561"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "The theorem needs structured oracle classes and supplies no deployed cost comparison.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-380-dscc",
+        "producer_source": "bf0ec2e3f4773c8f3969f017f3b56d9b88928bb5",
+        "producer_result": "37cd39f6434d8464d771c783ef61fb6a051b821a",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "critical-securing-multi-tool-agent-chains--compositional-taint-260703423"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Catalog rejection arithmetic is not real violation recall; implementation and zone assignments are absent.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-381-coderabbit",
+        "producer_source": "37cd39f6434d8464d771c783ef61fb6a051b821a",
+        "producer_result": "2a50934903820fb996a6dde046b27f5202fd3c24",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "high-agentic-code-review--563-rejection-rate-260703316"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Reply-selected automated labels cannot estimate all-comment user impact.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-382-rlsr",
+        "producer_source": "2a50934903820fb996a6dde046b27f5202fd3c24",
+        "producer_result": "d7cca640660903036f7b1da37c9477afcdfcced2",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "high-selective-prediction--training-abstention-260703528"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Abstention is post-hoc thresholding, dataset results vary, and low-coverage MedQA lacks a finite-sample guarantee.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-383-agentic-ttt",
+        "producer_source": "d7cca640660903036f7b1da37c9477afcdfcced2",
+        "producer_result": "fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-07-arxiv-scan-424.md",
+          "fragment": "high-agentic-test-time-training--qualified-preservation-hypothesis-260703441"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Selected means do not isolate token weighting or causally establish competence preservation.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-384-policy-repair",
+        "producer_source": "fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c",
+        "producer_result": "83a35e8e0f66c46f3e1c66a54132991ba311cf14",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md",
+          "fragment": "6-when-aggregate-alignment-misleads-auditing-policy-repair-260703386-supporting"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "One simulator misranking supports multi-resolution audit, not a universal repair law.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-385-hase",
+        "producer_source": "83a35e8e0f66c46f3e1c66a54132991ba311cf14",
+        "producer_result": "02ae7286bcbe8d66c18ca4f56b1e23d095a93549",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md",
+          "fragment": "1-harness-aware-self-evolving-hase-260703935"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "Cross-system rows jointly change model, harness, proposer, and budget; no attributable release was found.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      },
+      {
+        "entry_id": "cycle-386-veritas",
+        "producer_source": "02ae7286bcbe8d66c18ca4f56b1e23d095a93549",
+        "producer_result": "08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80",
+        "accepted_evidence": {
+          "path": "projects/scout-knowledge-lib/knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md",
+          "fragment": "2-veritas-towards-a-general-purpose-replication-tool-for-scientific-research-260702931"
+        },
+        "seed_receipt": "cycle-375-receipt",
+        "review": "cycles-373-386-review",
+        "limitation": "The public release omits benchmark trajectories and results and differs from the paper grader boundary.",
+        "integration": "exact",
+        "rollback": "revert-producer-result-after-dependents"
+      }
+    ],
+    "retained_literals": {
+      "commit_refs": [
+        "1a8ea9c904eb439b53703e1067cfa5172dc8072a",
+        "255232f3b0977d1938e62a52cdaf2e9cda1e0dff",
+        "300ff7ea03469d7c3d7f07ef3427089eb57785a2",
+        "8b8f7179cf",
+        "8dca8f4576",
+        "9c52296961"
+      ],
+      "timestamps": [
+        "2026-07-03T03:55:59Z",
+        "2026-07-03T14:42:01Z",
+        "2026-07-03T15:54:41Z",
+        "2026-07-04T16:04:30Z",
+        "2026-08-25T21:11:18Z",
+        "2026-08-28T21:02:58Z",
+        "2026-08-31T12:49:19.479317809Z",
+        "2026-09-04T10:39:25.749Z",
+        "2026-09-04T10:39:59.611Z",
+        "2026-09-04T10:40:38.080Z",
+        "2026-09-04T10:54:02.932Z",
+        "2026-09-04T10:54:29.754Z",
+        "2026-09-04T10:55:11.532Z",
+        "2026-09-04T10:56:15.479Z",
+        "2026-09-04T11:08:30.983Z",
+        "2026-09-04T11:09:20.326Z",
+        "2026-09-04T11:10:44.299Z",
+        "2026-09-04T11:11:22.729Z",
+        "2026-09-04T11:23:20.840Z",
+        "2026-09-04T11:23:42.450Z",
+        "2026-09-04T11:24:52.093Z",
+        "2026-09-04T11:33:01.538Z",
+        "2026-09-04T11:33:28.154Z",
+        "2026-09-04T11:44:45.172Z",
+        "2026-09-04T11:45:01.937Z",
+        "2026-09-04T11:45:31.519Z",
+        "2026-09-04T12:00:26.479Z",
+        "2026-09-04T12:00:50.864Z",
+        "2026-09-04T12:01:45.154Z",
+        "2026-09-04T12:10:51.681Z",
+        "2026-09-04T12:11:01.489Z",
+        "2026-09-04T12:11:43.833Z",
+        "2026-09-04T12:20:57.604Z",
+        "2026-09-04T12:21:07Z",
+        "2026-09-04T12:21:53Z",
+        "2026-09-04T12:41:36.521Z",
+        "2026-09-04T12:43:09Z",
+        "2026-09-04T12:56:41.428Z",
+        "2026-09-04T13:09:46.946Z",
+        "2026-09-04T13:11:18.260Z",
+        "2026-09-04T13:11:52.197Z",
+        "2026-09-04T13:22:28.576Z",
+        "2026-09-04T13:22:35.263Z",
+        "2026-09-04T13:25:00.962Z",
+        "2026-09-04T13:34:39Z",
+        "2026-09-04T13:34:54.108Z",
+        "2026-09-04T13:37:13.824Z",
+        "2026-09-04T13:47:48.565Z"
+      ]
+    }
+  },
+  "audit": {
+    "absent_heading_count": 61,
+    "absent_headings_sha256": "4d96b9cc884e45fbd8deeb4186ba56ba9b569c4ba0f24f8450ed40eee6ffe6da",
+    "generic_headings": [
+      "Artifact, cost, and reproduction boundary",
+      "Contradictory and limiting evidence",
+      "Exact provenance and lane continuity",
+      "Exact provenance and source-lane continuity",
+      "Lane continuity and next decision",
+      "Primary paper and direct table comparison",
+      "Primary paper evidence",
+      "Primary sources and released artifact",
+      "Public code and reproducibility boundary",
+      "Reproduced result and matched control",
+      "Source lanes, confidence, and next work",
+      "Source-lane continuity and next decision",
+      "Validation and preservation"
+    ],
+    "omitted_operational_timestamps": [
+      "2026-09-04T10:50:33.654Z",
+      "2026-09-04T11:04:46.275Z",
+      "2026-09-04T11:19:38.510Z",
+      "2026-09-04T11:20:18.566Z",
+      "2026-09-04T11:29:26.204Z",
+      "2026-09-04T11:41:34.788Z",
+      "2026-09-04T11:52:52.952Z",
+      "2026-09-04T11:57:04.288Z",
+      "2026-09-04T12:07:02.759Z",
+      "2026-09-04T12:07:02.815Z",
+      "2026-09-04T12:17:50.653Z",
+      "2026-09-04T12:18:00.174Z",
+      "2026-09-04T12:35:38.543Z",
+      "2026-09-04T12:36:08.970Z",
+      "2026-09-04T12:50:12.937Z",
+      "2026-09-04T12:51:37.738Z",
+      "2026-09-04T13:05:38.003Z",
+      "2026-09-04T13:19:04.412Z",
+      "2026-09-04T13:31:34.626Z"
+    ],
+    "omitted_operational_sha256": "de05ddbe460e1c8cef9611bae6e418ac224b0b8f62b73b3fb0856cbe0660449b",
+    "expected_projection": {
+      "broad_documents": 1546,
+      "broad_links": 1774
+    }
+  }
+}
