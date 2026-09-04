@@ -5592,6 +5592,32 @@ ablation; (5) other unsourced primary/reproducibility gaps; (6) Reddit; and (7)
 compaction. Select `2607.05677` and test population, maintainability estimand,
 survey denominator, self/other comparison, identification, and artifacts.
 
+### Cycle 327 checkpoint — maintenance asymmetry is a 25-response perception
+
+At `2026-09-04T03:11:42.126Z`, arXiv `2607.05677v1` supplied a
+43,936-byte abstract (`f9df792f…a09`) and 5,656,550-byte source package
+(`e7c8d3d8…5581`). The study discovers 13,360 committed chat sessions across
+1,356 repositories and analyzes 12,108 across 1,240. Its `p=.029` maintenance
+asymmetry comes from at most 25 self-selected survey respondents out of 589
+delivered invitations (4.2%), with no paired means, effect size, adjusted
+`q`, item-level count, or interval.
+
+Repository evidence addresses different estimands: no broad quality decline or
+sustained productivity gain; issue resolution slows; active-contributor
+broadening reverses in the older validation cohort; communication concentration
+was already high and stays statistically unchanged. Adoption is the first
+committed chat and remains confounded. Confidence is high that the old
+population-scale Knowledge Erosion claim was unsupported, low about the true
+direction or size of maintenance effects.
+
+The anonymous replication package returned HTTP 401 `not_connected` at
+`2026-09-04T03:12:27.916Z`; public GitHub searches found no attributable
+mirror. Revisit on readable scripts/data or a representative maintenance
+outcome study. Reddit made zero requests and remains trigger-deferred.
+`RV-004` remains high/open. Next begin seed-first and review SWE-Review
+`2607.06065`, the highest accessible pending claim from the same synthesis,
+before inaccessible Cortex ablation, other unsourced scans, or compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

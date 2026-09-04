@@ -11778,6 +11778,81 @@ scale maintenance and comprehension claims affect the same synthesis and have
 not yet been checked against estimands, survey denominators, identification,
 and released artifacts.
 
+## Cycle 327 checkpoint — maintenance asymmetry is a 25-response perception
+
+What was wrong was merging a large repository panel and a small survey into one
+population claim. The repository data do not measure comprehension or observed
+maintainability. The own-versus-others maintenance result comes from a maximum
+of 25 self-selected respondents. The library now preserves each estimand and
+no longer calls the study population-scale confirmation of Knowledge Erosion.
+
+Anonymous arXiv observation began at `2026-09-04T03:11:42.126Z`.
+`2607.05677v1` returned a 43,936-byte abstract page with SHA-256
+`f9df792f1cf038c8d74e06112c5822e427dab6527bcbd38077ec810b688bea09`
+and a 5,656,550-byte source package with SHA-256
+`e7c8d3d8b17d64ca4a8398e5a964be6456145f67aa08a2481f5fd17ddfbb5581`.
+The discovery surface comprises 13,360 publicly committed SpecStory chat
+sessions and 79,172 messages across 1,356 repositories. Completeness and
+substantive-project filters retain 12,108 sessions and 1,240 repositories;
+90% of repositories were created in 2025 or later, and many are small or
+solo-maintained. The first committed chat is treated as adoption, although 632
+repositories have it at or before GitHub creation and uncommitted/private AI
+use is invisible.
+
+The repository panel reports no broad observable code-quality deterioration
+and no sustained productivity gain. Monthly commits fall after adoption;
+interrupted-time-series estimates do not show a reliable main-cohort immediate
+jump or trend change. Bug/fix commit share rises while raw bug/fix counts do not,
+consistent with the smaller commit denominator. Test-touching and continuous-
+integration outcomes remain stable, and pull-request merge share does not
+decrease. Issue resolution does slow from median 6.6 to 50.1 days (`p=.002`,
+`q=.008`), but issue activity is sparse and the observational design explicitly
+cannot attribute the change to AI. Active contributors rise from 1.4 to 1.7 in
+the main cohort, while the older validation cohort's active-contributor share
+moves from 87.9% to 74.1% in the opposite direction. Communication and review
+concentration are high before adoption and do not change significantly. These
+facts reject the old inference that AI demonstrably scales production without
+understanding.
+
+The maintenance headline uses another population. Of 652 developers with
+public email, 589 received invitations and 25 responded (4.2%); 76% were very
+or extremely familiar with vibe coding and 84% used it for OSS. A within-
+respondent item rates others' AI code more likely to need extra maintenance
+than one's own with raw `p=.029`. The paper gives no paired means, effect size,
+false-discovery-adjusted `q`, item-level valid response count, or uncertainty
+interval. This supports the existence of an own/other perception asymmetry in
+a small, AI-familiar volunteer sample. It does not measure actual maintenance,
+allocate burden to maintainers, or estimate the broader OSS population.
+
+The paper explicitly treats adoption effects as associations because project
+phase, contributors, governance, and concurrent workflow changes can confound
+them. Its activity metrics are proxies rather than correctness,
+maintainability, intent, or comprehension. Consequently, stable repository
+proxies and a small survey concern cannot be combined to prove hidden
+organizational knowledge erosion. Confidence is high in this scope correction,
+low in the true maintenance effect's direction or size.
+
+The arXiv package contains the paper and three figures, not chat/repository
+records, survey instrument/responses, tables, or analysis scripts. At
+`2026-09-04T03:12:27.916Z`, the named anonymous replication package redirected
+to its API and returned HTTP 401 `{"error":"not_connected"}`. Complete public
+GitHub repository searches for the title and arXiv identity found no attributable
+mirror. No reproduction is claimed.
+
+Lane continuity: arXiv supplied the exact v1 paper and source; revisit on a
+revision or effect-size/sample disclosure. GitHub and the replication endpoint
+supplied an exact artifact-unavailable boundary; revisit when the anonymous
+package reconnects or an attributable repository appears. Reddit made zero
+requests and remains RSS-readable/JSON-403 until a relevant-thread/access
+change. `RV-004` remains high/open because this evidence is not Scout's missing
+post-August-31 query/rank-to-selection-to-later-outcome join.
+
+Next begin seed-first and primary-review SWE-Review `2607.06065`, now the
+highest accessible pending claim in the same Write Contract synthesis. Test
+the decision and resolve-rate baselines, revision loop, transfer claim,
+statistical uncertainty, evaluator authority, and public artifact before
+retaining the categorical generate-review-revise result.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

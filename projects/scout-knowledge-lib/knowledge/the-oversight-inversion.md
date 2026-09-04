@@ -809,7 +809,7 @@ Three papers converge:
   post-verification action appears only in a deterministic 50-task synthetic
   loop, where all conservative non-collapsing baselines tie.
 - **PatchOptic** (2607.05483v1): Optic-inspired projected reads plus declared write and patch-source paths. On 46 hand-authored cases, projection reduces reported leakage and tokens without lowering accepted-only GPT-5-mini content; View Only overlaps PatchOptic. Mechanical phase/scope checks block their diagnosed violations, and PatchOptic plus Verify Only reject 9/9 fixed hidden-source artifacts. PatchOptic still accepts 21/24 expected-reject weak-actor cases per round, so this is not general semantic-validity enforcement.
-- **From Conversation to Contribution** (2607.05677): 13,360 AI sessions across 1,356 OSS repos. Key finding: developers perceive others' AI-generated code as harder to maintain (p = .029). AI lowers production barriers while increasing maintenance burden — Knowledge Erosion (#450) confirmed at population scale.
+- **From Conversation to Contribution** (2607.05677v1): 13,360 committed chat sessions were discovered and 12,108 across 1,240 repositories analyzed. The maintenance asymmetry is a raw `p=.029` paired perception result from at most 25 self-selected respondents (4.2% response), not population maintenance evidence. Repository proxies show no broad quality decline or sustained production gain; contributor broadening reverses in the validation cohort, and communication concentration remains unchanged.
 
 **The Write Contract**: Without verified contracts between local writes and global state validity, conflicts accumulate silently, disagreements are destroyed, and maintenance debt compounds. Reads can be cheap; writes must be governed.
 

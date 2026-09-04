@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse supports conflict visibility, not a unique safety effect. PatchOptic supports projected-read leakage reduction and mechanical declared-path enforcement on a hand-authored benchmark, but its weak actor still accepts 21/24 expected-reject cases per round and the public source package omits the claimed cases and raw runs. The OSS contribution study remains pending primary review; HN and repository counters are discovery signals."
+summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse supports conflict visibility, not a unique safety effect. PatchOptic supports projected-read leakage reduction and mechanical declared-path enforcement, not semantic validity. The OSS study's maintenance asymmetry comes from at most 25 self-selected survey respondents, while its repository panel finds no broad quality decline and inconsistent contributor broadening. HN and repository counters are discovery signals."
 triggers: ["write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "optic-based state", "projected reads", "verified patches", "write verification", "local update global validity", "OSS AI contribution", "vibe-coding OSS", "maintenance asymmetry", "AI code maintainability", "SWE-Review", "agentic code review", "generate-review-revise", "conflict-aware memory", "immutable history", "projection-time resolution", "claim correction", "patch-read enforcement", "state contract", "scan 454"]
 source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOptic). arXiv cs.SE 2026-07-07 (2607.05677 Conversation to Contribution, 2607.06065 SWE-Review, 2607.05842 Beyond Refusal). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,363★, ECC 227,132★, shepherd 1,063★, local-llm 1,200★, security-audit-skill 2,338★, SkillSpector 12,348★). Cross-referenced with Execution Boundary (#453), Knowledge Erosion (#450), Memory Control Plane (#441), Oversight Inversion (thesis)."
 </ai_context>
@@ -33,7 +33,16 @@ separate fixed no-model test: PatchOptic and Verify Only both reject 9/9 patches
 that cite hidden source paths. This supports declared-path enforcement, not a
 general semantic-validity or leakage guarantee.
 
-3. **From Conversation to Contribution** (2607.05677): 13,360 AI conversation sessions comprising 79,172 user messages across 1,356 OSS repositories — the largest empirical study of AI-assisted open-source contribution to date. Key finding: **developers perceive others' AI-generated code as harder to maintain than their own (p = .029)**. AI lowers barriers to contribution while simultaneously increasing the maintenance burden on reviewers and co-maintainers — the Knowledge Erosion (#450) confirmed at OSS population scale. Communication remained "highly concentrated" even as contributor count grew.
+3. **From Conversation to Contribution** (2607.05677v1): Begins with 13,360
+publicly committed SpecStory chat sessions across 1,356 repositories and retains
+12,108 sessions across 1,240 screened repositories. Its maintenance asymmetry
+is not a repository-population result: it is a paired perception item among at
+most 25 self-selected respondents from 589 delivered invitations (4.2%), with
+only raw `p=.029` reported. The repository panel finds no broad code-quality
+decline, no sustained productivity gain, and contributor broadening that
+reverses in its older validation cohort. Communication was already concentrated
+and remains statistically unchanged. This is useful descriptive evidence, not
+population confirmation of Knowledge Erosion.
 
 **The 26th Layer of the Oversight Inversion**: The Write Contract. The exit arc (#444–#453) verified individual actions. But agents write to shared state: memory, codebases, tool outputs. Without a verified contract between local writes and global state validity, conflicts accumulate silently, disagreements are destroyed by overwrite, and maintenance debt compounds. Reads can be cheap; writes must be governed.
 
@@ -133,26 +142,53 @@ primary-reviewed 2026-09-04); https://github.com/ZBaiY/bAI-harness/tree/80d45528
 
 ### 3. From Conversation to Contribution: Characterizing Coding Agents in Open-Source Software (2607.05677)
 
-**Core finding**: The largest empirical study of AI-assisted OSS contribution — 13,360 AI conversation sessions (79,172 user messages) from 1,356 repositories, linked to development histories and complemented by developer survey.
+**Population and observation**: The discovery corpus has 13,360 committed
+SpecStory chat sessions (79,172 user messages) from 1,356 public repositories.
+After history completeness and substantive-project screening, analysis uses
+12,108 sessions from 1,240 repositories. Ninety percent were created in 2025 or
+later, many are small or solo-maintained, and the first observed committed chat
+is an adoption proxy rather than all AI use.
 
-Key findings:
-- **Heavier AI use in smaller, less mature, less collaborative repositories** — AI fills gaps where human collaboration is sparse
-- After AI adoption, projects showed **more active contributors and lower contributor concentration** (p < .001) — the barrier-lowering effect is real
-- However, **communication remained highly concentrated** — more people contribute code, but discussion doesn't proportionally expand
-- **Code Writing was the dominant chat purpose**, and nearly all AI chat sessions were followed by commits
-- **No broad deterioration in code-quality signals or PR merge rates** — at the code-quality surface level, AI contributions look fine
-- **Critical finding: developers perceive others' AI-generated code as harder to maintain than their own (p = .029)** — the maintenance burden is asymmetrically distributed
-- Most developers (68%) willing to share their chat, but concerns remain about appearing incompetent, increasing reviewer burden, and exposing ideas to competitors
+**Repository findings**: smaller and less collaborative repositories have
+higher observed AI-artifact shares, partly from the total-commit denominator.
+Monthly commits fall after adoption and interrupted-time-series models show no
+sustained gain. Bug/fix share rises while raw bug/fix counts do not, testing and
+continuous-integration outcomes remain stable, and pull-request merge share
+does not decrease. Issue resolution grows slower (median 6.6 to 50.1 days;
+`p=.002`, `q=.008`), but adoption is observational and concurrent project
+changes remain confounders. Active contributors rise 1.4 to 1.7 in the main
+cohort, while the validation cohort's active-contributor share moves in the
+opposite direction. Communication/review concentration is high before adoption
+and does not change significantly.
 
-**Why this matters**: This confirms three Oversight Inversion predictions at population scale:
+**Survey boundary**: 652 developers with public email were identified, 589
+invitations delivered, and 25 responses received (4.2%). The paired claim that
+others' AI code is more likely to need extra maintenance reports raw `p=.029`,
+but no paired means, effect size, adjusted `q`, item-level response count, or
+interval. Seventy-six percent report that AI lowers contribution barriers and
+68% would share chat history. These are perceptions from a small, AI-familiar,
+self-selected sample, not observed maintenance or a population estimate.
 
-(1) **Knowledge Erosion (#450) confirmed**: AI-generated code creates maintenance debt even when it passes functional tests. The maintainer, not the contributor, bears the cost — and the maintainer didn't benefit from the learning that writing the code would have provided.
+(1) **Knowledge Erosion (#450) remains a hypothesis here**: a small survey
+detects an own/other perception asymmetry, but the repository panel does not
+measure comprehension and reports no broad quality decline.
 
-(2) **Attribution Error (#440) confirmed**: Code quality signals (merge rates, test pass rates) don't deteriorate — suggesting the code is "fine." But perceived maintainability drops — suggesting the surrounding context (understanding, familiarity, diagnostic capacity) is degraded. The surface metrics miss the structural change.
+(2) **Proxy disagreement is plausible, not confirmed attribution error**:
+repository activity proxies and survey perceptions use different populations
+and estimands, so their difference cannot identify a hidden degradation.
 
-(3) **The Comprehension Dividend (#444) at the OSS level**: Communication remains concentrated even as contribution broadens. AI lowers the production barrier but doesn't lower the comprehension barrier. More code gets written; understanding doesn't proportionally expand.
+(3) **Communication concentration does not measure comprehension**: it is high
+and statistically unchanged; contributor broadening does not reproduce in the
+validation cohort. The study itself reports no sustained production gain.
 
-Source: https://arxiv.org/abs/2607.05677
+**Artifact boundary**: The v1 arXiv package contains the paper and figures, not
+the underlying chat/repository records, survey instrument/responses, analysis
+tables, or scripts. Its named anonymous replication package returned HTTP 401
+`{"error":"not_connected"}` on 2026-09-04. Complete public repository searches
+found no attributable mirror, so no metric reproduction is claimed.
+
+Source: https://arxiv.org/abs/2607.05677 (v1 source primary-reviewed
+2026-09-04); https://anonymous.4open.science/r/vibe_coding_oss-CFE4/
 
 ### 4. SWE-Review: Closing the Loop on Issue Resolution with Agentic Code Review (2607.06065) [SUPPORTING]
 
@@ -276,7 +312,11 @@ The ten-scan exit arc (#444–#453) and its extension to the execution boundary 
 1. **Memory writes** (StateFuse): StateFuse preserves contradictory claims as
    first-class objects; its benchmark compares public surfaces, not the
    prevalence or downstream cost of last-write-wins in deployed systems.
-2. **Code writes** (From Conversation to Contribution): AI agents write code to shared repositories. Functional tests pass (the code "works"), but maintainers find it harder to maintain (p = .029). The write is syntactically valid but semantically ungoverned — it lacks the comprehension contract that human authorship provided.
+2. **Code writes** (From Conversation to Contribution): 25 self-selected survey
+respondents rate others' AI code as more maintenance-prone than their own
+(`p=.029`), while repository proxies show no broad quality decline. This is a
+perception/proxy mismatch, not evidence that passing writes degrade shared
+state or comprehension.
 3. **Workflow writes** (PatchOptic): Agent workflow steps modify shared state. Progressive disclosure shows them a partial view. Nothing verifies their proposed changes are valid in the full context. PatchOptic introduces patch verification as the missing contract.
 
 **Structural fix**: Make the write contract explicit. StateFuse's approach: preserve all writes with immutable history and resolve conflicts at projection (read) time. PatchOptic's approach: declare authorized write regions and verify patches against global state before commit. SWE-Review's approach: close the loop with agentic review before writes become permanent.
@@ -284,8 +324,12 @@ The ten-scan exit arc (#444–#453) and its extension to the execution boundary 
 **Connection to preceding layers**:
 - The Execution Boundary (#453) bound individual tool calls to execution authority. The Write Contract extends this to **persistent state mutations** — the execution boundary for state.
 - The Memory Control Plane (#441) identified memory transitioning from storage to governance. StateFuse and PatchOptic are concrete instantiations of the governance layer.
-- Knowledge Erosion (#450) showed agents erode organizational knowledge. The OSS study (2607.05677) confirms this at population scale and identifies the mechanism: the write (AI code contribution) degrades the shared state (codebase maintainability) even when it passes verification (tests).
-- The Comprehension Dividend (#444) showed understanding scales better than production. The OSS study shows that AI scales production (more contributors) without scaling understanding (communication remains concentrated).
+- Knowledge Erosion (#450) is not confirmed by this study: the own/other
+maintenance item is a 25-response perception result, and repository proxies do
+not measure comprehension or establish maintenance degradation.
+- The Comprehension Dividend (#444) is not tested: contributor broadening
+reverses in the validation cohort, communication concentration is unchanged,
+and neither is a direct understanding measure.
 
 **Eleven-point exit arc**:
 1. **Comprehension Dividend (#444): Invest in understanding (demand-side)**
@@ -337,7 +381,7 @@ The Write Contract is a three-source convergent finding:
 |--------|--------|-----------|
 | arXiv (cs.MA) | StateFuse | Conflict-preserving CRDT memory — disagreements as first-class objects |
 | arXiv (cs.MA) | PatchOptic | Optic-inspired projected reads + verified patches — write contract as enforcement |
-| arXiv (cs.SE) | From Conversation to Contribution | 13,360 AI sessions in 1,356 OSS repos — code writes degrade maintainability (p=.029) |
+| arXiv (cs.SE) | From Conversation to Contribution | 13,360 discovered sessions; 12,108/1,240 analyzed. Maintenance asymmetry is a raw `p=.029` perception item from at most 25 respondents, not repository outcome evidence. |
 | arXiv (cs.SE) | SWE-Review | Generate-review-revise loop — write verification via agentic review |
 | arXiv (cs.SE) | Beyond Refusal | Governance mechanism (refusal) impairs legitimate writes; structural enforcement needed |
 | HN | 30papers crossing 400 | Comprehension investment sustained — understanding scales, production doesn't |
