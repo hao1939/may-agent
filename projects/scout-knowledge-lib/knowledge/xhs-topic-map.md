@@ -4194,6 +4194,56 @@ for any other active target that explicitly declares mock, synthetic, or
 pending-source evidence. It must distinguish honest scoped synthetic research
 from an unsupported result before changing any disposition.
 
+### Cycle 306 marker-audit disposition — no unsupported active result found
+
+The bounded scan resolved 693 unique available Markdown targets from active
+INDEX links. A narrow, case-insensitive search for explicit mock-source,
+mock-data, pending-source/external, not-sourced, or unsourced language found
+seven files. None is another unsupported result: two are the current audit and
+seed-cycle records, two are library sourcing-gap assessments, one warns that
+individual claims can drift, one defines a mock-source testing boundary, and
+one is this living map. The retired raw mock-source note remains byte-exact and
+is no longer active, so it is correctly absent from the 693-target set.
+
+No INDEX disposition, source file, or navigation fixture changed. Confidence
+is high for the active-link resolution and exact marker contexts, but the
+bounded lexical audit is not a claim-level source review. This closes the
+explicit-marker question without treating legitimate synthetic experiments
+as fabricated source evidence.
+
+## Cycle 307 seed-first start — current receipt reused before primary-evidence review
+
+Cycle 307 began from clean validated
+`0e490fd2f775698f2863acc5befd6b254b115b09` at
+`2026-09-04T00:15:56.847Z`. Cycle 292's observation through
+`2026-09-03T22:59:03.253Z` was about 77 minutes old, inside the six-hour
+cadence, so the bounded reconciliation made zero XHS or public requests.
+Added and changed identities remain unknown, observed removals are `[]`, and
+all 132 durable seeds remain unavailable. No account state changed.
+
+The complete accessible queue now ranks by expected knowledge value:
+
+1. `RV-004`'s missing retained query/rank -> selected-file -> later-outcome
+   join has the greatest potential value, but readable protected history still
+   ends on August 31 and contains no such join. More telemetry or narration
+   cannot manufacture the missing outcome.
+2. Primary-evidence and contradiction review of the active, explicitly
+   **Not yet sourced** Memory Loop Gap (`2510.19771v4`, `2607.05690v1`, and
+   `2607.05794v1`) is accessible and directly relevant to the selected memory-
+   governance cluster. Its claim that memory architecture *causes* the observed
+   proactivity ceiling is stronger than three adjacent paper summaries alone.
+3. Other active not-yet-sourced scan claims remain a broader claim-level
+   backlog; inspect them after the selected bounded comparison supplies a
+   reusable review pattern.
+4. GitHub implementation freshness and Reddit discussion remain below the
+   primary-paper question under their recorded change/access triggers.
+5. Additional byte/line compaction is last because it supplies neither primary
+   evidence nor an outcome.
+
+Select item 2. Use exact paper identities and primary text, record support and
+contradiction separately, and narrow the synthesis if the papers do not test a
+shared causal chain. `RV-004` remains high/open.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

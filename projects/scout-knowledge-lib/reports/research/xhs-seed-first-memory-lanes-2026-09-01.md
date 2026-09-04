@@ -10044,6 +10044,42 @@ GitHub, arXiv, and Reddit made zero requests. Next run a bounded active-INDEX
 marker audit for other explicit mock/synthetic/pending-source targets, while
 keeping scoped synthetic experiments distinct from unsupported source claims.
 
+### Cycle 306 marker-audit result — active synthetic evidence stays scoped
+
+The bounded active-link resolver found 693 unique available Markdown targets.
+A narrow exact-language pass found seven targets mentioning mock-source,
+mock-data, pending-source/external, not-sourced, or unsourced evidence. Context
+review dispositioned all seven without an INDEX change: two preserve this
+cycle's audit history, two assess the sourcing backlog, one warns about
+claim-level drift, one states a testing boundary, and one is the living topic
+map. The retired mock-source raw note is preserved byte-for-byte but is no
+longer an active target.
+
+This is high-confidence lexical and link-resolution evidence, not a complete
+claim-level provenance audit. It found no second unsupported active result and
+did not reinterpret honest synthetic controls as external observations.
+
+## Cycle 307 seed-first start — select a primary-evidence gap, not compaction
+
+At `2026-09-04T00:15:56.847Z`, Cycle 307 started from clean validated
+`0e490fd2f775698f2863acc5befd6b254b115b09`. The latest exact XHS receipt
+ended at `2026-09-03T22:59:03.253Z`, about 77 minutes earlier and inside the
+six-hour cadence. No browser, account, GitHub, arXiv, or Reddit request ran.
+Added/changed identities remain unknown, removals are `[]`, and all 132 durable
+seeds remain unavailable.
+
+The post-seed queue ranks `RV-004`'s missing protected later-outcome join first
+in potential impact but inaccessible: readable protected history ends August
+31 and no local metric or report can create the absent join. The highest-value
+accessible work is instead the primary-evidence/contradiction gap in active
+arXiv Scan 470, which is still marked **Not yet sourced** and joins PROBE
+`2510.19771v4`, Memory in the Loop `2607.05690v1`, and NapMem
+`2607.05794v1` into the causal claim that memory architecture explains the
+proactivity ceiling. Other unsourced claims, trigger-deferred GitHub/Reddit
+work, and byte/line compaction rank lower. Commit this ordering record before
+making any exact-paper request, then test whether the three primary papers
+actually share population, intervention, and outcome evidence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip
