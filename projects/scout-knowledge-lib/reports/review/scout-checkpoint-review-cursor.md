@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through exact standing Cycle 406 result 7c953afdcc70073fb071f262878a53aac189cf21: the e44006e4 integration gate remains accepted, while Cycle 406 is accepted after reviewer correction RV-042 separates RQ3 from RQ5 and states the full RQ4 evidence basis; RV-004/RV-034/RV-041 remain high/open and local-main preparation is not landed."
+summary: "Independent Scout review cursor through exact integrated Cycle 406 reviewer result 40684692df8352cb7dbed05f3d715e91b006585a: Cycle 406 is accepted after RV-042 separates RQ3 from RQ5 and states the full RQ4 evidence basis; RV-004/RV-034/RV-041 remain high/open and local-main preparation is not landed."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042"]
 last_updated: "2026-09-05"
-source_basis: "Exact accepted Cycle 405 integration e44006e4e9da5cdda30df325b3fb29208d577911, producer gate record 3746ae005f51d3f204b2a305c2fa00e20ffbdda1, and exact Cycle 406 result 7c953afdcc70073fb071f262878a53aac189cf21; retained OverEager source SHA-256 eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f; exact ancestry, source text, RQ boundaries, current-tip validation, dirty-overlap fingerprints, protected-checkout preservation, integration, rollback, and full-rubric dispositions independently reviewed."
+source_basis: "Exact accepted Cycle 405 integration e44006e4e9da5cdda30df325b3fb29208d577911, producer gate record 3746ae005f51d3f204b2a305c2fa00e20ffbdda1, exact Cycle 406 producer result 7c953afdcc70073fb071f262878a53aac189cf21, and exact integrated reviewer result 40684692df8352cb7dbed05f3d715e91b006585a at stable patch ID 6de2e965a235425457d078bad11a525aade96f0b; retained OverEager source SHA-256 eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f; exact ancestry, source text, RQ boundaries, integration, rollback, and full-rubric dispositions independently reviewed through the reviewer result, with producer-run current-tip validation and protected-checkout fingerprints recorded on its standing integration-status child."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -16,6 +16,10 @@ source_basis: "Exact accepted Cycle 405 integration e44006e4e9da5cdda30df325b3fb
   `7c953afdcc70073fb071f262878a53aac189cf21` (Cycle 406 RQ4-transfer qualification)
 - Last producer research material reviewed:
   `7c953afdcc70073fb071f262878a53aac189cf21`
+- Last integrated reviewer result:
+  `40684692df8352cb7dbed05f3d715e91b006585a` (direct child of the reviewed
+  producer result; stable patch ID
+  `6de2e965a235425457d078bad11a525aade96f0b`)
 - Current review date: `2026-09-05T02:29:08+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -217,7 +221,8 @@ source_basis: "Exact accepted Cycle 405 integration e44006e4e9da5cdda30df325b3fb
   `672f2f38fb6833a15569f0732d2ed915f3f8dacf` (Cycle 405 local-main safety review),
   `e44006e4e9da5cdda30df325b3fb29208d577911` (Cycle 405 post-integration status),
   `3746ae005f51d3f204b2a305c2fa00e20ffbdda1` (bounded Cycle 405 gate record), and
-  `7c953afdcc70073fb071f262878a53aac189cf21` (Cycle 406 RQ4-transfer qualification and current reviewed producer tip).
+  `7c953afdcc70073fb071f262878a53aac189cf21` (Cycle 406 RQ4-transfer qualification and current reviewed producer tip), and
+  `40684692df8352cb7dbed05f3d715e91b006585a` (exact integrated RV-042 reviewer correction).
 - Newly reviewed exact standing span:
   `e44006e4e9da5cdda30df325b3fb29208d577911..7c953afdcc70073fb071f262878a53aac189cf21`
   (two linear documentation commits across five files, +249/-20: one bounded
@@ -226,10 +231,11 @@ source_basis: "Exact accepted Cycle 405 integration e44006e4e9da5cdda30df325b3fb
   changed).
 - Review date: `2026-09-05T02:29:08+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
-- Overall disposition: **accept exact producer Cycle 406 tip
-  `7c953afdcc70073fb071f262878a53aac189cf21` after the narrow reviewer-owned
-  RV-042 correction below; local-main preparation remains pending and is not
-  landed.** Exact reviewer integrations `672f2f38fb` and `e44006e4e9` remain
+- Overall disposition: **accept exact producer Cycle 406 result
+  `7c953afdcc70073fb071f262878a53aac189cf21` after exact standing integration
+  of reviewer correction `40684692df8352cb7dbed05f3d715e91b006585a`;
+  local-main preparation remains pending and is not landed.** Exact reviewer
+  integrations `672f2f38fb`, `e44006e4e9`, and `40684692df` remain
   linear ancestors, and the exact producer tip passed the independent full
   repository gate before this documentation-only correction. RV-041 remains
   high/open because 295 dirty paths overlap the protected checkout; the prior
@@ -3208,7 +3214,7 @@ producer gate or the unchanged broad-link audit would add no scoped evidence.
 | Novelty, comparison, contradictions, and uncertainty | **Accept after RV-042.** The decision value is the cross-RQ population/estimand mismatch, not another isolated metric. Moving archetype/severity summaries remain contrary evidence to blanket invariance, not a refutation. Missing joins, scale curves, overlap, dependence, and cell coverage stay unknown. No matched-budget behavior baseline applies because no Scout behavior improvement is claimed. |
 | Duplication, contamination, usability, and retrieval | **Accept with RV-036/RV-038 visible.** One coherent result replaces same-artifact micro-cycles and updates the main retrieval surfaces consistently. The four surfaces still duplicate narrative, but no new source was imported, no protected evaluator was exposed, and no alias is counted as independent evidence. |
 | Access boundaries and cost | **Accept.** The review uses one retained checksum-matched archive and read-only repository evidence. No browser, account, external-source, runtime, evaluator, or authority mutation occurred. Cost is one consolidated documentation commit plus one scoped reviewer correction. |
-| Validation, batching, integration, and rollback | **Accept producer tip; reviewer correction pending standing integration.** The producer commit is clean, conventional, consolidated, and current-tip validated. Apply the reviewer range recorded below as one unit, then rerun scoped documentation/navigation/link checks. Roll back the reviewer result with one ordinary revert; roll back Cycle 406 separately by reverting `7c953afdcc` after any dependent reviewer/status commits. |
+| Validation, batching, integration, and rollback | **Accept producer result; reviewer correction integrated exactly.** The producer commit is clean, conventional, consolidated, and current-tip validated. Reviewer result `40684692df` is its direct child at stable patch ID `6de2e965a235425457d078bad11a525aade96f0b`; current-tip validation is recorded on the standing integration-status child. Roll back that child first, then the reviewer result with one ordinary revert; roll back Cycle 406 separately by reverting `7c953afdcc` only after dependent status commits. |
 | Canonical integration, local-main landing, and cleanup | **Accept standing research; defer landing/cleanup.** Cycle 406 is on the standing branch. Local-main preparation remains pending and is not landed; RV-041 still blocks a move across 295 dirty overlaps. No protected checkout, branch, worktree, or retained history may be cleaned up from this result. |
 | Productivity and unresolved outcomes | **No productivity claim.** The correction improves claim truthfulness and retrieval precision. RV-004 remains high/open because there is still no protected query/rank-to-selection-to-later-outcome join, matched-budget outcome, measured saving, or changed user decision; RV-034 and RV-041 remain high/open. |
 
@@ -3256,18 +3262,28 @@ producer gate or the unchanged broad-link audit would add no scoped evidence.
 | `RV-038` | Medium | OverEager sequences `1bcf880009..54ed4b11e6` and `f926a1d842..041a479100`; recurring durable surfaces | The earlier six commits in 36 minutes added +1,040/-9 from one retained package. Cycles 402-405 recur with four evidence commits over 39 minutes and +837/-15 across the same canonical/detailed pattern, without a recorded external dependency. The facts are useful, but fragmented same-artifact review increases integration, validation, and maintenance cost; commit/cycle count is not productivity. | **Accept existing history; revise prospectively; medium/open.** Do not rewrite or squash accepted history. Apply the convention now: consolidate the next retained-artifact evidence into one coherent material checkpoint unless a concrete external dependency requires separation. |
 | `RV-039` | Medium | Standing integration-status commit `8d0a2fa7634213bd698c5a3bbbf559f310e78cd5`; durable review cursor | The commit correctly records exact RV-037 integration `ee0f288d90` but rewinds the last reviewed and material commits from independently reviewed Cycle 401 `cc65a3fbde` to Cycle 400 `72ccecf3b0`, calls Cycle 401 pending, and routes the next trigger back to already-completed work. Its patch ID `e116ab5e0c13e3eafbf792a73768e8aa0f6033d0` differs from the reviewer cursor repair. Readers and automation would repeat review and lose the current evidence boundary. | **Resolved on standing; accept `f485e287e7`.** Conflict-resolved reconciliation `f485e287e738e338768312d3ff9ac64007b372b0` preserves the truthful exact-integration statement, restores Cycle 401 evidence and validation, and records reviewer `254e52441e` as reconciled rather than exactly contained or patch-equivalent. This reviewer cursor advances through that resolution and keeps RV-004/RV-034/RV-036/RV-038 visible. |
 | `RV-040` | Medium | Cycle 403 paragraph in `knowledge/xhs-topic-map.md` at exact producer tip `041a4791001214b1f0b5dc93babb451c9fb3d61f` | The paragraph says the three published aggregate rows show “stable high/low ordering across the two reported systems.” The checksum-matched source table names only Claude Code/GLM-4.6, and Cycle 405 correctly demonstrates that no second system's seed-7/13 values are published. The stale sentence contradicts the same current artifact and can restore an unsupported rank claim through retrieval. | **Resolved on standing by exact reviewer result `0665ae54ee5072634feda0fd650ee13aa5461411`.** The topic map now names the one published cell, limits the 1.4-point range to one-cell generator robustness, and explicitly withholds between-system rank stability. No research, source access, or arithmetic was repeated. |
-| `RV-041` | High | Protected dirty `/app` at `8554a5718cfa051bf4fb827c974423380614e5a7`, isolated merge candidate `283f723fd1b88c237b99af330495d7dae8296cb3`, and current standing `7c953afdcc70073fb071f262878a53aac189cf21` | The historical committed merge is conflict-free and fully validated, but 295 of its canonical range's 433 paths overlap the 344-record human-owned dirty checkout. Plain patch preservation fails across 260 paths; three-way checking yields 103 clean applications, 17 conflicts, and 140 paths absent from the merged index. Current standing spans 450 main-relative paths yet reproduces the same 295 overlaps and fingerprint. Advancing `main` would change the base beneath unresolved human edits and could silently lose or misattribute work. The full current diff retains the same 130 disclosed whitespace/EOF findings, so it must not be represented as diff-clean. The historical candidate stops at second parent `91fba0440e` and contains neither current reviewer integration. | **Accept current standing; accept candidate-only report as historical evidence; supersede candidate for landing; block landing; high/open.** Keep `main` and protected worktrees unchanged. Unblock only with a current isolated candidate plus clean human checkout or explicit overlay reconciliation in a separate goal-owned worktree, exact per-overlap dispositions, current-tip validation, unchanged unrelated-state fingerprints, and a reviewed rollback. Do not bulk-format overlapping history as a substitute for preservation proof. |
-| `RV-042` | Medium | Cycle 406 result `7c953afdcc70073fb071f262878a53aac189cf21`; four OverEager retrieval surfaces | The result describes all RQ4 positive support as one product/model cell even though only the generator-seed arm is one cell and the RQ4 discussion also cites the existing 15-cell matrix and a phase-1 two-seed comparison. It also merges the separate RQ5 50-run two-annotator re-evaluation into RQ3. The omissions do not rescue the transfer claim, but they misstate the manuscript's evidence basis and make repeated human labels look necessary for RQ3 characterization. | **Resolved on reviewer branch; pending standing integration.** The narrow correction states the full RQ4 basis without treating prior matrix/phase-1 evidence as complete sensitivity replication, keeps RQ3 on archetype/severity/rule-judge evidence, and requires human-label/adjudication output only for an RQ5 extension. Accept Cycle 406 after this exact correction. |
+| `RV-041` | High | Protected dirty `/app` at `8554a5718cfa051bf4fb827c974423380614e5a7`, isolated merge candidate `283f723fd1b88c237b99af330495d7dae8296cb3`, and exact integrated reviewer result `40684692df8352cb7dbed05f3d715e91b006585a` plus its standing status child | The historical committed merge is conflict-free and fully validated, but 295 of its canonical range's 433 paths overlap the 344-record human-owned dirty checkout. Plain patch preservation fails across 260 paths; three-way checking yields 103 clean applications, 17 conflicts, and 140 paths absent from the merged index. Current standing spans 450 main-relative paths yet reproduces the same 295 overlaps and fingerprint. Advancing `main` would change the base beneath unresolved human edits and could silently lose or misattribute work. The full current diff retains the same 130 disclosed whitespace/EOF findings, so it must not be represented as diff-clean. The historical candidate stops at second parent `91fba0440e` and contains neither current reviewer integration. | **Accept current standing; accept candidate-only report as historical evidence; supersede candidate for landing; block landing; high/open.** Keep `main` and protected worktrees unchanged. Unblock only with a current isolated candidate plus clean human checkout or explicit overlay reconciliation in a separate goal-owned worktree, exact per-overlap dispositions, current-tip validation, unchanged unrelated-state fingerprints, and a reviewed rollback. Do not bulk-format overlapping history as a substitute for preservation proof. |
+| `RV-042` | Medium | Cycle 406 result `7c953afdcc70073fb071f262878a53aac189cf21`; four OverEager retrieval surfaces | The result describes all RQ4 positive support as one product/model cell even though only the generator-seed arm is one cell and the RQ4 discussion also cites the existing 15-cell matrix and a phase-1 two-seed comparison. It also merges the separate RQ5 50-run two-annotator re-evaluation into RQ3. The omissions do not rescue the transfer claim, but they misstate the manuscript's evidence basis and make repeated human labels look necessary for RQ3 characterization. | **Resolved on standing by exact reviewer result `40684692df8352cb7dbed05f3d715e91b006585a`.** The narrow correction states the full RQ4 basis without treating prior matrix/phase-1 evidence as complete sensitivity replication, keeps RQ3 on archetype/severity/rule-judge evidence, and requires human-label/adjudication output only for an RQ5 extension. Cycle 406 is accepted after this correction. |
 
 ## Reviewer source/result and integration status
 
 - Producer Cycle 406 result `7c953afdcc70073fb071f262878a53aac189cf21`
-  is **accepted after the pending reviewer-owned RV-042 correction**. Its exact
+  is **accepted after exact standing integration of reviewer-owned RV-042
+  result `40684692df8352cb7dbed05f3d715e91b006585a`**. Its exact
   source is `3746ae005f51d3f204b2a305c2fa00e20ffbdda1`; the result is one
   consolidated four-document commit, not a behavior, local-main, or cleanup
-  change. Integrate this review checkpoint as one exact range on standing and
-  rerun scoped documentation/navigation/link validation. Roll back that
-  correction with one ordinary revert; roll back the producer result
+  change. The reviewer result is the producer result's direct child, is
+  contained exactly on standing, and has stable patch ID
+  `6de2e965a235425457d078bad11a525aade96f0b`. On the standing status child, the
+  full gate passes 296 tests / 1,486 assertions, Cycle 405 projection, 101
+  scoped links, navigation 11/14 and 8/8, and the 1,540-document / 1,741-link
+  broad audit; read-only health returns 30 facts / 16 wakes and remains
+  truncated. Protected `/app` remains at `8554a5718c` with 344 status records
+  (`bbe07139…8dec`) and 296 Scout records (`7e4d0937…26a8`); the 295-path
+  overlap stays `966e8c88…bcff`. The full standing range still has the
+  disclosed 127 trailing-whitespace plus three EOF findings at diagnostic
+  `fe687582…dde6`, so RV-041 remains high/open and the merge diff is not called
+  clean. Roll back that correction with one ordinary revert; roll back the producer result
   separately by reverting `7c953afdcc` only after dependent review/status
   commits.
 - Standing gate record `3746ae005f51d3f204b2a305c2fa00e20ffbdda1`
@@ -3755,9 +3771,8 @@ and the unreleased Memory in the Loop result.
 
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the first genuinely material,
-clean producer checkpoint after exact reviewed standing tip
-`7c953afdcc70073fb071f262878a53aac189cf21`; standing integration or
-conflict disposition of the RV-042 reviewer correction; a current isolated candidate plus
+clean producer checkpoint after exact integrated reviewer result
+`40684692df8352cb7dbed05f3d715e91b006585a`; a current isolated candidate plus
 clean checkout or overlay-reconciliation result that can advance RV-041;
 a fresh protected maintenance outcome that joins the route used to a later
 decision; evidence changing RV-004 or RV-034; a scoped
