@@ -17565,6 +17565,121 @@ Relative to Cycle 385's 893/296 observation, this is externally observed drift,
 not attributed to this worker. No command in that checkout or a peer worktree
 performed tests, generation, formatting, installation, cleanup, or writes.
 
+## Cycle 387 checkpoint — distinguish a scored frozen memory from governed evolution
+
+What was wrong: Scan #452 turned Organizational Memory's architecture into an
+empirical co-evolution claim. The paper does contain a real proof of concept,
+but it measures one frozen memory's consumption in a hypothetical procurement
+company. It does not measure sharing across agents, human governance, updates,
+access control, propagation, longitudinal adaptation, or deployment.
+
+What changes: the [canonical Scan #452 finding](../../knowledge/findings/2026-07-08-hn-arxiv-github-scan-452.md)
+now retains the small positive result while separating the untested lifecycle
+claims. Four ten-scenario runs produce 35/40 correct structured-memory outcomes
+versus 28/40 for document RAG with GPT-4.1, and 38/40 versus 32/40 with Sonnet
+4.5. Base produces 12/40 for either model. Those denominators come from three
+create and seven refuse cases over nine synthetic PDFs and 11 author-created
+rules. They are not enterprise-process, multi-agent, or evolving-memory
+outcomes.
+
+### Seed order and ranked decision
+
+This cycle began only after exact reviewer result
+`2379a9fabb619c653cbabda04e60066b5c473aa4` was fast-forwarded onto standing
+source `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`. It is the source's direct
+child and has patch ID `8dd95cfdb6c00b1162833300a46151eb66223934`.
+The accepted cursor preserves reviewer `26eda94dac` as semantically reconciled
+and superseded, while correctly recording that it is neither contained nor
+patch-equivalent. `RV-004` and `RV-034` stay high/open; `RV-036` stays
+medium/open.
+
+The bounded seed reconciliation then ran at
+`2026-09-04T14:11:25.520Z`, before the scheduled XHS boundary
+`2026-09-04T17:09:20.326Z`. It made zero browser requests because no cadence,
+collection, or access trigger had fired. Added and changed identities remain
+unknown, observed removals are `[]`, all 132 durable identities remain
+unavailable, and no account state changed. Provenance remains Cycle 375's
+browser receipt and seed-ledger row. This is an explicit unavailable result,
+not an unchanged-live-set claim.
+
+`RV-004` still ranks first by consequence but cannot move without the protected
+query/rank-to-selection-to-later-outcome join. `RV-034` still requires an
+external Mnemosyne runtime change outside Scout authority. Organizational
+Memory `2607.03228` therefore ranked highest among accessible evidence gaps and
+was actually pursued after the seed record.
+
+### Primary evidence, artifact proof, and limits
+
+ArXiv was observed read-only at
+`2026-09-04T14:12:15.308Z–14:12:17.900Z`. The 2,761-byte Atom response has
+SHA-256 `aa001fd18986b488696a41e586e5679e301ad49292a644c5854a69eb94c76c55`;
+it identifies only `2607.03228v1`, published and updated
+`2026-07-03T11:40:10Z`. The 1,144,989-byte v1 source archive has SHA-256
+`058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189`.
+Its 15 files contain manuscript source and figures, not executable artifacts.
+
+The paper's own footnote points to the attributable public repository
+`lukaskirchdorfer/org-memory-paper`. GitHub API and archive reads at
+`2026-09-04T14:12:40.721Z–14:13:26.307Z` resolve main to
+`11617e3191bf6307eea64476fcb1269b5ca3fb78`, last pushed
+`2026-06-01T12:22:13Z`. The head archive is 157,501 bytes, SHA-256
+`7e183ab73192b2ed748723147a544dc509ff1064543f09b5bedb39bbda8f6e7a`.
+Its 286 files include nine policy PDFs, ten scenarios, 240 standalone outputs,
+24 summaries, eight metrics files, and `evaluate.py`; it has no tag or release.
+
+An offline run of the supplied evaluator over every retained run regenerated
+all eight metrics files byte-for-byte. This is strong evidence that the
+published headline is the score of those retained outputs. It is not experiment
+replay: the paper says the implementation is proprietary, while the public
+tree omits the agent, system prompt, extracted atoms, curator/retriever, vector
+index, retrieval traces, generation settings, and seeds.
+
+The evaluator exposes a second limit. With its optional external judge off—as
+in all retained metrics—any refusal earns credit on a refuse case, regardless
+of whether the response gives the correct policy reason. Positive cases do
+require exact material, quantity, and where specified vendor. The result bundle
+also duplicates each standalone output inside a summary; two GPT-4.1 run-four
+RAG summary entries (`s08`, `s09`) say `sonnet-4.5` while the corresponding
+standalone records say `gpt-4.1`. The evaluator reads the standalone records,
+so the score does not change, but the bundle is not fully identity-clean.
+
+Confidence is high in source/repository identity, retained counts, exact metric
+regeneration, headline arithmetic, and the absence of evaluated governance or
+evolution. Confidence is moderate in the structured-memory advantage for this
+small fixture and low for correct refusal rationales, run independence,
+enterprise scale, governance cost, update behavior, deployed outcomes, or
+independent result generation. Revisit on a released implementation and
+configuration, identity-clean bundle, reason-aware scoring, paired uncertainty,
+policy-update test, multiple governed consumers, or real deployment.
+
+ArXiv and GitHub were useful topic-led lanes. Reddit made zero requests and
+retains its RSS-readable/JSON-403 boundary until a relevant thread or access
+change. The next highest accessible audit is SwarmResearch `2607.02807`: test
+whether its 13/15 headline isolates branch/population orchestration from model,
+budget, selection, and baseline differences, and whether attributable
+implementation and results permit replay.
+
+### Validation and preservation
+
+The exact four-document candidate passes whitespace, syntax, TypeScript,
+tracked-source formatting, the Cycle 375 projection, 96 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486 assertions with
+zero failures in 103.62 seconds. The broad offline audit passes 1,540 tracked
+Scout-library Markdown documents / 1,735 local prose links. Read-only health at
+`2026-09-04T14:19:04.738Z` returns 26 facts / 16 wake signals with
+`truncated:true`; it writes no runtime packet.
+
+Reviewed source `08f7d1f898` and reviewer result `2379a9fabb` remain ancestors;
+superseded `26eda94dac` remains a non-ancestor. Before this candidate was
+committed, the protected checkout was re-observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 894 whole short-status records /
+SHA-256 `a0a1663760657d91bfbcaec1d8e989d4bf1266a9aa8110729c98372b31e1ae7f`,
+and 296 Scout-scope records / SHA-256
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+Those counts differ from some earlier checkpoints and are recorded as external
+drift, not attributed to this worker. No test, generator, formatter, install,
+cleanup, or write ran in `/app` or a peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

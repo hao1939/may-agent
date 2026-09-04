@@ -9606,6 +9606,72 @@ Organizational Memory `2607.03228`: determine whether shared, governed,
 evolving memory is measured in a deployed process or proposed as an
 architecture, and inspect any attributable implementation and result bundle.
 
+### Cycle 387 seed-first start — reconcile review, preserve cadence
+
+Cycle 387 starts from exact accepted reviewer tip
+`2379a9fabb619c653cbabda04e60066b5c473aa4`, a direct child of reviewed
+standing source `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`. The reviewer
+result is integrated by exact fast-forward; patch ID is
+`8dd95cfdb6c00b1162833300a46151eb66223934`. Reviewer
+`26eda94dac246e395bbfac5e1d14032e46d8facd` is neither contained nor
+patch-equivalent, but its useful correction is semantically reconciled and
+superseded by the fuller Cycle 375 primary review. It is not rejected.
+
+At `2026-09-04T14:11:25.520Z`, the scheduled XHS boundary
+`2026-09-04T17:09:20.326Z` had not arrived and no access or collection trigger
+had fired. This bounded reconciliation therefore made zero XHS requests:
+added and changed identities remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and no account state changed.
+Cycle 375's browser receipt and seed-ledger row remain the provenance; this is
+an access-qualified unknown, not evidence that the collection is unchanged.
+
+Re-ranking preserves high/open `RV-004` first but inaccessible without the
+protected query/rank-to-selection-to-later-outcome join, and high/open
+`RV-034` second but outside Scout's authority at the external runtime.
+Organizational Memory `2607.03228` is the highest accessible unresolved claim:
+Scan #452 promoted its shared, governed, evolving design without distinguishing
+the measured consumption path from proposed curation and lifecycle behavior.
+
+### Cycle 387 checkpoint — consumption is measured; evolution is not
+
+The [primary finding](./findings/2026-07-08-hn-arxiv-github-scan-452.md)
+now separates three claims. First, one synthetic ten-scenario procurement
+fixture supports a structured-memory consumption advantage: 35/40 versus
+28/40 RAG decisions for GPT-4.1 and 38/40 versus 32/40 for Sonnet 4.5. Second,
+none of the shared-governance, human approval, update propagation, multiple-
+agent, access-control, or longitudinal-evolution mechanisms is evaluated.
+Third, the public result bundle exactly regenerates all eight metric files but
+cannot replay agent behavior because the proprietary agent/retrieval system,
+atoms, prompts, index, traces, and generation configuration are absent.
+
+The metric boundary matters: all seven refuse cases receive credit for any
+non-creation when the optional judge is off, and the retained metrics contain
+no judge result. Two GPT-run summary records also carry a Sonnet model label
+while their evaluator-read standalone records say GPT-4.1. Headline arithmetic
+is reproducible and the model-label defect does not change it, but neither
+correct refusal rationale nor identity-clean result packaging is established.
+
+ArXiv and GitHub were both useful. Exact arXiv v1 source is 1,144,989 bytes,
+SHA-256 `058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189`.
+Attributable GitHub head is
+`lukaskirchdorfer/org-memory-paper@11617e3191bf6307eea64476fcb1269b5ca3fb78`;
+its archive SHA-256 is
+`7e183ab73192b2ed748723147a544dc509ff1064543f09b5bedb39bbda8f6e7a`.
+Reddit made zero requests and retains its RSS-readable/JSON-403 boundary until
+a relevant thread or access change. Confidence is high in source identity,
+retained-output counts, headline arithmetic, and missing lifecycle arms;
+moderate in the small-fixture advantage; low in deployment, governance,
+evolution, scale, cost, or independent generation replay. `RV-004` and
+`RV-034` remain high/open; `RV-036` remains medium/open without another copied
+detailed narrative.
+
+Revisit on released implementation/configuration, identity-clean outputs,
+policy-reason scoring, paired uncertainty, a policy-update experiment,
+multiple governed consumers, or deployed outcomes. The next ranked accessible
+primary audit is SwarmResearch `2607.02807`: test whether its reported 13/15
+result isolates multi-branch orchestration from model, budget, selection, and
+baseline differences, and whether attributable code/results support replay.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative, qualified. HASE (2607.03935) reports one system that jointly changes an 8B policy, selected harness components, and solutions. Its 8B/120B rows are imported cross-system comparisons, not harness-only or model-size controls; the direct Heilbronn control instead compares FULL policy updates with FREEZE after evaluator repair. Evaluator repair is externally oracle-gated. VERITAS (2607.02931) reports strong CORE-Bench replication, but evaluates only its plan/replicate/verify core on hand-authored benchmark claims: claim extraction, its own Replication Score, fix assessment, and the user report are bypassed. Its official CORE gain over the three-session retry baseline is two capsules, while the 97.8% headline adds four VERITAS-only passes under an author-added rule. ReplicationBench gains are one or two tasks and single-run. The current public release is not an exact experiment replay: it retains no raw benchmark bundle and has replaced the paper's deterministic numeric grader with an evidence-reading agent. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
+summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative, qualified. HASE (2607.03935) reports one system that jointly changes an 8B policy, selected harness components, and solutions. Its 8B/120B rows are imported cross-system comparisons, not harness-only or model-size controls; the direct Heilbronn control instead compares FULL policy updates with FREEZE after evaluator repair. Evaluator repair is externally oracle-gated. VERITAS (2607.02931) reports strong CORE-Bench replication, but evaluates only its plan/replicate/verify core on hand-authored benchmark claims: claim extraction, its own Replication Score, fix assessment, and the user report are bypassed. Its official CORE gain over the three-session retry baseline is two capsules, while the 97.8% headline adds four VERITAS-only passes under an author-added rule. ReplicationBench gains are one or two tasks and single-run. Organizational Memory (2607.03228) retains a real synthetic proof of concept: structured atoms score 35/40 versus RAG's 28/40 with GPT-4.1 and 38/40 versus 32/40 with Sonnet 4.5. It tests one prebuilt memory's consumption, not deployed sharing, human governance, updates, or evolution. Its public result bundle supports exact metric recomputation but omits the proprietary agent, extraction, atom, prompt, index, and retrieval implementation. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
 triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "scan 452"]
-source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HASE 2607.03935 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746; four bounded GitHub repository searches found no attributable release and anonymous code search returned HTTP 401. VERITAS 2607.02931 primary-reviewed 2026-09-04 from identical v1/current 94,514-byte source archives, SHA-256 ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb, and attributable public repository ChicagoHAI/veritas at head f7283fa70e74d62d5a0ff398134436faa7063ee3. The repository has source, prompts, and tests but no benchmark trajectories/results; no Git tags or releases; current GHCR latest/v0.1.0 resolves to sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f rather than the paper's abbreviated e00fd604 experimental digest. How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HASE 2607.03935 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746; four bounded GitHub repository searches found no attributable release and anonymous code search returned HTTP 401. VERITAS 2607.02931 primary-reviewed 2026-09-04 from identical v1/current 94,514-byte source archives, SHA-256 ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb, and attributable public repository ChicagoHAI/veritas at head f7283fa70e74d62d5a0ff398134436faa7063ee3. The repository has source, prompts, and tests but no benchmark trajectories/results; no Git tags or releases; current GHCR latest/v0.1.0 resolves to sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f rather than the paper's abbreviated e00fd604 experimental digest. Organizational Memory 2607.03228 primary-reviewed 2026-09-04 from its 1,144,989-byte v1 source archive, SHA-256 058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189, and attributable lukaskirchdorfer/org-memory-paper head 11617e3191bf6307eea64476fcb1269b5ca3fb78. The 286-file public tree retains 9 synthetic PDFs, 10 scenarios, 240 output records, 24 summaries, 8 metric files, and evaluate.py; all eight metric files recompute byte-for-byte, but the proprietary agent/retrieval implementation, atoms, prompts, indexes, and generation configuration are absent. How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #452: The Co-Evolution Imperative
@@ -195,13 +195,51 @@ Source: https://arxiv.org/abs/2607.03561
 
 ### 4. Organizational Memory for Agentic Business Process Execution (2607.03228) [SUPPORTING]
 
-**Core finding**: LLM-based agents automating business processes lack organization-specific knowledge (policies, procedures, SOPs), which is "fragmented across human-oriented artifacts." Individual prompt engineering or per-agent retrieval creates knowledge silos and rule duplicates.
+**Core finding, qualified**: The paper proposes a shared layer of structured
+"process atoms" and evaluates one prebuilt memory in a synthetic procurement
+assistant. Across four runs of ten scenarios, memory scores 35/40 (`87.5%`,
+reported as 88%) versus document RAG's 28/40 (`70%`) with GPT-4.1, and 38/40
+(`95%`) versus 32/40 (`80%`) with Sonnet 4.5. Base is 12/40 (`30%`) for each
+model. These are useful consumption results, not a deployed organizational
+process or a test of shared ownership, governed changes, propagation, or
+evolution over time.
 
-The paper argues for **organizational memory** — a shared, governed, agent-consumable reference layer that evolves with the organization.
+The comparison uses nine author-created PDFs, including four distractors, 11
+rules, ten author-labeled requests, and three create versus seven refuse
+decisions. The memory and RAG arms share model and system prompt within each
+model family, but the released metric counts any non-creation as correct on a
+refuse case unless an optional LLM judge is enabled. The retained metrics have
+no judge results. Thus PCR establishes the binary create/refuse decision plus
+exact fields on positive cases; it does not establish correct policy rationale
+on negative cases. Runs lack generation settings, seeds, paired uncertainty,
+latency, token/cost, or governance effort.
 
-**Why this matters**: This is the enterprise instantiation of the Co-Evolution Imperative. The organizational knowledge (policies, procedures) is the enterprise equivalent of a verification harness — it constrains what agents can do. But if it's encoded once in prompts and never updated, it degrades as the organization evolves. Organizational memory must be shared, governed, *and evolving*.
+**Artifact boundary**: The attributable
+[`lukaskirchdorfer/org-memory-paper`](https://github.com/lukaskirchdorfer/org-memory-paper)
+head `11617e3191bf6307eea64476fcb1269b5ca3fb78` contains 286 files: the nine
+PDFs, scenarios, 240 per-scenario outputs, 24 duplicated summaries, eight
+metric files, and one evaluator. Running the evaluator without its optional
+external judge reproduces all eight metric files byte-for-byte. This validates
+scoring of retained outputs, not result generation. The paper says its source
+implementation is proprietary, and the public tree omits the agent, system
+prompt, extracted atoms, curator/retriever, vector index, retrieval traces, and
+generation configuration. Two embedded GPT-run summary records label their
+model `sonnet-4.5` while the matching standalone records say `gpt-4.1`; the
+evaluator reads standalone files, so headline arithmetic is unaffected, but
+the bundle is not internally identity-clean. There are no tags or releases.
 
-**Connection to Memory Control Plane (#441)**: PLACEMEM's versioned memory capsules and this paper's organizational memory both argue for the same thing — memory as an active, governed, evolving system, not a passive store.
+**Why this matters**: The evidence contradicts treating Organizational Memory
+as proposal-only: structured access improved this small, frozen fixture and
+the output-level result can be audited. It also contradicts the stronger
+Co-Evolution transfer. No policy changes, multiple agents, human approvals,
+conflicts, access controls, or later outcomes are exercised. The paper itself
+places lifecycle governance, update propagation, scale, and realistic
+enterprise evaluation in future work.
+
+**Connection to Memory Control Plane (#441)**: The process-atom design is a
+candidate representation for source-linked, governed memory. PLACEMEM and this
+paper remain convergent design arguments, not independent evidence that a
+shared evolving control plane works in deployment.
 
 Source: https://arxiv.org/abs/2607.03228
 
@@ -330,7 +368,9 @@ for one capability level may degrade at another. Treat this as the proposed
 - Doubly-Efficient Interactive Proofs: an honest opponent is unnecessary for
   robust or low-degree oracle computation under the paper's formal access and
   soundness conditions; general deployment and co-evolution remain untested
-- Organizational Memory: Enterprise governance knowledge must evolve with the organization or become stale
+- Organizational Memory: one frozen synthetic procurement memory improves
+  binary policy decisions over RAG; sharing, governance, updates, and evolution
+  remain proposed rather than evaluated
 - SwarmResearch: Single-context harness causes convergence failure; multi-branch orchestration is a structural evolution
 
 **Connection to preceding layers**:
@@ -392,8 +432,10 @@ The arXiv papers motivate a broader pattern across replication, enterprise
 knowledge, and exploration architecture: systems may need adaptation when
 their context changes. VERITAS is now primary-reviewed, but its experiments
 bypass the general claim-extraction and product-scoring path and compare no
-fixed-versus-adaptive harness over time. Organizational Memory remains
-unreviewed here, and the papers still share no longitudinal control. This is
-cross-domain synthesis rather than a convergent causal finding.
+fixed-versus-adaptive harness over time. Organizational Memory's synthetic
+consumption result is also now primary- and artifact-reviewed; it tests one
+frozen memory, not governance or evolution. The papers still share no
+longitudinal control. This is cross-domain synthesis rather than a convergent
+causal finding.
 
 Future scans will test whether co-evolution can be bounded (does the harness need to evolve *infinitely*, or does it converge?) and whether the co-evolution mechanism can itself be verified (who watches the watchers of the watchers?).

@@ -786,7 +786,7 @@ replay, or a claim that its harness must continually evolve.
 **The Co-Evolution Imperative hypothesis**: A verification harness that does not adapt may become the 24th layer of the Oversight Inversion. HASE makes this a testable system-design question, but its bounded runs do not observe temporal degradation of an initially adequate fixed harness. Its evaluator repair also depends on an immutable external oracle assumed accurate; agreement is only established on observed mismatches.
 
 Supporting evidence:
-- **Organizational Memory for Agentic Business Process Execution** (2607.03228): Enterprise governance knowledge (policies, SOPs) encoded once in prompts creates knowledge silos. Organizational memory must be shared, governed, and *evolving*.
+- **Organizational Memory for Agentic Business Process Execution** (2607.03228): A structured, frozen memory improves binary create/refuse decisions over document RAG in one synthetic procurement fixture. Sharing across agents, human governance, policy updates, and evolution are architectural requirements, not evaluated results.
 - **SwarmResearch** (2607.02807): Single-context harness causes exploration convergence failure. Multi-branch orchestration with a Shepherd Agent is a structural harness evolution that achieves SOTA on 13/15 tasks.
 - **Aggregate Alignment Misleads** (2607.03386): In one hotel-pricing simulator, pooled/reference-state distances and closed-loop revenue rank two repairs differently. This supports multi-resolution audit, not exact per-state divergence or audit co-evolution over time.
 
