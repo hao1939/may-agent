@@ -608,15 +608,15 @@ The Architecture Premium (#448) treats architecture as a factor to isolate. Scan
 - **"$10k/week to delete AI-generated code"** (HN item `48823359`): Slopfix's first-party page offers one week by three senior engineers for a conditional $10,000, with proportional payment against a line-reduction target. It reports no customer, completed engagement, revenue, supplier cost, conversion, competitor, or quantity evidence. The unrelated $149 Fable-port anecdote has different scope and units; `10,000 / 149 ≈ 67.1` is arithmetic, not a comparative price or cost estimate.
 - **OptiAgent** (2607.05346v1, cs.AI): Its GPT-5.4 row is highest on three of four solving-accuracy tables and its design exposes intermediate artifacts through four feedback routes. The study uses one run per configuration, mixes published and current baselines without variability, and leaves loop ablation, interpretability metrics, multi-run evaluation, and human audit tests to future work. The data do not isolate feedback-loop causality, audit success, sub-linear cost, or “subtraction.”
 - **Cortex** (2607.05377v1): Constrains planner-to-executor language to **32 canonical skill labels**, while the executor retains continuous robot actions. It reports 3.1- and 4.1-percentage-point benchmark gaps, but taxonomy, data, event-balanced sampling, memory, and harness changes are bundled. The public repository at `InternRobotics/Cortex@d2a9795` covers System-2 evaluation and annotation; joint LIBERO/RoboTwin evaluation and System-2 training remain unreleased. This supports constrained interfaces, not a causal “fewer actions” conclusion.
-- **HeRo** (2607.05353, cs.CR): Selective disclosure in LLM watermarking — different verifiers decode only their access-level portions. Verification itself can be subtracted: not verify-everything, but verify-what-matters-at-your-level.
+- **HeRo** (2607.05353v1): Independent per-level watermark keys let differently equipped verifiers decode different metadata fields; an unauthorized deeper level remains near chance under the paper's exchangeability and uniform-message assumptions. It measures bit accuracy and GPU decoding latency, not authorization enforcement, reviewer labor, total audit cost, or sub-linear verification.
 
 Three forms of subtraction:
 
 | Form | Mechanism | Example | Layer |
 |------|-----------|---------|-------|
 | **Economic** | Delete what was added | $10k/wk code deletion | Market |
-| **Architectural** | Constrain the possible | 32 canonical primitives | Design |
-| **Verification** | Verify selectively | HeRo hierarchical disclosure | Oversight |
+| **Architectural** | Constrain an interface | Cortex's 32 labels; effect unisolated | Design |
+| **Disclosure** | Reveal keyed metadata fields selectively | HeRo; audit-cost effect unmeasured | Provenance |
 
 The service offer establishes that remediation is available for sale, not that
 the market cleared at that price or that subtraction is more expensive or
@@ -629,7 +629,7 @@ tests; they are not independent economic observations.
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+6. Subtraction Economy (#449): Test realized remediation demand and constraint effects
 
 Source: findings/2026-07-21-hn-arxiv-github-scan-449.md, https://arxiv.org/abs/2607.05346, https://arxiv.org/abs/2607.05377, https://arxiv.org/abs/2607.05353
 

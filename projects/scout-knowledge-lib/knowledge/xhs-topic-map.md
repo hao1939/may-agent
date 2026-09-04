@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 292 observational reconciliation through 2026-09-03T22:59:03.253Z; exact access evidence and uncertainty are in seed-ledger row 292."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 292 at 2026-09-03T22:59:03.253Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable Scan 449 artifact reads through 2026-09-04; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary Scan 449 source reads through 2026-09-04 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 292 read-only XHS boundary through 2026-09-03T22:59:03.253Z."
 </ai_context>
 
@@ -5048,6 +5048,54 @@ support; (4) Cortex taxonomy-size identification pending a matched ablation;
 (5) other unsourced scans; (6) Reddit until its relevance/access trigger; and
 (7) compaction. Select HeRo and test the construction, verifier knowledge,
 threat model, detection/quality/latency evidence, and whether cost is measured.
+
+### Cycle 319 checkpoint — selective metadata is not cheaper oversight
+
+Seed-first `1a47982a93f249b977db16a1dadceb17976a277e` preceded every
+public read. Anonymous arXiv observation ran at
+`2026-09-04T02:04:12.019Z–02:04:12.997Z`. The `2607.05353v1` source archive
+is 4,040,292 bytes with SHA-256
+`1f77c54053cdae6a4ccca546455b5cda2973e1e26e16b9841e6eb7b6b0d3c090`;
+the 41,779-byte abstract receipt has SHA-256
+`c66841aaf7e09135c360ab58d3d0fe4c6f82bbaea51e015994bac6e509fee7d8`.
+
+HeRo recursively partitions a model vocabulary and uses independent secret
+key tables for payload layers. Under exchangeable unauthorized scores and a
+uniform hidden message, a verifier without the deeper key stays near 50% on
+private bits. With 24 bits and 200 C4 tokens, the two-level `(2,2)` result is
+0.925 bit accuracy, versus 0.981 for single-level HeRo and 0.894 for the
+strongest listed BiMark setting. On one A40 GPU, its decoder ranges from 10.34
+to 1.48 microseconds/token from batch 1 to 64; generation overhead is about
+4–5%. These are paper claims from one Llama2-7B study, two datasets, one
+configured seed, and no uncertainty intervals.
+
+This supports conditional metadata disclosure, not authorization enforcement.
+The paper does not study key issuance, hierarchy policy, revocation,
+compromise, collusion, or a cryptographic key-privacy reduction. Its latency
+comparison is asymmetric—GPU-batched HeRo versus CPU/per-text MPAC and
+BiMark—and measures decoder compute rather than reviewer labor, total audit
+cost, missed defects, or verification scaling. The previous claim that HeRo
+makes oversight proportional or sub-linear is therefore retracted.
+
+The project resolves to attributable
+`xuyangc03/hero-watermark@68fe4c8c1508484622a76d744896b7f805b70c1f`.
+Its 23 tracked files include 16 Python files that parse, but no tests or
+license file. Example configs use placeholders, 100 samples, and an 8-bit
+payload rather than the paper's 1,000-prompt/24-bit result setup. This is a
+partial implementation surface, not a reproduction. Confidence is high in
+the paper/code extraction and retraction, medium in the unreplicated reported
+point estimates, and low in security, audit-cost, or organizational transfer.
+
+Lane continuity: arXiv supplied the selected primary evidence; GitHub supplied
+the exact attributable implementation and reproducibility boundary. Revisit
+either on paper/code revision, released result configs, repeated estimates, or
+an end-to-end audit-cost study. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because this primary-source correction supplies no protected
+query-to-outcome join. Next begin seed-first and rank the remaining unsourced
+scans against Cortex taxonomy-size identification and the unreleased provider
+result; choose substantive primary or contradiction evidence ahead of
+compaction.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

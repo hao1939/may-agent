@@ -11001,6 +11001,59 @@ Test its construction, verifier secret and disclosure scope, threat model,
 detection/quality/latency comparisons, and whether it measures verification
 work or cost.
 
+## Cycle 319 checkpoint — selective disclosure does not establish lower audit cost
+
+Seed-first commit `1a47982a93f249b977db16a1dadceb17976a277e`
+preceded all public reads. Anonymous arXiv access ran from
+`2026-09-04T02:04:12.019Z` through `02:04:12.997Z`. The v1 source archive is
+4,040,292 bytes with SHA-256
+`1f77c54053cdae6a4ccca546455b5cda2973e1e26e16b9841e6eb7b6b0d3c090`;
+the 41,779-byte abstract receipt has SHA-256
+`c66841aaf7e09135c360ab58d3d0fe4c6f82bbaea51e015994bac6e509fee7d8`.
+
+HeRo recursively partitions a language model's vocabulary and uses independent
+secret key tables for payload layers. In the evaluated two-level construction,
+a verifier with both keys decodes both fields, while one without the deeper key
+stays near 50% on private bits under exchangeable unauthorized scores and a
+uniform hidden message. With 24 bits and 200 C4 tokens, HeRo `(2,2)` reports
+0.925 bit accuracy versus 0.981 for single-level HeRo and 0.894 for the
+strongest listed BiMark setting. On one A40 GPU, decoder latency falls from
+10.34 to 1.48 microseconds/token between batch 1 and 64, and generation adds
+about 4–5% over the unwatermarked baseline. The study uses one Llama2-7B
+model, C4/OpenGen, one configured seed, and no uncertainty intervals.
+
+Those results support conditional metadata disclosure, not an authorization
+system. Key possession stands in for access, while issuance, policy,
+revocation, compromise, collusion, and a cryptographic key-privacy reduction
+remain untested. The latency comparison is implementation-asymmetric:
+GPU-batched HeRo is compared with CPU/per-text MPAC and BiMark decoders. It
+measures decoding compute, not reviewer labor, total audit cost, missed
+defects, or scaling. The library therefore retracts the inference that HeRo
+makes verification proportional or sub-linear.
+
+The official project resolves to
+`xuyangc03/hero-watermark@68fe4c8c1508484622a76d744896b7f805b70c1f`.
+It contains 23 tracked files and 16 Python files that parse, but no tests or
+license file. Its example configs use placeholders, 100 samples, and an 8-bit
+payload, not the paper's 1,000-prompt/24-bit result setup. This is an
+attributable partial implementation, not a paper-result reproduction.
+
+Both Scan 449 variants, INDEX, and Oversight Inversion now preserve the
+measured bit/latency claims while rejecting authorization enforcement,
+verification-cost reduction, and economic confirmation. Confidence is high
+in primary-source extraction and the correction, medium in the unreplicated
+point estimates, and low in security, audit-cost, and organizational transfer.
+
+Lane continuity: arXiv supplied the selected paper and source; GitHub supplied
+the exact implementation boundary. Revisit on paper/code revision, released
+result configs, repeated estimates, or a direct end-to-end audit-cost study.
+Reddit made zero requests and remains RSS-readable/JSON-403 until a relevant
+thread or access change. `RV-004` remains high/open because no protected
+query/rank-to-selected-file-to-later-outcome join appeared. Next begin
+seed-first, compare the remaining unsourced scans and Cortex's unisolated
+taxonomy-size question against the unavailable provider result, and select
+substantive primary or contradiction evidence before any byte/line compaction.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

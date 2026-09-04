@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #449 (2026-07-08): The Subtraction Economy, qualified. Slopfix posts a conditional $10,000 team-week offer but no transactions or costs. OptiAgent reports four feedback routes and the best single-run value on 3/4 datasets without isolating the loops. Cortex reports 3.1- and 4.1-percentage-point benchmark gaps, but its 32-label planner interface is bundled with data, sampling, memory, and harness changes; it does not reduce continuous robot action to 32 actions. Public artifacts cover System-2 evaluation and annotation, not the closed-loop benchmark or training paths. HeRo remains pending primary review."
+summary: "HN/arXiv/GitHub Scan #449 (2026-07-08): The Subtraction Economy, qualified. Slopfix posts a conditional $10,000 team-week offer but no transactions or costs. OptiAgent does not isolate its feedback routes. Cortex's 32-label interface is bundled with other changes. HeRo conditionally hides payload layers from verifiers lacking their keys and reports strong bit accuracy plus fast GPU decoding, but does not enforce authorization or measure verification labor, total audit cost, or sub-linear oversight. None of the three engineering examples establishes an economic subtraction effect."
 triggers: ["subtraction economy", "deletion economy", "code deletion service", "slop fix", "slopfix", "$10k deletion", "subtraction pricing", "subtraction deficit priced", "OptiAgent", "multi-loop validation", "specialized feedback loops", "Cortex embodied agent", "32 canonical primitives", "skill primitive taxonomy", "harness engineering robotics", "HeRo watermarking", "selective disclosure", "hierarchical vocabulary routing", "verification access control", "peerd browser agent", "brain.md", "agent brain file", "awesome-evals", "deletion as premium", "subtraction as value", "scan 449"]
 source_basis: "HN front page 2026-07-08 (30 stories via Algolia API). arXiv API (2607.05346 OptiAgent, 2607.05377 Cortex, 2607.05353 HeRo Selective Disclosure Watermarking). GitHub API (shepherd 1,046★, local-llm 1,175★, rowboat 15,255★, security-audit-skill 2,335★, SkillSpector 12,317★, eve 3,302★, peerd 328★, brain.md 205★, awesome-evals 689★, Agentic-First-Enterprises 213★, agent-runtime 208★). Cross-referenced with Architecture Premium (#448), Subtraction Deficit (library thesis), Oversight Inversion (thesis), Restraint Premium (#445)."
 </ai_context>
@@ -68,17 +68,19 @@ Source: https://arxiv.org/abs/2607.05377
 
 ### 3. HeRo: Selective Disclosure Watermarking (2607.05353)
 
-**Core finding**: Current LLM watermarking methods require revealing the entire embedded message to verify any part of it. HeRo (Hierarchical Vocabulary Routing) enables **selective disclosure** — different verifiers decode only the portions of the payload corresponding to their access level. The scheme preserves sampling unbiasedness and text quality while supporting fine-grained access control.
+**Supported finding**: HeRo recursively partitions a language model's vocabulary and assigns independent key tables to payload layers. In the evaluated two-level setup, a verifier with both keys decodes both fields, while one with only the first key decodes the public field and remains near chance on the private field.
 
 **Key results**:
-- Hierarchically partitions vocabulary and distributes watermark information across layers
-- Different verifiers decode only their access-level portions
-- Preserves unbiasedness of the underlying sampling process (text quality maintained)
-- High detection accuracy with low latency
+- With 24 bits and 200 generated C4 tokens, two-level HeRo (2,2) reports 0.925 bit accuracy, versus 0.981 for single-level HeRo and 0.894 for the strongest listed BiMark setting
+- Median perplexity is close to the unwatermarked Llama2-7B baseline in the reported C4/OpenGen settings; the sampler's unchanged marginal token distribution is proved for the specified construction
+- On one A40 GPU, two-level decoding ranges from 10.34 to 1.48 microseconds/token as batch size rises from 1 to 64; generation adds about 4–5% over the unwatermarked baseline
+- Perturbation tests cover random edits, roundtrip translation, and DIPPER paraphrasing; bit accuracy falls as attacks strengthen
 
-**Structural significance**: This is **subtraction applied to the verification process itself**. Instead of verify-everything-or-nothing, HeRo makes verification proportional and selective. You verify what matters at your level — a form of architectural subtraction that reduces the Oversight Inversion's cost. Not every verifier needs the full picture; access-appropriate disclosure is sufficient.
+**Security and scope limits**: The selective-disclosure theorem is conditional on exchangeable unauthorized scores and uniformly distributed hidden messages. Authorization is represented by possession of independent secret key tables; the paper does not implement key issuance, hierarchy policy, revocation, compromise, or collusion, and it does not provide a cryptographic key-privacy reduction. Experiments use one model (Llama2-7B), two datasets, and one configured seed, with no uncertainty intervals.
 
-**Connection to Oversight Inversion**: Selective disclosure directly addresses the oversight cost problem. If verification must examine everything, cost scales linearly with output. If verification can selectively focus, cost becomes sub-linear. HeRo provides the mechanism — hierarchical access control over verification evidence.
+**Artifact and cost boundary**: Primary review at `2026-09-04T02:04:12Z` read the 4,040,292-byte v1 archive (SHA-256 `1f77c540…c090`). Official code was observed at `xuyangc03/hero-watermark@68fe4c8c1508484622a76d744896b7f805b70c1f`: 23 tracked files and 16 parseable Python files, but no tests or license file. Example configs use placeholder inputs, 100 samples, and an 8-bit payload rather than reproducing the paper's 1,000-prompt/24-bit tables. The latency comparison is also implementation-asymmetric: HeRo is GPU-batched while released MPAC/BiMark decoders are CPU/per-text. This measures decoder compute, not human verification work or end-to-end audit cost.
+
+**Connection to Oversight Inversion, qualified**: HeRo is evidence that one text can expose different metadata to different key holders. It does not show that selective disclosure makes review proportional, lowers organizational cost, or changes verification scaling.
 
 Source: https://arxiv.org/abs/2607.05353
 
@@ -250,6 +252,6 @@ Scan #449: Subtraction Economy     → Test realized remediation demand
 
 1. **Subtraction pricing curve**: Does the $10k/wk rate persist or compress as more entrants arrive? The Restraint Premium suggests it will hold or increase as demand for deletion grows with AI production volume.
 
-2. **Selective verification as standard**: HeRo's hierarchical access control is currently niche (watermarking). When does it generalize to all agent verification? The Composition Surface (#447) predicts: when composition-aware verification tools emerge.
+2. **Selective disclosure versus verification work**: HeRo controls watermark-field decoding through keys, not which claims must be checked. Measure partial-versus-full audit time, key operations, missed defects, and end-to-end cost before generalizing it to agent verification.
 
 3. **Taxonomy-size identification**: Cortex fixes 32 labels but does not compare another taxonomy size or remove standardization alone. Test matched taxonomies and report executor success, planner invalid-output rate, transfer, and annotation cost before treating 32—or fewer—as beneficial.
