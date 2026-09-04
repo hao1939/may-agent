@@ -2,7 +2,7 @@
 summary: "Cycle 406 landed exact reviewed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c on local main with protected bytes preserved and exactly 23 intended Scout divergences. A no-renames audit corrects the expected expanded status from 493 to 492 because an R100 pair represented two preflight dirty records. RV-041 and RV-043 are resolved for this landing; RV-044 records the failed first rollback and requires safer future transition tooling."
 triggers: ["Scout local-main integration", "dirty overlay preservation", "RV-041", "RV-043", "RV-044", "Cycle 406", "release boundary", "merge diff hygiene"]
 last_updated: "2026-09-05"
-source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T04:44:48+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, standing reviewer result 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, and rollback boundary."
+source_basis: "Protected preflight, guarded transition, recovery, retry, and independent postflight through 2026-09-05T04:50:08+08:00; exact prior main 8554a5718cfa051bf4fb827c974423380614e5a7, canonical 1d25aaadd544e89c74666a888771b4c9b49d4638, landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c, standing postflight 8bf1a0b1cc0858280d0780202100a7fc649b37ee containing reviewer result 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9, 295-row manifest, no-renames overlap correction, exact status fingerprints, candidate validation, retained cleanup evidence, and rollback boundary."
 </ai_context>
 
 # Cycle 406 local-main integration
@@ -170,7 +170,8 @@ to reviewed merge `803240b27fa4b40373524a1ed42d0b9bee7e890c` while standing
 remained at canonical parent `1d25aaadd544e89c74666a888771b4c9b49d4638`.
 Standing then fast-forwarded to reviewer result
 `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9`, stable patch ID
-`940c67c59d572e019af61cc19b392ef509e71a31`.
+`940c67c59d572e019af61cc19b392ef509e71a31`, and recorded producer postflight
+`8bf1a0b1cc0858280d0780202100a7fc649b37ee`.
 
 The first attempt was not fail-closed. It rejected an expected 493-record
 postflight count, restored HEAD to old main, then failed because candidate-added
@@ -222,12 +223,12 @@ JSON, and already contained in both standing and candidate history:
 
 Only those two clean worktree checkouts were removed. No commit or branch was
 deleted; both exact commits remain objects and ancestors of current standing
-`915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` and landed main `803240b27f`.
+`8bf1a0b1cc0858280d0780202100a7fc649b37ee` and landed main `803240b27f`.
 The operation reclaimed approximately 439 MB.
 
 Five goal-owned checkouts remain at approximately 1.1 GB total. Historical
-candidate `283f723fd1`, current candidate `be902d03fc`, its clean overlay
-probe, and the standing worktree remain because they support this active
+candidates `283f723fd1` and `be902d03fc`, the clean overlay probe, the landed
+candidate checkout, and the standing worktree remain because they support this active
 release boundary. Detached baseline `ec317f8456` remains because two goal
 records still reference its exact commit. Protected `/app` and every peer
 worktree were excluded from cleanup.

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through exact standing tip 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9 and landed local main 803240b27fa4b40373524a1ed42d0b9bee7e890c. Postflight preserves the protected overlay and exactly 23 intended Scout divergences. A no-renames audit corrects the overlap count from 295 to 296 and expected expanded status from 493 to 492. RV-041 and RV-043 are resolved for this landing; RV-044 keeps the failed first rollback and rename-sensitive procedure visible."
+summary: "Independent Scout review cursor through exact clean standing tip 8bf1a0b1cc0858280d0780202100a7fc649b37ee and landed local main 803240b27fa4b40373524a1ed42d0b9bee7e890c. Postflight preserves the protected overlay and exactly 23 intended Scout divergences. A no-renames audit corrects the overlap count from 295 to 296 and expected expanded status from 493 to 492. RV-041 and RV-043 are resolved for this landing; RV-044 keeps the failed first rollback and rename-sensitive procedure visible."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044"]
 last_updated: "2026-09-05"
-source_basis: "Exact standing tip and integrated reviewer result 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9 at stable patch ID 940c67c59d572e019af61cc19b392ef509e71a31; landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c with exact parents 8554a5718cfa051bf4fb827c974423380614e5a7 and 1d25aaadd544e89c74666a888771b4c9b49d4638; independently verified candidate validation, protected preflight and postflight fingerprints, 295-row manifest, no-renames 296th-overlap correction, failed first rollback and exact recovery, retained cleanup evidence, and full-rubric landing-safety disposition."
+source_basis: "Exact clean standing postflight tip 8bf1a0b1cc0858280d0780202100a7fc649b37ee containing reviewer result 915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9 at stable patch ID 940c67c59d572e019af61cc19b392ef509e71a31; landed merge 803240b27fa4b40373524a1ed42d0b9bee7e890c with exact parents 8554a5718cfa051bf4fb827c974423380614e5a7 and 1d25aaadd544e89c74666a888771b4c9b49d4638; independently verified candidate validation, protected preflight and postflight fingerprints, 295-row manifest, no-renames 296th-overlap correction, failed first rollback and exact recovery, retained cleanup evidence, and full-rubric landing-safety disposition."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,15 +11,15 @@ source_basis: "Exact standing tip and integrated reviewer result 915b8b8c1197eb5
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9`
+  `8bf1a0b1cc0858280d0780202100a7fc649b37ee`
 - Last material standing commit reviewed:
-  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` (integrated Cycle 406 landing-safety review)
+  `8bf1a0b1cc0858280d0780202100a7fc649b37ee` (Cycle 406 guarded-landing postflight)
 - Last producer research material reviewed:
   `7c953afdcc70073fb071f262878a53aac189cf21`
 - Last integrated reviewer result:
   `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` (exact standing integration;
   stable patch ID `940c67c59d572e019af61cc19b392ef509e71a31`)
-- Current review date: `2026-09-05T04:44:48+08:00`
+- Current review date: `2026-09-05T04:50:08+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -226,13 +226,14 @@ source_basis: "Exact standing tip and integrated reviewer result 915b8b8c1197eb5
   `8d28565893a474e65e975d85a3728696d421fc30` (Cycle 406 local-main overlay preparation),
   `577ba279885308c05feb8abf4ff00f949cc82694` (Cycle 406 release-worktree cleanup record), and
   `1d25aaadd544e89c74666a888771b4c9b49d4638` (exact pre-landing safety review), and
-  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` (exact integrated guarded-landing acceptance and current standing tip).
+  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9` (exact integrated guarded-landing acceptance), and
+  `8bf1a0b1cc0858280d0780202100a7fc649b37ee` (producer guarded-landing postflight and current standing tip).
 - Newly reviewed exact standing span:
-  `1d25aaadd544e89c74666a888771b4c9b49d4638..915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9`
-  (one exact reviewer-owned two-document guarded-landing checkpoint, integrated
-  by fast-forward before the protected transition; the reviewed commit itself
-  changes no runtime, evaluator, authority, account, or local-main ref).
-- Review date: `2026-09-05T04:44:48+08:00`
+  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9..8bf1a0b1cc0858280d0780202100a7fc649b37ee`
+  (one clean two-document producer postflight checkpoint; it records the
+  protected transition and introduces no runtime, evaluator, authority, or
+  account change).
+- Review date: `2026-09-05T04:50:08+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
 - Overall disposition: **accept the completed local-main landing of
   `803240b27fa4b40373524a1ed42d0b9bee7e890c` at the exact reviewed boundary;
@@ -3386,6 +3387,16 @@ status records retain their status, and the expected postflight total is
 | Local-main landing and rollback | **Accept the final landing; revise future procedure under RV-044.** Current protected bytes and intended status are preserved, and old main remains a rollback anchor. Any rollback must use the proven 77-restore/63-remove classification with byte guards and reproduce the original three fingerprints; a bulk old-main pathspec restore is rejected. |
 | Cleanup and retained history | **Accept unchanged.** The two previously reviewed clean worktree removals remain absent; commits `c19307f9237a95ed822c6734bcf1fad4c831928b` and `83a35e8e0f66c46f3e1c66a54132991ba311cf14` remain objects and ancestors of standing and landed main. No branch or commit was deleted. |
 
+Standing postflight `8bf1a0b1cc0858280d0780202100a7fc649b37ee`
+(patch ID `8cb5471cac7eb699f77774e7a0ca5583cb8194d5`) is **accepted after
+reviewer revision**. Its final commits, fingerprints, 492-record correction,
+23 visible modifications, and retained rollback anchor are accurate. Its
+statement that all 140 materialized paths were preflight-clean is too broad:
+the `R100` destination was preflight `??`, though byte-identical to the
+candidate. It also describes the failed rollback without assigning a durable
+finding. RV-044 supplies both corrections without changing the accepted
+landing.
+
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
@@ -3437,14 +3448,15 @@ status records retain their status, and the expected postflight total is
 
 ## Reviewer source/result and integration status
 
-- Current standing `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9`
-  is **the exact integrated guarded-landing reviewer result** at stable patch
-  ID `940c67c59d572e019af61cc19b392ef509e71a31`. Local main now resolves to
+- Current standing `8bf1a0b1cc0858280d0780202100a7fc649b37ee`
+  **contains exact guarded-landing reviewer result
+  `915b8b8c1197eb5b8d60ccf79d9f09c78dd389d9`** at stable patch ID
+  `940c67c59d572e019af61cc19b392ef509e71a31`. Local main resolves to
   exact landed merge `803240b27fa4b40373524a1ed42d0b9bee7e890c`;
   RV-041 and RV-043 are resolved for that landing after corrected postflight.
   Historical candidate `be902d03fc97da1998ebbb9492cf5393853d91c2`
-  remains rejected. This postflight reviewer checkpoint is pending standing-owner
-  integration, and RV-044 remains medium/open for future transition tooling.
+  remains rejected. This RV-044 reviewer correction is pending standing-owner
+  integration; the producer postflight is accepted after that revision.
 
 - Producer Cycle 406 result `7c953afdcc70073fb071f262878a53aac189cf21`
   is **accepted after exact standing integration of reviewer-owned RV-042
@@ -3480,7 +3492,7 @@ status records retain their status, and the expected postflight total is
 - Release-boundary maintenance removed only clean detached checkouts at
   `c19307f9237a95ed822c6734bcf1fad4c831928b` and
   `83a35e8e0f66c46f3e1c66a54132991ba311cf14`, producer-reported as reclaiming approximately
-  439 MB. Both commits remain exact ancestors of standing and candidate; no
+  439 MB. Both commits remain exact ancestors of standing and landed main; no
   branch was deleted. The `ec317f8456` detached baseline remains because two
   goal records reference it. The historical candidates remain retained release
   evidence; no further cleanup was reviewed or authorized.
@@ -3971,7 +3983,7 @@ Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for exact integration or explicit
 reconciliation of this postflight reviewer checkpoint, followed by a clean
 standing worktree; the first genuinely material producer checkpoint after
-exact standing `915b8b8c11`; a tested no-renames and addition-safe replacement
+exact standing `8bf1a0b1cc`; a tested no-renames and addition-safe replacement
 for the RV-044 transition procedure;
 a fresh protected maintenance outcome that joins the route used to a later
 decision; evidence changing RV-004 or RV-034; a scoped
