@@ -309,13 +309,18 @@ system.
 Three scan-reported measurements motivate separate configuration-sensitive
 questions; their tasks, interventions, and outcomes are not directly
 comparable:
-- **Risk configuration**: CONTRA (2607.03220) reports that 75.1% of tested agent skills have at least one configuration leading to malicious-action execution.
+- **Risk configuration**: CONTRA (2607.03220) reports that 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged configuration search. This is not configuration or live-incident prevalence.
 - **Driving-client performance**: HexStrike-AI (2607.02873) reports a 2.1× performance gap for a fixed model under its evaluated clients.
 - **Skill/harness optimization**: SkillOpt-Lite (2607.03451) reports a nano model with optimized configuration outperforming its larger sibling under standard pipelines (+25.4 points LiveMath).
 
 Enterprise governance reports AGL-1 (2607.03516) and CAGE-1 (2607.03510) propose vocabulary for this surface: seven domains (identity, policy, provenance, memory, knowledge integrity, execution control, trust observability) and a seven-field prebind checklist. Neither report implements or empirically validates the proposed control plane.
 
-**Self-configuration risk**: Agents now configure themselves (self-learning-skills, 843★ on GitHub). Combined with CONTRA's finding, self-configuration introduces recursive risk: agents may optimize toward dangerous configurations that pass their own validation. Anchored Self-Play (2607.03523) provides the mitigation template: anchor self-optimization to realistic reference distributions.
+**Self-configuration risk hypothesis**: self-learning-skills (843★ on GitHub)
+describes agents modifying reusable skills. CONTRA's simulated search yield
+motivates, but does not run, the key recursive-risk test: whether
+self-optimization selects a dangerous configuration that passes its own
+validation. Anchored Self-Play (2607.03523) suggests testing against a realistic
+reference distribution rather than assuming that mitigation transfers.
 
 **Configuration Layer completes the Oversight Inversion depth stack**:
 - Economic: monitoring output volume (wrong) vs. monitoring production cost (right)

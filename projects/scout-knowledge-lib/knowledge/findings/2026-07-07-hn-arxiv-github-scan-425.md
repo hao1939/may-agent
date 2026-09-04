@@ -1,7 +1,7 @@
 <ai_context>
 summary: "HN/arXiv/GitHub Scan #425 (2026-07-07): The Configuration Layer. The scan groups evidence about configuration-sensitive risk and performance, but its sources do not isolate one universal configuration-layer effect. CONTRA (2607.03220), HexStrike-AI (2607.02873), and SkillOpt-Lite (2607.03451) report distinct task-specific results. AGL-1 (2607.03516) and CAGE-1 (2607.03510) contribute conceptual governance and prebind-assurance vocabularies; neither implements or empirically evaluates an enterprise control plane. On GitHub, self-learning-skills (843★) describes self-configuring agents. HN's unmatched ROI stories are attention observations, not economic validation."
 triggers: "configuration surface, configuration layer, agent configuration risk, CONTRA, personalizable agents, skill configuration attack, HexStrike, driving client factor, orchestrator matters, SkillOpt-Lite, skill optimization, vibe optimization, AGL-1 enterprise governance, CAGE-1 prebind assurance, self-learning-skills, self-configuring agent, ROI skepticism, AI ROI runway, learn to code still worthwhile, sovereignty steady state"
-source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1 and CAGE-1 primary-reviewed 2026-09-04; the other paper claims remain pending separate primary review. Cross-referenced with scans #423, #424."
+source_basis: "HN Algolia API front_page query (2026-07-07), arXiv API (2607.03220, 2607.02873, 2607.03451, 2607.03516, 2607.03510, 2607.03523), GitHub API (Kulaxyz/self-learning-skills 843★, Kulaxyz/token-diet 596★, jamesob/local-llm 1072★, elder-plinius/T3MP3ST 2673★, rzhub/GateMem 150★, eli-labz/Godcoder 280★, Brain0-ai/brain0 28★). AGL-1, CAGE-1, and CONTRA primary-reviewed 2026-09-04; HexStrike-AI and SkillOpt-Lite remain pending separate primary review. Exact CONTRA v1 Atom SHA-256 41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d and source-archive SHA-256 c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5. Cross-referenced with scans #423, #424."
 </ai_context>
 
 # Scan #425: The Configuration Layer
@@ -16,10 +16,11 @@ The original scan grouped five sources under a structural hypothesis: **model
 configuration can materially affect risk and performance**. They do not share
 one task, intervention, comparator, or outcome, so they do not by themselves
 show that configuration universally dominates model choice or determines
-economic value. AGL-1 and CAGE-1 have now been primary-reviewed; the other
-three paper results below remain scan-reported claims pending separate review.
+economic value. AGL-1, CAGE-1, and CONTRA have now been primary-reviewed;
+HexStrike-AI and SkillOpt-Lite remain scan-reported claims pending separate
+review.
 
-- **CONTRA** (2607.03220): 75.1% of agent skills have at least one configuration leading to malicious action execution. Existing scans don't catch it. The danger isn't in the skill — it's in how the skill is *configured*.
+- **CONTRA** (2607.03220): 75.1% of 473 selected skills had at least one generated target succeed under a simulated, LLM-judged search. This is a skill-level search yield, not configuration or incident prevalence.
 - **HexStrike-AI** (2607.02873): The driving client is a **2.1× factor** over model choice for a fixed model. Performance lives in orchestrator configuration, not model capability.
 - **SkillOpt-Lite** (2607.03451): Formalizes skill optimization as zeroth-order optimization. One line of vibe enables a nano model to outperform its larger sibling under standard pipelines. Configuration > parameters.
 - **AGL-1/CAGE-1** (2607.03516, 2607.03510): These independent reports propose seven governance domains and a seven-field Prebind Assurance checklist. They provide design vocabulary, not an implemented control plane, proof that a configuration is safe, or an empirical cross-system comparison.
@@ -95,11 +96,44 @@ Sovereignty stack: ~1,590pts strict (Xbox 473 + OpenWrt 438 + CoMaps 307 + Alumi
 
 ### CRITICAL: CONTRA — Configuration Tree-Search for Red-Teaming Agents (2607.03220)
 
-**Finding**: 75.1% of agent skills have at least one configuration resulting in execution of a malicious action. CONTRA, an LLM-assisted tree-search algorithm, discovers dangerous agent configurations — not by finding malicious skills, but by finding *benign yet dangerous configurations* of legitimate skills. Standard scans don't detect these configurations. Overall, CONTRA successfully triggers target malicious actions in 39.2% of all tested cases.
+**Primary-reviewed finding:** In the paper's simulated, LLM-generated and
+LLM-judged environment, 75.1% of 473 selected popular skills had at least one
+generated target for which the search elicited the target action; 39.2% of
+1,590 generated, severity-filtered target actions succeeded. The first number
+is a skill-level at-least-one rate, not a configuration prevalence. The second
+is a target-action rate, not a live incident rate.
 
-**Dataset**: 473 most popular skills from a public repository, 2-5 corresponding malicious target actions per skill. Evaluated in simulated environments.
+**Dataset and search boundary:** The skills come from a cited ClawHub dataset.
+Gemma4-31b generated two to five target actions per skill and assigned their
+severity; only targets above severity two remained. Each search run had up to
+25 iterations × five candidates, with early stopping. The red team could
+modify agent files including the user task, and proxy tools were regenerated
+when the task or heartbeat changed. No real tool or service was invoked.
 
-**Why this matters**: This is the Configuration Layer thesis in its most dangerous form. The skill isn't malicious — the *configuration* is. Existing security scans operate at the skill/code level (wrong depth, per Depth Mismatch #424). Configuration-level red-teaming requires a fundamentally different approach: tree-search over composition space, not static analysis of individual components.
+**Supported value:** Dynamic configuration search found simulated target
+actions that skill-file scanners did not label. This supports configuration-
+aware red-team testing as complementary to static scanning within the tested
+setup.
+
+**Not established:** The 100-skill baseline compares static malicious-content
+flags with executed-target outcomes, which the paper acknowledges are different
+objects. The cross-model table changes only the assistant over 25 skills and
+77 targets; the Gemma-family orchestrator, tool creator, simulators, and judge
+remain shared. The paper reports no repeat seeds, intervals, significance
+tests, total executed trajectories, configuration base rate, or natural
+occurrence rate. Its 98.5% judge accuracy comes from 100 positive and 100
+negative human-labelled trajectories, but annotator count, sampling, and
+disagreement are not reported. “Benign” means a separate LLM judge did not
+detect direct target instructions or named adversarial strategies; it is not a
+human or deployment-safety verdict.
+
+The 30-file source archive includes paper sources, figures, and system prompts,
+but no 473-skill snapshot, target-action rows, result rows, configurations, or
+executable implementation. The paper promises release after responsible
+disclosure. An exact public GitHub repository search on 2026-09-04 returned
+zero results with `incomplete_results=false`. Live prevalence, external
+validity, reproducibility, and whether naturally arising configurations cause
+real harm therefore remain unknown.
 
 **Connects to**: Appearance Collapse (#411) — surface-level scans miss composition risks. Compositional tool-chain security (2607.03423, #424) — per-tool guardrails miss multi-tool violations. Persistence Attack Surface (#423) — configurations persist across sessions. Skill Supply Chain (#375).
 
@@ -201,7 +235,7 @@ Source: https://github.com/rzhub/GateMem
 | RAG pruning departs (absorbed) | Medium-High | 1 scan | Ratio 10.40 = silent agreement, pre-absorption |
 | AI ROI skepticism sustained | Low-Medium | 2 scans | Contentious (ratio 1.16), may not sustain |
 | Anthropic GW >300pts | Medium | 2 scans | +33.8% surge, interpretability research welcomed |
-| CONTRA cited by ≥1 agent security framework | Medium | 3 months | 75.1% finding too alarming to ignore |
+| CONTRA cited by ≥1 agent security framework | Medium | 3 months | High simulated search yield motivates configuration-aware auditing |
 | self-learning-skills >1K★ | Medium | 2 weeks | 843★, ~40★/day growth |
 
 ---
@@ -216,7 +250,7 @@ The three quantitative papers report different configuration-sensitive
 results; they have not yet been shown to measure one shared causal construct.
 
 The original scan summarized three reported results:
-1. **Risk**: 75.1% of skills are configurable into dangerous actions (CONTRA)
+1. **Risk**: 75.1% of 473 selected skills had at least one successful generated target under CONTRA's simulated search
 2. **Performance**: 2.1× gap from client configuration, dwarfing model-to-model differences (HexStrike)
 3. **Optimization**: Smaller model + optimized configuration > larger model + standard configuration (SkillOpt-Lite)
 
@@ -225,18 +259,19 @@ The original scan summarized three reported results:
 | Thesis | Configuration Layer Connection |
 |--------|-------------------------------|
 | Oversight Inversion (#382) | You can't oversee what you can't configure — governance IS configuration governance |
-| Depth Mismatch (#424) | Configuration is the correct depth for most practical verification |
-| Cost Inversion (#404) | Optimizing configuration (free) beats scaling parameters (expensive) |
+| Depth Mismatch (#424) | Configuration is one testable depth; its importance is system- and task-dependent |
+| Cost Inversion (#404) | Configuration optimization and model scaling need matched cost/outcome accounting |
 | Governance Depth (#405) | AGL-1/CAGE-1 propose control-plane and prebind vocabularies; neither validates an implementation |
 | Persistence Attack Surface (#423) | Configurations persist — every persisted config is an attack surface |
 | Verification Stack (#412) | Configuration verification is the missing layer in the stack |
-| Repair Turn (#419) | Repairing configuration is easier than repairing model weights |
+| Repair Turn (#419) | Configuration repair may be cheaper, but that comparison is not measured here |
 
 ### The Self-Configuration Risk
 
 self-learning-skills (843★) and SkillOpt-Lite describe systems that modify
 their reusable skills or harnesses. Combined with CONTRA's reported finding
-that 75.1% of tested skills have at least one dangerous configuration, this
+that 75.1% of 473 selected skills had at least one successful generated target
+under simulated search, this
 motivates a recursive-risk test: **can self-optimization select a dangerous
 configuration that still passes its own validation gate?** The current scan
 does not run that test.

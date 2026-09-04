@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 371 bounded reconciliation at 2026-09-04T10:14:03.755Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, and retained AGL-1 primary evidence resolved in Cycle 371; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 372 bounded reconciliation at 2026-09-04T10:24:38.968Z reused it without an early account request, and exact access evidence and uncertainty are in seed-ledger row 341."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 372; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, and CONTRA primary evidence resolved in Cycle 372; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -8442,6 +8442,86 @@ source formatting, Cycle 341 projection, 94 scoped links, navigation 11/14 and
 8/8, and all 296 Scout tests / 1,486 assertions. The project-wide audit passes
 1,539 tracked Markdown documents / 1,730 links, and read-only health remains
 26 facts / 16 wakes with truncation disclosed.
+
+### Cycle 372 seed-first start — test the configuration-risk denominator
+
+Cycle 372 begins from clean validated tip
+`5dd986460db5e560611d39a88e2cebb72f6d082c`. At
+`2026-09-04T10:24:38.968Z`, the Cycle 341 observation through
+`2026-09-04T05:00:03.241Z` remains inside the six-hour cadence. Make zero XHS
+requests: additions and changes remain unknown, observed removals are `[]`,
+all 132 durable identities remain unavailable, no representative saved post
+is supported, and account state is unchanged. The next scheduled observation
+remains no earlier than `2026-09-04T11:00:03.241Z` absent a material access
+trigger. The accepted-review ref is still identical to the producer tip, so no
+finite result requires integration before selection.
+
+Re-rank the complete queue: (1) high/open `RV-004` remains most consequential
+but inaccessible without the protected query/rank-to-selection-to-later-
+outcome join; (2) high/open `RV-034` remains reproduced at the pinned external
+runtime, with no source-change trigger and repair outside Scout's documentation
+scope; (3) the Memory in the Loop provider result remains unreleased; (4)
+CONTRA `2607.03220` is the highest accessible evidence gap because Scan #425's
+75.1% risk denominator and configuration-level interpretation remain primary-
+unreviewed; (5) HexStrike-AI and SkillOpt-Lite follow; (6) Reddit remains
+trigger-deferred; and (7) compaction remains last. Select CONTRA and inspect
+the exact skill/configuration denominator, target-action construction, search
+budget, baselines, success criteria, uncertainty, released artifacts, and what
+the result does or does not establish beyond the evaluated agents.
+
+### Cycle 372 checkpoint — high search yield is not configuration prevalence
+
+Seed-first ordering above preceded the only public requests. ArXiv Atom
+`2607.03220v1` was observed at `2026-09-04T10:25:13.948Z–10:25:14.449Z`:
+3,037 bytes, SHA-256
+`41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d`.
+The 343,633-byte source archive observed through `10:25:15.454Z` has SHA-256
+`c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5`.
+
+CONTRA reports two distinct denominators: 75.1% of 473 selected popular
+ClawHub skills had at least one generated target succeed, while 39.2% of 1,590
+Gemma4-generated, severity-filtered target actions succeeded. Searches explore
+up to 125 candidates per run with early stopping. Agent files including the
+task can change, and proxy tools are regenerated after task or heartbeat
+changes. Target “execution” is an LLM-judged trajectory against simulated
+tools, not a live side effect.
+
+The result supports configuration-aware dynamic red teaming within this
+simulation, but not the original prevalence implication. Static VirusTotal and
+OpenClaw-scan columns flag malicious skill content rather than target-action
+execution. The five-model subset changes only the assistant over 25 skills /
+77 targets while retaining Gemma-family orchestration and judging. No repeat
+seeds, intervals, significance tests, total trajectory count, natural
+configuration distribution, or live validation are reported. The 98.5% judge
+accuracy uses 100 positive and 100 negative human-labelled trajectories, with
+annotator and disagreement details absent. The separate “benign” label means
+an LLM judge found no direct target instruction or named adversarial tactic;
+it is not a human safety verdict.
+
+The 30-file source archive contains paper sources, figures, and prompts, but no
+skill snapshot, target/result rows, successful configurations, or executable
+implementation. The paper promises a later release. One exact public GitHub
+repository search at `2026-09-04T10:25:59.141Z–10:25:59.555Z` returned zero
+results with `incomplete_results=false` (73 bytes, SHA-256
+`08c082fdf7ca87ba911a2aabb0f0cf2d3e482a6feeaac9713e4578c20b2600b2`).
+GitHub should be revisited on an attributable release; arXiv on v2 or released
+rows; Reddit made zero requests and retains its relevant-thread/access trigger.
+
+Confidence is high in v1 artifact identity, source transcription, denominators,
+and simulation boundary; moderate in the descriptive search yield; and absent
+for independent reproduction, natural occurrence, real-world harm, or cross-
+system prevalence. `RV-004` and `RV-034` remain high/open. Next seed-first,
+primary-review HexStrike-AI `2607.02873` and test whether its reported 2.1×
+contrast isolates driving-client choice from model, tool, budget, and task
+changes.
+
+The reviewed candidate passes syntax, TypeScript, source formatting, Cycle 341
+projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests /
+1,486 assertions with zero failures in 100.36 seconds. The broad offline audit
+passes 1,540 tracked Markdown documents / 1,732 local prose links with zero
+errors. Read-only health at `2026-09-04T10:31:43.574Z` returns 26 facts / 16
+wakes with `truncated:true`; those retained signals are health evidence rather
+than new CONTRA evidence.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

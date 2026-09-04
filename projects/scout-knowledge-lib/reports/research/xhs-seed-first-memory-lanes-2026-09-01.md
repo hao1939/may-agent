@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 371 reuses that still-current receipt without an early account request, and retained AGL-1 primary evidence qualifies its seven-domain governance layer as a proposal rather than an implemented control plane."
+summary: "Seed-first Scout continuity through Cycle 341 remains projection-canonical; Cycle 372 reuses that still-current receipt without an early account request and qualifies CONTRA's 75.1% headline as simulated skill-level search yield rather than configuration or incident prevalence."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 371 bounded reconciliation at 2026-09-04T10:14:03.755Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 343; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, and retained AGL-1 primary evidence resolved in Cycle 371; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z remains the latest exact observation; Cycle 372 bounded reconciliation at 2026-09-04T10:24:38.968Z reused it without an early XHS request, while public Explore last returned 30 notes and supported saved status remained login-class and unavailable."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 372; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, and CONTRA primary evidence resolved in Cycle 372; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -15691,6 +15691,105 @@ projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests /
 audit passes 1,539 tracked Markdown documents / 1,730 links with zero errors.
 Read-only health at `2026-09-04T10:20:27.686Z` remains 26 facts / 16 wakes and
 `truncated:true`; those existing facts are health evidence, not new research
+claims.
+
+## Cycle 372 seed-first start — audit CONTRA's risk denominator
+
+Cycle 372 starts from clean validated tip
+`5dd986460db5e560611d39a88e2cebb72f6d082c`. At
+`2026-09-04T10:24:38.968Z`, Cycle 341's exact observation through
+`2026-09-04T05:00:03.241Z` remains inside cadence. This reconciliation makes
+zero XHS requests: additions and changes remain unknown, observed removals are
+`[]`, all 132 durable identities remain unavailable, no representative saved
+post is supported, and no account state changes. The next scheduled
+observation remains no earlier than `2026-09-04T11:00:03.241Z` unless a
+material access trigger arrives. A read-only accepted-ref check found no
+reviewer result beyond the producer tip.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+the protected query/rank-to-selection-to-later-outcome join; (2) high/open
+`RV-034`, reproduced at pinned external Mnemosyne code but without a source-
+change trigger and outside Scout's documentation-only repair scope; (3) the
+unreleased Memory in the Loop provider result; (4) CONTRA `2607.03220`, now
+highest accessible because Scan #425's 75.1% denominator and configuration-
+risk interpretation remain primary-unreviewed; (5) HexStrike-AI and SkillOpt-
+Lite; (6) Reddit until a relevant-thread/access trigger; and (7) compaction.
+Select CONTRA and inspect the paper's exact skill/configuration denominator,
+target-action construction, search budget, baselines, success criteria,
+uncertainty, released artifacts, and generalization boundary.
+
+## Cycle 372 checkpoint — CONTRA measures simulated search yield
+
+The seed record above preceded all public access. ArXiv Atom
+`2607.03220v1` was retrieved at
+`2026-09-04T10:25:13.948Z–10:25:14.449Z`: 3,037 bytes, SHA-256
+`41f1ddbefa7efc72279f7d7d4a92c6f4b9c14e951f7d830ddfa199a4ab676a3d`.
+The e-print endpoint returned a 343,633-byte gzip source archive through
+`10:25:15.454Z`, SHA-256
+`c7d93f6183f5f5ba5d3703864cd65bc41fe587fd885a1d92fddc013a7d117aa5`.
+Its 30 extracted files total 436,381 bytes and contain TeX, bibliography,
+figures, and full system prompts.
+
+The source resolves the headline into two outcomes. Among 473 selected popular
+ClawHub skills, 75.1% had at least one generated target action succeed under
+CONTRA. Across 1,590 Gemma4-31b-generated targets retained after the same model
+assigned severity above two, the action-level success rate is 39.2%. These are
+skill-level at-least-one and target-action search yields; neither is the share
+of all configurations that are dangerous or the frequency of live incidents.
+
+Each run explores at most 25 iterations × five candidates and stops early on
+success. The red team mutates internal files including the user task. When task
+or heartbeat changes, another LLM regenerates the simulated proxy tools “to
+ensure solvability.” The assistant, orchestrator, tool creator, judge, user
+proxy, and some tools are model-mediated, and no real service or side effect is
+used. The paper does not report total executed trajectories, repeat seeds,
+dispersion, intervals, significance tests, or a sampled natural-configuration
+distribution.
+
+The judge reports 98.5% accuracy on 100 positive and 100 negative human-
+labelled trajectories, but supplies no annotator count, sampling method,
+agreement, or active confusion matrix. A second LLM judge calls 91.8% of
+successful configurations benign when it sees neither direct target
+instructions nor named adversarial strategies. That narrow classifier output
+is not a human benignness or deployment-safety judgment.
+
+The 100-skill / 309-target baseline is not outcome-matched: VirusTotal and
+OpenClaw Scan classify malicious skill-file content, while CONTRA, direct
+instruction, and prompt injection are judged on simulated target execution.
+The paper acknowledges this difference. The cross-model subset covers 25
+skills / 77 targets and changes only the assistant model; Gemma-family
+orchestration, tool generation, simulation, and judging remain shared. It
+therefore supports repeated search yield across those assistants, not a model-
+independent or universal agent-safety prevalence claim.
+
+No evaluated skill snapshot, target rows, result rows, successful
+configurations, or executable pipeline ships in the archive; release is
+promised after disclosure. One exact-title public GitHub repository search at
+`2026-09-04T10:25:59.141Z–10:25:59.555Z` completed with zero results and
+`incomplete_results=false` (73 bytes, SHA-256
+`08c082fdf7ca87ba911a2aabb0f0cf2d3e482a6feeaac9713e4578c20b2600b2`).
+
+ArXiv was the primary-evidence lane and should be revisited on v2 or released
+rows. GitHub should be revisited on an attributable code/data release. Reddit
+made zero requests because no relevant-thread or access trigger fired. The
+Scan #425 finding, index, Oversight Inversion, and both Scan #445 copies now
+retain the search-yield/prevalence distinction. Confidence is high for source
+identity, method/table transcription, denominators, and the simulation
+boundary; moderate for descriptive search yield; and absent for independent
+reproduction, natural occurrence, live harm, or cross-system prevalence.
+
+`RV-004` remains high/open because this supplies no protected Scout outcome
+join. `RV-034` remains high/open at its pinned external runtime boundary. Next
+seed-first, primary-review HexStrike-AI `2607.02873` and test whether its
+reported 2.1× client contrast holds model, tools, budget, tasks, and judging
+fixed.
+
+The reviewed candidate passes syntax, TypeScript, source formatting, Cycle 341
+projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests /
+1,486 assertions with zero failures in 100.36 seconds. The broad offline audit
+passes 1,540 tracked Markdown documents / 1,732 local prose links with zero
+errors. Read-only health at `2026-09-04T10:31:43.574Z` returns 26 facts / 16
+wakes with `truncated:true`; these existing health signals are not new research
 claims.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
