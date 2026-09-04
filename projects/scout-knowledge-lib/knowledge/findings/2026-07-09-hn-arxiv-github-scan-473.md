@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories and authors five cross-cutting gaps, but uses a non-exhaustive iterative search and judgment-based single-category labels. Its citation-fragmentation claim has no released edge matrix or denominator, and TOCTOU/MCP equivalence is an interpretive validate-then-act analogy rather than shared experimental evidence. The arXiv source archive retains all 39 generated table rows but omits the promised machine-readable corpus and verifier. CAGE-1 and AGL-1 remain separate conceptual proposals pending primary review."
+summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories, but uses a non-exhaustive search and releases no citation-edge denominator. CAGE-1 2607.03510v1 contributes a 12-dimension assurance framework and seven-element consequence-boundary proof surface. It explicitly is not a benchmark: its three cases and scores are illustrative, it runs no agent or enforcement control, and it releases no implementation artifact. AGL-1 remains a separate proposal pending primary review."
 triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind assurance", "AGL-1 governance layer", "Fable criticism", "research-level task failure", "security literature systematization", "five cross-cutting gaps", "TOCTOU MCP unified", "benign out-of-scope actions", "honest policy author assumption", "EasyLastSkill", "Horizon verification harness", "Fortress stealth browser"]
 </ai_context>
 
@@ -7,7 +7,7 @@ triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind 
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.CR), GitHub
-**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. Its iterative search is explicitly non-exhaustive, categories involve judgment, and the promised corpus/verifier are absent from the arXiv source archive. CAGE-1 and AGL-1 add separate conceptual governance proposals pending primary review.
+**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. CAGE-1 adds a useful consequence-boundary evidence vocabulary, but its cases, scores, readiness levels, and 90-day path are proposed evaluation materials rather than an implemented or validated benchmark. AGL-1 remains pending primary review.
 
 ---
 
@@ -68,11 +68,36 @@ Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): ag
 **Source:** https://arxiv.org/abs/2607.03510
 **Categories:** cs.SE, cs.AI, cs.CY
 
-**Key finding:** Evaluation framework for enterprise agent deployment readiness covering: authority, policy enforcement, retrieval quality, memory integrity, tool safety, auditability, human oversight, conflict handling, safe failure, operational readiness, and business fitness.
+**Primary-review qualification (2026-09-04):** Exact Atom metadata observed
+`2026-09-04T08:40:35.819Z–08:40:36.362Z` pins v1 (3,040 bytes /
+`556b963d…c8e760`). The 494,549-byte PDF observed through
+`08:40:36.754Z` hashes to `5aeb8f8e…cfa5f`; the e-print endpoint observed
+through `08:40:37.866Z` returned the identical PDF rather than a source
+archive. The paper names no code or evaluation repository.
 
-**Critical concept — Prebind Assurance:** The evaluated ability to prove that an agentic action is controlled *before* it becomes binding, effective, or operationally consequential. Tests whether a proposed action is admitted, held, narrowed, refused, escalated, quarantined, or made non-effective before protected consequence forms.
+**Supported contribution:** CAGE-1 proposes 12 assurance dimensions, five
+maturity levels, and a seven-element Prebind Assurance evidence surface:
+attempted action, standing, condition, boundary outcome, non-effective result,
+receipt, and replay. This is a useful checklist for locating the consequence
+boundary and demanding evidence that a held or refused object did not become
+effective. The paper itself says it is “not a model benchmark.”
 
-**Significance:** Prebind Assurance is the evaluation-side complement to the Admission Boundary (#469). Where Mnemosyne's ATP *constructs* the gate (treat every action as an untrusted proposal), CAGE-1 *evaluates* whether the gate actually works. Together, they close the loop: ATP proves four safety properties by construction; CAGE-1 tests whether a specific enterprise deployment actually satisfies those properties. This construction-evaluation pair is structurally the cleanest architecture in the exit arc.
+**Not demonstrated:** No agent, policy engine, tool broker, receipt service, or
+replay implementation is run. The finance, HR, and IT cases are explicitly
+illustrative rather than customer-deployment claims. The finance table labels
+2→4 maturity changes as “Observed difference,” but the text supplies no
+subjects, executions, measurements, or scoring procedure behind those values.
+Section 12 says the framework *can be validated* on three to five agents and
+describes that study prospectively. Maturity thresholds, Level 3/4 readiness,
+and the 90-day adoption path are therefore normative proposals, not calibrated
+or empirical readiness results.
+
+**Qualified connection:** Prebind Assurance is a test-design complement to the
+Admission Boundary (#469): it specifies which boundary evidence an evaluator
+should request. It does not evaluate Mnemosyne or prove that any specific
+enterprise gate works, so the two papers do not yet “close the loop.” A useful
+next comparison would instantiate all seven fields against an implemented ATP
+trace and test refusal, condition change, replay, and non-effect independently.
 
 ---
 
@@ -160,9 +185,9 @@ Chatto's surge from 454pts to 531pts (+17.0%) makes it the highest-growth tracke
 The arXiv findings from this scan form a constructive arc:
 - **Balkanization** (2607.05743): The problem — security research is fragmented, five cross-cutting gaps are invisible to individual papers
 - **AGL-1** (2607.03516): The architecture — seven governance domains providing a unified control plane
-- **CAGE-1** (2607.03510): The evaluation — Prebind Assurance tests whether actions are controlled before consequences form
+- **CAGE-1** (2607.03510): The proposed evaluation schema — Prebind Assurance names evidence to request before consequences form, but no implementation is tested
 
-This is the first scan where **diagnosis, architecture, and evaluation** appear simultaneously for the same structural problem. The Balkanization paper diagnoses the fragmentation; AGL-1 provides the integrating control plane; CAGE-1 evaluates whether the integration actually works. This three-paper arc extends the eighteen-point exit arc to a **nineteen-point exit arc**.
+The three papers offer diagnosis, architecture, and evaluation concepts for a related structural problem. They do not empirically compose: Balkanization's corpus is non-exhaustive, AGL-1 remains pending review, and CAGE-1 does not run the control plane or evaluate whether the integration works. Treat the “nineteen-point exit arc” as Scout synthesis, not a demonstrated construction-evaluation closure.
 
 ---
 
@@ -183,7 +208,7 @@ This is the first scan where **diagnosis, architecture, and evaluation** appear 
 
 **Fortress (194★)** deserves special attention. It's a stealth Chromium engine designed explicitly to prevent agent/scraper detection. This is the adversarial complement to the Execution Boundary pattern: while security researchers build sandboxes and gates, tool builders create evasion infrastructure. The Balkanization paper's Gap #5 (benign out-of-scope actions unaddressed) creates the market for tools like Fortress — if security is binary (allow/deny), operators who need "almost-authorized" behavior build evasion rather than escalation.
 
-**agentic-trading-desk (203★)** is a practical implementation of Prebind Assurance from CAGE-1: the AI agent fetches data and computes scores, but *every order requires human approval*. The three-pillar scoring framework (Trend · Momentum · Macro-Sentiment) is the deterministic substrate; the AI is confined to data retrieval and display. This is ATP (#469) applied to financial trading.
+**agentic-trading-desk (203★)** was described by the scan as requiring human approval for every order. That is one proposed no-bind pattern, not evidence of a CAGE-1 implementation: the scan records no standing, policy-version, non-effective-object, receipt, or replay check, and no primary repository review is performed here. It also does not establish ATP's four properties.
 
 ---
 

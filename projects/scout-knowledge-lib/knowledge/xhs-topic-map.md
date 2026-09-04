@@ -8226,6 +8226,36 @@ version and determine whether Prebind Assurance is a proposed evaluation
 schema, an implemented benchmark, empirical proof of action control, or an
 enterprise-readiness result; inspect evaluation artifacts and stated limits.
 
+### Cycle 369 checkpoint — a proof-surface proposal, not proof
+
+Seed-ordering commit `fe09d925575dac8be2ac4d714bb45192934460b5`
+preceded retrieval. Atom metadata observed
+`2026-09-04T08:40:35.819Z–08:40:36.362Z` pins `2607.03510v1` (3,040
+bytes / `556b963d…c8e760`). Its PDF observed through `08:40:36.754Z` is
+494,549 bytes / `5aeb8f8e…cfa5f`; the e-print endpoint observed through
+`08:40:37.866Z` returned the byte-identical PDF, not a source archive. The
+paper links no implementation or evaluation repository.
+
+CAGE-1 proposes 12 dimensions, five maturity levels, and seven Prebind
+Assurance evidence elements: attempted action, standing, condition, boundary
+outcome, non-effective result, receipt, and replay. That is useful evaluation
+vocabulary. It is not implementation evidence. The paper explicitly says it
+is not a benchmark; its finance, HR, and IT cases are illustrative, no agent or
+control service runs, and its validation section proposes a future three-to-
+five-agent exercise. The finance table's 2→4 “Observed difference” scores have
+no subjects, executions, measurements, or calibrated scoring procedure.
+
+Confidence is high in version, bytes, wording, enumerated schema, and absence
+of released implementation in the primary artifact; high that no empirical
+readiness result is reported; medium in the schema's practical usefulness;
+unknown for reliability, coverage, or deployment effect. The Admission
+Boundary relationship is a prospective test-design complement, not a closed
+empirical loop. A decision-relevant follow-up is to map the seven fields onto
+an implemented ATP trace and test refusal, condition-change, replay, and non-
+effect as separate claims. AGL-1 remains the next unreviewed Scan 473 primary
+claim, but rank that implementation-grounded comparison against other open
+questions after the next seed-first pass.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

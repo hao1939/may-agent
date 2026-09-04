@@ -15365,6 +15365,46 @@ evaluation subjects, measurement basis, and stated limitations. Other primary,
 contradiction, reproducibility, retrieval, and synthesis gaps follow; Reddit
 remains trigger-deferred and compaction stays last.
 
+## Cycle 369 checkpoint — a proof-surface proposal, not proof
+
+Seed-first commit `fe09d925575dac8be2ac4d714bb45192934460b5`
+preceded every CAGE-1 public read. Exact Atom metadata observed
+`2026-09-04T08:40:35.819Z–08:40:36.362Z` pins `2607.03510v1`, 3,040 bytes /
+`556b963d0b1b7fa7da6d298761f98ac72304f7f51b5efc4d98fa0a5cd4c8e760`.
+The PDF observed through `08:40:36.754Z` is 494,549 bytes /
+`5aeb8f8e016a7c30f3a8a377f81f34e855fd690a1532899ca7d36ef9663cfa5f`.
+The e-print endpoint observed through `08:40:37.866Z` returned the exact same
+PDF bytes rather than a source archive. The paper identifies no code,
+benchmark, data, receipt, or evaluation repository.
+
+The direct contribution is a proposed assurance framework: 12 dimensions,
+five maturity levels, and seven consequence-boundary evidence elements
+(attempted action, standing, condition, boundary outcome, non-effective
+result, receipt, replay). These fields usefully separate action preparation
+from effective consequence and specify evidence an evaluator should demand.
+
+They are not evidence that a gate works. CAGE-1 explicitly says it is not a
+model benchmark. Its finance, HR, and IT cases are illustrative, not customer
+deployment claims; no agent, control plane, policy engine, tool broker, receipt
+service, or replay system is run. Although the finance table calls 2→4 maturity
+changes “Observed difference,” no subjects, runs, outcomes, or scoring method
+support those values. Section 12 says the framework *can be validated* on
+three to five agents and describes that exercise prospectively. Level 3/4
+readiness thresholds and the 90-day path are normative and uncalibrated.
+
+Confidence is high for exact version, bytes, primary wording, enumerated
+schema, missing source archive, and absence of an implementation artifact;
+high that there is no empirical action-control or readiness result; medium for
+the schema's practical value; unknown for coverage, reliability, and effect in
+deployment. CAGE-1 is a prospective evaluation-design complement to
+Mnemosyne's Admission Boundary, not a test of Mnemosyne and not a closed loop.
+The smallest credible follow-up is to map all seven fields onto an implemented
+ATP trace and test refusal, condition change, replay, and non-effect
+independently. Re-rank that against AGL-1 and the remaining primary gaps after
+the next bounded seed reconciliation. GitHub and Reddit made zero requests;
+their recorded evidence and triggers remain unchanged. `RV-004` stays
+high/open and compaction remains last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
