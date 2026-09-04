@@ -12759,6 +12759,63 @@ with 916 records / `8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d484
 overall and 296 / `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
 in Scout scope. This worker did not write, test, clean, or mutate it.
 
+## Cycle 339 seed-first start — reconcile Scan #479's downstream synthesis
+
+Cycle 339 starts from clean validated `519be67cc82b227bbdcc4c73ce44a47100807cbc`.
+At `2026-09-04T04:44:04.525Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside cadence. Make zero XHS requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, provenance remains the last browser receipt
+plus ledger, and account state is unchanged.
+
+The complete queue ranks (1) high/open `RV-004`, inaccessible without the
+protected post-August-31 query/rank -> selection -> later-outcome join; (2)
+Memory in the Loop's unreleased provider result; (3) Scan #479's stale
+downstream synthesis, highest accessible because all five primary-reviewed
+source sections now contradict its remaining hierarchy, EvoSOP-causality,
+governance-gap, and social-source validation statements; (4) other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit
+until a relevant thread/access change; and (6) compaction. Select the Scan
+#479 consistency audit. Preserve point/star observations while separating
+them from mechanism, prevalence, maturity, and community-state inferences.
+
+## Cycle 339 checkpoint — discovery signals no longer re-promote refuted claims
+
+The local consistency audit compared Scan #479's five now-primary-reviewed
+paper sections with every downstream synthesis block. The paper summary still
+said only three papers were reviewed, called the RSI qualitative pattern
+measured convergence behavior, treated EvoSOP's bundled result as pruning
+causality, and treated the governance survey as a mechanism comparison. Four
+cross-source rows repeated those claims. Five social-source interpretations
+also promoted point/star observations into controlled-comparison quality,
+sovereignty, burnout prevalence/causality, ecosystem transition, or RSI-tooling
+maturity without denominators or content/outcome evidence.
+
+The revised Scan preserves every historical HN point and GitHub star count but
+labels them as attention or repository-popularity observations. Its evidence
+bullets now match the primary reviews: RSI's ordering is qualitative;
+PA-SciML and PerformanceBench test distinct predicates; EvoSOP provides a
+bundled result with limited component evidence; and the governance review maps
+proposals without deployed effects. The convergence table declares exact
+non-claims, and the synthesis says social snapshots are discovery provenance,
+not independent validation.
+
+This is substantive evidence-synthesis repair, not line/byte compaction. No
+public source was needed: arXiv's last useful evidence remains the five primary
+records reviewed in Cycles 334–338; GitHub's last useful evidence remains the
+EvoSOP artifact search and exact empty-repository boundary; Reddit made zero
+requests and remains deferred at RSS-readable/JSON-403 until a relevant thread
+or access change. Confidence is high that the revised downstream statements
+are consistent with the retained primary reviews, and low in any unreviewed
+historical HN/GitHub mechanism or prevalence inference. `RV-004` remains
+high/open because no protected query/rank-to-outcome join appears.
+
+Next begin seed-first and primary-review the Harness Effect `2607.06906`, the
+highest-impact accessible promoted claim in the following Scan #482. Test its
+22-task denominator, harness/model randomization or matching, cost definition,
+model-invariance range, `r=0.99` calculation, uncertainty, artifacts, and
+transfer before retaining “harness moves cost more than the model menu.”
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

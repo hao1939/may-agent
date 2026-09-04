@@ -6249,6 +6249,41 @@ excluded, and runtime state is empty. Protected `/app` remains
 `386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
 `a430d0c9…32d7e` in Scout scope.
 
+### Cycle 339 seed-first start — reconcile Scan #479's downstream synthesis
+
+Cycle 339 starts from clean validated `519be67cc8`. At
+`2026-09-04T04:44:04.525Z`, XHS remains inside cadence, so make zero requests:
+additions/changes stay unknown, observed removals are `[]`, all 132 seeds stay
+unavailable, and account state is unchanged. Rank (1) inaccessible high/open
+`RV-004`; (2) unreleased Memory in the Loop; (3) Scan #479's stale downstream
+synthesis, highest accessible because it contradicts the five now-reviewed
+source sections; (4) other substantive evidence gaps; (5) Reddit until its
+trigger; and (6) compaction. Select the consistency audit and preserve social
+point/star observations without promoting them to mechanism, prevalence,
+maturity, or community-state evidence.
+
+### Cycle 339 checkpoint — social snapshots return to discovery provenance
+
+Scan #479's downstream synthesis contradicted all five now-reviewed source
+sections. It still said three were reviewed, promoted RSI's qualitative
+ordering to convergence behavior, made EvoSOP's bundled gain pruning-causal,
+and treated the governance survey as a mechanism comparison. Four convergence
+rows and five HN/GitHub interpretations further turned point/star observations
+into claims about experimental control, sovereignty, burnout, ecosystem
+transition, or tooling maturity.
+
+The revision preserves the historical counts but declares them attention or
+popularity observations and makes each paper bullet match its primary review.
+The convergence table now states the uncovered predicates; the synthesis uses
+social sources for discovery, not validation. No public request ran. ArXiv's
+last useful evidence remains the five primary records from Cycles 334–338;
+GitHub's remains the EvoSOP search/empty-repository boundary; Reddit stays
+RSS-readable/JSON-403 until its trigger. Confidence is high in internal
+source-to-synthesis consistency and low in unreviewed social-source mechanisms
+or prevalence. `RV-004` remains high/open. Next primary-review Harness Effect
+`2607.06906`: verify its 22-task denominator, cost definition, claimed model
+invariance, `r=0.99`, uncertainty, artifacts, and transfer.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
