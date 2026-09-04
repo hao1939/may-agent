@@ -12092,6 +12092,35 @@ remains trigger-deferred. `RV-004` remains high/open because this is not the
 missing Scout outcome join. Next begin seed-first and re-rank remaining primary,
 contradiction, reproducibility, retrieval, and synthesis gaps before compaction.
 
+Exact Cycle 330 material `07836ad009067857f639ecd467bb279f2f367369`
+passes syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped
+links, navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 101.70 seconds. The broad audit passes 1,540
+documents / 1,728 links. Read-only health at
+`2026-09-04T03:35:53.766Z` returns 26 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and standing porcelain/runtime state are empty.
+Protected `/app` remains `386b445c236e4609cd8870d22cc773cc4641fec8`,
+916 records / `8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d4848a36`;
+Scout scope remains 296 /
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+
+## Cycle 331 seed-first start — test model-substitution attribution
+
+At `2026-09-04T03:36:00.211Z`, the observational XHS receipt remains inside
+cadence. This bounded reconciliation makes zero XHS, GitHub, arXiv, Reddit, or
+other public requests: additions/changes remain unknown, removals `[]`, all
+132 durable seeds unavailable, and account state unchanged.
+
+Rank (1) high/open `RV-004`, inaccessible without the protected outcome join;
+(2) unreleased Memory in the Loop; (3) RuBench `2607.06411`, highest accessible
+because the library treats five reported fallback traces as direct proof that
+the deployed product rather than the requested model is the measured unit;
+(4) Danus; (5) other primary/contradiction/reproduction gaps; (6) Reddit until
+a relevant trigger; (7) compaction. Select RuBench. Test task/model
+denominators, fallback evidence and disclosure, comparison validity, artifact
+availability, and the boundary of model-versus-product attribution.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

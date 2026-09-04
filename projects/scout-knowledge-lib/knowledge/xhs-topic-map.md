@@ -5798,6 +5798,27 @@ readable attributable release; Reddit made zero requests and remains
 trigger-deferred. `RV-004` stays high/open. Next begin seed-first and re-rank
 the remaining primary and contradiction gaps before any compaction.
 
+Exact Cycle 330 material `07836ad009067857f639ecd467bb279f2f367369`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and the full Scout gate at 296 tests / 1,484
+assertions with zero failures in 101.70 seconds. Broad links pass 1,540 /
+1,728; health at `2026-09-04T03:35:53.766Z` is 26 facts / 16 wakes,
+truncated. Accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+excluded, and protected fingerprints remain 916 / `8e3558f4…848a36` plus
+Scout 296 / `a430d0c9…32d7e` at protected HEAD `386b445c…1fec8`.
+
+### Cycle 331 seed-first start — test model-substitution attribution
+
+At `2026-09-04T03:36:00.211Z`, the XHS receipt remains inside cadence, so
+this reconciliation makes zero XHS or public requests: additions/changes
+unknown, removals `[]`, all 132 seeds unavailable, account state unchanged.
+Rank `RV-004` and unreleased Memory in the Loop first but inaccessible;
+RuBench `2607.06411` is highest accessible because the library treats five
+reported fallback traces as direct proof that product rather than model is the
+unit measured. Danus follows, then other primary gaps, Reddit, and compaction.
+Select RuBench; test task/model denominators, fallback evidence, disclosure,
+comparison validity, artifact access, and attribution scope.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
