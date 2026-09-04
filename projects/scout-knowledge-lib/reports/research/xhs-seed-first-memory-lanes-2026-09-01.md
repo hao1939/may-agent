@@ -17900,6 +17900,112 @@ The changed count from Cycle 388's 19 peers is external worktree-registry
 drift, not attributed to this worker. No command tested, generated, formatted,
 installed, cleaned, or wrote in `/app` or a peer worktree.
 
+## Cycle 390 checkpoint — qualify aiAuthZ denial and identity evidence
+
+What was wrong: the library promoted a fixed-policy authorization result into
+uniform model safety and credited the effect broadly to per-message identity.
+It also presented a rounded per-model latency summary as a universal bound and
+described a static policy reconstruction as a live matched comparison.
+
+What changes: the [canonical Scan #453 finding](../../knowledge/findings/2026-07-09-hn-arxiv-github-scan-453.md),
+verified-enforcement note, Oversight Inversion synthesis, and living topic map
+now distinguish the result actually retained. The public benchmark has 120
+model/scenario rows, 116 completed rows, 580 successful model calls, and 187
+dangerous-call attempts across 44 rows. Every attempt is evaluated, but the
+saved file retains one representative gateway verdict per attempting row; all
+44 retained verdicts are denials. Four Qwen rows contain only HTTP 429 errors.
+
+### Seed order and ranked decision
+
+Cycle 390 began from clean validated Cycle 389 result
+`8a5fd742278cacd11e8b76a36abcccb556392edb`. At about
+`2026-09-04T14:43:51Z`, before any source work, the scheduled XHS boundary
+remained `2026-09-04T17:09:20.326Z` and no trigger had fired. The bounded
+reconciliation therefore reused Cycle 375's browser receipt and seed ledger
+with zero account requests: additions and changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, and no
+account state changed. This is an access-qualified unknown, not evidence that
+the live collection is unchanged.
+
+High/open `RV-004` still ranks first but cannot move without the protected
+query/rank-to-selection-to-later-outcome join. High/open `RV-034` remains at an
+external runtime boundary, and Memory in the Loop still lacks its provider
+result. aiAuthZ `2607.05518` was the highest accessible unresolved claim
+because the library conflated fixed-policy denial, per-message identity, model
+behavior, and deployment security. It was selected only after the seed record.
+
+### Exact source and lane evidence
+
+ArXiv was read-only at `2026-09-04T14:44:02.742Z–14:44:04.479Z`. The
+3,297-byte Atom response has SHA-256
+`64c4619417e35b70632903a5ef223c941c7f76f334425eb54e8f30ee3022c180`;
+the 596,526-byte v1 source archive has SHA-256
+`0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760`
+and identifies publication/update at `2026-07-06T18:00:49Z`.
+
+GitHub repository `Sports-Vision-Inc/aiAuthZ` was observed at public head
+`6eaac86ae5bfd8bf7b8a65786a5c77a7c0bce673` during
+`2026-09-04T14:44:18.621Z–14:44:20.348Z`. The recursive tree response has
+SHA-256 `8985798e7ce2570fa08fafc19bf71126618f952df16e1da053e0e2319e6a84e1`
+and reports 522 entries, 288 blobs, 2,199,795 blob bytes, not truncated. The
+archive read at `2026-09-04T14:44:34.872Z–14:44:38.305Z` returned 954,079
+bytes with SHA-256
+`c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39`.
+Tag and release `v0.1.0` are present; the sole release has no assets.
+
+The default benchmark fixes every caller as `member`. Four dangerous tools are
+owner-only; `web_fetch` admits members but has an empty default URL allowlist.
+Thus zero retained residual demonstrates deterministic denial under this
+restrictive policy, not that identity binding alone makes model behavior safe.
+The largest rounded per-model average policy decision is 0.0304 ms, while one
+retained decision is 0.0659 ms; neither includes network or end-to-end gateway
+cost. The repository retains aggregate rows but none of the paper's claimed raw
+multi-model transcripts, so arithmetic is inspectable while all 580 original
+provider calls are not fully replayable.
+
+AgentDojo is separate argument-policy evidence: both models already have 0/20
+attack success without a defense, seven emitted attacker-directed calls are
+denied by a known-payee allowlist, and clean utility falls from 100% to 80%.
+Its injection and user share one principal. The 9/9 versus 4/9 result is a
+static reconstruction of reduced “OAP-style” and “AIP-style” rules, not a live
+execution of those systems under matched conditions.
+
+Off-host authorization remains a credible covered-call design only under
+complete mediation: overlapping built-in tools must be disabled; gateway code,
+keys, policy, database, and shared nonce/rate-limit storage remain trusted;
+permitted calls can compose harm; and symmetric HMAC lacks third-party
+non-repudiation. Reddit made zero requests and retains its
+RSS-readable/JSON-403 boundary until a relevant thread or access change.
+
+Confidence is high in source identity, repository revision, aggregate
+arithmetic, default policy, and runner behavior; moderate in the
+complete-mediation architecture; low in full model-run replay, identity-only
+causal attribution, operational utility, and deployment transfer. `RV-004`
+and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit on raw
+transcript release, a complete rerun, matched comparison-system execution,
+independent deployment evidence, or a utility-matched identity ablation. The
+next seed-first investigation should audit the Balkanization survey's claimed
+four verified CVEs and five cross-cutting gaps if it remains the highest-value
+accessible execution-boundary question after ranking.
+
+### Cycle 390 validation boundary
+
+The five-document candidate from source
+`8a5fd742278cacd11e8b76a36abcccb556392edb` passes whitespace, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 seed projection, 101
+scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 tests / 1,486
+assertions with zero failures in 98.58 seconds. The broad offline audit passes
+1,540 tracked Scout-library Markdown documents / 1,741 local prose links.
+Read-only health at `2026-09-04T14:51:47.656Z` returns 26 facts / 16 wake
+signals with `truncated:true` and creates no runtime packet.
+
+Reviewer result `2379a9fabb619c653cbabda04e60066b5c473aa4` remains contained
+with patch ID `8dd95cfdb6c00b1162833300a46151eb66223934`. Reviewer result
+`26eda94dac246e395bbfac5e1d14032e46d8facd` remains non-contained and has
+distinct patch ID `0e277e14e05f103c96212285e58daf17a8ca66f7`; its useful
+substance is semantically reconciled and superseded rather than represented as
+commit or patch containment.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

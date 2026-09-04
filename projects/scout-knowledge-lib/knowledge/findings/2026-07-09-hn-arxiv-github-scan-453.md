@@ -1,7 +1,7 @@
 <ai_context>
 summary: "HN/arXiv/GitHub Scan #453 (2026-07-09): The Execution Boundary. Five arXiv papers converge on a gap between approval and execution. MCP TAG-Block Concealment (2607.05744) reports a deterministic reference-harness result: 8/8 metadata techniques survive into serialized prompt/JSON-RPC bytes, 4/8 evade its lexical sanitizer, 1/8 is hidden by its simplified renderer, and 0/8 force protocol re-approval. It does not run a model, measure model interpretation or action, audit a named deployed client, or establish attack prevalence. CXI (2607.06000) reports no observed escapes at fixed-policy mediated sinks, while safe task completion is 199/720 AgentDojo and 231/400 repository episodes; validator completeness and unreviewed sinks remain outside the guarantee. Balkanization survey (2607.05743) shows the research studying this gap is itself fragmented — 39 papers in 17 categories that rarely cite each other, with 5 cross-cutting gaps no single paper addresses. 25th layer of the Oversight Inversion and tenth extension of the exit arc. HN: sovereignty stack contracts as top stories age off (~2,683pts from 7 stories vs ~3,991pts last scan), but Comprehension:News ratio crosses 1.0 for the first time (1.21). 30papers at 399pts (1pt from 400 prediction). Fortress (35pts/32c) = stealth Chromium for agents. GitHub: T3MP3ST 3,354★ (plateau), openscience 1,422★, claude-code-merge-queue 295★ (NEW — parallel agent coordination), Godcoder 282★ (NEW — 'AI builds its own Harness'). Running accuracy: ~96.0% (69/72)."
 triggers: ["execution boundary", "approval surface", "execution surface", "approval fidelity gap", "MCP TAG block", "Unicode concealment", "CXI", "context-to-execution integrity", "Balkanization execution security", "aiAuthZ", "off-host authorization", "execution fidelity", "TOCTOU agent", "tool metadata attack", "doomed from start", "early abort", "probe cascade", "hidden state probes", "approval-execution gap", "scan 453"]
-source_basis: "arXiv cs.CR 2026-07-08 (2607.05744 MCP TAG-Block, 2607.06000 CXI, 2607.05743 Balkanization, 2607.05518 aiAuthZ, 2607.06503 Doomed from Start). TAG-block v1 source primary-reviewed 2026-09-04 at SHA-256 41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c; the ancillary endpoint returned the identical manuscript archive and two GitHub repository searches returned zero results, so the claimed driver, data, and verifier were not available on inspected surfaces. CXI v1 source primary-reviewed 2026-09-04 at SHA-256 02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1; anonymous artifact HTTP 401 after redirect. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (T3MP3ST 3,354★, openscience 1,422★, security-audit-skill 2,338★, claude-code-merge-queue 295★, Godcoder 282★, agent-memory-engine 122★). Cross-referenced with Co-Evolution Imperative (#452), Predicate Gate (#446), Boundary Dissolution (#432), Authority Gap (#434), Latent Horizon (#433), Oversight Inversion (thesis)."
+source_basis: "arXiv cs.CR 2026-07-08 (2607.05744 MCP TAG-Block, 2607.06000 CXI, 2607.05743 Balkanization, 2607.05518 aiAuthZ, 2607.06503 Doomed from Start). TAG-block v1 source primary-reviewed 2026-09-04 at SHA-256 41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c; the ancillary endpoint returned the identical manuscript archive and two GitHub repository searches returned zero results, so the claimed driver, data, and verifier were not available on inspected surfaces. CXI v1 source primary-reviewed 2026-09-04 at SHA-256 02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1; anonymous artifact HTTP 401 after redirect. aiAuthZ v1 source primary-reviewed 2026-09-04 at SHA-256 0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760; public repository Sports-Vision-Inc/aiAuthZ pinned at 6eaac86ae5bfd8bf7b8a65786a5c77a7c0bce673 (archive SHA-256 c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (T3MP3ST 3,354★, openscience 1,422★, security-audit-skill 2,338★, claude-code-merge-queue 295★, Godcoder 282★, agent-memory-engine 122★). Cross-referenced with Co-Evolution Imperative (#452), Predicate Gate (#446), Boundary Dissolution (#432), Authority Gap (#434), Latent Horizon (#433), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #453: The Execution Boundary
@@ -99,7 +99,11 @@ Source: https://arxiv.org/abs/2607.05743
 
 ### 4. aiAuthZ: Off-Host, Identity-Bound Authorization for AI Agents (2607.05518) [SUPPORTING]
 
-**Core finding**: Evaluates 15 contemporary language models against 8 attack scenarios — refusal varies from 100% down to 38% across models. The most expensive model refused only half of attacks despite a 20× price spread.
+**Core finding**: Evaluates 15 contemporary language models against 8 attack
+scenarios, five runs per cell. Four Qwen cells retain only HTTP 429 errors, so
+14 models complete 8/8 scenarios and Qwen completes 4/8. Across completed
+scenario cells, model refusal varies from 100% down to 25%; this is a sampled,
+provider-mediated result rather than a stationary model property.
 
 aiAuthZ solution: an authorization gateway that moves the safety decision off the agent's host.
 - Per-message HMAC-SHA256 signature bound to single-use nonce and timestamp window
@@ -107,16 +111,45 @@ aiAuthZ solution: an authorization gateway that moves the safety decision off th
 - SHA-256 hash-chained audit log
 - HMAC-authenticated QR receipts (94% mean verification across 8 transmission channels, 0 forgeries in 25 wrong-key trials)
 
-Results:
-- With gateway: **0% residual attack success for all 15 models** at ≤0.03ms added latency
-- On AgentDojo banking suite: blocks all 7 attacker-directed tool calls; spotlighting baseline allows 2 injections
-- On 9 in-scope case studies: aiAuthZ blocks 9/9; policy baseline without identity binding blocks 4/9
+Results and evidence boundary:
+- The public result file has 120 model/scenario rows, 116 completed rows, and
+  580 successful model calls. Models emit 187 dangerous-call attempts across
+  44 scenario rows. The runner evaluates every attempt, but the saved result
+  keeps only one representative gateway verdict per row: all 44 retained
+  verdicts are denials. Four Qwen rows contain only HTTP 429 failures.
+- The default benchmark caller is always `member`. Four dangerous tools are
+  owner-only; `web_fetch` admits members but its default URL allowlist is empty.
+  The zero retained residual therefore demonstrates deterministic denial under
+  this restrictive fixed policy, not that identity binding alone makes model
+  behavior uniformly safe.
+- The largest rounded per-model average policy-decision latency is **0.0304
+  ms**; the largest retained individual decision is **0.0659 ms**. Neither is
+  end-to-end gateway or network latency.
+- On AgentDojo, both models already have 0/20 attack success without a defense.
+  The gateway denies seven emitted attacker-directed calls using a known-payee
+  argument allowlist, while clean utility falls from 100% to 80% because a
+  legitimate new-payee payment is denied. This is argument-policy evidence
+  under one principal, not per-message identity evidence.
+- The reported 9/9 versus 4/9 comparison is a static reconstruction of full
+  aiAuthZ policy and reduced “OAP-style”/“AIP-style” rules. It does not execute
+  those cited systems on a matched live benchmark.
 
 Key quote: "The gateway does not prevent a model from being deceived; it prevents a deceived model from acting beyond the verified user's authority on every call routed through it."
 
-**Why this matters**: aiAuthZ demonstrates the **structural enforcement principle**: behavioral defenses (prompt engineering, instruction following, refusal training) vary from 38–100% effectiveness and correlate with nothing measurable (not price, not model size). Structural defenses (off-host gateway with identity binding) achieve 0% residual attack success uniformly. This is the Execution Boundary thesis in action: move verification to a structural enforcement point the agent cannot modify.
+**Why this matters**: aiAuthZ implements a credible **structural enforcement
+principle**: a fixed off-host policy can deny covered calls independently of
+model cooperation. Its security claim depends on complete mediation—overlapping
+built-in tools must be disabled—and on trusted gateway code, keys, policy,
+database, and shared nonce/rate-limit storage. Individually permitted calls can
+still compose into a harmful outcome, and symmetric HMAC authenticates to the
+operator without third-party non-repudiation.
 
-**Connection to Instrument Problem (#429)**: The Instrument Problem showed governance instruments change what they govern. aiAuthZ avoids this by being outside the agent's context — the gateway is not an instrument the agent interacts with; it's an enforcement point it passes through.
+**Reproducibility boundary**: The public repository makes the implementation,
+policy, aggregate rows, and arithmetic inspectable. It does not contain the raw
+multi-model request/response transcripts claimed by the paper, and the models
+are proprietary and non-stationary. The aggregate policy result can be audited;
+the original 580 model calls cannot be fully replayed from the inspected
+artifact.
 
 Source: https://arxiv.org/abs/2607.05518
 

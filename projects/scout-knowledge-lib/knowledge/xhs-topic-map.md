@@ -9814,6 +9814,74 @@ production metadata sample, or a model/action experiment. Next seed-first,
 audit the strongest remaining execution-boundary claim whose result still
 conflates a protocol/reference outcome with deployed security effect.
 
+### Cycle 390 seed-first start — preserve cadence; audit aiAuthZ attribution
+
+Cycle 390 starts from clean validated Cycle 389 result
+`8a5fd742278cacd11e8b76a36abcccb556392edb`. At
+`2026-09-04T14:43:51Z`, the scheduled XHS boundary remains
+`2026-09-04T17:09:20.326Z` and no access or collection trigger has fired.
+Make zero account requests and reuse Cycle 375's browser receipt and seed
+ledger: added and changed identities remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, and no account state
+changes. This records an access-qualified unknown before source selection; it
+does not claim the live collection is unchanged.
+
+Rank after that record: (1) high/open `RV-004`, still blocked on the protected
+query/rank-to-selection-to-later-outcome join; (2) high/open `RV-034`, still at
+an external runtime boundary; (3) Memory in the Loop's unreleased provider
+result; and (4) aiAuthZ `2607.05518`, now highest accessible because the
+library calls its fixed-policy denial uniform identity-bound model safety.
+Select the fourth item and separate per-call policy evaluation, retained
+results, per-message identity evidence, deployment assumptions, and replay.
+
+### Cycle 390 checkpoint — covered calls are denied; attribution is narrower
+
+The public result contains 120 model/scenario rows, of which 116 complete 580
+successful calls. Models emit 187 dangerous-call attempts across 44 rows. The
+runner evaluates every attempt, but saves only one representative verdict per
+attempting row; all 44 retained verdicts are denied. Four Qwen rows retain only
+HTTP 429 errors. The benchmark caller is fixed as `member`; four dangerous
+tools are owner-only, while member-allowed `web_fetch` has an empty default URL
+allowlist. The strong supported result is deterministic denial under this
+fixed restrictive policy—not uniform model safety or identity-only effect.
+
+The maximum rounded per-model average decision time is 0.0304 ms; one retained
+decision is 0.0659 ms. Both exclude end-to-end gateway/network time. AgentDojo
+starts at 0/20 no-defense attack success for both models; its seven denials
+come from a known-payee argument allowlist under one principal, and clean
+utility falls from 100% to 80%. The 9/9 versus 4/9 comparison is a static
+reconstruction of reduced policy styles rather than execution of the cited
+systems. Off-host enforcement remains credible only under complete mediation
+and trusted gateway, key, policy, database, and shared nonce/rate-limit state;
+allowed calls can compose harm and symmetric HMAC lacks third-party
+non-repudiation.
+
+ArXiv v1 was observed read-only at
+`2026-09-04T14:44:02.742Z–14:44:04.479Z`: the 3,297-byte Atom response has
+SHA-256 `64c4619417e35b70632903a5ef223c941c7f76f334425eb54e8f30ee3022c180`
+and the 596,526-byte source archive has SHA-256
+`0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760`.
+It identifies v1 published/updated `2026-07-06T18:00:49Z`. GitHub repository
+`Sports-Vision-Inc/aiAuthZ` was observed at public head
+`6eaac86ae5bfd8bf7b8a65786a5c77a7c0bce673` during
+`2026-09-04T14:44:18.621Z–14:44:20.348Z`; its 954,079-byte archive has
+SHA-256 `c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39`.
+The recursive tree has 522 entries / 288 blobs / 2,199,795 blob bytes. It makes
+the implementation and aggregate arithmetic inspectable, but contains no raw
+multi-model request/response transcripts; the original provider calls are not
+fully replayable. Reddit makes zero requests and retains its
+RSS-readable/JSON-403 boundary until a relevant thread or access change.
+
+Confidence is high in source/revision identity, saved-row arithmetic, default
+policy, and runner behavior; moderate in the complete-mediation design; low in
+full model-run replay, identity-only causal effect, operational utility, and
+deployment transfer. `RV-004` and `RV-034` remain high/open; `RV-036` remains
+medium/open. Revisit aiAuthZ on raw transcript release, a complete rerun,
+matched execution of comparison systems, independent deployment evidence, or
+a utility-matched identity ablation. Next seed-first, audit the Balkanization
+survey's four-CVE verification and five-gap synthesis if it remains the
+highest accessible execution-boundary claim after ranking.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
