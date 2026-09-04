@@ -11021,6 +11021,32 @@ projection that removes only the repeated Cycle 373–386 topic/ledger additions
 then compare all navigation fixtures, links, and distinctions before considering
 any real compaction.
 
+### Cycle 411 checkpoint — retrieval survives; provenance does not
+
+Cycle 411 reused Cycle 409's current XHS receipt and made zero XHS, GitHub,
+arXiv, or Reddit requests. The bounded projection removed no working-tree
+content. In memory, it omitted only current lines whose last `git blame`
+origin is one of the fourteen commits in exact range
+`3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`:
+1,082 topic-map lines and 1,772 detailed-ledger lines. Eight lines introduced
+in the range but later changed remain by construction.
+
+All three navigation controls stay at 11/14, 8/8, and 14/14, and the projected
+1,546-document / 1,774-link corpus has zero broken relative links. That is not
+lossless: 61 unique headings, six exact commit/provenance references, and 67
+timestamps become absent from the retained corpus. The six refs include three
+artifact parent/tree identities and three stabilization-lifecycle identities;
+deleting first would erase distinctions that route success cannot measure.
+
+The [Cycle 411 projection report](../reports/review/scout-history-projection-cycle411-2026-09-05.md)
+therefore rejects real compaction now. RV-036 remains medium/open. Before any
+deletion, a smaller project-owned provenance record must preserve each cycle's
+accepted entry, source/result/reviewer mapping, seed-access interval, exact
+reproduction identities, limiting evidence, and integration disposition; the
+same projection must then show that only explicitly non-decision operational
+timestamps disappear. Next, design that replacement schema against the
+fourteen accepted entries before changing either historical narrative.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

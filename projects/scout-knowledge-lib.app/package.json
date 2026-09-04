@@ -14,6 +14,7 @@
     "seed-projection": "bun ./scripts/xhs-current-projection.ts",
     "relative-links": "bun ./scripts/scout-relative-links.ts",
     "navigation-outcomes": "bun ./scripts/scout-navigation-outcomes.ts --minimum-passed 10 && bun ./scripts/scout-navigation-outcomes.ts --fixture scout-navigation-heldout-v2.json --minimum-passed 8 && bun ./scripts/scout-navigation-outcomes.ts --fixture scout-navigation-heldout-v3.json --minimum-passed 14",
+    "history-projection": "bun ./scripts/scout-history-projection.ts scout-history-projection-cycle410.json",
     "overlay-plan": "bun ./scripts/local-main-overlay-plan.ts"
   },
   "dependencies": {
