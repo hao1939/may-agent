@@ -16579,6 +16579,133 @@ Those are previously observed protected-checkout states, not changes
 attributable to this worker. This worker ran no test, generator, formatter,
 install, or write in `/app` or a peer worktree.
 
+## Cycle 379 seed-first start — preserve cadence; audit single-prover scope
+
+Cycle 379 begins from clean validated tip
+`7baa4d39971df7f4d3f5277bad5897ccc4f9b93c` at
+`2026-09-04T12:00:26.479Z`. Cycle 375 remains the supported XHS observation
+through `2026-09-04T11:09:20.326Z`, only 51 minutes earlier, and no access or
+collection trigger is present. Make zero XHS requests: additions and changes
+remain unknown, observed removals remain `[]`, all 132 durable identities
+remain unavailable, and no account state changes. The next scheduled boundary
+remains `2026-09-04T17:09:20.326Z`.
+
+Re-rank after that bounded reconciliation. `RV-004` remains high/open without
+a readable query/rank-to-selection-to-outcome join; `RV-034` remains high/open
+without external runtime evidence; and Memory in the Loop remains unreleased.
+The highest accessible claim gap is arXiv `2607.03561`, because Scan #424 says
+single-prover proofs “eliminate” debate assumptions and reduce verification
+cost without recording the theorem's oracle, robustness, interaction,
+efficiency, soundness, or verifier conditions. Select it before retrieval and
+audit the exact model and theorem scope, costs, baselines, failure conditions,
+and public artifact. Reddit remains deferred at RSS-readable/JSON-403.
+
+## Cycle 379 checkpoint — single-prover verification trades assumptions
+
+What was wrong: Scans #424 and #452 converted a conditional theoretical
+existence result into a general claim that one prover eliminates debate
+assumptions, halves verification cost, increases coverage, and demonstrates
+harness co-evolution. What changes: both scans, their index rows, and the
+Oversight Inversion now distinguish formal prover count from task/oracle
+structure, soundness class, practical cost, and deployment evidence.
+
+ArXiv latest resolved to `2607.03561v1` during the read from
+`2026-09-04T12:00:50.864Z` through `12:00:52.296Z`. The 3,098-byte Atom
+response has SHA-256
+`fb3066282a189bac1c76fdeddeca1ebcd98504f943e691d8fefdf80e2df9693a`;
+the 6,784,355-byte source archive has SHA-256
+`451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944`.
+Its 14-member archive contains the theorem and proof sources. This review
+audits their stated scope and parameters; it is not an independent formal
+verification of the proofs.
+
+All four constructions assume the prover and verifier receive a succinct
+description of a known logspace-uniform oracle circuit and have access to the
+same oracle. Two task classes replace debate's equal-capability, incentivized,
+honest-opponent premises:
+
+- For an `epsilon`-robust nonadaptive circuit, the statistical proof makes
+  `O(sigma/epsilon)` oracle queries, has soundness error `2^-sigma`, and has
+  verifier time roughly
+  `O(sigma(epsilon*l*D + 1/epsilon + n))`, suppressing query-length and
+  polylogarithmic factors.
+- The robust adaptive statistical proof adds the number `d` of oracle levels
+  to query, verifier, and round costs. A separate constant-round robust
+  argument makes `O(1/epsilon)` queries but has soundness `1/2` only against
+  probabilistic polynomial-time provers.
+- The low-degree argument makes one verifier oracle query with near-linear
+  verifier time, but has computational soundness under polynomial Short
+  Integer Solution (SIS) hardness. “Oracle access” means the parties can
+  evaluate the representing polynomial at arbitrary finite-field points, not
+  merely call the original
+  human or web interface.
+
+The manuscript supplies its own contradiction to a general “elimination”
+claim: relativizing single-prover proofs do not exist for all oracle-aided
+computations. An unstable computation over an arbitrary oracle may force the
+verifier to check every oracle answer. Robustness is an input property—the
+output must survive changing up to an `epsilon` fraction of answers—not an
+outcome established for realistic human-judgment tasks. The paper explicitly
+leaves realistic robustness, redundancy-based conversion, practical
+implementation, broader learnable oracles, and verification without a known
+algorithm as future work.
+
+No empirical system, AI-model experiment, or head-to-head debate comparison is
+reported. The paper therefore does not show that two provers literally double
+oversight cost, that one prover lowers realized cost, or that coverage rises.
+The source names no implementation repository. One bounded exact-title GitHub
+repository search from `2026-09-04T12:01:45.154Z` through `12:01:45.674Z`
+returned `total_count:0`, `incomplete_results:false`; its 55-byte response has
+SHA-256
+`4af480b8ee5b87b369a76c49bd22c9a783908272ebffbe97898f8ab0f0772a5f`.
+This is a reproducible negative search, not proof that no implementation
+exists.
+
+Confidence is high in version/archive identity, the explicit theorem
+conditions and asymptotic parameters, the absence of an empirical result in
+the source, and the bounded repository-search result; moderate in the paper's
+unmechanized proof correctness; absent for practical efficiency, realistic
+task robustness, human-oracle fidelity, general AI alignment, or co-evolution.
+Supporting evidence is the four stated protocols and their soundness bounds.
+Contradictory or limiting evidence is the arbitrary-oracle impossibility,
+strong low-degree access convention, computational-only variants, known-
+circuit assumption, and explicit experimental-validation agenda.
+
+Lane continuity: arXiv v1 is selected and qualified; revisit on v2, a proof
+correction, implementation, or experiment. GitHub's last useful evidence is
+the exact zero-result search and absent manuscript link; revisit on a named
+repository or release. Reddit made zero requests and remains deferred until a
+relevant thread or access change. XHS made zero requests, additions/changes
+remain unknown, observed removals remain `[]`, all 132 identities remain
+unavailable, and the next boundary is `2026-09-04T17:09:20.326Z`. `RV-004`
+and `RV-034` remain high/open. Next ranked accessible work is arXiv
+`2607.03423`: test whether the reported 79.2%/95.5% composition results,
+monotonicity guarantee, policy model, baselines, and artifact support Scan
+#424's broad multi-tool security claim.
+
+### Validation and preservation
+
+The exact reviewed candidate passes syntax, TypeScript, tracked-source
+formatting, Cycle 375 seed projection, 94 scoped links, navigation 11/14 and
+8/8, and all 296 Scout tests / 1,486 assertions with zero failures in 98.89
+seconds. The broad offline audit passes 1,540 tracked Markdown documents and
+1,732 local prose links. Read-only health at
+`2026-09-04T12:07:02.759Z` reports 26 facts / 16 wake signals with
+`truncated:true`; runtime state remains absent.
+
+Accepted commits `bb2daa3213161e1b43b0bd45b541f67de0b9adbc`,
+`e8b91a8963bf81d08fc54f3334c87fbe1026c6cf`,
+`b76d6c0737472565db26505d0b2b8e09777ba8eb`, and
+`cb07aedc4e4bcd6599677a7e1ba0115a26484701` remain standing ancestors;
+unaccepted `d041c41b54` remains excluded. At
+`2026-09-04T12:07:02.815Z`, protected `/app` remains externally observed at
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+These match the final Cycle 378 observation. This worker ran no test,
+generator, formatter, install, or write in `/app` or a peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

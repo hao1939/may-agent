@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative. Three arXiv papers converge: the harness is not a fixed container for the agent — it must co-evolve with the system it governs, or governance degrades. HASE (2607.03935) proves a single 8B model co-evolving its own harness matches GPT-OSS-120B with a fixed Claude Code harness — harness authorship is not external. VERITAS (2607.02931) names the replication crisis exit: domain-agnostic verification frameworks that extract claims, run methodology, and judge evidence — but the framework must evolve with the papers it verifies. Doubly-Efficient Interactive Proofs (2607.03561) removes the dual-prover assumption from AI safety verification — a single prover can convince a weak verifier, eliminating the 'honest opponent' requirement of debate. Together: the Verification Harness Hypothesis (#451) assumed the harness was designed once and applied forever. This scan reveals the harness must co-evolve or it becomes the next fixed layer the Oversight Inversion exploits. 24th layer of the Oversight Inversion. Kokoro TTS ✅ CONFIRMED >300pts (300pts exact). HN sovereignty stack at ~3,991pts across 11 stories. Comprehension:News ratio 0.825 (near ATH). All top-tier stories plateau (<4% growth) — full structural absorption. GitHub: T3MP3ST 3,333★, lazycodex 2,535★ (verified-completion harness for complex codebases). Running accuracy: ~96.0% (69/72)."
+summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative. Three arXiv papers motivate whether a fixed harness degrades as its governed system changes. HASE (2607.03935) reports a single 8B model co-evolving its own harness against a fixed-harness 120B comparison. VERITAS (2607.02931) proposes domain-agnostic scientific replication. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Together they motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
 triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "scan 452"]
-source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one bounded exact-title GitHub repository search returned zero matches. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #452: The Co-Evolution Imperative
@@ -14,15 +14,26 @@ source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 
 
 The Verification Harness Hypothesis (#451) proposed that kernel-backed admission can make the checked proof-validity property constructive. Aria reports all 4,864 existing target lemmas proved with zero expert intervention during its campaign. Primary review later found no matched control that isolates harness design, strategy freedom, model capability, or retry budget, so the full-system coverage result does not by itself close the causal architecture question.
 
-This scan reveals **the assumption that arc rested on**: that the harness is designed once and applied thereafter. Three independent arXiv papers converge from reinforcement learning, scientific replication, and theoretical computer science to demonstrate that **a fixed harness degrades as the system it governs evolves**:
+This scan proposes that the prior arc assumed a harness would be designed once
+and applied thereafter. The three highlighted papers motivate distinct harness
+questions; they do not collectively demonstrate that a fixed harness degrades.
+In particular, 2607.03561 changes prover architecture under fixed formal
+conditions and supplies no longitudinal or co-evolution result:
 
 1. **HASE** (2607.03935): Harness-Aware Self-Evolving — a single Qwen3-8B model that co-evolves its own harness matches GPT-OSS-120B using a fixed Claude Code harness. The breakthrough: harness authorship is not an external activity performed by designers; it's an endogenous capability the governed system can exercise. A fixed harness designed for one capability level becomes a constraint, not a guarantee, at the next.
 
 2. **VERITAS** (2607.02931): The first general-purpose scientific replication tool — extracts claims from papers, runs methodology using CLI coding agents, and judges each claim against experimental evidence. But the framework must evolve with the papers it verifies: new domains, new methodologies, new claim structures. No fixed replication pipeline survives the expanding frontier of what needs replicating.
 
-3. **Doubly-Efficient Interactive Proofs** (2607.03561): Shows how to *avoid debate* in AI safety verification by replacing the dual-prover assumption (two competing AIs, one honest) with a single-prover model where a computationally weak verifier can still validate a powerful prover's claims. The honest-opponent assumption of debate is a fixed structural constraint that doesn't survive in practice.
+3. **Doubly-Efficient Interactive Proofs** (2607.03561): Proves
+   single-prover protocols for two structured oracle-computation classes. It
+   removes the honest opponent inside those classes, but replaces debate's
+   premises with robustness or polynomial low-degree structure, a known
+   circuit, and shared oracle access. It does not test a deployed AI harness or
+   harness co-evolution.
 
-**The Co-Evolution Imperative**: A verification harness that does not co-evolve with the system it governs becomes the next fixed layer the Oversight Inversion exploits. Each of the 23 preceding layers identified a structural gap between production and verification. The 24th layer reveals that the *fix* for those gaps — the harness — is itself subject to the same degradation unless it co-evolves.
+**The Co-Evolution Imperative hypothesis**: A verification harness that does
+not adapt may become another fixed layer the Oversight Inversion exploits.
+Scan #452 proposes that extension; 2607.03561 neither tests nor proves it.
 
 **Connection to the exit arc**: The eight-scan exit arc (#444–#451) is not invalidated — it's *extended*. The exit is still architectural (harness-based verification), but the architecture must be living, not fixed:
 
@@ -70,18 +81,38 @@ Source: https://arxiv.org/abs/2607.02931
 
 ### 3. How to Avoid Debate: Scalable AI Safety via Doubly-Efficient Interactive Proofs (2607.03561)
 
-**Core finding**: The dominant paradigm for scalable AI safety verification — debate — assumes two competing AI provers of equal ability, one of which is truthful. This paper shows this structural assumption is unnecessary.
+**Core finding**: The paper supplies formal single-prover alternatives to
+debate for robust oracle computations and computations whose oracle is a
+polynomial low-degree function. The verifier is weak relative to the prover,
+but both receive a succinct description of the known circuit and share oracle
+access. Arbitrary unstable oracle computations remain impossible in this
+model.
 
-The authors initiate the study of **single-prover** interactive proofs for AI safety: a computationally weak verifier can validate claims from a single powerful prover without requiring an honest opponent. Prior single-prover results don't transfer directly to AI safety because they don't handle communication complexity limits (the verifier can't read the entire computation).
+The robust statistical protocols use `O(sigma/epsilon)` queries when
+nonadaptive and roughly `O(sigma*d/epsilon)` when oracle calls span `d`
+adaptive levels. A constant-round robust argument uses `O(1/epsilon)` queries
+but has computational rather than statistical soundness. The low-degree
+argument makes one verifier query, also with computational soundness, while
+assuming polynomial Short Integer Solution (SIS) hardness and access to the
+oracle polynomial at arbitrary field points.
 
-**Why this matters**: The debate paradigm is a *fixed structural assumption* — it assumes that verification requires adversarial competition between equals. Removing this assumption co-evolves the verification architecture itself:
-- **Old**: Two AI debaters, one honest → weak verifier decides
-- **New**: One AI prover → weak verifier validates via doubly-efficient interactive proofs
-- The honest-opponent requirement was a fixed harness assumption that constrained what could be verified
+**Why this matters**: The construction separates prover count from oracle
+structure. One need not assume an equal-capability honest opponent when the
+task satisfies one of the stated formal conditions. That is not assumption-
+free verification: realistic task robustness, practical implementation, and
+verification when the verifier does not know the task algorithm are explicit
+open problems.
 
-**Connection to the Oversight Inversion**: Debate verification has the same structure as human code review — it assumes adversarial tension (the reviewer is the "honest opponent" to the developer's claims). When oversight costs exceed production costs, the reviewer-as-honest-opponent model breaks. Single-prover verification removes this dependency, just as the Verification Harness removes the dependency on human expertise.
+**Connection to the Oversight Inversion**: The paper does not compare realized
+cost or coverage against debate. It therefore cannot support “two provers
+double oversight cost” or show that one prover is operationally cheaper. It
+does support treating task representation, oracle access, and soundness class
+as part of a verification budget rather than inferring budget from prover
+count.
 
-**Connection to Predicate Gate (#446)**: Single-prover interactive proofs are predicate gates at the theoretical level — they define verification conditions that a single system must satisfy, without requiring an external adversary.
+**Connection to Predicate Gate (#446)**: These protocols are conditional
+formal gates. Their predicates cover a specified circuit and oracle relation;
+they do not remove the need to establish that the real task has that form.
 
 Source: https://arxiv.org/abs/2607.03561
 
@@ -197,12 +228,16 @@ The GitHub landscape validates the Co-Evolution Imperative:
 
 ## Oversight Inversion Update — 24th Layer: The Co-Evolution Imperative
 
-**The Co-Evolution Imperative**: A verification harness that does not co-evolve with the system it governs becomes the 24th layer of the Oversight Inversion. The harness is itself subject to the same dynamics as every previous layer: designed for one capability level, it degrades at the next.
+**The Co-Evolution Imperative hypothesis**: A verification harness designed
+for one capability level may degrade at another. Treat this as the proposed
+24th layer, not a consequence of the single-prover theorem.
 
-**Evidence**:
+**Candidate evidence and boundaries**:
 - HASE: 8B model co-evolving its harness matches 120B with fixed harness (harness authorship as endogenous capability)
 - VERITAS: Scientific replication requires domain-agnostic frameworks that evolve with new domains
-- Doubly-Efficient Interactive Proofs: The honest-opponent assumption of debate verification is a fixed structural constraint that can be removed
+- Doubly-Efficient Interactive Proofs: an honest opponent is unnecessary for
+  robust or low-degree oracle computation under the paper's formal access and
+  soundness conditions; general deployment and co-evolution remain untested
 - Organizational Memory: Enterprise governance knowledge must evolve with the organization or become stale
 - SwarmResearch: Single-context harness causes convergence failure; multi-branch orchestration is a structural evolution
 

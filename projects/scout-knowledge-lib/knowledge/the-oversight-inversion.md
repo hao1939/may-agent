@@ -292,7 +292,11 @@ Key evidence:
   top-2 on correct examples; direct top-2 recovery spans 35.2--84.8%. This is
   partial white-box auditability, not measured zero surface information or
   general monitorability.
-- **Single-prover proofs** (2607.03561, ICML 2026): The debate paradigm for AI safety (two provers, weak verifier) is verification at the "adversarial pair" depth. Single-prover interactive proofs work when oracle access is structured — eliminating the doubled verification cost.
+- **Single-prover proofs** (2607.03561, ICML 2026): Formal protocols avoid an
+  honest opponent for robust computations or polynomial low-degree oracles
+  when both parties know the circuit and share oracle access. This separates
+  prover count from oracle structure; it does not measure debate as twice the
+  cost, demonstrate a cheaper deployment, or cover arbitrary unstable tasks.
 - **Compositional taint** (2607.03423): Per-tool guardrails (individual depth) miss 79.2% of policy-violating tool pairs. Chain-level taint tracking (compositional depth) catches them with a monotonicity invariant.
 - **Code review rejection** (2607.03316): 56.3% of agentic code reviews rejected across 31K review-feedback pairs — agents verify functional concerns (wrong depth) while developers evaluate intent alignment (correct depth).
 - **Selective prediction** (2607.03528, ICML 2026): Training for correctness (wrong depth) causes abstention to decay. Training for risk-coverage AURC (correct depth) preserves the ability to stop.

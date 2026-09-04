@@ -9009,6 +9009,72 @@ moved externally after the earlier snapshot to `7c285c09...ca01b` and
 `7e4d0937...26a8a`. These are previously observed protected states, not this
 worker's changes; no test or write ran there or in a peer worktree.
 
+### Cycle 379 seed-first start — preserve cadence; audit single-prover scope
+
+Cycle 379 begins from clean validated tip
+`7baa4d39971df7f4d3f5277bad5897ccc4f9b93c` at
+`2026-09-04T12:00:26.479Z`. Cycle 375 remains the supported XHS observation
+through `2026-09-04T11:09:20.326Z`; no access or collection trigger is present
+and the next boundary is `2026-09-04T17:09:20.326Z`. Make zero XHS requests:
+additions/changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and no account state changes.
+
+After reconciliation, `RV-004` and `RV-034` remain high/open at their recorded
+evidence boundaries and Memory in the Loop remains unreleased. Select arXiv
+`2607.03561` as the highest accessible primary-claim gap: test whether Scan
+#424's “eliminates debate assumptions” and lower-cost language survives the
+paper's oracle, robustness, interaction, efficiency, soundness, verifier, and
+artifact conditions. Reddit remains deferred at RSS-readable/JSON-403.
+
+### Cycle 379 checkpoint — one prover works only under bound structure
+
+ArXiv latest remained `2607.03561v1` during the
+`2026-09-04T12:00:50.864Z–12:00:52.296Z` read. Exact source archive SHA-256 is
+`451f5ad9...be3e944`. The paper states four asymptotic single-prover
+protocols, all with a known circuit and shared oracle access. Robust protocols
+need output invariance under an `epsilon` fraction of altered oracle answers;
+their verifier query cost scales as `1/epsilon` and the adaptive statistical
+variant also scales with oracle depth `d`. The constant-round robust and
+one-query low-degree variants offer only computational soundness; the latter
+assumes polynomial Short Integer Solution (SIS) hardness and arbitrary field-
+point access to the oracle's polynomial representation.
+
+This avoids an equal-capability honest opponent inside two formal classes, not
+all debate assumptions. The paper says arbitrary unstable oracle computations
+cannot receive such efficient single-prover proofs and leaves realistic
+robustness, practical implementation, broader learnable oracles, and unknown-
+algorithm tasks open. It reports no experiment or debate-cost comparison, so
+“two provers double cost,” “one prover increases coverage,” and harness co-
+evolution are unsupported transfers.
+
+The 14-member source archive contains proofs but no implementation. One exact-
+title GitHub repository search at `2026-09-04T12:01:45.154Z–12:01:45.674Z`
+returned zero complete results; response SHA-256 is `4af480b8...772a5f`.
+Confidence is high for source identity and theorem scope, moderate for
+unmechanized proof correctness, and absent for deployment, realized cost,
+human-oracle fidelity, or alignment. Scans #424/#452, their index rows, and the
+Oversight Inversion now retain that distinction.
+
+Lane continuity: arXiv v1 is qualified and revisits on revision, proof
+correction, implementation, or experiment. GitHub revisits on a named
+repository/release; Reddit made zero requests and remains RSS-readable/JSON-
+403 until a relevant thread or access change. XHS made zero requests, all 132
+IDs remain unavailable, and the next boundary remains
+`2026-09-04T17:09:20.326Z`. `RV-004` and `RV-034` remain high/open. Next,
+primary-audit arXiv `2607.03423` against its 79.2%/95.5% result, monotonicity
+guarantee, policy model, baselines, and artifact coverage.
+
+The exact candidate passes syntax, TypeScript, source formatting, Cycle 375
+projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout tests
+/ 1,486 assertions in 98.89 seconds. The broad audit passes 1,540 Markdown
+documents / 1,732 local prose links; read-only health at
+`2026-09-04T12:07:02.759Z` is 26 facts / 16 wakes with truncation and absent
+runtime state. Accepted Cycle 371 commits remain ancestors and unaccepted
+`d041c41b54` remains excluded. Protected `/app` retains HEAD `386b445c23` and
+the final Cycle 378 fingerprints: 386 records / `7c285c09...ca01b`, 296 Scout-
+scope records / `7e4d0937...26a8a`; no test or write ran there or in a peer
+worktree.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
