@@ -1,9 +1,9 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 401 bounded reconciliation at 2026-09-04T16:19:32.167Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 401; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility evidence qualified through Cycle 401; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+last_updated: "2026-09-05"
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 402 bounded reconciliation at 2026-09-04T16:39:37.005Z reused it before the scheduled 17:09:20.326Z boundary and made zero requests: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 402; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input evidence qualified through Cycle 402; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10478,6 +10478,65 @@ high/open and `RV-036` medium/open. Revisit on the promised generator,
 scenario corpus, or verifier traces. Next seed-first, audit whether the
 consent-kept/stripped pair is actually byte-identical outside the consent block
 or only claimed so, if that remains the highest accessible question.
+
+### Cycle 402 seed-first start — preserve cadence; audit paired-input identity
+
+Cycle 402 starts from independently accepted Cycle 401 and clean reconciled
+review tip `f485e287e738e338768312d3ff9ac64007b372b0`. At
+`2026-09-04T16:39:37.005Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`; no seed, access, or cadence trigger had fired. Make
+zero account requests: additions and changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and Cycle 375's
+receipt/ledger remain provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their protected-
+outcome and external-runtime boundaries. Reuse the checksum-matching Cycle 393
+package and select the consent-pair identity claim as the highest accessible
+unresolved validity question. GitHub, arXiv, Reddit, and other public lanes
+make zero requests; their last useful evidence and revisit triggers remain
+unchanged.
+
+### Cycle 402 checkpoint — paired effect lacks a public pair-identity receipt
+
+The source states the intended control clearly: RQ1 uses 76 verbose/terse
+prompt pairs; `consent_kept` retains one “Scope of consent” block,
+`consent_stripped` removes it; fixtures, predicates, and the rule judge are
+said to match by SHA-256. This is the correct shape for a single-axis test.
+
+The retained evidence cannot verify that shape. The exact Cycle 393 source
+archive remains 1,431,318 bytes at SHA-256 `eb6ca423…5408f` and contains 17
+files: manuscript sources, four figures, bibliography/style, and build
+metadata. It contains no phase-1 scenario, prompt pair, fixture, predicate,
+judge, pair manifest, run bundle, or pair-check output. `00README.json` only
+declares `main.tex` and `main.bib` as build inputs. The paper prints no pair or
+component hashes.
+
+The 0/76→13/76 GLM result and exact McNemar arithmetic remain reported paired
+evidence, but they do not independently prove consent-only isolation. A valid
+receipt cannot hash whole bundles as equal because prompt and outcome records
+must differ. It should bind the consent block's exact byte interval, prove
+`stripped = kept` with only that interval deleted, show equal fixture,
+predicate, judge, adapter, and other controlled-input digests, and preserve
+distinct run/result identities. Confidence is high that no public pair proof
+is in the retained package, moderate that the unpublished artifact may contain
+one, and low in independent byte-identity reproduction. This does not show the
+private pairs differ or refute the published rates.
+
+The printed McNemar values are conservative rather than unsupported. Exact
+enumeration of every joint table compatible with the published marginals fixes
+GLM-4.6 at `p=0.000244140625`, bounds MiniMax-M2.7 at
+`0.000244140625..0.004425048828125`, and bounds Sonnet-4.6 at
+`0.00390625..0.03515625`. The printed `0.0044` and `0.035` are the least
+favorable feasible tables, while GLM's zero kept positives determine its table
+uniquely. All feasible values remain below 0.05. The statistical direction is
+therefore robust to the undisclosed outcome pairing, conditional on the still-
+unverified consent-only input construction.
+
+`RV-004` and `RV-034` remain high/open; `RV-036` and `RV-038` remain open cost
+controls. Revisit on the promised phase-1 corpus, component manifest, or
+pair-check receipt. Next seed-first, inspect whether the three-seed sensitivity
+claim keeps scenario identities and paired inputs fixed across seeds or only
+reports aggregate rates, if that remains the highest accessible question.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

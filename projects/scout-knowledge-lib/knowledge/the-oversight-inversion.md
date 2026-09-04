@@ -1273,6 +1273,23 @@ per-check traces. A durable construction certificate should retain both a
 completion witness and one reachability witness per declared trap, bound to the
 exact scenario and verifier revision.
 
+The paired consent intervention has the same executable-evidence boundary.
+OverEager says verbose/`consent_kept` and terse/`consent_stripped` prompts are
+byte-identical outside one explicit block and that fixtures, predicates, and
+the judge match by SHA-256. The retained 17-file source package publishes none
+of the 76 prompt pairs or their component hashes. The rates and McNemar table
+therefore establish a reported paired association under the authors' design;
+they do not let an independent reader rule out another byte difference. A
+replayable causal receipt must bind the exact deleted byte span, prove the
+remaining prompt bytes equal, keep fixture/predicate/judge digests equal, and
+give outcome records distinct identities. A whole-bundle equality claim would
+be the wrong check because prompt and result bytes are expected to differ.
+The printed McNemar values are conservative: compatible-table enumeration fixes
+GLM at `p=0.000244140625`, bounds MiniMax at `0.000244140625..0.004425048828125`,
+and bounds Sonnet at `0.00390625..0.03515625`. All remain below 0.05, so the
+reported direction is robust to the unknown outcome pairing, conditional on
+the unverified consent-only input construction.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

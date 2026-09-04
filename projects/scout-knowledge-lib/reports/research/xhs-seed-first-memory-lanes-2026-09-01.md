@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 401 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, and feasibility claims: constructive pseudocode is not an executable admission certificate."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 402 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, and paired-input claims: the public package has no byte-identity receipt, while every outcome table compatible with the printed marginals remains significant."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
-last_updated: "2026-09-04"
+last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 401; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility evidence qualified through Cycle 401; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 402; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input evidence qualified through Cycle 402; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18927,6 +18927,109 @@ The four-document candidate from source
 TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
 navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
 1,486 assertions, zero failures in 124.21 seconds. After commit, bind broad
+links, read-only health, lineage, clean state, and protected fingerprints to
+the exact result.
+
+## Cycle 402 checkpoint — verify the pair, not only the paired statistic
+
+What was wrong: the library retained OverEager's consent-ablation rates and
+called the comparison single-axis without recording whether the public evidence
+actually lets a reader verify that the two inputs differ only by consent text.
+
+What changes: the durable finding and topic map retain the paired result while
+separating the authors' construction claim from independently inspectable
+pair-identity evidence.
+
+### Seed order, review integration, and ranked selection
+
+The cycle begins from clean standing review reconciliation
+`f485e287e738e338768312d3ff9ac64007b372b0`. It conflict-resolves reviewer
+cursor source `254e52441e9815da141b912eaded610b4f81bc91` with producer status
+`8d0a2fa7634213bd698c5a3bbbf559f310e78cd5`; reviewer source and standing
+result have distinct stable patch IDs and no exact-containment claim. Cycle 401
+is independently accepted, RV-037 is resolved, and RV-004/RV-034 remain
+high/open while RV-036/RV-038 remain visible.
+
+At `2026-09-04T16:39:37.005Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`. The bounded reconciliation made zero account
+requests: added/changed identities remain unknown, observed removals are `[]`,
+all 132 durable seeds remain unavailable, and Cycle 375's receipt and ledger
+remain the exact access provenance. No XHS state changed.
+
+The two high findings cannot move without a protected query→selection→outcome
+join or authority to repair the pinned external Mnemosyne runtime. The retained
+OverEager package makes its paired-input claim the highest accessible validity
+gap. GitHub, arXiv, Reddit, and other public lanes make zero requests; GitHub
+and arXiv retain Cycle 393's exact useful evidence and triggers, and Reddit
+remains RSS-readable/JSON-403 until a relevant thread or access change.
+
+### Public evidence for the single-axis claim
+
+The manuscript repeatedly specifies the intended contrast. It calls the pair
+`consent_kept`/`consent_stripped` and verbose/terse, says the latter removes one
+explicit “Scope of consent” block, and states that fixtures, predicates, and
+the deterministic rule judge match by SHA-256. Phase 1 contains 76 such pairs
+per model. If implemented as described, this is a credible single-axis design.
+
+The exact retained Cycle 393 artifacts still match: Atom 3,743 bytes /
+`282641c0…b3244`, source 1,431,318 bytes / `eb6ca423…5408f`, and PDF
+2,121,970 bytes / `0bfc3f0e…5a20f`. A fresh local archive inventory at the
+seed timestamp found the same 17 entries: 10 TeX sources, four PDF figures, one
+bibliography, one style file, and `00README.json`. No filename identifies a
+scenario, prompt pair, fixture, predicate, judge, manifest, bundle, result,
+trace, generator, or verifier. The build metadata declares only `main.tex` as
+top-level and `main.bib` as ignored. No network or provider authority was used.
+
+Consequently, the reported 0/76→13/76 GLM-4.6 change and worst-case McNemar
+calculation remain inspectable statistics under an asserted paired design, not
+proof of input identity. A whole-bundle SHA cannot be the equality test because
+the prompt variants and their result records should differ. The smallest
+replayable receipt needs:
+
+- exact kept and stripped prompt bytes plus the consent block's byte offsets
+  and digest;
+- proof that deleting only that interval from kept yields stripped;
+- equal digests for fixture, predicates, judge, adapter/configuration, and all
+  other controlled inputs; and
+- separate run/result identities so outcomes are never normalized into the
+  equality claim.
+
+### What the worst-case McNemar values still prove
+
+The hidden joint outcome tables are not required to test the paper's explicit
+worst-case claim. For kept positives `k`, stripped positives `s`, stripped-only
+discordance `b`, and kept-only discordance `c`, every feasible table obeys
+`b-c=s-k` and `0<=c<=k`. Enumerating those finite tables gives:
+
+- GLM-4.6 0/76→13/76: only `b=13,c=0`, exact two-sided
+  `p=0.000244140625`;
+- MiniMax-M2.7 3/76→16/76: `c=0..3`, exact `p` from
+  `0.000244140625` to `0.004425048828125`; and
+- Sonnet-4.6 3/76→12/76: `c=0..3`, exact `p` from `0.00390625` to
+  `0.03515625`.
+
+The printed `0.0044` and `0.035` match the largest, least favorable feasible
+values; GLM is uniquely identified. Thus every joint table compatible with the
+published marginals remains significant at 0.05. The actual discordant counts
+for MiniMax and Sonnet are still unknown, but that uncertainty cannot reverse
+the reported significance. It also cannot establish causal isolation unless
+the missing prompt/control bytes really differ only by the consent block.
+
+Confidence is high that the retained public package provides no such receipt,
+moderate that the promised private/unreleased artifact may provide one, and low
+in independent byte-identity reproduction. This does not imply an extra input
+difference or refute the reported effect. Revisit on the phase-1 corpus,
+component manifest, pair-check receipt, or attributable repository. The next
+ranked accessible audit asks whether the three-seed sensitivity claim keeps
+scenario identities and paired inputs fixed across seeds or only reports
+aggregate rates.
+
+### Cycle 402 candidate validation
+
+The four-document candidate follows exact reconciled source
+`f485e287e738e338768312d3ff9ac64007b372b0`. Run whitespace, syntax,
+TypeScript, formatting, Cycle 375 projection, scoped links, both navigation
+fixtures, and the full Scout test gate before committing; then bind broad
 links, read-only health, lineage, clean state, and protected fingerprints to
 the exact result.
 

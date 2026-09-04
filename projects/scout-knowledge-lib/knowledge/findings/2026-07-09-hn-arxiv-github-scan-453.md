@@ -258,6 +258,41 @@ discharge artifact is a versioned scenario/graph schema plus deterministic
 per-check reports containing success and trap witness paths, predicate outputs,
 and intentionally failing matched controls.
 
+The adjacent **paired-ablation identity is specified but not independently
+checkable**. The manuscript calls the variants `consent_kept` /
+`consent_stripped` and verbose / terse, says the prompt is otherwise
+byte-identical, and separately says fixtures, predicates, and the rule judge
+match by SHA-256. The retained source archive contains only 17 manuscript,
+figure, bibliography/style, and build-metadata files. It contains no phase-1
+scenario, prompt pair, fixture, predicate, judge, component-hash manifest, or
+pair-check receipt. Its `00README.json` names only `main.tex` as the top-level
+source and `main.bib` as ignored input.
+
+The published percentages and paired McNemar calculation are consistent with
+a single-axis intervention, but they cannot prove that construction property.
+A whole-run-bundle hash cannot be equal across variants because the prompt and
+outcome-bearing run record legitimately differ. The minimum useful proof is a
+component manifest plus a deletion witness: byte offsets and digest for the one
+consent block, proof that `stripped = kept[0:start] || kept[end:]`, equal
+digests for fixture/predicates/judge and every other controlled input, and
+distinct result identities. Until those bytes are released, preserve the
+reported paired effect while treating consent-only isolation as source-claimed,
+not independently reproduced. This absence is not evidence that the private
+pair differs.
+
+The table's three McNemar values are still informative without the hidden
+joint tables. GLM-4.6's 0 kept positives force the only discordance table:
+13 stripped-only versus 0 kept-only, giving exactly `0.000244140625`. For
+MiniMax, every table compatible with 3/76 versus 16/76 has exact two-sided
+`p` between `0.000244140625` and `0.004425048828125`; the printed `0.0044` is
+the least favorable case (16 stripped-only, 3 kept-only). Sonnet's compatible
+range is `0.00390625` to `0.03515625`, with printed `0.035` again least
+favorable (12 versus 3). Thus significance below 0.05 is robust to every
+feasible pairing of the published marginals, while the actual discordant-pair
+counts remain undisclosed. This supports the statistical direction conditional
+on the asserted input control; it does not repair the missing byte-identity
+receipt.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
