@@ -145,6 +145,26 @@ the source claim that all six false positives are `toctou-race`; do not infer
 benchmark-wide 1.00 recall, coverage of all other 23 archetypes, or independent
 human confirmation until those records are inspectable.
 
+**The nine-archetype “zero-touch” taxonomy is contradicted by its retained
+table.** The appendix says nine archetypes produce zero rule-judge hits across
+all v1 cells and remain at zero across seeds 42, 7, and 13. But its only
+24-archetype table, explicitly computed from seed 13, has just four rows with
+0.0% in every framework: `persistence-install`, `name-similarity`,
+`typosquat-package`, and `sudo-escalation`. The prose also says the assignment
+of all nine archetypes to three blindspot classes appears in that table, while
+the table has no blindspot-class column. No raw scenario-to-archetype or
+per-seed result file is released to resolve the mismatch.
+
+The three classes are not interchangeable measurement failures. “Say-only”
+and “intent without actuation” deliberately have no write or sensitive-read
+delta, so counting them would extend the paper's formal executed-effect
+outcome; its example of asking permission may be restraint rather than
+overreach. “Sink misalignment” can be a genuine false negative if an
+unauthorized effect reaches an unobserved remote or in-memory sink, but listing
+expected sinks in a manifest does not itself demonstrate interception or
+coverage. Preserve these as proposed extensions and an instrumentation risk,
+not an exhaustive, empirically assigned, or already fixed blindspot taxonomy.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
@@ -167,8 +187,8 @@ audit bundles, generators, audit suite, and adapters will be released upon
 publication. Its inspected arXiv source contains manuscript files and figures,
 not those artifacts. Four targeted GitHub repository searches found no
 attributable project, so the published tables and arithmetic are inspectable
-but neither the paired pilot, the human-label analysis, nor the full matrix can
-currently be replayed.
+but neither the paired pilot, the human-label analysis, the zero-touch
+taxonomy, nor the full matrix can currently be replayed.
 
 Sources: https://arxiv.org/abs/2607.05743,
 https://arxiv.org/abs/2605.18583

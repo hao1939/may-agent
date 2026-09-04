@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 395 bounded reconciliation at 2026-09-04T15:30:55.685Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 395; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label evidence qualified through Cycle 395; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 396 bounded reconciliation at 2026-09-04T15:36:50.747Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 396; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch evidence qualified through Cycle 396; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10158,6 +10158,56 @@ coverage, judge-blind re-labeling from complete traces, or artifact release.
 Next seed-first, test whether the paper's “all other 23 archetypes agree 100%”
 can be bounded from any released per-archetype count or whether the next
 highest accessible question should move to its zero-touch blindspot classes.
+
+### Cycle 396 seed-first start — reuse the source; test zero-touch consistency
+
+Cycle 396 starts from clean validated Cycle 395 result
+`8eb8a7fa35f1e07c7d3c1192c9ea6f771387c34e`. At
+`2026-09-04T15:36:50.747Z`, the next XHS observation remained
+`2026-09-04T17:09:20.326Z`; no trigger had fired. Make zero account requests:
+additions/changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's exact receipt/ledger
+remain provenance. High/open `RV-004` and `RV-034` remain more valuable but
+inaccessible at their recorded boundaries. Reuse the checksum-verified
+OverEager source and select its zero-touch taxonomy as the highest accessible
+internal-consistency and estimand gap without another public request.
+
+### Cycle 396 checkpoint — four table zeros do not establish nine blindspots
+
+The appendix makes two linked claims: nine archetypes produce zero rule-judge
+hits across all v1 cells, and the same nine remain zero across seeds 42, 7, and
+13. Its sole 24-row numeric table is explicitly the seed-13 replicate. Direct
+row inspection finds only four archetypes at 0.0% in every framework:
+`persistence-install`, `name-similarity`, `typosquat-package`, and
+`sudo-escalation`. At least one retained claim or table basis therefore needs
+correction; the missing raw per-seed outputs prevent choosing which. The prose
+says the nine archetype-to-class assignments appear in that table, but its six
+columns contain only archetype, sample count, and four framework results.
+
+The three proposed classes also cross an estimand boundary. Say-only text has
+no effect, and the intent-without-actuation example asks whether it may disable
+SSL verification; both fail the paper's formal requirement for an unauthorized
+write or sensitive read. A text/intent detector could define a useful warning
+metric, but it would not be a drop-in recall repair for the current outcome.
+Sink misalignment is different: an actual forbidden remote or in-memory effect
+outside the logger would be a genuine false negative. Yet declaring expected
+sinks in an action-surface manifest does not show that each sink is intercepted
+or that undeclared sinks are impossible. No experiment, coverage record, or
+released implementation verifies the claimed closure.
+
+Confidence is high in source identity, the four visible all-zero rows, absent
+class column, and formal outcome wording; moderate that the nine-versus-four
+conflict is substantive rather than an undocumented table transformation; low
+in the true per-seed zero set, class assignments, or mitigation effectiveness.
+The supported result is a taxonomy proposal containing one observability risk
+and two possible metric extensions, not nine empirically mapped, exhaustive,
+fixable blindspots. GitHub and arXiv retain Cycle 393's evidence; Reddit makes
+zero requests and remains RSS-readable/JSON-403. `RV-004` and `RV-034` stay
+high/open; `RV-036` stays medium/open. Revisit on raw per-seed outcomes,
+scenario-to-archetype rows, an explicit class column, full traces, or tested
+sink instrumentation. Next seed-first, audit the source's “complete
+audit-channel coverage” claim against its enumerated tools, commands, and
+unobserved sink admission rule if it remains the highest accessible gap.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

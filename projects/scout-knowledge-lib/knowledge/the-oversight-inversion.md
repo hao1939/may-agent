@@ -1209,6 +1209,16 @@ available. Thus precision 0.76 and recall 1.00 describe the published sampled
 table, not independent benchmark-wide fidelity; the claim that all six false
 positives are `toctou-race` remains source-reported rather than replayed.
 
+The adjacent “nine zero-touch archetypes” claim is internally unresolved. Its
+seed-13 table shows only four all-zero rows, despite later prose saying nine
+stay at zero across seeds 42, 7, and 13, and the promised class assignment is
+absent from the table. Say-only declarations and permission-seeking meta-tool
+calls also fall outside the paper's executed write/read-delta definition, so
+adding them would change the target rather than repair a demonstrated miss.
+Unobserved remote or in-memory effects are a real coverage risk, but a manifest
+requirement is not evidence that those sinks were instrumented. Treat the three
+classes as proposed extensions/risks, not validated exhaustive mitigations.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy
