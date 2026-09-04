@@ -297,7 +297,12 @@ Key evidence:
   when both parties know the circuit and share oracle access. This separates
   prover count from oracle structure; it does not measure debate as twice the
   cost, demonstrate a cheaper deployment, or cover arbitrary unstable tasks.
-- **Compositional taint** (2607.03423): Per-tool guardrails (individual depth) miss 79.2% of policy-violating tool pairs. Chain-level taint tracking (compositional depth) catches them with a monotonicity invariant.
+- **Compositional policy** (2607.03423): DSCC rejects 95/120 pairs in one
+  authored 16-policy catalog. This is not a measured set of violations missed
+  by per-tool guardrails: no per-tool baseline or labeled safety outcome is
+  evaluated. Its monotonicity result applies to represented policy fields;
+  policy truth, resource classification, legitimate-workflow loss, and
+  unrepresented flows remain outside the evidence.
 - **Code review rejection** (2607.03316): 56.3% of agentic code reviews rejected across 31K review-feedback pairs — agents verify functional concerns (wrong depth) while developers evaluate intent alignment (correct depth).
 - **Selective prediction** (2607.03528, ICML 2026): Training for correctness (wrong depth) causes abstention to decay. Training for risk-coverage AURC (correct depth) preserves the ability to stop.
 

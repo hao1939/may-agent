@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 reproduces the login-class collection boundary, then qualifies Anchored Self-Play as a two-intervention function-repair result whose public launcher and artifacts do not reproduce the paper-bound setup or establish transfer to self-configuration."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; Cycle 380 qualifies DSCC's 79.2%/95.5% values as authored-catalog rejection rates rather than measured violation recall and records the missing implementation and network-zone evidence."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 375; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, and Anchored Self-Play primary evidence resolved in Cycle 375; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 380; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, and DSCC composition evidence qualified in Cycle 380; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -16705,6 +16705,124 @@ and 296 Scout-scope records /
 `7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
 These match the final Cycle 378 observation. This worker ran no test,
 generator, formatter, install, or write in `/app` or a peer worktree.
+
+## Cycle 380 seed-first start — no early account request
+
+Cycle 380 starts from clean validated source tip
+`bf0ec2e3f4773c8f3969f017f3b56d9b88928bb5` at
+`2026-09-04T12:10:51.681Z`. The last supported XHS observation is Cycle 375
+through `2026-09-04T11:09:20.326Z`, about 61 minutes earlier. No access,
+collection, or cadence trigger is present, so make zero XHS requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and account state is unchanged. The
+next scheduled boundary remains `2026-09-04T17:09:20.326Z`.
+
+The complete queue still ranks `RV-004` and `RV-034` highest by consequence,
+but neither can advance from producer-visible evidence: the first lacks the
+protected query/rank-to-selection-to-outcome join and the second lacks an
+external runtime. Select arXiv `2607.03423` as the highest accessible gap
+because Scan #424 turns its catalog block rates into a per-tool detection
+comparison without a recorded baseline. Audit the primary source, reproduce
+the counts, test one matched policy control, and look for the named reference
+implementation. Reddit remains trigger-deferred without a request.
+
+## Cycle 380 checkpoint — DSCC counts are structural catalog arithmetic
+
+What was wrong: Scan #424 described 79.2% as policy violations missed by
+per-tool guardrails and treated 0% versus 79.2% as a measured depth gap. What
+changes: the scan, index, Oversight Inversion, and living map now identify the
+denominator as all catalog pairs and separate algebraic policy monotonicity
+from observed security effectiveness.
+
+ArXiv resolved `2607.03423v1` during the bounded read from
+`2026-09-04T12:11:01.489Z` through `12:11:02.949Z`. The 3,508-byte Atom
+response has SHA-256
+`837430a8cf885b99372ed0eda5a99f93edb37253af31d04e3d8270152927445d`;
+the 58,932-byte source archive has SHA-256
+`d7603468f756bed2a63e8f79160c787b62cdad3b8882486379515a0eb5c57de9`.
+Its five safe regular-file members contain the manuscript, bibliography, and
+figures. They contain no C# implementation.
+
+The reported counts reproduce exactly from the disclosed policy distribution:
+
+- Clearance partitions 16 policies into class sizes 6, 5, 3, and 2. Cross-
+  class pairs reject 91/120; the outbound email policy's same-class boundary
+  exception adds four, yielding 95/120 (79.2%). Cross-class triples reject
+  529/560 and the email exception adds six, yielding 535/560 (95.5%).
+- Taint mode permits combinations within the 12 non-email upper-class
+  policies and separately within the three Public policies, leaving 51/120
+  pairs (42.5%) and 339/560 triples (60.5%) rejected.
+- The disclosed tool-to-policy multiplicities likewise reconstruct all four
+  tool results: 704/992 and 4,499/4,960 in clearance mode; 322/992 and
+  2,350/4,960 in taint mode.
+- A matched control removing only the email boundary exception changes
+  clearance to 91/120 (75.8%) and 529/560 (94.5%). This confirms the rates are
+  sensitive to the authored policy catalog, as the paper also states.
+
+The paper evaluates no per-tool baseline or ground-truth violation set. It
+reports no precision, recall, false-positive rate, attack success, workload
+completion, or policy-authoring error. MRS explicitly cannot tell whether a
+block prevented an unsafe chain or overblocked a legitimate one. Phase 2 has
+three illustrative scenarios, not an empirical runtime campaign. The
+supported claim is therefore that the disclosed rules reject these catalog
+combinations, not that they catch 79.2% of violations that individual checks
+miss.
+
+The monotonicity invariant follows for represented fields when declarations
+are complete and truthful: maximum, Boolean OR, intersection, and minimum
+cannot relax their respective constraints. It says nothing about incorrect
+tool policies, misclassified resources, or flows absent from the model. The
+appendix's “complete data” claim is also too strong: its table omits the
+network-zone sets required by the six-field policy and zone-intersection
+rejection step. The arithmetic above is reproducible, but the named full
+implementation and zone behavior are not reproducible from the archive.
+
+One bounded GitHub repository search for “Dynamic Security Control
+Compositor” ran from `2026-09-04T12:11:43.833Z` through `12:11:44.383Z`.
+The complete 12,314-byte response has SHA-256
+`b3d41c2d9ee0c8636c2c456ad21595bc9e5dfff7afcddf8c22e51ef77b7d31b7`
+and returned two secondary agent-security resource lists, not an author
+implementation in their repository metadata. That is a bounded search result,
+not proof that no implementation exists.
+
+Confidence is high in version identity, the disclosed catalog, exact count
+derivation, absent archive code, and missing zone column; moderate in the
+paper's unexecuted implementation description; absent for violation recall,
+legitimate-workflow loss, real attack prevention, label quality, and deployed
+utility. Supporting evidence is the exact reconstruction of all eight result
+rows and the monotone operators. Contradictory or limiting evidence is the
+missing baseline, the paper's own overblocking caveat, illustrative-only
+runtime section, incomplete policy table, and absent public code.
+
+Lane continuity: arXiv v1 is qualified and revisits on v2, code, full zone
+assignments, or a labeled evaluation. GitHub's last useful evidence is the
+two-result secondary-list search and absent manuscript link; revisit on a
+named repository or author release. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant thread or access change. XHS made zero
+requests and remains due `2026-09-04T17:09:20.326Z`. `RV-004` and `RV-034`
+remain high/open. Next seed-first, primary-audit arXiv `2607.03316`: verify
+its 31,073-pair sampling and labels, the 56.3% rejection interpretation,
+predictor evaluation, causal claims, and released-artifact coverage.
+
+### Validation and preservation
+
+The exact five-file candidate is 239 additions and 22 removals and passes
+whitespace review, syntax, TypeScript, tracked-source formatting, Cycle 375
+seed projection, 94 scoped links, navigation 11/14 and 8/8, and all 296 Scout
+tests / 1,486 assertions with zero failures in 96.87 seconds. The broad audit
+passes 1,540 tracked Markdown documents / 1,732 local prose links. Read-only
+health at `2026-09-04T12:17:50.653Z` reports 26 facts / 16 wake signals with
+`truncated:true`; runtime state is absent.
+
+Accepted Cycle 371 commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors; unaccepted `d041c41b54` remains excluded. At
+`2026-09-04T12:18:00.174Z`, protected `/app` remains externally observed at
+HEAD `386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+These match the prior observation. This worker ran no test, generator,
+formatter, install, or write in `/app` or a peer worktree.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

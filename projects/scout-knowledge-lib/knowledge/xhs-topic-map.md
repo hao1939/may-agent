@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces the login-class collection boundary; exact access evidence, wrapper correction, and uncertainty are in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 375; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, and Anchored Self-Play primary evidence resolved in Cycle 375; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 380; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, and DSCC composition evidence qualified in Cycle 380; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9074,6 +9074,65 @@ runtime state. Accepted Cycle 371 commits remain ancestors and unaccepted
 the final Cycle 378 fingerprints: 386 records / `7c285c09...ca01b`, 296 Scout-
 scope records / `7e4d0937...26a8a`; no test or write ran there or in a peer
 worktree.
+
+### Cycle 380 seed-first start — preserve cadence; audit DSCC measurement
+
+Cycle 380 starts from clean validated tip
+`bf0ec2e3f4773c8f3969f017f3b56d9b88928bb5` at
+`2026-09-04T12:10:51.681Z`. Cycle 375's observation through
+`2026-09-04T11:09:20.326Z` is only about 61 minutes old, so this bounded
+reconciliation makes zero XHS requests. Added and changed identities remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and no account state changes. The next scheduled boundary remains
+`2026-09-04T17:09:20.326Z`.
+
+Re-ranking keeps high/open `RV-004` first but inaccessible without the
+protected query/rank-to-selection-to-later-outcome join, and high/open
+`RV-034` second but inaccessible without external runtime evidence. The
+highest accessible primary-claim gap is arXiv `2607.03423`: determine whether
+the 79.2%/95.5% values measure security effectiveness, whether monotonicity is
+end-to-end, and whether the reference implementation and catalog are publicly
+reproducible. Select it before retrieval. Reddit remains deferred at its
+RSS-readable/JSON-403 boundary.
+
+### Cycle 380 checkpoint — catalog rejection is not violation recall
+
+Primary review of `2607.03423v1` narrows the claim substantially. The paper's
+79.2% is 95 rejected combinations among every 120 unordered pairs in one
+authored 16-policy catalog. It is not a denominator of known violations, and
+the study supplies no per-tool-guardrail baseline, labeled safe/unsafe chains,
+precision, recall, false-positive rate, or workflow outcome. Phase 2 consists
+of three illustrative taint walkthroughs rather than an attack or live-agent
+evaluation. The paper itself acknowledges that MRS cannot distinguish a
+correct security block from an overblocked legitimate workflow.
+
+The disclosed class groups and email boundary exception reproduce every table
+row exactly: policy rejection counts are 95/120 and 535/560 in clearance mode,
+51/120 and 339/560 in taint mode; tool counts are 704/992 and 4,499/4,960,
+then 322/992 and 2,350/4,960. Removing only the email exception is a matched
+control that changes clearance to 91/120 (75.8%) and 529/560 (94.5%). The
+rates therefore describe the chosen policy distribution. They do not measure
+an intrinsic detector or a 0%-to-79.2% improvement over individual checks.
+
+The operator-level monotonicity result is supported under complete, truthful,
+stable declarations: maxima, Boolean OR, set intersection, and minimum
+lifetime cannot relax their represented fields. It does not validate policy
+truth, resource classification, unrepresented flows, or actual security
+outcomes. The appendix also omits the network-zone sets required by its own
+six-field policy and rejection algorithm. Its five-member source archive has
+no C# implementation, so the class arithmetic is reproducible but the claimed
+full implementation and zone behavior are not.
+
+Exact provenance and the full formulas are retained in Scan #424. ArXiv v1
+revisits on a revision, code release, policy-zone data, or labeled evaluation.
+One bounded GitHub search returned two secondary resource-list repositories
+and no author implementation in returned metadata; revisit on a named release.
+Reddit made zero requests and retains its relevant-thread/access trigger. XHS
+made zero requests and retains the `2026-09-04T17:09:20.326Z` boundary.
+`RV-004` and `RV-034` remain high/open. Next seed-first, primary-audit arXiv
+`2607.03316` against its 31,073-pair sampling, acceptance/rejection labels,
+56.3% interpretation, predictor evaluation, causal language, and public
+artifact coverage.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
