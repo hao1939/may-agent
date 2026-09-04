@@ -10797,6 +10797,35 @@ Next begin seed-first and primary-review OptiAgent's four-loop,
 subtractive, whether baselines/statistics support the ranking, and whether an
 artifact permits reproduction before carrying it into governance guidance.
 
+Exact Cycle 316 material `43f474dc2a490be9331986f4f1c3887b9ffeee1f`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad audit
+passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T01:47:23.468Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing tree is clean. Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole-status records /
+`7c285c09b735611dc4292f6d8158199b1d880b9c40764f4632c2408d0d1ca01b`,
+and 296 Scout-scope records /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`.
+This worker wrote or tested neither protected surface.
+
+## Cycle 317 seed-first start — primary-check OptiAgent
+
+At `2026-09-04T01:47:28.655Z`, the last XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, and no account state changed.
+
+`RV-004` remains first but inaccessible without the protected
+query/rank-to-selected-file-to-later-outcome join. Memory in the Loop remains
+second but inaccessible without the frozen provider artifact and execution
+authority. OptiAgent `2607.05346` is the highest-value accessible gap because
+Scan 449 uses its four loops, 3/4-benchmark ranking, and auditability as a
+governance mechanism. Select its primary paper and attributable artifact
+surface ahead of Cortex, HeRo, other unsourced scans, Reddit, and compaction.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

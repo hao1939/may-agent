@@ -4897,6 +4897,27 @@ and auditability claims. Test whether the loops are genuinely subtractive,
 what baselines and statistics support the reported ranking, and whether any
 artifact permits reproduction before carrying it into governance advice.
 
+Exact Cycle 316 material `43f474dc2a490be9331986f4f1c3887b9ffeee1f`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad audit
+passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T01:47:23.468Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing tree is clean. Protected `/app` remains HEAD `386b445c…41fec8`, 386
+whole-status records / `7c285c09…ca01b`, and 296 Scout-scope records /
+`7e4d0937…26a8a`; this worker wrote or tested neither surface.
+
+### Cycle 317 seed-first start — primary-check the four-loop claim
+
+At `2026-09-04T01:47:28.655Z`, the current XHS receipt remained inside the
+six-hour cadence. No XHS or public-source request ran during reconciliation:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, and no account state changed. `RV-004` and Memory in
+the Loop retain ranks one and two but remain inaccessible at their recorded
+evidence boundaries. OptiAgent `2607.05346` is now the highest-value accessible
+gap; select its primary paper and artifact surface ahead of Cortex, HeRo,
+other unsourced scans, Reddit, and compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
