@@ -14150,6 +14150,35 @@ matched-cardinality causality, or full-pipeline cost. `RV-004` remains high/open
 Next seed-first, primary-review Pitwall `2607.06495`, the highest accessible
 unreviewed Scan #456 claim about typed claims and virtue tradeoffs.
 
+Exact Cycle 354 material
+`14d157c4b0e620d02a41511d502d984088c35527` passes all 277 Scout tests /
+1,426 assertions across 24 files in 124.46 seconds, plus the 19 focused tests /
+51 assertions. TypeScript, tracked source formatting, whitespace, Cycle 341
+projection, 90 scoped links, navigation v1 11/14 and v2 8/8, and the broad
+1,540-document / 1,728-link audit pass. Read-only health at
+`2026-09-04T06:57:55.674Z` returns 26 facts / 16 wakes and is truncated.
+Historical `f26bd4f3…f1be`, accepted `ff923ccde4`, and Cycle 353
+`f88b309737` remain ancestors; unaccepted `d041c41b54` remains excluded. The
+tree is clean. Protected `/app` remains unchanged at `386b445c…1fec8`, 918 /
+`0d1ab91f…a932` overall and 296 / `7e4d0937…6a8a` in Scout scope.
+
+## Cycle 355 seed-first start — test typed-claim faithfulness
+
+At `2026-09-04T06:58:04.151Z`, Cycle 341's XHS observation through
+`05:00:03.241Z` remains inside cadence. Make zero XHS requests: additions and
+changes remain unknown, removals are `[]`, all 132 seeds remain unavailable,
+and account state is unchanged.
+
+Expected knowledge value ranks (1) high/open `RV-004`, inaccessible without
+protected query/rank -> selection -> later outcome; (2) Memory in the Loop's
+missing provider result; (3) Pitwall `2607.06495`, highest accessible because
+its typed-claim, probabilistic-state, and virtue-tradeoff conclusions remain
+primary-unreviewed in Scan #456; (4) other primary, contradiction,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until its trigger;
+(6) compaction. Select `2607.06495` and inspect claim types, verifier authority,
+datasets/denominators, virtue definitions/tradeoffs, controls, uncertainty, and
+public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

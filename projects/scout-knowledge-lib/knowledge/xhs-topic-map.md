@@ -7238,6 +7238,33 @@ primary-review Pitwall `2607.06495`, the highest accessible unreviewed claim in
 Scan #456: test whether typed claims make faithfulness architectural and what
 its virtue-tradeoff evidence actually measures.
 
+Exact Cycle 354 material
+`14d157c4b0e620d02a41511d502d984088c35527` passes 277 tests / 1,426
+assertions across all 24 Scout files in 124.46 seconds, plus the 19 focused
+tests / 51 assertions. TypeScript, tracked Scout source formatting, whitespace,
+Cycle 341 projection, 90 scoped links, navigation 11/14 and 8/8, and the
+1,540-document / 1,728-link broad audit pass. Read-only health at
+`2026-09-04T06:57:55.674Z` is 26 facts / 16 wakes and truncated.
+`f26bd4f3…f1be`, accepted `ff923ccde4`, and Cycle 353 `f88b309737` are
+contained; unaccepted `d041c41b54` remains excluded. The standing tree is
+clean. Protected `/app` remains read-only at `386b445c…1fec8`, 918 records /
+`0d1ab91f…a932` overall and 296 records / `7e4d0937…6a8a` in Scout scope.
+
+### Cycle 355 seed-first start — test typed-claim faithfulness
+
+At `2026-09-04T06:58:04.151Z`, reuse Cycle 341's supported XHS observation
+through `05:00:03.241Z`, still inside cadence. Make zero XHS requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 seeds
+remain unavailable, and account state is unchanged. Rank (1) high/open
+`RV-004`, inaccessible without the protected query/rank -> selection -> later-
+outcome join; (2) Memory in the Loop's missing provider result; (3) Pitwall
+`2607.06495`, highest accessible because its typed-claim, probabilistic-state,
+and virtue-tradeoff conclusions remain primary-unreviewed in Scan #456; (4)
+other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
+(5) Reddit until trigger; (6) compaction. Select `2607.06495` and inspect claim
+types, verifier authority, datasets and denominators, virtue definitions and
+tradeoffs, baselines/ablations, uncertainty, and public artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
