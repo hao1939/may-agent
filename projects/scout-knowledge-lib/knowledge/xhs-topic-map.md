@@ -4484,6 +4484,20 @@ asserted universal `3–4` ceiling and “workflow > model” ranking can change
 same synthesis and its primary `2607.05197v1` source is accessible, so it
 outranks another unsourced summary or static compaction.
 
+Cycle 310 material `fa7255fc708014dccd9c62f96c0c18355b1555e1` passes
+syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation v1 at 11/14, navigation v2 at 8/8, and all 296 tests / 1,484
+assertions. The broad audit passes 1,540 tracked Markdown documents / 1,728
+local prose links. Read-only health at `2026-09-04T00:54:05.411Z` returns 26
+facts / 16 wakes with `truncated:true`; accepted `ff923ccde4` is contained and
+unaccepted `d041c41b54` excluded.
+
+The standing tree is clean. Protected `/app` remains at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`; its externally owned whole-status
+surface changed from the preceding observation's 386 records /
+`7c285c09…1ca01b` to 916 / `f7080322…a93a`, while its 296-record Scout scope
+remains exact at `7e4d0937…26a8a`. This worker wrote or tested neither surface.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

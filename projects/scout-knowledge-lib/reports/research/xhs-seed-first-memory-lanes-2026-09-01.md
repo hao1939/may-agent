@@ -10311,6 +10311,21 @@ Testing the claimed universal three-to-four-iteration ceiling and “workflow
 orchestration > model” statement against its primary tasks, models, and
 estimand ranks above another unsourced summary or byte/line compaction.
 
+Source/seed `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d` produced material
+result `fa7255fc708014dccd9c62f96c0c18355b1555e1`. The exact result tree passes
+syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad audit
+passes 1,540 tracked Markdown documents / 1,728 links; read-only health at
+`2026-09-04T00:54:05.411Z` returns 26 facts / 16 wakes with `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the
+standing worktree is clean.
+
+Protected `/app` remains externally observed at HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its whole short-status surface
+changed externally from 386 records / `7c285c09…1ca01b` to 916 /
+`f7080322…a93a`; the 296-record Scout scope remains exact at
+`7e4d0937…26a8a`. This worker did not write or test the protected checkout.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
