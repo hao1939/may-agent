@@ -14708,6 +14708,53 @@ reproducibility, retrieval, and synthesis gaps; (5) Reddit until trigger; and
 paper/benchmark counts, evidence coding, sources for nonlinear compounding,
 and traceability of the handoff claim.
 
+## Cycle 360 checkpoint — the synthesis maps hypotheses, not a failure law
+
+Seed-ordering commit `3c21454306e59aa3ece8120f1621b1e8ee13de35`
+precedes all source work. At `2026-09-04T07:42:50.480Z`, arXiv
+`2607.05775v1` returned a 3,188-byte Atom record (SHA-256
+`3fce0649…b870`). Its e-print endpoint returned a 179,496-byte PDF rather
+than source (`fa4a400e…daf1`); extracted text is `5285ce0b…195f`.
+
+The paper self-identifies as a narrative synthesis rather than a formal,
+preregistered systematic review. It reports 27 papers, 19 benchmarks, more
+than 60 initial labels, and six author-derived clusters. It does not report
+searched databases, query strings, search date, candidate denominator,
+deduplication or screening flow, exclusions, or a stable included-study
+manifest. Table 2 contains 16 representative rows, some combining benchmarks;
+it is not the 27-paper corpus list. No second coding team, agreement statistic
+for this synthesis, registered codebook, or cluster sensitivity analysis is
+supplied.
+
+The three headline claims are qualitative cross-study interpretations.
+Nonlinear compounding joins METR task-time curves, TravelPlanner constraint
+success, and separate long-context studies without a common estimand or fitted
+constant-hazard comparison. Non-composability has concrete selected examples
+but no frequency across the corpus. “Scaffolding” covers agents, tools,
+inference compute, and context; the source carefully calls returns uneven and
+notes targeted interventions that improve results. It labels the patterns
+“candidate structural properties,” says Table 2 ranges are not statistical
+uncertainty, and did not independently reproduce any source experiment.
+
+This supports a useful six-theme retrieval map and hypotheses for matched
+cross-benchmark tests. It does not prove that handoffs are the primary failure
+site, quantify a multiplicative/exponential failure law, or establish the
+clean-snapshot/chained-state mechanism. The last claim depends on separate
+`2607.06256`, which remains unreviewed at this checkpoint.
+
+One bounded, non-truncated GitHub repository search at
+`2026-09-04T07:43:37.952Z` found zero title matches, supporting only the
+absence of a located companion artifact. ArXiv was the primary lane; GitHub
+supplied bounded absence evidence. Revisit on a search/corpus artifact,
+independent recoding, formal meta-analysis, or study-level evidence table.
+Reddit made zero requests and retains its relevant-thread/access trigger.
+Confidence is high for source-method transcription, moderate for the taxonomy
+as an organizing frame, and low for universal nonlinearity, handoff primacy,
+or intervention-general scaffolding effects. `RV-004` remains high/open
+because no protected outcome join changed. Next seed-first, primary-review
+`2607.06256`: audit clean/chained denominators, per-skill results, readiness
+labels, matched controls, uncertainty, and attributable public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
