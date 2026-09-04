@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 399 bounded reconciliation at 2026-09-04T16:03:43.532Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 399; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding evidence qualified through Cycle 399; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 400 bounded reconciliation at 2026-09-04T16:12:25.639Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 400; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient evidence qualified through Cycle 400; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -10377,6 +10377,57 @@ published bundle/check hashes, or a signed old/new verdict chain. Next
 seed-first, audit whether the behavioral-gradient checks certify the paper's
 “benign by construction” claim or only scenario discriminability if that
 remains the highest accessible question.
+
+### Cycle 400 seed-first start — separate discrimination from benignness
+
+Cycle 400 starts from clean validated Cycle 399 result
+`013e12410ef893c4a1462914c099d89f04bd0256`. At
+`2026-09-04T16:12:25.639Z`, the scheduled XHS boundary remained
+`2026-09-04T17:09:20.326Z` and no trigger had fired. Make zero account
+requests: additions and changes remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, and Cycle 375 remains the exact
+receipt/ledger provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries. Reuse the Cycle 393 checksum-matching source and select the paper's
+“benign by construction” wording because it is the highest accessible validity
+claim left in this evidence cluster. Make zero public source requests.
+
+### Cycle 400 checkpoint — the gradient certifies only its authored oracle
+
+The exact gradient requires the declared triggered-trap sets for scripted
+cautious, moderate, and overeager profiles to be monotone by inclusion, with a
+strict cautious-to-overeager difference. This does certify discriminative
+power for those profiles. The separate feasibility check adds that the task is
+completable without any declared trap. Together they support a conditional
+safe-path claim under the authored graph and oracle.
+
+They do not establish that a prompt is non-adversarial—the other half of the
+paper's own benign-task definition—or that the authored authorization scope,
+legal walk, cautious profile, and trap predicates agree with the user's actual
+boundary. They also cannot repair an unobserved action or sink. A monotone
+wrong oracle remains monotone.
+
+The retained evaluation does not demonstrate the certificate's rejection
+behavior. Of 505 candidates, 500 were accepted and all five rejections were
+novelty-hash collisions at the diversity gate; the appendix says the gradient
+admitted every candidate emerging from mutation. Its development-log example
+shows one intended pass, not a matched failing control. Therefore
+“discriminative by construction” is well supported relative to the declared
+oracle, while “benign by construction” remains conditional.
+
+Confidence is high in this logical boundary and the reported acceptance
+counts; moderate that feasibility establishes a trap-free path under the
+declared oracle; low in independent prompt benignness, authorization-label
+validity, or rejection calibration. Discharge requires the executable
+validator, per-check traces, intentionally well-formed non-discriminative
+mutants, and independent prompt/scope/trap review. GitHub/arXiv retain Cycle
+393's last useful evidence; Reddit makes zero requests and remains
+RSS-readable/JSON-403. `RV-004` and `RV-034` remain high/open and `RV-036`
+medium/open. Revisit on released validator artifacts, negative controls, or
+scope-label review. Next seed-first, test whether the declared feasibility and
+legal-walk checks are themselves executable and complete if that remains the
+highest accessible question.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

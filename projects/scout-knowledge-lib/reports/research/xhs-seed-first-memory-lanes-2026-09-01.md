@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 399 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, and provenance claims: retained views support bounded recomputation only when immutable inputs and old/new results are joined."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 400 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, and behavioral-gradient claims: the gradient certifies authored-oracle discrimination, not unconditional benignness."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 399; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding evidence qualified through Cycle 399; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 400; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient evidence qualified through Cycle 400; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -18772,6 +18772,85 @@ The four-document candidate from source
 TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
 navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
 1,486 assertions, zero failures in 125.07 seconds. After commit, bind broad
+links, read-only health, lineage, clean state, and protected fingerprints to
+the exact result.
+
+## Cycle 400 checkpoint — behavioral gradients do not validate their oracle
+
+What was wrong: the library preserved the paper's “benign by construction”
+wording without separating the behavioral gradient's mathematical guarantee
+from the semantic assumptions supplied by scenario authors.
+
+What changes: the durable finding and topic map now retain the gradient as a
+useful discriminability certificate while making prompt benignness,
+authorization correctness, trap completeness, and rejection calibration
+explicit open conditions.
+
+### Seed order and ranked selection
+
+Cycle 400 began from clean validated Cycle 399 result
+`013e12410ef893c4a1462914c099d89f04bd0256`. At
+`2026-09-04T16:12:25.639Z`, the next XHS observation remained scheduled for
+`2026-09-04T17:09:20.326Z`; no trigger had fired. Make zero account requests:
+additions and changes remain unknown, observed removals remain `[]`, all 132
+durable identities remain unavailable, and Cycle 375's receipt/ledger remain
+provenance. No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at their recorded
+boundaries. Reuse the checksum-matching Cycle 393 source package and select the
+behavioral-gradient validity claim. GitHub, arXiv, Reddit, and other public
+lanes make zero requests; their last useful evidence, boundaries, and triggers
+remain unchanged.
+
+### What the four checks establish
+
+The gradient compares the declared trap sets fired under scripted cautious,
+moderate, and overeager profiles. Admission requires monotone set inclusion and
+a strict cautious-to-overeager difference. That is a genuine, exact
+discriminative-power guarantee relative to those profiles. The separate
+feasibility check says that the task is completable without firing a declared
+trap. Together they establish an authored-oracle result: at least one declared-
+safe path exists and the authored traps separate the scripted endpoints.
+
+The checks do not independently establish the paper's full definition of a
+benign task, which additionally requires a non-adversarial prompt. They also
+take the authorization boundary, legal action graph, cautious profile, and trap
+predicates as inputs rather than validating that those inputs match a user's
+scope. A missing trap, mislabelled boundary, or unobserved sink can satisfy the
+set equation. The later human run re-annotation assesses verdict agreement on
+50 sampled outputs, not scenario-construction benignness, and its raw labels
+remain unavailable.
+
+The published admission counts provide no rejection control for the gradient.
+Of 505 candidates, 500 passed; all five failures were exact novelty-hash
+collisions before the four checks, and the appendix says every post-mutation
+candidate passed the gradient. The `cleanup_unknown_dir` development trace is
+a positive case that satisfies the inclusion, not a matched well-formed,
+feasible, non-discriminative candidate that the validator rejects.
+
+The qualified conclusion is therefore: “discriminative by construction” is
+supported under the declared oracle; “benign by construction” is conditional
+on correct prompt, scope, action-graph, trap, and observation annotations.
+Confidence is high in the equation/statistics boundary, moderate in safe-path
+existence relative to the authored traps, and low in independent benignness or
+rejection calibration. A released executable validator, per-check traces,
+intentionally failing mutants, and independent prompt/scope/trap labels would
+resolve the gap. This does not show the admitted scenarios are malicious or
+invalidate the reported agent rates.
+
+`RV-004` and `RV-034` remain high/open; `RV-036` remains medium/open. Revisit
+on the validator artifact, negative-control corpus, or independent scenario
+annotations. Next seed-first, inspect whether feasibility and legal-walk
+coverage are executable and complete rather than author assertions if that
+remains the highest accessible question.
+
+### Cycle 400 candidate validation
+
+The four-document candidate from source
+`013e12410ef893c4a1462914c099d89f04bd0256` passed whitespace, syntax,
+TypeScript, source formatting, Cycle 375 projection, 101 scoped links,
+navigation v1 at 11/14 and v2 at 8/8, and the full Scout gate: 296 tests,
+1,486 assertions, zero failures in 110.00 seconds. After commit, bind broad
 links, read-only health, lineage, clean state, and protected fingerprints to
 the exact result.
 

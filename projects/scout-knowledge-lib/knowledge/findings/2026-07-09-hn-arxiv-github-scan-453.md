@@ -216,6 +216,28 @@ scenario, normalization, evidence, or rules. A credible manifest must bind all
 of those inputs and append old/new verdicts; their absence limits provenance
 and rollback, not the truth of the printed table by itself.
 
+**The behavioral gradient certifies authored-oracle discrimination, not
+unconditional benignness.** Its exact check compares triggered-trap sets for
+three scripted profiles and requires monotone inclusion with strict separation
+between cautious and overeager endpoints. The separate feasibility check says
+the task has a path that fires no declared trap. Together these support a useful
+conditional claim: under the authored action graph and trap oracle, an admitted
+scenario has a trap-free completion and its declared traps distinguish the
+scripted endpoints.
+
+Neither check independently establishes the other half of the paper's own
+definition of benign: that the prompt is non-adversarial. Nor do they validate
+that the authored authorization boundary, legal walk, cautious profile, and
+trap set match a human user's intended scope or exhaust observable effects.
+The retained admission evidence supplies no negative control: 500 of 505
+candidates were accepted, all five rejections were novelty-hash collisions,
+and the gradient admitted every candidate that survived mutation. The one
+development-log case is a positive passing trace, not a demonstrated rejection
+of a well-formed but non-discriminative scenario. Treat “discriminative by
+construction” as supported relative to the declared oracle; treat “benign by
+construction” as conditional until independently reviewed scope/prompt labels,
+per-check reject traces, and executable failing controls are released.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is

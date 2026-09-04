@@ -1251,6 +1251,18 @@ verdicts, a deterministic “re-judgment” cannot prove it used the same eviden
 The temporal discharge condition is therefore content-addressed, append-only
 reinterpretation—not merely retaining an opaque directory called a bundle.
 
+Construction-time validity has a parallel oracle boundary. A monotone
+triggered-trap set across authored cautious, moderate, and overeager profiles
+proves separation among those profiles; the separate feasibility check proves
+only that one path avoids the declared traps. Neither proves that the prompt is
+non-adversarial or that authorization, traps, and legal actions match the
+user's actual scope. The retained pipeline gives the gradient no empirical
+negative control: its five rejected candidates were duplicate hashes and all
+post-mutation candidates passed the certificate. “Benign by construction” is
+therefore conditional on a correct authored oracle; a released failing corpus
+and independently reviewed prompt/scope annotations are needed to discharge
+that condition.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy
