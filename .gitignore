@@ -66,6 +66,10 @@ projects/*/outputs/**
 # Project-local repositories mounted under the shared runtime.
 /projects/aks-rp-e2e/
 /projects/may-agent/
+/projects/herdr-supervisor/
+
+# Temporary Git worktrees live outside the shared repository.
+/worktrees/
 
 # UI build artifacts synced from a project's repo (e.g. `ui:sync` in repos/may-agent).
 projects/*/ui/
