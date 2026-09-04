@@ -5325,6 +5325,38 @@ selection-to-outcome join. Next begin seed-first, then review AgentTether
 `2607.06273` as the highest accessible remaining corrective-system claim,
 unless the bounded ranking reveals a higher-value change.
 
+Exact Cycle 322 material `6377b4716571a0103833cdc1fa374873222a8c57`
+passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
+navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions in 99.10
+seconds. The broad audit passes 1,540 documents / 1,728 links. Read-only health
+at `2026-09-04T02:43:17.805Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the exact
+standing tree and runtime state are clean.
+
+At the same boundary, protected `/app` retained HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` but externally changed from the
+Cycle 321 386-record status to 916 records / `6b0e4f9f…e5c7`. Its Scout scope
+remained 296 records but externally changed to `c4485b46…375`. This worker
+wrote or tested neither protected surface.
+
+### Cycle 323 seed-first start — primary-check the corrective graph claim
+
+At `2026-09-04T02:43:17.805Z`, the last XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. This bounded
+reconciliation made zero XHS or public requests: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+still inaccessible without a post-August-31 query-to-outcome join; (2) Memory
+in the Loop's unreleased provider artifact/result; (3) AgentTether
+`2607.06273`, highest accessible because Scan 450 treats task-graph repair as a
+proven corrective architecture; (4) LogicHunter; (5) Cortex's unreleased
+taxonomy-size ablation; (6) other unsourced scans; (7) Reddit until its
+relevant-thread/access trigger; and (8) compaction. Select AgentTether. Test
+its population, matched controls, graph mechanism, outcome definitions,
+artifact availability, and transfer limits before preserving the synthesis.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

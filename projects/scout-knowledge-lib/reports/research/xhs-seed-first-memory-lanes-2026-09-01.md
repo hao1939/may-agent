@@ -11374,6 +11374,47 @@ corrective architecture; test its task population, controls, graph-repair
 mechanism, outcome definitions, artifacts, and transfer limits before carrying
 that claim forward.
 
+Exact material commit `6377b4716571a0103833cdc1fa374873222a8c57`
+passes syntax, TypeScript, source formatting, the Cycle 292 seed projection,
+90 scoped links, navigation v1 at 11/14, navigation v2 at 8/8, and the full
+Scout gate at 296 tests / 1,484 assertions with zero failures in 99.10 seconds.
+The broad offline audit passes 1,540 tracked Markdown documents / 1,728 local
+prose links with zero errors. Read-only health at
+`2026-09-04T02:43:17.805Z` returns 26 facts, 16 wakes, and `truncated:true`.
+Accepted `ff923ccde4` is contained, unaccepted `d041c41b54` is excluded, the
+standing status has zero records, and its runtime state has zero files.
+
+Protected `/app` retained HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its externally observed whole
+status moved from Cycle 321's 386 records /
+`00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`
+to 916 records /
+`6b0e4f9f1501bfe5de7e8424e137da5635e36b547ec65b96e358716d9153e5c7`.
+The Scout scope remained 296 records but moved from
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
+to `c4485b46bd1f6115a967b29b70873e02cd850c76d323eda093c369562135c375`.
+This worker wrote, tested, cleaned, or otherwise mutated neither protected
+surface; these are external observations without attribution.
+
+## Cycle 323 seed-first start — test AgentTether as a correction, not a label
+
+At `2026-09-04T02:43:17.805Z`, the last XHS observation still ended at
+`2026-09-03T22:59:03.253Z`, inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests.
+Added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, and no account state changed.
+
+The complete expected-value queue is: (1) high/open `RV-004`, which cannot
+move without a readable post-August-31 query/rank-to-selection-to-outcome join;
+(2) Memory in the Loop's unreleased provider artifact/result; (3) AgentTether
+`2607.06273`, highest accessible because Scan 450 currently promotes its
+task-graph mechanism into a proven corrective architecture; (4) LogicHunter;
+(5) Cortex's unreleased taxonomy-size ablation; (6) other unsourced scans; (7)
+Reddit until a relevant-thread/access change; and (8) compaction. Select
+AgentTether. Test the task population, controls, graph mechanism, outcome
+definitions, public artifacts, and transfer limits before carrying the claim
+into the synthesis.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
