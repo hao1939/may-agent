@@ -438,15 +438,20 @@ The nine-scan exit arc (#444–#452) proposed that the Oversight Inversion is so
 **Three instances of the Execution Boundary**:
 1. **Encoding gap** (2607.05744): The reference approval renderer drops TAG codepoints retained in serialized prompt bytes. The measured gap is in rendering/transport; model interpretation is untested.
 2. **Authority gap** (2607.06000): Approval checks intent; execution requires exact-effect authorization. The gap is between "what was meant" and "what will happen."
-3. **Research gap** (2607.05743): 39 papers in 17 categories — each covers its boundary; no paper covers the gaps between categories. The gap is between "what is studied" and "what is operational."
+3. **Research gap** (2607.05743): The authors assign 39 selected papers to 17 categories and propose five cross-category gaps. The non-exhaustive corpus supports questions for comparison, not field-wide absence claims.
 
-**Structural fix**: Triple-binding at the execution boundary itself. CXI's gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the same action manifest. aiAuthZ moves the gate off-host so the agent cannot modify it. The common principle: **the verification surface must be the execution surface** — no approval-execution gap permitted.
+**Candidate design principle**: Triple-binding at the execution boundary itself.
+CXI's fixed-policy gate admits a mediated call only after field authority,
+exact-effect authorization, and invocation authority bind to the same action
+manifest. aiAuthZ moves a fixed-policy gate off-host for covered calls. These
+results motivate testing whether the verification surface reaches execution;
+they do not prove policy, mediation, validator, or runtime completeness.
 
 **Connection to preceding layers**:
 - The Predicate Gate (#446) gated state transitions — the Execution Boundary reveals the gate itself must be bound to execution, not approval
 - The Boundary Dissolution (#432) showed trust boundaries erode — the Execution Boundary shows they may never have existed at the protocol level
 - The Authority Gap (#434) asked "what grounds verification authority?" — the Execution Boundary asks "does authority reach the execution point?"
-- The Correlated Blindness (#436) showed research communities share blind spots — the Balkanization survey shows execution-security research is itself balkanized into 17 non-citing categories
+- The Correlated Blindness (#436) showed research communities may share blind spots — the Balkanization paper proposes 17 categories over a selected corpus, but releases no citation-edge denominator for a “non-citing” field-wide claim
 
 **Ten-scan exit arc**:
 1. **Comprehension Dividend (#444): Invest in understanding (demand-side)**
@@ -493,11 +498,15 @@ The Execution Boundary is a three-source convergent finding:
 | Source | Signal | Mechanism |
 |--------|--------|-----------|
 | arXiv (security) | MCP TAG-block concealment | Reference-harness encoding gap between approval view and serialized prompt bytes |
-| arXiv (systems) | CXI triple-binding | Architectural fix: gate at execution surface, not approval surface |
-| arXiv (survey) | Balkanization systematization | 39 papers in 17 categories with 5 uncovered cross-cutting gaps |
+| arXiv (systems) | CXI triple-binding | Candidate design: gate mediated calls at the execution surface rather than trust approval rendering |
+| arXiv (survey) | Balkanization systematization | 39 selected papers in 17 author-assigned categories with 5 author-proposed cross-cutting gaps |
 | HN | Fortress stealth Chromium | Anti-detection tools for agents = approval-execution arms race |
 | HN | AI Meets Cryptography | Crypto = domain where approval and execution are mathematically bound |
 | GitHub | claude-code-merge-queue | Execution-boundary enforcement for parallel agent coordination |
 | GitHub | Godcoder | "AI builds its own Harness" = co-evolution + local execution sovereignty |
 
-The Oversight Inversion has now reached its architectural foundation: the gap between what is approved and what is executed. CXI and aiAuthZ show the fix exists — structural binding at the execution boundary — but the Balkanization survey shows the research community hasn't yet assembled the pieces.
+The Oversight Inversion has now reached an architectural hypothesis: approval
+and execution can diverge. CXI proposes triple-binding and aiAuthZ demonstrates
+fixed-policy denial for covered calls, but neither establishes a complete fix.
+The Balkanization paper supplies a selected-corpus map and comparison agenda;
+it does not show that the wider research community has failed to assemble one.

@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories, but uses a non-exhaustive search and releases no citation-edge denominator. CAGE-1 2607.03510v1 contributes a 12-dimension assurance framework and seven-element consequence-boundary proof surface. AGL-1 2607.03516v1 contributes a seven-domain reference model, evidence-record inventory, roadmap, and maturity questions. Both explicitly are proposals rather than empirical benchmarks: neither runs an agent, integrated control plane, or deployment comparison, and neither releases an implementation artifact."
 triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind assurance", "AGL-1 governance layer", "Fable criticism", "research-level task failure", "security literature systematization", "five cross-cutting gaps", "TOCTOU MCP unified", "benign out-of-scope actions", "honest policy author assumption", "EasyLastSkill", "Horizon verification harness", "Fortress stealth browser"]
-source_basis: "Primary review on 2026-09-04 of arXiv 2607.05743v1, CAGE-1 2607.03510v1, and AGL-1 2607.03516v1. AGL-1 metadata was observed through the arXiv API at 2026-09-04T09:29:54.166Z (SHA-256 90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47); its PDF and e-print endpoint returned identical 401,365-byte PDF content (SHA-256 11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba). Industry-platform statements in AGL-1 are author synthesis over cited vendor/standards documents, not an observed integrated deployment result."
+source_basis: "Primary review on 2026-09-04 of arXiv 2607.05743v1, CAGE-1 2607.03510v1, and AGL-1 2607.03516v1, extended on 2026-09-05 with ShellSieve 2606.15549v2 (source SHA-256 d0bcea61…745d) and OverEager 2605.18583v1 (source SHA-256 eb6ca423…8408f). AGL-1 metadata was observed through the arXiv API at 2026-09-04T09:29:54.166Z (SHA-256 90a6dd81529137c579db7450996f43e34b74a95704bbbb21b844d71ce7aa3b47); its PDF and e-print endpoint returned identical 401,365-byte PDF content (SHA-256 11bc9b026cf79417e3387223fb8d172d8d4d2ab6ad2c5f757dfe42df598b66ba). Industry-platform statements in AGL-1 are author synthesis over cited vendor/standards documents, not an observed integrated deployment result."
 </ai_context>
 
 # Scan #473: The Balkanization Problem
@@ -45,12 +45,12 @@ GitHub Copilot/Visual Studio or Claude Code, while the runc CVE predates agent
 tooling and is an inherited container-runtime example, not an observed agent-
 harness incident.
 
-**Five cross-cutting gaps that no single paper addresses:**
-1. **No shared benchmark**: Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark.
-2. **No adversarial co-evaluation**: Policy enforcement studies report failure rates from 69% to 98% of real denylists, yet no isolation paper re-evaluates its defense under that adversarial setting.
+**Five author-proposed cross-cutting gaps within the selected corpus:**
+1. **No shared benchmark**: Within the selected corpus, isolation architectures and capability models are not evaluated head to head on one shared benchmark.
+2. **No adversarial co-evaluation**: ShellSieve 2606.15549v2 reports per-operation incomplete-block rates of 69.0–98.6% among real denylists targeting seven filesystem operations; no selected isolation paper re-evaluates under that specific setting.
 3. **TOCTOU/MCP analogy**: The paper interprets stale-state races and validate-once tool-metadata trust as one broad state-validation family. It does not show an MCP state changing between check and use or compare one mitigation across both settings.
-4. **Honest policy author assumed**: Every enforcement mechanism assumes an honest policy author, leaving policy-authoring error unaddressed.
-5. **Benign out-of-scope unaddressed**: Benign but out-of-scope agent actions occurring at rates up to **17.1%** under realistic prompting are addressed by **no** access-control or capability paper in the corpus.
+4. **Honest policy author assumed**: The authors report that the selected enforcement mechanisms assume an honest policy author, leaving policy-authoring error as a proposed gap.
+5. **Benign out-of-scope unaddressed**: No selected access-control paper evaluates OverEager 2605.18583v1's consent-ablation result. In its hand-curated 76-scenario Claude Code + GLM-4.6 pilot, **13/76** stripped-consent runs trigger a deterministic trap versus **0/76** with the explicit block retained. That **17.1-point** change is a sensitive-subset upper bound, not a general realistic-prompting rate; the separate 500-scenario randomized authorization-tier range is **2.6–3.1 points**.
 
 **Significance — proposed connection to the Oversight Inversion:**
 The paper provides a useful map of selected execution-security mechanisms and
@@ -61,7 +61,11 @@ fragmented, that papers do not compose, or that TOCTOU and MCP are the same
 problem remain author synthesis until citation edges, a reproducible corpus,
 and matched cross-mechanism evaluations are available.
 
-Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): agents do reasonable-but-unauthorized things, and no security framework distinguishes these from attacks. Current security is binary (allow/deny); governance requires a third category (escalate/review).
+Gap #5 connects to the Variance Signal (#457) as a test proposal: compare
+access-control mechanisms against both the 76-scenario consent ablation and the
+500-scenario randomized authorization tiers. The retained evidence motivates
+an escalate/review category; it does not show that every security framework is
+binary or that 17.1% transfers beyond the hand-curated pilot.
 
 ---
 

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through declared Cycle 384 boundary 08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80: the 14-commit Cycles 373-386 evidence-qualification range is accepted, reviewer 26eda94dac is semantically reconciled but not contained, RV-004/RV-034 remain high/open, and RV-036 records non-blocking duplication cost."
-triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "repair budget", "discrete concavity", "architecture premium", "market estimate", "feedback loop", "causal identification", "observability erosion", "fault signal rate", "TraceProbe", "Knowledge Debt", "AgentTether", "LogicHunter", "StateFuse", "PatchOptic", "PatchBench", "maintenance asymmetry", "benchmark boundary", "CXI", "fixed-policy admission", "mediated sink", "safe task completion", "RuBench", "model substitution", "runtime contamination", "executing-model validation", "Danus", "fact graph", "informal LLM verifier", "dangling predecessor", "PerformanceBench", "AIM", "AgentEval", "AgentLens", "SkillReranker", "Pitwall", "GitLost", "CAGE-1", "AGL-1", "configuration layer", "ATP", "principal binding", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022", "RV-023", "RV-024", "RV-025", "RV-026", "RV-027", "RV-028", "RV-029", "RV-030", "RV-031", "RV-032", "RV-033", "RV-034", "RV-035", "RV-036"]
+summary: "Independent Scout review cursor through exact standing tip 72ccecf3b0d78f1fa37771d64d1aadb64f40d624: fourteen producer source reviews are accepted after a scoped correction to stale high-retrieval TAG/CXI/Balkanization/OverEager claims; Cycles 399-400 truthfully bound provenance and authored-oracle validity; exact reviewer 2379a9fabb is integrated; RV-004/RV-034 remain high/open, RV-036 remains visible, RV-037 is resolved by the reviewer patch, and RV-038 records prospective batching debt."
+triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "consent ablation", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038"]
 last_updated: "2026-09-04"
-source_basis: "Exact linear standing range 3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80: 14 documentation commits across Cycles 373-386 and ten maintained files; all retained primary-archive hashes, exact GitHub identities, key denominators, comparison boundaries, contradictions, release gaps, access limits, duplicate narration, cost, and rollback reviewed under the standing rubric; independent exact-tip 296-test/1,486-assertion gate, Cycle 375 projection, 94 scoped and 1,733 project links, navigation, read-only health, lineage, cleanliness, and protected-checkout preservation; retained Cycle 372 and stabilization evidence below."
+source_basis: "Exact linear standing range 08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80..72ccecf3b0d78f1fa37771d64d1aadb64f40d624: exact reviewer integration 2379a9fabb plus fourteen producer documentation commits; retained Organizational Memory, SwarmResearch, TAG-block, aiAuthZ, Balkanization, ShellSieve, and OverEager primary/reproduction artifacts checked by exact hash; selected arithmetic, denominators, provenance binding, authored-oracle validity, comparison boundaries, contradictions, release gaps, access limits, duplication, batch cost, canonical integration, local-main landing, cleanup safety, and rollback reviewed under the expanded standing rubric; current reviewer-candidate validation and preservation evidence recorded below."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,10 +11,9 @@ source_basis: "Exact linear standing range 3ea02c3c767a77a1fb5fae7b176210edf6156
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80` (declared Cycle 384 review
-  boundary, containing producer evidence through Cycle 386)
+  `72ccecf3b0d78f1fa37771d64d1aadb64f40d624`
 - Last material standing commit reviewed:
-  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`
+  `72ccecf3b0d78f1fa37771d64d1aadb64f40d624`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -186,20 +185,43 @@ source_basis: "Exact linear standing range 3ea02c3c767a77a1fb5fae7b176210edf6156
   `fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c` (Cycle 383 aTTT),
   `83a35e8e0f66c46f3e1c66a54132991ba311cf14` (Cycle 384 policy repair),
   `02ae7286bcbe8d66c18ca4f56b1e23d095a93549` (Cycle 385 HASE), and
-  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80` (Cycle 386 VERITAS and declared review tip).
+  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80` (Cycle 386 VERITAS and declared review tip),
+  `2379a9fabb619c653cbabda04e60066b5c473aa4` (exact Cycle 384 reviewer integration),
+  `ab70560508a8613e102405ce8d4c325db51532f0` (Organizational Memory),
+  `3891aa18051622e4865493308ea3f8ff79ad3fef` (SwarmResearch),
+  `8a5fd742278cacd11e8b76a36abcccb556392edb` (TAG-block),
+  `a6236a312d00121026b9f8f5e939cc21385c599f` (aiAuthZ),
+  `309e4d7b7a8f4864d59b67cd5fa6ba04dc69d8ea` (Balkanization),
+  `37ba63e0c2acdd346cb7cc74d8ca4aa54d846c86` (ShellSieve),
+  `1bcf8800094ab35ac6cf353d86fcc8028e2065b8` (OverEager pilot),
+  `40ee1824ee903ea2d1ff4d9d5184bcc5d93303b7` (framework comparison),
+  `8eb8a7fa35f1e07c7d3c1192c9ea6f771387c34e` (human validation),
+  `54237dda30b020827f228b0e89f5ec5eef42d888` (zero-touch evidence),
+  `b2e68a7392a72dc24723c2ca9ea3ff26dc0ca000` (audit coverage), and
+  `54ed4b11e62a46cf0b6465fd475f1a180a5f9f4b` (offline rejudging), and
+  `013e12410ef893c4a1462914c099d89f04bd0256` (Cycle 399 result-to-run provenance binding), and
+  `72ccecf3b0d78f1fa37771d64d1aadb64f40d624` (Cycle 400 authored-oracle validity and current reviewed tip).
 - Newly reviewed exact standing span:
-  `3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`
-  (14 linear commits, 10 Scout documentation files, +3,895/-236 lines).
-- Review date: `2026-09-04T22:01:04+08:00`
+  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80..72ccecf3b0d78f1fa37771d64d1aadb64f40d624`
+  (15 linear commits: one exact reviewer integration plus fourteen producer
+  commits; Cycles 399-400 add two four-document checkpoints totaling
+  +328/-8 lines to the already reviewed producer delta).
+- Review date: `2026-09-05T00:11:36+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
-- Overall disposition: **accept exact standing tip `08f7d1f898` for continued
-  production. Cycles 373-386 replace broad or causal summaries with bounded
-  primary-source claims, matched comparisons where available, explicit
-  contradictions, and artifact limits. Independent current-tip validation
-  passes. No behavior, productivity, matched-budget, frozen-selection,
-  protected-promotion, or user-outcome evidence is added, so RV-004 and RV-034
-  remain high/open. RV-036 records non-blocking duplication and checkpoint-cost
-  debt; future work should link detailed evidence instead of repeating it.**
+- Overall disposition: **revise exact standing tip `72ccecf3b0` before
+  endorsement. The twelve producer reviews materially improve primary-source
+  qualification, but canonical high-retrieval surfaces retain disproved
+  TAG/CXI/Balkanization/OverEager claims. The scoped reviewer correction below
+  resolves RV-037 without changing code, evaluator policy, or protected state.
+  RV-004 and RV-034 remain high/open; RV-036 remains visible; RV-038 makes the
+  six-commit OverEager batching debt prospective and non-blocking. Cycle 399's
+  result-to-run provenance finding is accepted: the retained manuscript names
+  versions and run IDs but publishes no manifest that binds a revised verdict
+  to immutable scenario, observer, adapter, bundle, judge, and model inputs.
+  Cycle 400 is also accepted: the gradient proves discrimination and a
+  trap-free path relative to an authored oracle, not independent prompt
+  benignness, scope-label validity, trap completeness, or rejection
+  calibration.**
 
   The prior Cycle 334-370 disposition remains retained below: those bounded
   evidence corrections and Cycle 370 documentation are accepted, while the
@@ -2551,8 +2573,114 @@ source_basis: "Exact linear standing range 3ea02c3c767a77a1fb5fae7b176210edf6156
   evidence instead of repeating full narratives. Risky retroactive bulk
   compaction is not justified by this review.
 
+### Cycles 387-400 exact output-integration review
+
+- Exact reviewed lineage is
+  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80..72ccecf3b0d78f1fa37771d64d1aadb64f40d624`.
+  Reviewer `2379a9fabb619c653cbabda04e60066b5c473aa4` is the direct child of
+  `08f7d1f898`; it is therefore integrated exactly, not merely described as
+  patch-equivalent. Fourteen subsequent producer commits end at Cycle 400 tree
+  `28bc294cc7b0825d58887fc5f7820856375aa21c`.
+- Exact retained source checks match the standing record: Organizational
+  Memory `058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189`;
+  SwarmResearch `f428c409e96626675be636eff92eb48e6ca7d6ccd0f69d967669687b61349929`
+  and reproduction archive
+  `b46181076294c3f007e1c10ceecb2ddd89d5eb77dc0ccd36d6e877bed46b4791`;
+  TAG-block `41d54d51d5e926817c5af5bf52f055a1ecb61afeb7d651f4075bc4c96c13378c`;
+  aiAuthZ `0303e4d64b9631e82d587d7e642e48fb49e01ff3db7bf487cfc97fa772646760`
+  and repository archive
+  `c81b3a2808b9bf1f44879beaba9ae5ec04b1a5982b776156f9cb10e02ea50e39`;
+  Balkanization
+  `68eeba16c86b2952e33dca0f09b64dfcd4a0fb42aa65da0fa96e8afdb3a8385c`;
+  ShellSieve
+  `d0bcea61bdb4dbcf775faae42e1b75c669bb51cac29f3087ffdfb5427f67745d`;
+  and OverEager
+  `eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`.
+- Bounded arithmetic and primary-text checks reproduce Organizational Memory's
+  12/40, 28/40, and 35/40 GPT totals and 12/40, 32/40, and 38/40 Sonnet totals;
+  aiAuthZ's 120 rows, 116 completions, 4 rate-limit errors, 44 attempted cells,
+  187 reported attempts, 44 retained denials, and sub-millisecond policy-only
+  timings; and ShellSieve's seven per-operation incomplete-block rates of
+  69.0--98.6%. These are source/artifact facts, not Scout behavior evidence.
+- OverEager's 17.1-point result is 13/76 versus 0/76 on a hand-curated paired
+  Claude Code + GLM-4.6 pilot. Its separate 500-scenario randomized
+  authorization-tier effects are 2.6 and 3.1 points. The product comparison
+  changes prompts, tools, adapters, and confirmation policy together; excludes
+  OpenHands timeouts; and treats scenario runs as independent. The human check
+  has 44/50 raw agreement but an unstated two-rater tie adjudication, nine
+  zero-touch archetypes expose unobserved/say-only surfaces, promised audit
+  bundles remain unavailable, and offline rejudging is bounded by captured
+  fields. These limits are correctly retained in the main reviews.
+- Cycle 399 adds a truthful provenance boundary. The manuscript names 15 cells,
+  product versions, model labels, timeouts, a run ID, and a SHA-256 comparison,
+  but the cited appendix publishes no bundle IDs/hashes, image digest, scenario
+  manifest, adapter/schema revision, judge digest, model endpoint snapshot, or
+  append-only old/new verdict join. This prevents independent same-run replay
+  and rollback proof; it does not by itself refute the printed tables.
+- Cycle 400 adds a truthful authored-oracle boundary. The exact gradient checks
+  monotone trap-set inclusion with strict cautious-to-overeager separation,
+  while feasibility asserts one trap-free completion. The source defines
+  benignness to also require a non-adversarial prompt, and publishes no
+  independent prompt/scope/trap labels or well-formed failing gradient control.
+  Its five rejected candidates are novelty-hash collisions and every candidate
+  emerging from mutation passes the gradient. The supported conclusion is
+  conditional discrimination, not unconditional scenario benignness.
+- **Revise canonical output integration under RV-037.** High-retrieval
+  frontiers, Scan 453 synthesis, Oversight Inversion, and Scan 473 still turn
+  reference-harness results and selected-corpus author synthesis into universal
+  model delivery, independent-implementation, immunity, complete-fix,
+  non-citing-category, or realistic-prompting claims. The reviewer patch
+  propagates the already-supported qualifications and does not alter the
+  producer's exact primary reviews.
+- **Accept the producer research after that scoped correction.** No code,
+  evaluator, selection, fixture, authority, or protected outcome changes.
+  RV-004 remains high/open because no incumbent/candidate/strongest-simple
+  matched-budget Scout comparison, observed regression set, frozen selection,
+  fresh protected promotion, later-use join, saving, or user outcome appears.
+  RV-034 remains high/open at the external Mnemosyne principal-binding boundary.
+
+| Rubric dimension | Cycles 387-400 disposition |
+| --- | --- |
+| Lead completeness and disposition | **Accept.** Each bounded primary review records supported evidence, missing artifacts, and a revisit condition. Cycles 399-400 advance concrete provenance and validity questions without routine source collection. |
+| Provenance and claim/source separation | **Revise under RV-037, then accept.** The main reviews separate source report, retained artifact, calculation, inference, and producer validation; four stale canonical summaries require the scoped corrections in this reviewer result. |
+| Novelty and decision value | **Accept narrowly.** Primary checks and Cycle 399 improve what a reader may infer and what evidence a future release must expose. They do not establish improved Scout behavior or external-study truth beyond retained evidence. |
+| Related-work comparison | **Accept with limits.** SwarmResearch's unmatched budgets, TAG's no-model harness, fixed-policy aiAuthZ, non-exhaustive Balkanization, ShellSieve's operation-specific bypasses, and OverEager's bundled products and distinct pilot/randomized populations remain separated. |
+| Contradictions and uncertainty | **Accept after RV-037.** Source inconsistencies, absent releases, timeout exclusion, human-label ties, zero-touch surfaces, unreproduced same-run binding, and generalization limits remain visible. |
+| Duplication and contamination | **Accept with RV-036/RV-038.** Aliases and repeated reports are not independent evidence. Six OverEager commits made within 36 minutes touch the same four files and add +1,040/-9 lines from one source package; future reviewable units should consolidate one source's evidence without rewriting accepted history. |
+| Usability and retrieval value | **Revise under RV-037, then accept.** The patch repairs the surfaces most likely to be retrieved without the detailed audit. No observed reader reuse, selected-route join, or changed decision is claimed. |
+| Access boundaries | **Accept.** Checks use retained public artifacts and local read-only evidence. Missing bundles and repositories remain explicit; no account or content state changes. |
+| Validation quality | **Accept only after the independent current-candidate gate below.** Producer-authored candidate checks are not treated as independent evidence. Documentation validation does not reproduce unreleased external experiments or validate the authored oracle. |
+| Cost and productivity | **Defer outcome claims under RV-004.** The source checks correct high-value claims, while six micro-checkpoints and repeated narration impose review cost. Tests, links, cycles, notes, and commits are not productivity outcomes. |
+| Rollback safety | **Accept.** The producer range and reviewer patch are documentation-only and can be reverted in reverse order; no migration, schema, authority, external state, or protected evaluation changes. |
+| Batch coherence | **Revise prospectively under RV-038.** Existing history remains intact, but future evidence from one retained source should be reviewed as a unified checkpoint unless a real external dependency requires separation. |
+| Canonical integration status | **Revise.** Reviewer `2379a9fabb` is integrated exactly. The RV-037 correction and this cursor are pending standing-owner reconciliation; no accepted result is called landed before containment or reviewed patch equivalence. |
+| Local-main landing safety | **Defer.** Local main `/app` advanced independently to `8554a5718cfa051bf4fb827c974423380614e5a7`, but the commit is unrelated Herdr checkout maintenance and contains neither standing tip nor this reviewer result. No Scout landing is reported. |
+| Repository-cleanup safety | **Defer with retained-history evidence.** Main commit `8554a5718c` removes 16 tracked Herdr files while ignoring the standalone checkout and `/worktrees/`; parent `386b445c23` retains all deleted blobs, and the standalone repo remains present at `06ba7a5dc8` with one untracked file. Its tree is not asserted byte-equivalent and no Herdr validation was run. The unchanged Scout-scope fingerprint proves preservation, not resource-reclamation success. |
+
 ### Current-revision validation
 
+- Exact reviewer candidate based directly on standing
+  `72ccecf3b0d78f1fa37771d64d1aadb64f40d624` passes syntax, TypeScript,
+  formatting, Cycle 375 seed projection, all 101 scoped links, navigation v1
+  11/14 and v2 8/8, and 296 tests / 1,486 assertions with zero failures in
+  122.32 seconds. The separate project-wide audit checks 1,540 Markdown
+  documents and 1,741 links with zero errors; `git diff --check` passes.
+  Read-only health after aligning the cursor date to the packet's UTC boundary
+  returns 26 facts / 16 wakes with `truncated:true`. These checks validate the
+  reviewer candidate, not the unreleased external study artifacts.
+- During final preservation checks, local main advanced externally from
+  `386b445c236e4609cd8870d22cc773cc4641fec8` to
+  `8554a5718cfa051bf4fb827c974423380614e5a7` (`chore: ignore standalone
+  Herdr checkout`). The commit changes no Scout path. Its 16 deleted tracked
+  Herdr files remain recoverable from the direct parent; the ignored standalone
+  repository is present at `06ba7a5dc82c2c942d7822c6a27c24f04ab23b4a`
+  with one untracked review proposal, but its newer tree is not represented as
+  exact preservation of the deleted embedded copy. The whole `/app` status
+  changed from 386 records / `3afed0a6…f5a` to 344 records /
+  `3c302ac6…97d`; the protected Scout scope remains exactly 296 records /
+  `59974094d30cf9d3947d4b96c7ac9a75dc4e0d70955ab479cfc4c85a93df4b9f`.
+  No write or validation ran in `/app`, the standalone Herdr checkout, or the
+  producer worktree; no Scout landing or cleanup success is inferred.
 - Exact clean producer tip `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`
   independently passes the full repository gate: syntax, TypeScript,
   formatting, Cycle 375 seed projection, 94 scoped links, navigation v1 11/14
@@ -2851,9 +2979,24 @@ source_basis: "Exact linear standing range 3ea02c3c767a77a1fb5fae7b176210edf6156
 | `RV-034` | High | Cycle 370 material `6b07f569b3`; Mnemosyne ATP tag `7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`, `runtime/kernel_admission.py` and `runtime/sqlite_repository.py` | The runtime adapter constructs `KernelCommitRequest` with the decision caller's `agent_id` but does not load or compare the stored proposal owner; the repository records the decision identity without enforcing equality. A same-tenant Alice proposal can therefore be admitted by Bob. Constraint-relative validation still runs, but application-level principal binding is absent. | **Accept Scout's correction; defer external repair; high/open.** Require proposal-owner/decision-principal equality (or an explicit delegated-authority rule) at admission with matched allow/deny tests before treating ATP separation as an identity boundary. No authorized independent Scout-only edit can repair the pinned external runtime. |
 | `RV-035` | Medium | Cycle 372 AGL-1/CONTRA materials `5dd986460d` and `82dd495bd3`; standing reconciliation `3ea02c3c76`; Cycle 375 material `ea3ca60daa`; Scan 425, Oversight Inversion, Scan 473, topic map, and detailed lane report | `82dd495bd3` resolves the CONTRA-denominator and simulated-search component. `3ea02c3c76` reconciles the HexStrike, SkillOpt, governance-equivalence, missing-layer, self-configuration-risk, and AGL-1 organization claims. Cycle 375 then replaces Scan 425's remaining Anchored Self-Play transfer with a full primary review that limits the evidence to bundled code-repair interventions and explicitly rejects demonstrated self-configuration mitigation. | **Resolved on standing; accept.** Reviewer `26eda94dac` is not contained or patch-equivalent, but its one remaining substantive correction is semantically reconciled by the fuller Cycle 375 evidence. Preserve the finding and do not integrate the superseded older wording or cursor. |
 | `RV-036` | Medium | Exact Cycles 373-386 range `3ea02c3c76..08f7d1f898`; canonical findings, `knowledge/xhs-topic-map.md`, and `reports/research/xhs-seed-first-memory-lanes-2026-09-01.md` | Fourteen documentation commits repeat substantial source narratives across canonical findings and add 1,087 topic-map lines plus 1,775 detailed-ledger lines. The repeated surfaces improve retrieval but increase review, link, and maintenance cost; aliases and copied summaries are not independent evidence. | **Accept checkpoint; defer scoped process correction; medium/open and non-blocking.** Future material checkpoints should link stable detailed evidence rather than repeat it. Do not perform risky retroactive bulk compaction without an independently validated retrieval and rollback comparison. |
+| `RV-037` | Medium | Standing `8a5fd74227`, `309e4d7b7a`, and `1bcf880009..72ccecf3b0`; high-retrieval `agent-security-research-frontiers.md`, Scan 453 synthesis, Oversight Inversion, and Scan 473 | The detailed primary reviews correctly bound TAG/CXI/Balkanization/OverEager evidence, but canonical summaries still claimed model-tokenizer delivery, 32 independent implementations, CXI immunity, a complete fix, 17 non-citing categories, field-wide missing gaps, and a general 17.1% realistic-prompting rate. Readers reaching summaries without the detailed audit receive conclusions the retained evidence disproves or does not establish. | **Revise; resolved in the pending reviewer patch.** Propagate the reference-harness, fixed-policy, selected-corpus, hand-curated 13/76 pilot, and randomized 2.6--3.1-point boundaries without weakening the accepted detailed reviews. Standing integration remains pending. |
+| `RV-038` | Medium | OverEager sequence `1bcf880009..54ed4b11e6`; four repeated durable surfaces | Six commits within 36 minutes inspect one retained source package, repeatedly touch the same four files, and add +1,040/-9 lines. The facts are useful, but the fragmented sequence increases review and maintenance cost and duplicates substantial narration; commit count is not productivity. | **Accept existing history; medium/open and non-blocking prospective correction.** Do not rewrite or squash accepted history. Consolidate future evidence from one retained artifact into one coherent material checkpoint unless a concrete external dependency requires separation. |
 
 ## Reviewer source/result and integration status
 
+- Reviewer result `2379a9fabb619c653cbabda04e60066b5c473aa4` is
+  **integrated exactly** as the direct child of reviewed standing
+  `08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`; every later commit through
+  `72ccecf3b0d78f1fa37771d64d1aadb64f40d624` contains it. Its rollback remains
+  an ordinary revert before reverting any dependent producer commits.
+- The current direct-child reviewer correction and cursor, based on exact
+  standing source `72ccecf3b0d78f1fa37771d64d1aadb64f40d624`, are **pending
+  standing-owner integration**. They resolve RV-037 and record RV-038 without
+  changing producer research, tests, fixtures, evaluator policy, authority, or
+  protected state. Integrate the exact range reported in the reviewer handoff;
+  roll it back in reverse order with ordinary reverts. It is not canonically
+  landed, locally main-landed, cleaned up, or patch-equivalent until independently
+  proved on the resulting standing revision.
 - Standing integration `3ea02c3c767a77a1fb5fae7b176210edf6156ff6`
   is the exact child of producer CONTRA material
   `82dd495bd3fdfd04d81d79c4a5c503e038af09ae`. It truthfully reconciles
@@ -3288,21 +3431,22 @@ and the unreleased Memory in the Loop result.
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the first genuinely material,
 clean producer checkpoint after exact reviewed tip
-`08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`; integration or explicit
-rejection of the current cursor-only reviewer result; a fresh protected
-maintenance outcome that joins the route used to a later decision; evidence
-changing RV-004 or RV-034; a scoped opportunity to address RV-036 with an
-independent retrieval/cost comparison; or a concrete regression in the
-reviewed claims. Reviewer `26eda94dac`, the ordered Cycle 370 chain, standing
-reconciliation `3ea02c3c76`, and accepted stabilization `54da66597d3` are no
-longer wait conditions. If no material trigger arrives, the next periodic
-audit is no earlier than `2026-09-05T22:01:04+08:00`. Do not poll unchanged
-state.
+`72ccecf3b0d78f1fa37771d64d1aadb64f40d624`; exact integration, reviewed
+patch-equivalent reconciliation, or explicit rejection of the current RV-037
+reviewer result; a fresh protected maintenance outcome that joins the route
+used to a later decision; evidence changing RV-004 or RV-034; a scoped
+retrieval/cost comparison for RV-036; a prospective batching recurrence under
+RV-038; a canonical/local-main landing or cleanup claim; or a concrete
+regression in the reviewed claims. Producer validation prose still uncommitted
+in its dirty checkout is not a reviewed checkpoint and is not required for the
+independent candidate gate above. If no material trigger arrives, the next
+periodic audit is no earlier than `2026-09-06T00:11:36+08:00`. Do not poll
+unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
 
-- Goal: Continuously provide independent, evidence-backed review and process refinement for Scout Knowledge Library: review each new material Scout checkpoint and perform bounded periodic audits, determine whether its research and workflow changes improve correctness, usefulness, reuse, and cost under appropriate comparisons, identify regressions, contamination, duplication, unsupported claims, and missed high-value leads, and produce validated review findings or integration-ready refinements until the human explicitly stops or replaces this goal.
+- Goal: Continuously provide independent, evidence-backed review and process refinement for Scout Knowledge Library: review each new material Scout checkpoint and perform bounded periodic audits, determine whether its research, workflow, canonical integration, local-main landing, and cleanup changes improve correctness, usefulness, reuse, and cost under appropriate comparisons, identify regressions, contamination, duplication, unsupported claims, missed high-value leads, output-integration failures, and unsafe repository maintenance, and produce validated review findings or integration-ready refinements until the human explicitly stops or replaces this goal.
 - Goal ID: "g_8c5b597e-368d-4ced-b843-78aa4d796ea5"
 - Worker: "goal-4e4ae2af3e96585ffbcaecf47ff"
 - Codex session: "01a062c7-709c-7552-b44f-631fa7c6d81d"

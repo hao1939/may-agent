@@ -836,13 +836,13 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 **The Execution Boundary**: Verification deployed at any layer above the execution boundary provides approval-confidence, not execution-confidence. Three instances:
 1. **Encoding gap**: The reference approval renderer drops TAG codepoints retained in serialized prompt bytes; downstream model interpretation is untested (2607.05744)
 2. **Authority gap**: Approval checks intent; execution requires exact-effect authorization (2607.06000)
-3. **Research gap**: 39 papers cover individual boundaries; 5 cross-cutting gaps remain uncovered (2607.05743)
+3. **Research gap**: The authors assign 39 selected papers to 17 categories and propose 5 cross-cutting gaps; the non-exhaustive corpus does not establish field-wide absence (2607.05743)
 
 **Connection to preceding layers**:
 - The Predicate Gate (#446) gated state transitions — Layer 25 reveals the gate must bind to execution, not approval
 - The Boundary Dissolution (#432) showed trust boundaries erode — Layer 25 shows they may never have existed at the protocol level
 - The Authority Gap (#434) asked what grounds authority — Layer 25 asks whether authority reaches the execution point
-- The Correlated Blindness (#436) showed research shares blind spots — the Balkanization survey shows 17 non-citing categories in execution security
+- The Correlated Blindness (#436) showed research may share blind spots — the Balkanization paper proposes 17 categories over a selected corpus but supplies no citation-edge denominator for a “non-citing” field-wide claim
 
 **HN confirmation**: Comprehension:News ratio crosses **1.0** for the first time (1.21). 30papers at 399pts (1pt from 400 prediction). Fortress — "stealth Chromium so your agents stop getting blocked" (35pts/32c, ratio 0.91) — the approval-execution arms race as a product.
 
@@ -1174,11 +1174,11 @@ agent-harness incident. The claimed CSV/verifier are absent from the inspected
 source archive, so generated rows are inspectable but corpus regeneration is
 not independently reproducible.
 
-**Five cross-cutting gaps that no single paper addresses:**
+**Five author-proposed cross-cutting gaps within the selected corpus:**
 1. Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark
 2. ShellSieve reports per-operation incomplete-block rates of 69.0–98.6% among real denylists targeting seven filesystem operations; no selected isolation paper re-evaluates under that specific adversarial setting
 3. TOCTOU and MCP threats are analyzed as separate literatures despite both being instances of the **same state-validation problem**
-4. Every enforcement mechanism assumes an **honest policy author**, leaving policy-authoring error unaddressed
+4. The authors report that the selected enforcement mechanisms assume an **honest policy author**, leaving policy-authoring error as a proposed gap
 5. No selected access-control paper evaluates OverEager's consent-ablation
    failure: **13/76** Claude Code + GLM-4.6 runs tripped a deterministic trap
    after an explicit scope block was removed, versus **0/76** with it. That
