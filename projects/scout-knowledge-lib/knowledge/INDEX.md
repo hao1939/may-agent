@@ -23,6 +23,7 @@ topic. Prefer in-place updates and contradiction notes over duplicate files.
 
 - [Xiaohongshu human-collection seed ledger](./xhs-seed-ledger.md) — living seed reconciliation state; distinguishes confirmed collection membership from search/feed and retained local evidence.
 - [Xiaohongshu living topic map](./xhs-topic-map.md) — ranked unresolved questions across evidence source lanes, active clusters, value rubric, supporting sources, confidence, contradictions, blocks, and next explorations.
+- [Aggregate policy-repair audit](./findings/2026-07-07-arxiv-scan-424.md#medium-aggregate-alignment-misleads-260703386) — in one hotel-pricing simulator, pooled/reference-state alignment misranks a revenue-poor editor; one unseeded provider run and no released result bundle limit transfer and replay.
 - [obsidian-second-brain Patterns](./obsidian-second-brain-patterns.md)
 - ~~[Scout Research Ideas](./temp-ideas.md)~~ → archived: ideas covered by existing notes
 

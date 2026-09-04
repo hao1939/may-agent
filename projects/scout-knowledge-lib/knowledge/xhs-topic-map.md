@@ -2,8 +2,8 @@
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
-latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 383 bounded reconciliation at 2026-09-04T12:56:41.428Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 383; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 383; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, and aTTT competence/cost evidence qualified in Cycle 383; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z remains the last supported access receipt; Cycle 384 bounded reconciliation at 2026-09-04T13:09:46.946Z reused it without an early request: additions/changes remain unknown, removals [], and all 132 identities unavailable; exact access evidence remains in seed-ledger row 375."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 384; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 384; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, and aggregate policy-repair audit evidence qualified in Cycle 384; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 375 read-only XHS boundary through 2026-09-04T11:09:20.326Z."
 </ai_context>
 
@@ -9358,6 +9358,77 @@ revisits on a relevant thread or access change. XHS remains due at its exact
 boundary. `RV-004` and `RV-034` remain high/open. Next seed-first, primary-
 audit arXiv `2607.03510`: distinguish CAGE-1's proposed Prebind Assurance
 vocabulary from implemented or empirically tested pre-consequence control.
+
+### Cycle 384 seed-first start — correct the ranked continuity
+
+Cycle 384 starts from clean validated tip
+`fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c` at
+`2026-09-04T13:09:46.946Z`. Cycle 375 remains the last supported XHS
+observation through `2026-09-04T11:09:20.326Z`; no cadence or access trigger
+fired before its `2026-09-04T17:09:20.326Z` boundary. Make zero XHS requests.
+Added and changed identities remain unknown, observed removals remain `[]`,
+all 132 durable identities remain unavailable, no account state changes, and
+the Cycle 375 browser receipt plus seed-ledger row 375 remain provenance.
+
+Cycle 383's proposed CAGE-1 next step was stale. Cycle 369 already primary-
+reviewed CAGE-1, and Cycle 370 mapped its seven fields against the pinned
+Mnemosyne runtime. Preserve both results and correct the forward ranking
+without rewriting their history. `RV-004` remains highest consequence but
+lacks the protected query/rank-to-later-outcome join; `RV-034` remains pinned
+outside Scout. The highest accessible unresolved Scan #424 gap is therefore
+arXiv `2607.03386`, whose aggregate-policy-repair claim still lacks primary,
+control, run-uncertainty, and artifact qualification.
+
+### Cycle 384 checkpoint — one metric misranks one simulator repair
+
+Primary review supports a multi-resolution audit, not a universal policy-
+repair law. In one hotel-pricing simulator, tree search has better pooled D1
+(`0.214` versus `0.266`) and reference-state D1 (`0.328` versus `1.197`) than
+the selected LLM editor, but lower RevPAR (`98.911` versus `108.472`) and
+worse episode D1 (`0.766` versus `0.609`). Wasserstein-1 preserves those
+ordering disagreements. These metrics condition on different units and state
+distributions; the evidence does not show that every aggregate metric fails
+or that audit depth caused the outcome.
+
+The LLM policy's RevPAR `108.472` is close to benchmark `108.749`; paired gap
+`-0.276`, 95% interval `[-0.692, 0.146]`. A direct diagnostic projection is
+already `107.902`, only `0.570` lower. Up-to-2,500-evaluation random/guided
+nonsemantic proposers reach `93.90`/`99.70`, supporting a proposal-structure
+distinction over restart count alone. The shuffled-diagnostic selector-best
+is `94.30`, but uses only 200 calls against the main 2,500 and is a mechanism
+placebo rather than a matched-budget leaderboard arm.
+
+The 95% intervals resample 5,000 held-out simulator episodes. The main LLM
+result is one DeepSeek-V4-Flash production run without a provider seed, so
+run-level/provider variance remains unknown. The benchmark is a fixed rule-
+based reference rather than a global optimum, and neither another simulator
+nor another benchmark policy is tested.
+
+ArXiv `2607.03386v1` and current were read at
+`2026-09-04T13:09:46.946Z–13:09:48.998Z`; both return the same 18,618-byte
+archive, SHA-256
+`7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee`.
+It contains manuscript sources only. The appendix names monorepo commit
+`5c2d8b0` and `projects/hotel-pricing-marl` but no repository URL. Bounded
+GitHub repository searches through `2026-09-04T13:11:18.260Z` found no
+attributable release; short-commit search produced unrelated prefix
+collisions. Anonymous code search returned HTTP 401 at
+`2026-09-04T13:11:52.197Z`, so it cannot close that provenance gap. The 2,500
+prompts/responses/patches, selected policy, per-episode outcomes, and table
+regeneration remain unreplayed.
+
+ArXiv was the useful primary lane. GitHub established the attributable-
+artifact boundary, not a reproduction. Reddit made zero requests and remains
+RSS-readable/JSON-403 until a relevant-thread or access trigger. Confidence
+is high in manuscript identity, metric definitions, arithmetic, and release
+absence; moderate in the selected-policy episode estimates; low in run-level
+stability, provider/domain transfer, proposer optimality, or general
+causality. Revisit on an attributable repository at `5c2d8b0`, raw result
+bundles, repeated provider runs, a full-budget shuffled arm, another simulator
+or benchmark policy, or an independent replay. `RV-004` and `RV-034` remain
+high/open. Next seed-first, audit HASE `2607.03935`: test whether its 8B versus
+120B comparison isolates harness co-evolution or changes model, harness,
+budget, task, and selection together.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

@@ -17212,6 +17212,121 @@ This worker ran no test, generator, formatter, install, clean, or write in
 `/app` or any peer worktree; the exact fingerprints are rechecked after the
 standing commit.
 
+## Cycle 384 seed-first start — repair the stale forward ranking
+
+Cycle 384 starts from clean validated tip
+`fc4dcc7d0c98a29686dd63c291c7d7efa68e2b6c` at
+`2026-09-04T13:09:46.946Z`. The last supported XHS observation remains Cycle
+375 through `2026-09-04T11:09:20.326Z`. Its next scheduled boundary is
+`2026-09-04T17:09:20.326Z`; no cadence, collection, access, or account trigger
+fired, so this bounded reconciliation makes zero XHS requests. Additions and
+changes remain unknown, observed removals remain `[]`, all 132 durable
+identities remain unavailable, and no account state changes. Provenance is
+the Cycle 375 browser receipt and seed-ledger row 375; uncertainty is
+unchanged.
+
+Cycle 383 incorrectly ranked CAGE-1 as next. That work was already completed:
+Cycle 369 primary-reviewed the proposal and Cycle 370 mapped its seven fields
+against pinned Mnemosyne code. Preserve those results and correct only forward
+continuity. `RV-004` remains first but inaccessible without the protected
+query/rank-to-later-outcome join; `RV-034` remains outside Scout's authority.
+The highest accessible unresolved Scan #424 claim is arXiv `2607.03386`, so
+select its aggregate-policy-repair audit after reconciliation.
+
+## Cycle 384 checkpoint — qualify policy-repair audit granularity
+
+What was wrong: Scan #424 treated a one-simulator metric disagreement as a
+general diagnostic-to-outcome law, while Scan #452 promoted it as evidence
+that an audit must co-evolve. Neither entry retained the cheap projection,
+control budgets, run-level uncertainty, or missing artifact boundary.
+
+What changes: in one hotel-pricing simulator, a tree editor has better pooled
+D1 (`0.214` versus `0.266`) and reference-state D1 (`0.328` versus `1.197`)
+than the selected LLM editor, yet lower RevPAR (`98.911` versus `108.472`) and
+worse episode D1 (`0.766` versus `0.609`). Wasserstein-1 retains the same
+ordering disagreement. This directly supports evaluating policy edits across
+outcome, pooled, trajectory-local, and counterfactual-state views. It does not
+show exact per-state divergence, general failure of aggregate metrics, or
+harness evolution over time.
+
+The selected LLM policy's RevPAR is close to the fixed benchmark: `108.472`
+versus `108.749`, paired gap `-0.276`, 95% interval `[-0.692, 0.146]`. A cheap
+diagnostic projection already reaches `107.902`, only `0.570` lower. The LLM
+does improve episode D1 from projection `0.685` to `0.609`, while worsening
+reference-state D1 from `1.108` to `1.197`; its contribution is a combined
+profile rather than a large raw revenue lift.
+
+The main run uses DeepSeek-V4-Flash for 125 restarts times 20 iterations, or
+2,500 candidate evaluations. Up-to-2,500-evaluation random and guided
+nonsemantic proposers reach only `93.90` and `99.70` RevPAR, arguing against
+restart count alone. A shuffled-diagnostic control reaches `94.30`, but it
+uses 200 calls and is a mechanism placebo rather than a compute-matched
+leaderboard comparison. The reported intervals resample 5,000 held-out
+simulator episodes. They do not measure run-level variation: the main result
+is one production run, and DeepSeek exposes no seed parameter.
+
+### Exact provenance and source-lane continuity
+
+At `2026-09-04T13:09:46.946Z–13:09:48.998Z`, the 3,208-byte Atom response
+for `2607.03386` had SHA-256
+`fd77749526b9afc0292e8495e709fd984c0f0f42befd19abc5182dabe3dd56fd`
+and identified only `2607.03386v1`, published/updated
+`2026-07-03T14:42:01Z`. Explicit v1 and current retrievals both returned the
+same 18,618-byte archive, SHA-256
+`7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee`.
+It contains a 52,020-byte TeX manuscript, bibliography, and README only.
+
+The appendix says reproduction starts at repository commit `5c2d8b0` under
+`projects/hotel-pricing-marl`, but supplies no repository identity or URL.
+Six bounded repository searches by exact title, arXiv ID, project path, and
+author names through `2026-09-04T13:11:18.260Z` returned no attributable
+release. Public short-commit search returned 53 unrelated prefix collisions;
+anonymous GitHub code search for the project path returned HTTP 401 at
+`2026-09-04T13:11:52.197Z`. This is an access limit on code search, not proof
+that no repository exists. The arXiv release itself contains no simulator,
+scripts, prompt/response records, patches, selected policy, raw outcomes, or
+regenerated tables, so no empirical row was independently replayed.
+
+ArXiv was the selected and useful evidence lane. GitHub supplied only the
+bounded attributable-release/access result. Reddit made zero requests and
+remains RSS-readable/JSON-403 until a relevant-thread or access change. XHS
+remains due at its cadence boundary. Confidence is high in source identity,
+metric definitions, table arithmetic, and archive contents; moderate in the
+selected-policy episode estimates; low in provider-run stability, simulator
+or benchmark transfer, alternative proposer optimality, or general causal
+policy-repair claims. Revisit on an attributable `5c2d8b0` repository, raw
+run/results bundles, repeated provider runs, a full-budget shuffled arm,
+another simulator/reference policy, or an independent replay.
+
+`RV-004` remains high/open because this external study adds no protected Scout
+query/rank-to-selection-to-later-outcome join. `RV-034` remains high/open at
+the pinned external runtime boundary. Next seed-first, primary-review HASE
+`2607.03935`: test whether its 8B co-evolving-harness versus 120B fixed-harness
+comparison isolates harness evolution or jointly changes model, harness,
+budget, task, and selection.
+
+### Validation and preservation
+
+The reviewed five-file candidate passes `git diff --check`, syntax,
+TypeScript, tracked-source formatting, the Cycle 375 current-state projection,
+94 scoped links, navigation v1 at 11/14 and v2 at 8/8, and all 296 Scout tests
+/ 1,486 assertions with zero failures in 96.88 seconds. The broad audit passes
+all 1,540 tracked Scout Markdown documents / 1,733 local prose links.
+Read-only health at `2026-09-04T13:19:04.412Z` returns 26 facts / 16 wake
+signals with `truncated:true`.
+
+Accepted commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors, while unaccepted `d041c41b54` remains excluded.
+Read-only protected-checkout observation records HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 386 whole short-status records /
+SHA-256 `00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`,
+and 296 Scout-scope records / SHA-256
+`a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+The whole protected surface changed externally from Cycle 383; this worker
+does not attribute that drift. It ran no test, generator, formatter, install,
+clean, or write in `/app` or any peer worktree; recheck exact fingerprints
+after the standing commit.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

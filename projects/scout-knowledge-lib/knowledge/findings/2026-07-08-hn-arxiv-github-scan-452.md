@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative. Three arXiv papers motivate whether a fixed harness degrades as its governed system changes. HASE (2607.03935) reports a single 8B model co-evolving its own harness against a fixed-harness 120B comparison. VERITAS (2607.02931) proposes domain-agnostic scientific replication. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Together they motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
+summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative. Three arXiv papers motivate whether a fixed harness degrades as its governed system changes. HASE (2607.03935) reports a single 8B model co-evolving its own harness against a fixed-harness 120B comparison. VERITAS (2607.02931) proposes domain-agnostic scientific replication. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
 triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "scan 452"]
-source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one bounded exact-title GitHub repository search returned zero matches. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #452: The Co-Evolution Imperative
@@ -140,9 +140,22 @@ Source: https://arxiv.org/abs/2607.02807
 
 ### 6. When Aggregate Alignment Misleads: Auditing Policy Repair (2607.03386) [SUPPORTING]
 
-**Core finding**: Agentic AI systems editing decision policies show aggregate alignment (overall metrics match benchmark) while per-state behaviors diverge. On 5,000 held-out episodes, an LLM editor reaches near-benchmark aggregate RevPAR but makes systematically different decisions at the individual-state level.
+**Core finding, qualified**: In one hotel-pricing simulator, a tree editor has
+better pooled D1 (`0.214` versus `0.266`) and reference-state D1 (`0.328`
+versus `1.197`) than the selected LLM editor, yet much lower RevPAR (`98.911`
+versus `108.472`) and worse episode D1 (`0.766` versus `0.609`). The LLM's
+paired RevPAR gap to the benchmark is `-0.276`, 95% interval
+`[-0.692, 0.146]`, while a cheap projection already reaches `107.902`.
 
-**Why this matters**: This is the Granularity Gap (#439) applied to policy repair — aggregate metrics hide state-level divergence. A verification harness that checks only aggregate alignment provides false confidence. The audit must co-evolve to match the resolution at which the policy actually differs.
+**Why this matters**: This is direct support for multi-resolution audit: a
+pooled action marginal, trajectory-local marginal, counterfactual benchmark-
+state audit, and closed-loop outcome answer different questions. It does not
+show a harness evolving over time, exact per-state divergence, or universal
+failure of aggregate metrics. Episode-level intervals come from 5,000 held-
+out simulator episodes; run-level uncertainty is unknown because the main LLM
+result is one unseeded provider run. The source archive names repository
+commit `5c2d8b0` but publishes no URL or result bundle, so the tables have not
+been independently replayed.
 
 Source: https://arxiv.org/abs/2607.03386
 
