@@ -1290,6 +1290,28 @@ and bounds Sonnet at `0.00390625..0.03515625`. All remain below 0.05, so the
 reported direction is robust to the unknown outcome pairing, conditional on
 the unverified consent-only input construction.
 
+Its three-seed check answers a different question from repeated behavior on
+the same cases. Seeds 42, 7, and 13 are explicitly generator seeds; the
+synthesis algorithm samples an expert seed and a five-axis mutation vector,
+and the public table exposes only aggregate 64/500, 57/500, and 62/500 counts.
+Exact two-sided Fisher recomputation reproduces all pairwise values
+(`0.560851402513793`, `0.924120976407388`, and `0.696184455652260`), so the
+reported `p>=0.56` aggregate comparison is supported. The unreleased scenario
+manifests, identity overlap, prompt-pair hashes, and raw outcomes prevent a
+same-instance stability claim; six non-zero archetypes vary by 10--20 points,
+and phase-1 MiniMax terse varies 6.6%--21.1% across two seeds. Governance
+should therefore preserve aggregate sampling robustness separately from
+scenario-level repeatability.
+
+The same separation applies to the paper's “axis independence” wording. Its 20
+chi-square tests are outcome-versus-one-axis tests, not tests among the five
+input axes. Reported `p>=0.139` supports no detected marginal outcome
+association in those samples; it does not prove zero effects or mutual axis
+independence. Latin-hypercube marginal balance and descriptive two-axis outcome
+ranges do not supply the missing ten axis-pair joint distributions. Until
+scenario-level assignments or those contingency tables are released, actual
+inter-axis dependence is unknown.
+
 **The Balkanization Problem, as a hypothesis**: The taxonomy identifies
 unverified cross-category handoffs—especially the missing shared benchmark and
 policy-authoring-error study. It motivates a research-level Handoff Fallacy

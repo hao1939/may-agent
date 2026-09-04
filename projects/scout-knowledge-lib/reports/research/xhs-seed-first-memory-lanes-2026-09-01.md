@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 402 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, and paired-input claims: the public package has no byte-identity receipt, while every outcome table compatible with the printed marginals remains significant."
+summary: "Seed-first Scout continuity through Cycle 375 retains the login-class collection boundary; evidence work through Cycle 403 qualifies OverEager's pilot, product, human-label, zero-touch, audit-coverage, offline-rejudging, provenance, gradient, feasibility, paired-input, generator-seed, and axis-independence claims: aggregate Fisher comparisons reproduce, but the public package cannot establish same-scenario stability or mutual independence among mutation axes."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 375 observational reconciliation through 2026-09-04T11:09:20.326Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence and the corrected local wrapper boundary are in seed-ledger row 375."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 402; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input evidence qualified through Cycle 402; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 375 at 2026-09-04T11:09:20.326Z and bounded no-request reconciliation through Cycle 403; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence evidence qualified through Cycle 403; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19032,6 +19032,103 @@ TypeScript, formatting, Cycle 375 projection, scoped links, both navigation
 fixtures, and the full Scout test gate before committing; then bind broad
 links, read-only health, lineage, clean state, and protected fingerprints to
 the exact result.
+
+## Cycle 403 checkpoint — distinguish regenerated samples from matched reruns
+
+What was wrong: the living map asked whether OverEager's close three-seed
+rates preserved the same scenario and prompt-pair identities, but the library
+did not yet answer it. A reader could treat aggregate generator sensitivity as
+same-instance behavioral repeatability.
+
+What changes: the canonical finding and topic map now retain the reproduced
+aggregate comparison while stating that the public evidence cannot establish
+cross-seed scenario or consent-pair identity.
+
+### Seed order, integration, and ranked selection
+
+The cycle starts from clean validated standing tip
+`199c757b40f97143cdb3242e5c699986569898b7`. It contains Cycle 402 and the
+patch-equivalent integration of reviewer `018d008074d9f16988b1fe93125b12a4bd5d287e`
+as `a4f21ce386d6ce78701ffae0e8b3dcbd656256df`, with shared stable patch ID
+`381cd97cc8c8ecbe99856422dfb4fa4a907f2de4`; that review ends at Cycle 401.
+The compact follow-up truthfully removes its stale pending-integration status.
+
+At `2026-09-04T16:53:05.307Z`, the next XHS observation remained scheduled
+for `2026-09-04T17:09:20.326Z` and no trigger had fired. The bounded
+reconciliation made zero account requests: additions/changes remain unknown,
+observed removals remain `[]`, all 132 durable identities remain unavailable,
+and Cycle 375's receipt/ledger remain provenance. No XHS state changed.
+
+`RV-004` and `RV-034` remain high/open at inaccessible protected-outcome and
+external-runtime boundaries. The checksum-matching local OverEager package
+made generator-seed identity the highest accessible question. GitHub, arXiv,
+Reddit, and other public lanes made zero requests; their prior evidence,
+boundaries, and change-bearing revisit triggers remain unchanged.
+
+### Exact retained evidence and matched arithmetic
+
+The exact retained source remains 1,431,318 bytes at SHA-256
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`.
+It calls 42 canonical and 7/13 replicates **generator seeds**, describes a
+synthesis loop that samples an expert seed plus a five-axis Latin-hypercube
+mutation vector, and labels the sensitivity table “aggregate metrics.” The
+three reported 500-scenario rows imply 64, 57, and 62 overeager outcomes.
+
+An exact local two-sided Fisher recomputation returns
+`0.560851402513793` for 64/500 versus 57/500,
+`0.924120976407388` for 64/500 versus 62/500, and
+`0.696184455652260` for 57/500 versus 62/500. This reproduces the source's
+`p>=0.56` statement and supports a narrow aggregate population-stability
+claim under the disclosed generator perturbation. No provider or network call
+was used.
+
+The same package contains no per-seed scenario manifest, cross-seed overlap
+map, canonical scenario IDs, prompt-pair hashes, or raw per-scenario outcomes.
+Only seed 13 has a per-archetype table, and its caption promises rather than
+contains the raw assignment. Consequently, the package cannot establish that
+one scenario, fixture, or consent pair is shared across runs 8, 14, and 15.
+The algorithm and “generator seed” wording are consistent with regenerated
+scenario samples, but without manifests even their exact overlap is unknown.
+
+The close aggregate means also hide material local variation. The appendix
+reports six of fifteen non-zero archetypes spanning 10--20 points at
+`n=10..30`, severity totals 386/350/356, critical hits 39/31/28, and phase-1
+MiniMax terse rates 6.6% versus 21.1% across two seeds. Preserve these as
+contradictory scale evidence, not a refutation of the reproduced aggregate.
+
+The paper's 20 chi-square p-values do not establish its stronger axis-
+independence sentence. The methods call them four systems times five
+overeager-vs-axis independence tests. A `p>=0.139` result can support only a
+failure to detect marginal association between one axis and the binary outcome
+in those samples. It does not test any of the ten axis pairs, and balanced
+Latin-hypercube margins do not prove mutual independence. The published
+two-axis outcome ranges are conditional descriptive ranges, not axis-versus-
+axis contingency tests. No per-level outcome counts or scenario-level axis
+assignments are released, so even the printed p-values cannot be independently
+recomputed from this package.
+
+Confidence is high in the printed-count arithmetic and missing public identity
+evidence, moderate that each generator seed denotes a regenerated sample, and
+low in matched-instance stability or the actual direction of inter-axis
+dependence. Discharge needs per-seed content-addressed manifests for parent
+seed, five mutation axes, canonical scenario and consent-pair identity,
+outcomes, cross-seed overlap, distinct generator/model randomness, and same-
+scenario reruns. A mutual-independence claim additionally needs scenario-level
+assignments or all ten 3-by-3 axis-pair tables, a joint-balance criterion, and
+effect-size bounds.
+
+Next seed-first, test whether the reported two-axis “range” calculation
+identifies interactions or is only a descriptive conditional range without a
+matched interaction estimand.
+
+### Cycle 403 candidate validation
+
+The four-document candidate follows exact source
+`199c757b40f97143cdb3242e5c699986569898b7`. Run whitespace, syntax,
+TypeScript, formatting, Cycle 375 projection, scoped links, both navigation
+fixtures, and the full Scout gate before committing; then bind broad links,
+read-only health, lineage, clean state, and protected fingerprints to the exact
+result.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

@@ -293,6 +293,30 @@ counts remain undisclosed. This supports the statistical direction conditional
 on the asserted input control; it does not repair the missing byte-identity
 receipt.
 
+The three-seed sensitivity result is likewise aggregate rather than paired
+same-scenario evidence. The source calls 42, 7, and 13 generator seeds and its
+synthesis pseudocode samples both a base seed and a five-axis mutation vector
+while building each set. Its aggregate rows imply 64/500, 57/500, and 62/500;
+exact two-sided Fisher recomputation gives `0.560851402513793`,
+`0.924120976407388`, and `0.696184455652260`, reproducing `p>=0.56` and the
+reported 1.4-point aggregate range. But no per-seed manifest, scenario overlap,
+prompt-pair hash, or raw outcome binds one item across the three runs. Only
+seed 13 has a per-archetype table, while six non-zero archetypes vary by
+10--20 points and the phase-1 MiniMax terse cell varies 6.6%--21.1%. Treat this
+as generator-level aggregate stability, not matched-instance repeatability.
+Discharge requires content-addressed per-seed scenario/pair manifests,
+cross-seed overlap, separated generator/model randomness, and same-scenario
+reruns.
+
+The source also overstates what its 20 chi-square tests identify. It defines
+them as four systems times five overeager-vs-axis tests, so `p>=0.139` means no
+marginal outcome association was detected in those samples. Those tests do not
+compare any axis to another axis. Latin-hypercube marginal balance does not
+prove mutual independence, and two-axis outcome ranges are not input-axis
+contingency tests. Without scenario-level assignments or the ten 3-by-3
+axis-pair tables, the later claim that all axes are statistically independent
+within each system is unsupported; actual dependence remains unknown.
+
 The paper checks four CVE metadata records against NVD and vendor advisories but
 does not reproduce the exploits. Three concern Copilot/Visual Studio or Claude
 Code. `CVE-2024-21626` is a 2024 runc escape that predates agent tooling and is
