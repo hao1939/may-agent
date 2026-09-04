@@ -11054,6 +11054,46 @@ seed-first, compare the remaining unsourced scans and Cortex's unisolated
 taxonomy-size question against the unavailable provider result, and select
 substantive primary or contradiction evidence before any byte/line compaction.
 
+Exact Cycle 319 material
+`f4f76e579294f81d16858f231a911d3a8c45599c` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,
+navigation v2 at 8/8, and all 296 tests / 1,484 assertions in 104.61 seconds.
+The broad audit passes 1,540 Markdown documents / 1,728 local prose links.
+Read-only health at `2026-09-04T02:09:59.995Z` returns 26 facts, 16 wakes,
+and `truncated:true`. Accepted `ff923ccde4` is contained and unaccepted
+`d041c41b54` excluded. The standing tree has zero status records and zero
+runtime-state files.
+
+At `2026-09-04T02:10:21.625Z`, protected `/app` retained HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its externally observed wider
+status changed from Cycle 318's 386 records / `7c285c09…ca01b` to 916 /
+`f7080322…4a93a`; the Scout scope remained unchanged at 296 /
+`7e4d0937…26a8a`. This worker wrote or tested neither protected surface.
+
+## Cycle 320 seed-first start — primary-check observability erosion
+
+At `2026-09-04T02:10:21.625Z`, the last observational XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance remains the last browser receipt plus the
+ledger, and no account state changed.
+
+The complete queue ranks by expected knowledge value: (1) high/open `RV-004`,
+inaccessible because protected query/rank-to-selection-to-outcome history ends
+August 31; (2) Memory in the Loop's unreleased frozen provider artifact and
+authority-bearing result; (3) Scan 450's `2607.05785` claim that functionally
+correct agent code systematically lacks observability, highest accessible
+because one study is generalized into accelerating diagnostic erosion; (4)
+the scan's conceptual knowledge-debt and trajectory-compression claims, then
+its two corrective systems; (5) Cortex taxonomy-size identification, blocked
+on an unreleased matched ablation; (6) other unsourced scans; (7) Reddit until
+a relevant-thread/access change; and (8) byte/line compaction. Select
+`2607.05785`. Test the study population, task construction, controls,
+correctness and observability criteria, runtime evidence, statistics,
+artifacts, and whether the evidence supports longitudinal or system-wide
+erosion.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

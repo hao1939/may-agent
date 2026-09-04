@@ -5097,6 +5097,41 @@ scans against Cortex taxonomy-size identification and the unreleased provider
 result; choose substantive primary or contradiction evidence ahead of
 compaction.
 
+Exact Cycle 319 material
+`f4f76e579294f81d16858f231a911d3a8c45599c` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation 11/14 and 8/8,
+and 296 tests / 1,484 assertions in 104.61 seconds. The broad audit passes
+1,540 documents / 1,728 links; read-only health at
+`2026-09-04T02:09:59.995Z` returns 26 facts / 16 wakes. Accepted `ff923ccde4`
+is contained, unaccepted `d041c41b54` excluded, and the standing tree and
+runtime state are clean. At `02:10:21.625Z`, protected `/app` retained HEAD
+`386b445c…4641fec8`; its externally observed wider status moved from 386 /
+`7c285c09…ca01b` to 916 / `f7080322…4a93a`, while Scout scope remained
+unchanged at 296 / `7e4d0937…26a8a`. This worker wrote or tested neither
+protected surface.
+
+### Cycle 320 seed-first start — test the observability-erosion claim
+
+At `2026-09-04T02:10:21.625Z`, the last XHS observation through
+`2026-09-03T22:59:03.253Z` remained inside its six-hour cadence. The bounded
+reconciliation made zero XHS or public requests: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) `RV-004`'s missing
+protected query/rank-to-selection-to-outcome join, inaccessible because
+readable history ends August 31; (2) Memory in the Loop's unreleased frozen
+provider result; (3) Scan 450's `2607.05785` claim that functionally correct
+agent code systematically lacks observability, highest accessible because it
+generalizes an empirical study into accelerating diagnostic erosion; (4)
+Scan 450's conceptual knowledge-debt and trajectory-compression claims, then
+its two corrective systems; (5) Cortex taxonomy-size identification, blocked
+on an unreleased matched ablation; (6) other unsourced scans; (7) Reddit until
+a relevant-thread/access trigger; and (8) compaction. Select `2607.05785`.
+Test the study population, task construction, controls, correctness and
+observability criteria, runtime evidence, statistics, artifacts, and whether
+the evidence supports longitudinal or system-wide erosion.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
