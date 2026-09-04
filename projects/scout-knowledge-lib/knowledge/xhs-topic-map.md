@@ -7667,6 +7667,47 @@ effect. `RV-004` remains high/open. Next seed-first, primary-review
 readiness labels, comparison controls, and public artifacts before retaining
 the handoff mechanism.
 
+Exact Cycle 360 result
+`22999cc813b53805afe63a74fcf0e73bc96de927` contains seed-ordering commit
+`3c21454306e59aa3ece8120f1621b1e8ee13de35`. It passes syntax, TypeScript,
+tracked-source formatting, Cycle 341 projection, 90 scoped links, navigation
+11/14 and 8/8, and all 296 tests / 1,484 assertions with zero failures in
+109.73 seconds. The broad audit passes 1,540 tracked Markdown documents /
+1,728 local prose links. Read-only health at `2026-09-04T07:48:19.438Z`
+returns 26 facts / 16 wakes and is truncated. Cycle 359 result `56bb6a33c7`,
+Cycle 358 result `21f7db953e`, accepted `ff923ccde4`, and historical
+`f26bd4f3a5` are ancestors; unaccepted `d041c41b54` remains excluded. The
+exact standing tip is clean.
+
+Protected `/app` HEAD remains
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its externally observed dirty
+state is 919 records / `57783d0ac10b…b15169653c6a` overall and 296 records /
+`a430d0c9f657…e4628684322f7e` in Scout scope. Both byte fingerprints differ
+from the preceding receipt while their counts do not; record this as external
+drift without assigning cause. This worker wrote or tested neither protected
+surface.
+
+### Cycle 361 seed-first start — test the handoff mechanism itself
+
+At `2026-09-04T07:48:42.819Z`, reuse the supported XHS observation through
+`2026-09-04T05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 durable seeds remain unavailable, and account state is unchanged. The
+next scheduled observation is approximately `2026-09-04T11:00:03.241Z`
+unless a material access trigger arrives first.
+
+Expected knowledge value ranks (1) high/open `RV-004`, decision-relevant but
+inaccessible without the protected query/rank -> selection -> later-outcome
+join and authority to evaluate it; (2) Memory in the Loop's missing frozen-
+provider result, inaccessible without that result and authority; (3)
+`2607.06256`, highest accessible because Scan #459's remaining mechanism and
+77–100% clean/chained contrast still rest on an unreviewed primary source;
+(4) other primary, contradiction, reproducibility, retrieval, and synthesis
+gaps; (5) Reddit until a relevant-thread/access trigger; and (6) byte/line
+compaction. Select `2607.06256`. Audit clean and chained denominators,
+per-skill success, readiness labels, controls, uncertainty, and attributable
+public artifacts before retaining the mechanism.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
