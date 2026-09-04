@@ -11007,15 +11007,16 @@ RV-004 and RV-034 remain higher severity but cannot move without protected
 later-outcome or external-runtime evidence. The highest-value accessible item
 was therefore RV-036. Exact Cycles 373–386 added 1,087 topic-map lines and
 1,775 detailed-ledger lines while the accepted detailed evidence lives in
-project-owned findings. A fourteen-case navigation set frozen before the
-change found zero exact audit identities and only ten correct accepted files at
-rank one. Material `0073f95dedda211769971ba1bf451216ae044da6` adds fourteen
+project-owned findings. A fourteen-case producer-authored regression set,
+first committed with the change and replayed against its exact parent, found
+zero exact audit identities and only ten correct accepted files at rank one.
+Material `0073f95dedda211769971ba1bf451216ae044da6` adds fourteen
 compact INDEX routes to three accepted files and makes all fourteen exact
 identities and files unique rank-one results.
 
 No historical evidence was removed. RV-036 is mitigated but remains
-medium/open because this local deterministic comparison does not prove human
-retrieval, later reuse, or lossless deletion. The [Cycle 410 retrieval report](../reports/review/scout-retrieval-routes-cycle410-2026-09-05.md)
+medium/open because this local deterministic comparison is neither protected
+selection nor proof of human retrieval, later reuse, or lossless deletion. The [Cycle 410 retrieval report](../reports/review/scout-retrieval-routes-cycle410-2026-09-05.md)
 records the matched result and rollback. Next, build an isolated virtual
 projection that removes only the repeated Cycle 373–386 topic/ledger additions,
 then compare all navigation fixtures, links, and distinctions before considering

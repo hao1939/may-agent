@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 410 turns fourteen repeated Cycle 373-386 audit narratives into stable, tested INDEX routes without deleting evidence. A frozen matched navigation set moves from zero exact route identities before the change to fourteen of fourteen after it; RV-036 is mitigated but remains open pending a safe virtual-removal comparison."
+summary: "Cycle 410 turns fourteen repeated Cycle 373-386 audit narratives into stable, tested INDEX routes without deleting evidence. A producer-authored post-hoc navigation set moves from zero exact route identities on the parent to fourteen of fourteen after the change; RV-036 is mitigated but remains open pending protected and safe virtual-removal comparisons."
 triggers: ["Cycle 410", "RV-036", "retrieval cost", "primary evidence routes", "navigation outcomes"]
 last_updated: "2026-09-05"
-source_basis: "Accepted RV-045 standing integration a76726f370dd77a8cf708d153e2016f7ab523443; Cycle 373-386 exact range 3ea02c3c76..08f7d1f898; frozen navigation fixture v3; material route commit 0073f95dedda211769971ba1bf451216ae044da6."
+source_basis: "Accepted RV-045 standing integration a76726f370dd77a8cf708d153e2016f7ab523443; Cycle 373-386 exact range 3ea02c3c76..08f7d1f898; producer-authored navigation fixture v3 first committed with the route change; material route commit 0073f95dedda211769971ba1bf451216ae044da6."
 </ai_context>
 
 # Cycle 410 retrieval routes
@@ -18,7 +18,7 @@ would risk hiding useful distinctions.
 
 This checkpoint takes the smallest reversible step first. It adds fourteen
 compact INDEX identities pointing to three accepted project-owned entry files
-and freezes the corresponding decision-relevant navigation queries as fixture
+and records the corresponding decision-relevant navigation queries as fixture
 v3. No existing evidence, narrative, source record, or accepted commit is
 removed or rewritten.
 
@@ -40,9 +40,12 @@ access, and revisit triggers.
 
 ## Matched retrieval result
 
-Fixture v3 was frozen against exact pre-change standing
-`a76726f370dd77a8cf708d153e2016f7ab523443`. It contains one paraphrased need
-for each audit and expects the stable route title plus accepted entry file.
+Fixture v3 replays exact pre-change standing
+`a76726f370dd77a8cf708d153e2016f7ab523443`. It contains one producer-authored
+paraphrased need for each audit and expects the stable route title plus accepted
+entry file. The fixture and routes were first committed together, so this is a
+matched post-hoc regression comparison rather than protected or independently
+frozen selection.
 
 | Condition | Exact route identity | Correct accepted file at rank 1 |
 | --- | ---: | ---: |
@@ -76,9 +79,10 @@ main `803240b27f` with a clean index and unchanged default 72 /
 ## Disposition, uncertainty, and rollback
 
 RV-036 is **mitigated and remains medium/open**. Stable entry-file retrieval is
-now executable, but the fixture covers fourteen paraphrases and one deterministic
-ranker; it does not measure human discovery time, semantic search, downstream
-reuse, maintenance effort, or loss from deleting historical provenance.
+now executable, but the fixture covers fourteen producer-authored paraphrases
+and one deterministic ranker; it was not protected from the route author and
+does not measure human discovery time, semantic search, downstream reuse,
+maintenance effort, or loss from deleting historical provenance.
 
 The next ranked step is an isolated virtual-removal comparison: project the
 Cycle 373–386 topic-map and detailed-ledger additions out without changing the

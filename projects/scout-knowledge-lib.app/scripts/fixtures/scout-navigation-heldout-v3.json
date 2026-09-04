@@ -1,8 +1,8 @@
 {
   "schema": "scout.navigation-heldout/v1",
-  "frozen_at": "2026-09-05T06:14:00+08:00",
+  "frozen_at": "2026-09-05T06:03:19+08:00",
   "frozen_against_tip": "a76726f370dd77a8cf708d153e2016f7ab523443",
-  "source_basis": "Fourteen decision-relevant paraphrases for the Cycle 373-386 primary-evidence audits, frozen after the accepted RV-045 integration and before adding compact index routes. The fixture tests accepted project-owned entry files, not detailed-ledger preservation or user outcome.",
+  "source_basis": "Fourteen producer-authored paraphrases for the Cycle 373-386 primary-evidence audits, first committed with the compact index routes at the recorded Git commit time and replayed against the exact parent. This is matched post-hoc regression evidence, not protected or independently frozen selection; it tests accepted project-owned entry files, not detailed-ledger preservation or user outcome.",
   "cases": [
     {
       "id": "hexstrike-client-contrast",
