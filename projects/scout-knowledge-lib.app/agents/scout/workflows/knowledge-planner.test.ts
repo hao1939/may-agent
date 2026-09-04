@@ -125,6 +125,10 @@ describe("Scout owner reconciliation boundary", () => {
     );
 
     expect(prompt).toContain("Host is the sole task-state mutation authority");
+    expect(prompt).toContain(
+      "inline relative link at the omission point to the exact retained heading",
+    );
+    expect(prompt).toContain("file-level mention elsewhere is not a substitute");
     const startList = prompt.slice(
       prompt.indexOf("Start by reading:"),
       prompt.indexOf("Valid durable outcomes:"),

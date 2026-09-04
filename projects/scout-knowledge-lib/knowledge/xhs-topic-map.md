@@ -3913,10 +3913,10 @@ links, 1,540 documents / 1,705 broad links, and read-only health at 30 facts /
 
 ## Cycle 285 checkpoint — Cycle 272 seed provenance has one detailed home
 
-Seed `ab67f6bdd606e4e740696ba682b61b76ae0120e3` preceded the audit. The
+Seed `ab67f6bdd69afabaeb921abe862056e3b03bf983` preceded the audit. The
 map and report shared an exact 21-line / 1,203-byte Cycle 272 seed block at
 SHA-256 `99925ebb…ca585f0`. Material
-`d27fe00e55f061e33f0a10d82a98d625d610b443` preserves the report and
+`d27fe00e551fb138d3cadc13b03dfab39963c042` preserves the report and
 replaces only the map copy with a 9-line / 569-byte linked transition, removing
 12 net lines / 634 bytes. Result/seed identities, validation provenance,
 unavailable-seed uncertainty, zero-request access, and protected-state
@@ -4078,8 +4078,9 @@ Explore exposed 30 public notes; saved status remained HTTP 200, `login`,
 account mutation was supported. Cycles 293–295 reused that fresh receipt at
 zero browser-request cost before each ranked local audit.
 
-The [detailed checkpoint report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-292-seed-first-reconciliation--scheduled-pass-completed-first)
-retains exact source/result, validation, protected-state, and rollback proof.
+The [consolidated checkpoint report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycles-292295-checkpoint--four-ranked-mirrors-one-durable-handoff)
+retains source/result identities, current validation, protected-state evidence,
+and the decisions preserved from each removed mirror.
 This map removes four historical proof mirrors while preserving their decisions:
 
 | Cycle | Exact old run | Decision retained |
@@ -4448,7 +4449,7 @@ only repository behavior, retaining supporting and contradictory evidence.
 
 ### Cycle 310 checkpoint — production breadth is not comprehension evidence
 
-Seed-first `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d` preceded every public
+Seed-first `7dd3965ef86c6bee02ee6660931bcb43ab65640f` preceded every public
 read. At `2026-09-04T00:49:17.626Z`–`00:49:19.087Z`, anonymous read-only
 arXiv access returned HTTP 200 for `2605.25438v2` metadata and its 46-file
 TeX source archive. The archive SHA-256 is
@@ -4529,8 +4530,8 @@ source at `00:57:17.988Z`. The archive SHA-256 is
 `997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`.
 
 Supporting evidence: six tool/dataset configurations across three task types
-and three low-cost models all have concave completion curves through ten
-repairs. The first increment is the largest in the published relative-gain
+and three low-cost models all have completion curves that flatten overall
+through ten repairs. The first increment is the largest in the published relative-gain
 table, and later increments generally shrink. Contradictory/qualifying
 evidence: flattening differs materially by workflow; Basic LLM Call reports
 `11.5%` at step 3 and `12.7%` at step 4; multiple rows retain small nonzero
@@ -5827,8 +5828,11 @@ ArXiv `2607.06411v2` and its full source were observed through
 `2026-09-04T03:36:54.582Z`. The paper reports four ranked product
 configurations over 25 tasks and three runs each (300 rollouts), with a 78.7%
 best point estimate; only comparisons with the weakest row have paired
-intervals excluding zero. Fable is hors concours, has one run, and is reported
-as 17/20 after five safeguard-fallback exclusions.
+intervals excluding zero. Two Opus passes and one GPT-5.5 pass fetched current
+upstream gold-fix files; treating them as failures moves 78.7% to 76.0% and
+66.7% to 65.3% without changing ranks. Fable is hors concours, has one run,
+and is reported as 17/20 after five safeguard-fallback exclusions; one retained
+pass has the same runtime contamination and becomes 16/20 under that rule.
 
 The attributable GitHub release at `eugeneshilow/rubench`
 `3cf010895c20c5e6d3b9a0eacd37e7cd207be412` supplies the decision-relevant
@@ -5837,8 +5841,10 @@ trajectory message identifies a non-requested model. The public Fable lane log
 (10,072 bytes, SHA-256 `fef41560…631444`) preserves one explicit
 `MODEL-SUBSTITUTION` rejection for AIOH1. The tree retains exactly the other 20
 Fable task directories, whose 1,585 model-bearing messages all identify
-`claude-fable-5`. It does not retain the five rejected trajectories, their
-fallback records, or the paper's reported AIOH1 2/2 rerun. `RESULTS.md`
+`claude-fable-5`. These traces are model-identity-clean, not contamination-
+clean: AIOH5 fetched current upstream source containing the gold-fix file. The
+release does not retain the five rejected trajectories, their fallback records,
+or the paper's reported AIOH1 2/2 rerun. `RESULTS.md`
 (SHA-256 `77904a8b…4194347c`) and the paper name AIOH1, AIOH4, AIOH6, AIOH8,
 and LARA1, so that exact five-task set remains author-reported rather than
 independently reproducible from the release.
@@ -9307,7 +9313,8 @@ trigger/receipt pair could support a retrospective control,
 and low for general navigation effectiveness. No telemetry or scorer change is
 justified. Next, freeze one historical trigger→accepted-output pair and test
 whether its contemporaneous index revision can be reconstructed without
-inferring the missing query.
+inferring the missing query. The [detailed report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-257-checkpoint--receipts-preserve-paths-attempts-do-not)
+retains the exact review provenance and protected-count evidence.
 
 ## Cycle 256 seed-first start — ordering corrected before selection
 
@@ -9327,8 +9334,9 @@ agent-authored receipt, or shared-schema expansion would not close that gap.
 
 No implementation is justified. Recover accepted event payloads and stable
 output paths first; only a demonstrated join warrants an app-local optional
-self-report receipt. The detailed report retains the complete alternatives,
-authority limits, confidence, and next investigation.
+self-report receipt. The [detailed report](../reports/research/xhs-seed-first-memory-lanes-2026-09-01.md#cycle-256-checkpoint--use-the-real-event-boundary-not-a-synthetic-gate)
+retains the complete alternatives, authority limits, confidence, and next
+investigation.
 
 ## Cycle 255 seed-first start — current receipt reused
 

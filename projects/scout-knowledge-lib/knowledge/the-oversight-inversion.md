@@ -671,7 +671,7 @@ internal expertise measure, so this does not economically confirm erosion.
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. **Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)**
 
 Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2601.20245, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
@@ -702,7 +702,7 @@ The seven-scan exit arc (#444–#450) demanded an architectural exit. Three arXi
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. **Verification Harness (#451): The architecture makes its checker authority and retained evidence explicit (instantiation)**
 
@@ -741,7 +741,7 @@ Supporting evidence:
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
 9. **Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)**
@@ -754,7 +754,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 
 **MCP TAG-Block Concealment** (2607.05744): First protocol-level proof that what humans see during MCP tool approval ≠ what models receive in context. Unicode TAG block (U+E0000–U+E007F) has no assigned glyph in any mainstream renderer — payloads are invisible in approval dialogs while surviving byte-for-byte into the model's tokenizer. Across 5 MCP metadata surfaces, 8 techniques, 3 independent server implementations: **8/8 deliver payload into model context, 0/8 trigger re-approval** (even under TOCTOU rug-pull). The gap is protocol-level, not implementation-specific.
 
-**Context-to-Execution Integrity (CXI)** (2607.06000): The architectural fix — **triple-binding** at the execution boundary. Policies mark protected sink fields; typed releases carry narrow validated values; a deterministic gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the **same action manifest**. On 720 live AgentDojo episodes (1,739 LLM calls) and 400 code-agent episodes: **231 safe task completions, zero observed escapes** across all three authority dimensions.
+**Context-to-Execution Integrity (CXI)** (2607.06000): **Triple-binding** at the execution boundary. Policies mark protected sink fields; typed releases carry narrow validated values; a deterministic gate admits a call only after field authority, exact-effect authorization, and invocation authority all bind to the **same action manifest**. The paper reports no observed escape at mediated sinks; safe task completion is 199/720 AgentDojo episodes (1,739 LLM calls) and 231/400 repository episodes. This is a fixed-policy admission result, not complete-safety or utility-preservation evidence.
 
 **Balkanization of Execution-Security Research** (2607.05743): Systematizes 39 papers (2023–2026) into 17 categories that **rarely cite each other**. Confirms 4 disclosed, patched CVEs in production agent harnesses. Surfaces 5 cross-cutting gaps: (1) no shared benchmark across isolation architectures; (2) policy enforcement reports 69–98% failure but isolation papers don't test adversarially; (3) TOCTOU and MCP threats analyzed separately despite being the same state-validation problem; (4) **every enforcement mechanism assumes an honest policy author**; (5) benign out-of-scope actions (up to 17.1%) addressed by zero papers. This is the Correlated Blindness (#436) applied to the research community itself — the 17 categories share correlated blind spots.
 
@@ -783,7 +783,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 3. Predicate Gate (#446): Gate at transitions (architecture-side)
 4. Composition Surface (#447): Transitions = where failure lives (target identification)
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
-6. Subtraction Economy (#449): Market prices subtraction (economic validation)
+6. Subtraction Economy (#449): Test realized remediation demand (economic hypothesis)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
 8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
 9. Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent Scout review cursor through Cycle 284 result f97bebdec5a59cfb48abd24f49c87accc2ce67d4: RV-022/RV-023 are integrated exactly and Cycle 284 safely replaces a byte-identical Cycle 271 seed mirror with linked detail; RV-004 remains high/open."
-triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022", "RV-023"]
+summary: "Independent Scout review cursor through Cycle 331 validation / Cycle 332 seed 8b6c0f8e932a45ce8ec918f5caeed582f9efefde: RuBench supports executing-model validation for routed products, not universal product-over-model attribution; RV-033 separates model-identity cleanliness from runtime contamination, RV-032/RV-031 remain revised, and RV-004 remains high/open."
+triggers: ["Scout independent review", "checkpoint review cursor", "navigation outcomes", "navigation perturbations", "ranking diagnostics", "diagnostic controls", "fixture digest", "title-weight crossover", "later reuse", "consumer boundary", "accepted output alert", "per-source output count", "source output state", "metric snapshot note", "per-lane metric", "transition classifier", "project.knowledge.maintained", "bounded navigation", "landing page", "inverse document frequency", "event retention", "retained window", "retained outcome", "retrieval compaction", "duplicate narration", "repair budget", "discrete concavity", "architecture premium", "market estimate", "feedback loop", "causal identification", "observability erosion", "fault signal rate", "TraceProbe", "Knowledge Debt", "AgentTether", "LogicHunter", "StateFuse", "PatchOptic", "PatchBench", "maintenance asymmetry", "benchmark boundary", "CXI", "fixed-policy admission", "mediated sink", "safe task completion", "RuBench", "model substitution", "runtime contamination", "executing-model validation", "RV-004", "RV-018", "RV-019", "RV-020", "RV-021", "RV-022", "RV-023", "RV-024", "RV-025", "RV-026", "RV-027", "RV-028", "RV-029", "RV-030", "RV-031", "RV-032", "RV-033"]
 last_updated: "2026-09-04"
-source_basis: "Exact standing history through reviewer integration 48adada0af7244fcfbb36701a2191d1456aca617 and Cycle 284 seed/material/result f044bc76ca2550d2cf58ad564aeb244f9364e91d..f97bebdec5a59cfb48abd24f49c87accc2ce67d4; independently reproduced reviewer patch IDs, heading-bounded and leading-separator-inclusive block bytes/hashes/line counts, commit objects, retained anchor, scoped and broad links, frozen navigation, identical app tree, health, exact final diff, and rollback boundaries. Earlier cursor evidence remains retained below."
+source_basis: "Exact standing history through Cycle 331 validation / Cycle 332 seed 8b6c0f8e932a45ce8ec918f5caeed582f9efefde; exact diff from prior cursor 394a09cbeab4e887d85b8614c0768966e9ec74c2; checksum-verified RuBench 2607.06411v2 source archive; pinned GitHub repository, exact runner/log/results hashes, retained-tree and model-message inspection; independent population, comparison, uncertainty, artifact, cost, contamination, duplication, usability, and rollback review; producer current-tip validation and protected-state preservation record; prior reviewer containment and patch-ID checks; current reviewer-candidate validation; final reviewer diff; and rollback boundaries. Earlier cursor evidence remains retained below."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,7 +11,7 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed:
-  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
+  `8b6c0f8e932a45ce8ec918f5caeed582f9efefde`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -61,9 +61,163 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   `9d17987de772f0728d9f3193d45ba43759745af1` (Cycle 283 result),
   `f044bc76ca2550d2cf58ad564aeb244f9364e91d` (Cycle 284 seed),
   `032b1fa093af84bc1edc9dbff1059eb61ba57b0d` (Cycle 284 material), and
-  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4` (Cycle 284 result).
-- Review date: `2026-09-04T06:26:15+08:00`
-- Overall disposition: **accept with limits; RV-022/RV-023 resolved on standing**.
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4` (Cycle 284 result),
+  `ab67f6bdd69afabaeb921abe862056e3b03bf983` (Cycle 285 seed),
+  `d27fe00e551fb138d3cadc13b03dfab39963c042` (Cycle 285 material),
+  `47574d326c9752b3852343afb5b628b54bd0d82c` (Cycle 285 result),
+  `0112e228896ae61433802992a6f18a72abf756e0` (Cycle 286 seed),
+  `efc32bf1cfaa19c0c9348c3a768545c058972cc3` (Cycle 286 material), and
+  `826114972c53747ac34fc854cfa192c25b2fa586` (Cycle 286 result),
+  `b6c46b3b412b11e60ab3d1323fe9beeb5017385e` (Cycle 287 seed), and
+  `e51a123cd94ed2236343d41d8ecebe55b76603de` (Cycle 287 material), and
+  `051c301a7cffc14fd04221148da2edac07eafa58` (Cycle 287 result), and
+  `1fa4e23de302ca7365231af0559dfd98d71c62d8` (Cycle 288 seed), and
+  `1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5` (Cycle 288 material),
+  `e1120425fbc285594385f833c8c9a9c9c793280a` (Cycle 289 seed), and
+  `a5c62bf6ff2499965426b610489490fcc43078e6` (Cycle 289 material),
+  `53ab65af9055ebb08747830c322b4eeb2445b57c` (Cycle 290 seed), and
+  `d391befc30c68520f06ec28990076be9936b78dd` (Cycle 290 material), and
+  `0b11065a59df0f3e44d42e0631dfd64ad27cf08d` (Cycle 291 seed), and
+  `40bc4a71572ac99a43ea3fce110de4fa40812ce4` (Cycle 291 material),
+  `06a80ca5d08ede533a7e69d653a8cc40859979e0` (Cycle 292 reconciliation),
+  `be7cc1092add3f47e7d900ccbb832b92832bd3f7` (Cycle 292 material), and
+  `c05e44af5fb714dcd5ffd261ed0e7a0cf0fc4077` (Cycle 293 seed),
+  `32c16f5ca63b1c16952a2a27f46d4f025d9742ee` (Cycle 293 material), and
+  `4de7d900b8697782c79c395e2c3a4e4b048bec3d` (Cycle 294 seed), and
+  `268fbc465304ea08cd30f4db563698604ac57719` (Cycle 294 material), and
+  `8aec08e4c59259de95e768364ca36fad5e8a8fff` (Cycle 295 seed), and
+  `d5de20cf8f24f7eeefb1539789cc0cc6479f5832` (Cycle 295 material), and
+  `415f2541ddec54c792d73e26fcc8f8966fcb75d3` (Cycle 295 validation),
+  `e9450d7b76fbf865a4af87f0adc70cbcc8a667eb` (Cycles 292-295 consolidation),
+  `d2ee79b1d0da0c606c67f0c520cbad0a27388074` (Cycle 296 result),
+  `9235b217536e27cc3bccab9bd114daa764ac6b3d` (Cycle 297 result),
+  `2940174467c3db15511476a793bb027ea516b5ba` (Cycle 298 result),
+  `5b32d18e7205f8bc5b1b711b8fa59f621cceea39` (Cycle 299 result),
+  `1f75f42d4ced73fb252fe0b08f847814969d83d9` (Cycle 300 result),
+  `8d60819c6d18db79d5c33fbcc9bd3a452bd8dffa` (Cycle 301 result),
+  `2b457a3dedfa93ce5d20d2a00462f53aa8d3275c` (Cycle 302 result),
+  `62cb84ee8412baa7e0f4ee618c9d089e863ddb2f` (Cycle 303 result), and
+  `f26bd4f3a590b59d241536326199e805777df1be` (Cycle 304 result),
+  `4151805fea8f3fe815853b406d46dd0168db578e` (Cycle 305 gate result), and
+  `0e490fd2f775698f2863acc5befd6b254b115b09` (Cycle 306 result),
+  `458496ebfe64b3648b793a9c8549b75750491702` (Cycle 307 seed and Cycle 306 marker-audit disposition),
+  `bee6972245059e1e57e5c17236688dd8af3bc881` (Cycle 307 primary-paper material),
+  `18cb8ed923f7f6b72a660baa07cd302d421b701c` (Cycle 307 validation result),
+  `09666b2058d95b0b400c22b8f07b48fbd2b92bf0` (Cycle 308 artifact-audit seed),
+  `3fb1bcbc5e74d2755aff14dac89daf7056369382` (Cycle 308 material),
+  `ef8cc8dffd5334bc471f8cb895aa72ee89a28832` (Cycle 309 seed),
+  `ba7b76ab04fe52ec9cdd56426612e39be5da1abc` (Cycle 309 material),
+  `7dd3965ef86c6bee02ee6660931bcb43ab65640f` (Cycle 310 seed),
+  `fa7255fc708014dccd9c62f96c0c18355b1555e1` (Cycle 310 material),
+  `e84546bbf919db571054e105eeef25243bd105f2` (Cycle 310 validation),
+  `b321dc4b29d681c71e921a58d6b698305aa9a112` (Cycle 311 seed),
+  `9eacb75f9f43b8445d053af1c84099c9d77a5aa6` (Cycle 311 material),
+  `d3ae19af8f16e9aefe4045ea9be77d4eaae970fb` (Cycle 312 seed),
+  `bcffb09afca1a800b87ed5779ec7b2c90a851be3` (Cycle 312 material),
+  `616365f105548464cad3e9b0661e120e5c7de806` (Cycle 313 seed),
+  `a18828cef0706de76159fa0a2613b68be69f4683` (Cycle 313 material),
+  `b769559a2dbf5ef7242ad5ab9d2cbe6444b979fe` (Cycle 314 seed),
+  `e7c25db7c366532fd02dbf0fc2ab9b1ab44f74b0` (Cycle 314 material),
+  `0749927c5327947ea82187270bbff9fce9ad1645` (Cycle 315 seed),
+  `bf3e0551d69f5e841ac0df443d59279f6bf5f0f8` (Cycle 315 material),
+  `f17577efe3cb6644fae46df960c29959c9c334db` (Cycle 316 seed),
+  `43f474dc2a490be9331986f4f1c3887b9ffeee1f` (Cycle 316 material),
+  `d6f2320cbf2cab4a607cf862bd048fbde947c6de` (Cycle 317 seed),
+  `d87008f144c0a2ddd57d179de10931aac59554bf` (Cycle 317 material),
+  `7f5820008d9b5151084db553fa0398efa0ec7a1f` (Cycle 317 validation),
+  `16e542370dcb9af71d8f2fcafd8a348a2910a3da` (Cycle 318 seed),
+  `976f343ca6c922ec09e8297c5931b680233a36f4` (Cycle 318 material),
+  `1a47982a93f249b977db16a1dadceb17976a277e` (Cycle 318 validation and Cycle 319 seed),
+  `f4f76e579294f81d16858f231a911d3a8c45599c` (Cycle 319 material),
+  `e7714b8bd86d2be70573ee16ba1060c4abfe6f71` (Cycle 319 validation and Cycle 320 seed),
+  `721372ef69027da4116735a357f7a6461db80056` (Cycle 320 material), and
+  `8e6b7e98afdf2d9ee5ef99ece506ed2b26555ac8` (Cycle 320 validation and Cycle 321 seed),
+  `a963d706aa2de03586c795dd4d5d672510ffeae6` (Cycle 321 material),
+  `9af03c647310da09fe4f4b8c47e7e103339bad24` (Cycle 321 validation and Cycle 322 seed),
+  `6377b4716571a0103833cdc1fa374873222a8c57` (Cycle 322 material),
+  `344805bcfb13ae17bd9bd7306db7675c8e91d07e` (Cycle 322 validation and Cycle 323 seed),
+  `0237879678849e6402270517f4ee51c9ea49bc71` (Cycle 323 material),
+  `219d7b3f915e6e9e02036ef2c5827f1cf19c0525` (Cycle 323 validation and Cycle 324 seed),
+  `dd361d0331463b160805a2255ebc293f2e3d890d` (Cycle 324 material),
+  `30c3a850ce2314233a5e1ae8e18679d5d418738f` (Cycle 324 validation and Cycle 325 seed),
+  `4b45ed8fa04001d55272ad3d50c0fc77c5a4ef53` (Cycle 325 material),
+  `1967dfcb647d13b39e13cf17ad3454c5ab75cf6c` (Cycle 325 validation and Cycle 326 seed),
+  `c7a73c9debbda967a2d18b056d131e4cdce407f9` (Cycle 326 material),
+  `80c840784f71f49d56b58228c72835cdbee80709` (Cycle 326 validation and Cycle 327 seed),
+  `35f2d5778671e18c0b54f8f635bdebb1f627feef` (Cycle 327 material),
+  `3852d6b19c0e97253df38629f9b120c695c56a00` (Cycle 327 validation and Cycle 328 seed),
+  `80695da018873aaa3453134c36ec55cbc0215130` (Cycle 328 material),
+  `cd76912510950675952710fe438f4f5fde65f162` (Cycle 328 validation and Cycle 329 seed),
+  `7d4b6e01af3117c0bba4445a663a24a8e281a38f` (Cycle 329 material),
+  `2c38cea2f1267ed86b93df9991c10afd7d6edba2` (Cycle 329 validation and Cycle 330 seed),
+  `07836ad009067857f639ecd467bb279f2f367369` (Cycle 330 material),
+  `394a09cbeab4e887d85b8614c0768966e9ec74c2` (Cycle 330 validation and Cycle 331 seed),
+  `bee1114e84ae63a806fc71e41fd4fe05a5ce47d5` (Cycle 331 material), and
+  `8b6c0f8e932a45ce8ec918f5caeed582f9efefde` (Cycle 331 validation and Cycle 332 seed).
+- Review date: `2026-09-04T11:52:33+08:00`
+- Overall disposition: **accept Cycles 329-331 after resolving medium RV-032 and RV-033 claim-contamination findings and extending RV-031 through CXI; retain RV-004 high/open and supersede the unintegrated earlier reviewer ranges with the current direct-child consolidation**.
+  TraceProbe adds reproducible process profiles, not failure prediction,
+  diagnostic outcomes, or evidence-destruction proof. Agents That Teach is an
+  unevaluated design proposal; its separate 52-person citation supports only
+  an immediate one-hour learning-score gap. AgentTether improves conditional
+  repair on initially failed benchmark tasks but depends on auxiliary LLM
+  judgments and has no readable result artifact. LogicHunter supports one
+  high-precision oracle operating point, while its unequal full-pipeline
+  comparison does not prove agentic-testing necessity. StateFuse makes
+  conflicts externally visible on the official 282-case slice; the slice has
+  no gold abstention cases, and the separate safer-action loop is deterministic
+  synthetic evidence that does not beat conservative flat alternatives. These
+  corrections improve claim quality and retrieval value without supplying a
+  protected Scout outcome or matched-budget behavioral improvement.
+  PatchOptic's 46 hand-authored cases support projection's leakage/token effect
+  and deterministic declared-path checks, not semantic validity: View Only
+  overlaps the complete system, the weak actor accepts 21/24 expected-reject
+  cases per round, and the 9/9 containment result is a separate no-model test
+  also passed by Verify Only. The public source omits cases and raw runs.
+  Conversation to Contribution's maintenance asymmetry is a paired perception
+  among at most 25 self-selected respondents, not a repository-population
+  outcome; its observational panel finds no sustained productivity gain or
+  broad quality decline, and contributor broadening reverses in the older
+  cohort. These source corrections are decision-usable but do not establish a
+  protected Scout outcome, matched-budget improvement, observed reuse, or
+  changed user decision.
+  Cycle 328 correctly replaces a categorical loop-improvement claim with
+  model-, scaffold-, tool-, budget-, and benchmark-bounded evidence. The
+  public benchmark has 1,384 candidate pull requests from the same 500
+  SWE-bench Verified issues across three generators; the 8,914 retained
+  training trajectories come from a separate SWE-rebench pool after excluding
+  every repository present in the benchmark. Reviewer effects remain
+  heterogeneous (-0.6 to +25.1 points), the agentic comparison changes tool
+  access as well as interaction, and the iterative 38.4% result uses a
+  different procedure and budget from the 22.9% baseline. The source reports
+  point estimates rather than repeated-run uncertainty and does not establish
+  a model-independent loop effect.
+  Cycle 329 retains Aria's strong full-system proof-admission result while
+  removing the unsupported claim that the harness or strategy freedom alone
+  caused an 8× improvement. The reported populations total 4,864 target
+  lemmas across Iris, RustBelt, reglang, and iris-lean; Iris alone used 379.7
+  model-hours and up to 30 attempts per lemma. The only fixed model comparison
+  covers 40 easier lemmas and reaches 40/40 for both Opus 4.7 and Kimi K2.6,
+  with materially different retry and time costs. The prior-reglang comparison
+  changes system, model, context, and budget, and the paper reports no matched
+  alternate-harness campaign or repeated-run uncertainty.
+  Cycle 330 correctly narrows CXI from whole attack-class prevention to no
+  observed escape at fixed-policy mediated sinks. The primary source confirms
+  199/720 AgentDojo and 231/400 repository safe task completions, with policy,
+  runtime, validator completeness, task quality, and unreviewed sinks outside
+  the guarantee. The producer fixes the newest Scan 475 synthesis, but older
+  high-retrieval CXI surfaces still conflate the two utility denominators or
+  retain complete-fix, immunity, and equal-task-quality language. RV-032
+  corrects that contamination; RV-031 adds the missing CXI source/access basis.
+  Cycle 331 correctly narrows RuBench's five reported Fable-to-Opus
+  substitutions to one retained mismatch rejection plus 20 retained Fable
+  task traces whose 1,585 model-bearing messages identify Fable. It rejects a
+  universal product-over-model attribution and preserves the unresolved five-
+  trace provenance boundary. The same source reports runtime contamination in
+  one retained Fable pass and three ranked cells, so “clean” must mean model-
+  identity-clean rather than outcome-contamination-clean. RV-033 adds that
+  distinction and the paper's exact sensitivity outcomes without weakening
+  the executing-model validation rule.
   Cycles 265-268 correctly reject transition, event, packet, and metric
   expansions that lack comparable history or a consumer. Cycle 269 confirms
   that the accessible protected store ends before any retained knowledge
@@ -98,10 +252,609 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   detailed provenance. Standing RV-022/RV-023 correct their nonexistent IDs
   and stale integration status. Cycle 284 removes a fifth duplicate block;
   all remain static retrieval improvements without protected outcome, measured
-  savings, later reuse, or changed user decision.
+  savings, later reuse, or changed user decision. Cycles 285-286 remove the
+  next two byte-identical seed mirrors. Cycle 285 publishes nonexistent
+  seed/material identities, corrected under RV-024; Cycle 286's provenance and
+  Cycle 284 reviewer integration reproduce exactly. Cycle 287 reduces the
+  Cycle 280 outcome-boundary map record while keeping mutable-retention,
+  causality, validation, and rollback detail behind one link; it adds no new
+  behavior or outcome evidence. Its result narration accurately records the
+  semantic overlap convention, preservation audit, validation, and next lead.
+  Cycle 288's seed accurately records a no-request cadence decision and the
+  next audit target. Its material removes one exact consumer-boundary mirror
+  while retaining the real-event and missing-join limits; RV-025 restores the
+  point-of-use link to the authoritative detail. Neither adds outcome evidence.
+  Cycle 289 repeats the exact compaction pattern for score-attribution evidence:
+  its arithmetic and narrow pair-specific claim remain intact, while RV-025
+  restores the second omitted point-of-use detail link. Cycle 290's seed then
+  records Cycle 289's current-tip validation; no separate result commit exists.
+  Cycle 290 corrects Cycle 289's mistaken label for the next duplicate, then
+  compacts the actual Cycle 257 review/receipt evidence without changing its
+  child-only outcome boundary; RV-025 restores the third omitted detail link.
+  It still supplies no trigger/query-to-selected-path join or user outcome.
+  Cycle 291's seed accurately records the final pre-cadence no-request decision
+  and next target. Its material corrects that target from Cycle 250 policy to
+  Cycle 251 rarity, then preserves the rare-caller counterexample and narrow
+  diagnostic-not-policy conclusion; RV-025 restores the fourth detail link.
+  Four consecutive omissions justify one prospective process refinement: the
+  durable Scout rules and hosted maintenance prompt now require an inline link
+  at the exact compaction omission point, pinned by prompt-capture assertions.
+  This is prevention logic, not evidence that a later run follows it.
+  Cycle 292 performs the due observational reconciliation before local work,
+  advances the canonical seed ledger, and preserves the inaccessible saved-set
+  boundary without inferring removals. Its next compaction removes 14 repeated
+  map lines / 636 bytes while retaining the unchanged detailed Cycle 221 proof
+  behind an exact anchored point-of-use link. This is the first producer run
+  after RV-025's diagnosed pattern and does not repeat the omission, although
+  the preventative rule itself remains pending integration. Cycle 293 then
+  reuses the receipt at under six minutes, makes zero source requests, and
+  records the next candidate without endorsing its uncommitted investigation.
+  None supplies matched-budget behavior, protected promotion, observed reuse,
+  measured saving, a later decision, or user impact; RV-004 remains high/open.
+  Cycle 293 then removes the exact 21-line Cycle 223 projection-proof mirror,
+  including a stale next-work sentence already resolved by Cycle 224, while an
+  anchored link retains all historical validation and protected-state proof.
+  Cycle 294 reuses the still-fresh receipt and correctly prioritizes Cycle
+  255's negative real-use boundary for the next audit. This is another static
+  retrieval improvement with no protected or matched-budget outcome.
+  Cycle 294 material keeps the decisive Cycle 255 negative finding in the map:
+  no retained evaluator-query/rank to selected-file to later-decision join
+  exists. It moves local integration, fixture, history, runtime, and protected
+  proof behind an exact anchored link. The eight-line map reduction neither
+  removes the adverse result nor supplies new outcome evidence; RV-004 remains
+  high/open.
+  Cycle 295 reuses the Cycle 292 receipt at under fourteen minutes, makes zero
+  browser or public-source requests, and ranks the Cycle 277 reviewer-
+  integration mirror without claiming it has already been compacted. It adds
+  no protected, matched-budget, deployed-use, or user-outcome evidence.
+  Cycle 295 material preserves Cycle 277's source/result, fast-forward, stable
+  patch, validation, health, and rollback proof behind an exact anchored link.
+  Its compact map keeps RV-018/RV-019 resolved and RV-004 high/open, removes a
+  stale instruction for already-completed mirror work, and names the next
+  missing-query/index boundary without endorsing it in advance.
+  Cycle 295 validation accurately reports the producer app tree's 296 tests /
+  1,483 assertions, Cycle 292 projection, 76 scoped and 1,712 broad links,
+  frozen navigation, health, accepted containment, unaccepted exclusion, and
+  unchanged protected fingerprints. The reviewer app tree retains its separate
+  296-test / 1,485-assertion gate and four additional repaired links.
+
+  Consolidation `e9450d7b76` reduces Cycles 292-295 to one durable handoff;
+  its commit identities, retained negative outcome, current validation, and
+  source-access boundary remain usable. Its map link, however, labels itself a
+  checkpoint route while landing on the preceding seed receipt and overstates
+  the target as retaining rollback proof. RV-026 retargets and narrows that
+  sentence without restoring duplicate narration. Cycles 296-304 then compact
+  fourteen more bounded map windows. Every published old/new line count, byte
+  count, and SHA-256 prefix reproduces at the claimed material parent/result;
+  all byte-identical windows remain in the detailed report, while the two
+  non-identical Cycle 253/254 decision windows preserve their counts,
+  contradictions, confidence, and no-change dispositions semantically. The
+  range is documentation-only, makes no new source or account request, keeps
+  accepted/unaccepted lineage separate, and is reversible by ordinary reverts.
+  It demonstrates static duplicate reduction, not reader savings or behavior.
+  No matched-budget baseline, fresh protected selection, later-decision join,
+  deployed prompt observation, rollback event, or user outcome appears;
+  RV-004 therefore remains high/open.
+
+  Cycles 305-306 improve active-index provenance: one finding explicitly says
+  it uses mock sources, and the other has no source field, citation, external
+  evidence, or observation time. Both raw notes remain byte-exact behind
+  provenance-only links, while the canonical coordination note retains the
+  five mock-note distinctions and the second note's ownership, event/shared-
+  state, and metric-health claims. The matched current-index sequence is v1
+  11/14 with three equal coordination targets, 12/14 after retiring the mock
+  target, then 11/14 when retiring the source-free target yields one unique
+  canonical result that disagrees only with the frozen two-way-ambiguity
+  expectation. V2 stays 8/8 throughout. This is deterministic local retrieval
+  evidence and a source-quality correction, not protected promotion: the
+  producer selected known active entries and observed the frozen case, while
+  no user/model decision follows. The first Cycle 305 gate exposed that the
+  Cycle 252 diagnostic fixture was incorrectly replaying frozen scores against
+  the mutable INDEX. Test `2ddb394e17` now uses the fixture's already-pinned
+  `d4a9208…a4444c` revision; independent replay reproduces its identities,
+  matches, coverage, scores, and order. No fresh finding requires another code
+  change. RV-004 remains high/open.
+
+  Cycle 307 closes only the previously queued lexical marker audit. Independent
+  parsing of active, non-struck INDEX links yields exactly 693 unique Markdown
+  targets. The stated marker family produces exactly seven files: the living
+  map, two cycle/review records, two sourcing-gap assessments, the canonical
+  evaluation note's mock-source isolation rule, and one claim-drift warning.
+  Context inspection confirms none is a second unsupported active result. This
+  is a correct bounded no-change disposition, not a claim-level provenance
+  audit. Material `bee6972245` then completes the selected PROBE / Memory in
+  the Loop / NapMem comparison. Independent primary-HTML inspection reproduces
+  PROBE's 1,000-case and 40% claims, Memory in the Loop's 0.0/12 versus 7.2/12
+  latency result and two-task-family limit, and NapMem's three personalized-
+  memory benchmarks and privacy/forgetting limits. The papers do not share a
+  memory intervention, PROBE outcome, or direct title citation. The in-place
+  qualification therefore corrects an unsupported causal chain while retaining
+  each scoped result. It adds no protected Scout behavior or user outcome.
+
+  Cycle 307 result `18cb8ed923` accurately records the producer-source gate.
+  Its 90 scoped and 1,728 broad links are exactly two below this reviewer
+  candidate because RV-025 adds two still-missing point-of-use links. The app
+  subtree is unchanged, so the prior independent source and candidate full
+  gates remain current. The protected-checkout count/hash are producer-reported
+  external-state provenance, not protected behavior evidence. Cycle 308 seed
+  `09666b2058` correctly leaves the artifact audit unperformed. The Memory in
+  the Loop primary HTML links `Egoist-Machines/LodeDB`, and public Git HEAD
+  resolves to `67405f5eaac698bb8613eeb8a0be8a56f12f958e`; repository contents,
+  paper-code correspondence, inputs, and latency controls remain unreviewed.
+
+  Cycle 308 material `3fb1bcbc5e` corrects that initial attribution. Primary
+  HTML names `getmykhan/vxdb`, pinned at
+  `d720fd3e67e2331144d7486e0642fe62c24ffd0f`, as the experiment's actual
+  instrument; LodeDB is a comparative citation. Public vxdb supplies the memory
+  primitive, tests, and a smaller notebook, but neither its repository, the
+  paper source archive, nor the inspected release surfaces supply the promised
+  full experiment scripts, frozen workloads, latency ladder, or per-run JSON.
+  The material keeps implementation plausibility separate from reproduction of
+  the paper's provider-level outcome probabilities.
+
+  Cycle 309 material `ba7b76ab04` then narrows the public notebook evidence.
+  Independent execution from vxdb 0.5.1 wheel SHA-256
+  `40640825f9a5866bd220f827f7ada0f5f276fd0bed9b959ab746770edcb7ec41`
+  reproduces the matched visible-window controls: baseline recall rises 1/4,
+  2/4, 3/4, 4/4 across windows one through four, while memory stays 4/4. One
+  hundred window-two repeats produce the invariant 2/4 versus 4/4 pair. That
+  is a deterministic truncation/scaffold contrast, not provider behavior,
+  general transfer, measured cost, or the paper's latency-dose result.
+
+  Cycle 310 material `fa7255fc70` correctly qualifies the delegation paper.
+  Primary text gives an additive adoption-time estimate of +2.528 active
+  languages (SE 0.063) against a 0.90 pre-adoption mean; it does not report a
+  2.5-times effect. It measures an observed public production frontier, not
+  knowledge, comprehension, skill acquisition, or skill erosion, and voluntary
+  project selection leaves the estimates associational. Validation
+  `e84546bbf9` records the producer gate, but the material and validation both
+  publish nonexistent seed
+  `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d` instead of actual seed
+  `7dd3965ef86c6bee02ee6660931bcb43ab65640f`; RV-027 corrects all three durable
+  occurrences.
+
+  Cycle 311 material `9eacb75f9f` correctly rejects a universal three-to-four
+  repair hard stop and an isolated workflow-over-model effect. Primary v1 HTML
+  confirms six tool/dataset configurations, three task types, three low-cost
+  models, temperature 0.2, automated correctness checks, and up to ten repairs.
+  Basic LLM Call rises 11.5% at step three and 12.7% at step four; several rows
+  retain small gains through steps eight to ten. Cross-tool comparisons also
+  change task, dataset, prompts, validation, and compatibility modifications;
+  the paper did not repeat every configuration and warns against transfer to
+  larger/newer models. This supports overall flattening and a target-specific
+  marginal-benefit/cost rule, not an invariant cutoff or causal factor rank.
+  Because several rows have a later increment after a smaller or zero step,
+  strict discrete concavity is overstated in three Cycle 311 statements;
+  RV-028 narrows them without changing the diminishing-returns disposition.
+
+  Cycle 312 material `bcffb09afc` correctly retracts the universal consent-law
+  claim. Current v4 primary HTML explicitly calls
+  `F = sigma(1+epsilon)/(1+alpha)` a phenomenological ansatz, reports that the
+  composite loses to independent effects and one frozen crossing has the
+  opposite interaction direction, and limits ROM to conditional persistence
+  for a finite, static, density-independent positive operator plus a stipulated
+  survival bridge. Exact public repository head
+  `8e113333bf461b0396ba44267f64320ef9f974bb` marks the formula-to-coordination
+  mapping retracted while retaining algebraic statements about the chosen
+  expression. GitHub Actions run `32805920785` is successful at that head, but
+  remains same-repository CI rather than independent elaboration; this
+  environment has neither `lean` nor `lake`. The accepted scope is therefore
+  authorization architecture and measurement discipline, not an empirically
+  adequate friction law, derived legitimacy, or real-world attractor. Cycle 313
+  seed `616365f105` precedes material `a18828cef0`. Independent download
+  reproduces the cited 419,344-byte `2607.05125v1` PDF at SHA-256
+  `4187af1486d4f3a2b6dd9fe93a469f12f0abbcbd0ec8861201ed5216ca619ebe`.
+  The table, n=4 descriptive limit, fixed phase order, accumulated-familiarity
+  confound, absent runtime archive, 87% versus 83.6% discrepancy, and evaluator-
+  blinding contradiction are exact. The checkpoint correctly retracts an
+  independently identified architecture effect, but several changed canonical
+  and Scan 448 passages still asserted a cross-phase premium, capability
+  ranking, or autonomy-caused frustration; RV-029 narrows those remnants.
+
+  Cycle 314 seed `b769559a2d` precedes material `e7c25db7c36`. Independent
+  inspection of the 39-file, 9,572,894-byte `2607.04846v1` TeX archive at
+  SHA-256 `c2904e5ed95c4376cf0938baf281e9f5df707bee8cb71a16ecc78a73306d6cc2`
+  confirms two small synthetic-transformer settings, the main-text `100/100`
+  versus methods-section 30-seed inconsistency, successful-run-conditioned
+  refusal comparisons, a constant 15:85 control, and the authors' explicit
+  large-model and natural-task limits. Both curricula reach near-zero
+  misaligned free generations after fine-tuning in the language task; the
+  remaining separation is on 250 targeted elicitation prompts. Component
+  ablations and activation patching support different learned dependencies,
+  but do not intervene on entanglement while holding curriculum fixed. The
+  paper reports no oversight cost or deployed outcome. Its code URL redirects
+  from `kjsandbrink/alignment-dynamics` to repository ID `1288403515` at
+  `kaisandbrink/alignment-dynamics`; the repository is empty and its commits
+  endpoint returns HTTP 409, so no independent execution was possible. Cycle
+  314 correctly narrows the durable curriculum claim to a bounded factor to
+  test. It does not resolve Scan 448's unmatched HN/GitHub return claims, which
+  remain narrowed by RV-029 in this reviewer range.
+
+  Cycle 315 seed `0749927c53` makes no public-source request and changes only
+  the two operational ledgers. It correctly keeps RV-004 first, records why
+  that protected join is inaccessible, and orders primary review of the
+  remaining HN/GitHub convergence provenance ahead of routine collection or
+  static compaction. This is an accepted work order, not completed research,
+  productivity evidence, or a disposition of the convergence claims.
+
+  Cycle 315 material `bf3e0551d6` independently pins the two Hacker News items,
+  corrects their Scan 447→448 changes from the published +1.0%/+0.4% to
+  357→386 (+8.1%) and 503→518 (+3.0%), and explains why the 0.81 ratio is
+  arithmetic over a manually classified basket rather than a complete
+  denominator. Bounded reviewer reads reproduce item `48818311` at 916 points /
+  352 comments and item `48819008` at 637 / 259; these current counters confirm
+  identity and are not substituted for the historical snapshots. Independent
+  anonymous GitHub reads reproduce all four cited heads and counters:
+  `akseolabs-seo/fable-soul@643ae8b39d19e83a4f48d5c95e32942b6f14444a`
+  (106 stars),
+  `pillar-labs/sail-skill@67e1691ac64586b0abea96c74f511ea5628f62ed`
+  (118), `oxbshw/watch-skill@994ee7514c64a9ec4980eeabef789b5e10ea28be`
+  (331), and
+  `elder-plinius/T3MP3ST@0cdbef08ce82edca65f9fe0c615f6f21be6b5854`
+  (5,973). The original search result, full denominator, and matched capability
+  cohort remain unavailable; `watch-skill` mixes video capability with
+  self-verification, and the T3MP3ST delta uses an older Scan 438 baseline.
+  Cycle 315 therefore correctly rejects a preference, market, or causal return
+  inference. Two stale open-question/next-scan sentences still treated autonomy
+  and incomparable ratios as established trends; RV-029 narrows those residual
+  prompts in this reviewer result.
+
+  Cycle 316 seed `f17577efe3` adds only ordering/validation narration, makes no
+  public request, and correctly selects Scan 449's unrelated-price comparison
+  for a bounded primary audit. Its `$149` production anecdote and `$10k/week`
+  consulting offer are not yet comparable units, transaction evidence, cost,
+  market clearing, or causal demand. The producer explicitly queues those
+  distinctions; this reviewer does not duplicate that in-progress research.
+  The seed is accepted as an order, not a disposition or productivity result.
+
+  Cycle 316 material `43f474dc2a` pins HN item `48823359` and Slopfix's
+  first-party offer. Independent reads reproduce the current item identity and
+  the exact 6,019-byte page at SHA-256
+  `79f6a8dbde8b379eb42d141594379b3e6d24e8a9eb6a4d52774d481ee16f7c27`.
+  The page offers one week by three senior engineers for a conditional $10,000,
+  proportional payment against a line-reduction target, and a two-week
+  warranty. It reports no customer, completed engagement, revenue, provider
+  cost, conversion, competitor, demand curve, or market-clearing quantity.
+  Dividing it by an unrelated $149 production anecdote is arithmetic over
+  unlike units, not a market, cost, or value estimate. The checkpoint correctly
+  narrows that claim.
+
+  Cycle 317 seed `d6f2320cbf` orders OptiAgent before Cortex and HeRo; material
+  `d87008f144` primary-reviews `2607.05346v1`. Independent retrieval reproduces
+  the four-file, 166,470-byte source archive at SHA-256
+  `71f685356b02e0752640c420322851139bcdcd1b64462a92b5a1ffef99e7fb39`.
+  The source directly supports six agents, four feedback routes, a three-
+  iteration cap, one correction trace, and the highest GPT-5.4 row on three of
+  four tables. It also confirms one run per configuration, mixed copied/current
+  baseline provenance, 262-versus-263 NLP4LP accounting, and future-work status
+  for loop/component ablation, repeated trials, interpretability metrics, and
+  expert/non-expert evaluation. No author code is linked. The checkpoint
+  correctly rejects loop causality, measured auditability, “subtraction,” and
+  sub-linear cost. RV-030 addresses remaining alias/canonical statements that
+  still called OptiAgent economically cheaper, treated pending Cortex/HeRo
+  reports as established mechanisms, or repeated market pricing as validation.
+
+  Cycle 317 validation `7f5820008d` records the exact `d87008f144` producer
+  result rather than projecting it onto later commits. Cycle 318 seed
+  `16e542370d` then selects Cortex without public access, and material
+  `976f343ca6` reviews `2607.05377v1`. Independent retrieval reproduces the
+  33,516,660-byte source archive at SHA-256
+  `8233fd185d285d3d10e9f5bb0cda60bc7edf415a6889b56b4b2c30c0af02c1c3`
+  and repository commit
+  `d2a9795b15aff369314b260d2727d7a0cdbf0b46`. The source confirms a fixed
+  32-way planner language, continuous executor actions, 95.5% versus 92.4%
+  LIBERO-Long and 86.8% versus 82.74% RoboTwin point estimates, 65%/55%
+  physical success over 20 trials per suite, a 10-hour target-setup executor
+  fine-tune, and a 2.72M-versus-3.10M event-sampling ablation. It reports no
+  taxonomy-size or taxonomy-only ablation, seeds, dispersion, or closed-loop
+  replication; joint benchmark evaluation and System-2 training remain
+  unreleased. Accept the corrected interface/result description with those
+  limits. It does not prove a causal subtraction mechanism, transfer gain,
+  Scout behavior improvement, or RV-004 resolution.
+
+  Cycle 318 validation and Cycle 319 seed `1a47982a93` records the exact
+  `976f343ca6` producer gate: 296 tests / 1,484 assertions, 90 scoped and 1,728
+  broad links, navigation 11/14 and 8/8, and bounded health at 26 facts / 16
+  wakes. It also discloses two non-gate invocation mistakes and distinguishes
+  them from the passing package command. The same commit orders HeRo review
+  without making a public request or claiming a result. Accept the validation
+  provenance and seed ordering; neither changes the app, INDEX, protected
+  state, Cortex disposition, or RV-004 evidence.
+
+  Cycle 319 material `f4f76e5792` primary-reviews `2607.05353v1`.
+  Independent retrieval reproduces the 4,040,292-byte source archive at
+  SHA-256
+  `1f77c54053cdae6a4ccca546455b5cda2973e1e26e16b9841e6eb7b6b0d3c090`
+  and repository commit
+  `68fe4c8c1508484622a76d744896b7f805b70c1f`. The source confirms
+  independent per-layer keys, a chance-level hidden-bit result conditional on
+  exchangeable unauthorized scores and uniform messages, 0.925 two-level bit
+  accuracy at 24 bits / 200 C4 tokens, and 10.34-to-1.48 microseconds/token
+  GPU decoding across batch sizes. The 23-file repository has 16 Python files,
+  no tests or license, and example configs with placeholders, 100 samples, and
+  an 8-bit payload rather than the paper's 1,000-prompt/24-bit tables. Accept
+  keyed disclosure and the reported point estimates with those limits. The
+  work does not implement key policy/revocation, supply uncertainty, reproduce
+  paper tables, measure reviewer labor or total audit cost, establish
+  sub-linear oversight, or change RV-004.
+
+  Cycle 319 validation / Cycle 320 seed `e7714b8bd8` records the exact
+  `f4f76e5792` producer gate: syntax, TypeScript, formatting, Cycle 292
+  projection, navigation 11/14 and 8/8, 296 tests / 1,484 assertions, 90
+  scoped links, 1,540 documents / 1,728 broad links, and bounded health at 26
+  facts / 16 wakes. It records accepted `ff923ccde4` as contained and
+  unaccepted `d041c41b54` as excluded. The same documentation-only commit
+  selects `2607.05785` for Cycle 320's observability audit after ranking the
+  inaccessible RV-004 join and unreleased provider result above it; it makes
+  no public request and publishes no observability conclusion. Accept the
+  exact validation provenance and queue disposition. Neither the larger
+  externally observed protected-status count nor the seed is a protected
+  outcome, behavioral comparison, measured saving, later reuse, or RV-004
+  resolution.
+
+  Cycle 320 material `721372ef69` primary-reviews `2607.05785v1` and removes
+  functionally-correct, longitudinal-erosion, test-incentive, human-baseline,
+  and faster-than-linear verification claims from both durable aliases and the
+  canonical synthesis. Independent retrieval reproduces the 719,150-byte
+  archive at SHA-256
+  `57c1447967033bd2626e59ac7675516d3e0455d95526e5b929421f00728779a2`.
+  Its TeX confirms 1,223 static restoration instances, no execution or
+  functional-preservation test, Position F1 0.278–0.633, and lexical KeyBag F1
+  0.197–0.398. A separate runtime population uses 200 specifications per
+  model, of which 151, 154, and 136 are runnable, and reports 4.95%, 6.32%,
+  and 13.99% overall fault-signal rates. It has no application-correctness
+  gate or human-written runtime control; its string oracle may miss indirect
+  signals; the claimed five repeats have no dispersion or public output. The
+  standing correction is supported and appropriately limits transfer. RV-031
+  restores the source archive and bounded artifact checks to the Scan 450
+  metadata field, which otherwise still named only API discovery despite the
+  new primary-derived summary.
+
+  Cycle 320 validation / Cycle 321 seed `8e6b7e98af` records the exact
+  `721372ef69` producer gate: syntax, TypeScript, formatting, Cycle 292
+  projection, navigation 11/14 and 8/8, 296 tests / 1,484 assertions, 90
+  scoped links, 1,540 documents / 1,728 broad links, and bounded health at 26
+  facts / 16 wakes. The documentation-only seed ranks inaccessible RV-004 and
+  the unreleased provider result ahead of TraceProbe `2607.06184`, then selects
+  TraceProbe as the highest accessible lead without a public request or result.
+  Accept the validation provenance and seed ordering. Neither commit supplies
+  a protected outcome, matched-budget behavior comparison, measured saving,
+  later reuse, or RV-004 resolution.
 
 ## Exact scope and ordering
 
+- The new standing range
+  `1967dfcb647d13b39e13cf17ad3454c5ab75cf6c..3852d6b19c0e97253df38629f9b120c695c56a00`
+  is the linear order `c7a73c9deb` (Cycle 326 PatchOptic material),
+  `80c840784f` (Cycle 326 validation / Cycle 327 seed), `35f2d57786`
+  (Cycle 327 OSS material), and `3852d6b19c` (Cycle 327 validation / Cycle
+  328 seed). It changes six documentation files by +480/-56. The standing app
+  subtree remains `79454aee7065368550b4374d89c74d36c2a57035`; no executable,
+  evaluator, fixture, schema, protected state, account state, or authority
+  changes.
+- Cycle 326 correctly separates projection from verification. PatchBench uses
+  46 hand-authored cases, six settings, two actors, and ten rounds. Its 5,520
+  live runs are aggregate source-reported evidence; the separate 9/9 hidden-
+  path stress test removes the model. Cycle 327 correctly separates the 1,240-
+  repository observational panel from the 25-response survey and keeps causal,
+  population, maintenance, and comprehension claims outside the evidence.
+- Rollback the new producer range in reverse order: revert `3852d6b19c`,
+  `35f2d57786`, `80c840784f`, then `c7a73c9deb`. The validation/seed commits
+  are dependent narration; neither material changes runtime state. The reviewer
+  consolidation is independently reversible and does not require reverting
+  producer research.
+- The newly reviewed standing range
+  `09666b2058d95b0b400c22b8f07b48fbd2b92bf0..8e6b7e98afdf2d9ee5ef99ece506ed2b26555ac8`
+  is the linear twenty-eight-commit order `3fb1bcbc5e`, `ef8cc8dffd`, `ba7b76ab04`,
+  `7dd3965ef8`, `fa7255fc70`, `e84546bbf9`, `b321dc4b29`, `9eacb75f9f`,
+  `d3ae19af8f`, `bcffb09afc`, `616365f105`, and `a18828cef0`. It changes 15
+  documentation files by +1,072/-159 through Cycle 313. The three later
+  commits are `b769559a2d`, `e7c25db7c36`, and `0749927c53`; they change six
+  documentation files by +283/-34. Cycle 315 material `bf3e0551d6` and Cycle
+  316 seed `f17577efe3` then change six documentation files by +229/-53. Cycle
+  316 material `43f474dc2a`, Cycle 317 seed `d6f2320cbf`, and Cycle 317 material
+  `d87008f144` change six documentation files by +245/-51. Cycle 317
+  validation `7f5820008d`, Cycle 318 seed `16e542370d`, and Cycle 318 material
+  `976f343ca6` change six documentation files by +195/-20. Cycle 318
+  validation / Cycle 319 seed `1a47982a93` then adds 69 lines to two reports.
+  Cycle 319 material `f4f76e5792` changes six documentation files by +129/-24;
+  Cycle 319 validation / Cycle 320 seed `e7714b8bd8` then adds 75 lines to the
+  two durable reports. Cycle 320 material `721372ef69` changes seven
+  documentation files by +199/-36; Cycle 320 validation / Cycle 321 seed
+  `8e6b7e98af` then adds 65 lines to the two durable reports.
+  Source
+  and result app subtree are identical
+  at `79454aee7065368550b4374d89c74d36c2a57035`; no runtime, evaluator,
+  fixture, schema, protected state, source authority, or account state changes.
+- Rollback is ordinary reverse-order reversion of the relevant documentation
+  commits. Revert a material with its dependent validation/seed narration;
+  reverting Cycle 308 restores the ambiguous artifact attribution, Cycle 309
+  removes only the public-notebook qualification, and Cycle 310 restores the
+  overstated multiplier/skill interpretation. Reverting Cycle 311 restores the
+  universal repair cutoff and causal workflow ranking; reverting Cycle 312
+  restores the universal-law and attractor claims. Reverting Cycle 313 restores
+  the unsupported architecture/autonomy claims that its material mostly
+  retracts. Reverting Cycle 314 restores an unsupported curriculum-governance
+  law; reverting Cycle 315 material restores the unsupported popularity and
+  return inferences, while its seed is separately removable ordering narration.
+  Reverting Cycle 316 material restores the invalid market estimate; its
+  dependent Cycle 317 seed and material should be reverted first. Reverting
+  Cycle 317 restores unqualified feedback-loop/audit claims. The reviewer
+  accepts Cycle 318's narrower Cortex correction; reverting it restores the
+  false 32-action interpretation and unsupported taxonomy causality. Its seed
+  and preceding validation remain separately removable narration; reverting
+  `1a47982a93` removes only exact validation and HeRo ordering. Reverting Cycle
+  319 restores unsupported authorization, audit-cost, and sub-linear-scaling
+  claims. The reviewer
+  correction is one separately revertible range and does not require data or
+  schema rollback.
+
+- Standing seed `458496ebfe64b3648b793a9c8549b75750491702` is the direct
+  child of Cycle 306 result `0e490fd2f775698f2863acc5befd6b254b115b09`.
+  It adds 50 topic-map and 36 detailed-report lines, changes no INDEX, app,
+  fixture, raw finding, source access, protected state, or authority, and
+  explicitly defers all three-paper conclusions until after the seed record.
+- The marker audit treats links on non-struck INDEX lines as active, resolves
+  fragments relative to `knowledge/`, filters `.md`, and deduplicates exact
+  targets. It independently returns 693 targets and seven marker hits. A
+  navigation-entry-only parser returns 688 unique Markdown targets because it
+  intentionally omits five non-navigation links; that narrower count is not a
+  contradiction to the producer's documented all-active-link scope.
+- Cycle 307 material `bee6972245059e1e57e5c17236688dd8af3bc881` is the
+  direct child of that seed and changes five documents by +204/-39. Its app
+  subtree `79454aee7065368550b4374d89c74d36c2a57035` is identical to the seed.
+  It corrects Scan 470 in place, adds one bounded canonical qualification, and
+  updates INDEX plus the two operational ledgers; no evaluator, fixture,
+  runtime, schema, protected state, or authority changes.
+- Current primary HTML independently confirms the three paper versions and
+  scoped numerical claims. Page bytes and hashes are transport-time evidence
+  and were not treated as stable paper identities; the claims were verified
+  from current exact-version content rather than by endorsing producer hashes.
+- Cycle 307 validation `18cb8ed923f7f6b72a660baa07cd302d421b701c`
+  and Cycle 308 seed `09666b2058d95b0b400c22b8f07b48fbd2b92bf0`
+  are linear documentation-only children adding 45 and 38 lines respectively.
+  Their app subtree remains `79454aee7065368550b4374d89c74d36c2a57035`.
+  The result records source validation and external protected-state provenance;
+  the seed reuses the still-current receipt and orders, but does not perform,
+  the public artifact audit.
+
+- Standing range
+  `f26bd4f3a590b59d241536326199e805777df1be..0e490fd2f775698f2863acc5befd6b254b115b09`
+  is linear: Cycle 305 seed `2f2ca443aa`, INDEX material `95a986c240`, result
+  `d32ab4694d`, frozen-index test `2ddb394e17`, gate result `4151805fea`, then
+  Cycle 306 seed `2805a961ea`, INDEX material `6739b98057`, and result
+  `0e490fd2f7`. It changes one test and three documents by +124/-15. Both
+  material commits change only one INDEX line; neither raw finding nor the
+  canonical note changes.
+- Cycle 305's raw finding is exactly 10 lines / 1,161 bytes / SHA-256
+  `bf6459b25a4e16430d5dc1367db5077bc4c5a647384dd04038c774a0c9e4bae4`.
+  Cycle 306's is 13 / 659 /
+  `4b1a1db21f7aab6b468d6859c4d9ed14a988e858adc13cd7e005b4ec2ee6fb8d`.
+  Canonical `multi-agent-coordination.md` remains 297 lines / 46,842 bytes /
+  `8d29c705c9e982504880afb533d8b595fbc3435f9af099924df99ec0f24a5d0f`.
+- The source/result app change is the test-only
+  `2ddb394e174d4ebc1d6780336e29705df0ac42a4`; it reads the pinned historical
+  INDEX through the same repository/ref boundary already supported by the
+  navigation CLI. The fixture bytes and current v1/v2 gates are unchanged.
+- Roll back Cycles 305-306 in reverse commit order. Reverting either INDEX
+  material restores its active entry without deleting a raw note; revert the
+  paired result/seed narration with it. Reverting `2ddb394e17` restores the old
+  mutable-index diagnostic test and its known false failure after INDEX edits.
+
+- Standing range
+  `415f2541ddec54c792d73e26fcc8f8966fcb75d3..f26bd4f3a590b59d241536326199e805777df1be`
+  is linear and contains consolidation `e9450d7b76`, then nine ordered
+  seed/material/result triplets through Cycle 304. It changes only the topic
+  map and detailed lane report by +281/-439. No executable, fixture, evaluator,
+  account, accepted-result, protected-state, schema, or authority surface
+  changes.
+- Reviewer `768e8981e20e8728b4b72a13b7aec25d90511d82` is not an ancestor of
+  the standing tip. Its stable patch ID is
+  `1711afb7690f0e15c98604ef3fc3e5fe02eaae78`; consolidation
+  `e9450d7b76fbf865a4af87f0adc70cbcc8a667eb` has distinct patch ID
+  `8edbf1e63fb924be956cd0da471f5193c55cb87f`. The standing tip lacks the
+  corrected Cycle 285 identities, prospective prompt rule, and Cycle 256/257
+  point-of-use links. Later producer compactions independently add the Cycle
+  251/252 routes, so only those two RV-025 instances are superseded.
+- Material commits are `4a3956200f1001a7ace7388b2f7670449ef62420`,
+  `d66cb7f6862e7ed84ce1c9a5b1b911210e870c19`,
+  `c5eb15e9cfc71a3d081c967d64e504dfd4cfddbd`,
+  `30735a71aecf8033f47fa50fbddc2c21ab017a58`,
+  `dc805d51db77b10c361204aea596fe66bb9dec8d`,
+  `1560120ad0db6ede59ea8d26e6e81548ce7e1913`,
+  `02b5e71151d61f41c16ff418f337dbdefc08e571`,
+  `5194ff45a79d44bb0e5c705e3a01d395ef5bab17`, and
+  `0fae2660921131f1c90ab235aad7f8bac808a8a6`. Each follows its committed
+  seed; each result commit listed above follows its material directly.
+- Rollback of producer content is a reverse-order ordinary revert from Cycle
+  304 result through `e9450d7b76`; reverting a result only removes its report,
+  so pair it with its material and seed when restoring duplicated map content.
+  The reviewer refinement is one separate, ordinary-revertable range and does
+  not require rewriting producer history.
+
+- Cycle 295 validation `415f2541ddec54c792d73e26fcc8f8966fcb75d3` is
+  the direct child of material `d5de20cf8f24f7eeefb1539789cc0cc6479f5832`.
+  It adds 16 documentation lines and no code, fixture, evaluator, account,
+  accepted-result, protected-state, schema, or authority change.
+
+- Cycle 295 material `d5de20cf8f24f7eeefb1539789cc0cc6479f5832`
+  is the direct child of seed `8aec08e4c59259de95e768364ca36fad5e8a8fff`.
+  It changes two documentation files by +31/-13 and no executable, fixture,
+  evaluator, account, accepted-result, protected-state, schema, or authority.
+
+- Cycle 295 seed `8aec08e4c59259de95e768364ca36fad5e8a8fff` is
+  the direct child of Cycle 294 material. It changes two documentation files by
+  29 insertions and no executable, fixture, evaluator, account, accepted-result,
+  protected-state, schema, or authority.
+
+- Cycle 294 material `268fbc465304ea08cd30f4db563698604ac57719` is
+  the direct child of seed `4de7d900b8697782c79c395e2c3a4e4b048bec3d`.
+  It changes two documentation files by +41/-17 and no executable, fixture,
+  evaluator, account, accepted-result, protected-state, schema, or authority.
+
+- Standing range
+  `c05e44af5fb714dcd5ffd261ed0e7a0cf0fc4077..4de7d900b8697782c79c395e2c3a4e4b048bec3d`
+  is linear: Cycle 293 material `32c16f5ca6`, then Cycle 294 seed
+  `4de7d900b8`. It changes two documentation files by +67/-19. No executable,
+  fixture, evaluator, account, accepted-result, protected-state, schema, or
+  authority change occurs.
+
+- Standing range
+  `40bc4a71572ac99a43ea3fce110de4fa40812ce4..c05e44af5fb714dcd5ffd261ed0e7a0cf0fc4077`
+  is linear: Cycle 292 reconciliation `06a80ca5d0`, material
+  `be7cc1092a`, then Cycle 293 seed `c05e44af5f`. It changes three
+  documentation files by +122/-29. No executable, fixture, evaluator, account,
+  accepted-result, protected-state, schema, or authority change occurs.
+- Cycle 292 material is the direct child of reconciliation `06a80ca5d0`; Cycle
+  293 seed is the direct child of material `be7cc1092a`. The material compacts
+  the Cycle 221 mirror only after the due observation is persisted, and the
+  next seed records the clean result before selecting Cycle 223 for review.
+
+- Standing range
+  `0b11065a59df0f3e44d42e0631dfd64ad27cf08d..40bc4a71572ac99a43ea3fce110de4fa40812ce4`
+  is one direct-child Cycle 291 material commit, two documentation files, and
+  +45/-22. No executable, fixture, account, protected-state, or authority
+  change occurs.
+- Standing range
+  `d391befc30c68520f06ec28990076be9936b78dd..0b11065a59df0f3e44d42e0631dfd64ad27cf08d`
+  is one direct-child Cycle 291 seed commit, two documentation files, and 26
+  insertions. It makes no executable, fixture, account, protected-state, or
+  authority change.
+- Standing range
+  `a5c62bf6ff2499965426b610489490fcc43078e6..d391befc30c68520f06ec28990076be9936b78dd`
+  is linear: Cycle 290 seed `53ab65af90` then material `d391befc30`, two
+  documentation files, and +78/-27. No executable, fixture, account,
+  protected-state, or authority change occurs.
+- Standing range
+  `1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5..a5c62bf6ff2499965426b610489490fcc43078e6`
+  is linear: Cycle 289 seed `e1120425fb` then material `a5c62bf6ff`, two
+  documentation files, and +71/-21. No executable, fixture, account,
+  protected-state, or authority change occurs.
+- Standing range
+  `1fa4e23de302ca7365231af0559dfd98d71c62d8..1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5`
+  is one direct-child Cycle 288 material commit, two documentation files, and
+  +44/-25. No executable, fixture, account, protected-state, or authority
+  change occurs.
+- Standing range
+  `051c301a7cffc14fd04221148da2edac07eafa58..1fa4e23de302ca7365231af0559dfd98d71c62d8`
+  is one direct-child Cycle 288 seed commit, two documentation files, and 28
+  insertions. It makes no executable, fixture, account, protected-state, or
+  authority change.
+- Standing range
+  `826114972c53747ac34fc854cfa192c25b2fa586..051c301a7cffc14fd04221148da2edac07eafa58`
+  is Cycle 287 seed `b6c46b3b41`, material `e51a123cd9`, and result
+  `051c301a7c`, two documentation files and +119/-40. No executable, fixture,
+  account, protected-state, or authority change occurs.
+- Standing range
+  `47574d326c9752b3852343afb5b628b54bd0d82c..826114972c53747ac34fc854cfa192c25b2fa586`
+  is linear: Cycle 286 seed `0112e22889`, Cycle 284 reviewer integration
+  `ff923ccde4`, status `ac86bc94d0`, Cycle 286 material `efc32bf1cf`, and result
+  `826114972c`. It changes three documentation files by +179/-46; no executable,
+  fixture, account, protected-state, or authority change occurs.
+- Standing range
+  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4..47574d326c9752b3852343afb5b628b54bd0d82c`
+  is Cycle 285 seed `ab67f6bdd6`, material `d27fe00e55`, and result
+  `47574d326c`, two changed documents, and +80/-20. It is documentation-only.
 - Standing range
   `48adada0af7244fcfbb36701a2191d1456aca617..f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
   is Cycle 284 seed `f044bc76ca`, material `032b1fa093`, and result
@@ -211,6 +964,35 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   `5c79f423a3` and result `094996202c`, the current tip.
 
 ## Evidence examined
+
+### Cycles 326-327 primary and validation evidence
+
+- PatchOptic `2607.05483v1` source archive SHA-256
+  `f5a5118d4871f4617c495a2ad33547264571cb0f60d2066448e932dc9493f3a5`
+  independently matches the producer record. Its TeX and four aggregate CSVs
+  reproduce 46 cases, 22 expected accepts, 24 expected rejects, six settings,
+  two actors, 5,520 live runs, GPT-5-mini Unconstrained/PatchOptic leakage
+  31.5%/0.2%, tokens 817.5/718.6, accepted-only content 0.925/0.927, View
+  Only overlap, 210/240 PatchOptic weak-actor false accepts without exact leak
+  matches, and the separate 9/9 Verify Only/PatchOptic hidden-path rejection.
+  The archive itself confirms that cases and raw JSONL are repository artifacts
+  but does not include them; no paper-linked repository is named.
+- Conversation to Contribution `2607.05677v1` source archive SHA-256
+  `e7c8d3d8b17d64ca4a8398e5a964be6456145f67aa08a2481f5fd17ddfbb5581`
+  independently matches the producer record. The TeX confirms 13,360 discovered
+  sessions / 1,356 repositories, 12,108 analyzed sessions / 1,240 repositories,
+  589 delivered invitations and 25 responses, raw paired `p=.029` without the
+  missing effect/interval/item denominator, 6.6-to-50.1-day issue-resolution
+  medians, the 87.9%-to-74.1% older-cohort contributor-share reversal,
+  observational confounding, proxy limits, and the unavailable replication
+  package. No result reproduction is claimed.
+- Producer validations `80c840784f` and `3852d6b19c` bind the exact material
+  parents `c7a73c9deb` and `35f2d57786`. Both report 296 tests / 1,484
+  assertions, navigation 11/14 and 8/8, 90 scoped and 1,728 broad links,
+  clean standing/runtime state, accepted containment, unaccepted exclusion,
+  and preserved protected fingerprints. Independent reviewer validation below
+  targets the current reviewer candidate rather than treating producer results
+  as independent proof.
 
 ### Link and provenance cleanup
 
@@ -763,7 +1545,7 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   296-record Scout-scope hashes. Neither observation identifies cause or
   supplies outcome evidence.
 
-### Cycles 282–284: compact retained provenance
+### Cycles 282–286: compact retained provenance
 
 - Cycle 282 seed/material/result are `2e46b646a40506ba530eed35d6b8573d23280e81`,
   `04b8bf5c1c9f2866dd2c819ec108ea95b4b43a89`, and
@@ -788,46 +1570,635 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   11 / 580 / `74f3359f…2033629`. Both prove the same exact 13-line / 745-byte
   reduction. Seed `19e38ce7f7` resolves fully and the detail link preserves
   validation, unavailable-seed uncertainty, drift attribution, and rollback.
+- Cycle 285 seed/material/result are `ab67f6bdd69afabaeb921abe862056e3b03bf983`,
+  `d27fe00e551fb138d3cadc13b03dfab39963c042`, and
+  `47574d326c9752b3852343afb5b628b54bd0d82c`. The old map and retained
+  detailed blocks are byte-identical at 21 lines / 1,203 bytes / SHA-256
+  `99925ebb…ca585f0`; the linked transition is 9 lines / 569 bytes /
+  `f4d7ff05…2f6515031`, an exact 12-line / 634-byte reduction. Both reports
+  instead published nonexistent full IDs `ab67f6bdd606…` and `d27fe00e55f0…`;
+  RV-024 replaces them with the exact commit objects above.
+- Cycle 286 seed/material/result are `0112e228896ae61433802992a6f18a72abf756e0`,
+  `efc32bf1cfaa19c0c9348c3a768545c058972cc3`, and
+  `826114972c53747ac34fc854cfa192c25b2fa586`. The old map and retained report
+  blocks are byte-identical at 16 lines / 902 bytes / SHA-256
+  `14cf1d1d…e62bd6a4`; the linked transition is 9 lines / 507 bytes /
+  `3a8d271a…58119d29`, an exact 7-line / 395-byte reduction. Cycle 284 reviewer
+  `ff09ef8d0c` is standing `ff923ccde4` at stable patch ID
+  `570bf2b3747ef0cb3516ac52970f57d8e0a73943`; status `ac86bc94d0` is a
+  distinct child. The retained link preserves validation, uncertainty,
+  zero-request access, and protected-state boundaries.
 - These compactions reduce static retrieval and duplication risk only. They do
   not supply matched-budget behavior, protected promotion, measured token
   savings, deployed use, later reuse, or a changed user decision.
 
+### Cycle 287: compact the retained-outcome boundary
+
+- Seed `b6c46b3b412b11e60ab3d1323fe9beeb5017385e` precedes material
+  `e51a123cd94ed2236343d41d8ecebe55b76603de` and result
+  `051c301a7cffc14fd04221148da2edac07eafa58`. The material replaces the
+  41-line / 2,542-byte Cycle 280 map record at SHA-256 `ec1604fe…c7214d`
+  with a 24-line / 1,573-byte boundary at `40b9413e…24c1f`, an exact 17-line /
+  969-byte reduction. This is semantic compaction, not exact-block deletion.
+- The unchanged 79-line / 4,797-byte detailed report remains linked. The map
+  still states the integration and seed ordering, receipt reuse, unknown
+  additions/removals boundary, query-only UID and database, retained row count
+  and contraction, terminal event identity/time, absence of the required join,
+  reviewer containment, deferred public lanes, validation, and RV-004 limit.
+  Exact fingerprints, the failed first query, schema correction, and rollback
+  remain in detail rather than default map context.
+- The result's eight-line overlap is an exact multiset count: six blank
+  separators plus the shared heading and commit line. The longest contiguous
+  run is the heading and one blank line. The result accurately distinguishes
+  semantic review from mechanical deletion and remains independently
+  reversible by reverting result before material and seed. No protected
+  outcome, matched-budget behavior, measured saving, or later decision exists.
+
+### Cycle 288: preserve the consumer boundary once
+
+- Seed `1fa4e23de302ca7365231af0559dfd98d71c62d8` is the direct child of Cycle
+  287 result `051c301a7cffc14fd04221148da2edac07eafa58`. The elapsed time from the
+  retained receipt endpoint `2026-09-03T16:57:11.030Z` to the stated decision
+  `2026-09-03T22:39:53.560Z` is 342 minutes 42.530 seconds, consistent with
+  "about 343 minutes" and before the six-hour boundary at `22:57:11.030Z`.
+- Reviewer `ff923ccde428270db699aefe4c38c2a9a51e3314` is an accepted ancestor;
+  unaccepted `d041c41b54` exists but is not an ancestor. The seed explicitly
+  records zero public requests, unknown additions/changes, no observed
+  removals, and unavailable durable IDs. This is a bounded ordering record,
+  not fresh source, behavior, productivity, or outcome evidence. Its proposed
+  Cycle 256 mirror audit remains pending producer work and is not endorsed in
+  advance.
+- Material `1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5` replaces the first exact
+  21 body lines shared by the Cycle 256 map/report sections: both reproduce at
+  1,421 bytes and SHA-256 `f075e5d4…c2134b4`. The 11-line / 749-byte map
+  replacement removes 10 lines / 672 bytes and keeps the real maintained-event
+  boundary, missing query/index/target/later-decision join, self-report limit,
+  no-implementation disposition, and evidence-first trigger. The retained
+  detailed section is unchanged.
+- An independent 21-line window scan confirms the 1,357-byte pair at SHA-256
+  `259d6587…d21196` is the largest remaining exact map/report mirror. This is
+  useful static duplication reduction, not measured retrieval saving or user
+  outcome. The material removed the point-of-use path to retained detail;
+  RV-025 adds one exact anchored link without changing the conclusion. That
+  corrected map body is 12 lines / 885 bytes, so the current reviewer candidate
+  retains a net 9-line / 536-byte reduction rather than the material's unlinked
+  10-line / 672-byte reduction.
+
+### Cycle 289: preserve score attribution once
+
+- Seed `e1120425fbc285594385f833c8c9a9c9c793280a` is the direct child of Cycle
+  288 material `1eb3fe8fd396a378c7e0a03faaf8727c7455b9e5`; material
+  `a5c62bf6ff2499965426b610489490fcc43078e6` is its direct child. The receipt
+  endpoint to seed-decision interval is 348 minutes 3.640 seconds, consistent
+  with "about 348 minutes" and before the six-hour boundary.
+- The material replaces the exact 21-line / 1,357-byte Cycle 252 map/report
+  window at SHA-256 `259d6587…d21196` with an 11-line / 835-byte map body,
+  removing 10 lines / 522 bytes. It preserves both score decompositions, equal
+  `caller` contribution, observed gap, 13/13 control, pair-specific mechanism,
+  producer-authored-fixture limit, absent real retrieval, confidence, and next
+  sweep. The detailed source remains unchanged.
+- An independent 21-line window scan confirms the 1,307-byte pair at SHA-256
+  `5a775518…c029f` is now the largest remaining exact mirror. The material again
+  omitted the direct path to retained detail; RV-025 adds the exact Cycle 252
+  anchored link. The correction adds one line / 180 bytes, leaving a net
+  9-line / 342-byte reduction. This remains static duplication reduction, not
+  protected promotion, measured use, or user outcome.
+
+### Cycle 290: preserve review and receipt boundaries once
+
+- Seed `53ab65af9055ebb08747830c322b4eeb2445b57c` is the direct child of Cycle
+  289 material `a5c62bf6ff2499965426b610489490fcc43078e6`; material
+  `d391befc30c68520f06ec28990076be9936b78dd` is its direct child. The receipt
+  endpoint to seed-decision interval is 352 minutes 18.735 seconds, consistent
+  with "about 352 minutes" and before the six-hour boundary.
+- Cycle 290 correctly revises the prior label: the exact 21-line / 1,307-byte
+  window at SHA-256 `5a775518…8c029f` is Cycle 257 review/receipt evidence, not
+  Cycle 256 seed/control evidence. Its 20 nonblank source lines / 1,306 bytes
+  become 12 / 794, removing 8 lines / 512 bytes. Reviewer/standing/status
+  provenance, RV-011/012, attempt and child-receipt counts, absent maintained
+  event, child-only outcome scope, missing join, confidence, and trigger remain.
+- The largest remaining exact 18-line window reproduces at 1,222 bytes and
+  SHA-256 `b5d18577…a864cb2`. RV-025 adds the omitted exact Cycle 257 detail link;
+  it costs one line / 213 bytes, leaving a 7-line / 299-byte net reduction.
+  No protected promotion, selected-path join, measured saving, or user outcome
+  follows from this static compaction.
+
+### Cycle 291: preserve the rarity counterexample once
+
+- Seed `0b11065a59df0f3e44d42e0631dfd64ad27cf08d` is the direct child of Cycle
+  290 material `d391befc30c68520f06ec28990076be9936b78dd`. The receipt endpoint
+  to seed-decision interval is 356 minutes 44.497 seconds, consistent with
+  "about 357 minutes" and 3 minutes 15.503 seconds before the six-hour boundary.
+- The seed accurately records zero public requests, unknown additions/changes,
+  no observed removals, unavailable durable IDs, contained accepted review,
+  excluded unaccepted review, and unchanged app tree. It adds no source,
+  behavior, matched-budget, protected-promotion, or outcome evidence. The
+  Cycle 250 policy-block audit remains pending and is not endorsed in advance.
+- Material `40bc4a71572ac99a43ea3fce110de4fa40812ce4` correctly revises that
+  target to Cycle 251 rarity evidence. The exact 18-line / 1,222-byte window at
+  SHA-256 `b5d18577…a864cb2` contains 17 nonblank lines / 1,221 bytes; the
+  10-line / 752-byte replacement removes 7 lines / 469 bytes while retaining
+  all counts, quartiles, false-positive frequencies, the rare-caller
+  counterexample, confidence, next question, and diagnostic-not-policy limit.
+- The next exact 21-line window reproduces at 1,194 bytes and SHA-256
+  `4bc19047…2059e21`. RV-025 adds the omitted exact Cycle 251 detail link at a
+  cost of one line / 204 bytes, leaving a 6-line / 265-byte net reduction.
+  Static rarity compaction is not a frozen policy, protected evidence,
+  behavioral improvement, measured saving, or user outcome.
+
+### Cycles 292-295: scheduled reconciliation, linked compactions, and reuse
+
+- Cycle 292 reconciliation `06a80ca5d08ede533a7e69d653a8cc40859979e0`
+  is the direct child of Cycle 291 material. The producer record says the
+  six-hour boundary elapsed before one public status and one non-navigating
+  saved status. Independent live read-only replay against Chrome PID 2136
+  reproduced Explore ready with 30 notes and the saved login-class response at
+  HTTP 200 / 46,763 bytes, target fingerprint `e860da46…906e`, access
+  fingerprint `3dab1b6d…af420`, zero attributable items, empty ID fingerprint,
+  login wall, and `ready:false`. The body SHA had changed again to
+  `5b73d3f0…d23868c` while those semantic fields stayed fixed, supporting the
+  narrow provenance-only interpretation rather than collection access.
+- Reconciliation advances the ledger from Cycle 237 to 292 without treating
+  unavailable seeds as removed. Direct timestamp arithmetic from Cycle 237
+  end `2026-09-03T16:57:11.030Z` to Cycle 292 start
+  `2026-09-03T22:59:02.203Z` is 6 hours, 1 minute, 51.173 seconds; source work
+  follows the persisted reconciliation. The observation was process/network
+  reachability under effective UID 0, not proof of account authority.
+- Material `be7cc1092add3f47e7d900ccbb832b92832bd3f7` is the reconciliation's
+  direct child. Its source map window reproduces at 20 lines / 1,193 bytes and
+  SHA-256 `f1887178183475ea356df3e95cfcd8b6be771b2921284f9204f9ce1156a38b9a`;
+  the replacement is six lines / 557 bytes, a 14-line / 636-byte map reduction.
+  The report retains the full proof, and the replacement links directly to
+  heading `cycle-221-checkpoint--canonical-seed-ledger-replaces-repeated-prose`.
+  This exact point-of-use route means RV-025 does not recur on Cycle 292.
+- Cycle 293 seed `c05e44af5fb714dcd5ffd261ed0e7a0cf0fc4077` is the material's direct
+  child. The recorded receipt reuse at `2026-09-03T23:04:54.025Z` is under six
+  minutes after the Cycle 292 observation; zero browser or public-source
+  requests ran. It names Cycle 223 as the next candidate but changes no
+  evidence or behavior and does not pre-endorse that pending investigation.
+- Cycle 293 material `32c16f5ca63b1c16952a2a27f46d4f025d9742ee`
+  is the seed's direct child. Independent scan of its parent finds the reported
+  21-line / 1,182-byte exact window at lines 6,260-6,280 with SHA-256
+  `c88740390129954cc781853be09c3ea741fe866042643099ea2bb778a9c7e5ca`.
+  The compact map points directly to the unchanged Cycle 223 heading, preserves
+  the canonical-projection decision and evidence categories, and removes the
+  now-stale request for a projection check that Cycle 224 implemented. RV-025
+  does not recur; the 21-line mirror becomes a six-line pointer, a 15-line
+  default-map reduction.
+- Cycle 294 seed `4de7d900b8697782c79c395e2c3a4e4b048bec3d` is the material's direct
+  child. It records a receipt age under ten minutes, zero browser/public-source
+  requests, the same inaccessible 132-seed boundary, and Cycle 255's negative
+  real-use-outcome mirror as the next candidate. It does not claim the pending
+  material exists or that any real-use outcome has appeared.
+- Cycle 294 material `268fbc465304ea08cd30f4db563698604ac57719`
+  is the seed's direct child. Its parent contains the reported leading 17-line
+  / 1,153-byte exact Cycle 255 window at lines 5,177-5,193 with SHA-256
+  `41556649bad666dab9b6611c4e6acea17d2ca10b95c28ce43a6e0c1d8df75efc`.
+  The map replacement keeps the missing evaluator-query/rank to selected-file
+  to later-decision join, confidence split, no-change disposition, and next
+  investigation while linking directly to the unchanged detailed proof. The
+  17 removed lines become a nine-line map boundary, eight net lines fewer.
+  RV-025 does not recur and, crucially, the adverse RV-004 evidence remains
+  visible rather than being converted into a positive productivity claim.
+- Cycle 295 seed `8aec08e4c59259de95e768364ca36fad5e8a8fff` is the
+  material's direct child. It accurately records the clean Cycle 294 result,
+  keeps the Cycle 292 receipt under fourteen minutes old, makes zero browser or
+  public-source requests, and ranks the Cycle 277 integration mirror next. The
+  seed does not claim that pending compaction or any fresh outcome exists.
+- Cycle 295 material `d5de20cf8f24f7eeefb1539789cc0cc6479f5832`
+  is the seed's direct child. Its parent contains the reported 20-line /
+  1,142-byte exact Cycle 277 window at lines 4,266-4,285 with SHA-256
+  `2d8543288d37bd569d993768c64a9e0819c4df95da69788423e2a0a38112575d`.
+  The replacement links to the unchanged detailed Cycle 277 heading, retains
+  source/result and stable-patch provenance, resolved RV-018/RV-019 status,
+  rollback, and the missing-outcome limit, and removes only 13 net duplicate
+  map lines plus a stale next-work instruction. RV-025 does not recur.
+- Cycle 295 validation `415f2541ddec54c792d73e26fcc8f8966fcb75d3`
+  is the material's direct child. Its reported producer totals match the
+  independently checked document delta: 76 scoped links and 1,712 broad links
+  at the standing source, with unchanged app tree and navigation inputs. The
+  current reviewer candidate adds exactly four repaired links and two prompt
+  assertions, yielding the separately recorded 80 / 1,716 and 1,485-assertion
+  totals. The result does not misstate those reviewer-only changes as landed.
+- These commits preserve provenance/claim separation, the saved-set access
+  boundary, and ordinary-revert rollback. They remove duplication from the
+  default map read, but do not demonstrate matched-budget behavior, frozen
+  selection, protected promotion, measured cost, deployed use, later reuse,
+  or a changed user decision.
+
+### Cycles 296–304: independent compaction replay
+
+- Direct byte-window replay reproduces every report claim. Cycle 296 is
+  `24/1,430/ea451572…9fc4` → `13/906/6c9e1e8e…d9f1`, with its distinct
+  authoritative report block at `26/1,564/6732c74e…0420`. Cycles 297–301 are
+  `18/1,095/207688dc…2285` → `4/379/8583be65…3600`,
+  `17/922/0c8816be…34b4` → `4/379/8b702e20…6ab1`,
+  `11/818/8a23eb92…8293` → `4/371/cabce526…8fde`,
+  `13/808/ea652e7d…77a5` → `4/367/6baa817d…6336`, and
+  `11/766/e67f01c1…5522` → `7/519/0b632952…559e`.
+- Cycle 302's three source/result windows reproduce as
+  `11/720/c440449a…d5d9` → `5/421/62fefa45…8ad9`,
+  `10/718/86d28e35…5141` → `4/386/11907b75…9b9a`, and
+  `13/669/0eea7dc5…2fe6` → `4/379/12f08f8e…a630`.
+  Cycle 303 reproduces `10/646/d0ae7d87…10f3` → `4/382/8f41425a…36e1`,
+  `10/647/dfb709ef…dbef` → `4/368/6f0d6bc2…dff3`, and
+  `19/1,252/3f297a8e…056f` → `10/740/8e564125…c9dd`.
+  Cycle 304 reproduces `10/628/5b3acf9a…9cff` →
+  `4/353/f4778ec7…2287`, `17/1,119/be121527…1642` →
+  `10/728/e91778c4…4a78`, and `9/572/e189480f…0803` →
+  `4/345/49ec7961…d432`.
+- All exact-mirror source windows remain byte-identical in the report.
+  Cycle 296 intentionally cites a longer authoritative report block; the
+  Cycle 253 and 254 decision windows were not byte-identical mirrors, but the
+  retained report preserves all tested weights and perturbation counts,
+  counterexamples, post-hoc producer-label limit, confidence split, and
+  no-scorer-change decision. No cross-cycle value is promoted as fresh source
+  evidence.
+- The incumbent and candidate are documentation layouts with identical app,
+  evaluator, fixtures, and accepted lineage. The strongest matched-budget
+  comparison available is direct bytes/lines plus intact heading navigation;
+  it proves smaller default text and preserved local routes, not reader token
+  savings, selected-file behavior, later reuse, or user outcome. No protected
+  promotion set exists for this change, and the existing frozen navigation
+  cases are unaffected.
+
+### Cycles 321–325: source qualification and benchmark boundaries
+
+- Exact standing ordering is linear from prior cursor `8e6b7e98af` through
+  material/validation pairs `a963d706aa`/`9af03c6473`,
+  `6377b47165`/`344805bcfb`, `0237879678`/`219d7b3f91`,
+  `dd361d0331`/`30c3a850ce`, and `4b45ed8fa0`/`1967dfcb64`.
+  Each seed precedes the selected public reads, and each completed validation
+  names its exact material parent. The final validation records 296 tests /
+  1,484 assertions, 90 scoped links, 1,540 documents / 1,728 broad links,
+  navigation 11/14 and 8/8, clean standing/runtime state, accepted containment,
+  unaccepted exclusion, and unchanged protected-state hashes.
+- TraceProbe's public archive supports deterministic normalization and process
+  profiles across 2,500 SWE-Bench Verified trajectories. Its equal-resolve
+  settings differ descriptively, but task difficulty confounds aggregate
+  failure associations, several detectors weaken or reverse on SWE-Bench Pro,
+  and some metrics use gold patches. The source and artifact do not establish
+  lucky/skilled labels, failure prediction, future reliability, downstream
+  diagnosis, evidence destruction, or review savings.
+- Agents That Teach supplies six design principles and an unevaluated SHIELD
+  prototype. Its separate randomized citation has 52 Python-experienced,
+  Trio-naive participants and reports a 17% immediate quiz-score reduction
+  after one hour with no significant average completion-time gain. This is an
+  immediate task-bounded learning result, not longitudinal atrophy, compounding
+  Knowledge Debt, loss of review ability, or evidence that SHIELD works.
+- AgentTether's matched conditional population is the 123 of 261 tau-bench
+  tasks initially failed by Qwen3.7-max: full repair is 85/123 versus 53/123
+  blind retry and 74/123 post-run-only guidance. Runtime intervention is
+  significant only for Banking and hurts three cases; separate model-specific
+  Banking sets do not transfer guidance. Auxiliary LLM roles, gold-action
+  localization, no repeated-run uncertainty, excluded simulator/evaluator
+  calls, and an HTTP-401 artifact bound reproduction and cost claims.
+- LogicHunter's matched oracle corpus is its own generated 1,000-failure set,
+  with 28 bugs. Five reported runs support high precision and low false-positive
+  rate, but the 40-versus-zero headline compares unequal generator/oracle
+  pipelines and a 31-bug post-cutoff set gives lower recall than the passive
+  GPT-5.2 judge. The repository omits corpora and per-run results. This supports
+  one useful triage operating point, not the necessity of agentic testing.
+- Independent StateFuse v1 table inspection confirms the producer's central
+  boundary. On the official 282-case conflict-bearing slice, aggressive
+  StateFuse, multi-value, raw-log, and collapsed surfaces all reach 97.5%
+  accuracy; only explicit StateFuse/multi-value surfaces expose all conflicts,
+  and the slice has no gold abstention or correction cases. The separate
+  deterministic 50-task loop gives every conservative non-collapsing surface
+  100% post-verification success and collapse 60%; the 13-task handle ablation
+  is also synthetic. Repository code/examples do not include those benchmark
+  assets. Accept conflict visibility, reject unique accuracy and naturalistic
+  safety transfer, and keep cost/rollback claims bounded.
+- The five cycles update existing aliases and synthesis surfaces consistently;
+  no paper result is counted as protected Scout evidence, no artifact absence
+  is converted into reproduction, and no account state changed. Repeating
+  concise map continuity beside the detailed ledger is provenance-oriented;
+  it adds retrieval text but does not create an independent observation.
+  `RV-031` does recur: the updated summaries rely on checksum-verified sources
+  and bounded artifacts while affected retrieval-facing `source_basis` fields
+  still name only discovery APIs or an older subset of primary reviews. This
+  reviewer range adds only the missing primary-review class and date.
+- None of the range supplies an incumbent/candidate/matched-budget Scout
+  behavior comparison, frozen selection, fresh protected promotion evidence,
+  a query-to-selected-file-to-later-outcome join, measured operational saving,
+  later reuse, rollback event, or changed user decision. `RV-004` therefore
+  remains high/open.
+
+### Cycle 328 exact review
+
+- Exact source/result ordering is Cycle 328 seed
+  `3852d6b19c0e97253df38629f9b120c695c56a00` followed by material
+  `80695da018873aaa3453134c36ec55cbc0215130` and validation / Cycle 329 seed
+  `cd76912510950675952710fe438f4f5fde65f162`. The material changes six
+  documentation surfaces by 119 insertions and 30 deletions; it changes no
+  implementation, evaluator, fixture, authority, or protected state.
+- Independent inspection of checksum-verified arXiv source
+  `c5d37f8ca240d9ac731e23e1a48d4cc112e316961b8cde8d57d47bef278dc09b`
+  reproduces the 1,384-PR benchmark over 500 SWE-bench Verified issues, the
+  8,914 decision-correct trajectory corpus, the -0.6 to +25.1-point range of
+  reviewer-relative results, +0.8/+5.6/+3.8 direct-resolution changes, and the
+  3%/8%/21%/32% functional sample. It also confirms that the 38.4% iterative
+  result uses 2.44 average samples while the 22.9% reference is a different
+  procedure and budget.
+- The benchmark repeats the same 500 issues under three PR generators; those
+  are generator-conditioned candidate distributions rather than 1,384
+  independent issues. Training uses SWE-rebench and excludes every repository
+  represented in the benchmark, a meaningful direct-leakage control. The
+  paper does not report repeated-run intervals, pretraining contamination, or
+  a held-out natural-review population. Its difficulty groups are post hoc and
+  use golden-patch divergence plus test counts.
+- Cost evidence is study-specific: local open reviewers use far more tokens
+  than Opus, proprietary reasoning tokens are omitted, training is reported as
+  roughly 30 hours for 8B and 70 hours for 30B-A3B, and iterative efficiency
+  compares different stopping and sampling procedures. The producer correctly
+  avoids transferring these costs or gains to Scout productivity.
+- Scan 475's summary, body, and `source_basis`, Scan 454's body, the index,
+  synthesis, map, and detailed report all preserve the narrower conclusion.
+  No alias is counted as another experiment. Scan 454's retrieval metadata
+  names the earlier primary reviews but omits SWE-Review; this low-severity
+  `RV-031` recurrence is corrected in the reviewer range.
+- Durable producer evidence in `cd76912510`, tied to exact material
+  `80695da018`, reports 296
+  tests / 1,484 assertions, 90 scoped and 1,728 broad links, navigation 11/14
+  and 8/8, clean standing/runtime state, accepted/unaccepted containment, and
+  preserved protected-state hashes. The independent current-candidate gate
+  below does not treat that producer record as independent review.
+- No incumbent/candidate/matched-budget Scout comparison, frozen selection,
+  fresh protected outcome, observed retrieval reuse, rollback event, measured
+  saving, or changed user decision appears. `RV-004` remains high/open.
+
+### Cycle 329 exact review
+
+- Exact ordering is Cycle 329 seed
+  `cd76912510950675952710fe438f4f5fde65f162`, material
+  `7d4b6e01af3117c0bba4445a663a24a8e281a38f`, and validation / Cycle 330 seed
+  `2c38cea2f1267ed86b93df9991c10afd7d6edba2`. The material changes eight
+  documentation surfaces by 115 insertions and 25 deletions; the validation
+  record adds 64 lines to the map and ledger. Neither changes implementation,
+  evaluator, fixture, authority, or protected state.
+- Independent retrieval reproduces the producer's Aria v1 source SHA-256
+  `a6a238cca9abebc8e428a352a8c1e9ebddcf008e563ab7dab9972ed3aa6e404e`.
+  The primary text reports 4,257 distinct Iris lemmas after duplicate reruns
+  are removed, 3,373 first-attempt successes (79.2%), 0.51 mean retries, a
+  maximum of 28 against a 30-attempt cap, and 379.7 model-hours. RustBelt,
+  reglang, and iris-lean add 217, 318, and 72 target lemmas respectively.
+- Kernel checking establishes accepted-proof validity under retained
+  statements; coverage checks guard dropped or altered obligations and an
+  Iris linter checks conventions. This does not establish end-to-end
+  specification adequacy. No no-feedback, fixed-strategy, alternate-harness,
+  or repeated campaign isolates architecture or uncertainty.
+- The reglang “one in eight” baseline is a cross-system prior-work comparison,
+  not a matched-budget control. The only same-harness model comparison uses 40
+  easier lemmas: both Opus 4.7 and Kimi K2.6 reach 40/40, while Opus has fewer
+  retries and roughly one-seventh the time. Longer-proof open-model failures
+  lack a complete denominator. The producer preserves these adverse limits.
+- Direct artifact access redirects to an API endpoint returning HTTP 401, and
+  an exact-name GitHub repository search returns zero results. The paper's
+  aggregate and protocol can be reviewed, but implementation, logs, produced
+  proofs, and the claimed deduplication cannot be independently reproduced.
+  No account or external state was mutated.
+- Both Scan 451 aliases now expose Aria's primary-review class and access
+  boundary in their retrieval metadata. Scan 475's body is corrected but its
+  `source_basis` still lists only SWE-Review's primary package; this is a
+  low-severity RV-031 recurrence because metadata-only retrieval can miss the
+  evidence class. The reviewer range adds only the exact Aria source/access
+  basis and does not promote paper claims into independent reproduction.
+- Producer `2c38cea2f1` records current-tip validation of exact material
+  `7d4b6e01af`: 296 tests / 1,484 assertions, 90 scoped and 1,728 broad links,
+  navigation 11/14 and 8/8, health at 26 facts / 16 wakes, clean standing and
+  runtime state, accepted/unaccepted containment, and preserved protected
+  fingerprints. The independent candidate gate below remains separate.
+- Aria supplies no Scout incumbent/candidate/matched-budget comparison,
+  frozen selection, protected outcome, retrieval-to-later-decision join,
+  measured saving, rollback event, or user outcome. `RV-004` remains
+  high/open.
+
+### Cycle 330 exact review
+
+- Exact ordering is Cycle 330 seed
+  `2c38cea2f1267ed86b93df9991c10afd7d6edba2`, material
+  `07836ad009067857f639ecd467bb279f2f367369`, and validation / Cycle 331 seed
+  `394a09cbeab4e887d85b8614c0768966e9ec74c2`. The material changes five
+  documentation surfaces by 71 insertions and 8 deletions; the validation
+  record adds 50 lines to the map and ledger. Neither changes implementation,
+  evaluator, fixture, authority, or protected state.
+- Independent retrieval reproduces the producer's CXI v1 source SHA-256
+  `02f14a0c2e8b522428d0a7df7470b3de8b69b38674e8d4a6c39216fc1329ace1`.
+  The primary table reports 199 safe task completions across 720 AgentDojo
+  episodes / 1,739 calls and 231 across 400 repository episodes. The latter
+  169 non-completions partition exactly into 73 parse failures, 61 parse-valid
+  rows without effect authorization, and 35 authorized executions missing the
+  task oracle. No observed field, effect, or invocation escape reaches the
+  mediated sink in either set.
+- The theorem and evaluation condition admission on fixed policy, conservative
+  provenance, fail-closed validators, complete mediation, trusted runtime, and
+  matching evidence. Wrong field classes, broad validators, unreviewed or
+  alternate sinks, compromised policy/runtime, validator completeness, and
+  task quality remain outside the guarantee. Hosted/API rows are compatibility
+  traces without provider-internal mask, attention, or cache-lineage evidence.
+- Mechanism baselines and boundary-utility cases test individual enforcement
+  obligations; they are not an implementation-level comparison with another
+  security system and do not show equal end-to-end task quality with and
+  without CXI. Heterogeneous fixed and sampled units are not pooled. The paper
+  reports no repeated-run interval for a general escape rate.
+- The named anonymous artifact redirects to its API and returns HTTP 401, so
+  table regeneration, run-record deduplication, and code-level reproduction
+  remain unavailable. The paper reports about 0.16 ms median mask construction,
+  about 677 bytes of evidence per four-field case, 9.328-15.275-second
+  AgentDojo and 10.672-14.017-second ToolEmu hosted requests, and a 24-sink / 149-
+  field policy audit. These are source-reported boundary costs, not production
+  throughput or Scout productivity.
+- Cycle 330 correctly fixes the newest Scan 475 body, index entry, and synthesis
+  paragraph. Exact cross-reference review finds the older Scan 453 context and
+  body, the verified-enforcement catalog, an earlier Oversight Inversion layer,
+  and three downstream comparisons still conflate utility denominators or
+  retain complete-fix, immunity, architecture-only, and implementation-
+  equivalence claims. This medium contamination is RV-032 and is corrected in
+  the reviewer range. Scan 475's body is scoped but its `source_basis` omits the
+  CXI source/access review; RV-031 is extended through CXI.
+- Producer `394a09cbea` records current-tip validation of exact material
+  `07836ad009`: 296 tests / 1,484 assertions, 90 scoped and 1,728 broad links,
+  navigation 11/14 and 8/8, health at 26 facts / 16 wakes, clean standing and
+  runtime state, accepted/unaccepted containment, and preserved protected
+  fingerprints. The independent reviewer-candidate gate below remains separate.
+- CXI supplies no Scout incumbent/candidate/matched-budget comparison, frozen
+  selection, protected outcome, retrieval-to-later-decision join, measured
+  saving, rollback event, or user outcome. `RV-004` remains high/open.
+
+### Cycle 331 exact review
+
+- Exact ordering is Cycle 331 seed
+  `394a09cbeab4e887d85b8614c0768966e9ec74c2`, material
+  `bee1114e84ae63a806fc71e41fd4fe05a5ce47d5`, and validation / Cycle 332 seed
+  `8b6c0f8e932a45ce8ec918f5caeed582f9efefde`. The material changes six
+  documentation surfaces by 128 insertions and 32 deletions; validation adds
+  60 lines to the map and ledger. Neither changes implementation, evaluator,
+  fixture, authority, or protected state.
+- Independent retrieval reproduces the RuBench v2 source SHA-256
+  `7dd857cab52b7c5b8ec33b952db1dd69917688b780fd5d2126adb338a0a6ec85`
+  and resolves GitHub `eugeneshilow/rubench` to exact revision
+  `3cf010895c20c5e6d3b9a0eacd37e7cd207be412`. The runner, Fable lane log,
+  and `RESULTS.md` hashes independently match `71d0a324…62d0d5`,
+  `fef41560…631444`, and `77904a8b…4194347c`.
+- The public tree has exactly 20 retained Fable task directories; direct parsing
+  counts 1,585 model-bearing messages, all `claude-fable-5`. The lane log
+  retains one AIOH1 `MODEL-SUBSTITUTION` rejection, while `RESULTS.md` and the
+  paper name AIOH1/AIOH4/AIOH6/AIOH8/LARA1. The rejected traces and reported
+  AIOH1 2/2 rerun are absent, so one rejection is directly reproducible and the
+  five-task incidence remains an attributable author report.
+- Four ranked configurations use 25 tasks and three runs each (300 rollouts).
+  Only paired gaps to Haiku exclude zero; the top-three ordering is point-
+  estimate evidence. Fable is one hors-concours run on 20 measurable tasks.
+  Round 2's 26-point `ds`-versus-`legacy` gap under one SourceCraft shell
+  contradicts universal product-over-model attribution. The supported rule is
+  to report product/model/effort/version/task slice and validate executing-model
+  identity per trajectory when routing can occur.
+- “Clean” requires a qualifier. The paper's audit identifies current-upstream
+  gold-fix retrieval in two Opus passes and one GPT-5.5 pass; its sensitivity
+  moves 78.7% to 76.0% and 66.7% to 65.3% without changing ranks. One retained
+  Fable pass has the same runtime contamination and moves 17/20 to 16/20.
+  Thus all 20 traces are model-identity-clean, not outcome-contamination-clean.
+  RV-033 corrects the two aliases, index, Scan 472, map, and detailed ledger.
+- Task fixes postdate stated model cutoffs, but one Claude-family model helped
+  build the benchmark, specifications have one author, private oracles prevent
+  third-party regrading, and products can auto-update. These declared limits
+  prevent clean model-only or language-effect attribution. The ranked release
+  cost is about $720 in API-price equivalents and 66 agent-hours across 320
+  cells; it is study cost, not Scout productivity.
+- Producer `8b6c0f8e93` records current-tip validation of exact material
+  `bee1114e84`: 296 tests / 1,484 assertions, 90 scoped and 1,728 broad links,
+  navigation 11/14 and 8/8, health at 26 facts / 16 wakes, clean standing and
+  runtime state, accepted/unaccepted containment, and preserved protected
+  fingerprints. The independent reviewer-candidate checks below remain separate.
+- RuBench supplies no Scout incumbent/candidate/matched-budget comparison,
+  frozen selection, protected outcome, retrieval-to-later-decision join,
+  measured saving, rollback event, or user outcome. `RV-004` remains high/open.
+
 ### Current-revision validation
 
-- Current reviewer candidate based on exact standing source
-  `f97bebdec5a59cfb48abd24f49c87accc2ce67d4` has app tree
-  `a732ffdb7f5799cc3d1750c17fd8cd2394fb3eeb`, exact to the candidate that
-  passed syntax, TypeScript, formatting, projection, both navigation fixtures,
-  and 296 tests / 1,483 assertions with zero failures. Current
-  document-sensitive checks pass 69 scoped links, v1 at 11/14, v2 at 8/8,
-  and 1,540 tracked Markdown documents / 1,705 local prose links with zero
-  errors. Read-only health reports 30 facts, 16 wake signals, and
-  `truncated:true`; the exact range and reviewer delta pass `git diff --check`.
+- Current reviewer candidate is based on exact standing source
+  `8b6c0f8e932a45ce8ec918f5caeed582f9efefde`. It carries all previously
+  reviewed RV-024-RV-031 corrections, extends RV-031 through the PatchOptic,
+  OSS, SWE-Review, Aria, and CXI primary reviews, resolves RV-032's cross-
+  reference contamination and RV-033's model-identity/runtime-contamination
+  ambiguity, and adds Cycle 331 evidence and dispositions to this cursor. The
+  same app subtree independently passed the full current gate before this
+  documentation-only rebase:
+  syntax, TypeScript, formatting, Cycle 292 projection, both navigation
+  fixtures, and 296 tests / 1,486 assertions with zero failures; the test suite
+  completes in 103.67 seconds (109.23 seconds for the full gate).
+  Fresh document-sensitive checks on the rebased candidate pass 92 scoped links,
+  v1 at 11/14, v2 at 8/8, and 1,540 tracked Markdown documents / 1,730 local
+  prose links with zero errors. Read-only health at
+  `2026-09-04T03:53:48.801Z` reports 26 facts, 16 wake signals, and
+  `truncated:true`; the exact standing range and reviewer delta pass
+  `git diff --check`. Cycle 329/331 index text mechanically changes inverse-
+  document-frequency scores and some rank diagnostics, but all frozen
+  selections and pass/fail outcomes remain unchanged; this is neither
+  protected improvement nor a selection regression.
+- Producer `8b6c0f8e93` validates exact RuBench material `bee1114e84` at 296
+  tests / 1,484 assertions, 90 scoped and 1,728 broad links, navigation 11/14
+  and 8/8, health at 26 facts / 16 wakes, accepted containment, unaccepted
+  exclusion, clean standing/runtime state, and preserved protected hashes.
+  Fresh reviewer checks cover the rebased documentation; the producer record
+  is not treated as independent review.
+- Producer `394a09cbea` validates exact CXI material `07836ad009` at 296
+  tests / 1,484 assertions, 90 scoped and 1,728 broad links, navigation 11/14
+  and 8/8, health at 26 facts / 16 wakes, accepted containment, unaccepted
+  exclusion, clean standing/runtime state, and preserved protected hashes.
+  The independent gate above exercises the rebased reviewer candidate rather
+  than endorsing that producer record alone.
+- Producer `2c38cea2f1` validates exact Aria material `7d4b6e01af` at 296
+  tests / 1,484 assertions, 90 scoped and 1,728 broad links, navigation 11/14
+  and 8/8, health at 26 facts / 16 wakes, accepted containment, unaccepted
+  exclusion, clean standing/runtime state, and preserved protected hashes.
+  The independent gate above exercises the rebased reviewer candidate rather
+  than endorsing that producer record alone.
+- Producer validations `80c840784f` and `3852d6b19c` record completed gates
+  for exact PatchOptic material `c7a73c9deb` and OSS material `35f2d57786`:
+  296 tests / 1,484 assertions, 90 scoped and 1,728 broad links, navigation
+  11/14 and 8/8, read-only health at 26 facts / 16 wakes, accepted containment,
+  unaccepted exclusion, clean standing/runtime state, and unchanged protected-
+  state hashes. The independent gate above exercises the rebased reviewer
+  candidate rather than endorsing producer records alone. Source and reviewer candidates retain the same evaluator,
+  frozen fixtures, protected state, and authority; only the already-tested
+  maintenance prompt rule and bounded documentation/provenance corrections
+  differ.
 
 ## Canonical rubric
 
 | Dimension | Disposition |
 | --- | --- |
-| Lead completeness and disposition | **Accept after RV-021/RV-022/RV-023, with limits.** Every Cycle 265-284 seed/result pair and reviewer integration is ordered; rejected telemetry routes, three remaining v1 failures, broad landing-page labels, retained-history limits, five compactions, and the current no-outcome recheck all have concrete dispositions. |
-| Provenance and claim/source separation | **Accept after RV-018 through RV-023.** Reused receipts, query-only protected evidence, mutable retention, static structure, adaptive frozen-case evidence, exact compaction inputs, linked detail, evaluator requests, and absent real-use outcomes remain distinct; all six findings are resolved exactly on standing. |
-| Novelty and decision value | **Accept narrowly.** One INDEX summary gap is repaired, two landing layers become link-addressable, large default reads become conditional, unsupported observability paths are rejected, false historical/global-exhaustion implications are narrowed, five duplicate blocks are reduced, and Cycle 280 confirms the missing outcome still cannot be recovered locally. |
-| Related-work comparison | **Defer.** No fresh external evidence or replication is claimed; existing papers remain contextual controls. |
-| Contradictions and uncertainty | **Accept after RV-021/RV-022/RV-023, with limits.** The reports deny deployed savings and user behavior; findings remove numerical and provenance overclaims, Cycles 276 and 280 limit zero events to the retained window, and Cycle 281 treats protected-status drift as unattributed and transient. |
-| Duplication and contamination | **Revise under RV-004.** Cycles 278 and 281-284 remove 59, 333, 36, 25, and 13 duplicate map lines while retaining linked detail, but Cycle 280's 120 mirrored lines and producer-authored adaptive fixtures remain. |
-| Usability and retrieval value | **Accept narrowly.** The project/knowledge route is coherent, one observed v1 case improves without selection/pass regression elsewhere, and compact map ledgers point to retained detail. Current scoped links are 69. No later reuse is observed. |
-| Access boundaries | **Accept.** Public lanes make zero requests, protected SQLite access is query-only under UID 1000, and no external or protected mutation occurs; the failed first query named a nonexistent column but was read-only and is disclosed. |
-| Validation quality | **Accept after RV-020 through RV-023, with limits.** Full current gates, 69 scoped links, 1,705 broad links, exact compaction bytes/hashes, retained headings, protected inventory and payload hashes, and checkout fingerprints reproduce. Selection consumed a known failure and no protected promotion or deployed-use result exists. |
-| Cost and productivity | **Revise under RV-004.** Five compactions remove 59, 333, 36, 25, and 13 lines at zero source-request cost while preserving linked detail. Cycle 280's 120 mirrored lines remain, and no measured token saving, protected outcome, later decision, or user impact exists. |
-| Rollback and integration safety | **Accept.** Reverse-order ordinary reverts of each result before its material commit restore Cycles 281-284's duplicated map blocks; reverse-order reverts remove Cycles 278-280. RV-021/RV-022/RV-023 are documentation-only corrections and ordinary reviewer reverts. No schema, runtime, evaluator, database, account, or protected checkout changed. |
+| Lead completeness and disposition | **Accept through Cycle 325 validation / Cycle 326 seed after RV-031.** TraceProbe, Knowledge Debt, AgentTether, LogicHunter, and StateFuse receive concrete source, artifact, comparison, uncertainty, and revisit dispositions. PatchOptic is explicitly selected next; missing provider evidence, protected later outcomes, and other unsourced claims remain visible. |
+| Provenance and claim/source separation | **Accept after expanded RV-031.** Primary papers, cited experiments, source-reported tables, artifact executions, repository identities, synthetic loops, official slices, producer gates, protected observations, and independent review are kept distinct. Four stale retrieval metadata fields now name the checksum-verified review class and date. Prior RV-024-RV-030 corrections remain carried because the older reviewer range is not on standing. |
+| Novelty and decision value | **Accept narrowly.** The range replaces categorical process-erasure, longitudinal-debt, operator-independent-repair, agentic-necessity, and unique-StateFuse-safety claims with decision-usable limits. It improves the library's advice and next-test selection, not protected Scout behavior. |
+| Related-work comparison | **Accept with limits.** TraceProbe exposes equal-resolve profiles and transfer reversals; the learning study separates an immediate randomized effect from SHIELD; AgentTether uses blind retry and post-run guidance controls; LogicHunter separates matched oracle evaluation from unequal pipelines; StateFuse separates official, synthetic-loop, and correction-handle surfaces. Missing released inputs, repeated-run uncertainty, natural traces, production transfer, and protected Scout baselines remain explicit. |
+| Contradictions and uncertainty | **Accept.** The range retains adverse or null evidence: no TraceProbe prediction, no significant learning-speed gain, intervention help only in Banking with three harmed cases, lower LogicHunter recall on post-cutoff bugs, StateFuse accuracy ties, no official abstention cases, and flat-baseline ties in the synthetic loop. Causal, longitudinal, transfer, user-outcome, and cost claims remain uncertain. |
+| Duplication and contamination | **Accept with limits.** Both Scan 450 aliases and the Scan 454/462 synthesis surfaces are updated consistently without counting aliases as independent support. Artifact checks are not relabeled as paper-result reproduction; producer validation is not independent evidence. Map/report repetition preserves cycle provenance but adds text and is not treated as productivity. |
+| Usability and retrieval value | **Accept after RV-031.** The index, findings, synthesis, topic map, and detailed ledger expose benchmark boundaries and exact revisit triggers. The metadata correction lets retrieval-only readers see the primary-review basis. No observed reader reuse or query→rank→selected-file→later-decision record exists. |
+| Access boundaries | **Accept.** Public arXiv, Zenodo, GitHub, and local read-only checks required no account mutation or provider authority. Missing AgentTether/StateFuse benchmark assets and dependencies limit reproduction; they are source/tooling limits, not fabricated blockers. Protected evidence remains external and read-only. |
+| Validation quality | **Accept with limits.** Producer `1967dfcb64` validates exact StateFuse parent `4b45ed8fa0` at 296 tests / 1,484 assertions, 90 scoped and 1,728 broad links, both navigation fixtures, clean standing/runtime state, and preserved protected hashes. Independent reviewer-candidate validation is recorded below. Direct StateFuse table inspection verifies the key boundary but does not reproduce absent benchmark inputs. |
+| Cost and productivity | **Revise under RV-004.** Bounded primary and artifact checks correct high-value claims, and reported benchmark costs are scoped to their studies. Nothing measures Scout saving, deployed use, later reuse, rollback frequency, or changed user decisions; document/test counts remain maintenance evidence only. |
+| Rollback and integration safety | **Accept.** The producer range is documentation-only and reverses in reverse commit order. The reviewer range changes one prospective prompt rule, two assertions, bounded document routes/provenance/scope, metadata, and the cursor; it changes no schema, evaluator, fixture, protected state, or authority and is independently revertible. |
+
+### Cycles 326-327 rubric addendum
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and claim separation | **Accept after RV-031.** PatchOptic and the OSS study receive explicit population, denominator, baseline, artifact, uncertainty, and revisit dispositions. Projection, verifier checks, semantic validity, repository proxies, survey perceptions, producer validation, and independent review remain separate. |
+| Comparisons and contradictions | **Accept with limits.** PatchOptic includes matched settings but View Only explains most live benefit, Verify Only matches the fixed containment result, and 21/24 weak-actor reject labels are still missed. The OSS panel and survey concern different populations and estimands; the older cohort contradicts broad contributor-growth transfer. Neither study supplies a protected Scout baseline or outcome. |
+| Contamination and duplication | **Accept after RV-031.** Scan 454, Scan 462, the index, synthesis, map, and detailed ledger repeat bounded conclusions without counting surfaces as independent support. Conditional accepted-only quality and GPT-5-mini leakage judging remain visible. Metadata now exposes which sources were primary-reviewed. |
+| Usability, cost, and rollback | **Accept narrowly.** The corrections make unsafe generalizations harder to retrieve and preserve exact triggers. PatchOptic reports 11%-13% within-actor token reduction but no natural-workflow cost; the OSS paper reports no sustained productivity gain. Both producer materials are documentation-only and reverse cleanly with their dependent validation/seed records. |
+| RV-004 | **High/open.** No incumbent/candidate/matched-budget Scout comparison, fresh frozen/protected selection, query-to-selected-file-to-later-decision join, deployed route observation, measured reuse, or user outcome appears. Source qualification and passing gates are maintenance quality, not behavioral improvement evidence. |
+
+### Cycle 328 rubric addendum
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and claim separation | **Accept after RV-031.** Paper results, repository/data availability, lightweight parse checks, producer validation, and independent review remain separate. Aria and CXI are explicitly pending rather than borrowed as corroboration. |
+| Comparisons and uncertainty | **Accept with limits.** The exact reviewer-by-generator cells, fixed-context controls, training comparisons, functional sample, and iterative path are retained with their denominators. Tool/scaffold changes, post-hoc strata, unmatched procedures/budgets, and absent repeated-run uncertainty prevent a loop-only causal claim. |
+| Contamination and duplication | **Accept after RV-031.** Training excludes benchmark repositories, while pretraining overlap remains unknown. The same 500 issues under three generators are not treated as independent issue samples, and repeated documentation surfaces are retrieval routes rather than additional evidence. |
+| Usability, cost, and rollback | **Accept narrowly.** The correction is easy to retrieve and states exact revisit conditions. Reported token/training costs remain model- and study-specific. The six-file producer documentation delta and reviewer metadata/cursor delta reverse independently without evaluator, fixture, schema, or authority migration. |
+| RV-004 | **High/open.** SWE-Review is external benchmark evidence. It adds no matched-budget Scout behavior comparison, frozen candidate selection, protected promotion evidence, query-to-use-to-outcome join, measured saving, later reuse, or user outcome. |
+
+### Cycle 329 rubric addendum
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and claim separation | **Accept after RV-031.** Kernel validity, obligation preservation, source-reported campaign aggregates, producer validation, and independent source inspection remain distinct. RuBench, Danus, and CXI stay pending rather than being counted as corroboration. |
+| Comparisons and uncertainty | **Accept with limits.** Exact target populations, retries, first-attempt results, time, and the fixed 40-lemma model subset are retained. The reglang prior-work baseline changes system/model/context/budget; no matched harness intervention or repeated campaign supports causal or uncertainty claims. |
+| Contamination and duplication | **Accept after RV-031.** The paper reports distinct Iris lemmas after duplicate reruns are removed, while the unavailable logs prevent independent deduplication. Proof bodies are removed with statements/dependencies retained and network/version control disabled; pretraining memorization remains unmeasured. Alias and synthesis surfaces are retrieval routes, not independent experiments. |
+| Usability, access, cost, and rollback | **Accept narrowly.** The correction makes the full-system boundary and exact revisit trigger retrievable. The anonymous artifact is HTTP-401 unavailable; 379.7 Iris model-hours and subscription pricing do not establish matched monetary or Scout cost. The documentation-only producer and reviewer deltas reverse independently. |
+| RV-004 | **High/open.** Aria is external formal-proof evidence and adds no matched-budget Scout comparison, protected promotion evidence, observed reuse, route-to-decision join, measured saving, or user outcome. |
+
+### Cycle 330 rubric addendum
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and claim separation | **Accept after RV-031/RV-032.** Fixed-policy admission, safe task completion, source-reported aggregates, producer validation, and independent source inspection remain distinct. RuBench, Danus, and protected Scout outcomes stay pending rather than being borrowed as corroboration. |
+| Comparisons, contradictions, and uncertainty | **Accept with limits.** Safe completion is separated from no observed escape, the two populations are not averaged, and mechanism/boundary baselines are not presented as matched end-to-end alternatives. Complete-safety, validator-completeness, architecture-only, implementation-equivalence, and general-rate claims are rejected. |
+| Contamination and duplication | **Accept after RV-032.** The reviewer corrects older high-retrieval CXI surfaces that Cycle 330 left inconsistent; aliases and downstream comparisons are retrieval routes, not new experiments. The unavailable result records prevent independent deduplication, so aggregate counts remain source-reported. |
+| Usability, access, cost, and rollback | **Accept narrowly.** Exact denominators, threat boundaries, source checksum, and revisit conditions become retrievable. The artifact is HTTP-401 unavailable; source-reported latency, evidence-size, and policy-effort costs are not production or Scout costs. The documentation-only producer and reviewer deltas reverse independently. |
+| RV-004 | **High/open.** CXI is external admission evidence and adds no matched-budget Scout behavior comparison, protected promotion evidence, observed reuse, route-to-decision join, measured saving, rollback outcome, or user decision. |
+
+### Cycle 331 rubric addendum
+
+| Dimension | Disposition |
+| --- | --- |
+| Lead completeness and claim separation | **Accept after RV-033.** Paper-reported five-task fallback incidence, one directly retained rejection, 20 model-identity-clean traces, runtime contamination, producer validation, and independent source/repository inspection remain distinct. Danus stays pending rather than being counted as corroboration. |
+| Comparisons, contradictions, and uncertainty | **Accept with limits.** Four ranked configurations have matched task/run budgets, but only weakest-row gaps exclude zero. Fable is a one-run 20-task subset; Round 2's fixed-shell 26-point model gap contradicts universal product-over-model attribution. One retained rejection supports the gate, not five reproduced traces or a general fallback rate. |
+| Contamination and duplication | **Accept after RV-033.** The same two Scan 451 aliases and Scan 472 are retrieval routes, not independent experiments. Twenty Fable traces are model-identity-clean, while one Fable and three ranked passes have disclosed current-upstream retrieval. Private oracles, one specification author, builder-family participation, and absent rejected traces remain visible. |
+| Usability, access, cost, and rollback | **Accept narrowly.** The executing-model receipt rule, exact repository revision, hashes, and revisit trigger are usable. Reported $720 API-price equivalent and 66 agent-hours are benchmark costs, not Scout savings. The documentation-only producer and reviewer deltas reverse independently. |
+| RV-004 | **High/open.** RuBench is external benchmark evidence and adds no matched-budget Scout behavior comparison, protected promotion evidence, observed reuse, route-to-decision join, measured saving, rollback outcome, or user decision. |
 
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
 | --- | --- | --- | --- | --- |
-| `RV-001` | Medium | Cycle 65 source cadence | Work through Cycle 284 defers unchanged public lanes at zero request cost while bounded local work closes historical/telemetry dead ends, improves static navigation, narrows retained-history claims, and removes five duplicate map blocks. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; current local productivity evidence confirms that safe work can advance concrete decisions without quota activity. |
+| `RV-001` | Medium | Cycle 65 source cadence | Work through Cycle 318 defers unchanged account-bound lanes while bounded primary/artifact work corrects unsupported attribution, reproduction, repair-budget, architecture-premium, popularity-preference, market-pricing, feedback-loop, and Cortex-interface claims. | **Resolved.** Independent reviewer work cannot improve the unchanged login-class source boundary; current local productivity evidence confirms that safe work can advance concrete decisions without account mutation. |
 | `RV-002` | Low | Cycle 65 GitHub provenance | Exact repository identities remain integrated. | **Resolved.** |
 | `RV-003` | Medium | Cycle 65 review duplication | Accepted compaction remains on standing. | **Resolved.** |
-| `RV-004` | High | `37430cf4..f97bebde`, especially remaining duplicate logs, adaptive verifier work, and unobserved prompt behavior | 665 commits, 75 files, +36,108/-546 lines through Cycle 284 yield ten observed navigation-status gains, zero scoped/broad link failures, rejected speculative designs, a bounded static route, five duplicate reductions of 59/333/36/25/13 lines, and a current negative outcome recheck. Cycle 280's 120 mirrored lines remain while independently reproduced protected history still ends August 31 with no required join. The retrieval gain was selected against a known producer-authored fixture failure. There is still no protected evaluator, query-to-selection join, retained later decision, deployed route observation, measured token saving, current provider result, authority-bearing promotion, or changed user decision. | **Revise; high/open.** Treat 11/14, the static route, compactions, retained operational events, and rejected designs as useful local evidence only. Require fresh protected navigation or later-decision evidence before broader promotion; do not count prompt structure, link count, line reduction, negative rechecks, or retention mechanics as user outcome. |
+| `RV-004` | High | `37430cf4..8b6c0f8e93`, especially adaptive verifier work, static compaction, primary-source qualification, and unobserved prompt behavior | Cycles 321-331 add reproducible structure and narrow Knowledge Debt, AgentTether, LogicHunter, StateFuse, PatchOptic, OSS maintenance, SWE-Review, Aria, CXI, and RuBench claims. None adds an incumbent/candidate/matched-budget Scout behavior comparison, protected evaluator, fresh frozen selection, query→rank→selected file→later decision join, deployed route observation, measured saving, later reuse, authority-bearing promotion, rollback outcome, or changed user decision. Paper benchmarks and current gates are claim-maintenance evidence, not Scout productivity evidence. | **Revise; high/open.** Preserve the improved source advice while requiring fresh protected navigation or later-decision evidence before any broader behavior/productivity claim. Do not add unjoined telemetry merely to make the gap look measured. |
 | `RV-005` | Medium | Seed projection | Exact Cycle 237 projection remains current and passes. | **Resolved.** |
 | `RV-006` | Medium | `package.json` through `6045108077` | Standing previously reported v2 8/8 while gating only v1. | **Resolved.** Standing `98926518f0` has stable patch ID `816b747af0` with reviewer `4f6de66f7b`; current-tip validation runs both fixtures. |
 | `RV-007` | Low | Cycle 245 result wording | Only v2 reef is an actual miss; v1's expected miss is an ambiguity. | **Resolved.** Standing `6045108077` integrates the corrected wording at stable patch ID `fb5fe6f7b6`. |
@@ -847,9 +2218,172 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
 | `RV-021` | Low | Cycle 281 result `12efeb6cd9`, topic map and detailed lane report | Both summaries said material `f40b09a2da` dropped the whole map by 334 net lines. Exact Git delta is +28/-361 and direct file counts are 11,068→10,735, so the net reduction is 333; block hashes, 307-line overlap, link behavior, and compaction value remain unchanged. | **Resolved on standing.** Reviewer `c3400f8c77` is standing `15e30e50ea` at stable patch ID `dc58f6b46d3b2e1cfbff9ab56b905f823c38427e`; both summaries now say 333. |
 | `RV-022` | Low | Cycle 282 result `7c8abbb30e`, topic map and detailed lane report | Both summaries published nonexistent full seed and material commit IDs, preventing exact provenance replay without changing the compaction. | **Resolved on standing.** Reviewer `1f611b69aa` corrects all four occurrences and has stable patch ID `a9802f0c97d01134674240b452cc3ae33e50db03`, equal to earlier reviewer `827c13d0a4`. |
 | `RV-023` | Low | Cycle 283 result `9d17987de7`, topic map, detailed lane report, and review cursor | Both summaries published nonexistent full seed and material IDs, and their integration note stopped at reviewer `641bc7088b`, omitting its later RV-022 branch state. Exact replay and pending-work status were therefore wrong, without changing the compaction. | **Resolved on standing.** Reviewer `48adada0af` corrects both identities, distinguishes the superseded replay from later RV-022 work, and updates the durable cursor; RV-022 is now integrated exactly as its parent `1f611b69aa`. |
+| `RV-024` | Low | Cycle 285 result `47574d326c`, topic map and detailed lane report | Both reports publish nonexistent seed `ab67f6bdd606e4e740696ba682b61b76ae0120e3` and material `d27fe00e55f061e33f0a10d82a98d625d610b443`. The actual direct line is seed `ab67f6bdd69afabaeb921abe862056e3b03bf983`, material `d27fe00e551fb138d3cadc13b03dfab39963c042`, and result `47574d326c9752b3852343afb5b628b54bd0d82c`. The wrong IDs prevent exact replay but do not alter the byte-identical source blocks or safe compaction. | **Revise in this reviewer range.** Replace all four bad occurrences with the actual commit objects; retain the compaction, links, and RV-004 limit. |
+| `RV-025` | Medium | Cycle 288-291 materials `1eb3fe8fd3` / `a5c62bf6ff` / `d391befc30` / `40bc4a7157`, compact Cycle 256/252/257/251 map sections and Scout maintenance prompt | Four consecutive materials moved evidence behind unchanged reports without exact point-of-use links. At `f26bd4f3a5`, later producer compactions independently supply the Cycle 251/252 links, but Cycle 256/257 and the prospective maintenance rule remain absent. | **Revise in this reviewer range.** Carry only the two still-missing links plus the durable/prompt rule and its two assertions; do not duplicate the already reconciled Cycle 251/252 routes. This is process-compliance evidence, not observed use or RV-004 resolution. |
+| `RV-026` | Low | Consolidation `e9450d7b76`, Cycles 292-295 topic-map handoff | The map labels its link “detailed checkpoint report” but targets the preceding Cycle 292 seed-reconciliation heading, while the retained checkpoint is the next `Cycles 292–295 checkpoint` heading. The sentence also claims exact rollback proof that the target does not state. The file exists and adjacent evidence remains, so no evidence is lost, but readers land at the wrong boundary and receive an overstated retention claim. | **Revised in this reviewer range.** Link the actual consolidated checkpoint heading and limit the claim to source/result identities, current validation, protected-state evidence, and retained decisions. |
+| `RV-027` | Low | Cycle 310 material/validation `fa7255fc70` / `e84546bbf9`; topic map and detailed lane report | Three durable references publish seed `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d`, which `git cat-file` confirms is not a commit. The actual direct parent is `7dd3965ef86c6bee02ee6660931bcb43ab65640f`. The bad identity prevents exact replay but does not change the primary-paper correction, app tree, or validation outcome. | **Revised in this reviewer range.** Replace all three occurrences with the actual commit object and retain the Cycle 310 evidence limits. |
+| `RV-028` | Low | Cycle 311 material `9eacb75f9f`; Scan 467, topic map, and detailed lane report | Three statements call all six completion curves concave. Primary Table 2 has local marginal reversals, including Basic 11.5%→12.7%, INTERVENOR 1.2%→1.9%, and later 0→positive steps, so strict discrete concavity is false even though every curve flattens overall. The distinction affects mathematical precision, not the accepted diminishing-returns conclusion. | **Revised in this reviewer range.** Say overall flattening, retain the exact local reversals, and keep the universal-cutoff and causal-ranking rejections. |
+| `RV-029` | Medium | Cycle 313-315 materials `a18828cef0` / `e7c25db7c36` / `bf3e0551d6`; both Scan 448 aliases and `the-oversight-inversion.md` | Cycles 313-314 left causal/ranking remnants after rejecting identification. Cycle 315 now pins HN/GitHub identities, corrects growth arithmetic, identifies the mixed sample and missing denominators, and removes almost all preference/return claims. Two alias prompts still say frustration increased with autonomy and ask whether incomparable 0.71/0.81 baskets show continuing investment; these can reinstate the rejected inference for readers. | **Mostly resolved on standing; residual revised in this reviewer range.** Preserve Cycle 315's identity-pinned observations, require a frozen basket/denominator before ratio comparison, describe the workload pattern as fixed-order, and require matched tests before any cross-phase premium, autonomy effect, governance-cost transfer, or return ranking. |
+| `RV-030` | Medium | Cycles 316-319 materials `43f474dc2a` / `d87008f144` / `976f343ca6` / `f4f76e5792`; both Scan 449 aliases, INDEX, and `the-oversight-inversion.md` | Cycles 316-317 reject market pricing and unmeasured loop/audit claims; Cycle 318 narrows Cortex from action-space subtraction to a bundled 32-label interface; Cycle 319 narrows HeRo from sub-linear verification to conditional keyed disclosure with unmatched implementation latency. The reviewer range removes five residual economic-validation labels and keeps OptiAgent's mechanism limits. | **Resolved across standing and reviewer range.** Accept the primary-source Cortex/HeRo replacements and retain the reviewer economic/OptiAgent corrections. No market effect, loop/taxonomy causality, authorization system, audit saving, or Scout outcome is promoted. Reopen only on contradictory primary evidence or a residual overclaim. |
+| `RV-031` | Low | Cycles 320-330; Scan 450 aliases plus Scan 453/454/462/475 `source_basis` metadata | Standing still lacks the earlier metadata corrections. Cycles 329-330 correctly update the Aria/CXI bodies, but Scan 475 metadata names neither CXI's exact source/access review nor its checksum; Scan 453 also retains only the abstract-era source list. Readers using context preambles can miss the actual evidence class and artifact boundary even when the body is scoped correctly. | **Revised in this reviewer range.** Name every checksum-verified primary-review class and date, extending Scan 453/475 through CXI, Scan 454 through SWE-Review, and Scan 462 through PatchOptic; retain every artifact/reproduction limit and do not convert source review into independent outcome evidence. |
+| `RV-032` | Medium | Cycle 330 material `07836ad009`; INDEX Scan 453, Scan 453 context/body, verified-enforcement §2.44, Oversight Inversion Layer 25, and Scans 478/479/497 | Cycle 330 correctly narrows the latest Scan 475 synthesis, but older high-retrieval surfaces still call CXI an architectural fix or immune, collapse 199/720 and 231/400 into one utility count, claim equal task quality with/without CXI, or imply implementation equivalence and a shared deployment gradient. The primary source reports fixed-policy mediated-sink admission, separate utility, trusted-policy/runtime assumptions, and no matched end-to-end architecture comparison. Readers can otherwise recover the rejected broad claim through canonical cross-links. | **Revised in this reviewer range.** Propagate the exact denominators and admission boundary, remove immunity/equivalence/architecture-only claims, and preserve the zero-observed-escape result only at mediated sinks. Reopen on a contradictory primary revision or released matched artifact evidence. |
+| `RV-033` | Medium | Cycle 331 material `bee1114e84`; two Scan 451 aliases, INDEX Scan 451/472, Scan 472, and Cycle 331 map/ledger | The material calls 20 retained Fable traces “clean” while the primary source and retained AIOH5 trace disclose current-upstream gold-fix retrieval in one passing Fable cell. The paper also flags two Opus and one GPT-5.5 ranked passes. All 1,585 Fable model-bearing messages match the requested model, so identity cleanliness is valid; outcome-contamination cleanliness is not. Unqualified wording obscures the 17/20→16/20 Fable and 78.7%→76.0% / 66.7%→65.3% ranked sensitivity results, though ranks and the identity-gate finding survive. | **Revised in this reviewer range.** Say model-identity-clean, disclose the contaminated cells and exact sensitivity outcomes, retain the one directly reproduced mismatch and author-reported five-task boundary, and preserve the executing-model validation rule. Reopen on a released rejected-trace receipt or contradictory source revision. |
 
 ## Reviewer source/result and integration status
 
+- Current reviewer source
+  `3852d6b19c0e97253df38629f9b120c695c56a00` has one direct-child material
+  result whose exact commit, patch, tree, and subtree identities are recorded
+  by the immediately following status checkpoint. The material commit
+  consolidates every still-applicable correction from the prior unintegrated
+  range, advances review through Cycle 327 validation / Cycle 328 seed, and
+  expands RV-031's metadata fix through PatchOptic and Conversation to
+  Contribution. Independent
+  validation passes 296 tests / 1,486 assertions, 92 scoped and 1,730 broad
+  links, both navigation fixtures, projection, syntax, types, formatting,
+  health, and `git diff --check`. It changes no runtime implementation,
+  evaluator, frozen fixture, protected state, or authority. Integrate from
+  source through the result and this following status checkpoint in order;
+  roll back the status first, then the material result, with ordinary reverts.
+- Prior reviewer range
+  `8e6b7e98afdf2d9ee5ef99ece506ed2b26555ac8..de704d68429b3799f2725bdd68e7ad28b587fd60`
+  remains unintegrated. Neither reviewer commit is an ancestor of standing
+  `3852d6b19c`; stable patch IDs `56ea398c34b546891f0423fc325b00c24b6e8ca6`
+  and `b7a3cc93b88ca09124ea4523a62bdadbc546c467` do not occur in the
+  intervening standing history. Exact standing searches still find RV-024's
+  four invalid commit IDs and do not find the compaction-link rule, RV-028's
+  strict-concavity correction, or RV-031's checksum-qualified metadata. The
+  current direct-child consolidation on source
+  `3852d6b19c0e97253df38629f9b120c695c56a00` supersedes that range while
+  retaining all applicable corrections and adding Cycles 321-327 plus expanded
+  RV-031 evidence. No earlier finding is treated as landed merely because its
+  source branch advanced.
+- Earlier result `7d226355c274dc4e2670fe348dba588ce7d00ad5` and status
+  `4089265205`, based on Cycle 319 validation / Cycle 320 seed `e7714b8bd8`,
+  are superseded by the current direct-child consolidation after Cycle 320
+  material and validation arrived. The result has stable patch ID
+  `07e3e670f0c6473694627299d05ba850a1a6a683`, tree
+  `39a1bd1f619638fa9b8b2413e5642dcd02153275`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `a7bf0616a0bb13cfac2941c12d7696be6d3bdbf6`. All corrections and evidence
+  remain retained; the newer result adds Cycle 320 review and RV-031.
+- Earlier result `d14979f3f2aff51a76ab140187743207d8913c7f` and status
+  `c4c3e6eb95`, based on Cycle 319 material `f4f76e5792`, are superseded by the
+  current direct-child consolidation after Cycle 319 validation / Cycle 320
+  seed arrived. The earlier result has stable patch ID
+  `99376bb7c465fcea3ebb7c5ec17e504ab267e5a5`, tree
+  `527664ab2e5d5104846248a6e2c256dfbac7ca87`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `2a9456be5132f75900dd1be60b4cdab8a036b974`. All corrections and independent
+  evidence remain retained; the newer result adds exact validation provenance
+  and the Cycle 320 seed disposition.
+- Earlier result `ac31361fd2bead4d3eed3915820b11d0bd214e0a` and status
+  `a31d1edfa7`, based on Cycle 318 validation / Cycle 319 seed
+  `1a47982a93f249b977db16a1dadceb17976a277e`, are superseded by the current
+  direct-child consolidation after Cycle 319 material arrived. The result has
+  stable patch ID `5eb53c8b6c580b497845bd169b0a03399060faec`, tree
+  `7f9ecd24cde028cda3fcd7f49f1bb24b4de987fd`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `9d807534b6cc78c16b9b493d5d780849cebfa221`. All material corrections and
+  independent evidence remain retained; Cycle 319 adds the HeRo disposition.
+- Earlier result `3305c3f2b999d81f4e07ac761aa59ed01d7050ff` and status
+  `af4afac4aa`, based on Cycle 318 material
+  `976f343ca6c922ec09e8297c5931b680233a36f4`, are superseded by the current
+  direct-child consolidation after exact Cycle 318 validation arrived. The
+  result has stable patch ID `e0d466d060b3aef7438b9b76b50553153112382c`,
+  tree `8a2a44edb469f3f77e2373c6cd79a73775a0ec21`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `09956b0eb9b5d8c9db71bc65fbfeb4c2d5e3210a`. All material corrections and
+  independent evidence remain retained.
+- Earlier result `9392716b16e9d8463137c064d1106e60b02201a2` and status
+  `cfa6f7741f`, based on Cycle 317 material
+  `d87008f144c0a2ddd57d179de10931aac59554bf`, are superseded by the current
+  direct-child consolidation after Cycle 318 material arrived. The result has
+  stable patch ID `584d54b57bb97aefa26ebfc73272565dd0dbac7f`, tree
+  `5298bffb6ffe1e81f7a252165502461f1c966a0d`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `544288b4da5b50c0b79e4b63f2ea7cdd88e56af8`. Its corrections and review
+  evidence are retained; Cycle 318 replaces only the provisional Cortex limit
+  with independently reproduced primary evidence.
+- Earlier result `ca9f23e7ddd96c417048410feca1f416c2b67173` and status
+  `355634b481a6787adac6da1d22d262381231b505`, based on Cycle 316 seed
+  `f17577efe3cb6644fae46df960c29959c9c334db`, are superseded by the current
+  direct-child consolidation after Cycles 316-317 material arrived. The result
+  has stable patch ID `6e41a37e5a138765d4d54018d2a2b56092ddf070`,
+  tree `9d44865ed257c82ef708bc9f062327af74a705ab`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `f690a7a4d959b3bc1db54ff73efe2bd3c830e3a4`. Its corrections and review
+  evidence are retained; RV-030 and the later source dispositions are additive.
+- Earlier result `eac9c16f0ecb4f4a41dd2224b39c1862aff42090` and status
+  `3694f74d5641e10d15a7b690e635f80415aa3256`, based on Cycle 315 seed
+  `0749927c5327947ea82187270bbff9fce9ad1645`, are superseded by the current
+  direct-child consolidation after Cycle 315 material arrived. The result has
+  stable patch ID `1164066e21ee4278d2301c32bee4f962bdd72074`, tree
+  `616044a15c6cd7b01848825d560e1bba1c76ddb9`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `44177035fb69de08ddd22ccc1b2dc17432bd35f9`. Standing `bf3e0551d6`
+  independently reconciles most of RV-029 but is not patch-equivalent to this
+  broader reviewer result; the current consolidation retains all still-needed
+  fixes without undoing the producer's identity-pinned evidence.
+- Earlier direct-child reviewer result
+  `9524d2010c8a521e2cf089eef519b817bad547c2`, based on Cycle 313 material
+  `a18828cef0706de76159fa0a2613b68be69f4683`, has stable patch ID
+  `422cdbbf2d2fe073fc70be0f83f0e34258934686`, tree
+  `7b13291c6841dbb6c5be9e5a75bee49417ec5a2d`, app subtree
+  `c82eea6feb5297372f25876c5106986ad52a0ef9`, and knowledge subtree
+  `eef731fa6fd6a3c1e7cbfa27a9ad211fd41cf264`. The earlier status-only record
+  expanded this short identity incorrectly; this is the verified commit object.
+  It is superseded by the current direct-child consolidation, which retains its
+  corrections and adds the Cycle 314-315 review.
+- Reviewer result `33a1aa644e60ae3f35fc617d3e3d2da73c529835`
+  and identity checkpoint `676341f6e8`, based on Cycle 313 seed
+  `616365f105548464cad3e9b0661e120e5c7de806`, are superseded by this direct-
+  child consolidation after material `a18828cef0` arrived. Their corrections,
+  validation evidence, and dispositions are retained; RV-029 and the material
+  review are additive.
+- Reviewer result `19b2362a4c456672a254b46e774d77c268149a6d`
+  and status `3ada5701b11d5512cc4d5212b78068ff49b60517`, based on
+  `d3ae19af8f16e9aefe4045ea9be77d4eaae970fb`, remain absent from standing and
+  are superseded by this direct-child consolidation after Cycle 312 material
+  arrived. All earlier corrections and validation evidence are retained; the
+  Cycle 312 disposition and later cursor are additive.
+- Reviewer result `3fd75f78874ee163bfe16a7a3b0b7cdd4dd4356a`
+  and status `f50de0fa630b31b88f02d9a126bd43aa49a915bb`, based on
+  `b321dc4b29d681c71e921a58d6b698305aa9a112`, remain absent from standing and
+  are superseded by this direct-child consolidation after Cycle 311 material
+  arrived. All earlier corrections and validation evidence are retained;
+  RV-028 and the later cursor are additive.
+- Prior reviewer result `62c46f2bbc98c33479866dc011cdfe417418daf4`
+  and status `46eab286352229cc6b2a9f8f90363ff2d6ee31d1`, based on
+  `09666b2058d95b0b400c22b8f07b48fbd2b92bf0`, remain absent from standing and
+  are superseded by this direct-child consolidation. Its corrections, prompt
+  rule, assertions, validation evidence, and finding dispositions are retained;
+  RV-027 and the later review are additive.
+- Cycle 307 material-based reviewer result
+  `85a719c208ba01996c2becb14bd8731d659259ae` and identity checkpoint
+  `ae30c528dcd5d7071adad0783c339d308c4d3356` are superseded by this direct-
+  child consolidation after the standing result/seed advanced. No correction,
+  validation evidence, or finding disposition is dropped.
+- Cycle 307 seed-based reviewer result
+  `9d3c9f93bd0eb933951d85adaa5cfd3c8fd9a404` and identity checkpoint
+  `71db6189c5fdb5319564b31342eb3f97f5fd705e` are superseded by this direct-
+  child consolidation after standing material `bee6972245`. No correction,
+  validation evidence, or finding disposition is dropped.
+- Earlier Cycle 306 reviewer result `8a4a08e393292834d84da8381784859b5e54c956`
+  and status `c71092c5388904cf37ac2d48bb070ce59bef442f` are superseded by this
+  direct-child consolidation after the standing seed advanced. No correction,
+  validation evidence, or finding disposition is dropped.
+- Earlier Cycle 304 reviewer result `83d5646f724247960058567b618da56257035eac`
+  and status `c43146d36bb740d9cfebee0fe5c55ce124fbf3d6` are superseded by this
+  direct-child consolidation after standing advanced. No correction or review
+  disposition is dropped.
+- Earlier reviewer `768e8981e20e8728b4b72a13b7aec25d90511d82`, based on
+  `415f2541ddec54c792d73e26fcc8f8966fcb75d3`, remains absent from standing and
+  has stable patch ID `1711afb7690f0e15c98604ef3fc3e5fe02eaae78`.
+  Consolidation `e9450d7b76` is not equivalent. The current direct-child result
+  supersedes `768e8981e2`: it preserves its still-applicable corrections,
+  avoids duplicate Cycle 251/252 links added later by the producer, and adds
+  the Cycle 304 review plus RV-026.
 - Reviewer source `f97bebdec5a59cfb48abd24f49c87accc2ce67d4`
   has direct-child result `ff09ef8d0cb7a0c08df663e1f8b1274d417b63d5`,
   integrated as standing `ff923ccde428270db699aefe4c38c2a9a51e3314`.
@@ -1026,12 +2560,16 @@ then the unreleased Memory in the Loop result, then accessible AGL-1
 
 ## Next trigger
 
-Review the next material standing checkpoint; a fresh protected maintenance
-outcome that records the route used and a later decision; deployed/current
-evidence for the bounded prompt or source-state fields; misuse of the adaptive
-v1 gain as protected promotion evidence; or another concrete RV-004 outcome.
-If no material trigger arrives, the next periodic audit is no earlier than
-`2026-09-05T06:26:15+08:00`. Do not poll unchanged state.
+Review the first clean material/result standing commit after Cycle 327
+validation / Cycle 328 seed
+`3852d6b19c0e97253df38629f9b120c695c56a00`, especially the selected
+SWE-Review claim; an integration, rejection, or patch-equivalent reconciliation
+of the current reviewer result recorded immediately above; a fresh
+protected maintenance outcome that joins the route used to a later decision;
+new evidence changing StateFuse/PatchOptic's benchmark boundaries or RV-004;
+or a concrete regression in the reviewed claims. If none arrives, the next
+periodic audit is no earlier than `2026-09-05T11:17:58+08:00`. Do not poll unchanged
+state.
 This standing reviewer goal remains active.
 
 ## Supervision

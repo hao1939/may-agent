@@ -230,7 +230,7 @@ This scan reveals three distinct subtraction mechanisms, each addressing a diffe
 | **Architectural subtraction** | Constrain the possible | 32 canonical primitives (Cortex) | Design |
 | **Verification subtraction** | Verify selectively | HeRo selective disclosure | Oversight |
 
-OptiAgent combines all three: economic (auditable = cheaper oversight), architectural (four specialized loops), and verification (each loop targets a specific failure mode).
+OptiAgent exposes four correction routes, but the paper does not measure an economic effect, audit savings, verification cost, or the independent contribution of each loop. It therefore cannot combine or validate these three proposed forms.
 
 ### From Architecture Premium to Subtraction Economy
 

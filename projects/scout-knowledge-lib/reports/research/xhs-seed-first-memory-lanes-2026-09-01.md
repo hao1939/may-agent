@@ -9486,11 +9486,11 @@ ranked exact 21-line Cycle 272 mirror audit.
 
 What was wrong: the full Cycle 272 seed and preservation record was repeated
 in both the living map and this detailed report. Seed
-`ab67f6bdd606e4e740696ba682b61b76ae0120e3` preceded the audit. The exact
+`ab67f6bdd69afabaeb921abe862056e3b03bf983` preceded the audit. The exact
 shared block measured 21 lines / 1,203 bytes at SHA-256
 `99925ebb66e9e79a980c53876c10f49f015611eb9d7821adb09dfe429ca585f0`.
 
-Material `d27fe00e55f061e33f0a10d82a98d625d610b443` retains this report copy
+Material `d27fe00e551fb138d3cadc13b03dfab39963c042` retains this report copy
 unchanged and replaces the map copy with a 9-line / 569-byte transition at
 SHA-256 `f4d7ff05…2f6515031`. The map removes 12 net lines / 634 bytes while
 retaining exact Cycle 271 result and Cycle 272 seed identities, a link to full
@@ -10270,7 +10270,7 @@ unmeasured comprehension or skill.
 
 ## Cycle 310 checkpoint — language use broadens; comprehension is unmeasured
 
-Seed-first commit `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d`
+Seed-first commit `7dd3965ef86c6bee02ee6660931bcb43ab65640f`
 preceded all public reads. Anonymous read-only arXiv access returned HTTP 200
 for the `2605.25438v2` abstract at `2026-09-04T00:49:17.626Z` and its source
 archive at `00:49:19.087Z`. The 46-file TeX source archive is pinned by
@@ -10311,7 +10311,7 @@ Testing the claimed universal three-to-four-iteration ceiling and “workflow
 orchestration > model” statement against its primary tasks, models, and
 estimand ranks above another unsourced summary or byte/line compaction.
 
-Source/seed `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d` produced material
+Source/seed `7dd3965ef86c6bee02ee6660931bcb43ab65640f` produced material
 result `fa7255fc708014dccd9c62f96c0c18355b1555e1`. The exact result tree passes
 syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation 11/14 and 8/8, and 296 tests / 1,484 assertions. The broad audit
@@ -10355,7 +10355,8 @@ archive at `00:57:17.988Z`; archive SHA-256 is
 
 The primary result supports a narrower operational conclusion. Six
 tool/dataset configurations, three task types, three cost-efficient models,
-temperature 0.2, and at most ten repairs all show concave completion curves.
+temperature 0.2, and at most ten repairs all show completion curves that
+flatten overall.
 The published mean-relative-improvement table generally declines after the
 first step. It does not reveal a single threshold: Basic LLM Call rises `11.5%`
 at step 3 and `12.7%` at step 4, and several configurations retain small
@@ -10369,8 +10370,8 @@ validation, and compatibility modifications change together. It is not a
 matched estimate of workflow versus model influence.
 
 The finding, Scan 433, index, and canonical Oversight Inversion now retain the
-supported concavity while replacing a universal `3–4` hard stop with an
-explicit target-workflow marginal-benefit/cost/uncertainty rule. Confidence is
+supported overall flattening while replacing a universal `3–4` hard stop with
+an explicit target-workflow marginal-benefit/cost/uncertainty rule. Confidence is
 medium for the observed tested-setting diminishing returns and low for an
 invariant cutoff, causal factor ranking, frontier-model transfer, or open-ended
 agent tasks.
@@ -12135,8 +12136,11 @@ and 31,796 source bytes at
 `7dd857cab52b7c5b8ec33b952db1dd69917688b780fd5d2126adb338a0a6ec85`.
 It reports 25 tasks, four ranked configurations, three runs each, and 300
 ranked rollouts. The 78.7% best row is a point estimate; only gaps to the
-weakest configuration have paired intervals excluding zero. Fable has one
-hors-concours run and a reported 17/20 result after five excluded tasks.
+weakest configuration have paired intervals excluding zero. Two Opus passes
+and one GPT-5.5 pass fetched current upstream gold-fix files; treating them as
+failures moves 78.7% to 76.0% and 66.7% to 65.3% without changing ranks. Fable
+has one hors-concours run and a reported 17/20 result after five excluded tasks;
+one retained pass has the same runtime contamination and becomes 16/20.
 
 GitHub `eugeneshilow/rubench` resolved to
 `3cf010895c20c5e6d3b9a0eacd37e7cd207be412`. Its 157,219,362-byte release
@@ -12147,7 +12151,9 @@ deletes a cell on a requested/executing-model mismatch. The released Fable log
 is 10,072 bytes at `fef4156028fbc6817804f7b324f31ce02427abf7da4da4424d48cbaed8631444`;
 it directly records one AIOH1 `MODEL-SUBSTITUTION` rejection. Exactly 20 Fable
 task directories remain, and all 1,585 model-bearing messages in their
-trajectories identify `claude-fable-5`.
+trajectories identify `claude-fable-5`. They are model-identity-clean, not
+contamination-clean: AIOH5 fetched current upstream source containing the gold-
+fix file.
 
 The contradictory boundary matters: no rejected Fable trajectory is in the
 public Git history, so the explicit fallback records for AIOH4, AIOH6, AIOH8,
@@ -12161,10 +12167,11 @@ executed them.
 What changes for readers: the library now retains a high-confidence,
 operational rule—report product, requested model, effort, versions, and task
 slice, then verify the executing model per trajectory. It records one directly
-observable rejection plus 20 clean retained traces, medium confidence in the
-reported five-task incidence, and low confidence in universal product-over-
-model attribution. A future runner should preserve a compact mismatch receipt
-or redacted invalid trace instead of deleting all model-identity evidence.
+observable rejection plus 20 model-identity-clean retained traces, one of which
+is runtime-contaminated; medium confidence in the reported five-task incidence;
+and low confidence in universal product-over-model attribution. A future runner
+should preserve a compact mismatch receipt or redacted invalid trace instead of
+deleting all model-identity evidence.
 
 ArXiv is revisited on a paper revision or uncertainty disclosure. GitHub is
 revisited on a head/release change or publication of the rejected traces or

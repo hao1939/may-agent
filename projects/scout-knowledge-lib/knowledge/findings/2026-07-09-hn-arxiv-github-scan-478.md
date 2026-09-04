@@ -89,7 +89,7 @@ Tool-using agents can violate the very policies they are deployed to enforce whi
 
 **Connection to the Execution Boundary (#453)**: The Execution Boundary identified the gap between approval and execution. Silent wrong-state failures are what happens when that gap is bridged by a policy-permissive tool rather than a verifying gate. The tool provides syntax enforcement (well-formed calls) without semantic enforcement (policy-compliant state transitions).
 
-**Connection to CXI (#475)**: CXI achieved zero escapes through triple-binding gates. This paper achieves measurable improvement through four simpler gates. The design space between CXI's maximal binding and these minimal gates is the practical deployment gradient.
+**Connection to CXI (#475)**: CXI reports no observed escape at fixed-policy mediated sinks through triple-binding gates, with utility measured separately. This paper reports measurable improvement through four simpler gates. The two evaluations do not establish a common deployment gradient without matched tasks, policies, and budgets.
 
 ---
 

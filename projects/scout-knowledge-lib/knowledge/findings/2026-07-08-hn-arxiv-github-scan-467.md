@@ -46,7 +46,7 @@ The robust persistence in unassisted commits is supporting evidence against a pu
 
 #### Cycle 311 primary-source correction (2026-09-04)
 
-The v1 abstract page and 7-file TeX source were read directly (archive SHA-256 `997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`). The source supports concavity and early-gain concentration across its six configurations. It contradicts “past round 4 adds noise, not signal”: the authors say later iterations can still repair cases, and their table records later positive increments. No experiment code, raw completion counts, per-run data, or repeated-run uncertainty accompanies the source archive.
+The v1 abstract page and 7-file TeX source were read directly (archive SHA-256 `997a858f9d826aa003dc8cfd5bef413b095819aa9aaa195bb5f221066f55384d`). The source supports overall flattening and early-gain concentration across its six configurations, not strict discrete concavity: several rows have a later marginal increase after a smaller or zero step. It contradicts “past round 4 adds noise, not signal”: the authors say later iterations can still repair cases, and their table records later positive increments. No experiment code, raw completion counts, per-run data, or repeated-run uncertainty accompanies the source archive.
 
 Confidence is medium that diminishing returns recur in these tested automated-validation workflows. Confidence is low in an exact universal cutoff, a causal workflow-over-model ordering, or transfer to frontier models and open-ended agent tasks. A reusable decision rule needs absolute marginal benefit, inference/runtime cost, and uncertainty on the target workflow rather than the paper title's number.
 

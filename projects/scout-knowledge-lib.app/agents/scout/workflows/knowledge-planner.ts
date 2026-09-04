@@ -125,6 +125,10 @@ Health-signal closure rules:
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
+- When compacting duplicated material into one authoritative note, leave an
+  inline relative link at the omission point to the exact retained heading. A
+  file-level mention elsewhere is not a substitute; verify the link after the
+  edit.
 - Treat /app/shared/knowledge as external source material. Link, summarize, or
   promote only durable reusable knowledge; do not bulk-copy the corpus.
 - Keep source-grounded <ai_context> preambles where the library already uses them.

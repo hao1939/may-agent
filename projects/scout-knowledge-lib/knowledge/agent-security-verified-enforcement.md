@@ -371,13 +371,16 @@ for agentic (as opposed to content) governance.
 authority must bind to the same action manifest before tool execution proceeds.
 Policies mark protected sink fields; typed releases carry narrow validated values;
 opaque data slots keep evidence as data. On 720 AgentDojo episodes (1,739 LLM
-calls) and 400 code-agent episodes: 231 safe task completions, zero observed
-escapes across all three authority dimensions.
+calls), 199 are safe task completions; on 400 repository episodes, 231 are safe
+task completions. Neither set has an observed escape at the mediated sink.
+Validator completeness, task quality, wrong field classes, unmediated sinks,
+and compromised policy or runtime remain outside the fixed-policy guarantee.
 
 **Defense class**: Deterministic execution-boundary enforcement.
 **Distinguishing property**: operates at the execution surface itself, not the
-approval surface above it — immune to encoding-gap attacks (cf. MCP TAG-Block
-Concealment, 2607.05744).
+approval surface above it. Complete mediation can stop an encoding-gap proposal
+from becoming authority at a covered sink; CXI does not make unreviewed sinks or
+incomplete policies immune (cf. MCP TAG-Block Concealment, 2607.05744).
 
 **Connection**: Extends Institutional Attestation (§2.34) — both gate consequential
 actions; CXI adds triple-binding at the exact execution point.

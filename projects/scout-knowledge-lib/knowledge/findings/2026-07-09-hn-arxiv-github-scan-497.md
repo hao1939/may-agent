@@ -54,7 +54,7 @@ Key property: **intent-binding**. The authorization isn't "this agent may use to
 
 Topics: `ai-agents`, `audit`, `authorization`, `confused-deputy`, `llm-agents`, `mcp`, `python`, `security`
 
-**Connection to CXI (#475)**: CXI's triple-binding gate (field authority × effect authorization × invocation authority) is the research formalization of what Delego implements practically. CXI achieves zero escapes on 1,120 episodes; Delego deploys the same principle as a library.
+**Connection to CXI (#475)**: CXI's triple-binding gate (field authority × effect authorization × invocation authority) is related to Delego's intent-bound authorization. CXI reports no observed escape at fixed-policy mediated sinks across 1,120 episodes, with safe task completion measured separately; that does not validate Delego or establish implementation equivalence.
 
 Source: https://github.com/Delego-Dev/delego
 

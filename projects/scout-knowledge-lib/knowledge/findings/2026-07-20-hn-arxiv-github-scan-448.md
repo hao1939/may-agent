@@ -253,14 +253,14 @@ The Architecture Premium hypothesis can be posed at every phase of the system li
 
 ## Open Questions
 
-1. **Is the Frustration Paradox a stable equilibrium?** Developer frustration increases with autonomy (05125). Does this plateau as developers adapt, or does it compound? The Restraint Premium (#445) suggests the exit: produce less, verify more meaningfully.
+1. **Does the workload pattern replicate?** Frustration means rose across the fixed phase order in 05125, but autonomy was not isolated. Randomize or counterbalance platform and order before asking whether the pattern plateaus or compounds.
 
 2. **Does curriculum transfer beyond synthetic transformers?** Reproduce 04846 with released code, exact seed accounting, matched successful-run selection, larger pretrained models, and natural tasks before testing post-hoc alternatives.
 
 3. **Does an identified architecture effect compound?** If a matched comparison first establishes an architecture effect, test whether it persists, compounds, or plateaus rather than assuming higher returns.
 
-4. **What is the Comprehension:News ratio ceiling?** It jumped from 0.71 to 0.81 in one scan. Is there a structural ceiling, or will comprehension investment continue to outpace news consumption?
+4. **Is a Comprehension:News ratio reproducible?** Freeze a complete denominator and classification before comparing snapshots or interpreting a change as attention movement.
 
 ---
 
-*Next scan*: Track Amazon knockoffs (predicted <1 scan to >300pts). Monitor Comprehension:News ratio stability above 0.8. Check whether governance-layer repos (fable-soul/sail-skill/watch-skill) cross 500★ collectively. Watch for Kokoro TTS approaching 300pts.
+*Next scan*: Track Amazon knockoffs (predicted <1 scan to >300pts). Recompute the Comprehension:News ratio only under a frozen basket and denominator. Check whether governance-layer repos (fable-soul/sail-skill/watch-skill) cross 500★ collectively as a popularity observation, not a return measure. Watch for Kokoro TTS approaching 300pts.
