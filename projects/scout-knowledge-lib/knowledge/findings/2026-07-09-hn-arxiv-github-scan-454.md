@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse defines conflict-preserving replicated memory and supports a public conflict-visibility distinction on a 282-case official slice, but that slice has no gold abstention cases and the safer-action result is a deterministic 50-task synthetic loop where all conservative non-collapsing surfaces tie. Its current public repository omits benchmark assets. PatchOptic and the OSS contribution study remain pending primary review; HN and repository counters are discovery signals."
+summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse supports conflict visibility, not a unique safety effect. PatchOptic supports projected-read leakage reduction and mechanical declared-path enforcement on a hand-authored benchmark, but its weak actor still accepts 21/24 expected-reject cases per round and the public source package omits the claimed cases and raw runs. The OSS contribution study remains pending primary review; HN and repository counters are discovery signals."
 triggers: ["write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "optic-based state", "projected reads", "verified patches", "write verification", "local update global validity", "OSS AI contribution", "vibe-coding OSS", "maintenance asymmetry", "AI code maintainability", "SWE-Review", "agentic code review", "generate-review-revise", "conflict-aware memory", "immutable history", "projection-time resolution", "claim correction", "patch-read enforcement", "state contract", "scan 454"]
 source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOptic). arXiv cs.SE 2026-07-07 (2607.05677 Conversation to Contribution, 2607.06065 SWE-Review, 2607.05842 Beyond Refusal). HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,363★, ECC 227,132★, shepherd 1,063★, local-llm 1,200★, security-audit-skill 2,338★, SkillSpector 12,348★). Cross-referenced with Execution Boundary (#453), Knowledge Erosion (#450), Memory Control Plane (#441), Oversight Inversion (thesis)."
 </ai_context>
@@ -21,7 +21,17 @@ projection-time resolution that cannot rewrite replicated state. The official
 benchmark supports visibility, not the categorical claim that practical memory
 systems destroy information or that StateFuse uniquely improves decisions.
 
-2. **PatchOptic** (2607.05483): Names the structural gap directly: "existing methods make the read side manageable, but they do not define when a locally proposed rewrite is valid after it is applied back to the full state. **The missing piece is a contract between local updates and global validity.**" PatchOptic introduces optic-inspired projected reads + verified structured patches. Each workflow step declares a projected read view, an authorized write region, and a patch-source region. Results on 46-case benchmark: projected reads reduce reported leakage and token cost while preserving output quality; runtime verification blocks contract violations before commit.
+2. **PatchOptic** (2607.05483v1): Defines optic-inspired projected reads,
+authorized write regions, and patch-source regions. Its 46 hand-authored cases
+support a read-side effect under matched settings: for GPT-5-mini, PatchOptic
+reports 0.2% leakage and 718.6 mean tokens versus 31.5% and 817.5 when
+unconstrained, with accepted-artifact content scores 0.927 and 0.925. That does
+not mean all expected-invalid work is blocked. With local Mistral, PatchOptic
+blocks 3/24 expected-reject cases per round and accepts 21/24; the accepted
+misses have no exact protected-value match. Its clean containment result is a
+separate fixed no-model test: PatchOptic and Verify Only both reject 9/9 patches
+that cite hidden source paths. This supports declared-path enforcement, not a
+general semantic-validity or leakage guarantee.
 
 3. **From Conversation to Contribution** (2607.05677): 13,360 AI conversation sessions comprising 79,172 user messages across 1,356 OSS repositories — the largest empirical study of AI-assisted open-source contribution to date. Key finding: **developers perceive others' AI-generated code as harder to maintain than their own (p = .029)**. AI lowers barriers to contribution while simultaneously increasing the maintenance burden on reviewers and co-maintainers — the Knowledge Erosion (#450) confirmed at OSS population scale. Communication remained "highly concentrated" even as contributor count grew.
 
@@ -79,18 +89,47 @@ PatchOptic borrows from optics (compositional bidirectional accessors in functio
 - **Patch-source regions**: where the data in the patch may come from
 - **Path-level footprints**: enable static analysis of delegation, sub-workflow composition, and reordering
 
-Results on PatchBench (46 cases across domains):
-- Projected reads reduce reported leakage and token cost while preserving accepted-output quality
-- Runtime verification blocks declared workflow-contract violations **before commit**
-- Patch-read enforcement rejects compromised patch artifacts that use hidden (unauthorized) sources
+PatchBench has 46 hand-authored cases: 22 expected accepts and 24 expected
+rejects. Each of six settings uses the same case record. Across ten GPT-5-mini
+rounds, Unconstrained versus PatchOptic reports semantic pass 0.609 versus
+0.779, accepted-only content 0.925 versus 0.927, leakage 31.5% versus 0.2%, and
+817.5 versus 718.6 mean tokens. View Only is statistically overlapping and
+reports 0.796 semantic pass, 0.7% leakage, and 718.1 tokens, so projection—not
+the complete verifier—drives this result.
 
-**Why this matters**: PatchOptic names the **structural asymmetry** between reads and writes in agent workflows. Progressive disclosure solved the read side (how to give agents enough context without overwhelming them). PatchOptic addresses the write side (how to ensure agent modifications are valid against the full state they can't see).
+The write-side evidence is narrower. On phase/write-scope audit cases, settings
+with those checks record zero unsafe accepts, including conventional FSM + ACL
+and Verify Only. In the 24-case weak-actor expected-reject audit, PatchOptic
+blocks only 3 traps per round and accepts 21; projection changes the accepted
+failure from an exact hidden-value copy to fabricated or off-policy content.
+In a separate no-model stress test, PatchOptic and Verify Only both reject 9/9
+fixed artifacts that cite hidden source paths. Thus runtime gates block patches
+that violate an implemented declared check before commit; they do not establish
+semantic correctness or block every benchmark reject label.
+
+**Measurement and artifact limits**: quality is measured only on accepted
+artifacts by a GPT-5-mini judge; reported leakage combines a deterministic
+candidate matcher with GPT-5-mini review. The benchmark trusts the policy
+author, does not prevent transformed or authorized disclosure, and evaluates
+static reordering analytically rather than empirically. The arXiv source package
+contains four aggregate CSVs, but not its stated 46 YAML cases or source-run
+JSONL. No paper-linked repository is named. The author-affiliated
+`ZBaiY/bAI-harness` at `80d455281d52854eb10867ad6577614af8603762`
+contains a May precursor implementation and tests, but no `benchmark/` path or
+PatchBench artifacts; it is supporting provenance, not paper reproduction.
+
+**Why this matters**: PatchOptic makes the read/write authority split explicit.
+Its strongest evidence is that projection can reduce observed disclosure and
+that deterministic path checks can fail closed on the paths they model. It does
+not show that progressive disclosure has solved retrieval generally or that a
+declared contract makes an update globally or semantically valid.
 
 This is the Predicate Gate (#446) applied to state mutations: the gate doesn't just check "is this tool call authorized?" — it checks "is this state change valid given what the rest of the state looks like?"
 
 **Connection to Execution Boundary (#453)**: CXI bound execution to approval at the tool-call level. PatchOptic extends the principle to the state-mutation level: the projected view (what the agent saw) must be consistent with the full state (what actually exists), and the patch must be valid in both.
 
-Source: https://arxiv.org/abs/2607.05483
+Source: https://arxiv.org/abs/2607.05483 (v1 source and aggregate tables
+primary-reviewed 2026-09-04); https://github.com/ZBaiY/bAI-harness/tree/80d455281d52854eb10867ad6577614af8603762
 
 ### 3. From Conversation to Contribution: Characterizing Coding Agents in Open-Source Software (2607.05677)
 

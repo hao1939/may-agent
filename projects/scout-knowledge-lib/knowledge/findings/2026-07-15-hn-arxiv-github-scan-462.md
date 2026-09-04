@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds process profiles without proving evidence destruction. AgentTether reports conditional repair gains with artifact limits. LogicHunter reports a high-precision agentic oracle on its own generated corpus. StateFuse exposes conflict structure, but its official 282-case slice contains no gold abstention cases and its safer-action result comes from a deterministic 50-task synthetic loop. PatchOptic remains pending primary review."
+summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds process profiles without proving evidence destruction. AgentTether reports conditional repair gains with artifact limits. LogicHunter reports a high-precision agentic oracle on its own generated corpus. StateFuse exposes conflict structure without a unique safety effect. PatchOptic supports projection and declared-path checks, not general semantic-validity enforcement."
 triggers: ["process erasure", "trajectory diagnostics", "TraceProbe", "StateFuse", "conflict-preserving memory", "PatchOptic", "verified patches", "AgentTether", "runtime repair", "LogicHunter", "agentic oracle", "PiSAs", "contextual integrity", "SICP overtakes Sol", "foundations turn 1000", "chat control 700", "scan 462", "resolve rate", "outcome metrics"]
 source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 48818311 (Chat Control 702pts), 48823557 (EU Car Camera 675pts), 48819608 (30papers 546pts), 48821576 (Kokoro 433pts), 48829312 (Uniqlo 340pts), 48821848 (Davit 322pts), 48756578 (Herdr 303pts), 48827858 (GitLost 250pts), 48825749 (Tenda 238pts), 48824826 (GAO 216pts), 48827325 (ZFS 216pts), 48825664 (SICP 204pts), 48819308 (Postgres 202pts), 48827402 (Sol 197pts), 48820119 (QR Font 189pts), 48819808 (Rowboat 168pts), 48821378 (l runtime 151pts). arXiv API: 2607.06184 (TraceProbe), 2607.05844 (StateFuse), 2607.05483 (PatchOptic), 2607.06273 (AgentTether), 2607.06195 (LogicHunter), 2607.05318 (PiSAs). GitHub API: omnigent 6,715★, Horizon 34★, memclaw-cross-fleet-gov 21★."
 </ai_context>
@@ -205,17 +205,36 @@ Source: https://arxiv.org/abs/2607.05844
 
 ### Paper 3: PatchOptic — Verified Structured Updates (2607.05483)
 
-**Core finding**: Agentic workflows read and write shared state, but progressive disclosure (showing each LLM only the relevant fragment) creates a gap: no contract defines when a locally proposed rewrite is valid against the full state. PatchOptic borrows the optic (bidirectional accessor) abstraction: each workflow step declares a projected read view, an authorized write region, and a patch-source region. Runtime enforcement blocks write-contract violations before commit.
+**Supported mechanism**: PatchOptic declares a projected read view, authorized
+write region, and patch-source region for each step. The verifier checks JSON
+Patch syntax, phase, write targets, and source paths against that declaration
+before commit. It enforces modeled mechanical predicates, not global semantic
+validity.
 
-**Key results** (46-case PatchBench):
-- Projected reads reduce reported leakage and token cost while preserving output quality
-- Runtime verification blocks declared workflow-contract violations before commit
-- Patch-read enforcement rejects compromised patch artifacts that use hidden sources
-- Path-level footprints support delegation, sub-workflow composition, and static reordering certificates
+**Key results and contradiction**: PatchBench is 46 hand-authored cases replayed
+under six settings. GPT-5-mini PatchOptic versus Unconstrained reports 0.2%
+versus 31.5% leakage and 718.6 versus 817.5 mean tokens, while accepted-only
+content is 0.927 versus 0.925. View Only overlaps the result, showing that
+projection drives the live benefit. Conventional FSM + ACL, Verify Only, and
+PatchOptic all reduce unsafe accepts to zero when phase/write-scope diagnostics
+fire. Verify Only and PatchOptic both reject all 9 fixed no-model patches that
+cite hidden source paths. Yet PatchOptic blocks only 3/24 expected-reject weak-
+actor cases per round and accepts 21/24 as fabricated or off-policy content.
+Path-level reordering is an analytic certificate, not an empirical result.
 
-**Structural significance**: PatchOptic is the Write Contract (#454) formalized as a compositional interface. It solves the dual gap: progressive disclosure governs reads (no unnecessary exposure), while verified patches govern writes (no unauthorized mutation). The same declaration that enables runtime enforcement also yields static analysis (path-level footprints) — write contracts are both enforceable and composable. This is the first paper to treat the read/write governance of shared agent state as a proper optics problem.
+**Limits and reproducibility**: The policy author is trusted; transformed and
+policy-authorized disclosure plus contract-valid false values remain possible.
+Quality uses an accepted-only GPT-5-mini judge and leakage uses model review
+after deterministic candidate matching. The v1 source package has aggregate
+tables but omits its claimed cases and raw JSONL. No paper repository is named;
+the author-affiliated `ZBaiY/bAI-harness` precursor at
+`80d455281d52854eb10867ad6577614af8603762` contains optics code but no
+PatchBench assets. Confidence is high in the aggregate table distinctions and
+low in general leakage prevention, semantic validity, transfer, or independent
+reproduction.
 
-Source: https://arxiv.org/abs/2607.05483
+Source: https://arxiv.org/abs/2607.05483 (v1 source and aggregate tables
+primary-reviewed 2026-09-04); https://github.com/ZBaiY/bAI-harness/tree/80d455281d52854eb10867ad6577614af8603762
 
 ### Paper 4: AgentTether — Runtime Repair via Transition Graphs (2607.06273)
 

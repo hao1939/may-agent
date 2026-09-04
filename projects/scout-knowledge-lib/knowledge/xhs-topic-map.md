@@ -5541,6 +5541,35 @@ Select PatchOptic. Test population, matched baselines, accepted-output and
 leakage definitions, enforcement scope, released artifacts, and whether
 blocked declared violations transfer beyond constructed contracts.
 
+### Cycle 326 checkpoint — projection works; the contract is not semantic validity
+
+At `2026-09-04T03:05:49.959Z`, arXiv `2607.05483v1` supplied a
+44,136-byte abstract (`9c01b17f…5f8f`) and 35,240-byte source package
+(`f5a5118d…f3a5`). PatchBench is 46 hand-authored cases, 22 expected-accept
+and 24 expected-reject, replayed across six settings and two actors. On ten
+GPT-5-mini rounds, Unconstrained versus PatchOptic reports 31.5% versus 0.2%
+leakage, 817.5 versus 718.6 mean tokens, and accepted-only content 0.925 versus
+0.927. View Only overlaps PatchOptic, so projection drives this live result.
+
+The write result is narrower than the old library claim. Conventional FSM +
+ACL, Verify Only, and PatchOptic all record zero unsafe accepts when their
+phase/write-scope checks fire. PatchOptic still blocks only 3/24 expected-reject
+weak-actor cases per round and accepts 21/24 as fabricated or off-policy
+content. Its 9/9 hidden-source result is a fixed no-model test that Verify Only
+also passes. Confidence is high in the aggregate distinction, low in semantic
+validity, general leakage prevention, or transfer.
+
+The source package contains four aggregate CSVs but omits the stated YAML cases
+and raw JSONL. At `2026-09-04T03:07:42.866Z`, author-affiliated
+`ZBaiY/bAI-harness` HEAD `80d455281d52854eb10867ad6577614af8603762`
+contained a May optics precursor but no `benchmark/` path; no paper-linked
+repository was found, so no metric reproduction is claimed. Revisit arXiv on a
+revision and GitHub on a named repository with cases/raw runs. Reddit made zero
+requests and remains trigger-deferred. `RV-004` remains high/open. Next begin
+seed-first and primary-review the still-pending OSS contribution study
+`2607.05677`, now the highest accessible evidence gap before inaccessible
+Cortex ablation, other scans, Reddit, or compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

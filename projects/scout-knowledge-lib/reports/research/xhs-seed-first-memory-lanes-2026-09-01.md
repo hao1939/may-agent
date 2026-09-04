@@ -11699,6 +11699,85 @@ population and matched baselines, accepted-output and leakage definitions,
 enforcement scope, public artifacts, and whether blocked declared violations
 transfer beyond constructed contracts.
 
+## Cycle 326 checkpoint — projection works; the contract is not semantic validity
+
+What was wrong was treating enforcement of declared mechanical predicates as
+enforcement of every invalid outcome. PatchOptic does fail closed when one of
+its modeled schema, phase, write-path, or patch-source checks rejects a patch.
+Its benchmark also contains expected-reject cases that the complete system
+accepts. The library now distinguishes those claims and no longer calls a
+declared contract proof of global or semantic validity.
+
+Anonymous arXiv observation began at `2026-09-04T03:05:49.959Z`.
+`2607.05483v1` returned a 44,136-byte abstract page with SHA-256
+`9c01b17ff4b9a2c475c9a8028eba308942770de5bbc71439857534a6a8c75f8f`
+and a 35,240-byte source package with SHA-256
+`f5a5118d4871f4617c495a2ad33547264571cb0f60d2066448e932dc9493f3a5`.
+PatchBench comprises 46 hand-authored domain-inspired cases: 22 expected
+accepts and 24 expected rejects. The same case record is replayed under
+Unconstrained, Schema Only, FSM + ACL, View Only, Verify Only, and PatchOptic.
+Each setting runs ten rounds with GPT-5-mini and ten with local Mistral 7B,
+giving 5,520 live actor runs.
+
+The strongest matched read-side comparison supports projection. On GPT-5-mini,
+Unconstrained versus PatchOptic reports semantic pass 0.609±0.041 versus
+0.779±0.032, accepted-artifact content 0.925±0.020 versus 0.927±0.032,
+leakage 31.5%±2.1% versus 0.2%±0.7%, and 817.5±5.4 versus 718.6±3.2 mean
+tokens. View Only reports 0.796±0.024 semantic pass, 0.928±0.019 content,
+0.7%±1.1% leakage, and 718.1±7.9 tokens. Its uncertainty bands overlap the
+PatchOptic means, so projection rather than the full verifier explains the
+live leakage/token benefit. Under weaker local Mistral, projection has a
+content cost: View Only is 0.837 versus Unconstrained 0.862; PatchOptic recovers
+to 0.884 but does not establish actor-independent preservation.
+
+The write-side controls contradict a categorical block claim. On audit pairs
+where a phase or write-scope diagnostic appears, FSM + ACL, Verify Only, and
+PatchOptic all record zero unsafe accepts. Across all 24 local-Mistral expected-
+reject cases, PatchOptic blocks 3 traps per round and accepts 21: 87.5% are
+false accepts without an exact protected-value match. Projection changes these
+misses from copied secrets to fabricated or off-policy content; it does not
+make them expected-valid. A separate no-model containment test submits nine
+fixed patches that cite hidden paths. PatchOptic and Verify Only both reject
+9/9 through the patch-source check. This isolates that deterministic check;
+it is not a general leakage, quality, or system-uniqueness result. Static
+reordering is justified analytically, not measured as a benchmark outcome.
+
+Measurement is also conditional. Content and semantic pass are computed only
+for accepted artifacts with a GPT-5-mini judge. Reported leakage starts with a
+deterministic surface matcher and retains disclosures confirmed by a separate
+GPT-5-mini review. The system trusts the policy author and does not prevent
+wrong declarations, transformed or authorized disclosure, or a contract-valid
+false value. Confidence is high in the source-reported aggregate distinctions
+and low in semantic validity, exhaustive leakage prevention, natural workflow
+transfer, or policy-author correctness.
+
+The source package exposes four aggregate CSVs used by the paper, but omits the
+claimed 46 YAML case files and raw source-run JSONL. It names a source repository
+without linking one. Complete unauthenticated repository and commit searches
+found no attributable PatchBench implementation; GitHub code search itself
+returned HTTP 401 without a token. Author-affiliated `ZBaiY/bAI-harness`,
+observed at `2026-09-04T03:07:42.866Z`, has HEAD
+`80d455281d52854eb10867ad6577614af8603762` and a May precursor optics module
+(14,951 bytes, SHA-256 `19be39eb…6e29`) plus tests, but its `benchmark/` path
+returns HTTP 404 and it has no PatchBench artifacts. This supports design
+provenance, not paper-result reproduction. No install or repository mutation
+was attempted.
+
+Lane continuity: arXiv supplied the exact paper and aggregate tables; revisit
+on a revision or attached full artifact. GitHub supplied the attributable
+precursor and absence boundary; revisit on a named paper repository with cases
+and raw runs. Reddit made zero requests and remains RSS-readable/JSON-403 until
+a relevant thread or access change. `RV-004` remains high/open because this
+work supplies no protected post-August-31 query/rank-to-selection-to-outcome
+join.
+
+Next begin seed-first and primary-review `2607.05677`, the still-pending OSS
+contribution study. It now outranks the inaccessible Cortex taxonomy-size
+ablation, other unsourced scans, Reddit, and compaction because its population-
+scale maintenance and comprehension claims affect the same synthesis and have
+not yet been checked against estimands, survey denominators, identification,
+and released artifacts.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
