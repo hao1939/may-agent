@@ -11088,12 +11088,13 @@ no account state changed.
 The [Cycle 413 executable replacement](../reports/review/scout-provenance-replacement-cycle413-2026-09-05.md)
 turns Cycle 412's schema into a versioned fail-closed fixture and validator.
 Against exact Cycle 411 source `73088d8c91`, the no-replacement baseline loses
-six commit references and 67 timestamps. The candidate retains all six refs
-and 48 receipt/review/reproduction/decision timestamps; only nineteen
-explicitly enumerated operational times remain absent. It validates all
-fourteen producer parent/result pairs, the direct-child range review, and
-exactly one project-owned Markdown fragment per accepted entry. The
-source-bound 1,546-document / 1,774-link result is unchanged.
+six commit references and 67 timestamps. The corrected candidate retains all
+six refs and 48 exact producer-classified timestamp literals; their semantic
+roles are not yet bound one by one, and nineteen explicitly enumerated
+operational times remain absent. It validates one contiguous fourteen-result
+chain, the direct-child range review, two immutable receipt sections, and
+exactly one project-owned Markdown fragment per accepted entry. The source-
+bound 1,546-document / 1,774-link result is unchanged.
 
 The same comparison still leaves 61 classified structural headings absent,
 and the retained/omitted classifications have no protected retrieval or

@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Cycle 413 implements and tests the compact Cycles 373-386 provenance record without deleting history. Against the exact Cycle 411 source projection, it preserves all six otherwise-lost commit references and 48 decision-bearing timestamps, while 19 enumerated operational timestamps and 61 classified structural headings remain absent."
+summary: "Cycle 413 implements and tests the compact Cycles 373-386 provenance record without deleting history. Independent review adds immutable receipt-section and contiguous-chain bindings before acceptance; the source-bound comparison preserves all six otherwise-lost commit references and 48 classified timestamps while 19 operational timestamps and 61 structural headings remain absent."
 triggers: ["Cycle 413", "RV-036", "provenance replacement", "source-bound projection", "fragment validation"]
 last_updated: "2026-09-05"
 source_basis: "Reviewed Cycle 412 correction 86502d99271207d872057c4874326296d57255b4; Cycle 411 source-bound projection at 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9; exact Cycles 373-386 producer range; range review 08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80..2379a9fabb619c653cbabda04e60066b5c473aa4; canonical project-owned evidence anchors."
@@ -20,9 +20,10 @@ Cycle 413 adds a versioned JSON record and a fail-closed validator. The
 validator proves the fourteen exact producer parent/result pairs, their shared
 accepted review lineage, two normalized observational seed receipts, and one
 unique Markdown section for each accepted evidence entry. Unknown or missing
-fields, lineage drift, an invalid receipt, a missing or ambiguous fragment, or
-changed source-bound loss counts fail the gate. No historical topic-map,
-ledger, finding, or report content is deleted or rewritten.
+fields, lineage drift, an invalid or source-substituted receipt, a repeated or
+reordered producer pair, a missing or ambiguous fragment, or changed source-
+bound loss counts fail the corrected gate. No historical topic-map, ledger,
+finding, or report content is deleted or rewritten.
 
 ## Seed and lane boundary
 
@@ -51,7 +52,7 @@ structured record in memory. Neither side changes the source corpus.
 | Evidence class | Baseline absent | Candidate absent | Disposition |
 | --- | ---: | ---: | --- |
 | Commit/provenance references | 6 | 0 | All six exact literals are retained. |
-| Timestamps | 67 | 19 | Forty-eight receipt, review, reproduction, or decision timestamps are retained. |
+| Timestamps | 67 | 19 | Forty-eight exact literals are retained; their producer-classified roles are not yet bound one by one. |
 | URLs | 0 | 0 | No URL loss is introduced. |
 | Headings | 61 | 61 | All are classified as cycle-specific or enumerated generic structure; none is silently called retained. |
 | Source-bound links | 1,774 checked | 1,774 checked | Both projected corpora contain 1,546 documents and no broken relative link. |
@@ -74,7 +75,13 @@ The fixture is frozen against reviewed canonical tip
 former to remain an ancestor of the candidate and the latter to remain an
 ancestor of the former. It also requires:
 
+- the exact reviewed fixture bytes to remain digest-pinned;
+- the two normalized seed receipts to resolve uniquely at immutable source
+  commits `37c641cef6` and `ea3ca60daa`, with their section bytes and declared
+  observation fields matching;
 - exactly fourteen distinct entries covering every Cycle 373-386 once;
+- fourteen unique producer results and evidence sections forming one
+  contiguous chain that ends at the independently reviewed source;
 - each result's actual Git parent to equal its declared producer source;
 - every result to be contained by the exact reviewed source;
 - reviewer `2379a9fabb619c653cbabda04e60066b5c473aa4` to be the direct child of
@@ -85,20 +92,28 @@ ancestor of the former. It also requires:
   source-bound projection rather than a current-HEAD corpus; and
 - the source-bound 1,546-document / 1,774-link result to remain unchanged.
 
-The validator is part of the normal project check. Focused candidate-tree
-validation passes TypeScript, four tests / eight assertions, all fourteen
-evidence fragments, all six retained commit references, all 48 retained
-timestamps, the nineteen-item omission boundary, and the 61-heading
-classification.
+The validator is part of the normal project check through its end-to-end test;
+the named script remains available for a readable standalone receipt without
+running the same ten-second source projection twice in one gate. The producer
+checkpoint passed TypeScript and four tests / eight assertions, all fourteen
+evidence fragments, all six retained commit references, all 48 classified timestamps,
+the nineteen-item omission boundary, and the 61-heading classification.
+Independent negative controls then showed that its shape gate accepted a
+repeated producer pair and an arbitrary-but-well-formed receipt timestamp.
+The reviewer correction adds the fixture digest, immutable receipt-section
+bindings, contiguous-chain and uniqueness checks, and rejection controls.
 
 ## Decision and remaining uncertainty
 
-The candidate resolves the executable completeness and fragment-validation
-steps from Cycle 412. It is materially stronger than the no-replacement
-baseline for exact provenance and chronology, but it does not prove that the
-61 headings have no retrieval value or that the nineteen operational times
-will never matter. The timestamp and heading classifications are explicit,
-reviewable judgments, not observed user outcomes.
+The corrected candidate resolves the executable shape, fragment-validation,
+receipt-binding, and producer-chain steps from Cycle 412. The uncorrected
+producer result is revise-only because coherent receipt or pair substitution
+could pass while changing provenance. After the reviewer correction, it is
+materially stronger than the no-replacement baseline for exact provenance and
+chronology, but it does not prove that the 61 headings have no retrieval value
+or that the nineteen operational times will never matter. The timestamp and
+heading classifications are explicit producer judgments, not individually
+source-bound semantic roles or observed user outcomes.
 
 RV-036 therefore remains mitigated but medium/open, and real compaction stays
 rejected. RV-004 remains high/open because this is a local structural control,

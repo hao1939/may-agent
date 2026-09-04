@@ -30,6 +30,9 @@ type ProvenanceFixture = {
   review: { id: string; source: string; result: string };
   seed_receipts: Array<{
     id: string;
+    source_commit: string;
+    source_evidence: EvidenceReference;
+    source_section_sha256: string;
     observed_through: string;
     stable_identity_count: number;
     observed_removals: string[];
@@ -106,6 +109,10 @@ function sha256(values: string[]): string {
     .digest("hex");
 }
 
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 function sameStrings(
   actual: string[],
   expected: string[],
@@ -136,6 +143,63 @@ export function fragmentMatchCount(markdown: string, fragment: string): number {
       ),
     )
     .filter((candidate) => candidate === fragment).length;
+}
+
+export function markdownSection(markdown: string, fragment: string): string {
+  const lines = markdown.split("\n");
+  const matches = lines.flatMap((line, index) => {
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/u);
+    if (!heading || githubHeadingFragment(heading[2]) !== fragment) return [];
+    return [{ index, level: heading[1].length }];
+  });
+  if (matches.length !== 1) {
+    throw new Error(`evidence fragment resolved ${matches.length} times`);
+  }
+  const [{ index, level }] = matches;
+  const end = lines.findIndex((line, candidateIndex) => {
+    if (candidateIndex <= index) return false;
+    const heading = line.match(/^(#{1,6})\s+/u);
+    return Boolean(heading && heading[1].length <= level);
+  });
+  return lines.slice(index, end === -1 ? undefined : end).join("\n");
+}
+
+export function validateSeedReceiptEvidence(
+  receipt: ProvenanceFixture["seed_receipts"][number],
+  markdown: string,
+): void {
+  const section = markdownSection(markdown, receipt.source_evidence.fragment);
+  if (sha256Text(section) !== receipt.source_section_sha256) {
+    throw new Error(`${receipt.id} source section digest mismatch`);
+  }
+  if (
+    !section.includes(receipt.observed_through.split("T").at(-1) ?? "") ||
+    !new RegExp(`\\b${receipt.stable_identity_count}\\b`, "u").test(section) ||
+    !section.includes("[]") ||
+    !/unavailable/iu.test(section) ||
+    !/no (?:account|xhs) (?:or content )?state\s+(?:was\s+)?changed|no account mutation occurred/iu.test(
+      section,
+    )
+  ) {
+    throw new Error(`${receipt.id} fields do not match its source section`);
+  }
+}
+
+function evidenceReference(value: unknown, label: string): EvidenceReference {
+  const evidence = object(value, label);
+  exactKeys(evidence, ["path", "fragment"], label);
+  const path = nonempty(evidence.path, `${label}.path`);
+  if (
+    !path.startsWith("projects/scout-knowledge-lib/knowledge/") ||
+    !path.endsWith(".md") ||
+    path.includes("..")
+  ) {
+    throw new Error(`${label} path leaves canonical knowledge`);
+  }
+  return {
+    path,
+    fragment: nonempty(evidence.fragment, `${label}.fragment`),
+  };
 }
 
 export function validateProvenanceFixtureShape(
@@ -190,6 +254,9 @@ export function validateProvenanceFixtureShape(
       receipt,
       [
         "id",
+        "source_commit",
+        "source_evidence",
+        "source_section_sha256",
         "observed_through",
         "stable_identity_count",
         "observed_removals",
@@ -198,6 +265,17 @@ export function validateProvenanceFixtureShape(
       `seed_receipts[${index}]`,
     );
     const id = nonempty(receipt.id, `seed_receipts[${index}].id`);
+    if (!sha.test(nonempty(receipt.source_commit, `${id}.source_commit`))) {
+      throw new Error(`${id}.source_commit must be a full commit SHA`);
+    }
+    evidenceReference(receipt.source_evidence, `${id}.source_evidence`);
+    if (
+      !/^[0-9a-f]{64}$/u.test(
+        nonempty(receipt.source_section_sha256, `${id}.source_section_sha256`),
+      )
+    ) {
+      throw new Error(`${id}.source_section_sha256 must be SHA-256`);
+    }
     if (
       !timestamp.test(nonempty(receipt.observed_through, "observed_through"))
     ) {
@@ -226,7 +304,7 @@ export function validateProvenanceFixtureShape(
   if (!Array.isArray(record.entries) || record.entries.length !== 14) {
     throw new Error("record.entries must contain exactly fourteen entries");
   }
-  const entryIds = record.entries.map((value, index) => {
+  const entryBindings = record.entries.map((value, index) => {
     const entry = object(value, `record.entries[${index}]`);
     exactKeys(
       entry,
@@ -249,20 +327,10 @@ export function validateProvenanceFixtureShape(
         throw new Error(`${entryId}.${key} must be a full commit SHA`);
       }
     }
-    const evidence = object(
+    const evidence = evidenceReference(
       entry.accepted_evidence,
       `${entryId}.accepted_evidence`,
     );
-    exactKeys(evidence, ["path", "fragment"], `${entryId}.accepted_evidence`);
-    const path = nonempty(evidence.path, `${entryId}.accepted_evidence.path`);
-    if (
-      !path.startsWith("projects/scout-knowledge-lib/knowledge/") ||
-      !path.endsWith(".md") ||
-      path.includes("..")
-    ) {
-      throw new Error(`${entryId} evidence path leaves canonical knowledge`);
-    }
-    nonempty(evidence.fragment, `${entryId}.accepted_evidence.fragment`);
     if (!receiptIds.includes(nonempty(entry.seed_receipt, "seed_receipt"))) {
       throw new Error(`${entryId} references an unknown seed receipt`);
     }
@@ -276,17 +344,46 @@ export function validateProvenanceFixtureShape(
     if (entry.rollback !== "revert-producer-result-after-dependents") {
       throw new Error(`${entryId} rollback boundary changed`);
     }
-    return entryId;
+    return {
+      entryId,
+      cycle: Number(entryId.match(/^cycle-(\d+)-/u)?.[1] ?? NaN),
+      producerSource: entry.producer_source as string,
+      producerResult: entry.producer_result as string,
+      evidenceIdentity: `${evidence.path}#${evidence.fragment}`,
+    };
   });
+  const entryIds = entryBindings.map((entry) => entry.entryId);
   unique(entryIds, "entry ids");
-  const cycles = entryIds
-    .map((id) => Number(id.match(/^cycle-(\d+)-/u)?.[1] ?? NaN))
+  unique(
+    entryBindings.map((entry) => entry.producerResult),
+    "producer results",
+  );
+  unique(
+    entryBindings.map((entry) => entry.evidenceIdentity),
+    "accepted evidence references",
+  );
+  const cycles = entryBindings
+    .map((entry) => entry.cycle)
     .sort((left, right) => left - right);
   if (
     JSON.stringify(cycles) !==
     JSON.stringify(Array.from({ length: 14 }, (_, index) => 373 + index))
   ) {
     throw new Error("entry ids must cover each Cycle 373-386 exactly once");
+  }
+  const orderedEntries = [...entryBindings].sort(
+    (left, right) => left.cycle - right.cycle,
+  );
+  for (let index = 1; index < orderedEntries.length; index += 1) {
+    if (
+      orderedEntries[index].producerSource !==
+      orderedEntries[index - 1].producerResult
+    ) {
+      throw new Error("producer entries must form one contiguous cycle chain");
+    }
+  }
+  if (orderedEntries.at(-1)?.producerResult !== review.source) {
+    throw new Error("producer cycle chain must end at the review source");
   }
 
   const retained = object(record.retained_literals, "record.retained_literals");
@@ -447,6 +544,23 @@ export function inspectProvenanceReplacement(
     throw new Error("review result is not a direct child of review source");
   }
 
+  const receipts = new Map(
+    fixture.seed_receipts.map((receipt) => [receipt.id, receipt]),
+  );
+  for (const receipt of fixture.seed_receipts) {
+    git(root, [
+      "merge-base",
+      "--is-ancestor",
+      receipt.source_commit,
+      fixture.evidence_tip,
+    ]);
+    const markdown = git(root, [
+      "show",
+      `${receipt.source_commit}:${receipt.source_evidence.path}`,
+    ]);
+    validateSeedReceiptEvidence(receipt, markdown);
+  }
+
   for (const entry of fixture.record.entries) {
     if (
       git(root, ["rev-parse", `${entry.producer_result}^`]) !==
@@ -461,6 +575,14 @@ export function inspectProvenanceReplacement(
       "--is-ancestor",
       entry.producer_result,
       fixture.review.source,
+    ]);
+    const receipt = receipts.get(entry.seed_receipt);
+    if (!receipt) throw new Error(`${entry.entry_id} receipt is unavailable`);
+    git(root, [
+      "merge-base",
+      "--is-ancestor",
+      receipt.source_commit,
+      entry.producer_result,
     ]);
     const markdown = git(root, [
       "show",
@@ -536,6 +658,8 @@ export function inspectProvenanceReplacement(
     evidence_tip: fixture.evidence_tip,
     entries: fixture.record.entries.length,
     evidence_fragments_unique: fixture.record.entries.length,
+    receipt_sections_bound: fixture.seed_receipts.length,
+    producer_chain_bound: true,
     retained_commit_refs: fixture.record.retained_literals.commit_refs.length,
     retained_timestamps: fixture.record.retained_literals.timestamps.length,
     omitted_operational_timestamps: remainder.timestamps.length,

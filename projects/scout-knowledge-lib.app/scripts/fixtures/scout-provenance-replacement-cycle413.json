@@ -11,6 +11,12 @@
   "seed_receipts": [
     {
       "id": "cycle-341-receipt",
+      "source_commit": "37c641cef6c7f84ecc799b4512a3dd2e214fc0f8",
+      "source_evidence": {
+        "path": "projects/scout-knowledge-lib/knowledge/xhs-topic-map.md",
+        "fragment": "cycle-341-seed-first-start--scheduled-access-pass-is-semantically-unchanged"
+      },
+      "source_section_sha256": "de64611cd2724ed76559753202cfae3418373b47cc2bfae93bf19dca7232bc62",
       "observed_through": "2026-09-04T05:00:03.241Z",
       "stable_identity_count": 132,
       "observed_removals": [],
@@ -18,6 +24,12 @@
     },
     {
       "id": "cycle-375-receipt",
+      "source_commit": "ea3ca60daaecd86da482fc6f04c7a99d6a9c2635",
+      "source_evidence": {
+        "path": "projects/scout-knowledge-lib/knowledge/xhs-topic-map.md",
+        "fragment": "cycle-375-seed-first-start--access-is-unchanged-audit-anchored-self-play"
+      },
+      "source_section_sha256": "1da27cf71ad745fec3f753a1a2c36dc5f8453c5cd7083051b5bd6d0b7e25bb2a",
       "observed_through": "2026-09-04T11:09:20.326Z",
       "stable_identity_count": 132,
       "observed_removals": [],

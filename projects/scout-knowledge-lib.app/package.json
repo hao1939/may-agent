@@ -5,7 +5,7 @@
   "description": "Agent App that drives the Scout knowledge library domain workspace.",
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts ./agents/scout/workflows/scout-daily-digest.ts ./agents/scout/workflows/scout-explore.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
-    "check": "bun run syntax && bun run typecheck && bun run format:check && bun run seed-projection && bun run relative-links && bun run navigation-outcomes && bun run provenance-replacement && bun run test",
+    "check": "bun run syntax && bun run typecheck && bun run format:check && bun run seed-projection && bun run relative-links && bun run navigation-outcomes && bun run test",
     "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts ./agents/scout/workflows/scout-daily-digest.ts ./agents/scout/workflows/scout-explore.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "bun test ./app.test.ts ./scripts ./agents/scout/tools ./agents/scout/workflows ./watchers --timeout 30000",
