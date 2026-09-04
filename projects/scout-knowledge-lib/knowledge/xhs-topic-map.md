@@ -8168,6 +8168,39 @@ facts without a source qualification. Retrieve the exact version, distinguish
 paper results from Scout synthesis, inspect search/corpus and artifact limits,
 and retain only decision-relevant supported claims.
 
+### Cycle 368 checkpoint — useful taxonomy, unreleased reproducibility
+
+Seed-ordering commit `3b78be7612f73b8d7e1c38446c9afe9c69f84066`
+preceded primary retrieval. At `2026-09-04T08:32:57.330Z`, arXiv Atom pinned
+`2607.05743v1` (3,592 bytes / `954d63a6…650c35`). The PDF observed
+`08:32:57.827Z` is 1,005,745 bytes / `1fb8aa52…22f7`. Exact v1 source at
+`08:33:11.065Z` is 852,843 bytes / `68eeba16…3a8385c`.
+
+The generated appendix contains 39 classified rows and 17 category counts that
+sum to 39. The paper explicitly authors five gaps, but its search was iterative
+and non-exhaustive, categories and root-cause/pipeline readings require
+judgment, and “rarely cite” has no released edge matrix or denominator. The
+TOCTOU/MCP link is a validate-then-act analogy; no shared experiment shows an
+MCP state changing between validation and use. The concrete retained gap is
+narrower: within this corpus, isolation and access-control mechanisms lack a
+shared head-to-head benchmark and do not reuse ShellSieve's bypass set.
+
+The paper promises a machine-readable corpus and verifier, yet the exact arXiv
+archive contains only TeX, bibliography, figures, generated macros/tables, and
+the 39 appendix rows—no CSV or scripts. Counts are inspectable but the search,
+classifications, citation claims, and verifier cannot be reproduced. Of four
+CVE examples, one is a pre-agent runc substrate vulnerability; it is inherited
+risk, not an observed agent-harness incident. Confidence is high in version,
+archive contents, row counts, and paper wording; medium in within-corpus gaps;
+low in corpus completeness, field-wide absence, and structural equivalence.
+
+ArXiv supplied the useful evidence; GitHub made no request and retains Cycle
+362, HN retains Cycles 365–367, and Reddit remains trigger-deferred. `RV-004`
+stays high/open. Next seed-first, primary-review Scan 473's CAGE-1
+`2607.03510v1`: distinguish a proposed “Prebind Assurance” evaluation schema
+from an implemented benchmark, empirical action-control proof, or enterprise
+deployment-readiness result.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

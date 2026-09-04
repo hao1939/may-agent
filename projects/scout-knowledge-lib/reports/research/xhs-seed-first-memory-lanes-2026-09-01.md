@@ -15295,6 +15295,43 @@ artifact availability, denominators, and wording, and retain only supported
 decision-relevant claims. Other causal/reproducibility/retrieval gaps follow;
 public source lanes stay trigger-bounded and compaction remains last.
 
+## Cycle 368 checkpoint — useful taxonomy, unreleased reproducibility
+
+Seed-first commit `3b78be7612f73b8d7e1c38446c9afe9c69f84066`
+preceded all public reads. ArXiv Atom observed
+`2026-09-04T08:32:57.330Z` pins `2607.05743v1`, 3,592 bytes /
+`954d63a659349360ad3386cdc13186284212afac82ef3f517a52811819650c35`.
+The PDF observed `08:32:57.827Z` is 1,005,745 bytes /
+`1fb8aa5216ebc5e4cf969544b608093bebe7584ced98cc66acc070fc958722f7`.
+The v1 source archive observed `08:33:11.065Z` is 852,843 bytes /
+`68eeba16c86b2952e33dca0f09b64dfcd4a0fb42aa65da0fa96e8afdb3a8385c`.
+
+The appendix directly retains 39 classified rows and 17 category counts
+summing to 39. The paper's five gaps are author synthesis over an iterative,
+explicitly non-exhaustive search with judgment-based category, root-cause, and
+pipeline labels. No citation-edge matrix, count, or denominator supports the
+field-wide “rarely cite” phrase. TOCTOU/MCP is an interpretive validate-then-
+act analogy, not evidence that MCP metadata changed between check/use or that
+one mitigation transfers. The strongest retained within-corpus result is that
+isolation/access-control mechanisms lack a shared head-to-head benchmark and
+do not reuse the ShellSieve bypass set.
+
+The paper claims a released CSV and independent verifier. Neither appears in
+the exact arXiv source archive, which contains the paper build, figures,
+generated tables/macros, bibliography, and 39 appendix rows. Therefore counts
+are inspectable but corpus selection, classifications, citation assertions,
+and verifier claims are not independently reproducible. One of four CVE
+examples is pre-agent runc substrate risk rather than an observed harness
+incident. Confidence is high for exact version, bytes, rows, and wording;
+medium for within-corpus gaps; low for completeness and field-wide absence.
+
+ArXiv was useful. GitHub made zero requests and retains Cycle 362; HN retains
+Cycles 365–367; Reddit made zero requests and stays trigger-deferred. `RV-004`
+remains high/open. Next begin seed-first, then primary-review CAGE-1
+`2607.03510v1` and separate its proposed “Prebind Assurance” schema from an
+implemented benchmark, empirical action-control proof, or enterprise-
+readiness result. Compaction remains last.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

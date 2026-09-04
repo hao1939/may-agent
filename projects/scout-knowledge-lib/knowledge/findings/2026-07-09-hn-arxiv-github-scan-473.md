@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #473: The Balkanization Problem. The security literature for AI coding agents is scattered across 17 categories that rarely cite each other — the research community is suffering from the same fragmentation the Oversight Inversion documents. Balkanization paper (2607.05743v1) systematizes 39 papers and surfaces 5 cross-cutting gaps: no shared benchmark for isolation vs capability, policy enforcement vs isolation never co-evaluated, TOCTOU and MCP are the same state-validation problem treated separately, honest policy author universally assumed, benign out-of-scope actions at 17.1% unaddressed. CAGE-1 (2607.03510v1) introduces 'Prebind Assurance' — proving agent actions are controlled before they become binding — directly extending the Admission Boundary (#469). AGL-1 (2607.03516v1) provides a vendor-neutral 7-domain governance control plane. HN front page: three frontier models combined still below Uniqlo (1,188pts). 'Fable is not a useful model' (69pts) — bioinformatics researcher documents frontier model failure on real research tasks. Chatto open-source surge (+17.0% to 531pts). Skill ecosystem continues: EasyLastSkill (227★), Horizon (34★, verification-first offline harness), Fortress (194★, anti-oversight stealth engine)."
+summary: "Scan #473: The Balkanization Problem, qualified. Paper 2607.05743v1 classifies 39 papers into 17 categories and authors five cross-cutting gaps, but uses a non-exhaustive iterative search and judgment-based single-category labels. Its citation-fragmentation claim has no released edge matrix or denominator, and TOCTOU/MCP equivalence is an interpretive validate-then-act analogy rather than shared experimental evidence. The arXiv source archive retains all 39 generated table rows but omits the promised machine-readable corpus and verifier. CAGE-1 and AGL-1 remain separate conceptual proposals pending primary review."
 triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind assurance", "AGL-1 governance layer", "Fable criticism", "research-level task failure", "security literature systematization", "five cross-cutting gaps", "TOCTOU MCP unified", "benign out-of-scope actions", "honest policy author assumption", "EasyLastSkill", "Horizon verification harness", "Fortress stealth browser"]
 </ai_context>
 
@@ -7,7 +7,7 @@ triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind 
 
 **Date:** 2026-07-09
 **Sources:** HN (front page + tracked stories), arXiv (cs.AI, cs.SE, cs.CR), GitHub
-**Theme:** The research community studying agent security is suffering from the same fragmentation the Oversight Inversion documents. The Balkanization paper (2607.05743v1) systematizes 39 papers across 17 categories — sandbox isolation, capability control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress, and more — and finds they *rarely cite each other*. Five cross-cutting gaps emerge not from any one paper's weakness but from the absence of cross-category verification. Meanwhile, CAGE-1 introduces "Prebind Assurance" — proving actions are controlled before they become binding — extending the Admission Boundary (#469). On HN, "Fable is not a useful model" reaches the front page as a bioinformatics researcher documents frontier model failure on real research tasks, deepening the measurement crisis: the model-level debate misses the point when real work requires domain expertise benchmarks don't capture.
+**Theme:** Paper 2607.05743v1 organizes 39 selected papers into 17 execution-security categories and proposes five cross-cutting research gaps. This is a useful author synthesis, not a complete citation or cross-mechanism evaluation study. Its iterative search is explicitly non-exhaustive, categories involve judgment, and the promised corpus/verifier are absent from the arXiv source archive. CAGE-1 and AGL-1 add separate conceptual governance proposals pending primary review.
 
 ---
 
@@ -18,17 +18,47 @@ triggers: ["balkanization", "execution security fragmentation", "CAGE-1 prebind 
 **Source:** https://arxiv.org/abs/2607.05743
 **Categories:** cs.CR, cs.AI
 
-**Key finding:** Systematizes 39 papers (2023–2026) into 17 categories covering sandbox isolation, capability/access control, policy enforcement, TOCTOU races, MCP threats, identity delegation, execution provenance, network egress control, and static analysis of agent-generated code. The verification protocol confirms four disclosed, patched CVEs affecting production agent harnesses.
+**Primary-review qualification (2026-09-04):** The paper's generated appendix
+contains 39 classified rows and its category counts sum to 39 across 17 labels.
+Search used iteratively expanded arXiv/web terms rather than a predeclared or
+exhaustive protocol; inclusion, single-category assignment, four root causes,
+and pipeline roles involve author judgment. The paper calls the latter
+re-readings “our synthesis rather than a new empirical claim.” It gives no
+citation-edge table, count, or denominator for “rarely cite,” although Gap 3
+states that none of the six named TOCTOU/MCP papers cites across that pair.
+
+The paper says a CSV, generators, and independent verifier are released as a
+supplement. Exact arXiv v1 source observed `2026-09-04T08:33:11.065Z` is
+852,843 bytes / `68eeba16…3a8385c` and contains TeX, bibliography, figures,
+generated macros/tables, and all 39 appendix rows—but no CSV or verifier. The
+counts can be inspected, not regenerated or checked against the claimed
+source corpus. The 1,005,745-byte PDF hashes to `1fb8aa52…22f7`; Atom metadata
+is 3,592 bytes / `954d63a6…650c35` and identifies only v1.
+
+**Supported finding:** Within this non-exhaustive corpus, no isolation and
+access-control papers share a head-to-head benchmark, and none reuses the
+specific ShellSieve bypass set. The five gaps are explicitly the paper's
+cross-category synthesis, not independently demonstrated general absences.
+Its four-CVE grounding also needs a distinction: three disclosures concern
+GitHub Copilot/Visual Studio or Claude Code, while the runc CVE predates agent
+tooling and is an inherited container-runtime example, not an observed agent-
+harness incident.
 
 **Five cross-cutting gaps that no single paper addresses:**
 1. **No shared benchmark**: Isolation architectures and capability models are almost never evaluated against one another on a shared benchmark.
 2. **No adversarial co-evaluation**: Policy enforcement studies report failure rates from 69% to 98% of real denylists, yet no isolation paper re-evaluates its defense under that adversarial setting.
-3. **TOCTOU ≡ MCP**: TOCTOU and MCP threats are analyzed as separate literatures despite both being instances of the **same state-validation problem**.
+3. **TOCTOU/MCP analogy**: The paper interprets stale-state races and validate-once tool-metadata trust as one broad state-validation family. It does not show an MCP state changing between check and use or compare one mitigation across both settings.
 4. **Honest policy author assumed**: Every enforcement mechanism assumes an honest policy author, leaving policy-authoring error unaddressed.
 5. **Benign out-of-scope unaddressed**: Benign but out-of-scope agent actions occurring at rates up to **17.1%** under realistic prompting are addressed by **no** access-control or capability paper in the corpus.
 
-**Significance — 34th layer of the Oversight Inversion:**
-The Balkanization Problem is a meta-level manifestation of the Oversight Inversion. The knowledge needed for governance is itself scattered across independent literatures that rarely cite each other. Each paper addresses a real problem; the system-level gap is that they don't compose. This is exactly what the Handoff Fallacy (#459) predicts at the research level: component papers pass their own tests, but the handoffs between categories — where isolation meets policy enforcement meets TOCTOU defense meets identity delegation — are unverified. Gap #3 (TOCTOU ≡ MCP) is particularly striking: two communities working on the *same* state-validation problem don't recognize each other.
+**Significance — proposed connection to the Oversight Inversion:**
+The paper provides a useful map of selected execution-security mechanisms and
+testable cross-category questions. The strongest retained gap is concrete:
+isolation and access-control mechanisms have not been compared head to head on
+one benchmark within this corpus. The broader claims that the field is
+fragmented, that papers do not compose, or that TOCTOU and MCP are the same
+problem remain author synthesis until citation edges, a reproducible corpus,
+and matched cross-mechanism evaluations are available.
 
 Gap #5 (benign out-of-scope at 17.1%) connects to the Variance Signal (#457): agents do reasonable-but-unauthorized things, and no security framework distinguishes these from attacks. Current security is binary (allow/deny); governance requires a third category (escalate/review).
 
