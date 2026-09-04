@@ -1067,7 +1067,14 @@ support a narrower coverage claim:
   after choosing the best training-success epoch, this is suggestive evidence
   for feedback-guided retirement, not proof that governance or pruning alone
   causes the gain.
-- **Towards Agentic AI Governance** (2607.07612v1): Systematic review identifies that agentic AI requires targeted governance mechanisms distinct from pre-existing AI frameworks. Self-describes as "preliminary" — the field is pre-paradigmatic while deployment accelerates.
+- **Towards Agentic AI Governance** (2607.07612v1, primary-reviewed
+  2026-09-04): Maps 21 mostly conceptual, legal, review, and proposal papers,
+  but provides no reproducible search flow, evidence grading, deployed-control
+  count, or governance outcome. Its adoption premise comes from vendor surveys
+  of narrow U.S. executive populations; the paper also misstates 66% of PwC
+  adopters reporting productivity gains as a 66% productivity increase. It
+  supports “early literature,” not a measured widening deployment–governance
+  gap.
 
 The revised coverage map keeps the mechanisms but removes ordinal claims:
 formal verifiers cover encoded statements; deterministic gates cover named

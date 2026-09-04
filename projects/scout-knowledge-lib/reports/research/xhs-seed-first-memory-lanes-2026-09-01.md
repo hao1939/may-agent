@@ -12759,6 +12759,78 @@ with 916 records / `8e3558f447f603a76b5472eb5e8a49cead8e62172e526cd51945c4b4d484
 overall and 296 / `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`
 in Scout scope. This worker did not write, test, clean, or mutate it.
 
+## Cycle 338 seed-first start — test the governance-maturity inference
+
+Cycle 338 begins from clean validated tip
+`d0de5f1485af6a8c0c7f2c8946bd64e083cffcd9`. At
+`2026-09-04T04:39:00.606Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` remains inside the same six-hour cadence. Make zero
+XHS requests: additions and changes remain unknown, observed removals are
+`[]`, all 132 durable seeds remain unavailable, the last browser receipt and
+seed ledger remain the provenance, and no account state changes. The next
+scheduled observation remains `2026-09-04T04:59:03.253Z` unless a material
+access trigger arrives first.
+
+Re-rank the complete queue: (1) high/open `RV-004`, decision-relevant but
+inaccessible because the protected post-August-31 history does not retain its
+query/rank -> selection -> later-outcome join; (2) Memory in the Loop's
+unreleased provider result; (3) agentic-governance survey `2607.07612`, now
+highest accessible because Scan #479 infers a widening deployment/maturity
+gap from a paper currently described only as preliminary; (4) other primary,
+contradiction, reproducibility, retrieval, and synthesis gaps; (5) Reddit
+until a relevant thread or access change; and (6) compaction. Select
+`2607.07612`. Review search dates and databases, corpus denominator,
+screening, evidence grading, deployed-mechanism counts, stakeholder coverage,
+and what the paper actually supports about maturity or acceleration.
+
+## Cycle 338 checkpoint — early literature is not a measured governance gap
+
+ArXiv `2607.07612v1` metadata and PDF were observed at
+`2026-09-04T04:39:27Z`. The 2,375-byte Atom response has SHA-256
+`6d92354778f26d60d36340d8c33cb1d0af513fbee1a2b6ebd7851fdcd8df1cae`;
+the 277,827-byte PDF has SHA-256
+`3b9e9166d9a137f8b18382975c3142dee6e0fc4ae98386122b8d8a3688cef844`.
+ArXiv's e-print endpoint returned that PDF rather than a source archive.
+
+The paper reports a funnel from more than 3,000 search results to about 995
+governance records, then 552 autonomous-device exclusions, 389 other-AI
+exclusions, 54 core publications, and 21 articles after removing 33 records
+without formal peer review. It does not give exact search dates,
+database-specific queries or counts, a duplicate count, screening flow,
+extraction/coding protocol, reviewer count, disagreement process, or quality
+appraisal. Its stated 2020–2025 window includes one 2026 corpus record. Table 1
+is dominated by conceptual/theoretical, review, legal, technical-proposal, and
+regulatory work; no table or analysis counts deployed controls, tests their
+effects, or compares governed with ungoverned deployments.
+
+The deployment premise is separate vendor evidence. KPMG's primary page
+reports 42% of 130 U.S. C-suite/business leaders at organizations with at
+least $1B annual revenue had deployed at least some agents, up from 11% two
+quarters earlier. PwC's primary page reports 308 U.S. executives surveyed in
+April 2025: 79% said agents were being adopted and 66% of adopters reported
+increased productivity. The paper incorrectly turns that respondent share
+into a 66% productivity increase. KPMG and PwC returned HTTP 200 at
+`2026-09-04T04:39:58Z–04:39:59Z` (207,986 bytes / `8fa389fd…cabb` and
+189,188 bytes / `dcdb605a…72bd`); the cited Gartner page returned HTTP 403
+(10,494 bytes / `effbc317…1c26`).
+
+The supported conclusion is that a small literature is still largely
+conceptual and that measured governance deployment/effectiveness is an open
+research need. The review does not measure a widening deployment–governance
+gap, independently validate the RSI survey's governance-measurement claim, or
+establish Singapore framework uniqueness through a jurisdictional inventory.
+Confidence is high in the declared funnel and table and in the PwC correction,
+moderate in the early-literature characterization, and low in search
+completeness, framework uniqueness, or any widening-gap estimate.
+
+ArXiv and the two primary vendor pages were useful; GitHub made zero requests
+because no attributable artifact is declared. Reddit made zero requests and
+remains trigger-deferred. `RV-004` remains high/open: no protected Scout
+query-to-outcome join appears. Next begin seed-first and audit the highest-
+impact still-promoted Scan #479 claim against its primary paper or artifact;
+prefer a claim with a released denominator or contradiction over another
+unreproducible narrative survey.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
