@@ -14571,6 +14571,42 @@ primary-review `2606.02494`: verify the denominators and provenance behind its
 CV, masking, and triage claims before retaining the scan's broad monitoring
 inference.
 
+Exact Cycle 358 result
+`21f7db953e9b90927e396b827dd9d10b4d68b73d` contains seed-ordering commit
+`f1a845c359992a8b8b07a897c511ec84064e238f`. The repository-defined gate
+passes syntax, TypeScript, tracked-source formatting, Cycle 341 projection, 90
+scoped links, navigation 11/14 and 8/8, and all 296 tests / 1,484 assertions
+with zero failures in 99.54 seconds. The broad audit passes 1,540 tracked
+Markdown documents / 1,728 local prose links. Read-only health at
+`2026-09-04T07:34:29.810Z` returns 26 facts / 16 wakes and is truncated.
+Historical `f26bd4f3a590b59d241536326199e805777df1be`, accepted
+`ff923ccde428270db699aefe4c38c2a9a51e3314`, Cycle 353
+`f88b30973782c7bfd7a219af7006b9e32722a98b`, and the Cycle 358 seed are
+ancestors; unaccepted `d041c41b544667d3c2ea6a62299dd212c1c7fc19` is
+excluded. The exact standing tip is clean. Protected `/app` remains externally
+unchanged at `386b445c236e4609cd8870d22cc773cc4641fec8`, 918 records /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 359 seed-first start — audit the monitoring denominators
+
+At `2026-09-04T07:34:55.709Z`, the latest supported XHS observation remains
+Cycle 341 through `05:00:03.241Z`, inside the six-hour cadence whose next
+boundary is approximately `11:00:03Z`. Make zero XHS requests: additions and
+changes remain unknown, observed removals are `[]`, all 132 durable IDs remain
+unavailable, and account state is unchanged. Expected knowledge value ranks
+(1) high/open `RV-004`, unable to move without the protected query/rank ->
+selection -> later-outcome join; (2) Memory in the Loop's missing frozen
+provider result, inaccessible without its result bundle and provider
+authority; (3) `2606.02494`, highest accessible because Scan #457's CV,
+injected-error masking, and 97%/2% triage claims remain primary-unreviewed; (4)
+other primary, contradiction, reproducibility, retrieval, and synthesis gaps;
+(5) Reddit until a relevant-thread/access trigger; and (6) compaction. Select
+`2606.02494`. Inspect its units, denominators, repeat design, baseline/error
+comparison, triage categories, uncertainty, and attributable public artifacts.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

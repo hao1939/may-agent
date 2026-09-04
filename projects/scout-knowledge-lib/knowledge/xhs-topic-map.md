@@ -7530,6 +7530,35 @@ later-outcome join remains unavailable. Next seed-first, primary-review
 masking claim, and 97%/2% triage split have attributable observations and
 whether they justify the scan's general monitoring inference.
 
+Exact Cycle 358 result
+`21f7db953e9b90927e396b827dd9d10b4d68b73d` contains seed source
+`f1a845c359992a8b8b07a897c511ec84064e238f` and passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and all 296 tests / 1,484 assertions with zero failures in 99.54 seconds.
+The broad audit passes 1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T07:34:29.810Z` is 26 facts / 16 wakes and truncated. Historical
+`f26bd4f3a5`, accepted `ff923ccde4`, Cycle 353 `f88b309737`, and the Cycle 358
+seed are contained; `d041c41b54` is excluded. The standing tree is clean.
+Protected `/app` remains externally exact at `386b445c…1fec8`, 918 /
+`0d1ab91f…a932` overall and 296 / `7e4d0937…6a8a` in Scout scope.
+
+### Cycle 359 seed-first start — test the production-monitoring evidence
+
+At `2026-09-04T07:34:55.709Z`, reuse the supported Cycle 341 XHS observation
+through `05:00:03.241Z`; the next six-hour boundary is approximately
+`11:00:03Z`. Make zero XHS requests. Additions/changes remain unknown,
+observed removals are `[]`, all 132 durable seeds remain unavailable, and
+account state is unchanged. Re-rank (1) high/open `RV-004`, inaccessible
+without the protected query/rank -> selection -> later-outcome join; (2) the
+Memory in the Loop frozen-provider result, inaccessible without its result
+bundle and provider authority; (3) `2606.02494`, highest accessible because
+Scan #457's exact CV, masking, and 97%/2% production-monitoring claims remain
+primary-unreviewed; (4) remaining contradiction, primary-evidence,
+reproducibility, retrieval, and synthesis gaps; (5) Reddit until trigger; and
+(6) compaction. Select `2606.02494`. Audit its experimental unit, denominators,
+baseline/error comparison, triage categories, repeat structure, uncertainty,
+and attributable implementation or result artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
