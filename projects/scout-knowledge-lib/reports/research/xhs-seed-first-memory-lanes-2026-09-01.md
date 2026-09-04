@@ -10080,6 +10080,51 @@ work, and byte/line compaction rank lower. Commit this ordering record before
 making any exact-paper request, then test whether the three primary papers
 actually share population, intervention, and outcome evidence.
 
+## Cycle 307 checkpoint — primary text narrows the Memory Loop Gap
+
+Seed-first commit `458496ebfe64b3648b793a9c8549b75750491702`
+preceded all public reads. One anonymous exact-ID API request from this worker
+to `export.arxiv.org` ran at
+`2026-09-04T00:16:47.910Z–00:17:19.517Z` and returned HTTP 429 with exact body
+`Rate exceeded.` (14 bytes, SHA-256
+`467622e2f17f01d302d6c790b13078569f17d71cd83910558535019a594e07c1`).
+This was endpoint throttling, not missing account authority.
+
+Exact public abstract and HTML pages on `arxiv.org` then returned HTTP 200. The
+abstract bodies were PROBE v4, 42,166 bytes / `647f9b76…7426e`; Memory in the
+Loop current v2, 43,626 / `95fc4db1…2900`; and NapMem v1, 42,800 /
+`e52b703a…5118`. Primary HTML was PROBE v4, 1,928,478 bytes /
+`6fa0ea55…8bb5`; Memory in the Loop v1, 268,938 / `54f29e3c…515e` and current
+v2, 321,049 / `12c7d841…5909`; and NapMem v1, 346,975 /
+`e5700dc2…2cb0`. Memory in the Loop's July 19 v2 is a material freshness change
+from the recorded v1.
+
+The evidence supports each paper locally but contradicts the scan's joined
+causal claim:
+
+| Boundary | PROBE v4 | Memory in the Loop v2 | NapMem v1 |
+| --- | --- | --- | --- |
+| Task/population | 1,000 synthetic workplace bottleneck cases across models/frameworks | Two memory task families; four GPT-5-class models, two in latency dose-response | Three personalized-memory and three non-memory benchmarks; Qwen3.5 variants |
+| Intervention | Model/framework comparison | Store latency under a fixed lookup budget; in-loop/dedup controls | Memory pyramid plus learned navigation policy |
+| Outcome | Search, identify, resolve, end-to-end success | Redundant actions, recall, latency, tokens | Accuracy/F1/judge score, tool use, cost |
+| Shared causal test | No memory-placement/NapMem arm | No PROBE/proactivity outcome | No PROBE/latency/proactivity arm |
+
+PROBE's 40% best result, Memory in the Loop's 0.0/12 versus 7.2/12 latency
+effect (`p=0.0079`), and NapMem's competitive memory-navigation result remain
+supported. Version 2 adds a 25-turn cost comparison and write-side dedup gate,
+but the paper still limits itself to two task families and its five-fact task
+is solved by instructed restatement. NapMem explicitly leaves real-world
+personalization, privacy, and forgetting incomplete. No paper names either of
+the other two by title.
+
+The active finding, INDEX summary, and canonical Read-Write Attention
+Inversion now distinguish scoped results from the untested transfer claim.
+The arXiv lane supplied the material revision and primary evidence. GitHub's
+only linked paper artifact is `github.com/anonymized`, so reproduction remains
+blocked until a stable repository identity appears. Reddit made zero requests
+and retains its RSS-readable/JSON-403 boundary. This improves source quality,
+not a user outcome; `RV-004` remains high/open.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip

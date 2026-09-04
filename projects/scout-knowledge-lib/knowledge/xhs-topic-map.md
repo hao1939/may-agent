@@ -4244,6 +4244,41 @@ Select item 2. Use exact paper identities and primary text, record support and
 contradiction separately, and narrow the synthesis if the papers do not test a
 shared causal chain. `RV-004` remains high/open.
 
+### Cycle 307 checkpoint — memory mechanisms do not yet cause PROBE's ceiling
+
+Seed-first `458496ebfe64b3648b793a9c8549b75750491702` preceded the
+selected arXiv reads. The anonymous exact-ID API request at
+`2026-09-04T00:16:47.910Z–00:17:19.517Z` returned HTTP 429, `Rate exceeded`;
+the public exact abstract and HTML pages then returned HTTP 200 through
+`00:19:02.018Z`. Current identities are PROBE `2510.19771v4`, NapMem
+`2607.05794v1`, and Memory in the Loop `2607.05690v2`, a material advance from
+the INDEX's recorded v1 (revised July 19).
+
+The matched comparison rejects the original causal bridge. PROBE uses 1,000
+synthetic workplace bottleneck cases and compares models/frameworks, but does
+not vary memory placement or learned navigation. Memory in the Loop causally
+varies store latency only within constraint-recall and loop-guard tasks; its
+small five-fact task is also solved by instructed restatement. NapMem compares
+a Qwen3.5-based learned navigator with five heterogeneous memory baselines on
+PersonaMem-v2, LongMemEval, and LoCoMo, not PROBE. None of the three primary
+texts cites either of the other two by title or shares a task, intervention,
+and outcome.
+
+Support remains high-confidence for three scoped results: PROBE's reported 40%
+best end-to-end result; Memory in the Loop's 0.0/12 versus 7.2/12 latency
+dose-response (`p=0.0079`) and v2's added 25-turn cost/dedup evidence; and
+NapMem's competitive learned navigation. Confidence is high that these do not
+yet establish general-proactivity causality, and low for transfer until a
+matched PROBE memory-factorial test exists.
+
+The arXiv lane was selected by the primary-evidence gap and v2 freshness.
+GitHub exposed only the paper's anonymized placeholder artifact link, so it
+cannot support reproduction; revisit when a stable public repository identity
+appears. Reddit made zero requests and retains its RSS-readable/JSON-403
+boundary until a relevant thread or access change appears. `RV-004` remains
+high/open because this corrects knowledge scope but supplies no retained user
+outcome.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

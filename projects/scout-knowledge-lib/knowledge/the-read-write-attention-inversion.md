@@ -1,10 +1,10 @@
 <ai_context>
-summary: "Cross-source synthesis, created 2026-06-29 and qualified 2026-09-01: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge (arXiv 2608.30177v1) shows stage-specific profiles; arXiv 2606.04315v1 supports active query-time reads, not autonomous governed writes; and Mnemo shows that write-control tooling must bind the authenticated caller through the operation. The durable conclusion is stage-aware memory governance, not exclusive write-side control."
+summary: "Cross-source synthesis, created 2026-06-29 and qualified through 2026-09-04: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge shows stage-specific profiles; AutoMEM supports active query-time reads; Mnemo shows caller binding; and primary review of PROBE, Memory in the Loop, and NapMem separates useful memory mechanisms from an untested claim that they cause general proactivity."
 triggers: ["read-write inversion", "memory attention", "write governance", "read optimization", "write selection", "memory investment", "RAG ceiling", "retrieval saturates", "write quality", "write discipline", "memory engineering", "industry attention bias", "read-side optimization"]
 confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
 discovered: "2026-06-29"
-last_updated: "2026-09-01"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), pinned source plus goal-owned MCP transport validation of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703 with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428, HN scan #220 (Write Discipline), GitHub MARM/Distill"
+last_updated: "2026-09-04"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), 2510.19771v4 (PROBE), 2607.05690v1/v2 (Memory in the Loop), 2607.05794v1 (NapMem), pinned source plus goal-owned MCP transport validation of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703 with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428, HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
@@ -264,6 +264,35 @@ the 11-test `mcp_test` suite, the 14-test `per_request_identity` suite, and all
 deployed, or live-HTTP validated, and it does not bind `org_id` because
 `CallerContext` carries no authenticated organization identity.
 
+### Qualification: Memory mechanisms do not yet explain general proactivity
+
+Primary-text review of three papers previously grouped as the “Memory Loop
+Gap” preserves their scoped results but rejects the original causal bridge.
+PROBE `2510.19771v4` reports 40% best end-to-end performance on 1,000 synthetic
+workplace bottleneck cases. It compares models and agent frameworks but does not
+vary memory placement, in-process retrieval, or learned memory navigation.
+
+Memory in the Loop `2607.05690v2` does make a causal latency intervention:
+under a fixed per-turn lookup budget, redundant actions move from 0.0/12 at
+in-process speed to 7.2/12 at a 110 ms round trip, with exact permutation
+`p=0.0079`. Its scope is two memory task families and one main context window;
+the five-fact, six-turn recall task is solved perfectly by instructed
+restatement. Version 2 adds a 25-turn cost comparison and write-side dedup gate,
+but still contains no PROBE or proactivity evaluation.
+
+NapMem `2607.05794v1` evaluates a linked memory pyramid and learned navigation
+policy on PersonaMem-v2, LongMemEval, and LoCoMo, with three non-memory controls.
+It is competitive against five heterogeneous memory baselines, but contains no
+PROBE, latency, or proactivity arm and explicitly leaves real-world
+personalization, privacy, and forgetting incomplete.
+
+The supported synthesis is therefore conditional: fast per-step access and
+learned multi-granularity navigation are credible memory mechanisms that may
+improve proactive agents. Whether they raise PROBE search, identification, or
+resolution requires a matched factorial comparison on the same benchmark.
+Confidence is high for this scope separation and each reported local result,
+and low for transfer to general proactive behavior.
+
 ## The Quantified Inversion, Bounded by Evidence Scope
 
 | Aspect | Industry Investment | Performance Bound |
@@ -368,4 +397,7 @@ Sources:
 - https://arxiv.org/abs/2606.10062
 - https://arxiv.org/abs/2608.30177v1
 - https://arxiv.org/abs/2606.04315v1
+- https://arxiv.org/abs/2510.19771v4
+- https://arxiv.org/abs/2607.05690v2
+- https://arxiv.org/abs/2607.05794v1
 - https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703
