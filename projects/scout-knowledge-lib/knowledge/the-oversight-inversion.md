@@ -1145,6 +1145,14 @@ overview's five-engine claim lack matching released evidence. The useful
 oversight lesson is to place named controls at real state/flow boundaries, not
 to promote a partial database predicate into an end-to-end safety claim.
 
+Its AIM memory example has the same evidence limit. The source reports roughly
+10% of full-dialogue context, relative gains over Mem0 and Octen, and a
+4.18-times speed / 13.54% relative-accuracy comparison with GAM, but supplies
+no absolute scores, denominators, model/configuration controls, repeat results,
+or artifact. A title-matching OpenReview record is challenge-gated and is not
+cited by the overview, so these remain preliminary author reports rather than
+evidence that a structured representation alone caused the gains.
+
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
 cause.

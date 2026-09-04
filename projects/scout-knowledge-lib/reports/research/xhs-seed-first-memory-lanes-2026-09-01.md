@@ -13285,6 +13285,44 @@ change; and (6) compaction. GitHub, arXiv, Reddit, and accepted refs make zero
 requests/checks in this seed record. Commit it before searching for AIM
 evidence.
 
+## Cycle 344 checkpoint — AIM's reported gains lack experiment binding
+
+The exact `2607.07397v1` source archive (`83e29086…6b758`; AIM section
+`72a773e7…c3a37`) reports that AIM uses about 10% of the full-dialogue context
+at comparable LoCoMo accuracy, improves relative
+accuracy by 49.8% over Mem0 and 15.82% over Octen, and is 4.18x faster with
+13.54% higher average relative accuracy than GAM. It also reports 11.53% and
+24% relative gains for temporal and open-domain questions. All six claims are
+one author-written prose example. The archive provides no result table,
+absolute scores, query/category denominators, model or prompt identities,
+repeat/variance evidence, latency environment, or implementation. This audit
+therefore preserves the direction and exact wording as a preliminary source
+claim while rejecting attribution to structured representation alone.
+
+At `2026-09-04T05:30:17.871Z`, exact-title indexed metadata
+(`603353ba…b08b50`) identifies OpenReview forum `qFBAlgwkzb`, *AIM:
+Constructing Adaptive Structured Memory
+via Agentic Information Management*. Its indexed abstract describes the same
+structured-memory framework, but the overview does not cite it. Anonymous
+forum, PDF, API v2, legacy API, and independent text-fetch reads all reach the
+Cloudflare Turnstile challenge; legacy API body `1e85f9ee…abb0` returns HTTP
+403 and `Challenge verification required`. Exact arXiv phrase search returns zero,
+Crossref has no matching record, DBLP returns HTTP 503, Semantic Scholar
+returns HTTP 429, OpenAlex does not resolve the paper, and GitHub search finds
+no attributable implementation. These are current access/publication limits,
+not evidence of absence.
+
+The primary arXiv source and indexed metadata were useful. GitHub has no
+attributable AIM artifact to inspect and should be revisited on a repository,
+paper, or OpenReview-access change. Reddit made zero requests and stays
+deferred until a relevant-thread/access trigger. `RV-004` remains high/open:
+no protected query/rank -> selection -> later-outcome join changed. Confidence
+is high in the overview text and absent fields, moderate that the OpenReview
+record is the intended experiment, and low in isolated representation
+causality or transfer. Next seed-first, then audit the highest-impact remaining
+unqualified capability-preparation claim without another XHS request inside
+the current cadence.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

@@ -187,6 +187,21 @@ attributable public repository found. Treat the active-substrate framing as a
 useful systems decomposition, database branching as partially reproducible,
 and environment-wide safety as unproved.
 
+The same source reports a preliminary LoCoMo example for Agentic Information
+Management (AIM): accuracy comparable to full-dialogue context at about 10% of
+the context length, 49.8% and 15.82% relative accuracy gains over Mem0 and
+Octen, and 4.18x speed with 13.54% higher average relative accuracy than GAM.
+Those figures occur only in prose: the archive gives no absolute scores,
+question or run counts, model and prompt identities, repeat/variance results,
+latency environment, or artifact. A search-indexed candidate primary record,
+OpenReview `qFBAlgwkzb`, matches the AIM title and high-level structured-memory
+description, but the overview does not cite it and this environment reaches a
+Cloudflare Turnstile challenge for its forum, API, and PDF. No matching arXiv,
+Crossref, or attributable GitHub result was found. Preserve the figures as
+source-reported preliminary results, not a controlled or independently
+reproducible comparison; representation effects cannot be isolated from the
+unknown model and configuration bundle.
+
 Source: https://arxiv.org/abs/2607.07397
 
 ---

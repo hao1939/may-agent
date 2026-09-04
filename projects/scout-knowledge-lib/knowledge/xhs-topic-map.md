@@ -6595,6 +6595,47 @@ until its relevant-thread/access trigger changes; and (6) compaction. GitHub,
 arXiv, Reddit, and accepted refs make zero requests/checks in this seed record.
 Commit it before searching for the AIM evidence.
 
+### Cycle 344 checkpoint — AIM's direction is reported, its cause is unbound
+
+The exact `2607.07397v1` source archive (`83e29086…6b758`; AIM section
+`72a773e7…c3a37`) makes six AIM LoCoMo claims in one prose example: roughly
+10% of full-dialogue context at comparable accuracy; 49.8%
+and 15.82% relative accuracy improvements over Mem0 and Octen; 4.18x speed and
+13.54% higher average relative accuracy than GAM; and 11.53% / 24% relative
+accuracy gains for temporal / open-domain questions. These are direct author
+reports, not recomputed results. The source contains no table, absolute scores,
+query/category denominators, target or judge model identities, prompts,
+repeats, intervals, latency hardware, or AIM artifact; each number occurs only
+in that example. It therefore supports the direction of one preliminary
+comparison, not attribution to structured representation or transfer beyond
+the undisclosed bundle.
+
+At `2026-09-04T05:30:17.871Z`, an exact-title web result (`603353ba…b08b50`)
+identifies OpenReview
+forum `qFBAlgwkzb`, *AIM: Constructing Adaptive Structured Memory via Agentic
+Information Management*, whose indexed abstract matches the high-level
+framework. Identity with the overview's experiment remains probable but
+unproved because `2607.07397` does not cite that record. Anonymous reads of
+the forum, PDF, API v2, legacy API, and an independent text fetch all terminate
+at OpenReview's Cloudflare Turnstile challenge; legacy API body
+`1e85f9ee…abb0` returns HTTP 403 `Challenge verification required`. Exact
+arXiv phrase search returns zero,
+Crossref returns no matching work, DBLP returns HTTP 503, Semantic Scholar
+returns HTTP 429, OpenAlex does not resolve the work, and GitHub searches find
+only secondary lists or no attributable AIM implementation. This is an access
+and publication boundary, not negative proof that no artifact exists.
+
+ArXiv/source and indexed metadata were useful. GitHub yielded no attributable
+artifact; revisit on a repository, paper, or OpenReview-access change. Reddit
+made zero requests and remains deferred until a relevant-thread/access trigger.
+`RV-004` stays high/open because no protected query/rank -> selection -> later-
+outcome join appeared. Confidence is high in the overview's exact prose and
+missing experiment fields, moderate that the title-matching OpenReview record
+is the intended primary experiment, and low in comparative causality or
+transfer. Next seed-first, then primary-review the highest-impact remaining
+unqualified claim in the capability-preparation chain without making another
+XHS request inside the current cadence.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
