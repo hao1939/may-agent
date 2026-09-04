@@ -194,15 +194,16 @@ Source: https://arxiv.org/abs/2607.05677 (v1 source primary-reviewed
 
 **Core finding**: One-shot PR generation is "open-loop" — the PR modifies shared codebase state without systematic review, diagnosis, or revision. SWE-Review introduces agentic code review: a reviewer agent explores the repository, decides whether the PR should be accepted, and provides structured feedback for revision.
 
-Results:
-- Agentic review **continuously improves PRs** through a generate-review-revise loop
-- Outperforms single-turn fixed-context review in **both decision accuracy and resolve rate after revision**
-- Transfers beyond review to improve issue-resolution models
-- Enables effective and efficient test-time scaling
+Primary-review qualification (2026-09-04):
+- Executable review/revision improves tested SWE-bench outcomes in several reported cells, especially for weaker generators, but the effect is not uniform. Opus reviewer-relative resolve-rate gains are +3.0, +16.4, and +25.1 percentage points across the three generators; SWE-Review-8B gives -0.6, +1.9, and +7.6; SWE-Review-30B gives +0.4, +2.8, and +8.3.
+- The agentic-versus-single-turn comparison changes both interaction and repository/tool execution access, so it does not isolate a causal effect of multiple turns.
+- Mixed review training transfers to direct issue resolution by +0.8, +5.6, and +3.8 points across model scales. These are model/scaffold-specific point estimates, not a general law that review continuously improves generation.
+- The 100-instance functional-diagnosis sample reports 3% no-review, 8% decision-only, 21% teacher-review, and 32% oracle-review resolution. Difficulty strata are post hoc and use golden-patch divergence and test counts.
+- Iterative test-time scaling reaches 38.4% with 2.44 average samples versus a 22.9% baseline, but the procedures and budgets differ and repeated-run uncertainty is not reported.
 
-**Why this matters**: SWE-Review is the Write Contract applied to code: one-shot generation proposes a state mutation (PR) without verifying it against the full codebase state. The review loop provides the verification contract. The finding that review transfers to improve generation is the Co-Evolution Imperative (#452) in microcosm: the verification harness (reviewer) co-evolves the generation process.
+**Why this matters**: SWE-Review is useful evidence for making review executable before a code write becomes permanent. It does not establish that the loop alone is the unit of reliability: reviewer, generator, tools, scaffold, and sampling budget all vary and materially affect the result. The transfer result is compatible with the Co-Evolution Imperative (#452), but remains a benchmark-specific training result rather than proof that verification generally co-evolves generation.
 
-Source: https://arxiv.org/abs/2607.06065
+Sources: https://arxiv.org/abs/2607.06065; https://github.com/LegoX/SWE-Review (primary-reviewed at revision `95b652e095e5ac8f16f08ae52fd3b26513c56097`, 2026-09-04)
 
 ### 5. Beyond Refusal: Aligned vs. Abliterated LLMs for Vulnerability Analysis (2607.05842) [SUPPORTING]
 

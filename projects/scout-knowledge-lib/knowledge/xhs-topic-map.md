@@ -5636,6 +5636,46 @@ Memory in the Loop result; (3) SWE-Review `2607.06065`, highest accessible;
 Reddit; (7) compaction. Select SWE-Review and test its baselines, revision
 intervention, evaluation authority, uncertainty, transfer, and artifacts.
 
+### Cycle 328 checkpoint — executable review helps, but the loop effect is not isolated
+
+Primary arXiv observation at `2026-09-04T03:16:22.682Z` returned abstract
+bytes `11bed267…d2567e` and source bytes `c5d37f8…8dc09b`. The canonical
+post-rename repository `LegoX/SWE-Review` was observed at
+`95b652e095e5ac8f16f08ae52fd3b26513c56097`; its 43,101,341-byte source
+snapshot hashes to `2ffd9f99…95525c`. Fifteen project-owned Python files parse
+when vendored SWE-bench and Harbor code are excluded. Public benchmark and
+trajectory datasets expose 1,384 and 8,914 rows at revisions
+`4b3fdf8…6b030` and `587eaa89…b508`.
+
+Supporting evidence: executable review/revision improves several reported
+SWE-bench resolve-rate cells, especially for weak generators. Opus reviewer
+gains are +3.0/+16.4/+25.1 points; the two released reviewer models range from
+-0.6 to +8.3. Mixed review training improves direct issue resolution by
++0.8/+5.6/+3.8 points across scales. Contradictory/qualifying evidence: the
+agentic-versus-single-turn comparison changes repository exploration and tool
+execution as well as turns; point estimates have no repeated-run intervals;
+the diagnostic sample is 100; difficulty strata are post hoc; and the 38.4%
+iterative test-time result uses 2.44 average samples against a 22.9% baseline
+with a different procedure/budget.
+
+Confidence is high that the released package supports artifact-backed,
+benchmark-specific benefits from executable review/revision. Confidence is
+low that multiple turns alone cause the gain, that review continuously helps
+every model, or that “the loop” is independently the unit of reliability. A
+full local reproduction is not claimed: model weights/runtime, inference APIs,
+GPU execution, benchmark containers, and repeated runs are outside this
+bounded documentation audit.
+
+Lane continuity: arXiv supplied v1 and source; revisit on a revision or
+uncertainty disclosure. GitHub supplied the attributable implementation and
+public datasets; revisit when code/data heads change or a low-cost matched
+control becomes executable. Reddit made zero requests and remains deferred
+until a relevant thread or access change. `RV-004` remains high/open because
+these benchmark artifacts do not supply Scout's missing post-August-31
+query/rank-to-selection-to-outcome join. Next begin seed-first and rank the
+remaining primary-review gaps; prefer a claim with an accessible artifact or
+contradiction over compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -1001,15 +1001,15 @@ Source: findings/2026-07-09-hn-arxiv-github-scan-473.md, arXiv 2607.05743, 2607.
 
 ### Layer 35: The Verification Loop (Scan #475, 2026-07-09)
 
-Layers 25–34 identified governance failures at specific surfaces (execution, write, claim, handoff, process, admission, knowledge composition). Layer 35 provides the constructive unification: **verification as the execution mechanism itself, not an external inspection**.
+Layers 25–34 identified governance failures at specific surfaces (execution, write, claim, handoff, process, admission, knowledge composition). Layer 35 proposes a constructive pattern: **make verification executable rather than optional inspection, and state exactly what its contract does and does not establish**.
 
-Three arXiv papers from the same submission day (2026-07-07) converge across different subfields:
+Three arXiv papers from the same submission day (2026-07-07) test related but non-equivalent mechanisms:
 
-- **SWE-Review** (2607.06065v1, cs.SE): One-shot PR generation is open-loop. Agentic code review introduces a generate-review-revise loop that continuously improves PRs. Review **transfers beyond review** to improve generation models — the loop trains the generator.
+- **SWE-Review** (2607.06065v1, cs.SE; primary-reviewed 2026-09-04): Executable review/revision improves several SWE-bench resolve-rate cells, especially for weak generators, and mixed review training produces +0.8/+5.6/+3.8-point direct-resolution gains across model scales. Reviewer gains range from -0.6 to +25.1 points. The agentic comparison also changes tool/execution access and reports point estimates without repeated-run uncertainty, so it does not isolate multi-turn review or establish continuous improvement.
 - **Aria** (2607.06341v1, cs.SE): A general code agent (Claude Code) wrapped in a verification harness achieves **100% proof coverage** — 4,257 Iris lemmas, 217 Rust verification lemmas, 318 reglang (vs ~12.5% for prior LLM provers), 72 iris-lean lemmas. Zero expert intervention. The key: **freeing the agent within the harness** outperforms constraining the agent's strategy.
 - **CXI** (2607.06000v1, cs.CR): Context-to-Execution Integrity implements a triple-binding gate (field authority × exact-effect authorization × invocation authority) — 720 AgentDojo live episodes, 1,739 LLM calls, **zero** escapes. 400 repository episodes, 231 safe completions, zero escapes.
 
-**The Verification Loop**: When verification is architecturally external to generation, it can be omitted, deferred, or optimized away — the open-loop default that Layers 25–34 document failing. When verification IS the execution mechanism — the generator cannot produce output without passing through the loop — reliability becomes a construction property rather than an inspection property. The loop is the unit of reliability, not the model.
+**The Verification Loop, qualified**: When verification is architecturally external to generation, it can be omitted, deferred, or optimized away. When a checker or gate is executable, the property it actually checks can become a construction property rather than an inspection property. End-to-end reliability still belongs to the complete model, scaffold, tool, budget, and evaluator system; the three studies do not isolate one common loop effect.
 
 **Unification across preceding layers**:
 - Layer 25 (Execution Boundary) → the loop IS the execution mechanism
@@ -1021,7 +1021,7 @@ Three arXiv papers from the same submission day (2026-07-07) converge across dif
 
 **Twenty-point exit arc**:
 1–19: (#444–#473)
-20. **Verification Loop (#475): Make verification the execution mechanism, not an external inspection — the generator proposes, the loop verifies and admits, and the loop's verdicts feed back to improve future generation; reliability is a property of the loop architecture, not the model capability (the loop-as-mechanism condition)**
+20. **Verification Loop (#475): Make verification executable rather than optional inspection — the generator proposes and a reviewer, checker, or gate revises or admits under a stated contract; reliability claims must remain scoped to the complete tested system (the executable-contract condition)**
 
 Source: findings/2026-07-09-hn-arxiv-scan-475.md, arXiv 2607.06065, 2607.06341, 2607.06000
 

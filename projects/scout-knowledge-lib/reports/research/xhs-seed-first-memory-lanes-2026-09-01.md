@@ -11886,6 +11886,53 @@ thread/access change; and (7) compaction. Select SWE-Review. Test decision and
 resolve-rate baselines, revision intervention, evaluator authority, repeated-
 run uncertainty, transfer definition, and public artifacts.
 
+## Cycle 328 checkpoint — review/revision gains depend on the tested system
+
+What was wrong: the library said SWE-Review continuously improves pull
+requests and treated the loop rather than the model as the reliability unit.
+The primary package supports a narrower and still useful conclusion. Executable
+review/revision improves several tested SWE-bench outcomes, particularly for
+weak generators, but reviewer, generator, tool access, scaffold, and budget
+all change the result.
+
+At `2026-09-04T03:16:22.682Z`, arXiv v1 returned a 42,153-byte abstract
+(`11bed267759306fd4a334ca8ff9999ac9365dfbfab999ef0181e8df763d2567e`)
+and 560,265-byte source package
+(`c5d37f8ca240d9ac731e23e1a48d4cc112e316961b8cde8d57d47bef278dc09b`).
+The canonical repository after the organization rename is
+`LegoX/SWE-Review`, observed at
+`95b652e095e5ac8f16f08ae52fd3b26513c56097`; its 43,101,341-byte snapshot
+hashes to `2ffd9f9997842e2c0952cda160f7e09ba6880be1d8fe2e074023e0643895525c`.
+All 15 project-owned Python files parse when vendored SWE-bench/Harbor trees
+are excluded. Public benchmark and trajectory datasets expose 1,384 and 8,914
+rows at revisions `4b3fdf8ba06bdf3f98947b5ae522b40d69b6b030` and
+`587eaa89ca868365dcd84c480a87e7bde5bdb508`.
+
+The paper's reviewer-relative resolve-rate gains vary materially: Opus gives
++3.0, +16.4, and +25.1 points; SWE-Review-8B gives -0.6, +1.9, and +7.6;
+SWE-Review-30B gives +0.4, +2.8, and +8.3. Mixed review training improves
+direct issue resolution by +0.8, +5.6, and +3.8 points across scales. The
+100-instance functional sample rises from 3% no-review to 8% decision-only,
+21% teacher-review, and 32% oracle-review. Iterative test-time scaling reports
+38.4% at 2.44 average samples versus 22.9% for a differently budgeted and
+procedural baseline.
+
+Limits: the agentic-versus-single-turn comparison changes repository/tool
+execution as well as interaction, so it does not identify a pure multi-turn
+effect. Results are point estimates without repeated-run uncertainty;
+difficulty strata are post hoc. The package is strong artifact support, but a
+full local reproduction would require model inference, GPUs, APIs, and
+benchmark containers and was not attempted in this bounded review.
+
+Lane continuity: arXiv supplied the exact paper/source and is revisited on a
+revision or uncertainty disclosure. GitHub supplied the attributable repo and
+public datasets and is revisited on a head/data change or executable matched
+control. Reddit made zero requests and remains deferred until a relevant
+thread/access change. No source provides the protected outcome join needed for
+`RV-004`, so it remains high/open. Next begin seed-first and re-rank remaining
+primary, contradiction, reproducibility, retrieval, and synthesis gaps before
+choosing another artifact-backed claim; do not default to compaction.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
