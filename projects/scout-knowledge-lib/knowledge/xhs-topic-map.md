@@ -7874,6 +7874,44 @@ constraint claims. GitHub retains the Cycle 362 proof chain as its last useful
 evidence; arXiv retains the Cycle 361 handoff evidence; Reddit makes no request
 absent a relevant-thread/access trigger.
 
+### Cycle 363 checkpoint — cumulative snapshots do not show acceleration
+
+Seed-ordering commit `e69add00753169094fec789f485689b82bd0b5db`
+precedes source work. Stable HN identities are 30papers `48819608`, Notes on
+Software Quality `48821441`, SICP `48825664`, GPT-5.6 Sol `48827402`, and
+Scheme Is a Hoot `48794049`. From Scan #457 to #458, the first three stories'
+matched basket grows 693→736 (+6.2%) while Sol grows 113→145 (+28.3%); the
+ratio narrows 6.13→5.08. At #459 the matched foundation basket is 784 and Sol
+178, narrowing the ratio again to 4.40. The reported 4.81 instead adds Scheme
+to the numerator, so its claimed +16.3% mixes membership change with
+within-item growth. Scan #458 also skips the immediate #457 baselines:
+30papers changes 456→482 (+5.7%), not 419→482 (+15.0%), and SICP changes
+123→137 (+11.4%), not 99→137 (+38.4%). Scan #454 records SICP at 75; 99 is
+from #455.
+
+The item creation times span `2026-07-05T13:12:19Z` through
+`2026-07-08T04:12:13Z`, so the stories also have unequal exposure ages.
+Public Firebase reads at `2026-09-04T08:05:04.802Z` confirm the first four
+identities and final scores 652/168/355/235 with hashes
+`38da6934…0e98`, `e6d50ef3…5939`, `da3cb0b8…ae1a`, and
+`a8f3818e…3d20`; Algolia resolves Scheme (`15026cfa…b3c9`). These receipts
+cannot reconstruct the historical capture times. Scans #458/#459 declare only
+the same date, and all compared scan files first appear in commit
+`7db00bfe86ddd29be1431a669b9bf6f035e08ebd` at
+`2026-07-08T19:22:09Z`, before their later declared dates. The commit clock is
+not an observation clock, but the conflict rules it out as one.
+
+Confidence is high in identity and matched arithmetic, moderate that the
+selected stories reflect substantial foundation interest, and low in any
+per-window rate, category-wide preference, market price, substitution,
+governance effect, or binding constraint. HN was the useful primary-evidence
+lane. GitHub retains Cycle 362, arXiv Cycle 361, and Reddit makes zero requests
+without its relevant-thread/access trigger. `RV-004` remains high/open because
+no protected outcome join changed. Next seed-first, test the adjacent
+model-depreciation claim against Scan #460's own three distinct Sol-linked HN
+items—especially the 1,137-point preview—and separate item selection, story
+age, and cumulative score before retaining any category-wide conclusion.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

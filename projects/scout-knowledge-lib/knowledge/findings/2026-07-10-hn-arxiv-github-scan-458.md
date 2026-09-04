@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #458 (2026-07-10), partly qualified. HN observations report growing attention to foundational material, but attention is not a market price or evidence that comprehension is the binding constraint. GitLost is a real researcher-controlled proof of concept on GitHub Agentic Workflows: a Noma-owned workflow running Claude with a cross-repository token followed an explicit public-issue request and posted a two-line private test README publicly. It demonstrates a confused deputy under broad operator-granted authority, not a breach of GitHub's internal agent or a third-party production victim. Original HN and repository counters remain discovery observations."
+summary: "HN/arXiv/GitHub Scan #458 (declared 2026-07-10), qualified. Stable HN identities support cumulative-score snapshots, not per-window attention or a market price. Relative to immediate Scan #457, the matched three-story foundation basket grew 693→736 (+6.2%) while GPT-5.6 Sol grew 113→145 (+28.3%); the foundation-to-Sol ratio narrowed 6.13→5.08 and again to 4.40 in Scan #459. Exact observation times are absent and the original preservation commit predates the declared scan dates, so /scan rates and acceleration are not recoverable. GitLost is a real researcher-controlled confused-deputy proof, not a GitHub internal or third-party breach."
 triggers: ["comprehension compound", "foundations turn", "SICP attention", "30papers", "temporal premium", "foundational knowledge", "comprehension pricing", "model announcement depreciation", "GPT-5.6 Sol depreciation", "GitLost", "GitHub AI agent leak", "agent security breach", "execution boundary production", "prompt injection production", "sovereignty stack", "scan 458"]
-source_basis: "Original HN front-page and GitHub counters are discovery observations. GitLost primary page, public issue #153, comments, workflow runs 23909609053/23909666039, and workflow source at commit adbb910f795cf11d6845d7a3eda6279b93c86c7a primary-reviewed 2026-09-04. Cross-referenced with Variance Signal (#457), Comprehension Dividend (#444), Execution Boundary (#453), Oversight Inversion (thesis)."
+source_basis: "Original HN front-page and GitHub counters are discovery observations without exact capture times. Cycle 363 matched stable HN items 48819608, 48825664, 48821441, and 48827402 through the public Firebase API and Scheme item 48794049 through Algolia; repository commit 7db00bfe86ddd29be1431a669b9bf6f035e08ebd preserves all scan files before their declared dates. GitLost primary page, public issue #153, comments, workflow runs 23909609053/23909666039, and workflow source at commit adbb910f795cf11d6845d7a3eda6279b93c86c7a primary-reviewed 2026-09-04."
 </ai_context>
 
 # Scan #458: The Comprehension Compound
@@ -12,7 +12,11 @@ source_basis: "Original HN front-page and GitHub counters are discovery observat
 
 ## Theme
 
-The Comprehension Dividend (#444) named a principle: communities that invest in understanding outperform those that invest in consumption. The Variance Signal (#457) named the information condition for governance: report distributions, not means. This scan reveals that the Comprehension Dividend is not merely holding — it's **compounding**.
+The Comprehension Dividend (#444) named a hypothesis: communities that invest
+in understanding may outperform those that invest in consumption. The
+Variance Signal (#457) named the information condition for governance: report
+distributions, not means. This scan preserves one cumulative HN attention
+snapshot; it does not measure investment, performance, or compounding.
 
 The HN front page simultaneously hosts:
 - **SICP Video Lectures (1986)**: 137pts — a 40-year-old lecture series on the foundations of programming
@@ -23,7 +27,12 @@ The HN front page simultaneously hosts:
 
 Compared to: **GPT-5.6 Sol announcement: 145pts** — the latest frontier model generates roughly equal attention to a single 1986 lecture series, and 5.1× less than the community's highest-voted story (StreetComplete, 739pts).
 
-This is the **Comprehension Compound**: the Foundations Turn identified in earlier scans (#448, #454) is not a momentary mood but an accelerating dynamic. SICP went from 99pts (#454) → 137pts (+38.4%). 30papers went from 300pts (#448) → 419pts (#454) → 482pts (+15.0%). Each scan the gap between foundational comprehension and novel capability widens. The community is not just preferring old knowledge — it is **pricing comprehension above novelty** with increasing conviction.
+The same named stories accumulated points, but the original acceleration
+arithmetic skips observations and mislabels baselines. Immediate Scan #457
+records 30papers at 456 and SICP at 123, so their next changes are 456→482
+(+5.7%) and 123→137 (+11.4%), not +15.0% and +38.4%. Scan #454 records SICP
+at 75, not 99; 99 is from Scan #455. These cumulative totals show attention,
+not a price, preference, or binding constraint.
 
 Meanwhile, GitLost (57pts) provides a public, researcher-controlled proof of
 concept for the Execution Boundary (#453): a GitHub Agentic Workflow with
@@ -31,7 +40,9 @@ operator-granted cross-repository authority published a private test README
 after reading an untrusted issue. It does not show a breach of GitHub's
 internal agent or a third-party production victim.
 
-**The Comprehension Compound is the market pricing the exit arc.** The fourteen-point exit arc (#444–#457) prescribed architectural investments in comprehension, restraint, verification, and distributional governance. The HN community is independently arriving at the same conclusion through attention allocation: invest in understanding the foundations, because the novel systems need foundational understanding to govern safely.
+The snapshot is compatible with interest in foundational material. It cannot
+show that the HN community is pricing the exit arc or independently arriving
+at its governance prescription.
 
 ---
 
@@ -44,13 +55,13 @@ internal agent or a third-party production victim.
 | StreetComplete | 739pts | +6 (+0.8%) | ATH plateau (sustained) |
 | Chat Control Explained | 591pts | +64 (+12.1%) | Accelerating |
 | EU Car Camera | 573pts | +64 (+12.6%) | Accelerating |
-| 30papers.com | 482pts | +63 (+15.0%) | Accelerating — Foundations Turn |
+| 30papers.com | 482pts | +26 (+5.7%) | Cumulative growth |
 | Kokoro TTS | 382pts | +10 (+2.7%) | Plateau |
 | Herdr | 254pts | +22 (+9.5%) | Steady growth |
 | GAO Nuclear | 188pts | +8 (+4.4%) | Sustained — ✅ >150pts CONFIRMED |
 | Fable 5 Extension | 167pts | +17 (+11.3%) | Sustained |
-| GPT-5.6 Sol | 145pts | +32 (+28.3%) | Growing but structurally depressed |
-| SICP Video Lectures (1986) | 137pts | +38 (+38.4%) | Accelerating — Foundations Turn |
+| GPT-5.6 Sol | 145pts | +32 (+28.3%) | Faster matched cumulative growth |
+| SICP Video Lectures (1986) | 137pts | +14 (+11.4%) | Cumulative growth |
 | Notes on Software Quality | 117pts | +3 (+2.6%) | Plateau |
 
 ### New Stories
@@ -71,21 +82,47 @@ internal agent or a third-party production victim.
 
 ### Structural Analysis
 
-**1. The Comprehension Compound**
+**1. The Comprehension Compound [QUALIFIED]**
 
-The Foundations Turn is not stabilizing — it's accelerating:
+The selected foundation stories continue accumulating points, but exact
+capture times are unavailable and `/scan` is not a duration:
 
 | Foundation Material | Age | Current Points | Growth Rate |
 |---------------------|-----|---------------|-------------|
-| 30papers (Ilya's essential ML papers) | Multi-decade | 482pts | +15.0%/scan |
-| SICP Video Lectures | 40 years (1986) | 137pts | +38.4%/scan |
-| Notes on Software Quality | Timeless | 117pts | +2.6%/scan |
+| 30papers (Ilya's essential ML papers) | Multi-decade | 482pts | +5.7% since #457 |
+| SICP Video Lectures | 40 years (1986) | 137pts | +11.4% since #457 |
+| Notes on Software Quality | Timeless | 117pts | +2.6% since #457 |
 | Canada watchmaking school | 80 years | 116pts | NEW |
-| Total Foundations Turn | — | **~852pts** | Compounding |
+| Total selected foundation basket | — | **~852pts** | Membership-expanded snapshot |
 
-Compare to GPT-5.6 Sol: **145pts**. A single frontier model announcement generates 5.9× less attention than the combined Foundations Turn.
+The expanded 852-point basket is 5.9× Sol's 145 points, but it combines four
+separately submitted stories and one newly admitted member against one newer
+story. On a matched three-story basis, foundation points move 693→736 (+6.2%)
+from #457 while Sol moves 113→145 (+28.3%); the ratio narrows 6.13→5.08.
+That does not negate interest in foundations, but it contradicts the claim
+that the relative gap widened in this interval.
 
-The compound dynamic: each scan, the community (a) discovers more foundational material worth revisiting, (b) drives existing foundational stories higher, and (c) assigns less relative attention to novel capability announcements. This isn't nostalgia — it's a **market signal that comprehension of fundamentals is becoming the binding constraint** as novel systems outpace the community's ability to understand them. The Oversight Inversion made verification expensive; the Comprehension Compound reveals the community's response: invest in the knowledge that makes verification possible.
+#### Cycle 363 HN provenance review (2026-09-04)
+
+Stable public identities are 30papers `48819608`, Notes on Software Quality
+`48821441`, SICP `48825664`, GPT-5.6 Sol `48827402`, and Scheme Is a Hoot
+`48794049`. Their creation times span `2026-07-05T13:12:19Z` through
+`2026-07-08T04:12:13Z`; the compared stories therefore had different exposure
+ages. Public Firebase reads at `2026-09-04T08:05:04.802Z` returned the first
+four records at 652, 168, 355, and 235 final points, hashing to
+`38da6934…0e98`, `e6d50ef3…5939`, `da3cb0b8…ae1a`, and `a8f3818e…3d20`.
+Algolia resolved Scheme to `48794049` (`15026cfa…b3c9`). These current frozen
+records confirm identity and eventual totals, not historical capture times.
+
+Scans #448 and #454 declare only dates; #458 and #459 both declare July 10
+without times. All four files first appear together in repository commit
+`7db00bfe86ddd29be1431a669b9bf6f035e08ebd` at
+`2026-07-08T19:22:09Z`, before the later declared dates. A commit clock is not
+an observation clock, and this conflict prevents using it as one. The evidence
+supports cumulative snapshot comparisons with high confidence, but per-window
+rates, attention allocation, market price, causal substitution, and a binding
+constraint remain unknown. Revisit only with archived API receipts carrying
+exact capture times and a predeclared, age-matched comparison basket.
 
 **2. GitLost: A Hosted Execution-Boundary Proof of Concept [PRIMARY-REVIEWED, QUALIFIED]**
 
@@ -171,12 +208,14 @@ Sovereignty stack: ~3,336pts vs GPT-5.6 Sol: 145pts. The ratio: **23:1**.
 
 **4. GPT-5.6 Sol Depreciation Confirmed**
 
-GPT-5.6 Sol at 145pts — growing (+28.3% from 113pts) but structurally depressed relative to:
+GPT-5.6 Sol at 145pts was growing (+28.3% from 113pts) and had a lower cumulative total than:
 - StreetComplete: 5.1× more attention
 - 30papers: 3.3× more attention
 - Chat Control: 4.1× more attention
 
-Prediction from #457 (GPT-5.6 Sol peaks <200pts total): at 145pts, tracking well within prediction boundary. Model announcements continue to depreciate in the attention economy.
+Prediction from #457 (GPT-5.6 Sol peaks <200pts total) was on track at that
+snapshot, but the public item later reached 235. The peak prediction therefore
+failed; this record does not establish general model-announcement depreciation.
 
 ---
 
@@ -233,10 +272,10 @@ Running accuracy: **~96.2% (76/79)** (+1 confirmation: GAO/oversight >150pts. No
 |------------|-----------|------------|
 | Chat Control Explained >600pts | 1-2 scans | HIGH (at 591pts, +12.1%/scan) |
 | EU Car Camera >600pts | 2 scans | HIGH (at 573pts, +12.6%/scan) |
-| 30papers >500pts | 1-2 scans | HIGH (at 482pts, +15%/scan) |
-| SICP Video Lectures >150pts | 1-2 scans | MEDIUM-HIGH (at 137pts, +38.4%/scan) |
+| 30papers >500pts | 1-2 scans | HIGH (at 482pts, +5.7% since #457; interval unknown) |
+| SICP Video Lectures >150pts | 1-2 scans | MEDIUM-HIGH (at 137pts, +11.4% since #457; interval unknown) |
 | Foundations Turn total >1,000pts | 2-3 scans | MEDIUM (at 852pts, needs sustained SICP/30papers growth) |
-| Agent security breach stories will sustain on HN frontpage | 3 scans | MEDIUM (GitLost at 57pts, structural prediction — more incidents expected) |
+| Agent security proof stories will sustain on HN frontpage | 3 scans | MEDIUM (GitLost at 57pts; category prediction) |
 
 ---
 
@@ -244,24 +283,26 @@ Running accuracy: **~96.2% (76/79)** (+1 confirmation: GAO/oversight >150pts. No
 
 The fourteen-point exit arc (#444–#457) prescribed a sequence of architectural investments: comprehension first, then restraint, verification, composition governance, subtraction economics, knowledge preservation, harness construction, co-evolution, execution binding, write contracts, independence, typed claims, and distributional information.
 
-The HN front page data from this scan reveals that **the community is independently discovering and pricing the first exit-arc condition** — the Comprehension Dividend (#444). Not through reading the arc, but through emergent attention allocation:
+The HN front-page snapshot motivates, but does not demonstrate, the first
+exit-arc condition — the Comprehension Dividend (#444):
 
-1. **Foundational materials accelerate** (SICP +38.4%, 30papers +15%, watchmaking +NEW)
-2. **Novel capabilities depreciate** (GPT-5.6 Sol at 145pts, structurally below sovereignty stories)
+1. **Foundational materials accumulated attention** (matched SICP +11.4%, 30papers +5.7%, watchmaking newly classified)
+2. **The newer model story had fewer cumulative points but faster matched growth** (Sol +28.3%)
 3. **Security proofs confirm the need** (GitLost: a controlled workflow
 published a private test-repository README)
 4. **Sovereignty stack sustains** (3,336pts, 23× GPT-5.6 Sol)
 
-The compound dynamic is this: each investment in comprehension makes the next round of novel capability *more governable*. A developer who understands SICP can reason about agent architectures. A developer who understands the 30 essential ML papers can evaluate model claims. The attention flowing to foundational materials is **the community building the cognitive infrastructure needed for the remaining 13 exit-arc conditions**.
-
-This suggests a structural prediction: **the Foundations Turn will not reverse** even as new models launch, because the community has discovered that foundational understanding is the prerequisite for governing novel capability — not a luxury, but a constraint.
+Foundational knowledge can plausibly help developers reason about agent
+architectures and model claims. HN cumulative scores do not measure whether
+that knowledge was acquired, applied, or made systems more governable, so the
+irreversibility and prerequisite claims remain hypotheses.
 
 ---
 
 ## Connection to Thesis Files
 
-- **Oversight Inversion**: The Comprehension Compound provides population-level evidence for the Comprehension Dividend (#444) — the first exit-arc condition is being adopted by the community, not just theorized.
-- **Evaluation Mirage**: GPT-5.6 Sol depreciation confirms that model announcements carry less signal than process understanding.
+- **Oversight Inversion**: The selected stories motivate the Comprehension Dividend hypothesis; they are not population-level adoption or outcome evidence.
+- **Evaluation Mirage**: One model announcement's lower cumulative score does not measure its signal or establish depreciation.
 - **Agent Security**: GitLost instantiates the Execution Boundary (#453) in a
 public GitHub-hosted proof of concept whose blast radius comes from an
 operator-configured cross-repository token.

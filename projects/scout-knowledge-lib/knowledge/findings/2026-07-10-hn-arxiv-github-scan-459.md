@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #459 (2026-07-10), qualified. Beyond the Leaderboard (2607.05775) is a narrative synthesis without a reproducible corpus or pooled analysis. Semantic Handoff (2607.06256) reports strong clean-snapshot skill scores beside weak composed-task progress, but does not publish a matched clean-versus-chained per-skill result table. Its 30-rollout progress summary and one representative-round failure taxonomy support a preliminary handoff hypothesis, not an effect size or proof that handoffs dominate. Neither paper establishes a universal failure law; HN and GitHub counters remain discovery signals."
+summary: "HN/arXiv/GitHub Scan #459 (declared 2026-07-10), qualified. Beyond the Leaderboard (2607.05775) is a narrative synthesis without a reproducible corpus or pooled analysis. Semantic Handoff (2607.06256) reports strong clean-snapshot skill scores beside weak composed-task progress, but no matched clean-versus-chained per-skill result table. Its 30-rollout progress summary and one representative-round taxonomy support a preliminary handoff hypothesis, not an effect size. HN counters are cumulative snapshots without exact capture times: the matched three-story foundation-to-Sol ratio narrows from 6.13 in #457 to 5.08 in #458 and 4.40 here; the reported 4.81 uses a newly expanded four-story basket."
 triggers: ["handoff fallacy", "composition failure", "component success end-to-end failure", "handoff gap", "transition state", "chained state failure", "clean snapshot bias", "beyond the leaderboard", "failure taxonomy", "failure clusters", "nonlinear failure compounding", "semantic handoff", "skill composition failure", "postcondition precondition mismatch", "VLA composition", "component-level evaluation", "scan 459"]
-source_basis: "arXiv 2607.05775v1 PDF and 2607.06256v2 PDF/source archive primary-reviewed 2026-09-04. Bounded GitHub repository searches located no attributable companion implementation or raw result artifact. Original HN and GitHub counters are discovery signals. Cross-referenced with Comprehension Compound (#458), Composition Surface (#447), Execution Boundary (#453), Oversight Inversion (thesis)."
+source_basis: "arXiv 2607.05775v1 PDF and 2607.06256v2 PDF/source archive primary-reviewed 2026-09-04. Bounded GitHub repository searches located no attributable companion implementation or raw result artifact. Original HN and GitHub counters are discovery signals. Cycle 363 matched stable HN identities through Firebase/Algolia and found no exact historical capture times; all compared scan files first appear in preservation commit 7db00bfe86ddd29be1431a669b9bf6f035e08ebd before their declared dates."
 </ai_context>
 
 # Scan #459: The Handoff Fallacy
@@ -206,10 +206,10 @@ component and system outcomes.
 | Herdr | 267pts | +13 (+5.1%) | Steady |
 | GAO Nuclear | 198pts | +10 (+5.3%) | Sustained |
 | Fable 5 Extension | 181pts | +14 (+8.4%) | Accelerating |
-| GPT-5.6 Sol | 178pts | +33 (+22.8%) | Growing but still structurally depressed |
-| SICP Video Lectures (1986) | 157pts | +20 (+14.6%) | Foundations Turn acceleration |
+| GPT-5.6 Sol | 178pts | +33 (+22.8%) | Faster matched cumulative growth |
+| SICP Video Lectures (1986) | 157pts | +20 (+14.6%) | Cumulative growth; interval unknown |
 | Rowboat | 157pts | +2 (+1.3%) | Plateau — local-first alternative |
-| GitLost | 132pts | +75 (+131.6%) | 🔺 Execution Boundary production resonance |
+| GitLost | 132pts | +75 (+131.6%) | Controlled proof gaining attention |
 | Notes on Software Quality | 123pts | +6 (+5.1%) | Plateau |
 
 ### New Stories
@@ -226,9 +226,16 @@ component and system outcomes.
 
 ### Key Dynamics
 
-**Foundations Turn crosses 850pts.** 30papers (504pts) + SICP (157pts) + Notes on Software Quality (123pts) + Scheme Is a Hoot (72pts) = **856pts** spanning 40 years of CS foundations. Up from ~736pts in #458 (+16.3%). The comprehension investment is compounding.
+**The expanded Foundations basket crosses 850 points.** 30papers (504) + SICP
+(157) + Notes on Software Quality (123) + newly included Scheme Is a Hoot (72)
+= 856. The claimed +16.3% compares this four-story basket with a three-story
+736-point basket in #458. On a matched three-story basis it is 784, up 48
+points (+6.5%); Sol rises 145→178 (+22.8%) over the same unordered scan pair.
 
-**GPT-5.6 Sol at 178pts** — growing (+22.8%) but structurally depressed. **4.3× less** than StreetComplete alone. **4.8× less** than the Foundations Turn total. The community prices comprehension of existing knowledge 5× higher than the announcement of a new frontier model.
+**GPT-5.6 Sol at 178pts** has a lower cumulative total than StreetComplete or
+the multi-story foundation basket, but it grows faster than the matched
+foundation basket in this pair. The 4.8 ratio compares four older stories with
+one newer story and is neither a price nor a preference estimate.
 
 **GitLost surges +131.6%** (57→132pts). The story about a Noma-owned GitHub
 Agentic Workflow publishing a private test README is the fastest-growing story
@@ -237,7 +244,10 @@ a GitHub internal or third-party production incident.
 
 **Sovereignty stack ~3,480pts**: StreetComplete 754pts, Chat Control 630pts, EU Car Camera 615pts, Davit 301pts, GAO Nuclear 198pts, Tenda backdoor 187pts, ZFS NAS 171pts, Rowboat 157pts, LineageOS 73pts. Nine domains.
 
-**Comprehension:News ratio** = 856pts / 178pts = **4.81**. The community allocates nearly 5× more attention to understanding existing knowledge than to the latest model announcement. This ratio has been consistently above 1.0 since Scan #453 and continues to accelerate.
+**Selected-foundation:Sol ratio** = 856 / 178 = **4.81** for the expanded
+basket, versus a matched three-story ratio of **4.40**. The matched ratio was
+6.13 in #457 and 5.08 in #458, so it narrows rather than accelerates. Exact
+observation times are absent, and scores are cumulative.
 
 ### Predictions
 
@@ -310,7 +320,10 @@ than capability.
 
 **Connection to the Oversight Inversion**: The Handoff Fallacy is the mechanism by which the Oversight Inversion operates at the system level. Component-level verification creates *component-confidence*, but the system needs *handoff-confidence*. The gap between these two confidence measures is the unverified space where production failures accumulate.
 
-**Connection to HN signals**: The community's Comprehension:News ratio of 4.81 can be read as an intuitive recognition of the Handoff Fallacy — understanding how components connect (comprehension) matters more than acquiring new components (novelty). The GitLost surge (+131.6%) shows what happens when the handoff between approval and execution is exploited in production.
+**Connection to HN signals**: The selected HN basket is compatible with
+interest in foundational material but does not measure recognition of the
+Handoff Fallacy or rank comprehension against novelty. GitLost is a controlled
+confused-deputy proof, not production-prevalence evidence.
 
 ---
 
