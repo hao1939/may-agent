@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Scan #482 — The Harness Effect reports a paired one-vendor bundle comparison over 22 prompts and six models: lower aggregate tokens, cost, and latency under Writer's harness, with quality treated as parity. All six model aggregates are cheaper, but the 33–61% range is heterogeneity rather than model invariance; the quality correlation has six points and no interval. Raw prompts, traces, price snapshot, and configuration manifests are promised but absent from the arXiv source, so this is workload-specific reported evidence, not mathematical proof that harness choice dominates model choice. HN and GitHub counts remain discovery signals."
+summary: "Scan #482 — The Harness Effect reports a paired one-vendor bundle comparison over 22 prompts and six models: lower aggregate tokens, cost, and latency under Writer's harness, with quality treated as parity. AgentEval reports 23–38 graph-guided boundaries across four agents, but its 23-vs-12 comparison is one airline ablation against prompt-only generation; one run, LLM-defined boundary clusters, unvalidated run-audit labels, and absent code/data bound the result. HN and GitHub counts remain discovery signals."
 triggers: ["commodity proof", "harness effect", "harness multiplier", "model invariant", "orchestration economics", "harness leverage", "token maxing", "harness evaluation", "AgentLens", "AgentEval", "trajectory evaluation", "model commodity", "LLM burnout", "developer fatigue"]
 </ai_context>
 
@@ -83,15 +83,36 @@ Source: https://arxiv.org/abs/2607.06906
 
 ### AgentEval: Black-Box Boundary Testing (2607.06873) — Discovering the Harness's Hidden Gates
 
-If the harness IS the value, how do you verify the harness? AgentEval offers a first answer:
+AgentEval tests one useful answer to harness verification:
 
 - Mines **conversational workflow graphs** — behavioral models of agent state machines — from black-box interaction
 - Enumerates specific **guards and prerequisites** (identity checks, confirmation gates) as test targets
 - Replays conversational paths to a boundary before applying perturbations
-- On four τ³-bench agents: discovers **23-38 distinct boundaries per agent** vs **12** with prompt-only baseline
-- Lower duplicate and false-alarm rates than unstructured testing
+- Across four τ³-bench text agents, its full system reports **23–38
+  distinct boundary clusters per agent**, with validity `0.78–0.98`, duplicate
+  rates `0.16–0.26`, and false-alarm rates `0.00–0.09`
+- In one airline-only, 50-test ablation, structural graph targets report **23
+  clusters versus 12** for prompt-only generation, while duplicate rate falls
+  `0.56`→`0.26`; this is not a four-domain controlled comparison
 
-**Key connection**: The Governance Silence (#478) showed governance outputs decoupled from governance functions. AgentEval discovers where the governance *boundaries* actually are — not where the system claims they are. Graph structure reveals twice as many boundaries as prompting alone.
+**Qualified connection**: The Governance Silence (#478) motivates testing
+observed workflow guards instead of declared governance. AgentEval supports
+structural target enumeration over loose graph context or prompt-only
+generation in one airline ablation. It does not show that human-authored suites
+miss half of all boundaries or that the same gain transfers across domains.
+
+**Primary-review boundary (2026-09-04):** all configurations run once. A
+GLM-5.2 white-box auditor supplies every reported metric; its coverage labels
+reach `0.94` Jaccard agreement with one expert reference on 26 airline
+scenarios, but its run-audit labels behind false-alarm rates are not
+independently validated. Boundary clusters are LLM-proposed and then counted
+deterministically. The visible-fault check catches 22/27 edited process faults;
+backend-only faults are explicitly out of scope. Full airline testing uses 285
+calls / 1.55M tokens versus 142 / 0.60M for naive discovery. The v1 source
+archive contains TeX and one figure but no code, prompts, test/run data, or
+manifests; it promises release only upon acceptance. Three complete GitHub
+repository searches found no exact-ID, exact-title, or attributable AgentEval
+repository, so the experiment is not independently reproducible yet.
 
 Source: https://arxiv.org/abs/2607.06873
 

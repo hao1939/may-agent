@@ -3,7 +3,7 @@ summary: "Seed-first Scout continuity through Cycle 341: the canonical seed ledg
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; public Explore returned 30 notes, supported saved status remained login-class and unavailable, and no source-lane work preceded it."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 340; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 340; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact searches through Cycle 341; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary reads through Cycle 341; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -12969,6 +12969,63 @@ status without primary review; (4) other primary, contradiction,
 reproducibility, retrieval, and synthesis gaps; (5) Reddit until a relevant
 thread/access change; and (6) compaction. Commit this exact seed receipt before
 reading AgentEval.
+
+## Cycle 341 checkpoint — AgentEval's matched gain is one airline ablation
+
+The exact arXiv v1 Atom response was retrieved by
+`2026-09-04T05:02:59.214Z`: 2,977 bytes,
+`b4aa3d93b266e00ec9d0c8d380db45ad0f56a8a37e656bd209c183bb1407c82d`.
+The source archive arrived by `05:03:00.492Z`: 163,706 bytes,
+`a2b99cc7ddb550ca94b251f1911a88da5c3e38672e51c9129a8783f6ef59c586`.
+It contains `main.tex`, bibliography, compiler class, manifest, and one figure.
+
+AgentEval conducts 12 discovery sessions of at most six turns, mines a
+conversation workflow graph, and targets graph nodes, edges, entry activities,
+and terminal activities. Across four τ³-bench text agents, its full system
+reports 23–38 boundary clusters from a 50-boundary-test budget, validity
+`0.78–0.98`, duplicate rates `0.16–0.26`, and false alarms `0.00–0.09`.
+However, only the airline domain has a matched boundary-generation ablation:
+prompt-only produces 12 clusters / `0.56` duplicates, loose graph context 9 /
+`0.40`, and explicit structural targets 23 / `0.26`. The result supports
+structural target selection in this single run. It does not support the
+library's former four-domain 2× comparison, “human-specified” baseline, or
+claim that humans miss roughly half of real boundaries.
+
+The ground truth is a GLM-5.2 LLM auditor with subject source, tool traces, and
+a 145-item author-built functionality inventory. Auditor selection used one
+26-scenario airline coverage set and one expert reference: chosen-model Jaccard
+agreement is `0.94`. The false-alarm run labels are not independently
+validated, and the distinct count is based on auditor-proposed semantic
+clusters. The judge catches 22/27 visible, single-turn edited process faults
+and 12/40 relevant checks across four live value mutations; backend changes
+that do not surface in text are outside the oracle. One run/configuration
+leaves stochastic uncertainty unmeasured. The airline full system consumes
+285 calls / 1.55M tokens / 2.5 hours against naive discovery's 142 / 0.60M /
+1.3 hours.
+
+From `2026-09-04T05:04:23.303Z` through `05:04:24.533Z`, three bounded,
+unauthenticated GitHub repository searches—exact arXiv ID, exact title, and
+descriptive AgentEval terms—each returned HTTP 200, zero repositories, and the
+same 73-byte body (`08c082fdf7ca87ba911a2aabb0f0cf2d3e482a6feeaac9713e4578c20b2600b2`).
+The paper promises code, prompts, and data only upon acceptance; none is in the
+archive. This is an actual reproducibility boundary, not proof that no private
+or unindexed artifact exists.
+
+ArXiv supplied useful primary evidence; GitHub supplied exact negative public
+artifact evidence. Reddit made zero requests because there is no relevant
+thread or access trigger and remains RSS-readable/JSON-403. `RV-004` remains
+high/open: this cycle has no protected Scout query/rank -> selection -> later-
+outcome join. Confidence is high in source contents and reported table
+transcription, moderate in the single airline structural-target contrast, and
+low in repeated-run stability, cross-domain causal gain, other agent/model
+families, open-ended workflows, and auditor-label accuracy.
+
+Scan #482, Scan #494, and the Oversight Inversion now preserve the supporting
+and contradictory evidence. The next cycle starts seed-first without another
+XHS request before cadence or access change, then primary-reviews AgentLens
+`2607.06624`: the highest accessible adjacent claim because Scan #482 currently
+promotes trajectory-level diagnosis, formal verification, production use, and
+open-source availability without the same primary qualification.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

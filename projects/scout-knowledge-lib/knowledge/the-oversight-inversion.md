@@ -1121,7 +1121,13 @@ and individual mechanisms are not ablated. Harness-level verification is a
 useful target alongside model evaluation; this paper does not inventory or
 prove near-zero infrastructure.
 
-AgentEval (2607.06873) and AgentLens (2607.06624) represent the first responses: AgentEval discovers hidden governance boundaries via mined workflow graphs (23-38 boundaries per agent vs 12 with prompting); AgentLens evaluates entire trajectories instead of binary pass/fail, recovering the process information that Process Erasure (#462) destroys.
+AgentEval (2607.06873) and AgentLens (2607.06624) are candidate responses.
+AgentEval's full system reports 23–38 boundary clusters across four agents, but
+23 versus 12 is one airline-only ablation against an LLM prompt-only generator.
+Its single runs, auditor-defined clusters, and absent artifacts make this
+evidence for structural target diversification, not a general hidden-boundary
+recovery rate. AgentLens evaluates trajectories instead of binary pass/fail;
+its separate claims require their own primary review.
 
 HN point totals record attention to the named stories. They do not confirm a
 market verdict or measure physiological cost, a verification vacuum, or its
@@ -1361,12 +1367,13 @@ Three independently submitted papers converge:
 
 1. **What Makes a Good Bug Report for an AI Agent?** (2607.07593): 433 SWE-bench issues × 87 agents × 27 features. Features emphasized for human readers (NL steps-to-reproduce, readable descriptions) contribute little or correlate *negatively* with agent success. **Structure alone matters**: removing section headers or flattening lists reduces solve rates without removing any content. Models diverge in failure mode (Qwen exhausts budget searching; Gemma commits early to wrong interpretation).
 2. **Measuring Intelligence Beyond Human Scale** (2607.07040): Human-authored benchmarks saturate because examiners at the frontier cannot specify tasks that are both hard AND verifiable beyond their own capability. Proposes adversarial psychometric system where models generate public challenges. The benchmark specification has a ceiling encoded by its author.
-3. **Mining Workflow Graphs for Black-Box Boundary Testing** (2607.06873): AgentEval discovers 23–38 boundaries per agent via conversation workflow graphs vs 12 with human-specified prompts (~2× improvement). Critical boundaries hide behind multi-turn prerequisites invisible to human test authors.
+3. **Mining Workflow Graphs for Black-Box Boundary Testing** (2607.06873): AgentEval reports 23–38 boundary clusters per agent across four full-system runs. Its only matched boundary-generation ablation is airline: 23 structural-target clusters versus 12 from an LLM prompt-only generator. It does not compare against human-authored suites or estimate a 50% human miss rate.
 
 **The Mismatch across layers:**
 - Bug report *format* embeds human reading patterns → agent parsing interference
 - Benchmark *content* embeds human capability ceiling → cannot discriminate beyond frontier
-- Test suite *coverage* embeds human observability → misses ~50% of real boundaries
+- Test generation can omit stateful guards → mined structural targets may
+  diversify probes, with the human-suite comparison still untested
 
 Each produces **false confidence** (tests pass, benchmarks score, specifications look adequate) because the auditor is the same species as the specification author.
 

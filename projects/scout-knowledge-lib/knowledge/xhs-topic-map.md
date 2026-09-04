@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-04"
 latest_seed_basis: "Cycle 341 observational reconciliation through 2026-09-04T05:00:03.241Z; exact access evidence and uncertainty are in seed-ledger row 341."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 340; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 340 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 341 at 2026-09-04T05:00:03.241Z; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact searches through Cycle 341; exact arXiv version freshness through 2026-09-02T14:33:20.288Z plus primary source reads through Cycle 341 and checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 341 read-only XHS boundary through 2026-09-04T05:00:03.241Z."
 </ai_context>
 
@@ -6371,6 +6371,46 @@ highest accessible because Scan #482 promotes its boundary counts and “first
 response” status without primary review; (4) other primary, contradiction,
 reproducibility, retrieval, and synthesis gaps; (5) Reddit until its trigger;
 and (6) compaction. Commit this receipt before reading AgentEval.
+
+### Cycle 341 checkpoint — structural targets diversify one airline run
+
+ArXiv `2607.06873v1` was retrieved through
+`2026-09-04T05:03:00.492Z`: Atom is 2,977 bytes /
+`b4aa3d93…1407c82d`; the 163,706-byte source archive is
+`a2b99cc7…f59c586`. AgentEval mines a conversational workflow graph, ranks
+structural nodes/edges/entries/exits, and generates 50 functional plus 50
+boundary tests after 12 six-turn discovery sessions. Its four full-system
+text-domain runs report 23–38 distinct boundary clusters, validity `0.78–0.98`,
+duplicates `0.16–0.26`, and false alarms `0.00–0.09`.
+
+The decision-relevant matched result is narrower: one airline-only 50-test
+ablation reports 23 clusters / `0.26` duplicates for explicit structural
+targets, versus 12 / `0.56` for prompt-only and 9 / `0.40` for the same graph
+supplied as loose prompt context. This supports structural enumeration in that
+run, not a four-domain 2× gain, human-suite comparison, or 50% human miss rate.
+
+Every metric comes from a GLM-5.2 white-box LLM auditor. Its coverage audit has
+`0.94` Jaccard agreement with one expert reference over 26 airline scenarios;
+run-audit labels behind false-alarm rates were not independently validated,
+and LLM-proposed boundary clusters are only counted deterministically after
+proposal. The judge catches 22/27 seeded visible process faults, while
+backend-only faults are out of scope. There is one run/configuration. Full
+airline testing costs 285 calls / 1.55M tokens versus 142 / 0.60M for naive
+discovery.
+
+GitHub repository searches ran `2026-09-04T05:04:23.303Z–05:04:24.533Z`.
+Exact ID, exact title, and `AgentEval workflow graph boundary testing` each
+returned HTTP 200 with zero repositories; the identical 73-byte bodies hash
+`08c082fd…00b2`. The source archive contains TeX, bibliography, class file,
+and one figure, but no code, prompts, tests, traces, or manifests; those are
+promised only upon acceptance. Thus arXiv is useful primary evidence, GitHub
+sets the reproducibility boundary, and Reddit makes zero requests under its
+RSS-readable/JSON-403 trigger. `RV-004` remains high/open because no protected
+query/rank-to-outcome join appeared. Confidence is high in the declared tables
+and artifact absence, moderate in the one airline structural-target contrast,
+and low in repeatability, transfer, and auditor-label accuracy. Next begin
+seed-first without an early XHS request, then primary-review AgentLens
+`2607.06624`, the highest accessible adjacent trajectory-evaluation claim.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
