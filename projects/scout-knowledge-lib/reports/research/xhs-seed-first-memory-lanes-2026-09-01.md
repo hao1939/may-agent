@@ -14373,6 +14373,47 @@ definitions, pre/post visual authority, benchmark/model denominators,
 baselines, uncertainty, and released artifacts before treating dual rewards as
 independent verification.
 
+Exact result `e27a412de6e43a902d36e05cdd0fa9eedf47c0b6` contains seed-
+ordering source `1e55156d5a718ea51bed68fe981a0def31c8b283` and passes the full
+Scout gate: syntax, TypeScript, tracked-source formatting, Cycle 341 XHS
+projection, 90 scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484
+assertions with zero failures in 95.92 seconds. The broad audit passes 1,540
+tracked Markdown documents / 1,728 local prose links with zero errors.
+Read-only health at `2026-09-04T07:16:44.215Z` returns 26 facts / 16 wakes and
+is truncated. Historical `f26bd4f3a590b59d241536326199e805777df1be`,
+accepted `ff923ccde428270db699aefe4c38c2a9a51e3314`, Cycle 353
+`f88b30973782c7bfd7a219af7006b9e32722a98b`, and Cycle 355
+`3d0fbac70a223ab5b6ddc96435d87e68999ed151` are ancestors; unaccepted
+`d041c41b544667d3c2ea6a62299dd212c1c7fc19` is excluded. The result tree is
+clean. Protected `/app` is still read-only and unchanged at
+`386b445c236e4609cd8870d22cc773cc4641fec8`, 918 status records /
+`0d1ab91f4eb004b806d3f31a0a9e393ecb930921be96a2d7ce2966e162eba932`
+overall and 296 /
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+in Scout scope. This worker wrote or tested neither protected surface.
+
+## Cycle 357 seed-first start — rank outcome evidence above compaction
+
+At `2026-09-04T07:17:09.647Z`, Cycle 341's supported observation through
+`05:00:03.241Z` remains inside its six-hour cadence. This reconciliation makes
+zero XHS requests: additions/changes remain unknown, observed removals are
+`[]`, all 132 durable seeds remain unavailable, and account access is
+unchanged.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+which cannot advance here because no protected query/rank -> selection ->
+later-outcome join exists and this worker may only observe the protected
+surface; (2) Memory in the Loop's absent frozen provider-result bundle; (3)
+VAORA `2607.06522`, the highest accessible gap because Scan #456 still treats
+its dual visual rewards as verification without primary review; (4) other
+primary-evidence, contradiction, reproducibility, retrieval, and synthesis
+gaps, including the unavailable Pitwall and signature packages; (5) Reddit
+until a relevant-thread/access trigger; and (6) byte/line compaction, which is
+lower value than testing a substantive unresolved claim. Select VAORA. Inspect
+reward definitions, pre/post visual authority, training/evaluation separation,
+models and benchmark denominators, baselines, uncertainty, and public artifacts
+before retaining any hallucination-suppression or verification claim.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

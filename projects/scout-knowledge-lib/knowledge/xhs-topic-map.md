@@ -7393,6 +7393,36 @@ primary-review VAORA `2607.06522`, the remaining accessible Scan #456 claim:
 audit reward definitions, pre/post visual authority, baselines, denominators,
 uncertainty, and released artifacts before calling dual rewards verification.
 
+Exact Cycle 356 material
+`e27a412de6e43a902d36e05cdd0fa9eedf47c0b6` passes syntax, TypeScript,
+source formatting, Cycle 341 projection, 90 scoped links, navigation 11/14 and
+8/8, and all 296 tests / 1,484 assertions with zero failures in 95.92 seconds.
+The broad audit passes 1,540 Scout Markdown documents / 1,728 local prose links.
+Read-only health at `2026-09-04T07:16:44.215Z` is 26 facts / 16 wakes and
+truncated. `f26bd4f3a5`, accepted `ff923ccde4`, `f88b309737`, and Cycle 355
+`3d0fbac70a` are contained; unaccepted `d041c41b54` is excluded. The standing
+tree is clean. Protected `/app` remains externally exact at `386b445c…1fec8`,
+918 records / `0d1ab91f…a932` overall and 296 records / `7e4d0937…6a8a` in
+Scout scope.
+
+### Cycle 357 seed-first start — test outcome-grounded reasoning evidence
+
+At `2026-09-04T07:17:09.647Z`, reuse Cycle 341's supported XHS observation
+through `05:00:03.241Z`, still inside the six-hour cadence. Make zero XHS
+requests: additions/changes remain unknown, observed removals are `[]`, all
+132 seeds remain unavailable, and account state is unchanged. Expected value
+ranks the complete queue: (1) high/open `RV-004`, blocked from producer-side
+progress because the required protected query/rank -> selection -> later-
+outcome join is absent and the protected surface is read-only; (2) Memory in
+the Loop's missing provider result, likewise inaccessible without its frozen
+result bundle; (3) VAORA `2607.06522`, highest accessible because Scan #456's
+visual-reward and hallucination conclusions remain primary-unreviewed; (4)
+remaining primary-source, contradiction, reproducibility, retrieval, and
+synthesis gaps, including unattributed Pitwall and signature artifacts; (5)
+Reddit until a relevant-thread/access trigger; (6) byte/line compaction. Select
+VAORA and audit visual-state authority, reward equations, training/evaluation
+separation, baselines, denominators, uncertainty, and attributable artifacts.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
