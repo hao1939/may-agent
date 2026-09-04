@@ -16231,6 +16231,94 @@ and `59974094d30cf9d3947d4b96c7ac9a75dc4e0d70955ab479cfc4c85a93df4b9f`.
 This worker did not run tests, generators, formatters, installers, or writes in
 that checkout or any peer worktree.
 
+## Cycle 376 seed-first start — reuse the fresh receipt; audit GameEngineBench
+
+Cycle 376 begins from clean validated tip
+`ea3ca60daaecd86da482fc6f04c7a99d6a9c2635` at
+`2026-09-04T11:23:20.840Z`, fourteen minutes after Cycle 375's supported XHS
+observation. The six-hour cadence is not due, and no access-change trigger is
+present, so this bounded reconciliation makes zero browser or public XHS
+requests. Cycle 375 remains the exact provenance: additions and changes are
+unknown, observed removals are `[]`, all 132 durable identities are
+unavailable, and no account state changes. The next scheduled observation is
+`2026-09-04T17:09:20.326Z` unless a material access trigger arrives first.
+
+Re-rank after reconciliation: (1) high/open `RV-004`, still inaccessible
+without the protected query/rank-to-selection-to-later-outcome join; (2)
+high/open `RV-034`, pinned at the external runtime boundary; (3) the unreleased
+Memory in the Loop result; (4) GameEngineBench `2607.03525`, highest accessible
+because Scan #424 turns its 55.5% best pass@1 and 31/110 all-system failures
+into a runtime-environment generalization without a retained primary review;
+(5) other primary, contradiction, reproducibility, retrieval, and synthesis
+gaps; (6) Reddit until its trigger; and (7) compaction. Select GameEngineBench
+and inspect task construction, scoring, matched configurations, failure
+overlap, uncertainty, released artifacts, and the supported scope of the
+environment-depth claim.
+
+## Cycle 376 checkpoint — qualify GameEngineBench's 31-task result
+
+What was wrong: Scan #424 called 31 GameEngineBench tasks “unsolvable” and
+turned one benchmark matrix into a broad runtime-environment claim without a
+retained primary audit. Exact `2607.03525v2` supports a narrower result. Its
+110 Unreal Engine tasks use buildable states, scoped editable C++ files,
+public behavior specifications, post-solve withheld tests, Play-in-Editor
+listen-server execution, and LLM-judge review. One attempt is run for each
+task/configuration. The best displayed setup solves 61/110 (55.5%); GPT-5.5
+medium/high/xhigh solves 10/21/32 under its shared wrapper; 79 tasks have at
+least one success and 31 have none.
+
+What changes: the library now calls those 31 a no-success subset for this
+finite, heterogeneous, single-attempt matrix—not an impossibility result. No
+repeated-run interval or inferential test is reported. The paper also says 12
+configurations while every released per-configuration figure displays 13,
+including GLM 5.2 at 3/110. The protocol supports cross-family judges but does
+not identify actual assignments in the source bundle, and the authors explicitly admit
+wrapper confounding. This is moderate-confidence evidence that agents struggle
+with authority, replication, lifecycle, initialization, and other scoped
+Unreal runtime integration. It does not cover dedicated server fleets,
+consoles, profiling, large QA matrices, live operations, or lightly sampled
+audio/performance/platform/security/tooling/build work.
+
+The Atom/latest read ran `2026-09-04T11:23:42.450Z–11:23:43.011Z`. Exact v2
+source is 8,308,831 bytes, SHA-256 `2b24e081...192f31d9`; `main.tex` is
+`f0303782...49ea54d`; the displayed outcome matrix is
+`92bf7d23...82a1`. V2 changes 9 lines in and 9 out from v1, limited to
+author/affiliation text and four figure paths; common result figures are
+byte-identical. At `2026-09-04T11:24:52.093Z`, the paper-linked
+`Nitrode-Research/GameEngineBench` GitHub page and API returned 404, its public
+account showed zero repositories, and a repository-name search found none.
+The claimed task packages, saved runs, runner, judge prompts/assignments,
+wrapper versions, and OS/hardware metadata cannot yet be independently audited.
+
+Lane continuity is explicit. ArXiv v2 is selected and qualified; revisit on
+v3, repeated-run evidence, a corrected configuration count, or judge audit.
+GitHub retains the exact named identity and 404/zero-repository receipts;
+revisit on repository publication or changed artifact link. Reddit made zero
+requests and stays deferred at RSS-readable/JSON-403 until a relevant thread
+or access trigger. XHS made zero requests and retains the fresh Cycle 375
+login-class receipt, with additions/changes unknown, removals `[]`, and all
+132 seeds unavailable. `RV-004` and `RV-034` remain high/open. Next ranked
+accessible work is AtomicCommitBench `2607.03332`: audit replay validity,
+semantic grouping, the natural/synthetic comparison, and released artifacts.
+
+### Validation and preservation
+
+The exact reviewed diff passes the complete Scout gate: syntax, TypeScript,
+tracked-source formatting, Cycle 375 projection, 94 scoped links, navigation
+11/14 and 8/8, and all 296 tests / 1,486 assertions with zero failures in
+97.71 seconds. The broad offline audit passes 1,540 tracked Markdown documents
+/ 1,732 local prose links. Read-only health at
+`2026-09-04T11:29:26.204Z` reports 26 facts / 16 wake signals with
+`truncated:true`; the application runtime state remains empty.
+
+Accepted reviewer commits `bb2daa3213`, `e8b91a8963`, `b76d6c0737`, and
+`cb07aedc4e` remain ancestors, transitively preserving the prior accepted
+finite-result boundary. Unaccepted `d041c41b54` remains excluded. Read-only
+protected-checkout inspection records unchanged HEAD `386b445c236e...1fec8`,
+386 porcelain-v1 records / `3afed0a6...ef5a`, and 296 Scout-scope records /
+`59974094...f4b9f`. This worker did not test, generate, format, install, or
+write in `/app` or any peer worktree.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
