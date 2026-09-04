@@ -8332,6 +8332,19 @@ Next seed-first, primary-review AGL-1 `2607.03516v1` and test whether its seven
 governance domains are an implemented control plane, an architectural proposal,
 or an evidence-backed enterprise deployment model.
 
+### Cycle 370 stabilization boundary
+
+Checkpoint `6b07f569b38d1644a7044683a51c86efe84bd4e7` passed 296 tests /
+1,484 assertions, structural checks, 90 scoped and 1,726 broad links, read-only
+health, clean status, and protected-scope preservation. The later exact
+reviewer range `5720963c11..a0a1b2f52b` is cursor-only and is dispositioned in
+the [durable review record](../reports/review/scout-checkpoint-review-cursor.md#standing-disposition-of-the-cycle-333-status-range):
+its claim limits are retained, its stale integration instruction is
+superseded, and `RV-004` remains high/open. Production is paused at the clean
+commit carrying this record until that exact tip receives independent review;
+do not begin Cycle 371. AGL-1 remains the next accessible investigation after
+that boundary.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

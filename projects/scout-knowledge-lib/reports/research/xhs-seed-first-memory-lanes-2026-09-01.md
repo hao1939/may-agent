@@ -15547,6 +15547,30 @@ implemented control plane, an architecture proposal, or supported enterprise
 deployment evidence. Begin that work only after the next bounded seed-first
 reconciliation; do not make an early XHS request.
 
+### Cycle 370 bounded stabilization handoff
+
+Exact producer checkpoint `6b07f569b38d1644a7044683a51c86efe84bd4e7`
+passed its terminal gate with 296 tests / 1,484 assertions and zero failures in
+117.66 seconds, plus syntax, TypeScript, source formatting, Cycle 341
+projection, 90 scoped links, navigation 11/14 and 8/8, and a broad audit of
+1,539 tracked Markdown documents / 1,726 links with zero errors. Read-only
+health at `2026-09-04T08:56:14.291Z` reported 26 facts / 16 wakes and
+`truncated:true`; standing status was empty.
+
+The exact one-commit reviewer range `5720963c11..a0a1b2f52b` was dispositioned
+in the [review cursor](../review/scout-checkpoint-review-cursor.md#standing-disposition-of-the-cycle-333-status-range).
+Its historical Danus/CREAD limits and `RV-031`/`RV-032`/`RV-033` distinctions
+are retained, `RV-004` stays high/open, and the stale instruction to import the
+excluded 26-file base is superseded without claiming containment or patch
+equivalence. No reviewer finding is silently rejected.
+
+The exact commit carrying this handoff is the bounded safe producer tip after
+current-tip validation. Normal production and Cycle 371 remain paused until
+reviewer `w1:p6G` independently reviews that exact tip; review of
+`6b07f569b3` alone is insufficient. Ranked work remains the inaccessible
+`RV-004` outcome join, the unreleased Memory in the Loop provider result, and
+then accessible AGL-1 `2607.03516v1`.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip

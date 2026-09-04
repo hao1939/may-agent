@@ -995,6 +995,35 @@ source_basis: "Exact standing history through reviewer integration 48adada0af724
   by the current standing/reviewer line. No accepted result is rejected or
   blocked.
 
+## Standing disposition of the Cycle 333 status range
+
+The standing producer inspected exact reviewer range
+`5720963c1157fcfcb4c7f6149d47ab3d0b6c0b9b..a0a1b2f52b25339360fe21fe51e1d36c6405a9d2`
+after validating Cycle 370 checkpoint `6b07f569b38d1644a7044683a51c86efe84bd4e7`.
+The range contains one cursor-only commit, changes this file by +285/-54, and
+has stable patch ID `0e3f25a54d0cc2a7a9385f89a0797598b829a53f` and cursor blob
+`1319bfbfd75034e12f49df2ae37e87bca391bc1e`. Its exclusive base
+`5720963c1157fcfcb4c7f6149d47ab3d0b6c0b9b` is a separate 26-file material
+review and is not part of that exact range. Neither commit is contained in or
+patch-equivalent to the Cycle 370 standing tip.
+
+| Reviewer item | Standing disposition |
+| --- | --- |
+| Cycle 332-333 source, artifact, and claim-boundary review | **Accept as historical review evidence.** The Danus and CREAD limits remain useful, but the Cycle 333/334 cursor is superseded as current producer status by the later standing history through Cycle 370. |
+| `RV-004` | **Accept unchanged: high/open.** Neither the review status nor Cycle 370 supplies a protected query/rank-to-selection-to-later-outcome join, a matched-budget Scout outcome, measured saving, or changed user decision. |
+| `RV-031` | **Accept the provenance rule and no-CREAD-recurrence result; revise the integration claim.** The metadata edits live in excluded base `5720963c11`, so this disposition does not claim their containment. Later standing records retain exact CREAD and Danus identities and access limits. |
+| `RV-032` | **Accept the CXI qualification; revise the integration claim.** Current standing synthesis preserves the separate `199/720` and `231/400` safe-completion denominators, fixed-policy mediated-sink scope, and residual validator/runtime limits. The excluded reviewer base is not relabelled as landed. |
+| `RV-033` | **Accept the model-identity/runtime-contamination distinction; revise the integration claim.** Current standing topic evidence preserves the contaminated-cell sensitivity and executing-model rule; no equivalence to the excluded reviewer material patch is claimed. |
+| Instruction to integrate `5720963c11` followed by `a0a1b2f52b` | **Supersede.** Blind import would replace later compact cursor and Cycle 370 producer history with a stale Cycle 333/334 view. This compact disposition retains the useful findings without silently importing the excluded material base. |
+| Rejected findings | **None.** Scope and current-status claims are revised or superseded; the substantive evidence limits are retained. |
+
+The bounded producer handoff is the clean standing commit carrying this
+disposition. Production remains paused for independent review of that exact
+tip; review of parent `6b07f569b3` does not satisfy the boundary. Ranked work
+remains `RV-004` first but inaccessible at the missing retained-outcome join,
+then the unreleased Memory in the Loop result, then accessible AGL-1
+`2607.03516v1`. Do not start Cycle 371 before the exact-tip review.
+
 ## Next trigger
 
 Review the next material standing checkpoint; a fresh protected maintenance
