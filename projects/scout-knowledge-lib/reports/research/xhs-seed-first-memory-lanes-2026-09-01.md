@@ -15572,11 +15572,13 @@ excluded 26-file base is superseded without claiming containment or patch
 equivalence. No reviewer finding is silently rejected.
 
 The exact commit carrying this handoff is the bounded safe producer tip after
-current-tip validation. Normal production and Cycle 371 remain paused until
-reviewer `w1:p6G` independently reviews that exact tip; review of
-`6b07f569b3` alone is insufficient. Ranked work remains the inaccessible
-`RV-004` outcome join, the unreleased Memory in the Loop provider result, and
-then accessible AGL-1 `2607.03516v1`.
+current-tip validation. Independent review of exact tip `71356a70df` accepts
+the Cycle 370 evidence and gate but revises blanket supersession of the older
+material review: applicable corrections are reconciled in the new direct-child
+reviewer range. Production and Cycle 371 may resume after that range is
+integrated. Ranked work remains the inaccessible `RV-004` outcome join, the
+unreleased Memory in the Loop provider result, and then accessible AGL-1
+`2607.03516v1`.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

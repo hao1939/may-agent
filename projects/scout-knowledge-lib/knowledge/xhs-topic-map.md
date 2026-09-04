@@ -8346,10 +8346,11 @@ health, clean status, and protected-scope preservation. The later exact
 reviewer range `5720963c11..a0a1b2f52b` is cursor-only and is dispositioned in
 the [durable review record](../reports/review/scout-checkpoint-review-cursor.md#standing-disposition-of-the-cycle-333-status-range):
 its claim limits are retained, its stale integration instruction is
-superseded, and `RV-004` remains high/open. Production is paused at the clean
-commit carrying this record until that exact tip receives independent review;
-do not begin Cycle 371. AGL-1 remains the next accessible investigation after
-that boundary.
+superseded, and `RV-004` remains high/open. Independent review of exact post-
+disposition tip `71356a70df` accepts the Cycle 370 evidence and validation but
+revises blanket supersession of the older material review. Production may
+resume after the reconciled reviewer range in the durable cursor is integrated.
+AGL-1 remains the next accessible investigation after that boundary.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
