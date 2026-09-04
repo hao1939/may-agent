@@ -10876,6 +10876,27 @@ overall and 296 records /
 `7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
 for Scout scope.
 
+## Cycle 318 seed-first start — primary-check Cortex
+
+At `2026-09-04T01:52:37.620Z`, the latest XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS, GitHub, arXiv, Reddit, or other public requests:
+additions/changes remain unknown, observed removals are `[]`, all 132 durable
+seeds remain unavailable, provenance remains the last browser receipt plus the
+durable ledger, and no account state changed.
+
+Expected knowledge value ranks the complete queue as follows: (1) `RV-004`'s
+missing protected query/rank-to-selected-file-to-later-outcome join, still
+inaccessible because readable protected history ends August 31; (2) Memory in
+the Loop's unreleased frozen provider artifact and authority-bearing result;
+(3) Cortex `2607.05377`, now the highest-value accessible claim because Scan
+449 turns 32 primitives, two benchmark deltas, and zero-shot demonstrations
+into a causal action-space/subtraction conclusion; (4) HeRo's
+selective-disclosure claims; (5) other unsourced scans; (6) Reddit until a
+relevant-thread/access trigger; and (7) compaction. Select Cortex. Test the
+intervention, baselines, statistics, attributable artifacts,
+demonstration/evaluation boundary, and transfer before preserving the claim.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

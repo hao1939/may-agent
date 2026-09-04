@@ -4959,6 +4959,25 @@ is contained, unaccepted `d041c41b54` excluded, and the standing tree is clean.
 Protected fingerprints remain 386 / `7c285c09…ca01b` overall and 296 /
 `7e4d0937…26a8a` for Scout scope.
 
+### Cycle 318 seed-first start — primary-check the 32-primitives claim
+
+At `2026-09-04T01:52:37.620Z`, the last XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. No XHS or
+public-source request ran during reconciliation: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and no account state changed.
+
+The complete queue ranks: (1) `RV-004`'s missing protected
+query/rank-to-selected-file-to-later-outcome join, inaccessible because
+readable protected history ends August 31; (2) Memory in the Loop's unreleased
+frozen provider artifact and authority-bearing result; (3) Cortex
+`2607.05377`, now the highest-value accessible claim because Scan 449 turns 32
+primitives, two benchmark deltas, and zero-shot demonstrations into a causal
+action-space/subtraction conclusion; (4) HeRo's selective-disclosure claims;
+(5) other unsourced scans; (6) Reddit until a relevant-thread/access change;
+and (7) compaction. Select Cortex and test the intervention, baselines,
+statistics, artifact surface, demonstration/evaluation boundary, and transfer.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
