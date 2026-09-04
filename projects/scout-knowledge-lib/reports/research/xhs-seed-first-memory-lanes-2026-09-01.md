@@ -11259,6 +11259,49 @@ highest accessible item. Test whether it reports developer learning/atrophy or
 only proposes design principles, and what evidence could distinguish
 short-term assistance from longitudinal skill loss.
 
+Exact Cycle 321 material
+`a963d706aa2de03586c795dd4d5d672510ffeae6` passes syntax, TypeScript,
+source formatting, Cycle 292 projection, 90 scoped links, navigation v1 at
+11/14, navigation v2 at 8/8, and all 296 tests / 1,484 assertions in 102.82
+seconds. The broad audit passes 1,540 tracked Markdown documents / 1,728 local
+prose links with zero errors. Read-only health at
+`2026-09-04T02:32:44.361Z` returns 26 facts, 16 wakes, and `truncated:true`.
+Accepted `ff923ccde4` is contained; unaccepted `d041c41b54` is excluded. The
+standing worktree has zero status records and zero runtime-state files.
+
+At `02:33:13.666Z`, protected `/app` retained HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8`. Its whole porcelain-v2 surface
+changed externally from Cycle 320's 916 records /
+`f708032218aff44c348f8a3f6167aee42aea64cb10ad8037adf3b86be8c4a93a`
+to 386 records /
+`00bcc28173e972a1fe7196b0971d05374a2c7d6fd7d700a43d259c60015c5ed4`.
+The 296-record Scout scope also changed from
+`7e4d09379a93e60fe584a87f6c40c8b8cc493ae059be289359a40a10bdc26a8a`
+to `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e`.
+This worker wrote or tested neither protected surface; the change is recorded
+as external observation without attribution.
+
+## Cycle 322 seed-first start — distinguish a research agenda from an effect
+
+At `2026-09-04T02:33:13.666Z`, the last XHS observation still ended at
+`2026-09-03T22:59:03.253Z`, inside the six-hour cadence. The bounded
+reconciliation therefore made zero XHS, GitHub, arXiv, Reddit, or other public
+requests. Added/changed identities remain unknown, observed removals are `[]`,
+all 132 durable seeds remain unavailable, provenance remains the last browser
+receipt plus ledger, and no account state changed.
+
+The complete expected-value queue is: (1) high/open `RV-004`, which still
+lacks a readable post-August-31 query/rank-to-selection-to-outcome join despite
+external protected-checkout drift; (2) Memory in the Loop's unreleased provider
+artifact/result; (3) Agents That Teach `2607.06101`, highest accessible because
+Scan 450 promotes its conceptual argument into developer atrophy, verification
+inability, and scaling claims; (4) AgentTether; (5) LogicHunter; (6) Cortex's
+unreleased taxonomy-size ablation; (7) other unsourced scans; (8) Reddit until
+a relevant-thread/access change; and (9) byte/line compaction. Select Agents
+That Teach. Test the paper's evidence type, population, measured outcomes,
+design proposals, citations, and whether it establishes longitudinal skill loss
+or instead defines a research agenda.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

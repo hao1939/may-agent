@@ -5253,6 +5253,42 @@ history still has no query-to-outcome join. Next begin seed-first and review
 Agents That Teach `2607.06101` as the highest accessible claim: distinguish its
 conceptual design argument from measured developer learning or atrophy.
 
+Exact Cycle 321 material
+`a963d706aa2de03586c795dd4d5d672510ffeae6` passes syntax, TypeScript,
+formatting, Cycle 292 projection, 90 scoped links, navigation 11/14 and 8/8,
+and all 296 tests / 1,484 assertions in 102.82 seconds. The broad audit passes
+1,540 documents / 1,728 links. Read-only health at
+`2026-09-04T02:32:44.361Z` returns 26 facts / 16 wakes. Accepted
+`ff923ccde4` is contained, unaccepted `d041c41b54` excluded, and the exact
+standing tree and runtime state are clean.
+
+At `02:33:13.666Z`, protected `/app` retained HEAD
+`386b445c236e4609cd8870d22cc773cc4641fec8` but externally moved from the
+Cycle 320 observation of 916 records / `f7080322…4a93a` to 386 /
+`00bcc281…15c5ed4`. Its 296-record Scout scope likewise moved from
+`7e4d0937…26a8a` to `a430d0c9…4322f7e`. This worker wrote or tested neither
+surface; the hashes are observation of external protected-checkout drift, not
+attribution.
+
+### Cycle 322 seed-first start — test whether knowledge debt was measured
+
+At `2026-09-04T02:33:13.666Z`, the XHS receipt through
+`2026-09-03T22:59:03.253Z` remained inside the six-hour cadence. The bounded
+reconciliation made zero XHS or public requests: additions/changes remain
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and no account state changed.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+still inaccessible because protected history has no post-August-31 query-to-
+outcome join; (2) Memory in the Loop's unreleased provider artifact/result;
+(3) Agents That Teach `2607.06101`, highest accessible because Scan 450 turns
+its conceptual argument into developer atrophy and inability-to-review claims;
+(4) AgentTether; (5) LogicHunter; (6) Cortex's unreleased taxonomy-size
+ablation; (7) other unsourced scans; (8) Reddit until a relevant-thread/access
+change; and (9) compaction. Select Agents That Teach. Test its evidence type,
+population, measured outcomes, design proposals, citations, and whether it
+supports longitudinal skill loss or only a research agenda.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
