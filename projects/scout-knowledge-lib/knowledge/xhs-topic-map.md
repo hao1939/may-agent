@@ -5421,6 +5421,42 @@ and (7) compaction. Select LogicHunter. Test baseline definitions, defect-
 confirmation provenance, artifact availability, repeated-run uncertainty, and
 whether the evidence supports necessity or only comparative performance.
 
+### Cycle 324 checkpoint — high precision does not prove agentic necessity
+
+At `2026-09-04T02:52:46.788Z`, arXiv `2607.06195v1` supplied a
+42,568-byte abstract page (`f8697a09…fada`) and 843,699-byte source archive
+(`8eef25ab…be8d`). On a 1,000-failure corpus drawn from LogicHunter's own
+generator outputs (28 bugs / 972 non-bugs), five GPT-5-mini oracle runs report
+91.17%±4.01% precision, 72.14%±1.60% recall, and 0.21%±0.10% false-positive
+rate. The best passive GPT-5.2 comparator reports 29.27%±5.40% precision,
+59.29%±4.07% recall, and 4.24%±0.84% false-positive rate.
+
+The contradiction is decision-relevant: on 31 post-cutoff known bugs, Agentic
+Oracle recall is 60.65%±1.44%, below the passive judge's 70.32%±3.53%, while
+its 484-case hard-negative false-positive rate is much lower. The 40-versus-
+zero result compares complete generation pipelines under unequal original
+oracles; re-oracling 506 baseline failures finds one overlapping bug. Confidence
+is high in the paper's comparative claim and low that it establishes general
+necessity.
+
+GitHub commit `dc5691b341a4cf2be2f2487ea0c79aa34d977cdf`, observed at
+`2026-09-04T02:53:05.746Z`, contains code and a 32-row issue ledger whose
+multiplicities total 40 (26 fixed, 4 confirmed, 8 pending, 2 won't-fix). All 51
+Python files parse, but the repository omits the labeled corpora, generated
+tests, raw per-run outputs, and 32 stated root-cause clusters; no metric
+reproduction is claimed. Three live issue reads at `02:53:32.037Z` support two
+closed-completed reports and show one ledger-`confirmed` CrewAI item now closed
+`not_planned`; current status does not rewrite the paper-time disposition.
+
+ArXiv's next trigger is a revision or released evaluation data. GitHub's is a
+repository advance that adds the missing corpora/results or materially changes
+the issue ledger. Reddit made zero requests and stays trigger-deferred at RSS-
+readable/JSON-403. `RV-004` remains high/open because this evidence has no
+Scout query-to-outcome join. Next begin seed-first and primary-review StateFuse
+`2607.05844`, now the highest accessible unresolved memory-governance claim,
+before PatchOptic, Cortex's unavailable ablation, other scans, Reddit, or
+compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

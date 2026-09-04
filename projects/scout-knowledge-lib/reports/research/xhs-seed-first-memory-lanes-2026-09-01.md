@@ -11477,6 +11477,80 @@ testing result into a necessity claim. Test the baseline definitions, bug-
 confirmation provenance, artifact availability, repeated-run uncertainty, and
 whether the evidence supports necessity or only comparative performance.
 
+## Cycle 324 checkpoint — LogicHunter supports precision, not necessity
+
+What was wrong was an invalid inference from a mixed comparison. Scan 462 said
+the full-pipeline 40-versus-zero result proved passive testing cannot find
+production framework bugs and that agent-based testing is necessary. The
+paper has a useful matched oracle comparison, but its bug-discovery headline
+compares different generators together with different original oracles. The
+library now preserves the matched comparison, the external-set contradiction,
+and the incomplete reproduction boundary.
+
+ArXiv observation began at `2026-09-04T02:52:46.788Z`.
+`2607.06195v1` returned a 42,568-byte abstract page with SHA-256
+`f8697a0999870b68cea0c1496c87fd739b5933d3fb5db4577447a11e9c00fada`
+and an 843,699-byte source archive with SHA-256
+`8eef25ab37b486be61e930b64a693e47987e2650387fa60001d177579cb5be8d`.
+LogicHunter combines API-focused generation, seed repair/mutation, and an
+Agentic Oracle that searches documentation and source, inspects tests, and
+executes code. It targets selected APIs in LangChain 0.3.65, LlamaIndex
+0.12.42, and CrewAI 0.130.0.
+
+The matched oracle corpus contains 1,000 unique failures sampled from
+LogicHunter generator outputs: 28 bugs and 972 non-bugs, independently labeled
+by two developers with consensus resolution and Cohen's kappa 0.77. Across five
+temperature-zero GPT-5-mini runs, Agentic Oracle reports 91.17%±4.01%
+precision, 72.14%±1.60% recall, 80.49%±1.34% F1, and 0.21%±0.10%
+false-positive rate. The strongest passive precision is 29.27%±5.40% from a
+GPT-5.2 naive judge, with 59.29%±4.07% recall and 4.24%±0.84% false-positive
+rate. Agentic Oracle costs $5.10 total and $0.25 per found bug versus $3.21 and
+$0.19; it requires 1.10 reviews per found bug versus 3.42.
+
+The supplementary sets qualify the advantage. On 31 post-cutoff known bugs,
+Agentic Oracle recall is 60.65%±1.44%, below the passive judge's
+70.32%±3.53%. On 484 manually checked TitanFuzz hard negatives, its false-
+positive rate is 0.04%±0.09%, far below the passive comparator's 2.07%±0.41%.
+The reported 40 newly disclosed developer-facing failure patterns come from
+the complete LogicHunter pipeline; baselines report zero under their own
+oracles. When 506 baseline-generated effective failures are instead checked by
+Agentic Oracle and manually verified, one genuine bug appears, overlapping a
+LogicHunter report. This supports high-precision triage on the tested corpus,
+not the categorical necessity claim.
+
+The paper links `security-pride/LogicHunter`. GitHub observation at
+`2026-09-04T02:53:05.746Z` resolved HEAD to
+`dc5691b341a4cf2be2f2487ea0c79aa34d977cdf`. The repository includes 72
+tracked files, implementation code, three API lists, usage snippets, and
+`issues_status.csv` (`2fb32c5e…e0c1`). Its 32 rows use multiplicities totaling
+40: 26 fixed, 4 confirmed, 8 pending, and 2 won't-fix. All 51 Python files
+parsed without writing bytecode. The repository omits the 1,000-case corpus,
+31 known bugs, 484 hard negatives, generated tests, raw five-run results, and
+stated 32 root-cause clusters, so neither the oracle metrics nor full bug-
+discovery experiment is locally reproduced.
+
+Three bounded GitHub issue reads at `2026-09-04T02:53:32.037Z` provide
+independent status samples. LlamaIndex 19404 (`25663c1d…f3b`) and LangChain
+30640 (`4f39f81a…02a`) are closed `completed`. CrewAI 3160
+(`649aa461…e58`) is now closed `not_planned`, whereas the artifact ledger says
+`confirmed`; this is current disposition drift, not proof that the paper-time
+status was false. No provider credentials or install were used.
+
+ArXiv's last useful evidence is the exact v1 source; revisit on a revision or
+released evaluation data. GitHub's last useful evidence is commit `dc5691b…`
+plus the three live issue records; revisit on a repository advance that adds
+corpora/results or materially changes the issue ledger. Reddit made zero
+requests and remains RSS-readable/JSON-403 until a relevant thread or access
+change. `RV-004` stays high/open because this work supplies no Scout query/
+rank-to-selection-to-later-outcome join.
+
+Next begin seed-first and rank again. StateFuse `2607.05844` now outranks
+PatchOptic, Cortex's unavailable ablation, other unsourced scans, Reddit, and
+compaction because it is an accessible memory-governance claim still carried
+categorically by the same synthesis. Test its benchmark slice, accuracy-tie
+claim, conflict visibility, artifact, and whether preservation actually causes
+safer abstention or only exposes another interface.
+
 Exact material commit `0237879678849e6402270517f4ee51c9ea49bc71` passes
 syntax, TypeScript, source formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

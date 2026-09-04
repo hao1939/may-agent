@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds deterministic process profiles but does not show that outcome metrics erase evidence or improve decisions. AgentTether reports conditional matched repair gains on 123 initially failed tau-bench tasks; runtime intervention significantly helps only Banking, can also hurt, uses auxiliary LLM judgments, and has no currently readable artifact. StateFuse and PatchOptic remain pending primary review. HN counters are attention observations."
+summary: "HN/arXiv/GitHub Scan #462 (2026-07-15), partly qualified. TraceProbe adds process profiles without proving evidence destruction. AgentTether reports conditional repair gains with artifact limits. LogicHunter reports a high-precision agentic oracle on its own generated corpus, but the public artifact omits evaluation data and the unequal full-pipeline baseline does not establish necessity. StateFuse and PatchOptic remain pending primary review."
 triggers: ["process erasure", "trajectory diagnostics", "TraceProbe", "StateFuse", "conflict-preserving memory", "PatchOptic", "verified patches", "AgentTether", "runtime repair", "LogicHunter", "agentic oracle", "PiSAs", "contextual integrity", "SICP overtakes Sol", "foundations turn 1000", "chat control 700", "scan 462", "resolve rate", "outcome metrics"]
 source_basis: "HN front page 2026-07-15 via Algolia API (50 stories). HN items: 48818311 (Chat Control 702pts), 48823557 (EU Car Camera 675pts), 48819608 (30papers 546pts), 48821576 (Kokoro 433pts), 48829312 (Uniqlo 340pts), 48821848 (Davit 322pts), 48756578 (Herdr 303pts), 48827858 (GitLost 250pts), 48825749 (Tenda 238pts), 48824826 (GAO 216pts), 48827325 (ZFS 216pts), 48825664 (SICP 204pts), 48819308 (Postgres 202pts), 48827402 (Sol 197pts), 48820119 (QR Font 189pts), 48819808 (Rowboat 168pts), 48821378 (l runtime 151pts). arXiv API: 2607.06184 (TraceProbe), 2607.05844 (StateFuse), 2607.05483 (PatchOptic), 2607.06273 (AgentTether), 2607.06195 (LogicHunter), 2607.05318 (PiSAs). GitHub API: omnigent 6,715★, Horizon 34★, memclaw-cross-fleet-gov 21★."
 </ai_context>
@@ -17,7 +17,7 @@ useful for governance. The reviewed TraceProbe evidence establishes added
 measurement detail, not systematic erasure or downstream governance benefit.
 
 Four arXiv papers are grouped under that hypothesis from different domains;
-TraceProbe and AgentTether have now been primary-reviewed:
+TraceProbe, AgentTether, and LogicHunter have now been primary-reviewed:
 
 - **TraceProbe** (2607.06184v1): Resolve rate omits trajectory measurements.
   Across 2,500 SWE-Bench Verified runs, deterministic process profiles and
@@ -211,14 +211,39 @@ Source: https://arxiv.org/abs/2607.06273
 
 ### Paper 5: LogicHunter — Agentic Oracle for Framework Testing (2607.06195)
 
-**Core finding**: LLM agent frameworks (LangChain, LlamaIndex, CrewAI) are critical production infrastructure but severely under-tested. Defects manifest as ordinary exceptions or silent semantic failures, creating oracle ambiguity. LogicHunter introduces an Agentic Oracle that actively retrieves documentation, navigates source code, and inspects runtime states through a ReAct-based architecture with Dual-Layer State Management.
+**Supported mechanism**: LogicHunter combines API-focused seed generation,
+repair, and mutation with an Agentic Oracle that searches documentation and
+source code, inspects tests, and executes snippets. It targets selected APIs in
+LangChain 0.3.65, LlamaIndex 0.12.42, and CrewAI 0.130.0.
 
-**Key results** (3 frameworks):
-- 40 previously unknown bugs, 30 confirmed, 26 fixed by developers
-- State-of-the-art baselines reported **zero** bugs as final findings
-- Agentic Oracle achieves 91.17% precision vs 29.27% for best passive approach
+**Oracle comparison**: The primary corpus contains 1,000 unique failures
+sampled from LogicHunter generator outputs and manually labeled by two
+developers (Cohen's kappa 0.77): 28 bugs and 972 non-bugs. Across five
+temperature-zero GPT-5-mini runs, Agentic Oracle reports 91.17%±4.01%
+precision, 72.14%±1.60% recall, and 0.21%±0.10% false-positive rate. The best
+passive GPT-5.2 judge reports 29.27%±5.40% precision, 59.29%±4.07% recall, and
+4.24%±0.84% false-positive rate. Agentic Oracle costs $5.10 total and 1.10
+reviews per found bug versus $3.21 and 3.42 for that passive comparator.
 
-**Structural significance**: Agent frameworks testing themselves via agents. This is verification at the infrastructure layer — not verifying what agents do, but verifying the frameworks that agents run on. The 40 → 0 comparison (LogicHunter vs baselines) demonstrates that passive testing cannot find the bugs that production agent deployments encounter. Active, agent-based testing is necessary for agent infrastructure.
+**Contradictions and limits**: On a separate 31-bug post-cutoff set, Agentic
+Oracle recall is 60.65%±1.44%, below the passive GPT-5.2 judge's
+70.32%±3.53%; on 484 hard negatives its false-positive rate is much better at
+0.04%±0.09%. The reported 40 previously undisclosed failure patterns, 30
+acknowledgments, and 26 fixes come from the full LogicHunter pipeline. Baseline
+tools report zero bugs under their own unequal oracles; when 506 of their
+effective failures are rechecked with Agentic Oracle and manual review, one
+overlapping bug appears. This supports comparative precision and triage value,
+not the necessity of active agents or inability of passive testing to find
+framework defects.
+
+**Artifact boundary (2026-09-04)**: Public repository commit
+`dc5691b341a4cf2be2f2487ea0c79aa34d977cdf` contains code, API lists, usage
+snippets, and a 32-row issue ledger totaling 40 patterns. It omits the labeled
+corpora, generated tests, per-run results, and stated 32 root-cause clusters,
+so the evaluation is not locally reproduced. Three live issue checks support
+two closed-completed reports while one artifact-`confirmed` CrewAI report is
+now closed `not_planned`; current status must not be substituted for the
+paper-time disposition.
 
 Source: https://arxiv.org/abs/2607.06195
 

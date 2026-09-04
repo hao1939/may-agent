@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #450 (2026-07-08), primary-qualified in 2026-09: five papers motivate a Knowledge Erosion hypothesis, but the reviewed evidence is narrower. A separate randomized study (2601.20245) reports a 17% immediate quiz-score reduction after a one-hour unfamiliar-library task; Agents That Teach proposes unevaluated Knowledge Debt/SHIELD. TraceProbe describes 2,500 trajectories, Observability-Aware Code reports limited diagnostic restoration, and AgentTether reports matched repair gains on 123 initially failed tau-bench tasks but relies on auxiliary LLM judgments and has no currently readable artifact. HN and repository counters are discovery signals."
+summary: "HN/arXiv/GitHub Scan #450 (2026-07-08), primary-qualified in 2026-09: five papers motivate a Knowledge Erosion hypothesis, but the reviewed evidence is narrower. A separate randomized study reports a one-hour learning-score gap; Agents That Teach proposes unevaluated Knowledge Debt/SHIELD; TraceProbe and Observability-Aware Code add process measurements; AgentTether reports conditional repair; and LogicHunter reports a high-precision oracle on its own generated corpus. Neither artifact supports operator-skill preservation or agentic-testing necessity, and both have reproduction limits."
 triggers: ["knowledge erosion", "skill atrophy", "knowledge debt", "incidental learning loss", "developer deskilling", "resolve rate hides", "trajectory diagnostics", "TraceProbe", "trajectory opacity", "observability-aware code", "diagnostic evidence", "agent observability gap", "AgentTether", "runtime repair", "task graph repair", "LogicHunter", "agentic oracle", "framework testing", "silent attrition", "remediation debt", "knowledge infrastructure", "human authorship premium", "expertise erosion", "learning pathway disruption", "process evidence loss", "scan 450"]
 source_basis: "HN front page 2026-07-08 (30 stories via Firebase API). arXiv API (2607.06101 Agents That Teach, 2607.06184 What Resolve Rate Hides, 2607.05785 Observability-Aware Code, 2607.06273 AgentTether, 2607.06195 LogicHunter). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,315★, eve 3,303★, rowboat 15,273★, horizon 34★, agent-apprenticeship 1,295★). Cross-referenced with Subtraction Economy (#449), Architecture Premium (#448), Oversight Inversion (thesis), Comprehension Dividend (#444)."
 </ai_context>
@@ -136,11 +136,29 @@ Source: https://arxiv.org/abs/2607.06273
 
 ### 5. LogicHunter: Testing LLM Agent Frameworks with an Agentic Oracle (2607.06195) [CORRECTIVE]
 
-**Core finding**: The frameworks that agent systems are built on (LangChain, LlamaIndex, CrewAI) are themselves severely under-tested. Defects manifest as "ordinary exceptions or silent semantic failures" — no crash, no visible error, just wrong behavior. LogicHunter uses an **agentic oracle** (an agent that tests the agent framework) to detect these silent failures.
+**Supported finding**: LogicHunter combines API-focused generation with an
+agentic oracle that searches documentation/source and runs code. On a
+LogicHunter-generated, manually labeled corpus of 1,000 failures (28 bugs),
+five GPT-5-mini runs report 91.17%±4.01% precision, 72.14%±1.60% recall, and
+0.21%±0.10% false-positive rate. The best passive GPT-5.2 judge reports
+29.27%±5.40% precision and 59.29%±4.07% recall on that corpus.
 
-**Key insight**: "Unlike traditional software, where crashes serve as reliable oracles, defects in these pure Python frameworks manifest as ordinary exceptions or silent semantic failures, creating profound oracle ambiguity."
+**Bug and artifact evidence**: The paper reports 40 developer-facing failure
+patterns (32 root-cause clusters), of which 30 were acknowledged and 26 fixed.
+Repository commit `dc5691b341a4cf2be2f2487ea0c79aa34d977cdf`
+ships code, API lists, usage snippets, and a 32-row issue ledger whose
+multiplicities total 40. It omits the evaluation corpora, generated tests, raw
+per-run outputs, and stated root-cause clusters, so the metrics are not locally
+reproduced.
 
-**Structural significance**: The infrastructure underlying agent systems has the same Knowledge Erosion problem as the output. Framework bugs are silent, diagnostic evidence is absent, and the complexity of Pydantic schemas and protocol requirements defeats existing fuzzers. LogicHunter's solution — using agents to test agent frameworks — is the Recursion Barrier (#430) as a testing strategy: self-improvement within the testing domain.
+**Scope limit**: The 40-versus-zero headline compares complete pipelines under
+their original, unequal oracles; rechecking 506 baseline-generated effective
+failures with Agentic Oracle plus manual review finds one overlapping bug. On
+31 post-cutoff known bugs, Agentic Oracle recall is 60.65%±1.44%, below the
+best passive judge's 70.32%±3.53%, while its hard-negative false-positive rate
+is much lower. The evidence supports one high-precision operating point, not
+that passive testing cannot find framework bugs or that agentic testing is
+necessary in general.
 
 Source: https://arxiv.org/abs/2607.06195
 
