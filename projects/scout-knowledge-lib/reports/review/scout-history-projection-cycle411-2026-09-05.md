@@ -2,7 +2,7 @@
 summary: "Cycle 411 virtually removes the repeated Cycle 373-386 topic-map and detailed-ledger lines without changing repository content. Navigation and links survive, but unique chronology and provenance do not, so real compaction is rejected pending a smaller provenance replacement."
 triggers: ["Cycle 411", "RV-036", "history projection", "retrieval compaction", "provenance loss"]
 last_updated: "2026-09-05"
-source_basis: "Clean source 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9; exact Cycle 373-386 range 3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80; commit-scoped in-memory blame projection; navigation fixtures v1-v3, with producer-authored post-hoc v3; broad relative-link audit."
+source_basis: "Clean source 73088d8c912fadb2fb6b3e6e1e721c854ce70ff9; exact Cycle 373-386 range 3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80; commit-scoped in-memory blame projection; navigation fixtures v1-v3, with producer-authored post-hoc v3; source-bound broad relative-link audit."
 </ai_context>
 
 # Cycle 411 history projection
@@ -37,7 +37,7 @@ freshness, and revisit triggers.
 
 ## Matched virtual-removal result
 
-The fixture is versioned against source
+The projection fixture is versioned against source
 `73088d8c912fadb2fb6b3e6e1e721c854ce70ff9`. It selects the fourteen commits
 in exact range
 `3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`
@@ -73,6 +73,14 @@ no URL becomes absent. The six refs are
 `300ff7ea03469d7c3d7f07ef3427089eb57785a2`, `8b8f7179cf`,
 `8dca8f4576`, and `9c52296961`. They include artifact parent/tree provenance
 and stabilization-lifecycle disposition, not merely repeated prose.
+
+Independent current-revision replay found that the initial implementation used
+`HEAD` for the retained corpus. Once this report entered `HEAD`, its own list
+made all six refs appear retained and changed the broad corpus to 1,547/1,775.
+RV-047 binds blame, projected documents, navigation, and links to exact source
+`73088d8c91` while reporting the current candidate separately. A regression
+pins the six refs and source-corpus 1,546/1,774 boundary, preventing the report
+from satisfying its own loss test.
 
 ## Disposition, uncertainty, and rollback
 

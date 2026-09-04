@@ -169,7 +169,13 @@ if (import.meta.main) {
       .split("\n")
       .filter(Boolean),
   );
-  const allTracked = git(root, ["ls-tree", "-r", "--name-only", "HEAD"])
+  const corpusReference = fixture.frozen_against_tip;
+  const allTracked = git(root, [
+    "ls-tree",
+    "-r",
+    "--name-only",
+    corpusReference,
+  ])
     .trim()
     .split("\n")
     .filter(Boolean);
@@ -182,11 +188,11 @@ if (import.meta.main) {
   for (const path of fixture.projected_files) {
     if (!trackedSet.has(path))
       throw new Error(`projected file is not tracked: ${path}`);
-    const original = git(root, ["show", `HEAD:${path}`]);
+    const original = git(root, ["show", `${corpusReference}:${path}`]);
     projected.set(
       path,
       projectPorcelainBlame(
-        git(root, ["blame", "--line-porcelain", "HEAD", "--", path]),
+        git(root, ["blame", "--line-porcelain", corpusReference, "--", path]),
         commits,
         original.endsWith("\n"),
       ),
@@ -197,7 +203,8 @@ if (import.meta.main) {
   const documents = markdownPaths.map((path) => ({
     path: resolve(root, path),
     contents:
-      projected.get(path)?.contents ?? git(root, ["show", `HEAD:${path}`]),
+      projected.get(path)?.contents ??
+      git(root, ["show", `${corpusReference}:${path}`]),
   }));
   const pathExists = (absolutePath: string) => {
     const path = relative(root, absolutePath);
@@ -209,7 +216,10 @@ if (import.meta.main) {
   const links = inspectRelativeLinks(documents, pathExists);
 
   const index = parseNavigationEntries(
-    git(root, ["show", "HEAD:projects/scout-knowledge-lib/knowledge/INDEX.md"]),
+    git(root, [
+      "show",
+      `${corpusReference}:projects/scout-knowledge-lib/knowledge/INDEX.md`,
+    ]),
   );
   const navigation = fixture.navigation_fixtures.map((name) => {
     if (!/^scout-navigation-heldout-v\d+\.json$/u.test(name)) {
@@ -274,6 +284,7 @@ if (import.meta.main) {
   const result = {
     schema: fixture.schema,
     head: git(root, ["rev-parse", "HEAD"]).trim(),
+    corpus_reference: corpusReference,
     frozen_against_tip: fixture.frozen_against_tip,
     range: fixture.range,
     removed_commit_count: commits.size,

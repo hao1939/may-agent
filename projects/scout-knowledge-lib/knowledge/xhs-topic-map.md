@@ -11039,6 +11039,12 @@ timestamps become absent from the retained corpus. The six refs include three
 artifact parent/tree identities and three stabilization-lifecycle identities;
 deleting first would erase distinctions that route success cannot measure.
 
+Independent current-revision replay exposed one self-contamination defect: the
+initial harness included its own new report in the retained corpus, so those
+six refs appeared present after commit. RV-047 binds the projection to exact
+source `73088d8c91` and keeps current candidate identity separate; the source-
+bound six-ref, 1,546-document, and 1,774-link result is regression-tested.
+
 The [Cycle 411 projection report](../reports/review/scout-history-projection-cycle411-2026-09-05.md)
 therefore rejects real compaction now. RV-036 remains medium/open. Before any
 deletion, a smaller project-owned provenance record must preserve each cycle's
