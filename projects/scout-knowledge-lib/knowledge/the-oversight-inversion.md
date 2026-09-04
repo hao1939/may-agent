@@ -1058,25 +1058,34 @@ Source: findings/2026-07-15-hn-arxiv-github-scan-462.md, arXiv 2607.06184, 2607.
 
 Layers 25–32 identified governance failures at specific surfaces: approval vs execution (#453), write authorization (#454), claim typing (#456), and process preservation (#462). Layer 33 unifies these under a single constructive architecture.
 
-**Mnemosyne** (2607.00269v2) introduces **Agentic Transaction Processing (ATP)**: every agent-generated action is an untrusted proposal until it passes deterministic admission under a declared constraint set C. The governing principle: *a proposal is not truth, and no proposal foresees every disruption.* Correctness of committed state becomes **independent of the competence, honesty, or learning of the proposing layer**.
+**Mnemosyne** (2607.00269v2) introduces **Agentic Transaction Processing (ATP)**: every agent-generated action is an untrusted proposal until it passes deterministic admission under a declared constraint set C. The governing principle is useful, but the guarantee is only relative to predicates present and correctly bound in C; it does not cover omitted application policy.
 
-Four proven safety properties (relative to C):
+Four properties proved by the paper (relative to C):
 1. **Authority separation** — only the runtime admits and commits; anything may propose
 2. **Serial-equivalent generative admission** — proposals evaluated as if serialized under concurrency
 3. **Evidence-preserving repair** — compensation preserves the evidence that triggered the repair
 4. **Obligation containment** — committed obligations are bounded and tracked
 
-Empirical validation: 80 live-proposer trials across 4 heterogeneous LLMs, zero invalid commits, under 6% overhead. Admission gate rejected 16 of 40 repair proposals including 4 explicit safety rejections of over-broad rollback.
+Paper-reported validation: 80 live-proposer trials across 4 heterogeneous LLMs,
+zero invalid commits under its scorer, and under 6% overhead. A pinned
+implementation rerun reproduced selected RQ1/RQ3 controls, but a matched
+standing probe also committed an Alice-owned proposal using a Bob-owned
+decision and kernel request. The audited runtime path therefore lacks
+proposal/decision principal binding even though selected constraint checks work.
 
 **The Admission Boundary**: ATP unifies the preceding four layers:
-- Layer 25 (Execution Boundary) → ATP's authority separation IS the execution boundary — as a proven property
-- Layer 26 (Write Contract) → ATP's admission gate IS the write contract — formalized and enforced
-- Layer 28 (Claim-Verification Surface) → ATP's constraint set C IS the typed claim specification
-- Layer 32 (Process Erasure) → ATP's append-only transition log DEFEATS process erasure — by construction
+- Layer 25 (Execution Boundary) → ATP separates proposing from committing, but
+  the adapter audit leaves caller/principal binding incomplete
+- Layer 26 (Write Contract) → ATP implements a declared admission contract; its
+  completeness and provenance remain separate
+- Layer 28 (Claim-Verification Surface) → C types selected predicates rather
+  than proving a complete claim surface
+- Layer 32 (Process Erasure) → the append-only log preserves recorded fields,
+  not omitted evidence or external non-effect
 
 **Eighteen-point exit arc**:
 1–17: (#444–#462)
-18. **Admission Boundary (#469): Treat every agent-generated action as an untrusted proposal; enforce governance at the admission gate rather than inspecting outcomes; prove safety properties relative to a declared constraint set C rather than trusting the proposing agent (the admission condition)**
+18. **Admission Boundary (#469): Treat every agent-generated action as an untrusted proposal; enforce declared predicates at admission rather than only inspecting outcomes; test policy completeness, provenance, and principal binding separately from constraint-relative gate correctness (the admission condition)**
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-469.md, arXiv 2607.00269
 
@@ -1097,7 +1106,10 @@ Layers 25–33 identified governance failures at specific surfaces within system
 
 Companion papers from this scan form a diagnosis-architecture-evaluation arc:
 - **AGL-1** (2607.03516v1) provides a vendor-neutral 7-domain governance control plane (identity-aware retrieval, policy enforcement, provenance management, memory governance, knowledge integrity, execution control, trust observability)
-- **CAGE-1** (2607.03510v1) introduces **Prebind Assurance** — proving an agentic action is controlled *before* it becomes binding. The evaluation complement to the Admission Boundary (#469): ATP *constructs* the gate; CAGE-1 *evaluates* whether it works
+- **CAGE-1** (2607.03510v1) proposes **Prebind Assurance**, a seven-field
+  evidence checklist for asking whether an action was controlled before it
+  became binding. It runs no gate or control and therefore does not evaluate
+  whether ATP works; it is a prospective test-design complement.
 
 **Nineteen-point exit arc**:
 1–18: (#444–#469)

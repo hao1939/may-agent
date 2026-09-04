@@ -8281,6 +8281,57 @@ minimum primary paper/repository evidence needed to map all seven fields and
 separate formal properties, live trials, logging, replay, and actual non-
 effect. AGL-1 follows; Reddit remains trigger-deferred; compaction stays last.
 
+### Cycle 370 checkpoint — the schema finds a standing gap
+
+Seed-first commit `0dabc5636352ee0f40f78fdf43b98adbd15445d1`
+preceded every Cycle 370 source read. The exact v2 Mnemosyne PDF is 462,517
+bytes / `23a713cf…e1b`; its source archive is 64,058 bytes /
+`fdc2a9cf…8e7d`. Current 3,218-byte Atom metadata /
+`cb014d96…3960` advertises v3. GitHub repository `eyuchang/Mnemosyne` was
+therefore evaluated at reproducibility tag `7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`;
+public HEAD `ba43036035bb33dfb955d53da54635aac2ab83a0` differs only by an added
+supplement PDF, not Python or `pyproject.toml`.
+
+Supporting evidence is constraint-relative. A dependency-free RQ1 rerun gave
+raw/self-validation 35 invalid commits each versus ATP zero, 35 rejected, and
+five valid commits. RQ3 gave both baselines 20 evidence-destroying unresolved
+repairs versus ATP zero, 20 rejected, and eight valid repairs. R7.3 replayed
+three recovery events and detected two duplicates; R7.4 rejected missing
+validator/store capabilities and accepted an explicit validator. Generated
+RQ1/RQ3 reports remained byte-identical.
+
+Contradictory evidence is standing/principal binding. Matched probe
+`1486cd9c…fb97` first paired proposal and decision principal
+`agent:r4-kernel-evidence` and committed. Its only decision-relevant identity
+change supplied the registered same-tenant `agent:r4-kernel-bob` for the
+decision and kernel request while leaving the proposal Alice-owned; this also
+returned `accepted_and_committed`. The runtime adapter accepts caller-supplied
+decision identity, and the repository checks proposal/tenant/workflow/binding
+but not proposal-agent equality. This is a pinned runtime-path defect, not
+evidence that every domain-kernel deployment lacks an application identity
+policy.
+
+CAGE's seven fields now map to: strong local attempted-action and boundary-
+outcome records; incomplete standing; represented but not independently
+authoritative conditions; local no-commit rather than external non-effect;
+split proposal/decision/trace/CTL records rather than one hashed receipt; and
+recovery-event replay rather than linked re-evaluation of the same action after
+changed conditions. Confidence is high in pinned bytes, revisions, matched
+outputs, and this field mapping; medium in transfer beyond the audited paths;
+low in policy completeness, external effects, receipt portability, and
+deployment behavior. Full `pytest` was unavailable (`No module named pytest`)
+and no package was installed.
+
+GitHub supplied the pinned code and matched defect; revisit on a repository
+revision changing runtime decision/proposal identity checks. ArXiv supplied the
+v2 paper/source and current v3 metadata; revisit v3 only if its claims or linked
+artifact materially differ. Reddit made zero requests because no relevant
+thread/access trigger fired; its RSS/JSON boundary and defer rationale remain
+unchanged. `RV-004` remains high/open at its missing retained-outcome join.
+Next seed-first, primary-review AGL-1 `2607.03516v1` and test whether its seven
+governance domains are an implemented control plane, an architectural proposal,
+or an evidence-backed enterprise deployment model.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

@@ -99,6 +99,29 @@ enterprise gate works, so the two papers do not yet “close the loop.” A usef
 next comparison would instantiate all seven fields against an implemented ATP
 trace and test refusal, condition change, replay, and non-effect independently.
 
+**Implementation-grounded comparison (2026-09-04):** That comparison was run
+against `eyuchang/Mnemosyne` at reproducibility tag
+`7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`; public HEAD was
+`ba43036035bb33dfb955d53da54635aac2ab83a0`, with no intervening Python or
+`pyproject.toml` change. The evidence maps as follows:
+
+| CAGE field | Reproduced ATP evidence | Qualification |
+|---|---|---|
+| Attempted action | Runtime proposal record includes proposal, workflow, binding, agent, and payload | Strong local proposal record, not an external action observation |
+| Standing | Decision and kernel request include an agent, tenant, workflow, and binding | Incomplete: an Alice proposal with a Bob decision was accepted and committed |
+| Condition | Constraint, policy, validator, and store metadata are represented; missing validator/store fail closed in R7.4 | Presence is demonstrated; authority and completeness are not |
+| Boundary outcome | Decisions carry accepted/rejected status, committed record IDs, and error codes | Strong local outcome record for exercised paths |
+| Non-effective result | RQ1/RQ3 invalid proposals were not committed locally | This is local no-commit evidence, not proof that no external business effect occurred |
+| Receipt | Proposal, decision, trace, and committed-transition-log records can be joined | Split records; no unified hashed or externally verifiable receipt was reproduced |
+| Replay | State projection and R7.3 recovery-event replay are implemented | R7.3 explicitly does not replay domain CTL mutation or re-evaluate the same action after changed conditions |
+
+The result supports CAGE's vocabulary as a diagnostic surface: it located a
+standing defect that aggregate “zero invalid commits” did not expose. It still
+does not validate CAGE's maturity scores or produce the closed evaluation loop
+the original scan implied. Full repository `pytest` was unavailable in the
+isolated evidence environment (`No module named pytest`); dependency-free
+controls and report-byte checks passed without installing packages.
+
 ---
 
 ### AGL-1: The Enterprise AI Governance Layer (2607.03516v1)

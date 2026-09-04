@@ -287,31 +287,44 @@ blur:
 
 ## Agentic Transaction Processing — Deterministic Admission (Mnemosyne, arXiv June 2026)
 
-Mnemosyne (2607.00269v2) unifies semantic transactions, effect containment, and
-verified enforcement into a single constructive architecture: **Agentic
+Mnemosyne (2607.00269v2) combines semantic transactions, effect containment, and
+constraint-relative enforcement in a constructive architecture: **Agentic
 Transaction Processing (ATP)**. Every agent-generated action is an untrusted
 proposal until it passes deterministic admission under a declared constraint
-set C. Correctness of committed state becomes independent of proposer
-competence, honesty, or learning.
+set C. Its guarantee concerns predicates expressed and correctly bound in C;
+it is not independence from omitted or misbound application policy.
 
-**Four proven safety properties:**
+**Four properties proved by the paper relative to C:**
 1. Authority separation — only the runtime admits/commits; anything may propose
 2. Serial-equivalent generative admission — proposals evaluated as if serialized
 3. Evidence-preserving repair — compensation preserves triggering evidence
 4. Obligation containment — committed obligations are bounded and tracked
 
-**Empirical results (80 live-proposer trials, 4 heterogeneous LLMs):**
+**Paper-reported results (80 live-proposer trials, 4 heterogeneous LLMs):**
 - Zero invalid commits; gate rejected 16/40 repair proposals (4 safety rejections)
 - Under 6% overhead; local repair edits order-of-magnitude fewer ops than global recompute
 
-- **Key implication**: ATP is the formal realization of Cordon's semantic
-  transactions (above) with proven guarantees. The admission gate pattern —
+- **2026-09-04 implementation check**: At reproducibility tag
+  `7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`, dependency-free RQ1 and RQ3
+  controls reproduced zero invalid/evidence-destroying ATP commits against
+  unsafe baselines. R7.3 replays recovery events rather than domain CTL
+  mutation; R7.4 fails closed without validator/store capabilities. A matched
+  runtime probe nevertheless committed a proposal owned by
+  `agent:r4-kernel-evidence` using a decision and kernel request owned by
+  `agent:r4-kernel-bob`. The adapter therefore does not supply application-level
+  proposal/decision principal binding. Receipt evidence is split among
+  proposal, decision, trace, and CTL records; no unified hashed receipt or
+  external non-effect proof was reproduced.
+- **Key implication**: ATP is a formal realization of Cordon-like semantic
+  transactions for predicates represented in its constraint and adapter paths.
+  The admission gate pattern —
   proposals are untrusted until deterministic verification — is the structural
   primitive underlying the Write Contract, Execution Boundary, and
-  Claim-Verification Surface. This is the 33rd layer of the Oversight Inversion.
+  Claim-Verification Surface, but it does not make those surfaces complete by
+  itself. This is the qualified 33rd layer of the Oversight Inversion.
 - **Connects to**: Semantic Transactions/Cordon (ATP subsumes staged effects),
-  Compilation Gradient (admission = compiled governance), Process Erasure
-  (append-only log defeats evidence destruction), Verified Enforcement
+  Compilation Gradient (admission = compiled declared predicates), Process
+  Erasure (append-only log preserves recorded evidence), Verified Enforcement
   (admission gate is a constructive enforcement point).
 - **Source**: [2607.00269v2] Mnemosyne, arXiv June–July 2026.
 

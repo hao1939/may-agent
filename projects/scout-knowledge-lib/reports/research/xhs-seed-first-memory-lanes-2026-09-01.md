@@ -15439,6 +15439,114 @@ Use retained local evidence first, then retrieve only minimum primary paper and
 repository evidence needed to distinguish formal properties, live trials,
 logging, replay, and actual non-effect.
 
+## Cycle 370 checkpoint — constraint-relative admission, incomplete standing
+
+What was wrong: the library described ATP's paper-level results as a complete
+constructive governance boundary and said its append-only log defeated process
+erasure. That collapsed four distinct questions: whether declared predicates
+work, whether the predicate set is complete, whether caller identity is bound,
+and whether local no-commit proves external non-effect. Applying CAGE-1's seven
+fields to the implementation found that the selected constraint checks work but
+standing is not bound on one current runtime path.
+
+### Scope and provenance
+
+Seed-first commit `0dabc5636352ee0f40f78fdf43b98adbd15445d1`
+preceded all source work. Re-hashing at `2026-09-04T08:51:46.206Z` verified:
+
+- Mnemosyne v2 PDF: 462,517 bytes,
+  `23a713cfda699233ddeb30160fc6cff90f250cc082471944cefedd7651c2de1b`;
+- v2 source archive: 64,058 bytes,
+  `fdc2a9cf9e59eb4fede6241cce44e7032018ef839d8259645df2d7e4169f8e7d`;
+- current Atom result: 3,218 bytes,
+  `cb014d9622d412c06ecfdd44ceb2977025be80872f15671bc1ccdb3388f43960`,
+  advertising `2607.00269v3` updated 2026-08-31;
+- GitHub repository `eyuchang/Mnemosyne` public HEAD
+  `ba43036035bb33dfb955d53da54635aac2ab83a0` and reproducibility tag
+  `arxiv-atp-rq1-rq9b-r8-v2` at
+  `7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4`.
+
+Tag-to-HEAD comparison found one added path,
+`docs/Mnemosyne_VLDB_Final_Supplement_August012026.pdf`; Python and
+`pyproject.toml` are patch-equivalent. The implementation comparison stays
+pinned to v2 rather than silently treating current v3 metadata as the evaluated
+artifact.
+
+### Matched controls
+
+Dependency-free reruns at the tag produced these exact outcomes:
+
+| Control | Unsafe baseline(s) | ATP path |
+|---|---|---|
+| RQ1 authority separation, 40 proposals/system | raw append: 35 invalid + 5 valid commits; self-validation: 35 invalid + 5 valid | 0 invalid commits, 35 invalid rejections, 5 valid commits |
+| RQ3 evidence-preserving repair, 32 proposals/system | naïve: 20 evidence-destroying unresolved + 4 valid commits; workflow: 20 evidence-destroying unresolved + 8 valid | 0 evidence-destroying commits, 20 such rejections, 8 valid commits |
+| R7.3 recovery replay | no matched external baseline | 3 events replayed, 2 duplicate events detected; domain CTL mutation explicitly not replayed |
+| R7.4 validator/store boundary | missing validator and invalid store | both rejected; explicit validator accepted |
+
+The four tracked RQ1/RQ3 report files retained their exact pre-run SHA-256
+digests after regeneration. Full repository `pytest` could not run in this
+isolated evidence space because `python3` reported `No module named pytest`.
+No dependency was installed; the executable evidence above uses only the
+repository and standard library.
+
+The matched standing probe has SHA-256
+`1486cd9cd9ad43c88abdbd001950235502e0660f7969970869d204f928a9fb97`.
+The control paired an `agent:r4-kernel-evidence` proposal with the same decision
+principal and returned `accepted_and_committed`. The mismatch preserved the
+proposal and all tenant/workflow/binding inputs but supplied existing
+same-tenant `agent:r4-kernel-bob` as decision and kernel-request principal; it
+also returned `accepted_and_committed`. Code provenance is v2 tag
+`7aab09c43c…0a4`, principally
+`mnemosyne/runtime/kernel_admission.py:105-167` and
+`mnemosyne/runtime/sqlite_repository.py:293-367`. The adapter builds a kernel
+request from the caller-supplied identity; repository validation checks proposal,
+tenant, workflow, and binding consistency but not equality with the proposal's
+agent. This proves the runtime adapter does not supply that binding. It does not
+prove the domain kernel lacks every application-specific identity rule.
+
+### CAGE field disposition
+
+| CAGE-1 field | Actual evidence | Decision |
+|---|---|---|
+| Attempted action | Proposal with workflow, binding, principal, and payload | Supported locally |
+| Standing | Decision/kernel request name tenant, binding, and principal | Incomplete: Alice→Bob mismatch commits |
+| Condition | Constraint/policy and validator/store metadata | Present, not independently authoritative or complete |
+| Boundary outcome | Accepted/rejected, committed IDs, error codes | Supported for exercised paths |
+| Non-effective result | Invalid RQ1/RQ3 proposals did not commit | Local no-commit only; no external business-effect proof |
+| Receipt | Proposal, decision, trace, and CTL records | Split join, not one hashed portable receipt |
+| Replay | State projection and recovery-event replay | Not same-action re-evaluation after changed conditions; no domain CTL mutation replay in R7.3 |
+
+The high-confidence conclusion is therefore qualified: ATP supplies useful
+constraint-relative admission and evidence-preserving controls, while the
+audited runtime leaves application principal binding incomplete. CAGE-1 did not
+validate ATP, but its checklist helped expose a defect that the aggregate zero-
+invalid-commit result did not measure. Confidence is high in exact bytes,
+revisions, outputs, and local code path; medium in generalizing across untested
+adapters; low in external non-effect, unified receipt, policy completeness, and
+deployment behavior.
+
+### Lane continuity and next exploration
+
+- **GitHub — selected/useful:** `eyuchang/Mnemosyne`, v2 tag
+  `7aab09c43c…0a4`, public HEAD `ba43036035…3a0`. Relevance/value are high
+  because code resolves the CAGE standing question; freshness is current and
+  public access succeeded. Revisit when runtime proposal/decision identity
+  validation changes.
+- **arXiv — selected/useful:** `2607.00269v2` was the matched paper artifact;
+  Atom now advertises v3. Relevance/value are high; preserve v2 for this result
+  and inspect v3 only if its claims or artifact linkage changes materially.
+- **Reddit — deferred:** zero public requests. No relevant thread or access
+  trigger fired; the recorded RSS/JSON boundary and low expected value remain.
+  Revisit on a named relevant thread or access change, not quota work.
+
+`RV-004` remains high/open because the protected history still lacks the
+query/rank→selection→later-outcome join needed for retained-outcome evidence.
+The next ranked accessible exploration is AGL-1 `2607.03516v1`: determine from
+its primary artifact whether its seven-domain “governance layer” is an
+implemented control plane, an architecture proposal, or supported enterprise
+deployment evidence. Begin that work only after the next bounded seed-first
+reconciliation; do not make an early XHS request.
+
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
 Cycle 338 begins from clean validated tip
