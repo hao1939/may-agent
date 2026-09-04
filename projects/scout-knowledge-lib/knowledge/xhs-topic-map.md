@@ -6157,6 +6157,43 @@ is excluded. Standing status and runtime state are empty. Protected `/app`
 remains `386b445c…1fec8`, 916 / `8e3558f4…848a36` overall and 296 /
 `a430d0c9…32d7e` in Scout scope.
 
+### Cycle 337 seed-first start — isolate EvoSOP's lifecycle claim
+
+At `2026-09-04T04:31:43.160Z`, the last XHS receipt through
+`2026-09-03T22:59:03.253Z` remains inside the six-hour cadence ending at
+`2026-09-04T04:59:03.253Z`. Make zero XHS requests: additions and changes are
+unknown, observed removals are `[]`, all 132 durable seeds remain unavailable,
+and account state is unchanged. Rank (1) high/open `RV-004`, inaccessible at
+the protected outcome-join boundary; (2) unreleased Memory in the Loop; (3)
+EvoSOP `2607.07321`, highest accessible because its four-stage lifecycle has
+not been isolated from the bundled architecture; (4) other substantive
+primary, contradiction, reproducibility, retrieval, and synthesis gaps; (5)
+Reddit until its trigger; and (6) compaction. Select EvoSOP and test its
+baselines, ablations, denominators, success/round metrics, pruning evidence,
+artifacts, and transfer limits.
+
+### Cycle 337 checkpoint — feedback-guided retirement, not four-stage causality
+
+Primary review of `2607.07321v1` finds a concrete ten-iteration lifecycle and
+higher average success for the bundled EvoSOP system, but not causal isolation
+of construct/merge/evaluate/prune. The ACEBench ablation removes only Reviewer
+or Merger. Reviewer removal bundles loss of judgment with loss of pruning and
+has a large Multi-Step contrast, while its Multi-Turn interval overlaps the
+full system; Merger removal stays close to full EvoSOP. Constructor and
+Evaluator are never ablated. Final-epoch selection uses training success with
+no validation set, and exposed and unseen task outcomes are pooled.
+
+Metadata/source provenance is 2,957 bytes / `35f7f93e…bf74` and 181,356
+bytes / `b0e10a3b…34244` at `2026-09-04T04:32:35Z`. The paper declares no
+repository. A complete unauthenticated GitHub search found eight incidental
+matches; the only exact-name repository is empty, later-created, and
+unattributed. Reddit made zero requests and retains its existing trigger.
+Confidence is high in the paper-stated workflow and table, moderate in the
+bundled benchmark result, and low in stage attribution, held-out transfer, or
+reproducibility. `RV-004` remains high/open. Next primary-review agentic-
+governance survey `2607.07612`, especially its corpus denominator, evidence
+grading, deployed-mechanism counts, and deployment/maturity-gap inference.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

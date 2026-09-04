@@ -1058,7 +1058,15 @@ support a narrower coverage claim:
 - **Recursive Self-Improvement survey** (2607.07663v1, primary-reviewed 2026-09-04): Organizes an 871-paper seed harvest plus 379 targeted supplemental records, but calls its formal-verifier-to-intrinsic-signal ordering a “qualitative pattern ... not a measured law.” The recency-biased sample is 74% from 2026, acknowledges about 54 supplemental bleed records, and was classified by one annotator. Its promised public corpus repository returned `Repository not found`, so assignments and scripts remain unverified. “Governance-grade measurement” is an attributed gap inference, not a separately measured category.
 - **Physics-Audited Agentic SciML** (2607.07379v1, primary-reviewed 2026-09-04): A common post-run contract finds normalized causality violations of 12.62 sampled and 2750.62 under bounded search for one earlier error-only transient surrogate, while the causal surrogate reports zero. But the audit-enabled surrogate also has lower mean error (`2.629e-3` versus `2.724e-3`), causality was soft during live search, both runs are single-seed, and the workflow changes verification, probes, and proposal feedback together. This supports predicate-specific output evidence, not a systematic weak-versus-strong selection reversal.
 - **Rethinking Code Performance Benchmarks** (2607.07619v1, primary-reviewed 2026-09-04): Only **94/1,538 (6.11%)** benchmark-labeled performant implementations pass the study's combined original-test correctness, one-sided significance, and effect-size gate. This does not prove that the 1,444-task complement is noise or false: released CSVs contain 1,400 `p >= .05` cases, 44 other gate failures, and 529 implementations that pass fewer tests than canonical. The authors' generated stress tests detect 23.94–25.43% in the released artifact, but its COFFE spreadsheets disagree with the paper's comparison table. Repeated measurement helps; correctness, workload selection, and artifact consistency remain separate verification requirements.
-- **EvoSOP** (2607.07321v1): Agents self-evolve through lifecycle governance (construct→merge→evaluate→prune), not static toolsets. The pruning step IS the verification gate — without it, the toolset accumulates false-pass artifacts. Governance loop IS the improvement mechanism.
+- **EvoSOP** (2607.07321v1): The paper implements lifecycle governance
+  (construct→merge→evaluate→prune) and reports higher average task success for
+  the bundled system. Its ablation removes only Reviewer/pruning or Merger:
+  Reviewer removal has a large adverse Multi-Step contrast, but Multi-Turn
+  intervals overlap; Merger removal stays close to full EvoSOP; Constructor
+  and Evaluator are never ablated. Because exposed and unseen tasks are pooled
+  after choosing the best training-success epoch, this is suggestive evidence
+  for feedback-guided retirement, not proof that governance or pruning alone
+  causes the gain.
 - **Towards Agentic AI Governance** (2607.07612v1): Systematic review identifies that agentic AI requires targeted governance mechanisms distinct from pre-existing AI frameworks. Self-describes as "preliminary" — the field is pre-paradigmatic while deployment accelerates.
 
 The revised coverage map keeps the mechanisms but removes ordinal claims:

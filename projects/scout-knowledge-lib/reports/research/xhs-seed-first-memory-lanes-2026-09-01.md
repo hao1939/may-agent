@@ -12670,6 +12670,78 @@ overall and 296 /
 `a430d0c9f6572009793273d453d67220ba6a5f6c6e4198d43de4628684322f7e` in
 Scout scope. This worker did not write, test, clean, or mutate it.
 
+## Cycle 337 seed-first start — isolate EvoSOP's lifecycle claim
+
+At `2026-09-04T04:31:43.160Z`, the XHS observation through
+`2026-09-03T22:59:03.253Z` is still inside its six-hour cadence, whose next
+boundary is `2026-09-04T04:59:03.253Z`. This bounded reconciliation therefore
+makes zero XHS requests. Added and changed identities remain unknown, observed
+removals are `[]`, all 132 durable seeds remain unavailable, provenance is the
+last browser receipt plus the durable seed ledger, and account state remains
+unchanged. The missing live observation is explicit uncertainty, not a
+no-change claim.
+
+Expected knowledge value ranks the complete queue: (1) high/open `RV-004`,
+whose query/rank -> selected-file -> later-outcome join could change Scout's
+maintenance policy but is inaccessible because the protected post-August-31
+history does not retain that join; (2) Memory in the Loop's unreleased
+provider result; (3) EvoSOP `2607.07321`, highest accessible because the
+library has not established whether construct/merge/evaluate/prune is an
+experimentally isolated mechanism or a bundled architecture; (4) other
+agentic-governance, contradiction, primary-evidence, reproducibility,
+retrieval, and synthesis gaps; (5) Reddit until a relevant thread or access
+change; and (6) byte/line compaction. Select EvoSOP. Review its primary paper,
+baselines, ablations, denominators, success/round metrics, pruning evidence,
+artifact provenance, and transfer limits before changing the synthesis.
+
+## Cycle 337 checkpoint — the lifecycle is implemented but not isolated
+
+ArXiv `2607.07321v1` metadata and source were observed at
+`2026-09-04T04:32:35Z`: the 2,957-byte Atom response has SHA-256
+`35f7f93ed2f096263cb91c1965dc1fb5bc371acc952a5b27246852514d03bf74`,
+and the 181,356-byte source archive has SHA-256
+`b0e10a3b346b4b928ad854e8c92a9ba11a25e5bbac5e9cb25562c9afd7134244`.
+
+EvoSOP's complete architecture constructs SOPs from 25 sampled trajectories,
+merges candidates, re-executes training tasks, reviews tool outcomes, and
+prunes candidates over ten iterations. Its main table averages six ACEBench
+workflows and three Tau2Bench workflows. With GPT-4o construction, it reports
+`84.2±1.9` versus ReAct's `80.8±3.4` on ACEBench Multi-Step, `79.4±3.0`
+versus `72.2±3.7` on Multi-Turn, and `40.9±0.4` versus `37.1±2.8` on
+Tau2 Telecom Solo. Those are bundled-system averages with standard errors;
+the paper supplies no paired-difference test, multiplicity handling, or
+per-task result.
+
+The ablation does not isolate construct/merge/evaluate/prune. It removes only
+Reviewer or Merger on ACEBench. Reviewer removal simultaneously removes
+judgment and prune decisions; the plotted Multi-Step contrast is large, while
+the Multi-Turn intervals overlap. Removing Merger stays near the complete
+system, and Constructor and Evaluator are never removed. A representative
+SOP-lifetime plot and a below-ten maintained-tool trend document lifecycle
+behavior but supply no matched no-pruning outcome. The paper selects the
+checkpoint with highest training success without a separate validation set
+and pools the exposed and unseen tasks in the reported table, so held-out
+transfer and selection optimism remain unknown.
+
+The paper and arXiv record declare no repository. At
+`2026-09-04T04:33:51.682Z`, unauthenticated GitHub repository search returned
+eight complete but incidental matches in a 51,571-byte response (SHA-256
+`079816781876d26f7a5da8af76ce1d53d9ee057ca2c0cdca51f388018d863e89`).
+The sole exact-name target, `rahmadikaaa/evosop`, is an empty personal
+repository created after the paper; its tree endpoint returned HTTP 409, and
+no author or paper linkage was observed. This is an artifact boundary, not a
+failed reproduction.
+
+ArXiv and the paper-attributable GitHub search were useful. Reddit made zero
+requests and remains RSS-readable/JSON-403 until a relevant thread or access
+change. Confidence is high in the paper's table and stated workflow, moderate
+in the bundled benchmark result, and low in stage attribution, held-out
+transfer, or reproducibility. `RV-004` remains high/open because this paper
+contains no protected Scout query-to-outcome join. Next begin seed-first and
+primary-review agentic-governance survey `2607.07612`: test its search dates,
+corpus denominator, screening, evidence grading, deployed-mechanism counts,
+and whether “preliminary” supports any deployment/maturity-gap claim.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296
