@@ -10268,6 +10268,49 @@ Select item 3. Read the primary method and estimates, test the coefficient's
 units and comparison, and distinguish direct measures of language use from
 unmeasured comprehension or skill.
 
+## Cycle 310 checkpoint — language use broadens; comprehension is unmeasured
+
+Seed-first commit `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d`
+preceded all public reads. Anonymous read-only arXiv access returned HTTP 200
+for the `2605.25438v2` abstract at `2026-09-04T00:49:17.626Z` and its source
+archive at `00:49:19.087Z`. The 46-file TeX source archive is pinned by
+SHA-256 `1b3e7968697bcb306f7c96fbdb60e93d8c49eb805afb15ce00271084da24a296`.
+
+The source changes the library in two decision-relevant ways. First,
+`table_cl_main.tex` reports `+2.528` active languages (SE `0.063`) at adoption
+against a `0.90` pre-adoption mean. That is an additive event-time ATT, not the
+recorded `2.5x` multiplier. It also reports `+1.193` newly used languages (SE
+`0.051`) and `+0.382` entropy (SE `0.009`). Excluding all Claude-coauthored
+commits retains `+1.663` active languages, evidence against a purely mechanical
+commit-label explanation.
+
+Second, the paper expressly defines a production frontier rather than a skill
+frontier. Its empirical “unfamiliar” category means absent from public GitHub
+history since January 2024; it does not exclude private or older use. The
+narrow-portfolio first-use pattern survives within activity halves, but the
+paper says activity is a confounded ability proxy and does not measure
+comprehension. Voluntary adoption can also follow the same new-project shock
+that changes language use, so the authors frame the estimates as associations
+and require exogenous adoption variation for causality.
+
+The revised Scan 467 artifact now retains both sides: robust observed breadth
+supports a production association, while measurement and identification
+limits reject “agents substitute for comprehension most where it was weakest”
+as a finding. Confidence is high for the exact estimate and scope correction,
+low for causality, comprehension, skill erosion, or later skill accumulation.
+
+arXiv won on relevance and directness; revisit on v3, code/data publication,
+or exogenous-adoption evidence. GitHub made zero requests and has no stable
+paper replication identity to inspect; revisit on an author-linked repository.
+Reddit made zero requests and stays deferred at RSS-readable/JSON-403 until a
+relevant thread or access change. `RV-004` remains high/open because no
+query/rank-to-later-outcome join appeared.
+
+Next begin seed-first and audit Scan 467's `2607.05197v1` repair-loop section.
+Testing the claimed universal three-to-four-iteration ceiling and “workflow
+orchestration > model” statement against its primary tasks, models, and
+estimand ranks above another unsourced summary or byte/line compaction.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

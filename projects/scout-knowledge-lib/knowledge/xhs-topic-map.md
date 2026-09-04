@@ -4444,6 +4444,46 @@ primary evidence. Select item 3: test the exact meaning of the reported
 language-frontier coefficient and whether the study measures comprehension or
 only repository behavior, retaining supporting and contradictory evidence.
 
+### Cycle 310 checkpoint — production breadth is not comprehension evidence
+
+Seed-first `7dd3965ef8bfb9612aa6f127dfe7a1f77470d05d` preceded every public
+read. At `2026-09-04T00:49:17.626Z`–`00:49:19.087Z`, anonymous read-only
+arXiv access returned HTTP 200 for `2605.25438v2` metadata and its 46-file
+TeX source archive. The archive SHA-256 is
+`1b3e7968697bcb306f7c96fbdb60e93d8c49eb805afb15ce00271084da24a296`.
+
+Primary evidence corrects two durable claims. Table `table_cl_main.tex`
+reports an adoption-month average treatment effect on the treated (ATT) of
+`+2.528` active languages (SE `0.063`) against a `0.90` pre-adoption mean;
+this is additive, not a `2.5x` ratio. Newly used languages rise by `1.193`
+(SE `0.051`) and entropy by `0.382` (SE `0.009`). The unassisted-commit
+decomposition retains `+1.663` active languages, supporting that the result is
+not only the treatment-defining commit.
+
+The same source contradicts the comprehension inference. It explicitly calls
+the object a production frontier, not a skill frontier; “unfamiliar” means
+absent from observed public contributions since January 2024 and may include
+private or older experience. Narrow-portfolio developers have more first uses
+within each activity half, but the authors call the activity-based ability
+proxy confounded. They also retain project-driven selection as an alternative:
+a new-language project can cause both Claude adoption and language expansion.
+Thus confidence is high for the coefficient/scope correction and observed
+event-time association, low for causality, comprehension substitution, skill
+erosion, or later skill acquisition.
+
+Lane continuity: arXiv supplied the selected primary evidence; revisit on v3,
+data/code release, or exogenous-adoption analysis. GitHub made zero requests;
+the paper provides no public replication identity, so revisit on a stable
+author repository or data link. Reddit made zero requests and remains deferred
+at RSS-readable/JSON-403 until a relevant thread or access change. `RV-004`
+remains high/open because this corrects durable knowledge but supplies no
+retained query/rank-to-later-outcome join.
+
+Next begin seed-first, then primary-review Scan 467's repair-loop claim. Its
+asserted universal `3–4` ceiling and “workflow > model” ranking can change the
+same synthesis and its primary `2607.05197v1` source is accessible, so it
+outranks another unsourced summary or static compaction.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
