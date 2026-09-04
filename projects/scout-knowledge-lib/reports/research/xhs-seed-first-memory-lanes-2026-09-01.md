@@ -10386,6 +10386,36 @@ Next begin seed-first and primary-review Scan 467's `2601.06692v3` formal
 consent claim, especially what Lean actually proves versus what is posed as a
 phenomenological equation or dynamical interpretation.
 
+Cycle 311 seed/source `b321dc4b29d681c71e921a58d6b698305aa9a112`
+produced material result `9eacb75f9f43b8445d053af1c84099c9d77a5aa6`.
+The exact candidate passes syntax, TypeScript, formatting, Cycle 292
+projection, 90 scoped links, navigation 11/14 and 8/8, and all 296 tests /
+1,484 assertions. The 1,540-document / 1,728-link broad audit passes.
+Read-only health at `2026-09-04T01:04:06.976Z` returns 26 facts / 16 wakes
+with `truncated:true`; accepted `ff923ccde4` is contained, unaccepted
+`d041c41b54` excluded, and the standing tree is clean.
+
+Protected `/app` remains externally observed at HEAD `386b445c…41fec8`, 916
+whole-status records / `f7080322…a93a`, and 296 Scout-scope records /
+`7e4d0937…26a8a`. This worker wrote or tested neither protected surface.
+
+## Cycle 312 seed-first start — primary-check the consent formalism
+
+At `2026-09-04T01:04:18.335Z`, Cycle 312 began from clean validated
+`9eacb75f9f43b8445d053af1c84099c9d77a5aa6`. The current XHS receipt through
+`2026-09-03T22:59:03.253Z` was about 125 minutes old and inside the six-hour
+cadence. Reconciliation made zero XHS, GitHub, arXiv, or Reddit requests:
+added/changed identities remain unknown, observed removals are `[]`, all 132
+durable seeds remain unavailable, and no account mutation occurred.
+
+The complete queue ranks `RV-004`'s unavailable protected outcome join first,
+the missing Memory in the Loop provider artifact second, and Scan 467's
+accessible `2601.06692v3` formal-consent claim as the highest-value actionable
+item. Other unsourced claims follow; Reddit remains trigger-deferred; static
+compaction is last. Select the primary paper and separate its posited friction
+functional, Lean-checked propositions, replicator dynamics, and real-world
+stability inference.
+
 Exact Cycle 308 material
 `3fb1bcbc5e74d2755aff14dac89daf7056369382` passes syntax, TypeScript,
 formatting, Cycle 292 projection, 90 scoped links, navigation v1 at 11/14,

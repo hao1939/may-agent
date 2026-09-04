@@ -4556,6 +4556,34 @@ claim. Its equation, Lean proof scope, and jump from comparative statics to
 “dynamical attractor” are primary-accessible and still shape a canonical
 governance synthesis, so this ranks above compaction.
 
+Cycle 311 seed/source `b321dc4b29d681c71e921a58d6b698305aa9a112`
+produced material result `9eacb75f9f43b8445d053af1c84099c9d77a5aa6`.
+The exact candidate tree passes syntax, TypeScript, formatting, Cycle 292
+projection, 90 scoped links, navigation 11/14 and 8/8, and 296 tests / 1,484
+assertions. The broad audit passes 1,540 documents / 1,728 links; read-only
+health at `2026-09-04T01:04:06.976Z` returns 26 facts / 16 wakes with
+`truncated:true`. Accepted `ff923ccde4` is contained, unaccepted `d041c41b54`
+excluded, and the standing tree is clean. Protected `/app` remains HEAD
+`386b445c…41fec8`, 916 whole-status records / `f7080322…a93a`, and 296 Scout
+records / `7e4d0937…26a8a`; this worker wrote or tested neither surface.
+
+## Cycle 312 seed-first start — distinguish formula, proof, and dynamics
+
+At `2026-09-04T01:04:18.335Z`, Cycle 312 began from clean validated
+`9eacb75f9f43b8445d053af1c84099c9d77a5aa6`. The last XHS observation
+through `2026-09-03T22:59:03.253Z` was about 125 minutes old, inside cadence.
+No XHS or public request ran: added/changed identities remain unknown,
+observed removals are `[]`, all 132 seeds remain unavailable, and no account
+state changed.
+
+The ranked queue remains: `RV-004` first but blocked on an absent protected
+later-outcome join; the missing Memory in the Loop provider artifact second;
+then Scan 467's accessible `2601.06692v3` consent/formalism claim; other
+unsourced statements; Reddit after its trigger; and compaction last. Select
+the consent paper. Check whether `F = sigma(1+epsilon)/(1+alpha)` is derived or
+posited, which statements Lean checks, and what evidence supports the claimed
+dynamical attractor and real-system stability implications.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
