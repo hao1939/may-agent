@@ -678,19 +678,19 @@ Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2
 
 ## The Verification Harness (#451) — Exit-Arc Instantiation
 
-The seven-scan exit arc (#444–#450) demanded an exit that is architectural, not human-dependent. Three arXiv papers reveal the concrete instantiation: a **verification harness** that makes soundness a *construction property*, not an *inspection activity*.
+The seven-scan exit arc (#444–#450) demanded an architectural exit. Three arXiv papers reveal a qualified instantiation: a **verification harness** makes only the property checked by its actual authority an admission condition.
 
 - **Aria** (2607.06341, primary-reviewed 2026-09-04): An Opus 4.7 code-agent campaign with kernel checking and coverage/lint hooks reports all 4,864 existing target lemmas proved across Iris, RustBelt, reglang, and iris-lean, with zero expert intervention during the campaign. The cross-system reglang comparison and absence of a matched alternate-harness control do not establish that strategy freedom or harness design alone caused coverage.
 - **RuBench** (2607.06411): A trajectory-tracking benchmark caught Claude Code + Fable 5 silently substituting Opus 4.8 on **20% of tasks** via an undisclosed safeguard fallback. Outcome-only evaluation would have attributed all results to Fable 5. The paper states: "the deployed product, not the model, is the unit actually measured." Validates Attribution Error (#440) and Configuration Layer (#425).
-- **Danus** (2607.06447): Mathematical reasoning with a shared **fact graph** as verified memory — a stateless verifier checks claims before admission, each fact stored with its proof and logical dependencies. Incremental construction of long proofs in algebraic geometry, singularity theory, and combinatorics. The fact graph is a verification harness for mathematical knowledge.
+- **Danus** (2607.06447, primary-reviewed 2026-09-04): Mathematical reasoning with a shared fact graph, but its stateless verifier is an informal LLM judge rather than a formal kernel. The paper reports six case studies and useful proof/dependency/revocation structure, while also reporting human-discovered target-scope, proof-gap, and faulty-reference errors. Its public releases retain only toy facts, not the research graphs or verdict receipts; current admission code also accepts a declared nonexistent predecessor after a controlled `correct` verdict.
 
-**The Verification Harness Hypothesis**: the harness provides exactly the three guarantees the Knowledge Erosion (#450) showed human authorship can no longer supply:
+**The Verification Harness Hypothesis, qualified**: a harness supplies only the guarantee supported by its checking authority and retained evidence. A proof kernel, trajectory identity check, and informal LLM judge are not interchangeable:
 
 | Knowledge Layer Eroded (#450) | Harness Guarantee (#451) |
 |------|------|
-| Expertise accrual | **Soundness** — harness rejects unsound output regardless of operator expertise |
-| Process evidence | **Completeness** — harness ensures no obligation silently dropped |
-| Diagnostic capacity | **Termination** — harness prevents divergent execution, makes failure visible |
+| Expertise accrual | **Soundness when proved by the authority** — Danus's LLM verdict can be wrong |
+| Process evidence | **Completeness over retained obligations** — unreleased runs cannot be independently audited |
+| Diagnostic capacity | **Termination when explicitly enforced** — an agent declaring a target verified is not a formal termination guarantee |
 
 **GitHub confirmation**: AgentStalker (129★) — formal taint tracking proofs for agent vulnerabilities. donecheck (15★) — proof-of-done evidence receipts for coding agents. The harness ecosystem (172K★ top 5) has absorbed; new growth is in *verification of harnesses*.
 
@@ -704,7 +704,7 @@ The seven-scan exit arc (#444–#450) demanded an exit that is architectural, no
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. **Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)**
+8. **Verification Harness (#451): The architecture makes its checker authority and retained evidence explicit (instantiation)**
 
 Source: findings/2026-07-22-hn-arxiv-github-scan-451.md, https://arxiv.org/abs/2607.06341, https://arxiv.org/abs/2607.06411, https://arxiv.org/abs/2607.06447
 
@@ -743,7 +743,7 @@ Supporting evidence:
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)
+8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
 9. **Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)**
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-452.md, https://arxiv.org/abs/2607.03935, https://arxiv.org/abs/2607.02931, https://arxiv.org/abs/2607.03561
@@ -785,7 +785,7 @@ The nine-scan exit arc assumed that **what the harness approves is what the syst
 5. Architecture Premium (#448): Test architecture as a factor, not a universal model ranking
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)
-8. Verification Harness (#451): The architecture is a harness that makes soundness constructive (instantiation)
+8. Verification Harness (#451): The architecture names its checker authority and retained evidence (instantiation)
 9. Co-Evolution Imperative (#452): The harness must co-evolve with the system it verifies (sustainability condition)
 10. **Execution Boundary (#453): Bind verification to the execution surface, not the approval surface (fidelity condition)**
 11. **Write Contract (#454): Govern shared state mutations with explicit contracts (persistence condition)**

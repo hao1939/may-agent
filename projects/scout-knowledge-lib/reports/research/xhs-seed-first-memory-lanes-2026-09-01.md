@@ -12212,6 +12212,76 @@ the primary source, attributable artifacts, admission semantics, proof and
 dependency receipts, actual case-study outcomes, controls, and generalization
 limits.
 
+## Cycle 332 checkpoint — Danus is a repairable LLM-reviewed graph, not a proof kernel
+
+ArXiv exact-ID access returned `2607.06447v2`; the 3,656-byte Atom response has
+SHA-256 `0c4965f801b339a57f2474a3e542541ed98acffb5b38591090179d576aba9c49`,
+and the 1,137,014-byte source archive has SHA-256
+`1b5d5ddd6cc5fd6fd1f3e9d637d8f31ec1cd9cf329e80b790688b44df4b4e3ba`.
+The source and public repository were reviewed through
+`2026-09-04T03:53:24.890Z`.
+
+The paper reports six research cases. Its largest run used seven workers for
+about five days and records 3,157 verifier-accepted facts, 8,616 declared
+dependency edges, depth 54, and 664 facts supporting the final theorem. The
+paper itself supplies the important contradictory evidence: humans found that
+the system had declared completion after solving only the rational form of an
+integral target, found one written lemma justification incomplete, and found a
+faulty reference definition whose descendants then had to be revoked. Another
+case required a human to correct a misread `>=3` hypothesis. Human review took
+one or two weeks for results produced in one or two days. These observations
+support review and repair, not formal soundness, completeness, or
+operator-independent correctness.
+
+Unauthenticated public Git observed attributable repository
+`frenzymath/Danus` at default `codex` head
+`6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c`; `main` was
+`1a2cb99f9b16abb6b82d1bda207ed8a822f12743`. Initial release
+`v0.1.0` is `7aad41077147af7b8f2a697512075bb326ade992`. The verifier docs
+explicitly call it an informal LLM judge and require expert review. Both GitHub
+releases have zero assets; the two tags and two current branches each expose
+only eight tracked toy fact files. No research fact graph, verifier receipt,
+prompt, human-intervention trace, or case output is released, and `runtime/`
+plus verification runs are gitignored. The paper's run counts and six outcomes
+therefore remain author-reported.
+
+Current code accepts the verifier response's `correct` string and then writes a
+fact; deterministic prechecks can reject but do not establish mathematical
+correctness. The core fact-store blob is identical between initial release and
+current head. Its predecessor check rejects a revoked ID but never requires an
+ID to exist. In a goal-owned scratch clone, one controlled stub-verdict comparison
+held statement/proof pattern, author, problem, and verdict structure fixed.
+Empty-predecessor control `094ab53b72bcdfa0` and candidate
+`77bd0e241ce78d4e` naming nonexistent `ffffffffffffffff` were both returned as
+accepted; two fact files and two verification records were written, and the
+dangling ID persisted. The repository's existing core suite also printed
+`ALL CORE TESTS PASSED`. Importing the full gateway normally was unavailable
+because the optional `mcp` package is not installed in this environment; a
+minimal non-network stub exposed only the existing function for this storage
+control, and no provider/model judgment was exercised.
+
+The Rethlas comparison keeps the prompt and worker/verifier models common but
+compares three failed Rethlas runs with one successful Danus run under different
+orchestration and effective search budgets. It is useful comparative evidence,
+not a repeated matched ablation isolating fact-graph memory. The retained rule
+is narrower: record checker authority separately from its admission result;
+retain graph, verdict and intervention receipts; validate referenced-node
+existence; and keep expert review for high-stakes informal proofs.
+
+Both Scan #451 copies, Scan #461, the INDEX, and the Oversight Inversion
+synthesis now carry that qualification. GitHub last supplied exact
+code/release provenance and the artifact absence; revisit on head/release change
+or publication of case receipts. ArXiv supplied v2 paper/source; revisit on a
+revision or supplement. Reddit made zero requests and stays deferred at its
+RSS-readable/JSON-403 boundary until a relevant thread or access change.
+`RV-004` remains high/open because this result has no protected Scout
+query/rank/selection/outcome join.
+
+Next begin seed-first without an early XHS request. Re-rank the remaining
+primary-evidence and reproducibility gaps and inspect the highest-value
+accessible verifier/artifact claim; do not substitute byte/line compaction for
+that research.
+
 Exact Cycle 326 material `c7a73c9debbda967a2d18b056d131e4cdce407f9`
 passes syntax, TypeScript, formatting, Cycle 292 projection, 90 scoped links,
 navigation v1 at 11/14, navigation v2 at 8/8, and the full Scout gate at 296

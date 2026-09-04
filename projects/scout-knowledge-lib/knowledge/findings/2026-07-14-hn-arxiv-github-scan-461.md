@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #461 (2026-07-14), primary-qualified in 2026-09. The Foundations Turn approaches 998pts as an Accretive Work essay reaches 56pts; these counters are attention observations. Agents That Teach (2607.06101v1) proposes Knowledge Debt, six learning-aware design principles, and an unevaluated SHIELD prototype. Its cited randomized study (2601.20245v2) reports a 17% immediate quiz-score reduction in a one-hour unfamiliar-library task, not longitudinal atrophy or SHIELD effectiveness. Danus and the GitHub repositories remain discovery claims pending their own primary review."
+summary: "HN/arXiv/GitHub Scan #461 (2026-07-14), primary-qualified in 2026-09. The Foundations Turn and Accretive Work counters are attention observations. Agents That Teach proposes unevaluated SHIELD; its cited randomized study reports a one-hour learning gap, not longitudinal atrophy. Danus supplies content-addressed, linked, revocable storage after an informal LLM verdict, but releases no research-run receipts and reports human-discovered errors; this supports repairable accumulation, not compounding verified correctness."
 triggers: ["accretive signal", "accretive work", "foundations turn", "knowledge debt", "SHIELD", "incidental learning", "Danus", "fact-graph memory", "Visa harness", "Looper review-gated", "burner agents", "uniqlo decode", "scan 461", "comprehension naming", "verification productization"]
-source_basis: "HN front page 2026-07-14 via Algolia API (50 stories). HN items: 48761868 (Accretive Work 56pts), 48829312 (Uniqlo 175pts), 48816883 (StreetComplete 770pts), 48818311 (Chat Control 680pts), 48823557 (EU Car Camera 654pts), 48819608 (30papers 536pts), 48821576 (Kokoro 424pts), 48827858 (GitLost 204pts), 48825664 (SICP 189pts), 48827402 (Sol launch 197pts), 48821378 (l runtime 147pts). arXiv API: 2607.06101 (SHIELD), 2607.06447 (Danus), 2607.06157 (Deliberative Collaboration). GitHub API: visa-vulnerability-agentic-harness 660★, looper 638★, burner-agents 646★, agent-apprenticeship 1,301★, AutoCVE 1,104★, omnigent 6,713★, shepherd 1,091★, tau 890★, Danus 16★. Primary qualification 2026-09-04: 2607.06101v1 and its cited randomized study 2601.20245v2."
+source_basis: "HN front page 2026-07-14 via Algolia API (50 stories). HN items: 48761868 (Accretive Work 56pts), 48829312 (Uniqlo 175pts), 48816883 (StreetComplete 770pts), 48818311 (Chat Control 680pts), 48823557 (EU Car Camera 654pts), 48819608 (30papers 536pts), 48821576 (Kokoro 424pts), 48827858 (GitLost 204pts), 48825664 (SICP 189pts), 48827402 (Sol launch 197pts), 48821378 (l runtime 147pts). arXiv: 2607.06101v1, 2601.20245v2, and 2607.06447v2 primary-reviewed 2026-09-04. Danus repository initial release 7aad41077147af7b8f2a697512075bb326ade992 and observed default head 6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c; release trees, verifier trust boundary, and admission/store semantics audited. Other GitHub counters remain discovery observations."
 </ai_context>
 
 # Scan #461: The Accretive Signal
@@ -147,15 +147,15 @@ Source: https://arxiv.org/abs/2607.06447
 An orchestration system for research-level mathematical reasoning centered on a **shared fact graph** as global memory. Architecture:
 - **Main agent**: planning and coordination
 - **Worker agents**: parallel proof search
-- **Stateless verifier**: checks proposed mathematical claims before admission to the fact graph
+- **Stateless informal LLM verifier**: reviews proposed mathematical claims before admission to the fact graph
 
-Each verified fact is stored with its proof and logical dependencies, enabling incremental construction of long arguments. The main agent periodically summarizes the evolving proof state and redirects workers.
+Each LLM-verifier-accepted fact is stored with its proof and declared predecessor IDs, enabling incremental construction and cascade revocation. The checker is explicitly not a formal prover, and expert review remains required.
 
-Evaluated on six research-level case studies in algebraic geometry, singularity theory, and combinatorics. Open source at https://github.com/frenzymath/Danus (16★, tracked since #460).
+The paper reports six research-level case studies in algebraic geometry, singularity theory, and combinatorics. Public releases contain no research graphs, run logs, or verdict receipts; the repository's tracked facts are toy examples. The paper also reports human-discovered target-scope, proof-gap, and faulty-reference errors.
 
-**Structural insight**: The fact graph is an accretive memory structure — each new verified fact builds on previous ones, and the graph's value compounds as more facts are admitted. This is the architectural implementation of the accretive principle: reasoning capacity grows with accumulated verified structure.
+**Structural insight, qualified**: The fact graph is an accretive and repairable memory structure, but admission quality does not compound automatically. Current code accepts a nonexistent declared predecessor after a controlled `correct` verdict, so integrity of the dependency closure needs its own check. This supports linked accumulation and revocation, not a claim that reasoning capacity or correctness necessarily grows with graph size.
 
-**Connection to Write Contract (#454)**: The fact graph with stateless verification is a concrete instance of the Write Contract pattern — every write to the shared state (every new fact) must pass verification before admission. The stateless verifier ensures that verification is decoupled from the agent's subjective state, preventing motivated reasoning from contaminating the proof.
+**Connection to Write Contract (#454)**: The fact graph is a concrete mediated-write pattern: every gateway fact write requires an independent LLM verdict. Fresh context reduces direct self-review coupling, but it does not prevent shared-model blind spots, bypasses outside the gateway, or incorrect verdicts.
 
 **Connection to Verification Harness (#451)**: The stateless verifier + fact graph is a domain-specific verification harness: the verifier provides soundness (only valid facts admitted), the graph provides completeness (all dependencies tracked), and the combination enables the worker agents to operate freely within the verified space.
 
@@ -254,7 +254,7 @@ All three sources this scan converge on the same structural insight:
 | GitHub | Visa Harness, Looper | Accretive verification infrastructure (tools that compound safety over time) |
 | GitHub | Agent-Apprenticeship | Accretive agent skill building |
 
-**Proposed pattern**: systems that accumulate verified structure may outperform systems optimized for single-shot performance. The attention counters do not measure comprehension, Danus requires separate primary review before supporting a comparative claim, and SHIELD has not been evaluated. Agents That Teach argues that learning should be designed into agent workflows; its cited controlled study supports only an immediate, task-bounded learning gap.
+**Proposed pattern, qualified**: systems that retain reviewable and repairable structure may outperform single-shot systems, but the attention counters do not measure comprehension and Danus supplies no released matched outcome comparison for that claim. SHIELD remains unevaluated; its cited controlled study supports only an immediate, task-bounded learning gap.
 
 This is not a new layer of the Oversight Inversion but a deepening of existing layers — particularly Knowledge Erosion (#450), Verification Harness (#451), and Attention Decay Curve (#460). The accretive principle is the common structure underlying all three: oversight requires accumulated understanding, not transient attention.
 

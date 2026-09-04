@@ -1,7 +1,7 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #451: The Verification Harness Hypothesis, qualified. Aria reports complete kernel-checked coverage over 4,864 existing lemmas, but no matched control isolates harness causality. RuBench reports five Fable-to-Opus substitutions; its public release directly retains one logged rejection plus 20 clean Fable trajectories, not all five substituted trajectories. The reusable result is requested-versus-executing-model validation for routed products, not a universal claim that the model is never a measurement unit. Danus remains pending primary review."
+summary: "HN/arXiv/GitHub Scan #451: The Verification Harness Hypothesis, qualified. Aria's kernel supplies machine-checkable admission; RuBench's trajectory identity gate directly retains one mismatch rejection; Danus uses an informal LLM judge and still requires expert review. Danus's paper reports six case studies, but its public releases retain no research fact graphs or run receipts. The reusable conclusion is to name the verifier's authority and retain independently auditable outcomes rather than treating every gate as formal soundness."
 triggers: ["verification harness", "Aria formal verification", "code agent proofs", "Coq agent", "Lean agent", "harness soundness", "harness completeness", "constructive verification", "model substitution", "silent fallback", "product layer measurement", "RuBench", "Danus fact graph", "verified fact memory", "trajectory tracking", "full coverage proofs", "zero expert intervention", "verification as construction", "AgentStalker", "donecheck", "proof-of-done", "scan 451"]
-source_basis: "arXiv API (2607.06341 Harnessing Code Agents for Automatic Software Verification, 2607.06411 RuBench, 2607.06447 Danus). Aria v1 and RuBench v2 source primary-reviewed 2026-09-04. RuBench public repository eugeneshilow/rubench pinned at 3cf010895c20c5e6d3b9a0eacd37e7cd207be412; release tarball, run log, harness, 20 retained Fable cells, and result summary audited. Aria anonymous artifact HTTP 401 and complete GitHub repository search zero results. HN front page 2026-07-22 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,185★, guard-skills 972★, T3MP3ST 3,324★, eve 3,304★, AgentStalker 129★, donecheck 15★). Cross-referenced with Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
+source_basis: "arXiv API and full source (2607.06341 Aria v1, 2607.06411 RuBench v2, 2607.06447 Danus v2), primary-reviewed 2026-09-04. RuBench repository eugeneshilow/rubench pinned at 3cf010895c20c5e6d3b9a0eacd37e7cd207be412. Danus repository frenzymath/Danus initial release 7aad41077147af7b8f2a697512075bb326ade992 and observed default head 6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c; release metadata, tracked trees, verifier trust boundary, admission/store implementation, core tests, and a controlled dangling-predecessor admission checked. Aria anonymous artifact HTTP 401 and complete GitHub repository search zero results. HN front page 2026-07-22 (30 stories via Firebase API)."
 </ai_context>
 
 # Scan #451: The Verification Harness Hypothesis
@@ -22,17 +22,17 @@ Three independent arXiv papers converge from formal logic, benchmarking, and mat
 
 2. **RuBench** (2607.06411, qualified): The authors report that Claude Code + Fable 5 fell back to Opus 4.8 on 5/25 tasks. The public release directly preserves one model-substitution rejection and 20 retained Fable trajectories whose 1,585 model-bearing messages all identify Fable; the five rejected trajectories are absent. This supports trajectory-level requested-versus-executing-model validation, while the exact five-task attribution remains author-reported rather than independently reproducible from the release.
 
-3. **Danus** (2607.06447): A mathematical reasoning orchestration system with a shared fact graph as verified memory. A stateless verifier checks each mathematical claim before admission. Proven facts include proofs and logical dependencies, enabling incremental construction of long proofs in algebraic geometry, singularity theory, and combinatorics. The fact graph is a verification harness for mathematical knowledge.
+3. **Danus** (2607.06447, qualified): A mathematical reasoning orchestration system whose fact graph stores an informal LLM verifier's accepted statements, proofs, and declared dependencies. The paper reports six research case studies, but also reports human-discovered target-scope, proof-gap, and faulty-reference errors. The public repository explicitly says the verifier is not a formal checker and releases no research-run fact graphs or verdict receipts.
 
-**The Verification Harness Hypothesis**: when a verification kernel (Coq's proof checker, a trajectory tracker, a stateless claim verifier) wraps agent production, the harness provides exactly the three guarantees the Knowledge Erosion showed human authorship can no longer supply:
+**The Verification Harness Hypothesis, qualified**: a gate provides only the guarantee supported by its authority and retained evidence. Coq's kernel can supply machine-checkable proof admission; a trajectory identity gate can reject a requested/executing-model mismatch; an LLM judge supplies a fallible review signal. Calling all three “verification” does not make their soundness, completeness, or termination guarantees interchangeable:
 
 | Knowledge Layer Eroded (#450) | Harness Guarantee (#451) |
 |------|------|
-| Expertise accrual (developer learns) | **Soundness** (harness rejects unsound output regardless of operator expertise) |
-| Process evidence (developer knows why) | **Completeness** (harness ensures no obligation is silently dropped) |
-| Diagnostic capacity (developer builds observability) | **Termination** (harness prevents divergent execution, makes failure visible) |
+| Expertise accrual (developer learns) | **Soundness only when the authority proves it**; Danus's LLM verdict can be wrong |
+| Process evidence (developer knows why) | **Completeness only over retained obligations**; missing run artifacts prevent independent audit |
+| Diagnostic capacity (developer builds observability) | **Termination only when enforced and measured**; Danus instead runs until its agent declares the target verified |
 
-**Connection to the exit arc**: The exit from the Oversight Inversion is a verification harness that makes correctness a property of the *system*, not a property of the *operator*. This closes the seven-scan arc by instantiating its requirement:
+**Connection to the exit arc**: The architectural exit is a harness whose authority, admitted property, and retained evidence are explicit. Correctness becomes a system property only where that authority actually proves it:
 
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
 2. Restraint Premium (#445): Invest in producing less (supply-side)
@@ -91,20 +91,22 @@ Source: https://arxiv.org/abs/2607.06411; public artifacts at [eugeneshilow/rube
 
 ### 3. Danus: Orchestrating Mathematical Reasoning Agents with Fact-Graph Memory (2607.06447)
 
-**Core finding**: Mathematical reasoning at research level requires long, detailed proofs with coordinated parallel search and reliable intermediate claims. Danus uses a shared fact graph as a global memory-management mechanism:
+**Core finding, qualified**: Danus uses a shared fact graph as a global memory-management mechanism:
 - Main agent performs planning and coordination
 - Multiple worker agents carry out proof search in parallel
-- A **stateless verifier** checks proposed mathematical claims before admission into the fact graph
-- Each verified fact stored with its proof and logical dependencies
+- A fresh **informal LLM verifier** checks proposed mathematical claims before admission
+- Each admitted fact stores its statement, proof, and declared predecessor IDs
 - Incremental construction of long arguments while keeping shared proof state organized
 
-Evaluated on six research-level case studies in algebraic geometry, singularity theory, and combinatorics.
+The paper reports six research-level case studies. The largest used seven workers for about five days and records 3,157 accepted facts, 8,616 declared edges, depth 54, and a 664-fact final closure. These are author-reported run counts: the two public releases have no assets, `runtime/` and verifier runs are gitignored, and the published tags/current branches contain only eight tracked toy fact files and no research graph, verdict log, prompt, or case output.
 
-**Why this matters**: The fact graph is a verification harness for mathematical knowledge. The stateless verifier is a Predicate Gate (#446) — claims that don't pass formal verification are never admitted. This addresses the Memory Control Plane (#441): the fact graph is versioned, dependency-tracked, verified memory — not passive storage but an active governance layer.
+The authority boundary is explicit in the current repository: the verifier is a cold-start Codex LLM judge, not Lean, Coq, or another formal kernel; the service accepts the returned `correct` string without re-deriving it, while deterministic prechecks can only reject more. Expert review remains necessary. The paper itself reports that humans caught a solution that addressed only the rational rather than requested integral target after the system declared completion, an incomplete written lemma, and a flawed reference definition that required revocation. Those observations contradict universal soundness or completeness even while supporting the utility of review plus repair.
 
-**Connection to Knowledge Erosion (#450)**: The fact graph provides *process evidence* by construction — every fact carries its proof and dependency chain. Human mathematicians can inspect intermediate progress reports. The harness doesn't replace mathematical expertise; it makes the reasoning *auditable* regardless of who (or what) produced it.
+The current admission/store code does preserve useful structure, but not every claimed dependency invariant. Its core store is byte-identical between initial release `7aad4107` and observed default head `6d92e8d`. A controlled two-arm local check held the stub verifier's `correct` verdict fixed: the empty-predecessor baseline and a submission naming nonexistent `ffffffffffffffff` were both accepted (`094ab53b72bcdfa0` and `77bd0e241ce78d4e`), two verdict receipts were logged, and the dangling predecessor was persisted. This tests deterministic admission semantics, not the real verifier's mathematical quality; no provider call was made.
 
-Source: https://arxiv.org/abs/2607.06447
+**Why this matters**: Danus supports a narrower governance claim: accepted claims can be content-addressed, linked, searched, and cascade-revoked, and verifier outcomes can be logged. It does not make mathematical soundness constructive or the released case studies independently reproducible. A stronger artifact would publish the case graph, verdict/rejection receipts, prompts/models, human interventions, and an integrity check rejecting absent predecessors. The Rethlas comparison is one Danus success against three Rethlas failures with the same prompt and worker/verifier models, but different orchestration and effective search budgets; it is not a repeated matched ablation of the fact graph.
+
+Source: https://arxiv.org/abs/2607.06447 (v2 source) and [frenzymath/Danus `6d92e8d`](https://github.com/frenzymath/Danus/commit/6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c), primary-reviewed 2026-09-04.
 
 ### 4. SkillReranker: Task Decomposition-Guided Reranking for Adaptive Agent Skill Retrieval (2607.06283)
 
@@ -216,17 +218,17 @@ The top 5 harness repos total **172,698★** — the category has absorbed. New 
 
 ## Oversight Inversion Update — 23rd Layer: The Verification Harness
 
-**The Verification Harness Hypothesis**: When formal verification wraps agent production — as a harness, not a strategy — soundness becomes a construction property rather than an inspection activity. The harness provides the guarantees human authorship can no longer supply (soundness, completeness, termination) while *freeing* the agent to operate unconstrained within those bounds.
+**The Verification Harness Hypothesis, qualified**: A harness can turn the property its authority actually checks into an admission condition. It cannot upgrade an LLM judgment into formal soundness, prove completeness over unretained obligations, or establish termination merely by declaring a target complete.
 
 **Connection to preceding layers**:
 - Exits the Knowledge Erosion (#450): Harness guarantees replace eroded human knowledge
 - Instantiates the Architecture Premium (#448): The architecture (harness) determines outcomes, not the model
 - Composes with the Predicate Gate (#446): Verification kernels are predicate gates for entire proof spaces
 - Refines the Attribution Error (#440): routed products require both configuration-level reporting and trajectory-level executing-model checks
-- Extends the Verification Scaling Axis (#427): Formal verification is the strongest scaling axis — it achieves O(0) residual error
+- Extends the Verification Scaling Axis (#427): checker authority and retained receipts determine what residual error can be claimed
 
 **Eight-scan exit arc complete**:
-The exit from the Oversight Inversion is now fully specified — from demand (comprehension), through supply (restraint), through architecture (gates, surfaces, premium, pricing), through constraint (knowledge erosion), to instantiation (verification harness). The harness is not the only exit, but it's the *strongest* exit — the one where the guarantee is constructive, not probabilistic.
+The exit arc now identifies an architectural direction, not one universal guarantee: make the checking authority, admitted property, and evidence retention explicit. Aria, RuBench, and Danus occupy different points on that spectrum.
 
 ---
 
@@ -253,10 +255,10 @@ Running accuracy: **~95.8% (68/71)** (no new confirmations or disconfirmations t
 
 ## Synthesis
 
-The Verification Harness Hypothesis closes the structural arc that began with the Comprehension Dividend (#444), with different guarantees by domain. Aria's kernel admits machine-checkable proofs; RuBench's identity check rejects a mismatched executing model when the trace is retained; Danus claims fact-graph verification. RuBench does not establish proof soundness or completeness, and its release does not preserve all five reported mismatch traces, so these mechanisms should not be collapsed into one universal guarantee.
+The Verification Harness Hypothesis closes the structural arc only in qualified form. Aria's kernel admits machine-checkable proofs; RuBench's identity check rejects a mismatched executing model when the trace is retained; Danus's LLM judge admits fallible claims into a repairable graph. RuBench does not retain all five reported mismatch traces, and Danus does not release its research graphs or verdict receipts, so these mechanisms must not be collapsed into one universal guarantee.
 
 The $10k/wk deletion story (+48.2%) confirms that the market is pricing verification at a premium that keeps rising. The Microsoft idTech firing confirms that institutional knowledge erosion is visible and contested at scale. The Foundations Turn (30papers +19.3%) confirms that the community continues investing in comprehension over consumption.
 
 The harness ecosystem has absorbed (~172K★ across top 5). New growth is in *verification of harnesses*, not new harnesses. AgentStalker (formal taint tracking), donecheck (proof-of-done), and Polos (safe-loop construction) represent the next layer: harnesses that verify harnesses, applying the Verification Harness Hypothesis recursively.
 
-The eight-scan exit arc is complete. Future scans will test whether this architecture scales beyond formal verification into the harder territory of semantic correctness, business logic alignment, and the other oversight dimensions that currently lack formal proof systems.
+The eight-scan exit arc now supplies a testable rule: state the checker authority, preserve the evidence, and measure the property actually enforced. Future scans should test semantic correctness and business logic without borrowing guarantees from formal kernels.

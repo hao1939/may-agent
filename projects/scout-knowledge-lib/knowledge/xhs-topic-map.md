@@ -5884,6 +5884,44 @@ reproducibility gaps follow, then Reddit and compaction. Select Danus; inspect
 primary source, attributable artifacts, verifier semantics, retained proof
 receipts, case-study outcomes, controls, and limits.
 
+### Cycle 332 checkpoint — verifier authority, receipts, and graph integrity are separate
+
+ArXiv `2607.06447v2` source and attributable GitHub repository
+`frenzymath/Danus` were observed through `2026-09-04T03:53:24.890Z`. The paper
+reports six cases; the largest used seven workers for about five days and
+records 3,157 accepted facts, 8,616 edges, depth 54, and a 664-fact final
+closure. It also reports that humans caught a rational-versus-integral target
+miss after declared completion, an incomplete written lemma, and a faulty
+reference definition requiring revocation. Its Rethlas comparison is one Danus
+success versus three Rethlas failures with the same prompt and worker/verifier
+models but different orchestration and effective search budgets, not a repeated
+matched fact-graph ablation.
+
+The repository says the verifier is a cold-start Codex LLM judge, not a formal
+kernel. Initial release `7aad41077147af7b8f2a697512075bb326ade992` and observed
+default head `6d92e8d415933ca2ef52fd1a4da73fdfcd418f1c` share the exact fact-store
+implementation. Both releases have zero assets; published tags and current
+branches contain eight toy facts and no research graph, verdict log, prompt, or
+case output, while runtime and verifier runs are ignored. Therefore case counts
+and interventions remain author-reported rather than independently reproducible.
+
+The local code preserves useful content addressing, declared edges, verdict
+receipts, and cascade revocation but does not require a predecessor to exist.
+With one controlled `correct` stub verdict, empty-predecessor control
+`094ab53b72bcdfa0` and nonexistent-predecessor candidate `77bd0e241ce78d4e`
+were both admitted; two verification receipts were logged and
+`ffffffffffffffff` persisted as a dangling edge. Core tests pass. This is
+high-confidence deterministic storage evidence, not a real-verifier or
+mathematical-quality test.
+
+Qualify Scans #451 and #461: a gate supplies only the guarantee supported by its
+authority and retained evidence. GitHub and arXiv supplied exact primary
+evidence; Reddit made zero requests and remains at RSS-readable/JSON-403 until a
+relevant thread or access change. `RV-004` remains high/open because no protected
+query/rank/selection/outcome join appeared. Next begin seed-first without an
+early XHS request and primary-review the highest-ranked remaining verifier or
+artifact-reproducibility claim rather than compacting prose.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
