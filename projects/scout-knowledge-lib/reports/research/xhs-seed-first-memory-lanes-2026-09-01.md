@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 414 observation and Cycle 417 no-request reconciliation: Cycle 415 localizes compact-record retrieval signal, Cycle 416 finds a repeated but statistically weak Organizational Memory direction, and Cycle 417 shows binary refusal does not establish exact rationale coverage."
+summary: "Seed-first Scout continuity through Cycle 414 observation and Cycle 419 no-request reconciliation: Cycle 415 localizes compact-record retrieval signal, Cycles 416-417 qualify Organizational Memory direction and rationale evidence, and Cycle 419 distinguishes prompt-topic contamination from duplicate wording."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 414 observational reconciliation through 2026-09-05T07:41:57.756Z keeps public Explore at 30 notes while supported saved status changes from login-class to profile-class but retains a login wall and zero attributable items; exact access evidence is in seed-ledger row 414."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 414 at 2026-09-05T07:41:57.756Z, with bounded no-request reconciliation in Cycles 406-408, 410-413, and 415; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407, and executable provenance replacement/reconstruction/retrieval evidence through Cycle 415; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 414 at 2026-09-05T07:41:57.756Z, with bounded no-request reconciliation in Cycles 406-408, 410-413, 415-417, and 419; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407, executable provenance replacement/reconstruction/retrieval evidence through Cycle 415, and prompt-overlap evidence through Cycle 419; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19641,6 +19641,34 @@ semantic classification and generalization remain low-confidence.
 Do not tune the rubric against these outputs. Re-rank to another substantive
 primary-evidence, contradiction, uncertainty, or reproducibility gap. Existing
 RV-004/RV-034 high/open and RV-036/RV-038 medium/open dispositions remain.
+
+## Cycle 419 checkpoint — older prompts expose topic contamination
+
+At `2026-09-05T08:48:15.990Z`, Cycle 414's supported XHS observation remained
+inside its six-hour cadence. The bounded reconciliation made zero XHS, GitHub,
+arXiv, or Reddit requests: additions/changes remain unknown, removals remain
+`[]`, all 132 durable identities remain unavailable, and no account state
+changed. Read-only refs exposed no newer accepted reviewer result. Interrupted
+Cycle 418 is retained only on `codex/g-c1b31972-interrupted-cycle418` at
+`1668e158c6`; its cutoff fixture and notes were not read into this result.
+
+The highest accessible queued gap was whether Cycle 415's prompts were merely
+near-duplicates of the older post-hoc navigation-v3 questions. The
+[Cycle 419 overlap audit](../review/scout-provenance-prompt-overlap-cycle419-2026-09-05.md)
+pins both prompt files, makes the producer-authored fourteen-topic mapping
+explicit, and reuses the accepted tokenizer/ranker. Aligned pairs share 43
+normalized tokens; thirteen cyclic mismatch controls range from 0 to 4.
+Aligned mean Jaccard is 0.1712, mean shorter-query coverage is 0.4533, and only
+5/14 pairs pass as exact top-one matches.
+
+The result is narrower than either extreme: the prompts are not near-duplicate
+wording, but they are not independent because both sets were producer-authored
+around the same exact evidence topics. Cycle 415 remains valid as an
+adapter-time tuning control, not a held-out retrieval evaluation. `RV-036`
+stays medium/open, real compaction remains rejected, `RV-004`/`RV-034` stay
+high/open, and `RV-038` stays medium/open. Next require independently authored
+wording/scoring or genuinely later decision queries instead of another local
+prompt rewrite.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

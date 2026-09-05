@@ -67,9 +67,11 @@ RV-036 remains mitigated medium/open and real compaction remains rejected.
 RV-004 and RV-034 remain high/open at their protected later-outcome and
 external-runtime boundaries; RV-038 remains medium/open. The next decisive
 evidence is an independently authored prompt/scorer set or genuinely later
-decision queries frozen before the candidate sees them. A local follow-up
-should first quantify overlap with the older post-hoc navigation prompts so
-near-duplicate wording is not mistaken for a new holdout.
+decision queries frozen before the candidate sees them. The later
+[Cycle 419 overlap audit](./scout-provenance-prompt-overlap-cycle419-2026-09-05.md)
+binds the older post-hoc navigation prompts and finds strong topic alignment
+without near-duplicate wording; it strengthens the contamination limit rather
+than supplying the missing independent holdout.
 
 ## Validation and rollback
 

@@ -6,6 +6,8 @@ import { describe, expect, it } from "bun:test";
 import { buildProvenanceReconstruction } from "./scout-provenance-reconstruction";
 import {
   inspectProvenanceRetrieval,
+  provenanceRetrievalPosthocV3Commit,
+  provenanceRetrievalPosthocV3Sha256,
   provenanceRetrievalEntries,
   provenanceRetrievalPromptCommit,
   provenanceRetrievalPromptSha256,
@@ -59,6 +61,25 @@ describe("Scout provenance retrieval", () => {
         provenanceRetrievalEntries(answers, false),
       ).exact,
     ).toBe(1);
+  });
+
+  it("distinguishes post-hoc topic contamination from duplicate wording", () => {
+    expect(provenanceRetrievalPosthocV3Commit).toBe(
+      "3fd5c82a8412e279e65e2ccf3ace5456d6af4b7d",
+    );
+    expect(provenanceRetrievalPosthocV3Sha256).toBe(
+      "cc5ab71b0ff5fe354abd5494fea35cb355a8b59b6827ac4e6b7308ddf7721324",
+    );
+    expect(inspectProvenanceRetrieval(promptPath)).toMatchObject({
+      prompt_overlap_with_posthoc_v3: {
+        aligned_pairs: 14,
+        aligned_shared_tokens: 43,
+        aligned_mean_jaccard: 0.1712,
+        aligned_mean_shorter_query_coverage: 0.4533,
+        posthoc_exact_top_one: 5,
+        cyclic_shift_max_shared_tokens: 4,
+      },
+    });
   });
 
   it("rejects a cyclic substitution of all expected identities", () => {

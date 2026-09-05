@@ -3,7 +3,7 @@ summary: "Living seed-first, multi-source topic map for Scout, including source-
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 414 observational reconciliation through 2026-09-05T07:41:57.756Z kept public Explore at 30 notes while the saved shell changed from login-class to profile-class but retained its login wall and zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 414."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 414 at 2026-09-05T07:41:57.756Z, with bounded no-request reconciliation in Cycles 406-408, 410-413, and 415; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; executable provenance replacement, reconstruction, and frozen-prompt retrieval evidence through Cycle 415; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 414 at 2026-09-05T07:41:57.756Z, with bounded no-request reconciliation in Cycles 406-408, 410-413, 415-417, and 419; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; executable provenance replacement, reconstruction, and frozen-prompt retrieval evidence through Cycle 415 plus prompt-overlap evidence through Cycle 419; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 latest_seed_observation: "Cycle 414 read-only XHS boundary through 2026-09-05T07:41:57.756Z."
 </ai_context>
 
@@ -11240,6 +11240,37 @@ Next pursue a different high-value primary gap rather than tune this rubric to
 its outputs. Preserve `RV-004`/`RV-034` high/open and `RV-036`/`RV-038`
 medium/open; do not promote this producer-authored lexical screen into an
 independent evaluation or compaction argument.
+
+### Cycle 419 checkpoint — prompt freeze is not prompt independence
+
+Cycle 419 began from clean Cycle 417 tip
+`3b0607c90d9f722a0bf72c39fba55f3377faae79`. At
+`2026-09-05T08:48:15.990Z`, the Cycle 414 XHS observation was about 66 minutes
+old and inside the six-hour cadence. The bounded reconciliation made zero XHS
+or public-source requests: additions/changes remain unknown, observed removals
+remain `[]`, all 132 durable identities remain unavailable, and no account
+state changed. No newer accepted reviewer result was visible. Interrupted
+Cycle 418 remains preserved separately at `1668e158c6`; none of its fixture or
+cutoff-ledger evidence enters canonical research.
+
+High/open `RV-004` and `RV-034` remain inaccessible at their protected-outcome
+and external-runtime boundaries. The highest accessible queued question was
+Cycle 415's own contamination limit. The
+[Cycle 419 audit](../reports/review/scout-provenance-prompt-overlap-cycle419-2026-09-05.md)
+pins both producer-authored prompt sets and exposes an explicit one-to-one
+topic mapping. Aligned pairs share 43 normalized tokens, while every one of 13
+cyclic mismatch controls shares at most 4. Mean aligned Jaccard is only 0.1712,
+mean shorter-query coverage is 0.4533, and just 5/14 aligned v3 queries become
+exact top-one results under the existing ranker.
+
+This is topic contamination, not byte-near duplication. It preserves Cycle
+415's adapter-time tuning result while rejecting any claim that its prompts
+form an independent retrieval sample. The alignment is itself producer-authored
+and supplies no protected query, later use, savings, changed decision, or
+deletion boundary. `RV-036` remains medium/open and real compaction remains
+rejected; `RV-004`/`RV-034` remain high/open and `RV-038` medium/open. Next seek
+independently authored prompts/scoring or genuinely later decision queries;
+do not manufacture another producer holdout.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
