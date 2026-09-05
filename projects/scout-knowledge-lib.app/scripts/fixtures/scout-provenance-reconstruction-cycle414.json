@@ -1,0 +1,69 @@
+{
+  "schema": "scout.provenance-reconstruction/v1",
+  "frozen_against_tip": "d3a8a06186f1e254abb9d48a765804468987727d",
+  "replacement_fixture": "scout-provenance-replacement-cycle413.json",
+  "replacement_fixture_sha256": "8c9ecb6c26214be88820eb9b9d3612ea82394a1b5fdc7dae20e29aab84cc1856",
+  "expected_entries": [
+    {
+      "entry_id": "cycle-373-hexstrike",
+      "answer_sha256": "36416712657a3cbde8ec9920edd66eeca44dd96598d156bb8f148d1d30484e7a"
+    },
+    {
+      "entry_id": "cycle-374-skillopt-lite",
+      "answer_sha256": "d937eff42052da558a2d94d6b333d7e6c27f0f24add3c081241513499f1d8be2"
+    },
+    {
+      "entry_id": "cycle-375-anchored-self-play",
+      "answer_sha256": "2cbe4272393ab5aa5c7db418a3b24b34993d9f84f167a94233145058d2cae707"
+    },
+    {
+      "entry_id": "cycle-376-gameenginebench",
+      "answer_sha256": "036ae6c5899a7153fa057e49dc7a6beee8864cf5b271a21df1ad3f1af592f5f5"
+    },
+    {
+      "entry_id": "cycle-377-atomiccommitbench",
+      "answer_sha256": "34535a0a479ba8132ee26dcf48f484b3ef16290309d28a2df2956846a474e90d"
+    },
+    {
+      "entry_id": "cycle-378-hidden-computation",
+      "answer_sha256": "9ee0d191a071b0686876cb2db69957e1f0eab850d1f41747493bf2145311ef63"
+    },
+    {
+      "entry_id": "cycle-379-single-prover",
+      "answer_sha256": "d8be308bdbef923bae5f05b064e7fe1e587e7aca67638a02d193fb41326ad053"
+    },
+    {
+      "entry_id": "cycle-380-dscc",
+      "answer_sha256": "e3854b2e7fa4d820b7e5d882b113ec15ef6c9ee1b76cfef6cfa13e20e1f307b0"
+    },
+    {
+      "entry_id": "cycle-381-coderabbit",
+      "answer_sha256": "53bc92bf5b91791955ee8d153a5c4144c2a65fb73d3b906e060bfb29db70aae8"
+    },
+    {
+      "entry_id": "cycle-382-rlsr",
+      "answer_sha256": "c96f7d7111ff29cf4f358dc11e625aca191c676582a92619f3dae673125073b5"
+    },
+    {
+      "entry_id": "cycle-383-agentic-ttt",
+      "answer_sha256": "3d86eab2d79a6daf70ba7ac483d9b9b592082bf1ce425aee312db7c1b83874b3"
+    },
+    {
+      "entry_id": "cycle-384-policy-repair",
+      "answer_sha256": "f33cb84256c2424143bb9b202cf3b4b1672e25ddc6b17cb7513269c01995d672"
+    },
+    {
+      "entry_id": "cycle-385-hase",
+      "answer_sha256": "61692b5a8abf6d7c2a636ca2ff982ebf49351c8344ea21824fdfd15a55ddf65f"
+    },
+    {
+      "entry_id": "cycle-386-veritas",
+      "answer_sha256": "6c99833788858dc8c6e3057b3e2403cabfdfd94daf2e449acc79e2c4a92c69a6"
+    }
+  ],
+  "expected_scores": {
+    "replacement_exact": 14,
+    "anchor_reference_only_exact": 0
+  },
+  "interpretation": "The replacement reconstructs the frozen schema-level dispositions from the same fourteen anchor sections; this does not measure human retrieval, later use, token savings, or user outcomes."
+}
