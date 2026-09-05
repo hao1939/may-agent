@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent exact-tip review accepts standing Cycle 413 reconciliation 764cb00eca: RV-050 correction cf00aec105 and durable cursor a3c3349ce1 are exact linear integrations after source a70923f523, current-tip validation passes, and reviewer result 8f5b1a4666 is integrated exactly. The corrected replacement binds normalized receipts and the fourteen-result chain; no compaction, new local-main landing, or cleanup is authorized."
+summary: "Independent exact-tip review accepts standing integration checkpoint d3a8a06186: reviewer result 8f5b1a4666 is the literal direct child of reviewed source 764cb00eca, and the producer ledger is its literal direct child. Fresh current-tip validation and protected-state checks pass; no new research, compaction, local-main landing, or cleanup is authorized."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050"]
-last_updated: "2026-09-05"
-source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d38599380..764cb00eca907fdefcb96df2fdbf49dbfb08f85f: direct-child RV-050 correction cf00aec105ba802f7fd784a17c1275a09dcf3a2d at stable patch ID 344889841abfdf3c39d494a0d1a996484c85b039, direct-child durable cursor a3c3349ce19fc84dfd488cef444dc7a8b324a224 at stable patch ID 82eac41507f0e83546c6f307e7e3ad7f6020448e, and direct-child producer reconciliation 764cb00eca907fdefcb96df2fdbf49dbfb08f85f; independent exact-tip gate at 312 tests / 1,533 assertions, 110 scoped links, navigation 11/14, 8/8, and 14/14, 1,549-document / 1,793-link current-tree audit, 1,546-document / 1,774-link source projection, health 26 facts / 16 wakes, exact lineage, clean branches, and protected /app preservation; exact reviewer result 8f5b1a46665d6618b45624bdf8ae38a56875bb86 is integrated from 764cb00eca at stable patch ID b20c37b760eecf07fbad1ea4818f78c6c4c94842."
+last_updated: "2026-09-06"
+source_basis: "Exact linear integration range 764cb00eca907fdefcb96df2fdbf49dbfb08f85f..d3a8a06186f1e254abb9d48a765804468987727d: direct-child reviewer result 8f5b1a46665d6618b45624bdf8ae38a56875bb86 at stable patch ID b20c37b760eecf07fbad1ea4818f78c6c4c94842, then direct-child producer ledger d3a8a06186f1e254abb9d48a765804468987727d at stable patch ID 1277ee96aca2e25f20d8831a256be8ef9c94f29e; prior exact-tip full gate at 312 tests / 1,533 assertions, plus fresh ledger-tip Cycle 409 projection, 110 scoped links, navigation 11/14, 8/8, and 14/14, 1,549-document / 1,793-link current-tree audit, health 27 facts / 16 wakes, exact lineage, clean branches, and protected /app preservation."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d3859
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `764cb00eca907fdefcb96df2fdbf49dbfb08f85f` (exact Cycle 413 producer reconciliation)
+  `d3a8a06186f1e254abb9d48a765804468987727d` (exact Cycle 413 reviewer-integration ledger)
 - Last material standing commit reviewed:
   `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` (exact integrated RV-050 correction)
 - Last producer research material reviewed:
   `a70923f523a51b9c15d2e324a3c4d10d38599380` (Cycle 413 validation material; no new source collection)
 - Last integrated reviewer result:
   `8f5b1a46665d6618b45624bdf8ae38a56875bb86` (exact-tip acceptance after Cycle 413 reconciliation `764cb00eca`)
-- Current review date: `2026-09-05T15:26:56+08:00`
+- Current review date: `2026-09-06T04:42:37+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -252,12 +252,14 @@ source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d3859
   `a70923f523a51b9c15d2e324a3c4d10d38599380` (Cycle 413 executable replacement),
   `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` (exact RV-050 correction), and
   `a3c3349ce19fc84dfd488cef444dc7a8b324a224` (exact durable reviewer cursor), and
-  `764cb00eca907fdefcb96df2fdbf49dbfb08f85f` (Cycle 413 producer reconciliation).
+  `764cb00eca907fdefcb96df2fdbf49dbfb08f85f` (Cycle 413 producer reconciliation),
+  `8f5b1a46665d6618b45624bdf8ae38a56875bb86` (exact reviewer acceptance), and
+  `d3a8a06186f1e254abb9d48a765804468987727d` (exact reviewer-integration ledger).
 - Newly reviewed exact standing span:
-  `a70923f523a51b9c15d2e324a3c4d10d38599380..764cb00eca907fdefcb96df2fdbf49dbfb08f85f`
-  (exact RV-050 correction, durable cursor, and producer reconciliation; no
-  source access, local-main movement, deletion, or cleanup change).
-- Review date: `2026-09-05T15:26:56+08:00`
+  `764cb00eca907fdefcb96df2fdbf49dbfb08f85f..d3a8a06186f1e254abb9d48a765804468987727d`
+  (exact reviewer acceptance followed by its producer integration ledger; no
+  research, source access, local-main movement, deletion, or cleanup change).
+- Review date: `2026-09-06T04:42:37+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
 - Overall disposition: **accept the completed local-main landing of
   `803240b27fa4b40373524a1ed42d0b9bee7e890c` at the exact reviewed boundary;
@@ -293,7 +295,9 @@ source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d3859
   landing, or cleanup is accepted. Direct-child cursor `a3c3349ce1` records
   the review and is also integrated exactly. Direct-child producer
   reconciliation `764cb00eca` truthfully records those identities and passes
-  independent current-tip validation.
+  independent current-tip validation. Reviewer acceptance `8f5b1a4666` and
+  its direct-child integration ledger `d3a8a06186` are now independently
+  accepted at the exact current tip.
   The accepted local-main landing's parents are exact main
   `8554a5718cfa051bf4fb827c974423380614e5a7`
   and exact canonical `1d25aaadd544e89c74666a888771b4c9b49d4638`;
@@ -3695,6 +3699,28 @@ RV-050 is resolved exactly. RV-004 and RV-034 remain high/open; RV-036 and
 RV-038 remain medium/open. Real compaction, a new local-main landing, and
 repository cleanup remain unapproved.
 
+### Cycle 413 reviewer-integration disposition — accept `d3a8a06186`
+
+The exact successor line is reviewed source
+`764cb00eca907fdefcb96df2fdbf49dbfb08f85f` → exact reviewer result
+`8f5b1a46665d6618b45624bdf8ae38a56875bb86` → producer integration ledger
+`d3a8a06186f1e254abb9d48a765804468987727d`. Both parent relations reproduce;
+the producer therefore contains the reviewer result literally rather than by
+patch equivalence or semantic reconciliation. The final checkpoint changes
+only this cursor by +11/-3 and accurately records the result, source, stable
+patch ID, open findings, and reverse-order rollback.
+
+| Rubric dimension | Disposition |
+| --- | --- |
+| Integration, provenance, claim separation, and durable ledger | **Accept exact containment.** Reviewer `8f5b1a4666` has parent `764cb00eca`, stable patch ID `b20c37b760eecf07fbad1ea4818f78c6c4c94842`, and is the direct parent of ledger `d3a8a06186`. The ledger does not overstate patch equivalence, research, compaction, landing, cleanup, or behavior evidence. |
+| Current-tip validation | **Accept for the documentation-only delta.** Exact tip tree `e8484eb95f5325533511953652cd1ad2b73502aa` retains the executable tree that passed 312 tests / 1,533 assertions at the reviewed direct-parent gate. Fresh exact-ledger-tip checks pass `git diff --check`, Cycle 409 projection, all 110 scoped links, navigation 11/14, 8/8, and 14/14, and 1,549 Markdown documents / 1,793 broad links with zero errors. Read-only health reports 27 facts / 16 wakes with `truncated:true`; producer and pre-edit reviewer branches are clean. |
+| Research, behavior, usefulness, cost, and batching | **No new research or improvement claim.** The two-commit range is one reviewer result plus its required integration receipt, not source activity or productivity evidence. It changes no fixture, evaluator, route, knowledge claim, protected evidence, or matched comparison. RV-004/RV-034 remain high/open and RV-036/RV-038 remain medium/open. |
+| Local-main landing, cleanup, and rollback | **Accept preserved state; defer separate gates.** `/app` remains exact `803240b27fa4b40373524a1ed42d0b9bee7e890c`, with zero staged changes and unchanged 72 default / 492 expanded / 23 Scout status fingerprints. No file, history, branch, or worktree is removed. Roll back any later cursor first, then `d3a8a06186`, then `8f5b1a4666`; do not clean, stash, reset, or infer authorization for a new landing. |
+
+Disposition: **accept exact canonical tip
+`d3a8a06186f1e254abb9d48a765804468987727d`; normal producer research may
+resume.** This does not approve compaction, local-main landing, or cleanup.
+
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
@@ -3748,7 +3774,7 @@ repository cleanup remain unapproved.
 | `RV-047` | High | Cycle 411 harness, topic-map checkpoint, and projection report at exact standing material `3917ea3f709e2b524174a5564965641e7377b04d` | The harness loaded tracked files, blame, projected documents, INDEX, and links from `HEAD`. After its report was committed, that report itself repeated all six supposedly absent provenance refs. Independent exact-candidate replay therefore returned `commit_refs: []` and 1,547 documents / 1,775 links, contradicting the durable 6-ref and 1,546/1,774 claims. A self-satisfying loss test could authorize destructive compaction while hiding evidence removed from the declared source corpus. | **Resolved on standing; accept `199856526457`.** It is patch-equivalent to reviewer `8650d3eca708` at stable patch ID `823ae2dfb8c703eb2bc56fde5f84314fc9908fb5` and has the same tree. Every projected corpus read is source-bound, candidate HEAD remains separate, and the regression pins the exact source, six refs, and 1,546/1,774 boundary. The corrected result still rejects compaction; no deletion is authorized. |
 | `RV-048` | Medium | Standing status `756dce8901627b7d0f1ed87618d6b64ad34f4143`; durable review cursor | The interim producer row named RV-047 integration `199856526457`, but the same status diff retained pre-integration headline, cursor, acceptance, validation, and trigger text from `d54a7f15d712`. Reviewer correction `019d36f64e1ed3c67a9af8d5756fd19a4a533d5e` exposed that mixed state at stable patch ID `70c828bb2f35f4b39c83f273f2cbcce46a64f140`. | **Resolved on standing; reviewer result superseded, finding retained.** Standing `ceba626b39` reconciles the more complete canonical reviewer cursor `3a672dce7f` to an exact cursor blob, and `e0d3d6e971` records its source/result mapping. Importing `019d36f64e` now would rewind that later cursor to the intermediate `756dce8901` review boundary, so its useful regression finding is retained here without claiming containment or patch equivalence. |
 | `RV-049` | Medium | Cycle 412 design `0ac800129e6d2432b0bebc5e52966f22b7efa9c8`; six accepted-evidence fragments | Six section fragments did not match their target headings, while the file-only link gate discarded fragments. The defect could make a future compact record appear green with unreachable evidence. | **Resolved exactly on standing.** Reviewer correction `86502d99271207d872057c4874326296d57255b4` is the direct parent of Cycle 413 result `a70923f523`; all 14 corrected fragments resolve uniquely. Exact range `86502d9927..114812e8a0` contains only the stale reviewer cursor, which is neither contained nor claimed equivalent and is superseded by this cursor. |
-| `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; direct-child cursor `a3c3349ce1` is also integrated exactly, and direct-child reconciliation `764cb00eca` truthfully records both identities. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
+| `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; subsequent exact reviewer acceptance `8f5b1a4666` and producer ledger `d3a8a06186` retain that disposition. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
 
 ## Reviewer source/result and integration status
 
@@ -3772,12 +3798,15 @@ repository cleanup remain unapproved.
   result is part of this status commit.
 
 - Reviewer result `8f5b1a46665d6618b45624bdf8ae38a56875bb86`
-  is **integrated exactly** as the direct child of reviewed producer source
+  is **integrated and independently accepted exactly** as the direct child of reviewed producer source
   `764cb00eca907fdefcb96df2fdbf49dbfb08f85f`, at stable patch ID
   `b20c37b760eecf07fbad1ea4818f78c6c4c94842`. It accepts that exact tip,
   resolves RV-050 on standing, and preserves RV-004/RV-034 high/open and
-  RV-036/RV-038 medium/open. Roll back this producer ledger first, then revert
-  `8f5b1a4666`; neither operation authorizes local-main movement or cleanup.
+  RV-036/RV-038 medium/open. Its direct-child producer ledger is exact current
+  tip `d3a8a06186f1e254abb9d48a765804468987727d`, stable patch ID
+  `1277ee96aca2e25f20d8831a256be8ef9c94f29e`. Roll back that ledger first,
+  then revert `8f5b1a4666`; neither operation authorizes local-main movement or
+  cleanup.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
@@ -4386,12 +4415,12 @@ and the unreleased Memory in the Loop result.
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the next genuinely material
 checkpoint beyond exact reviewed standing
-`764cb00eca907fdefcb96df2fdbf49dbfb08f85f`; evidence that individually
+`d3a8a06186f1e254abb9d48a765804468987727d`; evidence that individually
 binds the 48 timestamp roles or supplies protected
 retrieval/later-decision value for RV-036; evidence changing RV-004 or RV-034;
 a canonical/local-main landing or cleanup claim; or a concrete regression in
 the reviewed claims. If no material trigger arrives, the next periodic audit
-is no earlier than `2026-09-06T15:26:56+08:00`. Do not poll unchanged state.
+is no earlier than `2026-09-07T04:42:37+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
