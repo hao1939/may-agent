@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent exact-tip review accepts standing Cycle 413 reconciliation 764cb00eca: RV-050 correction cf00aec105 and durable cursor a3c3349ce1 are exact linear integrations after source a70923f523, and current-tip validation passes. The corrected replacement binds normalized receipts and the fourteen-result chain; no compaction, new local-main landing, or cleanup is authorized."
+summary: "Independent exact-tip review accepts standing Cycle 413 reconciliation 764cb00eca: RV-050 correction cf00aec105 and durable cursor a3c3349ce1 are exact linear integrations after source a70923f523, current-tip validation passes, and reviewer result 8f5b1a4666 is integrated exactly. The corrected replacement binds normalized receipts and the fourteen-result chain; no compaction, new local-main landing, or cleanup is authorized."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050"]
 last_updated: "2026-09-05"
-source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d38599380..764cb00eca907fdefcb96df2fdbf49dbfb08f85f: direct-child RV-050 correction cf00aec105ba802f7fd784a17c1275a09dcf3a2d at stable patch ID 344889841abfdf3c39d494a0d1a996484c85b039, direct-child durable cursor a3c3349ce19fc84dfd488cef444dc7a8b324a224 at stable patch ID 82eac41507f0e83546c6f307e7e3ad7f6020448e, and direct-child producer reconciliation 764cb00eca907fdefcb96df2fdbf49dbfb08f85f; independent exact-tip gate at 312 tests / 1,533 assertions, 110 scoped links, navigation 11/14, 8/8, and 14/14, 1,549-document / 1,793-link current-tree audit, 1,546-document / 1,774-link source projection, health 26 facts / 16 wakes, exact lineage, clean branches, and protected /app preservation."
+source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d38599380..764cb00eca907fdefcb96df2fdbf49dbfb08f85f: direct-child RV-050 correction cf00aec105ba802f7fd784a17c1275a09dcf3a2d at stable patch ID 344889841abfdf3c39d494a0d1a996484c85b039, direct-child durable cursor a3c3349ce19fc84dfd488cef444dc7a8b324a224 at stable patch ID 82eac41507f0e83546c6f307e7e3ad7f6020448e, and direct-child producer reconciliation 764cb00eca907fdefcb96df2fdbf49dbfb08f85f; independent exact-tip gate at 312 tests / 1,533 assertions, 110 scoped links, navigation 11/14, 8/8, and 14/14, 1,549-document / 1,793-link current-tree audit, 1,546-document / 1,774-link source projection, health 26 facts / 16 wakes, exact lineage, clean branches, and protected /app preservation; exact reviewer result 8f5b1a46665d6618b45624bdf8ae38a56875bb86 is integrated from 764cb00eca at stable patch ID b20c37b760eecf07fbad1ea4818f78c6c4c94842."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -17,7 +17,7 @@ source_basis: "Exact linear Cycle 413 range a70923f523a51b9c15d2e324a3c4d10d3859
 - Last producer research material reviewed:
   `a70923f523a51b9c15d2e324a3c4d10d38599380` (Cycle 413 validation material; no new source collection)
 - Last integrated reviewer result:
-  `a3c3349ce19fc84dfd488cef444dc7a8b324a224` (durable cursor after exact RV-050 correction `cf00aec105`)
+  `8f5b1a46665d6618b45624bdf8ae38a56875bb86` (exact-tip acceptance after Cycle 413 reconciliation `764cb00eca`)
 - Current review date: `2026-09-05T15:26:56+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -3770,6 +3770,14 @@ repository cleanup remain unapproved.
   passes the independent current-tip gate above. Roll back any later reviewer
   cursor first, then ordinarily revert `764cb00eca`; no local-main or cleanup
   result is part of this status commit.
+
+- Reviewer result `8f5b1a46665d6618b45624bdf8ae38a56875bb86`
+  is **integrated exactly** as the direct child of reviewed producer source
+  `764cb00eca907fdefcb96df2fdbf49dbfb08f85f`, at stable patch ID
+  `b20c37b760eecf07fbad1ea4818f78c6c4c94842`. It accepts that exact tip,
+  resolves RV-050 on standing, and preserves RV-004/RV-034 high/open and
+  RV-036/RV-038 medium/open. Roll back this producer ledger first, then revert
+  `8f5b1a4666`; neither operation authorizes local-main movement or cleanup.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
