@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 414 observation, with Cycle 415 no-request reconciliation and a pre-adapter prompt freeze that localizes compact-record retrieval signal without proving compaction or outcomes."
+summary: "Seed-first Scout continuity through Cycle 414 observation and Cycle 416 no-request reconciliation: Cycle 415 localizes compact-record retrieval signal without proving compaction, while Cycle 416 finds a repeated but statistically weak Organizational Memory direction under paired sensitivity checks."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 414 observational reconciliation through 2026-09-05T07:41:57.756Z keeps public Explore at 30 notes while supported saved status changes from login-class to profile-class but retains a login wall and zero attributable items; exact access evidence is in seed-ledger row 414."
@@ -19568,6 +19568,46 @@ observation, savings measure, or deletion boundary. The
 is authoritative for exact lineage, controls, uncertainty, validation, and
 rollback. RV-036 remains medium/open; real compaction stays rejected; RV-004
 and RV-034 remain high/open.
+
+## Cycle 416 checkpoint — paired labels do not erase small-sample uncertainty
+
+The bounded seed reconciliation ran at `2026-09-05T08:15:48.771Z`, about
+34 minutes after Cycle 414's supported observation and before the next XHS
+cadence boundary at `2026-09-05T13:41:57.756Z`. It made zero XHS, GitHub,
+arXiv, or Reddit requests. Added and changed XHS identities remain unknown,
+observed removals remain `[]`, all 132 durable identities remain unavailable,
+and no account state changed. No newer accepted reviewer result was visible;
+exact reviewer result `8f5b1a4666` remains integrated on the standing line.
+
+Expected knowledge value kept `RV-004` first but inaccessible at its protected
+outcome join, `RV-034` at the external runtime boundary, and `RV-036` pending
+genuinely independent later retrieval. Organizational Memory `2607.03228` was
+the highest accessible substantive uncertainty gap because its existing
+finding reproduced aggregate scores but had not used the retained paired
+run/scenario labels.
+
+The [paired audit](../review/scout-organizational-memory-paired-audit-cycle416-2026-09-05.md)
+uses only the retained, checksum-bound public bundle. GPT Memory has 12
+memory-only versus 5 RAG-only correct pairs; Sonnet has 8 versus 2. Exact
+two-sided McNemar values are `0.143463134765625` and `0.109375`. All four
+run-level differences are positive for each model, but the exact two-sided
+four-run sign value is `0.125`. Grouping by scenario instead produces GPT
+signs 3 positive / 3 negative / 4 tied and Sonnet 3 / 2 / 5, with two-sided
+sign `p=1` for each after ties are removed.
+
+The conclusion is deliberately qualified. The artifact supports a repeated
+positive within-fixture direction, not a conventional 5% model-specific claim.
+Pairing by common labels does not prove shared randomness, and the 40-pair
+McNemar view assumes independence that the public bundle does not establish.
+The paper reports no confidence interval or significance analysis. Missing
+seeds, only four runs, repeated fixed scenarios, binary refusal scoring, and
+the proprietary generation path keep generalization uncertain. Existing
+governance, lifecycle, deployment, and cost limits are unchanged.
+
+Next, use a frozen non-LLM rationale rubric on retained refusal text if exact
+policy anchors make that feasible without post-hoc tuning; otherwise move to
+the next high-value primary artifact with an unresolved uncertainty or matched-
+control gap. Do not revisit static compaction or issue an early XHS request.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

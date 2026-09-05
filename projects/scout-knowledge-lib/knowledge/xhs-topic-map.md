@@ -11167,6 +11167,47 @@ holds exact lineage, controls, validation, uncertainty, and rollback. Next,
 quantify overlap with the older post-hoc navigation prompts, then seek an
 independently authored scorer or genuinely later decision queries.
 
+### Cycle 416 checkpoint — direction repeats; paired inference remains weak
+
+At `2026-09-05T08:15:48.771Z`, Cycle 414's supported XHS receipt was about
+34 minutes old and inside the six-hour cadence. The bounded seed pass made zero
+XHS or public-source requests: additions and changes remain unknown, observed
+removals remain `[]`, all 132 durable identities remain unavailable, and no
+account state changed. No newer accepted reviewer result was visible;
+`8f5b1a4666` remains an exact integrated ancestor.
+
+Re-ranking kept high/open `RV-004` first but inaccessible without protected
+query/rank, selection, and later-outcome joins. High/open `RV-034` remains at
+the external runtime boundary. `RV-036` needs independent later retrieval, not
+another producer-authored scorer. The highest accessible substantive gap was
+therefore Organizational Memory `2607.03228`'s unreported paired uncertainty,
+which could be answered from its already retained result bundle without a
+provider request.
+
+The [Cycle 416 paired audit](../reports/review/scout-organizational-memory-paired-audit-cycle416-2026-09-05.md)
+finds the same positive direction in every run: GPT Memory minus RAG is
+`+2,+2,+2,+1` decisions out of ten; Sonnet is `+2,+2,+1,+1`. Across forty
+run/scenario labels, discordance is 12 versus 5 for GPT and 8 versus 2 for
+Sonnet, giving exact two-sided McNemar values `0.143463134765625` and
+`0.109375`. A four-run sign test is `p=0.125` for both. Scenario-cluster signs
+are 3 positive / 3 negative / 4 tied for GPT and 3 / 2 / 5 for Sonnet, with
+two-sided `p=1` after dropping ties.
+
+The qualified conclusion is directional rather than inferential: structured
+Memory wins all eight retained model/run comparisons on this frozen fixture,
+but no model-specific check crosses 5%, scenario clustering is much weaker,
+and the public bundle supplies neither seeds nor an independence design. The
+40-pair calculation must not be promoted into generalization evidence. Prior
+limits on refusal reasons, proprietary generation, governance, lifecycle,
+deployment, and cost remain unchanged. Confidence is high in retained
+arithmetic, moderate in the within-fixture direction, and low beyond the ten
+fixed scenarios and four undocumented runs.
+
+Next rank a genuinely unresolved primary-evidence gap rather than repeat
+paired arithmetic: test the Organizational Memory refusal texts with a frozen,
+non-LLM reason rubric if the retained outputs support it; otherwise pursue the
+next primary artifact whose headline lacks uncertainty or matched controls.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

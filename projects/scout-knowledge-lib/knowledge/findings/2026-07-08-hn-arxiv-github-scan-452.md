@@ -211,8 +211,25 @@ model family, but the released metric counts any non-creation as correct on a
 refuse case unless an optional LLM judge is enabled. The retained metrics have
 no judge results. Thus PCR establishes the binary create/refuse decision plus
 exact fields on positive cases; it does not establish correct policy rationale
-on negative cases. Runs lack generation settings, seeds, paired uncertainty,
-latency, token/cost, or governance effort.
+on negative cases. Runs lack generation settings, seeds, latency, token/cost,
+or governance effort. The paper reports no confidence interval, significance
+test, or paired analysis.
+
+**Paired uncertainty, artifact reanalysis**: Pairing retained outcomes by the
+same run and scenario label gives GPT discordance of 12 memory-only versus 5
+RAG-only decisions (23 both correct, 0 both wrong) and Sonnet discordance of 8
+versus 2 (30 both correct, 0 both wrong). Exact two-sided McNemar values are
+`p=0.143463134765625` and `p=0.109375`, respectively. All four run-level
+differences are positive for both models—GPT `+2,+2,+2,+1` and Sonnet
+`+2,+2,+1,+1` decisions out of ten—but an exact two-sided sign test over only
+four runs is `p=0.125`. Treating each scenario as the cluster instead yields
+3 positive / 3 negative / 4 tied GPT scenarios and 3 / 2 / 5 Sonnet scenarios,
+with two-sided sign `p=1` in both cases. These sensitivity views preserve a
+consistent run-level direction while showing that the small repeated fixture
+does not support a conventional 5% model-specific inference. The 40-pair
+McNemar calculation is descriptive unless the repeated run/scenario outcomes
+can be treated as independent; shared run numbers do not establish shared
+randomness, and the public bundle supplies no seeds or dependence design.
 
 **Artifact boundary**: The attributable
 [`lukaskirchdorfer/org-memory-paper`](https://github.com/lukaskirchdorfer/org-memory-paper)
@@ -234,7 +251,10 @@ the output-level result can be audited. It also contradicts the stronger
 Co-Evolution transfer. No policy changes, multiple agents, human approvals,
 conflicts, access controls, or later outcomes are exercised. The paper itself
 places lifecycle governance, update propagation, scale, and realistic
-enterprise evaluation in future work.
+enterprise evaluation in future work. The paired reanalysis strengthens the
+claim that the observed direction repeats across the four retained runs, but
+does not turn that direction into a precise or statistically established
+general advantage.
 
 **Connection to Memory Control Plane (#441)**: The process-atom design is a
 candidate representation for source-linked, governed memory. PLACEMEM and this
