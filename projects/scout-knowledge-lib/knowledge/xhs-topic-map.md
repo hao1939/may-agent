@@ -11208,6 +11208,39 @@ paired arithmetic: test the Organizational Memory refusal texts with a frozen,
 non-LLM reason rubric if the retained outputs support it; otherwise pursue the
 next primary artifact whose headline lacks uncertainty or matched controls.
 
+### Cycle 417 checkpoint — binary refusal is not rationale evidence
+
+At `2026-09-05T08:21:53.319Z`, the Cycle 414 XHS observation remained inside
+its six-hour cadence. The bounded pass made zero XHS or other public requests:
+additions/changes remain unknown, removals remain `[]`, all 132 identities
+remain unavailable, and no account state changed. No newer accepted reviewer
+result was visible.
+
+The reason rubric was committed as `1142999e7439edc226aad1f223aee392c4b3ca05`
+before retained response text was inspected. It applies the same seven
+author-grounded lexical concept groups to Memory and RAG. The
+[Cycle 417 report](../reports/review/scout-organizational-memory-rationale-audit-cycle417-2026-09-05.md)
+binds the rubric and 160-result/eight-metric manifests.
+
+Qualification lowers GPT Memory/RAG from 35/28 to 27/21 and Sonnet from 38/32
+to 29/24. The direction survives, but exact matched discordance weakens to
+10 versus 4 for GPT (`p=0.1795654296875`) and 10 versus 5 for Sonnet
+(`p=0.3017578125`). Run-level differences are `+3,+2,+1,0` and
+`+2,+1,+1,+1`, with sign values `0.25` and `0.125`.
+
+These are lower-bound lexical coverage results, not semantic judge labels.
+The all-groups rule rejects unlisted synonyms, one-sufficient-blocker answers,
+and valid cross-cutting blockers outside the scenario's selected rationale.
+The result nonetheless sharpens the evidence boundary: binary non-creation
+cannot by itself establish correct refusal explanation. Confidence is high in
+freeze order, counts, and arithmetic; moderate in rationale under-
+specification; and low in semantic error rates or generalization.
+
+Next pursue a different high-value primary gap rather than tune this rubric to
+its outputs. Preserve `RV-004`/`RV-034` high/open and `RV-036`/`RV-038`
+medium/open; do not promote this producer-authored lexical screen into an
+independent evaluation or compaction argument.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

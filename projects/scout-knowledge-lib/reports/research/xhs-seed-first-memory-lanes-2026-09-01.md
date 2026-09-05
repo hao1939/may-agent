@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 414 observation and Cycle 416 no-request reconciliation: Cycle 415 localizes compact-record retrieval signal without proving compaction, while Cycle 416 finds a repeated but statistically weak Organizational Memory direction under paired sensitivity checks."
+summary: "Seed-first Scout continuity through Cycle 414 observation and Cycle 417 no-request reconciliation: Cycle 415 localizes compact-record retrieval signal, Cycle 416 finds a repeated but statistically weak Organizational Memory direction, and Cycle 417 shows binary refusal does not establish exact rationale coverage."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
 latest_seed_basis: "Cycle 414 observational reconciliation through 2026-09-05T07:41:57.756Z keeps public Explore at 30 notes while supported saved status changes from login-class to profile-class but retains a login wall and zero attributable items; exact access evidence is in seed-ledger row 414."
@@ -19608,6 +19608,39 @@ Next, use a frozen non-LLM rationale rubric on retained refusal text if exact
 policy anchors make that feasible without post-hoc tuning; otherwise move to
 the next high-value primary artifact with an unresolved uncertainty or matched-
 control gap. Do not revisit static compaction or issue an early XHS request.
+
+## Cycle 417 checkpoint — frozen rationale coverage weakens both arms
+
+At `2026-09-05T08:21:53.319Z`, the Cycle 414 seed receipt remained inside its
+six-hour cadence. The bounded reconciliation made zero XHS, GitHub, arXiv, or
+Reddit requests: additions/changes remain unknown, observed removals remain
+`[]`, all 132 durable identities remain unavailable, and no account state
+changed. No newer accepted reviewer result was visible.
+
+Rubric freeze `1142999e7439edc226aad1f223aee392c4b3ca05` is the direct child
+of Cycle 416 `8e2ec62d1924d3c0e5eed6e771fdf0b44e895272` and predates all
+retained response inspection in this cycle. Its seven refusal cases use exact
+concept groups derived from the author ground truth and bind the retained
+artifact manifests.
+
+The [Cycle 417 rationale audit](../review/scout-organizational-memory-rationale-audit-cycle417-2026-09-05.md)
+uses the same frozen screen for both arms. GPT Memory/RAG move from 35/28
+binary PCR to 27/21 qualified; Sonnet moves from 38/32 to 29/24. Exact matched
+McNemar values weaken to `0.1795654296875` and `0.3017578125`. Memory remains
+ahead, but binary refusal clearly does not establish exact rationale coverage.
+
+The rubric is a lower bound. It requires every selected concept and therefore
+misses some synonyms, responses with one sufficient blocker, and responses
+that identify a valid cross-cutting policy not selected in the scenario's
+rationale. It cannot replace semantic judging or yield an error prevalence.
+The initial inline normalizer also had a discarded escaping error; corrected
+ASCII normalization changed no frozen alias, but the scorer implementation was
+not itself precommitted. Exact freeze order and arithmetic are high-confidence;
+semantic classification and generalization remain low-confidence.
+
+Do not tune the rubric against these outputs. Re-rank to another substantive
+primary-evidence, contradiction, uncertainty, or reproducibility gap. Existing
+RV-004/RV-034 high/open and RV-036/RV-038 medium/open dispositions remain.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 

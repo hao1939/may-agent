@@ -231,6 +231,19 @@ McNemar calculation is descriptive unless the repeated run/scenario outcomes
 can be treated as independent; shared run numbers do not establish shared
 randomness, and the public bundle supplies no seeds or dependence design.
 
+**Frozen refusal-rationale screen**: A seven-scenario lexical rubric derived
+from the author ground truth was committed before retained `final_response`
+text was inspected. Requiring every scenario-specific concept group reduces
+GPT's Memory/RAG totals from 35/28 to 27/21 and Sonnet's from 38/32 to 29/24.
+Memory retains the higher total, but its qualified matched discordance is only
+10 versus 4 for GPT (`p=0.1795654296875`) and 10 versus 5 for Sonnet
+(`p=0.3017578125`). The screen is deliberately a lower bound, not a semantic
+judge: it rejects some answers that use an unlisted synonym, state one
+sufficient blocker rather than every annotated blocker, or identify a valid
+cross-cutting cost-center rule instead of the scenario's selected rationale.
+It therefore proves that binary PCR does not itself establish exact rationale
+coverage, not that every lexical miss is substantively wrong.
+
 **Artifact boundary**: The attributable
 [`lukaskirchdorfer/org-memory-paper`](https://github.com/lukaskirchdorfer/org-memory-paper)
 head `11617e3191bf6307eea64476fcb1269b5ca3fb78` contains 286 files: the nine
@@ -254,7 +267,8 @@ places lifecycle governance, update propagation, scale, and realistic
 enterprise evaluation in future work. The paired reanalysis strengthens the
 claim that the observed direction repeats across the four retained runs, but
 does not turn that direction into a precise or statistically established
-general advantage.
+general advantage. The frozen rationale screen preserves the direction while
+weakening the exact matched evidence further.
 
 **Connection to Memory Control Plane (#441)**: The process-atom design is a
 candidate representation for source-linked, governed memory. PLACEMEM and this
