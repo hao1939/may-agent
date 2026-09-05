@@ -1,0 +1,163 @@
+{
+  "schema": "scout.organizational-memory-rationale-rubric/v1",
+  "frozen_at": "2026-09-05T08:21:53.319Z",
+  "frozen_against_tip": "8e2ec62d1924d3c0e5eed6e771fdf0b44e895272",
+  "source_basis": "Author-created scenario policy rationales frozen before this worker inspected any retained final_response value. Matches are lexical lower bounds, not semantic judge labels.",
+  "evidence": {
+    "repository": "lukaskirchdorfer/org-memory-paper",
+    "revision": "11617e3191bf6307eea64476fcb1269b5ca3fb78",
+    "archive_sha256": "7e183ab73192b2ed748723147a544dc509ff1064543f09b5bedb39bbda8f6e7a",
+    "standalone_manifest_sha256": "c828e2de5ae64e014d81166ff940665db83388e805cb94a25b97d87eb930e317",
+    "metrics_manifest_sha256": "be97df9f73649e324e5fabf8eb7e98176f75f04a1f3ff7905a14779cfd01eb0f",
+    "scenarios_sha256": "29a5d26caa1b791c8e54705e2d49c771fbeb91930ea81ba22384138820b0ba51",
+    "evaluator_sha256": "49e2c08cedbc80672836cc2597dfdf1a4a43e653aa9af49a9e4ff5187cf248d9"
+  },
+  "seed_reconciliation": {
+    "receipt": "cycle-414-observation",
+    "observed_through": "2026-09-05T07:41:57.756Z",
+    "reconciled_at": "2026-09-05T08:21:53.319Z",
+    "stable_identity_count": 132,
+    "added_or_changed": "unknown",
+    "observed_removals": [],
+    "unavailable_count": 132,
+    "xhs_requests": 0,
+    "github_requests": 0,
+    "arxiv_requests": 0,
+    "reddit_requests": 0,
+    "reason": "The prior supported observation was about forty minutes old and inside the six-hour cadence; no public-lane or accepted-result trigger changed."
+  },
+  "cases": [
+    {
+      "scenario_id": "s01",
+      "required_groups": [
+        {
+          "id": "cost-center-identity",
+          "aliases": ["cost center", "cost centre", "cc xxxx"]
+        },
+        {
+          "id": "cost-center-requirement",
+          "aliases": [
+            "required",
+            "must provide",
+            "missing",
+            "not provided",
+            "without"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s03",
+      "required_groups": [
+        {
+          "id": "smi-identity",
+          "aliases": ["smi", "supplier managed inventory"]
+        },
+        {
+          "id": "smi-precondition",
+          "aliases": [
+            "replenishment",
+            "replenish",
+            "it support",
+            "system failure",
+            "has failed"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s05",
+      "required_groups": [
+        {
+          "id": "minimum-order-identity",
+          "aliases": ["minimum order quantity", "moq"]
+        },
+        {
+          "id": "minimum-order-threshold",
+          "aliases": ["50", "fifty"]
+        },
+        {
+          "id": "emergency-does-not-waive",
+          "aliases": [
+            "does not waive",
+            "not waive",
+            "do not override",
+            "does not override",
+            "continue to apply",
+            "still apply",
+            "standard policies"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s06",
+      "required_groups": [
+        {
+          "id": "urgent-prefix",
+          "aliases": ["urgent prefix", "prefix urgent", "urgent"]
+        },
+        {
+          "id": "department-head",
+          "aliases": [
+            "department head",
+            "dept head",
+            "authorising department head",
+            "authorizing department head"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s07",
+      "required_groups": [
+        {
+          "id": "closet-stock-limit",
+          "aliases": ["closet stock limit", "stock limit", "maximum per closet"]
+        },
+        {
+          "id": "closet-threshold",
+          "aliases": ["150", "one hundred fifty"]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s08",
+      "required_groups": [
+        {
+          "id": "budget-approval-reference",
+          "aliases": [
+            "budget approval reference",
+            "budget approval",
+            "ba yyyy nnnn"
+          ]
+        },
+        {
+          "id": "budget-threshold",
+          "aliases": ["5 000", "5000", "five thousand"]
+        }
+      ]
+    },
+    {
+      "scenario_id": "s10",
+      "required_groups": [
+        {
+          "id": "minimum-order-identity",
+          "aliases": ["minimum order quantity", "moq"]
+        },
+        {
+          "id": "minimum-order-threshold",
+          "aliases": ["50", "fifty"]
+        },
+        {
+          "id": "exception-process",
+          "aliases": ["moq exc 001", "exception form", "submit form"]
+        },
+        {
+          "id": "manager-approval",
+          "aliases": ["procurement manager", "manager approval"]
+        }
+      ]
+    }
+  ]
+}
