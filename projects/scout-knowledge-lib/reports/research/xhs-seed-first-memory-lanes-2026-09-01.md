@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 409: a scheduled observational pass preserves the login-class XHS boundary, and accepted Hermes Agent/OpenClaw evidence reaches canonical Scout with exact source-to-standing provenance."
+summary: "Seed-first Scout continuity through Cycle 414: the saved XHS shell changes class without exposing collection identities, and a source-frozen scorer shows structural reconstruction without proving retrieval value."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 409 observational reconciliation through 2026-09-04T21:36:26.369Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 409. Only the response-body hash changed from Cycle 405."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 409 at 2026-09-04T21:36:26.369Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 414 observational reconciliation through 2026-09-05T07:41:57.756Z keeps public Explore at 30 notes while supported saved status changes from login-class to profile-class but retains a login wall and zero attributable items; exact access evidence is in seed-ledger row 414."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 414 at 2026-09-05T07:41:57.756Z, with bounded no-request reconciliation in Cycles 406-408 and 410-413; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407, and executable provenance replacement/reconstruction evidence through Cycle 414; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19527,6 +19527,30 @@ validation, and rollback ledger is the
 Next seed-first, inventory remaining accepted finite outputs absent from
 canonical Scout before making a public request; if none is material, prefer a
 substantive contradiction or reproducibility gap with a released artifact.
+
+## Cycle 414 checkpoint — schema reconstruction passes a matched control
+
+At `2026-09-05T07:41:56.420Z–07:41:57.756Z`, one supported observational
+`status` and one non-navigating `saved-status` ran through the established
+effective-UID-0 connector after worker-local port 9222 refused. Explore stayed
+readable at 30 notes. The saved shell changed from `login`/46,763 bytes/access
+`3dab1b6d…af420` to `profile`/103,021 bytes/access `74a9cdb7…2e44`, but retained
+the login wall, zero attributable items, and empty ID set. Added/changed IDs
+remain unknown, removals are `[]`, and all 132 durable seeds remain unavailable.
+No representative post read or account mutation occurred.
+
+The complete ranked queue kept RV-004 and RV-034 first but inaccessible. The
+selected RV-036 step used exact canonical source `d3a8a06186`, accepted
+replacement digest `8c9ecb6c…1856`, and material `71b24b67ed`. With the same
+fourteen anchor sections, the reference-only baseline reconstructs 0/14 exact
+complete dispositions and the replacement reconstructs 14/14. Mutation and
+order controls reduce the score; altered scorer bytes fail closed. This is a
+producer-authored, source-frozen structural test, not held-out human retrieval
+or later-outcome evidence. The [Cycle 414 report](../review/scout-provenance-reconstruction-cycle414-2026-09-05.md)
+retains exact validation and rollback. RV-036 remains medium/open, real
+compaction stays rejected, and RV-004/RV-034 remain high/open. Next freeze
+decision-shaped prompts before implementing a retriever, or obtain an
+independently authored scorer.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
