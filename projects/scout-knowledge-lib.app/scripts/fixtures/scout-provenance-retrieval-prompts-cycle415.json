@@ -1,0 +1,92 @@
+{
+  "schema": "scout.provenance-retrieval-prompts/v1",
+  "frozen_at": "2026-09-05T07:59:44.049Z",
+  "frozen_against_tip": "af5dc0ee06a258cb05bb47bff67450d4c21d2005",
+  "source_basis": "Fourteen producer-authored decision questions frozen in a dedicated commit before any Cycle 415 retrieval adapter or score was implemented. They are derived from accepted Cycle 373-386 decision boundaries and are not independent, protected, or evidence of later use.",
+  "seed_reconciliation": {
+    "receipt": "cycle-414-observation",
+    "observed_through": "2026-09-05T07:41:57.756Z",
+    "reconciled_at": "2026-09-05T07:59:44.049Z",
+    "stable_identity_count": 132,
+    "added_or_changed": "unknown",
+    "observed_removals": [],
+    "unavailable_count": 132,
+    "xhs_requests": 0,
+    "github_requests": 0,
+    "arxiv_requests": 0,
+    "reddit_requests": 0,
+    "reason": "The prior supported XHS observation was about eighteen minutes old and inside the six-hour cadence; no public-lane or accepted-result trigger changed."
+  },
+  "cases": [
+    {
+      "id": "client-causality",
+      "query": "I need to cite tool-client results as client-only causality. Which accepted record explains why matched rows are insufficient?",
+      "expected_entry_id": "cycle-373-hexstrike"
+    },
+    {
+      "id": "scale-confounding",
+      "query": "Can a smaller-model skill result support a scale claim when the optimization method also changed and the public artifact omits the headline numbers?",
+      "expected_entry_id": "cycle-374-skillopt-lite"
+    },
+    {
+      "id": "bundled-intervention",
+      "query": "Which accepted result warns that transfer evidence bundles two interventions and has no repeated-run uncertainty?",
+      "expected_entry_id": "cycle-375-anchored-self-play"
+    },
+    {
+      "id": "runtime-generalization",
+      "query": "Which runtime benchmark record says an unavailable repository and thirty-one tasks cannot establish general impossibility?",
+      "expected_entry_id": "cycle-376-gameenginebench"
+    },
+    {
+      "id": "replay-grouping",
+      "query": "Where is the warning that manuscript and released summary counts disagree and that replay saturation is distinct from grouping?",
+      "expected_entry_id": "cycle-377-atomiccommitbench"
+    },
+    {
+      "id": "monitorability-scope",
+      "query": "Which record limits partial recovery of hidden reasoning to the tested task rather than general monitorability or zero-information evidence?",
+      "expected_entry_id": "cycle-378-hidden-computation"
+    },
+    {
+      "id": "prover-assumptions",
+      "query": "Which verification result depends on structured oracle classes and lacks a deployed cost comparison?",
+      "expected_entry_id": "cycle-379-single-prover"
+    },
+    {
+      "id": "catalog-versus-recall",
+      "query": "Where is catalog rejection arithmetic separated from real violation recall, with implementation and zone assignments still absent?",
+      "expected_entry_id": "cycle-380-dscc"
+    },
+    {
+      "id": "reply-selection",
+      "query": "Which code-review study cannot estimate all-comment user impact because its labels are selected through developer replies?",
+      "expected_entry_id": "cycle-381-coderabbit"
+    },
+    {
+      "id": "abstention-coverage",
+      "query": "Which selective-prediction result uses post-hoc abstention thresholds and lacks a finite-sample guarantee at low coverage?",
+      "expected_entry_id": "cycle-382-rlsr"
+    },
+    {
+      "id": "training-attribution",
+      "query": "Which test-time training record says selected means do not isolate token weighting or causally establish competence preservation?",
+      "expected_entry_id": "cycle-383-agentic-ttt"
+    },
+    {
+      "id": "repair-law",
+      "query": "Where does one simulator misranking support multi-resolution audit without establishing a universal repair law?",
+      "expected_entry_id": "cycle-384-policy-repair"
+    },
+    {
+      "id": "cross-system-confounding",
+      "query": "Which self-evolution comparison jointly changes model, harness, proposer, and budget and has no attributable release?",
+      "expected_entry_id": "cycle-385-hase"
+    },
+    {
+      "id": "replication-boundary",
+      "query": "Which replication project has a public release that omits benchmark trajectories and results and differs from the paper grader boundary?",
+      "expected_entry_id": "cycle-386-veritas"
+    }
+  ]
+}
