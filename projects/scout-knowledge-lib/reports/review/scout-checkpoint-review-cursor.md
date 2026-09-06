@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent exact-tip review accepts canonical checkpoint 6458b20511: the corrected line is cf08a2798d → 9dacf306f8 → 0292414aff → 6458b20511, superseded pre-amend reviewer commit 3b6d318d4f is excluded, and RV-051 changes only health-clock wording rather than Scout behavior."
+summary: "Independent exact-tip review accepts canonical checkpoint 6458b20511, and reviewer result 7ee00a1c88 is integrated exactly as the direct parent of this producer ledger. The corrected line excludes superseded pre-amend reviewer commit 3b6d318d4f, and RV-051 changes only health-clock wording rather than Scout behavior."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051"]
 last_updated: "2026-09-06"
-source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..6458b20511455313b5eec86913670d52482e1573: direct-child amended reviewer cursor 9dacf306f82092bac7aae574b418d126148fbdb2 at stable patch ID 3851d4be0fd6b48016088a797cf055f1a5fce4d3, direct-child producer ledger 0292414aff286dc91fe9a5ddcb4aee7766fe3839 at stable patch ID 74f04abd0d410365f25c71758edcd77d5c4b39d7, then direct-child RV-051 acceptance 6458b20511455313b5eec86913670d52482e1573 at stable patch ID 210906a68c7ee1ff207254b9d708c988167c1f3e; alternative pre-amend reviewer commit 3b6d318d4f55f51231411c5134d2d3342bfb63f4 has merge base cf08a2798d, distinct patch ID 826e8cb1dd37a83ae809c0b9ceca8a5319bf5906, and is not an ancestor. Fresh current-tip validation passes 312 tests / 1,533 assertions, Cycle 409 projection, 110 scoped links, navigation 11/14, 8/8, and 14/14; unchanged local-link content preserves the independently audited 1,549 documents / 1,793 broad links, health is 26 facts / 16 wakes at the exact tip clock, and clean branches, retained refs, and protected /app state reproduce."
+source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..7ee00a1c88cc3122423e7654c443431a06cbb2b3: direct-child amended reviewer cursor 9dacf306f82092bac7aae574b418d126148fbdb2 at stable patch ID 3851d4be0fd6b48016088a797cf055f1a5fce4d3, direct-child producer ledger 0292414aff286dc91fe9a5ddcb4aee7766fe3839 at stable patch ID 74f04abd0d410365f25c71758edcd77d5c4b39d7, direct-child RV-051 acceptance 6458b20511455313b5eec86913670d52482e1573 at stable patch ID 210906a68c7ee1ff207254b9d708c988167c1f3e, then direct-child reviewer result 7ee00a1c88cc3122423e7654c443431a06cbb2b3 at stable patch ID af092a0c3bfc1b414fb73abcf174bf5af43032b1; alternative pre-amend reviewer commit 3b6d318d4f55f51231411c5134d2d3342bfb63f4 has merge base cf08a2798d, distinct patch ID 826e8cb1dd37a83ae809c0b9ceca8a5319bf5906, and is not an ancestor. Fresh current-tip validation passes 312 tests / 1,533 assertions, Cycle 409 projection, 110 scoped links, navigation 11/14, 8/8, and 14/14; unchanged local-link content preserves the independently audited 1,549 documents / 1,793 broad links, health is 26 facts / 16 wakes at the exact tip clock, and clean branches, retained refs, and protected /app state reproduce."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -17,7 +17,7 @@ source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..6458
 - Last producer research material reviewed:
   `a70923f523a51b9c15d2e324a3c4d10d38599380` (Cycle 413 validation material; no new source collection)
 - Last integrated reviewer result:
-  `9dacf306f82092bac7aae574b418d126148fbdb2` (exact acceptance of Cycle 413 reviewer integration `cf08a2798d`)
+  `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (exact acceptance of Cycle 413 corrected cursor `6458b20511`)
 - Current review date: `2026-09-06T09:21:44+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -3917,8 +3917,11 @@ medium/open. Local-main landing, compaction, and cleanup remain unapproved.
   ambiguous clock attribution and records the independent disposition; it does
   not add research, behavior, landing, or cleanup evidence. Pre-amend alternative
   `3b6d318d4f55f51231411c5134d2d3342bfb63f4` is neither an ancestor nor
-  patch-equivalent and remains excluded. This reviewer cursor is pending
-  producer reconciliation after handoff.
+  patch-equivalent and remains excluded. Direct-child reviewer result
+  `7ee00a1c88cc3122423e7654c443431a06cbb2b3`, stable patch ID
+  `af092a0c3bfc1b414fb73abcf174bf5af43032b1`, is **integrated exactly** as
+  this producer ledger's parent. Roll back this ledger first, then revert
+  `7ee00a1c88`; neither operation authorizes local-main movement or cleanup.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
@@ -4527,8 +4530,8 @@ and the unreleased Memory in the Loop result.
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the next genuinely material
 checkpoint beyond exact reviewed canonical
-`6458b20511455313b5eec86913670d52482e1573`; producer reconciliation of this
-exact reviewer cursor; evidence that individually
+`6458b20511455313b5eec86913670d52482e1573`; independent review of the exact
+producer reconciliation checkpoint whose parent is `7ee00a1c88`; evidence that individually
 binds the 48 timestamp roles or supplies protected
 retrieval/later-decision value for RV-036; evidence changing RV-004 or RV-034;
 a canonical/local-main landing or cleanup claim; or a concrete regression in
