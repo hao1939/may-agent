@@ -53,6 +53,9 @@ directory for one-off investigation and delete it when the investigation ends.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for reproducible CI, test boundaries,
+review rules, and the separate deployment procedure.
+
 ```bash
 bun install
 bun run check
