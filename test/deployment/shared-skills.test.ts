@@ -2,10 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Production uses /app. An explicit root keeps this cross-repository contract
-// test authoritative while either side is being reviewed in an isolated
-// worktree.
-const APP_ROOT = resolve(process.env.MAY_AGENT_APP_ROOT ?? "/app");
+import { APP_ROOT } from "./installation.js";
 const SHARED_SKILLS = resolve(APP_ROOT, "shared/skills");
 
 function readSkill(path: string): string {

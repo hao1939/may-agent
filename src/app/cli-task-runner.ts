@@ -663,7 +663,7 @@ async function runCliAttempt(opts: {
   attempt: number;
   signal: AbortSignal;
 }): Promise<CliAttemptResult> {
-  const { bus, spawnCommand, record, recordPath, prompt, now, attempt, signal } = opts;
+  const { bus, spawnCommand, record, recordPath, prompt, attempt, signal } = opts;
   const native = commandFor(record, prompt);
   const { command, args } = sandboxedCommand(record, native.command, native.args);
   const collector = createCliOutputCollector(record.tool);

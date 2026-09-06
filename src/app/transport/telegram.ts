@@ -822,7 +822,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       };
     }
 
-    if (await handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId, replyToMsgId)) {
+    if (await handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) {
       return;
     }
 
@@ -872,7 +872,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     msg: any,
     conversationId: string,
     topicId?: number,
-    replyToMsgId?: number,
   ): Promise<boolean> {
     if (!text.startsWith("/")) return false;
 

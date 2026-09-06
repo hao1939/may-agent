@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { formatLastSession, writeLastSession, readLastSession, LAST_SESSION_FILENAME } from "./last-session.js";
 import type { LastSessionData } from "./last-session.js";

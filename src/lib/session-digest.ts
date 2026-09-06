@@ -676,7 +676,7 @@ export async function upsertDigest(
 
     // ── CREATE: session.start ────────────────────────────────────────
     if (input.trigger === "session.start") {
-      const id = insertDigest(persistDir, {
+      insertDigest(persistDir, {
         sessionId: input.sessionId,
         agent: input.agent,
         trigger: input.trigger,

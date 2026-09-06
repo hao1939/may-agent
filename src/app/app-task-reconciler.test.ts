@@ -6,6 +6,7 @@ import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {
@@ -46,7 +47,6 @@ import {
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   renewAppTaskAttemptLease,
-  appTaskContext,
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
@@ -988,6 +988,63 @@ describe("App task reconciler state", () => {
     expect(readAppTaskIntent(config, original.id)?.outcome).toBe(revised.outcome);
     expect(isAppTaskConverged(config, original.id)).toBe(false);
     expect(isAppTaskConverged(config, original.id, 1)).toBe(false);
+  });
+
+  it("reads exact live intent and completion state without confusing an older receipt", () => {
+    const { config } = resourceFixture(fixture(), "current-generation-read");
+    const original = intent();
+    const claim = declareAndClaimTask(config, {
+      intent: original,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(completeAppTask(config, claim, { summary: "original goal completed" }).status).toBe("applied");
+    expect(isAppTaskConverged(config, original.id, 1)).toBe(true);
+
+    const revised = { ...original, outcome: "Evaluate revised session 1" };
+    expect(observeAppTaskIntent(config, { intent: revised, appAgent: "app-owner" })).toMatchObject({
+      kind: "observed",
+      generation: 2,
+    });
+
+    expect(readAppTaskIntent(config, original.id)?.outcome).toBe(revised.outcome);
+    expect(isAppTaskConverged(config, original.id)).toBe(false);
+    expect(isAppTaskConverged(config, original.id, 1)).toBe(false);
+    expect(readRuntimeTaskView({ taskStateConfig: config }, original.id)).toMatchObject({
+      generation: 2,
+      status: "pending",
+      outcome: revised.outcome,
+    });
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["pending"] }).items).toContainEqual(
+      expect.objectContaining({ id: original.id, generation: 2, status: "pending" }),
+    );
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).not.toContainEqual(
+      expect.objectContaining({ id: original.id }),
+    );
+
+    const revisedClaim = claimObservedAppTask(config, {
+      taskId: original.id,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (revisedClaim.kind !== "claimed") throw new Error("expected revised claim");
+    expect(completeAppTask(config, revisedClaim, { summary: "revised goal completed" }).status).toBe("applied");
+    expect(config.resourceStore.readReceipt(original.id)).toMatchObject({
+      metadata: { generation: 2 },
+      outcome: revised.outcome,
+      summary: "revised goal completed",
+    });
+    expect(readRuntimeTaskView({ taskStateConfig: config }, original.id)).toMatchObject({
+      generation: 2,
+      status: "done",
+      outcome: revised.outcome,
+    });
+    expect(observeAppTaskIntent(config, { intent: revised, appAgent: "app-owner" })).toMatchObject({
+      kind: "completed",
+      generation: 2,
+    });
+    expect(listRunnableAppTaskIds(config)).not.toContain(original.id);
   });
 
   it("orders runnable tasks by declared priority before lower-priority work", () => {
@@ -1959,6 +2016,72 @@ describe("App task reconciler state", () => {
     expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("evaluate:session-1");
   });
 
+  it("keeps explicitly closed maintain work terminal under repeated observer admission", () => {
+    const { config } = resourceFixture(fixture(), "explicit-maintain-closure");
+    const standing = intent("maintain");
+    observeAppTaskIntent(config, { intent: standing, appAgent: "app-owner" });
+    const staleResource = config.resourceStore.readTask(standing.id);
+    if (!staleResource) throw new Error("expected standing resource");
+    const controller = declareAndClaimTask(config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (controller.kind !== "claimed") throw new Error("expected controller claim");
+    expect(
+      completeAppTask(config, controller, {
+        summary: "Stopped the standing work",
+        evidence: ["The exact standing task was explicitly selected for closure"],
+        actions: [{ kind: "close-task", taskId: standing.id, expectedGeneration: 1, summary: "Explicitly stopped" }],
+      }).status,
+    ).toBe("applied");
+    const receipt = config.resourceStore.readReceipt(standing.id);
+    const attemptCount = Object.keys(readTaskSnapshot(config).attempts ?? {}).length;
+
+    for (let index = 0; index < 3; index += 1) {
+      expect(
+        observeAppTaskIntent(config, {
+          intent: standing,
+          appAgent: "app-owner",
+          trigger: { eventId: index + 100, type: "pipeline.observed" },
+        }),
+      ).toMatchObject({ kind: "completed", taskId: standing.id, generation: 1 });
+      expect(listRunnableAppTaskIds(config)).not.toContain(standing.id);
+      expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(standing.id);
+    }
+    expect(config.resourceStore.readTask(standing.id)).toBeNull();
+    expect(config.resourceStore.readReceipt(standing.id)).toEqual(receipt);
+    expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(attemptCount);
+
+    expect(
+      config.resourceStore.commit({
+        fences: [],
+        expectMissingTaskIds: [standing.id],
+        tasks: [{ resource: staleResource, ready: true }],
+      }),
+    ).toBe(true);
+    expect(
+      claimObservedAppTask(config, {
+        taskId: standing.id,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+      }),
+    ).toMatchObject({ kind: "completed", generation: 1 });
+    expect(config.resourceStore.readTask(standing.id)).toBeNull();
+    expect(config.resourceStore.readReceipt(standing.id)).toEqual(receipt);
+
+    expect(
+      observeAppTaskIntent(config, {
+        intent: { ...standing, outcome: "Observe a newly authorized pipeline contract" },
+        appAgent: "app-owner",
+      }),
+    ).toMatchObject({ kind: "observed", generation: 2 });
+    expect(readRuntimeTaskView({ taskStateConfig: config }, standing.id)).toMatchObject({
+      generation: 2,
+      status: "pending",
+    });
+  });
+
   it("prunes a stale live duplicate when a matching achieve receipt already exists", () => {
     const { config } = fixture();
     const taskIntent = intent();
@@ -2698,7 +2821,6 @@ describe("App task reconciler state", () => {
       ],
     ] as const) {
       const state = fixture();
-      const { root } = state;
       const { reclaimed, sessionPath } = reclaimInterruptedSession(state, sessionId, [...transcript]);
       expect(reclaimed.handoff?.evidence).toContain(
         `Recovered durable checkpoint: absent for session ${sessionId}; no matching successful checkpoint receipt in ${join(sessionPath, "session.jsonl")}`,

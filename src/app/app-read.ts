@@ -30,18 +30,20 @@ export function readRuntimeTaskView(
 ): TaskDetail | null {
   const store = opts.taskStateConfig?.resourceStore;
   if (!store) return null;
-  const receipt = store.readReceipt(taskId);
-  if (receipt) return receiptTaskDetail(receipt);
+  // Match reconciliation authority: a live generation supersedes historical
+  // receipts. Completed duplicate resources are retired by admission/claim.
   const resource = store.readTask(taskId);
-  return resource
-    ? resourceTaskDetail(
-        resource,
-        store.readTaskConditions(taskId).map((condition) => ({
-          id: condition.metadata.id,
-          ...structuredClone(condition.spec),
-        })),
-      )
-    : null;
+  if (resource) {
+    return resourceTaskDetail(
+      resource,
+      store.readTaskConditions(taskId).map((condition) => ({
+        id: condition.metadata.id,
+        ...structuredClone(condition.spec),
+      })),
+    );
+  }
+  const receipt = store.readReceipt(taskId);
+  return receipt ? receiptTaskDetail(receipt) : null;
 }
 
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
@@ -139,10 +141,10 @@ export function listRuntimeTaskViews(
   const pageIds = ids.slice(0, limit);
   return {
     items: pageIds.flatMap((id) => {
-      const receipt = store.readReceipt(id);
-      if (receipt) return [receiptTaskView(receipt)];
       const resource = store.readTask(id);
-      return resource ? [resourceTaskView(resource)] : [];
+      if (resource) return [resourceTaskView(resource)];
+      const receipt = store.readReceipt(id);
+      return receipt ? [receiptTaskView(receipt)] : [];
     }),
     ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
   };
