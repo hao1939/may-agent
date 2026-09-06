@@ -1,7 +1,7 @@
 {
   "name": "may-agent",
   "version": "0.1.0",
-  "description": "Persistent feature-unit sub-agent system built on pi-agent-core",
+  "description": "May Host: bounded agent and workflow execution, durable tasks, and runtime control surfaces",
   "type": "module",
   "workspaces": ["packages/*"],
   "scripts": {
@@ -13,10 +13,10 @@
     "verify:apps-artifact": "bun run check:canonical-app-boundary && bun scripts/verify-app-artifact-compatibility.ts",
     "test": "bun test --timeout 30000 --parallel=2 src/ packages/ test/integration/ test/e2e/ test/poc/ scripts/",
     "test:deployment": "bun test --timeout 30000 test/deployment/ test/integration/agent-loader.test.ts",
-    "test:unit": "bun test --timeout 30000 --parallel --path-ignore-patterns='bundle/**' src/ packages/",
+    "test:unit": "bun test --timeout 30000 --parallel=2 src/ packages/",
     "test:integration": "bun test --timeout 30000 test/integration",
     "test:e2e": "bun test --timeout 30000 test/e2e",
-    "test:sdk": "bun test --timeout 30000 --parallel packages/sdk",
+    "test:sdk": "bun test --timeout 30000 --parallel=2 packages/sdk",
     "check:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
     "check:canonical-app-boundary": "bun scripts/check-canonical-app-boundary.ts",
     "check:codex-goal-protocol": "bun scripts/poc/check-codex-goal-protocol.ts",
@@ -36,8 +36,8 @@
     "restart:host": "docker exec may-agent supervisorctl start may-agent-restarter",
     "lint": "eslint src/ packages/ scripts/ test/",
     "lint:fix": "eslint src/ packages/ scripts/ test/ --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\""
+    "format": "prettier --write \"{src,packages,scripts,test}/**/*.ts\"",
+    "format:check": "prettier --check \"{src,packages,scripts,test}/**/*.ts\""
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "0.81.1",

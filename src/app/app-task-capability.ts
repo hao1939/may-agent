@@ -6,7 +6,6 @@ import type {
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
-  TaskView,
 } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
