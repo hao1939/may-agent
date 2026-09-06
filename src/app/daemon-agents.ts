@@ -203,7 +203,7 @@ export async function prepareDaemonAgents(opts: {
       projectRoot: opts.projectRoot,
       persistDir: opts.persistDir,
       agentsRoot: opts.agentsRoot,
-      sharedRoot: opts.sharedRoot,
+      sharedRoot: opts.definitionSharedRoot,
       manager: opts.manager,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,

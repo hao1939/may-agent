@@ -340,14 +340,18 @@ function saveConditionMutation(
     const resource = tree.resources?.[taskId];
     return resource ? [resource] : [];
   });
+  const fences = resources.map((resource) => ({
+    taskId: resource.metadata.id,
+    resourceVersion: resource.metadata.resourceVersion,
+    generation: resource.metadata.generation,
+    currentAttemptId: resource.status.currentAttemptId ?? null,
+  }));
+  for (const resource of resources) {
+    if (wakes.has(resource.metadata.id)) resource.metadata.resourceVersion += 1;
+  }
   commitTaskMutation(config, tree, {
     resourceMutation: {
-      fences: resources.map((resource) => ({
-        taskId: resource.metadata.id,
-        resourceVersion: resource.metadata.resourceVersion,
-        generation: resource.metadata.generation,
-        currentAttemptId: resource.status.currentAttemptId ?? null,
-      })),
+      fences,
       tasks: resources.flatMap((resource) =>
         wakes.has(resource.metadata.id)
           ? [

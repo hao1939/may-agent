@@ -529,11 +529,12 @@ function appWorkflowRuntimePaths(
   sharedGuardsDir: string;
 } {
   const runtime = requireWorkflowRuntimeOptions(opts);
-  const appAgentDir = localAgentDir(descriptor.appDir, agentName);
+  const sourceAppDir = join(opts.projectsRoot, basename(descriptor.appDir));
+  const appAgentDir = localAgentDir(sourceAppDir, agentName);
   const globalAgentDir = join(runtime.agentsRoot, agentName);
   const agentDir = appAgentDir ?? globalAgentDir;
   return {
-    agentsRoot: appAgentDir ? join(descriptor.appDir, "agents") : runtime.agentsRoot,
+    agentsRoot: appAgentDir ? join(sourceAppDir, "agents") : runtime.agentsRoot,
     workflowDir: join(agentDir, "workflows"),
     guardsDir: join(agentDir, "guards"),
     sharedGuardsDir: join(runtime.sharedRoot, "guards"),
@@ -584,7 +585,7 @@ async function ensureAppAgentRegistered(
 ): Promise<boolean> {
   if (opts.manager.hasAgent(agentName)) return true;
 
-  const agentDir = localAgentDir(descriptor.appDir, agentName);
+  const agentDir = localAgentDir(join(opts.projectsRoot, basename(descriptor.appDir)), agentName);
   const registered = opts.registerLocalAgent
     ? await opts.registerLocalAgent(agentName, descriptor.appDir, agentDir)
     : false;
@@ -3454,6 +3455,7 @@ async function reconcileTask(input: {
     if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
+      if (retry.status !== "released") return [];
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -3462,7 +3464,6 @@ async function reconcileTask(input: {
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
       });
-      if (retry.status === "missing") return [];
       throw new Error(primaryHandlerResult.summary);
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
@@ -4120,7 +4121,7 @@ export async function reconcileLoadedAppTaskOnce(input: {
     throw new Error(`App ${input.appId} has no loaded Task runtime`);
   }
   return reconcileTask({
-    opts,
+    opts: { ...opts, agentDefinitions: captureAgentDefinitions(opts) },
     descriptor,
     taskId: input.taskId,
     dispatch: input.dispatch,

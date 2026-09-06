@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { readTaskSnapshot } from "./app-task-store.js";
-import { claimObservedAppTask, deferAppTask, listRunnableAppTaskIds } from "./app-task-reconciler.ts";
+import {
+  claimObservedAppTask,
+  deferAppTask,
+  listRunnableAppTaskIds,
+  recordAppTaskTrigger,
+} from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
 
@@ -86,6 +91,53 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
+  it("does not acknowledge a newer wake admitted after the waiting snapshot was read", () => {
+    const config = fixture();
+    const store = config.resourceStore;
+    deferAppTask(config, claim(config), {
+      disposition: "waiting",
+      summary: "Wait for external review",
+      evidence: [],
+      conditions: [
+        {
+          id: "external-review",
+          type: "review.completed",
+          subject: "task:review",
+          expected: "done",
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    const readContext = store.readTaskContext.bind(store);
+    const read = spyOn(store, "readTaskContext").mockImplementationOnce((...args) => {
+      const snapshot = readContext(...args);
+      // Deterministically interleave a second writer between read and acknowledgment.
+      recordAppTaskTrigger(config, "human-request", {
+        type: "review.updated",
+        overrideWait: true,
+        data: { revision: 2 },
+      });
+      return snapshot;
+    });
+    try {
+      expect(
+        claimObservedAppTask(config, {
+          taskId: "human-request",
+          appAgent: "app-owner",
+          handler: "agent",
+        }).kind,
+      ).toBe("waiting");
+      expect(store.listRecoveryCandidates().items).toContainEqual(
+        expect.objectContaining({ taskId: "human-request", ready: true }),
+      );
+      expect(claim(config).trigger).toMatchObject({ type: "review.updated" });
+    } finally {
+      read.mockRestore();
+      store.close();
+    }
+  });
+
   it("preserves a future Condition deadline when duplicate claims find the Task waiting", () => {
     const config = fixture();
     const store = config.resourceStore;
@@ -100,7 +152,7 @@ describe("App task Condition review checkpoint", () => {
             type: "credential.state",
             subject: "credential:pilot",
             expected: { field: "state", equals: "ready" },
-            owner: "app:credential-provider",
+            owner: "human",
             reviewAfterMs: 60_000,
           },
         ],

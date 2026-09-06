@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import {
@@ -776,6 +777,48 @@ describe("AppTaskResourceStore", () => {
     expect(store.projectLifecycle()).toBe("paused");
     expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     store.close();
+  });
+
+  it.each(["trigger", "condition"])("fences a stale Task write after a newer %s wake", (ingress) => {
+    const store = open();
+    store.bootstrapSnapshot(fixture(), "revision-1");
+    const config: AppTaskContext = {
+      appDir: "/fixture/example.app",
+      projectDir: "/fixture",
+      agent: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    const claim = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "Wait for review",
+      evidence: [],
+      conditions: [
+        {
+          id: "review",
+          type: "review.completed",
+          subject: "task:review",
+          expected: "done",
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    const stale = store.readTask("normal")!;
+    const event = { type: "review.completed", taskId: "review", state: "done", overrideWait: true };
+    if (ingress === "trigger") recordAppTaskTrigger(config, "normal", event);
+    else trackAppTaskConditionEventForTasks(config, event, ["normal"]);
+    try {
+      expect(store.readTrigger("normal")).not.toBeNull();
+      expect(
+        store.replaceTask({ expectedResourceVersion: stale.metadata.resourceVersion, resource: stale, ready: false }),
+      ).toBeFalse();
+      expect(store.readTrigger("normal")).not.toBeNull();
+    } finally {
+      store.close();
+    }
   });
 
   it("records and claims one resource-backed task without whole-App persistence", () => {

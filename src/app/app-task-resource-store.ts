@@ -1357,7 +1357,7 @@ export class AppTaskResourceStore {
 
   setRecoveryState(
     taskId: string,
-    input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null },
+    input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null; expectedRevision?: number },
   ): boolean {
     const assignments: string[] = [];
     const assignmentValues: unknown[] = [];
@@ -1388,12 +1388,23 @@ export class AppTaskResourceStore {
           `UPDATE app_tasks SET ${assignments.join(", ")}
            WHERE app_id = ? AND task_id = ?
              AND (${changedPredicates.join(" OR ")})
+             AND (? IS NULL OR ? = (
+               SELECT CAST(value AS INTEGER) FROM app_task_store_meta
+               WHERE app_id = app_tasks.app_id AND key = 'revision'
+             ))
              AND NOT EXISTS (
                SELECT 1 FROM app_task_cancellations cancelled
                WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
              )`,
         )
-        .run(...assignmentValues, this.appId, taskId, ...expectedValues).changes > 0;
+        .run(
+          ...assignmentValues,
+          this.appId,
+          taskId,
+          ...expectedValues,
+          input.expectedRevision ?? null,
+          input.expectedRevision ?? null,
+        ).changes > 0;
     return changed;
   }
 

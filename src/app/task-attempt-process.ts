@@ -1,12 +1,15 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { writeSync } from "node:fs";
 import { resolve } from "node:path";
+import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
 import { SubagentManager } from "../lib/index.js";
-import { closeAllDbs } from "../lib/requests.js";
+import { closeAllDbs, getDb } from "../lib/requests.js";
 import { AppRegistry } from "./app-registry.js";
-import { DefinitionSourceReleaseStore } from "./app-source-release.js";
+import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import type { AppTaskDispatch } from "./app-task-controller.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { appTaskContext, readAppTaskAgent } from "./app-task-reconciler.js";
 import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
@@ -69,6 +72,7 @@ export type TaskAttemptProcessRequest = {
   appId: string;
   taskId: string;
   dispatch: AppTaskDispatch;
+  definitionSource?: Pick<DefinitionSourceRelease, "agentsRoot" | "projectsRoot" | "sharedRoot">;
 };
 
 export type TaskAttemptWorkerRoots = {
@@ -118,6 +122,7 @@ function workerArguments(request: TaskAttemptProcessRequest): string[] {
   return [
     "--task-worker-once",
     JSON.stringify({
+      ...request,
       appId: required(request.appId, "Task worker appId"),
       taskId: required(request.taskId, "Task worker taskId"),
       dispatch: request.dispatch,
@@ -130,7 +135,7 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
   return spawn(invocation.command, [...invocation.prefix, ...args], {
     cwd: process.cwd(),
     env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-    // Stdin is a private lifetime pipe. If the daemon exits, the pipe closes
+    // Stdin carries live input and parent lifetime. If the daemon exits, it closes
     // and the worker stops instead of surviving as an orphaned old Runtime.
     stdio: ["pipe", "inherit", "inherit", "pipe"],
   });
@@ -144,15 +149,31 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
 export function createTaskAttemptProcessExecutor(input: {
   bus: EventBus;
   timeoutMs?: number;
+  /** Capture the published source before an asynchronous child startup can race reload. */
+  definitionSource?: () => DefinitionSourceRelease | null;
   /** Test seam; production always uses the private current-binary worker. */
   spawnWorker?: (request: TaskAttemptProcessRequest) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeAttempt"]> {
-  return (request) =>
-    runWorkerProcess(
+  return (request) => {
+    const source = input.definitionSource?.();
+    if (input.definitionSource && !source) throw new Error("No published Task worker definition source");
+    const workerRequest: TaskAttemptProcessRequest = source
+      ? {
+          ...request,
+          definitionSource: {
+            agentsRoot: source.agentsRoot,
+            projectsRoot: source.projectsRoot,
+            sharedRoot: source.sharedRoot,
+          },
+        }
+      : request;
+    return runWorkerProcess(
       input.bus,
-      input.spawnWorker?.(request) ?? spawnPrivateWorker(workerArguments(request)),
+      input.spawnWorker?.(workerRequest) ?? spawnPrivateWorker(workerArguments(workerRequest)),
       input.timeoutMs,
+      workerRequest,
     );
+  };
 }
 
 /** Run startup Task repair outside the interface event loop. */
@@ -171,7 +192,12 @@ export function createTaskRecoveryProcessExecutor(input: {
   };
 }
 
-async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: number): Promise<string[]> {
+async function runWorkerProcess(
+  bus: EventBus,
+  child: ChildProcess,
+  timeoutMs?: number,
+  task?: TaskAttemptProcessRequest,
+): Promise<string[]> {
   const relay = child.stdio[3] as Readable | null;
   if (!relay) {
     child.kill("SIGKILL");
@@ -183,6 +209,7 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
   let workerError: string | undefined;
   let protocolError: Error | undefined;
   const frames: WorkerFrame[] = [];
+  const relayedEvents = new WeakSet<AgentEvent>();
   let relayScheduled = false;
   let relaySettled: (() => void) | undefined;
   const relayDrained = () =>
@@ -192,8 +219,10 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
           relaySettled = resolve;
         });
   const applyFrame = (frame: WorkerFrame) => {
-    if (frame.kind === "event") bus.fanoutPersisted(frame.event, frame.eventId);
-    else if (frame.kind === "result") result = frame.dependentTaskIds;
+    if (frame.kind === "event") {
+      relayedEvents.add(frame.event);
+      bus.fanoutPersisted(frame.event, frame.eventId);
+    } else if (frame.kind === "result") result = frame.dependentTaskIds;
     else workerError = frame.error;
   };
   const drainFrames = () => {
@@ -250,20 +279,60 @@ async function runWorkerProcess(bus: EventBus, child: ChildProcess, timeoutMs?: 
     relay.once("error", rejectEnd);
   });
 
-  const exit = await waitForChild(child, timeoutMs);
-  await relayEnded;
-  if (protocolError) throw protocolError;
-  if (buffer.trim()) {
-    enqueueFrame(parseWorkerFrame(buffer));
+  const failInput = (error: Error) => {
+    protocolError = error;
+    child.kill("SIGKILL");
+  };
+  child.stdin?.on("error", failInput);
+  const stopInput = task
+    ? bus.listen(
+        (event) => {
+          const target = (event as AgentEvent & { target?: Record<string, unknown> }).target;
+          const appId = String(target?.appId ?? target?.project ?? "")
+            .trim()
+            .replace(/\.app$/, "");
+          const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+          if (
+            relayedEvents.has(event) ||
+            appId !== task.appId ||
+            target?.taskId !== task.taskId ||
+            !Number.isSafeInteger(eventId) ||
+            Number(eventId) <= 0 ||
+            !child.stdin?.writable
+          )
+            return;
+          // Reuse the lifetime pipe for live observations. Durable Task input and
+          // cancellation remain authoritative if a process or its pipe disappears.
+          const line =
+            JSON.stringify({ kind: "event", eventId: Number(eventId), event } satisfies WorkerEventFrame) + "\n";
+          if (Buffer.byteLength(line) + child.stdin.writableLength > WORKER_FRAME_LIMIT) {
+            failInput(new Error("Task worker input exceeded its bound"));
+            return;
+          }
+          child.stdin.write(line);
+        },
+        { label: "task-worker-input" },
+      )
+    : () => {};
+  try {
+    const exit = await waitForChild(child, timeoutMs);
+    await relayEnded;
+    if (protocolError) throw protocolError;
+    if (buffer.trim()) {
+      enqueueFrame(parseWorkerFrame(buffer));
+    }
+    await relayDrained();
+    if (protocolError) throw protocolError;
+    if (workerError) throw new Error(workerError);
+    if (exit.code !== 0) {
+      throw new Error(`Task worker exited with ${exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`}`);
+    }
+    if (!result) throw new Error("Task worker exited without a result frame");
+    return result;
+  } finally {
+    stopInput();
+    if (child.stdin?.writable) child.stdin.end();
   }
-  await relayDrained();
-  if (protocolError) throw protocolError;
-  if (workerError) throw new Error(workerError);
-  if (exit.code !== 0) {
-    throw new Error(`Task worker exited with ${exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`}`);
-  }
-  if (!result) throw new Error("Task worker exited without a result frame");
-  return result;
 }
 
 function waitForChild(
@@ -311,6 +380,15 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
     appId: required(String(parsed.appId ?? ""), "Task worker appId"),
     taskId: required(String(parsed.taskId ?? ""), "Task worker taskId"),
     dispatch: dispatch as AppTaskDispatch,
+    ...(parsed.definitionSource
+      ? {
+          definitionSource: {
+            agentsRoot: required(String(parsed.definitionSource.agentsRoot ?? ""), "Task worker agentsRoot"),
+            projectsRoot: required(String(parsed.definitionSource.projectsRoot ?? ""), "Task worker projectsRoot"),
+            sharedRoot: required(String(parsed.definitionSource.sharedRoot ?? ""), "Task worker sharedRoot"),
+          },
+        }
+      : {}),
   };
 }
 
@@ -324,6 +402,8 @@ export async function runTaskAttemptWorker(input: {
     roots: input.roots,
     models: input.models,
     appIds: [input.request.appId],
+    task: input.request,
+    definitionSource: input.request.definitionSource,
     run: (bus) => reconcileLoadedAppTaskOnce({ bus, ...input.request }),
   });
 }
@@ -346,6 +426,8 @@ async function runTaskWorker(input: {
   roots: TaskAttemptWorkerRoots;
   models: ModelRegistry;
   appIds?: readonly string[];
+  task?: TaskAttemptProcessRequest;
+  definitionSource?: TaskAttemptProcessRequest["definitionSource"];
   run(bus: EventBus): Promise<string[]>;
 }): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
@@ -357,8 +439,17 @@ async function runTaskWorker(input: {
   process.stdin.resume();
   const bus = new EventBus();
   attachEventPersistence({ bus, persistDir: input.roots.persistDir });
+  const receivedEvents = new WeakSet<AgentEvent>();
+  const incoming = createInterface({ input: process.stdin });
+  incoming.on("line", (line) => {
+    const frame = parseWorkerFrame(line);
+    if (frame.kind !== "event") throw new Error("Task worker input must be a persisted event");
+    receivedEvents.add(frame.event);
+    bus.fanoutPersisted(frame.event, frame.eventId);
+  });
   bus.subscribe(
     (event) => {
+      if (receivedEvents.has(event)) return;
       const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
       if (Number.isSafeInteger(eventId) && Number(eventId) > 0) {
         writeWorkerFrame({ kind: "event", eventId: Number(eventId), event });
@@ -373,16 +464,33 @@ async function runTaskWorker(input: {
     bus,
   });
   const appSources = new DefinitionSourceReleaseStore(input.roots.projectRoot, input.roots.persistDir);
-  const activeSource = appSources.ensureCurrent();
+  const activeSource = input.definitionSource ?? appSources.ensureCurrent();
   const registry = new AppRegistry(activeSource.projectsRoot, input.roots.projectsRoot);
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
   const agentNames = registry
     .snapshot()
     .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
-    .map(({ definition }) => {
+    .flatMap(({ appDir, definition }) => {
       const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
-      return (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(/^agent:/, "");
+      const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
+        /^agent:/,
+        "",
+      );
+      if (!input.task) return [agent];
+      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
+      if (!resourceStore) return [agent];
+      const selected = readAppTaskAgent(
+        appTaskContext({
+          appDir,
+          projectDir: appDir,
+          agent,
+          maxConcurrent: 1,
+          resourceStore,
+        }),
+        input.task.taskId,
+      );
+      return selected && selected !== agent ? [agent, selected] : [agent];
     });
   const hostCapacity = new HostCapacity(1);
   try {
@@ -410,6 +518,7 @@ async function runTaskWorker(input: {
     writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });
     throw error;
   } finally {
+    incoming.close();
     process.stdin.off("end", stopWithParent);
     process.stdin.off("error", stopWithParent);
     process.stdin.pause();
