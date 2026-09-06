@@ -1,4 +1,4 @@
-/// <reference path="../workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/workflow-guard";
 
 /**
  * Test guard: injects a run_step demand when step "step-one" completes.

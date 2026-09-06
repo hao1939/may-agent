@@ -233,8 +233,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const getCallerSessionId = opts?.getCallerSessionId;
   const getCallerAgentName = opts?.getCallerAgentName;
   const callDeny = opts?.callDeny;
-  const agentsRoot = opts?.agentsRoot;
-  const triggerHeartbeat = opts?.triggerHeartbeat;
   const bus = opts?.bus;
 
   const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string; trace?: EventTrace } => {

@@ -45,10 +45,9 @@ async function probePuppeteer(): Promise<{ ok: true; mod: typeof import("puppete
   if (!chromePath) {
     return { ok: false, reason: "no chrome/chromium executable found (set CHROME_PATH or install /usr/bin/google-chrome)" };
   }
-  // puppeteer-core module — try repo (may have it), then /app fallback.
+  // The browser driver is a declared repository dependency, not a host fallback.
   const tryPaths = [
     "puppeteer-core",
-    "/app/node_modules/puppeteer-core",
   ];
   for (const p of tryPaths) {
     try {
@@ -58,7 +57,7 @@ async function probePuppeteer(): Promise<{ ok: true; mod: typeof import("puppete
       /* keep trying */
     }
   }
-  return { ok: false, reason: "puppeteer-core not importable from repo or /app/node_modules" };
+  return { ok: false, reason: "puppeteer-core not importable; run bun install --frozen-lockfile" };
 }
 
 function statusOf(content: string): string | null {
@@ -68,17 +67,16 @@ function statusOf(content: string): string | null {
   return s ? s[1].trim() : null;
 }
 
-describe.skipIf(E2E_NO_UI)("E8: project comment via served UI", () => {
+const probe = await probePuppeteer();
+if (process.env.CI && (E2E_NO_UI || !probe.ok)) {
+  throw new Error(`Browser coverage is required in CI: ${E2E_NO_UI ? "E2E_NO_UI=1" : !probe.ok ? probe.reason : ""}`);
+}
+if (!probe.ok) console.warn(`[E8] skipped: ${probe.reason}`);
+
+describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () => {
   let sb: Sandbox;
-  let probe: Awaited<ReturnType<typeof probePuppeteer>>;
-  let skipReason: string | null = null;
 
   beforeAll(async () => {
-    probe = await probePuppeteer();
-    if (!probe.ok) {
-      skipReason = probe.reason;
-      return;
-    }
     sb = await buildSandbox({
       fixtureAgents: ["may"],
       cronJson: { may: [] },
@@ -95,12 +93,7 @@ describe.skipIf(E2E_NO_UI)("E8: project comment via served UI", () => {
   });
 
   test("UI loads, route helpers exist, comment submits, file state updates", async () => {
-    if (skipReason || !probe.ok) {
-      // Bun's describe.skipIf already handles the env gate; this branch
-      // covers the runtime missing-prereq case (no chrome on this host).
-      console.log(`[E8] skipped: ${skipReason ?? "no prereqs"}`);
-      return;
-    }
+    if (!probe.ok) throw new Error(probe.reason);
     const { mod: puppeteer, chromePath } = probe;
     const base = `http://127.0.0.1:${sb.webPort}`;
     const PROJECT_FILE = join(sb.projectsRoot, "platform", "project.md");

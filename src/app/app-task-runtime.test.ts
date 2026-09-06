@@ -162,7 +162,7 @@ function activateTaskResources(config: AppTaskContext, persistDir: string, appId
 }
 
 function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.root, "state")) {
-  let resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+  const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
   if (!resourceStore) {
     return activateTaskResources(
       appTaskTestContext({
@@ -2801,7 +2801,7 @@ describe("canonical App task runtime", () => {
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
     const f = fixture();
     const bus = eventBus();
-    const installed = await installAppTaskRuntimes({
+    await installAppTaskRuntimes({
       ...options(f, bus),
       appRegistrySnapshot: {
         id: "boot:1",
@@ -3237,7 +3237,7 @@ describe("canonical App task runtime", () => {
       },
     };
 
-    const installedRelease = await installAppTaskRuntimes({
+    await installAppTaskRuntimes({
       ...runtimeOptions,
       appRegistrySnapshot: {
         id: "boot:stable-controller:1",
@@ -3386,7 +3386,6 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
-
     await attachLoadedAppTask({
       bus,
       appDir: f.appDir,
@@ -3434,6 +3433,75 @@ describe("canonical App task runtime", () => {
 
     await recoverInstalledAppTasks(bus);
     expect(recoveries).toBe(1);
+  });
+
+  it("parks invalid handler results instead of retrying them through recovery", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        invalid: async () => {
+          calls += 1;
+          return { state: "error", summary: "Invalid authored state", evidence: [] } as never;
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:invalid-handler-result",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/invalid-result",
+          parentId: "operations",
+          outcome: "Settle a rejected result",
+          acceptance: ["Invalid output does not become a retry loop"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "invalid",
+        },
+      },
+      idempotencyKey: "attach:invalid-result",
+      request: {
+        id: "request-invalid-result",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+    const config = appTaskContext({
+      appDir: f.appDir, projectDir: f.projectDir, agent: "sample-owner", maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!,
+    });
+    const deadline = Date.now() + 1_000;
+    while (
+      config.resourceStore.readTask("work/invalid-result")?.status.phase !== "attention" && Date.now() < deadline
+    ) {
+      await Bun.sleep(5);
+    }
+    expect(config.resourceStore.readTask("work/invalid-result")?.status).toMatchObject({
+      phase: "attention",
+      observedGeneration: 1,
+      summary: "Handler result was rejected: state must be converged, waiting, or needs-agent",
+    });
+    for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
+    await Bun.sleep(50);
+    expect(calls).toBe(1);
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(
+      "work/invalid-result",
+    );
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toContainEqual(
+      expect.objectContaining({
+        taskId: "work/invalid-result", state: "failed", failureReason: "HandlerResultInvalid",
+      }),
+    );
   });
 
   it("retries the same Task after an executor process failure", async () => {

@@ -1,85 +1,60 @@
-# test/e2e/
+# Daemon end-to-end tests
 
-End-to-end tests for the may-agent daemon.
+These tests run by default in `bun run ci`; they do not require model credentials.
+They prove Host mechanics, not the quality of model-generated work.
 
-## Two flavors
-
-### In-process e2e (existing)
-
-Construct a daemon inside the test process; talk to it directly through bus
-subscriptions and helper interfaces. No subprocess, no socket. Fast (~50ms
-per test). These don't need any extra env var.
-
-Examples: `control-routing-e2e.test.ts`, `telegram-reply-e2e.test.ts`.
-
-### Live-stack e2e
-
-Spawn a real `bun src/app/may.ts --cron --socket` subprocess pointed at a
-sandboxed state dir, then drive it through its Unix socket and observe via
-the sandbox's SQLite DB and filesystem. Asserts behavior of the **full
-running daemon** — process boundary, socket frames, event persistence,
-explicit runtime reload, workflow file discovery, etc.
-
-Each live-stack test is its own sandbox at `/tmp/may-e2e-<runId>/` with its
-own `.state/`, `agents/`, `projects/`, `shared/`. Nothing is read from or
-written to `/app/agents`, `/app/projects`, `/app/shared`, or the host's real
-`.state/`.
-
-Live-stack tests run by default because they are the main behavior contract.
-LLM-driven variants are gated behind `E2E_LIVE_LLM=1`.
+## Running
 
 ```bash
-# Full e2e suite, including live-stack daemon tests
-bun test test/e2e/
-
-# Single case
+bun run test:e2e
 bun test test/e2e/e2-project-comment-roundtrip.test.ts
 
-# Keep sandbox dirs for debugging (default: rm on close)
+# Preserve only this test's sandbox for debugging.
 E2E_KEEP=1 bun test test/e2e/e1-handler-loop-liveness.test.ts
-ls /tmp/may-e2e-*/
 ```
 
-## Cases
+`control-routing-e2e` and `telegram-reply-e2e` exercise in-process components
+with mocked external services. The numbered scenarios start a real daemon
+subprocess, use its Unix socket/HTTP interface, and inspect its stored results.
 
-| Case | Validates | Status |
-|---|---|---|
-| `e1-handler-loop-liveness` | Cron → handler-loader → event-persistence pipeline; `user-guide.md § Cron`, `handler-authoring.md § Lifecycle Events` | ✅ |
-| `e2-project-comment-roundtrip` | `project.comment.created` socket flow → discussion.md append + status flip + `project.nudge` event; comment intake portion of `user-guide.md § Events in Practice` | ✅ |
-| `e3b-workflow-discovery` | Agent-scoped workflow file resolution + dispatch + `workflow_runs` persistence; `workflow-authoring.md § Workflow Location` | ✅ |
-| `e4-metric-lifecycle` | `sdk.metrics.define`/`record`/`evaluate` → breach event → `metric_alerts` row → recovery; `metric-alerts.md`, `metrics.md § Pipeline` | ✅ |
-| `e5-agent-reload` | `reload` socket command → new agent on disk picked up, updated agent reported; `user-guide.md § Reload`, `agent-convention.md` | ✅ |
-| `e6-agent-call-chain` | `ctx.sdk.runAgent(target, task)` from a handler → child session with `kind=call`+`source=callAgent`, completion event observed; `sdk-quickstart.md § sdk.runAgent` | ✅ |
-| `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
-| `e8-project-comment-ui` | Served platform UI: index loads, top-level assets resolve, row click navigates to canonical id, comment form POSTs to `/api/projects/comment`, discussion.md appended, status flips. Replaces the manual `scripts/e2e-platform-comment.mjs`. Skipped on hosts without Chrome (set `E2E_NO_UI=1` to opt out). | ✅ |
-| `e9-session-auto-resume` | Cold (interrupted) session pre-seeded on disk → `steer` socket frame → unified `manager.resumeSession` primitive → fresh `session.start` event with the same sessionId. Regression test for the v2 single-resume-path refactor (`resumeInterrupted` no-op removed; `executeResume` is the single funnel). | ✅ |
-| `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
-| `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
+Each daemon gets a temporary directory with its own `.state`, agents, projects,
+and shared files. Tests do not operate the developer's `/app` installation.
+Scheduled fixtures use an explicit startup offset to avoid random initial
+waiting; real recurring timers still run.
 
-E8 currently covers project-comment UI; broader telegram UI flows and
-the full-LLM variant of E6 are still future work — see roadmap in
-`projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.
+## Coverage and limits
 
-## Library
+| Case | What it actually checks |
+| --- | --- |
+| `e1-handler-loop-liveness` | At least two real cron/handler cycles with start, completion, and domain events. |
+| `e2-project-comment-roundtrip` | Legacy project-comment intake: stored comment, project status update, and nudge event. Not App Task reconciliation. |
+| `e3b-workflow-discovery` | Configured workflow discovery, execution, and terminal `workflow_runs` persistence. |
+| `e4-metric-lifecycle` | Metric definition, baseline, breach, alert row, recovery event, and resolved alert. |
+| `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
+| `e6-host-maintenance` | Host file handlers cannot launch agents, workflows, or escalations; no worker session starts. |
+| `e7-escalation-roundtrip` | Escalation persistence and resume-attempt/failure handling for a synthetic session, plus the `needs_human` short-circuit. Not successful model execution. |
+| `e8-project-comment-ui` | Real browser loads the served UI, opens a project, submits a comment, and observes stored changes. |
+| `e9-session-auto-resume` | Explicit steering resumes a stored interrupted session under the same identity. Not autonomous retry/backoff or successful model execution. |
+| `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |
+| `telegram-reply-e2e` | Telegram routing and control behavior with a mocked Telegram service. |
 
-`lib/sandbox.ts` — `buildSandbox(spec) → { socketPath, stateDir, projectsRoot, dbPath, daemonReady, close }`. Copies fixtures from `fixtures/` into a tmp dir, spawns the daemon, returns control handles.
+E8 uses this repository's pinned browser driver. Install Chrome/Chromium or set
+`CHROME_PATH`. Missing prerequisites are an explicit local skip; `E2E_NO_UI=1`
+also skips locally. Both conditions fail under `CI=true`, where the browser
+scenario must execute.
 
-`lib/live-daemon.ts` — `openSandboxDb`, `queryEvents`, `queryWorkflowRuns`, `querySessions`, `pollUntil`, `socketEmit`, `socketStatus`, and env-flag constants (`E2E_LIVE_LLM`, `E2E_EXTENDED`).
+## Helpers and fixtures
 
-## Fixtures
+`lib/sandbox.ts` creates the isolated tree, starts the daemon, captures logs,
+and tears it down. `lib/live-daemon.ts` provides socket, polling, and database
+helpers. Poll for the observation being tested rather than sleeping and
+assuming it happened.
 
-`fixtures/agents/` — minimal agent definitions. `agent.json` with `tools: ["cron"]` and a 3-line `AGENTS.md`. No real heartbeat, no real handlers unless the test specifies them.
+Committed fixtures provide minimal agents, mechanical handlers, a no-model
+workflow, and project files. Handler progress that spans invocations is stored
+in the sandbox database, not hidden in module globals.
 
-`fixtures/handlers/` — one-purpose handler files per test. State across fires
-must persist in DB. Handler modules remain loaded until the explicit runtime
-reload boundary, so durable state must not depend on module-level variables.
-
-`fixtures/workflows/` — fixture workflows used by E3b. Pure functions, no LLM calls.
-
-`fixtures/projects/` — fixture project trees for tests that need them (E2).
-
-## Findings during harness work
-
-Building this harness surfaced implementation/documentation gaps that are not
-test-specific. They are recorded in
-`projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.
+Current system contracts live in `may-agent.app/docs`. Historical harness
+findings are in that tree's
+`archive/implementation/2026-05-19-e2e-harness-findings.md`; they are not the
+current coverage checklist.

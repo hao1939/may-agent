@@ -625,11 +625,7 @@ describe("Cron event subscriptions", () => {
     // NOT all 6 cascading instantly.
     expect(callCount).toBeLessThanOrEqual(2);
 
-    // Verify the queue-drop message appears after enough errors accumulate
-    // (we need to wait for backoff timers, so just check the pattern holds)
-    const queueDropped = errors.some((m) => m.includes("queue dropped"));
-    // With only 200ms elapsed and 5s backoff, the queue won't fully drain yet.
-    // The key assertion is callCount stayed low (no tight error loop).
-    expect(callCount).toBeLessThan(6);
+    // This proves bounded retry rate, not eventual queue dropping: the 5s
+    // backoff has not elapsed in this 200ms observation window.
   });
 });

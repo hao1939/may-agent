@@ -37,6 +37,7 @@ describe("E3b: workflow discovery and scheduled execution", () => {
               task: "e2e test task",
             },
             intervalMs: 10000,
+            offsetMs: 1, // Exercise dispatch without random startup jitter.
             agent: "may",
             enabled: true,
           },

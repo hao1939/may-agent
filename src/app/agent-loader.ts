@@ -71,16 +71,6 @@ export function getAgentCrons(): Map<string, Cron> {
   return agentCrons;
 }
 
-/** Register a cleanup function for an agent. */
-function addCleanup(agentName: string, fn: () => void): void {
-  const existing = agentCleanups.get(agentName);
-  if (existing) {
-    existing.push(fn);
-  } else {
-    agentCleanups.set(agentName, [fn]);
-  }
-}
-
 function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGeneration): AgentGenerationPublication {
   const previousCrons = new Map(agentCrons);
   const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));

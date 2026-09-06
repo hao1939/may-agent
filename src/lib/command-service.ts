@@ -7,7 +7,7 @@
  */
 export type CommandAPI = Record<never, never>;
 
-export interface CommandServiceOptions {}
+export type CommandServiceOptions = Record<string, never>;
 
 export function createCommandService(_opts: CommandServiceOptions = {}): CommandAPI {
   return {};

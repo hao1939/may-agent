@@ -9,13 +9,14 @@ describe("E6: Host maintenance capabilities", () => {
   beforeAll(async () => {
     sandbox = await buildSandbox({
       fixtureAgents: ["may", "worker"],
-      fixtureHandlers: { may: ["e2e-call-worker"] },
+      fixtureHandlers: { may: ["e2e-handler-capabilities"] },
       cronJson: {
         may: [
           {
-            name: "e2e-call-worker",
-            handler: "e2e-call-worker",
+            name: "e2e-handler-capabilities",
+            handler: "e2e-handler-capabilities",
             intervalMs: 10_000,
+            offsetMs: 1, // This checks capabilities, not randomized startup delay.
             agent: "may",
             enabled: true,
           },

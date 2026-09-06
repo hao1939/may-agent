@@ -1,8 +1,8 @@
-/// <reference path="../workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/workflow-guard";
 
 export const guard: WorkflowGuard = {
   name: "test-blocker",
-  handle(event: WorkflowGuardEvent): Demand[] {
+  handle(_event: WorkflowGuardEvent): Demand[] {
     return [{ type: "block", reason: "blocked by test guard" }];
   },
 };

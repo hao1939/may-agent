@@ -705,8 +705,9 @@ function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, ap
   ) {
     return undefined;
   }
+  // A maintain task normally stays live when up to date. A receipt means it
+  // was explicitly closed, so it is terminal just like achieved work.
   const intent = resourceIntent(resource);
-  if (intent.mode !== "achieve") return undefined;
   const agent = resolvedAgent(tree, intent, appAgent);
   return receipt.specHash === appTaskSpecHash(intent, agent) ? receipt : undefined;
 }
@@ -1574,7 +1575,6 @@ export function observeAppTaskIntent(
     const receiptMatchesDesiredIdentity =
       receipt?.metadata.id === input.intent.id &&
       receipt.specHash === specHash &&
-      input.intent.mode === "achieve" &&
       (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
     if (receiptMatchesDesiredIdentity) {
       const mutationScope = beginResourceMutationScopeForTasks(
@@ -2150,15 +2150,14 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: AppTaskContext, taskId: string): void {
+function acknowledgeIndexedRecoveryWait(config: AppTaskContext, taskId: string, nextCheckAt: number | null = null): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
-  // wake; leaving any recovery signal set would make safety recovery retry a no-op.
-  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  // wake. Clear consumed signals, but preserve a Condition's future review.
   config.resourceStore.setRecoveryState(taskId, {
     ready: false,
     changed: false,
-    nextCheckAt: nextTaskConditionReviewAt(tree, taskId),
+    nextCheckAt,
   });
 }
 
@@ -2932,7 +2931,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      acknowledgeIndexedRecoveryWait(config, input.taskId, nextTaskConditionReviewAt(tree, input.taskId));
       return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds, childIds };
     }
     if (
@@ -2942,7 +2941,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      acknowledgeIndexedRecoveryWait(config, input.taskId, nextTaskConditionReviewAt(tree, input.taskId));
       return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
     }
 
@@ -3827,7 +3826,7 @@ type ResourceMutationScope = {
   conditionIds: Set<string>;
   originalConditionVersions: Map<string, number>;
   originalAttemptVersions: Map<string, number>;
-  originalReceiptIds: Set<string>;
+  originalReceiptGenerations: Map<string, number>;
   fences: Array<{
     taskId: string;
     resourceVersion: number;
@@ -3850,7 +3849,9 @@ function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
     originalAttemptVersions: new Map(
       Object.values(tree.attempts ?? {}).map((attempt) => [attempt.metadata.id, attempt.metadata.resourceVersion]),
     ),
-    originalReceiptIds: new Set(Object.keys(tree.receipts ?? {})),
+    originalReceiptGenerations: new Map(
+      Object.values(tree.receipts ?? {}).map((receipt) => [receipt.metadata.id, receipt.metadata.generation]),
+    ),
     fences: [],
   };
 }
@@ -3916,7 +3917,7 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
   });
   const receipts = [...scope.writeTaskIds].flatMap((taskId) => {
     const receipt = tree.receipts?.[taskId];
-    return receipt && !scope.originalReceiptIds.has(taskId) ? [receipt] : [];
+    return receipt && scope.originalReceiptGenerations.get(taskId) !== receipt.metadata.generation ? [receipt] : [];
   });
   return {
     fences: scope.fences,

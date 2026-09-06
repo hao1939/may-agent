@@ -13,18 +13,12 @@ export default [
       "test-workspace/",
       "pi-deps/",
       "docs/",
-      // Synced from pi-coding-agent via scripts/sync-pi-tools.sh — do not lint/format
-      "src/lib/tools/bash.ts",
-      "src/lib/tools/edit.ts",
-      "src/lib/tools/edit-diff.ts",
-      "src/lib/tools/path-utils.ts",
-      "src/lib/tools/write.ts",
     ],
   },
 
   // TypeScript files
   {
-    files: ["src/**/*.ts", "test/**/*.ts"],
+    files: ["src/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"],
     languageOptions: {
       parser: tsParser,
     },
@@ -39,8 +33,11 @@ export default [
 
       // Customizations
       "no-unused-vars": "off",
+      // Callbacks may read a binding before its later initialization. Do not
+      // demand a const rewrite that changes that lifecycle boundary.
+      "prefer-const": ["error", { ignoreReadBeforeAssign: true }],
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
