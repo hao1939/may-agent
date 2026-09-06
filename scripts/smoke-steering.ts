@@ -7,13 +7,15 @@
  *   - unknown ids return 404
  *
  * Reads from the same SQLite file the server writes to (read-only) to
- * confirm DB writes happened. Reverts any state it touches.
+ * confirm DB writes happened. Attempts to restore the edited threshold, but
+ * a failed request can leave it changed and queued work cannot be undone.
  *
  * Usage:
  *   bun run scripts/smoke-steering.ts                    # localhost:8080
  *   PORT=9090 STATE_DIR=/tmp/foo bun run scripts/...     # custom
  *
- * Exits non-zero on any failure. Designed for CI / pre-commit / on-demand.
+ * Changes live state and may queue agent work. Run only against an explicitly
+ * authorized disposable installation, never in PR CI or a pre-commit hook.
  */
 
 import { Database } from "bun:sqlite";
@@ -86,7 +88,6 @@ console.log("─".repeat(60));
 
 // 5. POST /api/metrics/:id/threshold — pick a real metric, change & revert.
 let testMetricId: string | null = null;
-let originalThreshold: number | null = null;
 {
   const db = new Database(DB_PATH, { readonly: true });
   const m = db.prepare(
@@ -96,7 +97,6 @@ let originalThreshold: number | null = null;
   if (!m) { bad("no metric with threshold found in DB to test threshold endpoint"); }
   else {
     testMetricId = m.id;
-    originalThreshold = m.threshold;
     const newThr = m.threshold + 0.001;
     const { status, body } = await http("POST", `/api/metrics/${encodeURIComponent(m.id)}/threshold`, { threshold: newThr });
     if (status === 200 && body.from === m.threshold && Math.abs(body.to - newThr) < 1e-9) {

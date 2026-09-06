@@ -450,7 +450,6 @@ export async function inspectWorkflowDefinition(
 
 // ── Guard Discovery ────────────────────────────────────────────────────
 
-const MAX_INJECTION_DEPTH = 3;
 const DEFAULT_MAX_INJECTED_STEPS = 5;
 
 /** Load all guard modules from given directories. */

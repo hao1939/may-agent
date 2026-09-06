@@ -732,7 +732,6 @@ function markLifecycleRelations(
   const focusTaskId = dataValue(focusData, ["taskId", "task_id"]);
   return lifecycles.map((lifecycle) => {
     let relation: EventReviewLifecycle["relation"] = "related";
-    const lifecycleSessionIds = lifecycleRowValues(lifecycle, rowsById, ["sessionId", "session_id"]);
     const lifecycleWorkflowRunIds = lifecycleRowValues(lifecycle, rowsById, ["workflowRunId", "workflow_run_id"]);
     const lifecycleTaskIds = lifecycleRowValues(lifecycle, rowsById, ["taskId", "task_id"]);
     if (
