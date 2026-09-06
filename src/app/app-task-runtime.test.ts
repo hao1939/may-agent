@@ -3263,6 +3263,75 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it("parks invalid handler results instead of retrying them through recovery", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        invalid: async () => {
+          calls += 1;
+          return { state: "error", summary: "Invalid authored state", evidence: [] } as never;
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:invalid-handler-result",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/invalid-result",
+          parentId: "operations",
+          outcome: "Settle a rejected result",
+          acceptance: ["Invalid output does not become a retry loop"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "invalid",
+        },
+      },
+      idempotencyKey: "attach:invalid-result",
+      request: {
+        id: "request-invalid-result",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+    const config = taskReconciliationConfig({
+      appDir: f.appDir, projectDir: f.projectDir, agent: "sample-owner", maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!,
+    });
+    const deadline = Date.now() + 1_000;
+    while (
+      config.resourceStore.readTask("work/invalid-result")?.status.phase !== "attention" && Date.now() < deadline
+    ) {
+      await Bun.sleep(5);
+    }
+    expect(config.resourceStore.readTask("work/invalid-result")?.status).toMatchObject({
+      phase: "attention",
+      observedGeneration: 1,
+      summary: "Handler result was rejected: state must be converged, waiting, or needs-agent",
+    });
+    for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
+    await Bun.sleep(50);
+    expect(calls).toBe(1);
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(
+      "work/invalid-result",
+    );
+    expect(Object.values(readTaskState(config).attempts ?? {})).toContainEqual(
+      expect.objectContaining({
+        taskId: "work/invalid-result", state: "failed", failureReason: "HandlerResultInvalid",
+      }),
+    );
+  });
+
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();
