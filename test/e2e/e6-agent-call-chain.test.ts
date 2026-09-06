@@ -16,6 +16,7 @@ describe("E6: Host maintenance capabilities", () => {
             name: "e2e-call-worker",
             handler: "e2e-call-worker",
             intervalMs: 10_000,
+            offsetMs: 1, // This checks capabilities, not randomized startup delay.
             agent: "may",
             enabled: true,
           },
