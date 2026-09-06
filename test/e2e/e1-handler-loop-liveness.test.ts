@@ -35,6 +35,7 @@ describe("E1: handler loop liveness", () => {
             name: "e2e-noop",
             handler: "e2e-noop",
             intervalMs: 10000,
+            offsetMs: 1, // No random startup jitter in the fixture; keep real recurring timers.
             agent: "may",
             enabled: true,
           },
@@ -53,8 +54,8 @@ describe("E1: handler loop liveness", () => {
     async () => {
       const db = openSandboxDb(sb.dbPath);
       try {
-        // Wait up to 45s for ≥2 fires (10s interval; first fire after socket-ready,
-        // second ~10s later; plus jitter).
+        // Wait for ≥2 real fires, 10s apart. The generous deadline tolerates
+        // runner load; polling returns as soon as both cycles are persisted.
         const result = await pollUntil(
           () => {
             const started = queryEvents(db, { types: ["handler.started"], since: t0, limit: 20 })

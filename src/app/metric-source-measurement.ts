@@ -3,6 +3,7 @@ import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
+import { resolveRuntimeRoots } from "./path-roots.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
 export const SUBSCRIBER_FAILED_COUNT_METRIC_ID = "infra.bus.subscriber-failed-count-1h";
@@ -119,7 +120,7 @@ function execFileText(file: string, args: string[], options: ExecFileOptionsWith
 
 async function executeCommand(command: string): Promise<CommandSample | null> {
   const stdout = await execFileText("/bin/sh", ["-lc", command], {
-    cwd: "/app",
+    cwd: resolveRuntimeRoots(import.meta.url).projectRoot,
     encoding: "utf8",
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
@@ -148,7 +149,7 @@ async function executeBatches(rows: SourceMetric[]): Promise<{
     for (const item of group) handled.add(item.rowId);
     try {
       const stdout = await execFileText("bun", [scriptPath, "--batch-json", ...group.map((item) => item.metricId)], {
-        cwd: "/app",
+        cwd: resolveRuntimeRoots(import.meta.url).projectRoot,
         encoding: "utf8",
         timeout: 120_000,
         maxBuffer: 4 * 1024 * 1024,

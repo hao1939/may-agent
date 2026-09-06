@@ -1,12 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { APP_ROOT } from "./installation.js";
 import type { AppDefinition, AppDependencyObservation, AppEvent } from "@may-agent/sdk";
 import { matchesEventSelector } from "@may-agent/sdk";
-import scoutApp from "../../../scout-knowledge-lib.app/app.ts";
-import { openDatabase } from "../lib/db.js";
-import { applyDbSchema } from "../lib/db/schema.js";
-import { AppInboxHost } from "./app-inbox-host.js";
+import { openDatabase } from "../../src/lib/db.js";
+import { applyDbSchema } from "../../src/lib/db/schema.js";
+import { AppInboxHost } from "../../src/app/app-inbox-host.js";
+
+const { default: scoutApp } = await import(pathToFileURL(resolve(APP_ROOT, "projects/scout-knowledge-lib.app/app.ts")).href);
 
 type GoldenControl = {
   id: string;
@@ -26,7 +29,7 @@ type GoldenTrace = {
   controls: GoldenControl[];
 };
 
-const artifactPath = resolve(import.meta.dir, "../../test/fixtures/scout-library-health-golden-trace.v1.json");
+const artifactPath = resolve(import.meta.dir, "../fixtures/scout-library-health-golden-trace.v1.json");
 const artifact = JSON.parse(readFileSync(artifactPath, "utf8")) as GoldenTrace;
 
 function eventRow(
