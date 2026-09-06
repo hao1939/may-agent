@@ -154,7 +154,7 @@ describe("App task Condition review checkpoint", () => {
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 
-  it("retires an unchanged checkpoint timer after three owner reviews", () => {
+  it("preserves the App's checkpoint after three unchanged reviews", () => {
     const config = fixture();
     const condition = {
       id: "external-review-finished",
@@ -194,7 +194,7 @@ describe("App task Condition review checkpoint", () => {
     }
 
     const state = readTaskState(config);
-    expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBeUndefined();
+    expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 

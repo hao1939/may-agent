@@ -923,29 +923,6 @@ function completedConditionReviewCount(tree: TaskTree, taskId: string, condition
   return Math.max(highestRecordedAttempt, legacyAttemptCount);
 }
 
-function boundedReviewConditions(
-  claim: AppTaskClaim,
-  conditions: AppTaskConditionSpec[] | undefined,
-): AppTaskConditionSpec[] | undefined {
-  if (!conditions?.length || claim.trigger?.type !== "project.task.condition-review.missed") {
-    return conditions;
-  }
-  const data = isRecord(claim.trigger.data) ? claim.trigger.data : {};
-  if (data.finalReview !== true) return conditions;
-  const exhaustedIds = new Set(
-    Array.isArray(data.conditionIds)
-      ? data.conditionIds.filter((value): value is string => typeof value === "string")
-      : [],
-  );
-  return conditions.map((condition) => {
-    if (!exhaustedIds.has(condition.id) || condition.reviewAfterMs === undefined) {
-      return condition;
-    }
-    const { reviewAfterMs: _reviewAfterMs, ...conditionWithoutReview } = condition;
-    return conditionWithoutReview;
-  });
-}
-
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(
     ([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true",
@@ -4198,7 +4175,9 @@ export function deferAppTask(
       });
     }
     consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
-    const conditions = boundedReviewConditions(claim, input.conditions);
+    // The App owns whether to keep, change, or retire its review deadline.
+    // A missed checkpoint is not proof that the awaited fact is satisfied.
+    const conditions = input.conditions;
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
