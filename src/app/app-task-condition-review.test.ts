@@ -69,6 +69,41 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
+  it("preserves a future Condition deadline when duplicate claims find the Task waiting", () => {
+    const legacyConfig = fixture();
+    const store = AppTaskResourceStore.openStandalone(join(legacyConfig.appDir, "host.sqlite"), "sample");
+    store.bootstrapSnapshot(readTaskState(legacyConfig), "seed:duplicate-wait");
+    const config = taskReconciliationConfig({
+      appDir: legacyConfig.appDir,
+      projectDir: legacyConfig.projectDir,
+      agent: "app-owner",
+      maxConcurrent: 1,
+      resourceStore: store,
+    });
+    try {
+      deferAppTask(config, claim(config), {
+        disposition: "waiting",
+        summary: "Wait for an exact capability or its fallback review",
+        evidence: [],
+        conditions: [{
+          id: "capability-ready", type: "credential.state", subject: "credential:pilot",
+          expected: { field: "state", equals: "ready" }, reviewAfterMs: 60_000,
+        }],
+      });
+      const due = store.nextDueAt();
+      expect(due).toBeGreaterThan(Date.now());
+      for (let index = 0; index < 3; index += 1) {
+        expect(claimObservedAppTask(config, {
+          taskId: "human-request", appAgent: "app-owner", handler: "agent",
+        })).toMatchObject({ kind: "waiting", conditionIds: ["capability-ready"] });
+        expect(store.nextDueAt()).toBe(due);
+      }
+      expect(Object.keys(readTaskState(config).attempts ?? {})).toHaveLength(1);
+      expect(store.listRecoveryCandidates(due! + 1).items.map(({ taskId }) => taskId))
+        .toContain("human-request");
+    } finally { store.close(); }
+  });
+
   it("wakes the same task owner after a declared checkpoint is missed", () => {
     const config = fixture();
     const condition = {

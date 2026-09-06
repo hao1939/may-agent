@@ -2310,14 +2310,14 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {
+function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string, nextCheckAt: number | null = null): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
-  // wake; leaving any recovery signal set would make safety recovery retry a no-op.
+  // wake. Clear consumed signals, but preserve a Condition's future review.
   config.resourceStore?.setRecoveryState(taskId, {
     ready: false,
     changed: false,
-    nextCheckAt: null,
+    nextCheckAt,
   });
 }
 
@@ -2935,7 +2935,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
+      acknowledgeIndexedRecoveryWait(config, task.id, resourceWrite(tree, resource).nextCheckAt);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds, childIds };
     }
     if (
@@ -2945,7 +2945,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
+      acknowledgeIndexedRecoveryWait(config, task.id, resourceWrite(tree, resource).nextCheckAt);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
     }
 
