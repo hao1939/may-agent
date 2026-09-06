@@ -4,19 +4,12 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { createContextUpdater, createLastSessionWriter } from "./session-subscribers.js";
-import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 
 let tmpDir: string;
 let persistDir: string;
 let agentsDir: string;
 let agentDir: string;
 let contextPath: string;
-
-// Minimal model for testing (won't actually call LLM)
-const testModel = {
-  ...getBuiltinModel("anthropic", "claude-opus-4-6"),
-  id: "test-model",
-};
 
 /**
  * Helper: emit a fake session.end event to the context updater subscriber.

@@ -21,7 +21,6 @@ import {
   listConversationTopicPage,
   readConversationMessageTopicId,
   readConversationTopic,
-  renewAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
   wakeAppInboxItemsWaitingOnApp,

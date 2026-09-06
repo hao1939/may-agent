@@ -2790,7 +2790,7 @@ describe("canonical App task runtime", () => {
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
     const f = fixture();
     const bus = eventBus();
-    const installed = await installAppTaskRuntimes({
+    await installAppTaskRuntimes({
       ...options(f, bus),
       appRegistrySnapshot: {
         id: "boot:1",

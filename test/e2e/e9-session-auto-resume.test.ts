@@ -141,10 +141,8 @@ describe("E9: session resume from cold (interrupted) end via typed control", () 
         } catch (err) {
           // On timeout, dump the daemon log tail and recent events to make
           // the failure mode obvious.
-          // eslint-disable-next-line no-console
           console.error("=== daemon log (tail) ===\n" + sb.getLogs().split("\n").slice(-80).join("\n"));
           const allEvents = queryEvents(db, { since: cutoff, limit: 200 });
-          // eslint-disable-next-line no-console
           console.error(`=== events since cutoff (${allEvents.length}) ===\n` + allEvents.map((e) => `${e.event_type} src=${e.source} owner=${e.owner} data=${(e.data ?? "").slice(0, 200)}`).join("\n"));
           throw err;
         }

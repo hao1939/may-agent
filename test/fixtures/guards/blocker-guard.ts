@@ -2,7 +2,7 @@ import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/w
 
 export const guard: WorkflowGuard = {
   name: "test-blocker",
-  handle(event: WorkflowGuardEvent): Demand[] {
+  handle(_event: WorkflowGuardEvent): Demand[] {
     return [{ type: "block", reason: "blocked by test guard" }];
   },
 };

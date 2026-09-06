@@ -29,9 +29,11 @@ test/
   fixtures/     Shared test data
   helpers/      Shared test utilities
   poc/          Narrow proofs of concept
+  deployment/   Explicit installed-App compatibility checks
 
 container/   Container image and supervisor configuration
 scripts/     Current build, deploy, maintenance, and diagnostic commands
+evidence/    Retained incident evidence, not current design or runtime state
 ```
 
 Unit tests normally live beside the source they test. Put cross-component
@@ -71,7 +73,15 @@ bun run test:sdk
 bun run check:event-graph
 ```
 
-Build the deployable binary with `bun run bundle`. Deploy with
+For an isolated local build, keep generated UI files in this checkout:
+
+```bash
+MAY_AGENT_UI_OUTPUT_DIR="$PWD/bundle/platform-ui" bun run bundle
+```
+
+Without that override, `ui:sync` (also called by `bundle`) replaces the sibling
+`platform/ui` deployment copy. See the [script guide](scripts/README.md) before
+running operational helpers. Deploy with
 `bun run deploy` from work owned by a live `may-agent` App task. The candidate
 must contain the current canonical May commit. Another App cannot deploy the
 May Host on behalf of its own task. `reload` only reloads agent and app
