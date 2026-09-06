@@ -5,9 +5,10 @@ agents/
 test-workspace/
 pi-deps/
 docs/
+# These adapted tools retain their original formatting baseline. They are
+# Host-maintained and linted; there is no automatic upstream sync command.
 src/lib/tools/bash.ts
 src/lib/tools/edit.ts
 src/lib/tools/edit-diff.ts
-src/lib/tools/truncate.ts
 src/lib/tools/path-utils.ts
 src/lib/tools/write.ts

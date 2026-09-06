@@ -179,6 +179,3 @@ export async function socketEmit(
 ): Promise<unknown> {
   return sendSocketCommand(socketPath, { type: eventType, ...data }, { timeoutMs: 5000 });
 }
-
-export const E2E_LIVE_LLM = process.env.E2E_LIVE_LLM === "1";
-export const E2E_EXTENDED = process.env.E2E_EXTENDED === "1";

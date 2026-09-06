@@ -21,7 +21,6 @@ import {
   mkdirSync,
   readFileSync,
   realpathSync,
-  rmSync,
   statSync,
   unlinkSync,
   writeFileSync,

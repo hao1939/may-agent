@@ -217,11 +217,6 @@ function normalizeValue(value: unknown): unknown {
   return value;
 }
 
-function numberValue(value: unknown): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function normalizeRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   return rows.map((row) => {
     const normalized: Record<string, unknown> = {};

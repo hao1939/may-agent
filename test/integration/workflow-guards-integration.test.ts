@@ -178,7 +178,7 @@ describe("Guard integration: warn demand delivery", () => {
 
 describe("Guard integration: run_step demand injection", () => {
   test("inject guard fires on step-one completion, injected step runs", async () => {
-    const { calls, manager } = createMockManager(async (name, task) => {
+    const { calls, manager } = createMockManager(async (name) => {
       return makeTaskResult({
         lastAssistantText: `${name} completed`,
         sessionId: `s_${name}_${Date.now()}`,

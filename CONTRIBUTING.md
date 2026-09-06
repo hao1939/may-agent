@@ -14,14 +14,18 @@ bun run ci
 ```
 
 `check:ci` runs Host/SDK type checks, the canonical App-boundary check, and
-ESLint errors. Existing lint warnings remain visible through `bun run lint`;
-they are not a clean-lint claim. Whole-tree formatting is not yet a merge gate:
+ESLint errors, including unused imports, bindings, and private helpers. Public
+callback parameters intentionally retained for compatibility use an `_` prefix.
+Explicit `any` annotations remain warnings visible through `bun run lint`;
+they are not a clean-type claim. Whole-tree formatting is not yet a merge gate:
 format the lines you change without reformatting unrelated code.
 
 `test` runs source, package, integration, daemon, browser, PoC, and build/deploy
 script tests using two isolated Bun workers. The bounded worker count avoids
 oversubscribing small CI machines with daemon and compiler subprocesses.
 No automatic test retries hide a failure. Reproduce and explain flaky results.
+Use bounded asynchronous subprocess calls in test fixtures; synchronous calls
+can block the event loop and prevent the test runner's timeout from firing.
 Scheduled daemon fixtures use the existing explicit startup offset to avoid
 random initial delays; real recurring timers and lifecycle assertions remain.
 
@@ -73,8 +77,9 @@ cache upload took 124 seconds. These are observations, not guaranteed budgets.
 Dependency installation took only 2 seconds, so it does not need another cache.
 
 Actions are pinned to commit SHAs. Dependabot groups weekly action updates and
-proposes base-image updates. Bun/npm dependency and embedded CLI updates must include their lockfile
-or checksum changes and relevant compatibility tests; do not auto-merge them.
+proposes base-image updates. Bun/npm dependency and embedded CLI updates must
+include their lockfile or checksum changes and relevant compatibility tests;
+do not auto-merge them.
 There is no macOS/Windows matrix: the released deployment is Linux/container.
 
 ## Review and merge rules
