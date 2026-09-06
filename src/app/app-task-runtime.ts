@@ -614,6 +614,8 @@ type WorkflowCapability = {
 type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
   state: "converged" | "waiting" | "needs-agent" | "error";
+  /** A rejected contract needs correction, not a transport retry. Host-only. */
+  resultRejected?: true;
   summary: string;
   response?: string;
   result?: Record<string, unknown>;
@@ -650,6 +652,7 @@ export function normalizeTaskHandlerResult(
   if (!admission.ok) {
     return {
       state: "error",
+      resultRejected: true,
       summary: `Handler result was rejected: ${admission.error}`,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -662,6 +665,7 @@ export function normalizeTaskHandlerResult(
       if (problem) {
         return {
           state: "error",
+          resultRejected: true,
           summary: `Handler result was rejected: actions[${index}] ${problem}`,
           evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
@@ -676,6 +680,7 @@ export function normalizeTaskHandlerResult(
       if (problem) {
         return {
           state: "error",
+          resultRejected: true,
           summary: `Handler result was rejected: conditions[${index}] ${problem}`,
           evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
@@ -3560,7 +3565,7 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    if (!primaryResult.unavailable && !agentHandoff) {
+    if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -3581,15 +3586,17 @@ async function reconcileTask(input: {
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-          reason: primaryResult.unavailable
-            ? "HandlerUnavailable"
-            : primaryResult.executionFailed
-              ? "HandlerExecutionFailed"
-              : primaryResult.workspacePreparationFailed
-                ? "WorkspacePreparationFailed"
-                : primaryHandlerResult.state === "needs-agent"
-                  ? "needs-agent"
-                  : "handler-blocked",
+          reason: primaryHandlerResult.resultRejected
+            ? "HandlerResultInvalid"
+            : primaryResult.unavailable
+              ? "HandlerUnavailable"
+              : primaryResult.executionFailed
+                ? "HandlerExecutionFailed"
+                : primaryResult.workspacePreparationFailed
+                  ? "WorkspacePreparationFailed"
+                  : primaryHandlerResult.state === "needs-agent"
+                    ? "needs-agent"
+                    : "handler-blocked",
           wakeParent: !agentHandoff,
         }),
       );
