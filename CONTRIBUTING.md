@@ -24,6 +24,8 @@ format the lines you change without reformatting unrelated code.
 script tests using two isolated Bun workers. The bounded worker count avoids
 oversubscribing small CI machines with daemon and compiler subprocesses.
 No automatic test retries hide a failure. Reproduce and explain flaky results.
+Use bounded asynchronous subprocess calls in test fixtures; synchronous calls
+can block the event loop and prevent the test runner's timeout from firing.
 Scheduled daemon fixtures use the existing explicit startup offset to avoid
 random initial delays; real recurring timers and lifecycle assertions remain.
 
