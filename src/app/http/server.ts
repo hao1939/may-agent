@@ -2441,7 +2441,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         // Legacy per-agent projects may still use old `**Owner**: x` lines.
         const normalizedRelPath = normalizeProjectPathForCompare(relPath);
         const isSharedProject = normalizedRelPath.startsWith("projects/");
-        let frontmatter: Record<string, string> = {};
+        const frontmatter: Record<string, string> = {};
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
         if (fmMatch) {
           for (const line of fmMatch[1].split("\n")) {
@@ -2958,7 +2958,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // Recent sessions for this project. Two-tier:
     //   tier 1: rows tagged with projectId (canonical)
     //   tier 2: rows whose task mentions the project name (best-effort)
-    let recentSessions: Array<Record<string, unknown>> = [];
+    const recentSessions: Array<Record<string, unknown>> = [];
     let sessionCount = 0;
     let mentionCount = 0;
     try {

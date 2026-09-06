@@ -1,4 +1,4 @@
-/// <reference path="../workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/workflow-guard";
 
 export const guard: WorkflowGuard = {
   name: "test-valid",
