@@ -833,7 +833,7 @@ describe("App task reconciler state", () => {
   });
 
   it("reads exact live intent and completion state without confusing an older receipt", () => {
-    const { config } = fixture();
+    const { config } = resourceFixture(fixture(), "current-generation-read");
     const original = intent();
     const claim = declareAndClaimTask(config, {
       intent: original,
@@ -1915,7 +1915,7 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps explicitly closed maintain work terminal under repeated observer admission", () => {
-    const { config } = fixture();
+    const { config } = resourceFixture(fixture(), "explicit-maintain-closure");
     const standing = intent("maintain");
     observeAppTaskIntent(config, { intent: standing, appAgent: "app-owner" });
     const staleResource = config.resourceStore.readTask(standing.id);
