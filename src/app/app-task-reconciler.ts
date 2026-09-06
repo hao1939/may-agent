@@ -12,11 +12,8 @@ import {
 } from "@may-agent/sdk";
 import {
   buildAppTaskTreeProjection,
-  isLeaf,
-  normalizeStringArray,
   readTaskState,
   saveTaskState,
-  taskState,
   withTaskStateLock,
   type TaskNode,
   type ResourceTaskStateConfig,

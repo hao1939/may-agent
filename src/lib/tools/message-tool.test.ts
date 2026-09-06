@@ -2,7 +2,7 @@
  * message tool — v2 unified inter-agent communication primitive.
  */
 
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { createMessageTool } from "./message-tool.js";
 
 interface CapturedEvent {

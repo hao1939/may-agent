@@ -4,7 +4,6 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
 import {
-  associateAppInboxClaimSession,
   claimAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
@@ -447,7 +446,7 @@ describe("telegram reply e2e", () => {
   it("keeps Task cancellation local while forwarding runtime slash commands", async () => {
     let getUpdatesCount = 0;
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL) => {
       const method = String(url).split("/").pop();
 
       if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });

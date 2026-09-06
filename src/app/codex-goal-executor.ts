@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk";
 import {
   CodexGoalAppServerClient,

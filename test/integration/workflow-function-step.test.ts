@@ -1,63 +1,90 @@
-/**
- * Function workflow steps — v2 mechanical step type.
- *
- * Function steps run JS in the workflow runtime (no LLM call). They:
- *   - get a 30s timeout
- *   - truncate output to 50KB
- *   - capture errors as { status: "error", error: msg }
- *   - emit workflow.step_started / workflow.step_completed lifecycle events
- *   - participate in guard evaluation like agent steps
- *
- * This pins the v2 contract: function steps work, are observable, and
- * are isolated (errors don't kill the workflow).
- */
+/** Exercise function steps through the real workflow runner, without a model. */
+import { afterEach, describe, expect, it, mock } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
+import type { WorkflowEvent } from "../../src/lib/workflow.js";
 
-import { describe, it, expect, vi } from "bun:test";
+const roots: string[] = [];
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
-describe("workflow function step contract", () => {
-  it("runFunction signature is exposed in workflow defs", async () => {
-    // Smoke test: import the type definition to make sure it compiles.
-    const defs = await import("../../src/lib/workflow-defs.d.ts").catch(() => null);
-    // The .d.ts has no runtime module — we just want a non-throwing import path.
-    expect(defs === null || typeof defs === "object").toBe(true);
+async function runFixture(body: string) {
+  const root = mkdtempSync(join(tmpdir(), "may-function-step-"));
+  roots.push(root);
+  writeFileSync(
+    join(root, "fixture.ts"),
+    `
+    export const name = "fixture";
+    export const description = "Function-step regression fixture";
+    export async function execute(ctx) { ${body} }
+  `,
+  );
+  const events: WorkflowEvent[] = [];
+  const callAgent = mock(() => {
+    throw new Error("Function steps must not call a model");
+  });
+  const runner = createWorkflowRunner({
+    manager: { callAgent } as unknown as Parameters<typeof createWorkflowRunner>[0]["manager"],
+    workflowDir: root,
+    agentName: "fixture-owner",
+    onEvent: (event) => events.push(event),
+  });
+  const result = await runner.run("fixture", "Exercise function steps");
+  expect(callAgent).not.toHaveBeenCalled();
+  return { result, events };
+}
+
+describe("workflow function steps", () => {
+  it("executes a function and reports its result through lifecycle callbacks", async () => {
+    const { result, events } = await runFixture(`
+      const step = await ctx.runFunction("calculate", async () => String(6 * 7));
+      return ctx.done(step.lastAssistantText);
+    `);
+    expect(result).toMatchObject({ type: "done", summary: "42" });
+    const lifecycle = events.filter((event) => event.type.startsWith("workflow.step_"));
+    expect(lifecycle).toEqual([
+      { type: "workflow.step_started", step: "fn:calculate" },
+      expect.objectContaining({
+        type: "workflow.step_completed",
+        step: "fn:calculate",
+        result: expect.objectContaining({ status: "done", lastAssistantText: "42", turnsUsed: 0 }),
+      }),
+    ]);
   });
 
-  it("workflow step events distinguish agent vs function source", async () => {
-    // Compile-time pin: WorkflowEvent type carries source: 'agent' | 'function'.
-    const { /* type-only re-export check */ } = await import("../../src/lib/workflow.js");
-    type Source = Parameters<typeof noop>[0];
-    function noop(_x: "agent" | "function"): void {}
-    const valid: Source[] = ["agent", "function"];
-    expect(valid).toEqual(["agent", "function"]);
+  it("captures a thrown error and lets the workflow handle it and continue", async () => {
+    const { result, events } = await runFixture(`
+      const failed = await ctx.runFunction("fail", async () => { throw new Error("fixture failure"); });
+      if (failed.status !== "error") throw new Error("Expected a failed step");
+      const next = await ctx.runFunction("recover", async () => "continued");
+      return ctx.done(next.lastAssistantText);
+    `);
+    expect(result).toMatchObject({ type: "done", summary: "continued" });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.step_completed",
+        step: "fn:fail",
+        result: expect.objectContaining({ status: "error", error: "fixture failure" }),
+      }),
+    );
   });
 
-  it("a function step that throws returns status='error' instead of crashing the workflow", async () => {
-    // Direct contract test against the implementation lives in
-    // workflow-tool.ts runFunction (line ~695). We verify the public-facing
-    // shape: timeout-on-promise pattern works.
-    const slow = () =>
-      new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error("simulated timeout")), 1),
-      );
-
-    let error: unknown;
-    try {
-      await Promise.race([
-        slow(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 50),
-        ),
-      ]);
-    } catch (e) {
-      error = e;
-    }
-    expect(error).toBeInstanceOf(Error);
-  });
-
-  it("function step output is truncated when >50KB", () => {
-    const big = "a".repeat(60_000);
-    const truncated = big.length > 50_000 ? big.slice(0, 50_000) + "\n…(truncated)" : big;
-    expect(truncated.length).toBeLessThanOrEqual(50_000 + "\n…(truncated)".length);
-    expect(truncated.endsWith("(truncated)")).toBe(true);
+  it("bounds large function output in the actual step result", async () => {
+    const { result, events } = await runFixture(`
+      const step = await ctx.runFunction("large", async () => "a".repeat(60_000));
+      return ctx.done(step.lastAssistantText);
+    `);
+    const expected = "a".repeat(50_000) + "\n…(truncated)";
+    expect(result).toMatchObject({ type: "done", summary: expected });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.step_completed",
+        step: "fn:large",
+        result: expect.objectContaining({ status: "done", lastAssistantText: expected }),
+      }),
+    );
   });
 });

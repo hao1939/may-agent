@@ -12,7 +12,6 @@ import {
   rmSync,
   rmdirSync,
   symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -68,7 +67,6 @@ import type {
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
-  TaskView,
 } from "@may-agent/sdk/app";
 import {
   createRuntimeAppRead,
@@ -449,16 +447,6 @@ function domainProjectDir(projectsRoot: string, appDir: string, appId: string, a
   if (localPath) return resolve(appDir, localPath);
   const sibling = resolve(projectsRoot, appId);
   return existsSync(sibling) ? sibling : appDir;
-}
-
-function readJsonObject(path: string): Record<string, unknown> {
-  if (!existsSync(path)) return {};
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8"));
-    return isRecord(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
 }
 
 function projectReadModel(projectRoot: string, descriptor: AppTaskRuntimeDescriptor): ProjectReadModel {
