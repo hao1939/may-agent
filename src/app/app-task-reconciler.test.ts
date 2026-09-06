@@ -864,6 +864,29 @@ describe("App task reconciler state", () => {
     expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).not.toContainEqual(
       expect.objectContaining({ id: original.id }),
     );
+
+    const revisedClaim = claimObservedAppTask(config, {
+      taskId: original.id,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (revisedClaim.kind !== "claimed") throw new Error("expected revised claim");
+    expect(completeAppTask(config, revisedClaim, { summary: "revised goal completed" }).status).toBe("applied");
+    expect(config.resourceStore.readReceipt(original.id)).toMatchObject({
+      metadata: { generation: 2 },
+      outcome: revised.outcome,
+      summary: "revised goal completed",
+    });
+    expect(readRuntimeTaskView({ taskStateConfig: config }, original.id)).toMatchObject({
+      generation: 2,
+      status: "done",
+      outcome: revised.outcome,
+    });
+    expect(observeAppTaskIntent(config, { intent: revised, appAgent: "app-owner" })).toMatchObject({
+      kind: "completed",
+      generation: 2,
+    });
+    expect(listRunnableAppTaskIds(config)).not.toContain(original.id);
   });
 
   it("orders runnable tasks by declared priority before lower-priority work", () => {
