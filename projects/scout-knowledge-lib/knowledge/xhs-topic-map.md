@@ -1,23 +1,23 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 409 observational reconciliation through 2026-09-04T21:36:26.369Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 409. Only the response-body hash changed from Cycle 405."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 409 at 2026-09-04T21:36:26.369Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 409 read-only XHS boundary through 2026-09-04T21:36:26.369Z."
+last_updated: "2026-09-06"
+latest_seed_basis: "Cycle 420 observational reconciliation through 2026-09-06T02:05:21.407Z reproduced public Explore at 30 notes and observed the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 420. Access-shell class, byte length, access fingerprint, and body hash changed from Cycle 409 without exposing a collection delta."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 420 at 2026-09-06T02:05:21.407Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 420 read-only XHS boundary through 2026-09-06T02:05:21.407Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 409 used the established direct localhost Chrome
+authenticated window. Cycle 420 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
 worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
-retained the 46,763-byte login response and zero attributable items. Only the
-volatile body hash changed from Cycle 405. This is not a comparable collection
+returned a 103,020-byte profile-class login wall and zero attributable items.
+The shell class and bytes changed from Cycle 409. This is not a comparable collection
 inventory. Added and changed sets remain unknown, proven removals are `[]`,
 and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
@@ -11102,6 +11102,39 @@ later-decision outcome. RV-036 remains mitigated medium/open, RV-004 remains
 high/open, and real compaction remains rejected. Next, seek a genuinely
 held-out or protected reconstruction/retrieval comparison for the replacement;
 do not delete historical prose, move local main, or claim user-value evidence.
+
+### Cycle 420 checkpoint — SwarmResearch cutoff support is partial
+
+Cycle 420 used the established direct localhost Chrome preflight and read-only
+browser path through `2026-09-06T02:05:21.407Z`. Public Explore remained ready
+with 30 notes. The saved surface changed from Cycle 409's `login` shell to a
+103,020-byte `profile`-class login wall, still with zero attributable items.
+Added/changed identities remain unknown, observed removals remain `[]`, and all
+132 durable seeds remain unavailable. No feed, search, detail, or account
+mutation ran.
+
+The queue still ranks RV-004 first, but its required protected
+query-to-selection-to-later-outcome join remains inaccessible. RV-034 remains
+behind external runtime evidence, while RV-036/RV-038 require later independent
+use or outcome evidence. The highest accessible primary gap was therefore
+whether SwarmResearch's retained reproduction bundle maps its reported `$50`
+cutoff to all fifteen paper values.
+
+The [Cycle 420 cutoff audit](../reports/review/scout-swarmresearch-cutoff-audit-cycle420-2026-09-06.md)
+finds that the authors' ten-row cutoff CSV is compatible with nine paper cells
+after released score transformations. Third-Autocorrelation is not: cutoff
+`0.9985` implies `C3=1.4578295…`, while paper `1.45649` implies
+`0.9994183…`. A later trajectory contains the compatible score, but no retained
+artifact assigns that commit a cumulative cutoff cost. All five heuristic rows
+are absent from the CSV.
+
+Confidence is high in the pinned identities, hashes, decimal-interval
+arithmetic, and 9-compatible/1-conflicting/5-missing classification. It is low
+about which unpublished selection or accounting step produced the table. The
+evidence does not prove overspending or invalidate other SwarmResearch results.
+Next seek an exact per-commit cost ledger or author-supplied fifteen-task
+table-to-commit manifest; if neither is accessible, prefer a different primary
+contradiction or released denominator over another internal score conversion.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

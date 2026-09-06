@@ -1,0 +1,112 @@
+{
+  "schema": "scout.swarmresearch-cutoff-audit/v1",
+  "analysis_kind": "producer-authored post-hoc regression",
+  "source_tip": "b5b714d976bd1b4725cf459d5bab3182f8669c22",
+  "recovery_source": "1668e158c6907cd3aacf8c01d9751bfc669930f2",
+  "seed_reconciliation": {
+    "observed_through": "2026-09-06T02:05:21.407Z",
+    "stable_identity_count": 132,
+    "added_or_changed": "unknown",
+    "observed_removals": [],
+    "unavailable_count": 132,
+    "public_status_requests": 1,
+    "saved_status_requests": 1,
+    "feed_search_or_detail_requests": 0,
+    "account_mutations": 0,
+    "result": "The saved shell changed from login to profile class, but remained a login wall with zero attributable items; this is access provenance, not a seed delta."
+  },
+  "evidence": {
+    "paper": "arXiv:2607.02807v1",
+    "paper_source_archive_sha256": "f428c409e96626675be636eff92eb48e6ca7d6ccd0f69d967669687b61349929",
+    "evaluation_tex_sha256": "9bcf91e7e517842dca2e48f040c64768db80ff7764f524d0790af243c5f283de",
+    "reproduction_repository": "SwarmResearch/swarmresearch-paper-reproduce",
+    "reproduction_revision": "e848d8d5760065714c38fa7558f0298573db17ab",
+    "cutoff_readme_sha256": "96e0dd6bcdc90391953b204c47b411ab10e4f1a21ce00e5e819cd05cdcd524ff",
+    "cutoff_csv_sha256": "015c7d5c09ee9a0f80d7163037a93c3a89fe8f08a5039dab2562881260a50282",
+    "third_autocorr_log_sha256": "bfbb791126c26ce2b3e8ab47a5b65f46c4777f69634d24012bbb79560beda75b",
+    "third_autocorr_evaluator_sha256": "3fb1c3a1e881435b7b8ea663fc69d1a811b58fd16c5b81f1711b19a4cca62287"
+  },
+  "cutoff_rows": [
+    {
+      "id": "circle_packing",
+      "paper_value": "2.635996",
+      "cutoff_score": "2.636",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "signal_processing",
+      "paper_value": "0.7970",
+      "cutoff_score": "0.797",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "erdos_min_overlap",
+      "paper_value": "0.381080",
+      "cutoff_score": "0.38108",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "mmd_14_3",
+      "paper_value": "4.16584",
+      "cutoff_score": "1.00000180447",
+      "transform": "benchmark_div_score",
+      "benchmark": "4.165849767",
+      "expected": "compatible"
+    },
+    {
+      "id": "third_autocorr_ineq",
+      "paper_value": "1.45649",
+      "cutoff_score": "0.9985",
+      "transform": "benchmark_div_score",
+      "benchmark": "1.4556427953745406",
+      "cutoff_best_commit": "3180635",
+      "cutoff_best_cost_usd": "39.756658",
+      "closest_cutoff_commit": "0552cd2",
+      "closest_cutoff_cost_usd": "48.280899",
+      "closest_cutoff_score": "0.9971",
+      "later_compatible_commit": "f018f27",
+      "later_compatible_score": "0.99942",
+      "later_commit_cost": "unretained",
+      "expected": "incompatible"
+    },
+    {
+      "id": "eplb",
+      "paper_value": "0.1436",
+      "cutoff_score": "0.1436",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "llm_sql",
+      "paper_value": "0.7331",
+      "cutoff_score": "0.7331",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "txn_scheduling",
+      "paper_value": "4366.8",
+      "cutoff_score": "4366.81222707",
+      "transform": "direct",
+      "expected": "compatible"
+    },
+    {
+      "id": "cloudcast",
+      "paper_value": "618.0",
+      "cutoff_score": "0.0016155088853",
+      "transform": "reciprocal_minus_one",
+      "expected": "compatible"
+    },
+    {
+      "id": "prism",
+      "paper_value": "26.26",
+      "cutoff_score": "26.256",
+      "transform": "direct",
+      "expected": "compatible"
+    }
+  ],
+  "missing_cutoff_rows": ["ahc008", "ahc015", "ahc016", "ahc025", "ahc026"]
+}

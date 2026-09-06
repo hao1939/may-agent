@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 409: a scheduled observational pass preserves the login-class XHS boundary, and accepted Hermes Agent/OpenClaw evidence reaches canonical Scout with exact source-to-standing provenance."
+summary: "Seed-first Scout continuity through Cycle 420: a scheduled observational pass records a profile-class login wall without inferring a seed delta, and a primary-artifact audit narrows SwarmResearch's public $50 result support."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
-last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 409 observational reconciliation through 2026-09-04T21:36:26.369Z reproduces public Explore at 30 notes and supported saved status as login-class and unavailable; exact access evidence is in seed-ledger row 409. Only the response-body hash changed from Cycle 405."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 409 at 2026-09-04T21:36:26.369Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 393 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+last_updated: "2026-09-06"
+latest_seed_basis: "Cycle 420 observational reconciliation through 2026-09-06T02:05:21.407Z reproduces public Explore at 30 notes and observes supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in seed-ledger row 420. Access-shell class and bytes changed without exposing a collection delta."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 420 at 2026-09-06T02:05:21.407Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 420 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -19527,6 +19527,43 @@ validation, and rollback ledger is the
 Next seed-first, inventory remaining accepted finite outputs absent from
 canonical Scout before making a public request; if none is material, prefer a
 substantive contradiction or reproducibility gap with a released artifact.
+
+## Cycle 420 checkpoint — `$50` cutoff support is partial
+
+Cycle 420 began from clean reviewed source
+`b5b714d976bd1b4725cf459d5bab3182f8669c22`. Its bounded observational pass
+ended at `2026-09-06T02:05:21.407Z`: direct localhost 9222 refused with curl
+exit 7 / HTTP 000, public Explore remained ready with 30 notes, and one
+non-navigating saved-status read returned a 103,020-byte `profile`-class login
+wall with zero attributable items. The access fingerprint changed to
+`74a9cdb7…5cc2e44` and body SHA to `7a5b5602…5c44b`. This is material
+access-shell provenance, not a seed delta: additions/changes remain unknown,
+removals are `[]`, and all 132 durable seeds remain unavailable. No feed,
+search, detail read, or account mutation ran.
+
+RV-004 remained the highest-value question but could not advance without the
+protected query/rank-to-selection-to-outcome join. RV-034 remained behind the
+external runtime; RV-036/RV-038 still require later independent use or outcome
+evidence. The highest accessible primary gap was whether the public
+SwarmResearch bundle supports the paper's complete fifteen-task `$50` table.
+
+The [Cycle 420 audit](../review/scout-swarmresearch-cutoff-audit-cycle420-2026-09-06.md)
+uses arXiv `2607.02807v1` and pinned reproduction revision
+`e848d8d5760065714c38fa7558f0298573db17ab`. Nine of the ten public cutoff
+rows are compatible with the paper at the retained decimal precision.
+Third-Autocorrelation conflicts: cutoff `0.9985` maps to `C3=1.4578295…`, not
+paper `1.45649`; later trajectory `f018f27` records the compatible `0.99942`
+without a retained cumulative cost. The five heuristic tasks have no cutoff
+rows.
+
+This producer-authored post-hoc regression recovers useful partial work from
+retained interruption commit `1668e158c6907cd3aacf8c01d9751bfc669930f2`
+without importing that branch wholesale. It shows 9 compatible / 1 conflicting
+/ 5 missing cells in the released cutoff evidence. It does not prove that the
+run exceeded budget, because the ledger or an omitted mapping could be wrong.
+The next decisive evidence is an exact per-commit cost ledger or an
+author-supplied fifteen-task table-to-commit manifest; otherwise move to a
+different decision-bearing primary contradiction or reproducibility gap.
 
 ## Cycle 338 seed-first start — test the governance-maturity inference
 
