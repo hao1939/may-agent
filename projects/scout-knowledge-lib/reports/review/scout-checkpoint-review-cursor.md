@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent exact-tip review accepts canonical checkpoint 6458b20511, and reviewer result 7ee00a1c88 is integrated exactly as the direct parent of this producer ledger. The corrected line excludes superseded pre-amend reviewer commit 3b6d318d4f, and RV-051 changes only health-clock wording rather than Scout behavior."
-triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051"]
-last_updated: "2026-09-06"
-source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..7ee00a1c88cc3122423e7654c443431a06cbb2b3: direct-child amended reviewer cursor 9dacf306f82092bac7aae574b418d126148fbdb2 at stable patch ID 3851d4be0fd6b48016088a797cf055f1a5fce4d3, direct-child producer ledger 0292414aff286dc91fe9a5ddcb4aee7766fe3839 at stable patch ID 74f04abd0d410365f25c71758edcd77d5c4b39d7, direct-child RV-051 acceptance 6458b20511455313b5eec86913670d52482e1573 at stable patch ID 210906a68c7ee1ff207254b9d708c988167c1f3e, then direct-child reviewer result 7ee00a1c88cc3122423e7654c443431a06cbb2b3 at stable patch ID af092a0c3bfc1b414fb73abcf174bf5af43032b1; alternative pre-amend reviewer commit 3b6d318d4f55f51231411c5134d2d3342bfb63f4 has merge base cf08a2798d, distinct patch ID 826e8cb1dd37a83ae809c0b9ceca8a5319bf5906, and is not an ancestor. Fresh current-tip validation passes 312 tests / 1,533 assertions, Cycle 409 projection, 110 scoped links, navigation 11/14, 8/8, and 14/14; unchanged local-link content preserves the independently audited 1,549 documents / 1,793 broad links, health is 26 facts / 16 wakes at the exact tip clock, and clean branches, retained refs, and protected /app state reproduce."
+summary: "Independent review accepts Cycle 420 at exact canonical tip e6dab7f83e: the public SwarmResearch bundle supports nine of fifteen $50 table cells, conflicts on Third-Autocorrelation, and omits five heuristic rows. Reviewer result 7ee00a1c88 is integrated literally through b5b714d976. A separate high-severity release-safety finding keeps local-main landing, compaction, and cleanup blocked because the 48-path repository candidate includes two divergent protected Scout overlaps and three divergent ignored Herdr files."
+triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051", "RV-052"]
+last_updated: "2026-09-07"
+source_basis: "Exact linear range 6458b20511455313b5eec86913670d52482e1573..e6dab7f83edfa90ed1da978477bf3f5b634982d7: direct-child reviewer result 7ee00a1c88cc3122423e7654c443431a06cbb2b3, literal producer integration b5b714d976bd1b4725cf459d5bab3182f8669c22, and Cycle 420 material e6dab7f83edfa90ed1da978477bf3f5b634982d7. Independent pinned-source hashes reproduce the arXiv archive, evaluation.tex, cutoff README/CSV, Third-Autocorrelation history, and evaluator; arithmetic reproduces the 9 compatible / 1 incompatible / 5 missing classification. Current-tip validation passes 314 tests / 1,555 assertions, Cycle 420 projection, 112 scoped links, navigation 11/14, 8/8, and 14/14; a 1,550-document / 1,795-link Scout-library audit and health 26 facts / 16 wakes also pass. Release inspection finds 31 Scout paths within 48 repository paths, two divergent protected Scout overlaps, and three divergent ignored Herdr files; the planner fails closed, so no landing, compaction, or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..7ee0
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `6458b20511455313b5eec86913670d52482e1573` (exact Cycle 413 RV-051 acceptance checkpoint)
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (exact Cycle 420 SwarmResearch cutoff checkpoint)
 - Last material standing commit reviewed:
-  `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` (exact integrated RV-050 correction)
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 SwarmResearch cutoff evidence)
 - Last producer research material reviewed:
-  `a70923f523a51b9c15d2e324a3c4d10d38599380` (Cycle 413 validation material; no new source collection)
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 SwarmResearch cutoff evidence)
 - Last integrated reviewer result:
-  `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (exact acceptance of Cycle 413 corrected cursor `6458b20511`)
-- Current review date: `2026-09-06T09:21:44+08:00`
+  `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (literally integrated by producer ledger `b5b714d976`)
+- Current review date: `2026-09-07T05:29:49+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -258,20 +258,27 @@ source_basis: "Exact linear range cf08a2798d3c152af1aa882f3f7043ba03ba90bd..7ee0
   `9c85974613399e1e24019899d4868b84a8c36d9c` (exact reviewer acceptance),
   `cf08a2798d3c152af1aa882f3f7043ba03ba90bd` (exact reviewer-acceptance integration ledger),
   `9dacf306f82092bac7aae574b418d126148fbdb2` (exact amended reviewer cursor),
-  `0292414aff286dc91fe9a5ddcb4aee7766fe3839` (exact amended-cursor integration ledger), and
-  `6458b20511455313b5eec86913670d52482e1573` (exact RV-051 acceptance checkpoint).
+  `0292414aff286dc91fe9a5ddcb4aee7766fe3839` (exact amended-cursor integration ledger),
+  `6458b20511455313b5eec86913670d52482e1573` (exact RV-051 acceptance checkpoint),
+  `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (exact reviewer acceptance),
+  `b5b714d976bd1b4725cf459d5bab3182f8669c22` (literal reviewer-integration ledger), and
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 cutoff audit).
 - Newly reviewed exact standing span:
-  `cf08a2798d3c152af1aa882f3f7043ba03ba90bd..6458b20511455313b5eec86913670d52482e1573`
-  (amended reviewer cursor, its producer ledger, and the narrow RV-051 clock
-  clarification; no research, source access, local-main movement, deletion, or
-  cleanup change).
-- Review date: `2026-09-06T09:21:44+08:00`
+  `6458b20511455313b5eec86913670d52482e1573..e6dab7f83edfa90ed1da978477bf3f5b634982d7`
+  (exact reviewer acceptance, literal producer integration, and Cycle 420
+  SwarmResearch cutoff material; no local-main movement, compaction, deletion,
+  or cleanup change).
+- Review date: `2026-09-07T05:29:49+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
-- Overall disposition: **accept the completed local-main landing of
-  `803240b27fa4b40373524a1ed42d0b9bee7e890c` at the exact reviewed boundary;
+- Overall disposition: **accept exact Cycle 420 canonical research
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7`; reject new local-main landing,
+  compaction, and cleanup pending RV-052 reconciliation and preservation
+  proof.** The prior completed local-main landing
+  `803240b27fa4b40373524a1ed42d0b9bee7e890c` remains accepted at its exact
+  reviewed boundary;
   accept Cycle 408's isolated planner rehearsal and require the same guarded
   procedure at every future landing; accept Cycle 409 after the reviewer-only
-  correction that labels the published Hermes timestamp as author time.**
+  correction that labels the published Hermes timestamp as author time.
   **Revise Cycle 410 before treating its new fixture as held-out evidence.**
   The 0/14→14/14 exact-identity and 10/14→14/14 intended-file replay is useful
   post-hoc regression evidence, but fixture and routes first appear together
@@ -3800,6 +3807,34 @@ Disposition: **accept exact canonical tip
 RV-051 is resolved. RV-004/RV-034 remain high/open and RV-036/RV-038 remain
 medium/open. Local-main landing, compaction, and cleanup remain unapproved.
 
+### Cycle 420 SwarmResearch cutoff and release-preparation gate — accept research, block release
+
+The exact reviewed line is
+`6458b20511455313b5eec86913670d52482e1573` →
+`7ee00a1c88cc3122423e7654c443431a06cbb2b3` →
+`b5b714d976bd1b4725cf459d5bab3182f8669c22` →
+`e6dab7f83edfa90ed1da978477bf3f5b634982d7`. Reviewer result `7ee00a1c88`
+is therefore contained literally, not merely patch-equivalently, and producer
+ledger `b5b714d976` truthfully records that integration before the Cycle 420
+material.
+
+| Rubric dimension | Disposition |
+| --- | --- |
+| Lead completeness, provenance, and claim/source separation | **Accept Cycle 420.** Independent reads at reproduction revision `e848d8d5760065714c38fa7558f0298573db17ab` reproduce the reported SHA-256 identities for `data/swarmresearch/README.md` (`96e0dd6b…24ff`), the ten-row cutoff CSV (`015c7d5c…0282`), Third-Autocorrelation history (`bfbb7911…a75b`), and evaluator (`3fb1c3a1…2287`); arXiv v1 archive and `evaluation.tex` reproduce `f428c409…929f` and `9bcf91e7…83de`. The report distinguishes the designated cutoff ledger, paper values, later trajectory, and missing cost/selection evidence rather than promoting one into another. |
+| Arithmetic, contradictions, uncertainty, and access | **Accept the 9/1/5 classification.** The ten fixture rows match the cutoff CSV and the five named AHC tasks have no cutoff rows. Independent arithmetic gives `1.4556427953745406 / 0.9985 = 1.4578295396840666`, while paper `1.45649` implies score `0.9994183244475008`; later `0.99942` is compatible but uncosted. The text correctly treats a wrong ledger, omitted selection rule, and overspending as unresolved alternatives. The XHS profile-class login wall remains an access receipt, not a seed delta. |
+| Novelty, related work, duplication, contamination, usability, and retrieval | **Accept narrowly.** This closes a concrete artifact-provenance question left by the earlier SwarmResearch review and routes a compact qualification from the canonical finding, topic map, and lane log to one detailed report. Repetition is bounded and no external source body, protected evaluator, account state, or result is imported as Scout outcome evidence. RV-004 remains high/open; RV-034 remains high/open; RV-036 and RV-038 remain medium/open. |
+| Behavior comparison, cost, productivity, and batch coherence | **No Scout behavior-improvement claim.** The test is producer-authored post-hoc regression evidence, not frozen selection or protected promotion. The strongest simple comparison is direct ledger-to-paper interval arithmetic; no matched-budget Scout outcome, later-use join, measured saving, or user decision appears. One eight-file material commit follows one necessary reviewer-integration ledger and is coherent; test and commit counts are integrity evidence, not productivity. |
+| Current-tip validation and rollback | **Accept current revision.** In the clean reviewer-owned worktree, `bun run check` passes syntax, TypeScript, formatting, Cycle 420 projection, 112 scoped links, navigation 11/14, 8/8, and 14/14, and 314 tests / 1,555 assertions with zero failures. The focused cutoff suite passes 2 tests / 22 assertions. A Scout-library audit passes 1,550 tracked Markdown documents / 1,795 local links; `git diff --check` passes; read-only health at the exact commit clock reports 26 facts / 16 wakes with `truncated:true`. Roll back Cycle 420 with one ordinary revert of `e6dab7f83e`; revert `b5b714d976` and `7ee00a1c88` afterward only if the prior review disposition must also be removed. |
+| Canonical integration, dirty checkout, landing, compaction, and cleanup | **Accept canonical research; reject release preparation at this boundary under RV-052.** Relative to landed main `803240b27f`, the candidate has 48 paths, of which 31 are Scout paths. Protected `/app` remains at that exact HEAD with a clean index. Two checks during this review reproduce 73 default records / `63baf311…0d2`, 745 expanded records / `57b81771…1d4`, and the unchanged exact 23-record Scout status fingerprint `b9d6fb9c…a12c`; the aggregate growth since the prior 539-record observation is outside Scout scope and is not relabelled as reviewer-owned preservation evidence. The Scout set includes divergent overlaps `projects/scout-knowledge-lib.app/package.json` (main/candidate/working blobs `6bb09828…f265` / `368754f2…431d` / `8a1f4013…0431`) and `projects/scout-knowledge-lib/knowledge/INDEX.md` (`d874ed50…6338` / `185099fd…76d3` / `f635728b…e7b1`). Three candidate-added Herdr paths already exist under `/app` as ignored, byte-divergent files: `README.md`, `docs/research.md`, and `package.json`. The read-only overlay planner fails closed on the first with `status omitted changed candidate path: projects/herdr-supervisor/README.md`. No whole-tree or Scout-only landing procedure, compaction, or cleanup is approved until all five paths receive explicit reconciliation and a fresh preservation proof. |
+
+Disposition: **accept exact Cycle 420 canonical tip
+`e6dab7f83edfa90ed1da978477bf3f5b634982d7` for continued producer research;
+revise release preparation before any local-main landing, compaction, or
+cleanup.** The user-visible research improvement is a more truthful boundary:
+the public bundle supports part, not all, of the advertised `$50` table. The
+high-severity release block prevents a future landing from silently replacing
+human-owned Scout edits or ignored Herdr files.
+
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
@@ -3855,6 +3890,7 @@ medium/open. Local-main landing, compaction, and cleanup remain unapproved.
 | `RV-049` | Medium | Cycle 412 design `0ac800129e6d2432b0bebc5e52966f22b7efa9c8`; six accepted-evidence fragments | Six section fragments did not match their target headings, while the file-only link gate discarded fragments. The defect could make a future compact record appear green with unreachable evidence. | **Resolved exactly on standing.** Reviewer correction `86502d99271207d872057c4874326296d57255b4` is the direct parent of Cycle 413 result `a70923f523`; all 14 corrected fragments resolve uniquely. Exact range `86502d9927..114812e8a0` contains only the stale reviewer cursor, which is neither contained nor claimed equivalent and is superseded by this cursor. |
 | `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; subsequent exact reviewer acceptance `8f5b1a4666` and producer ledger `d3a8a06186` retain that disposition. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
 | `RV-051` | Low | Review-cursor `source_basis` through exact canonical tip `6458b20511455313b5eec86913670d52482e1573` | The phrase “commit-time health 27 facts / 16 wakes” did not identify its clock. Direct replay returns 27 / 16 at reviewed candidate `cf08a2798d`'s `2026-09-05T21:31:46Z` commit time but 26 / 16 at later ledger and acceptance clocks because a calendar boundary elapsed. The ambiguity weakened exact replay but changed no health logic or checkpoint decision. | **Resolved exactly at `6458b20511`.** The candidate and successor clocks are distinguished explicitly; current exact-tip replay returns 26 / 16 with `truncated:true`. |
+| `RV-052` | High | Cycle 420 release preparation from landed main `803240b27fa4b40373524a1ed42d0b9bee7e890c` to canonical `e6dab7f83edfa90ed1da978477bf3f5b634982d7` | The 48-path repository candidate contains 31 Scout paths, including divergent human-owned changes at `projects/scout-knowledge-lib.app/package.json` and `projects/scout-knowledge-lib/knowledge/INDEX.md`. It also adds three Herdr paths that already exist in `/app` as ignored, divergent files, so ordinary status omits them and the overlay planner fails closed. An unreviewed whole-tree transition could overwrite five protected paths or omit canonical content; compaction or cleanup could then erase the only recovery surface. | **Revise; high/open and release-blocking.** Reconcile the two Scout overlaps and three ignored Herdr files explicitly in an isolated candidate, preserve exact pre/post fingerprints and retained refs, rerun current-result validation, and obtain independent review before local-main landing. Do not compact or clean while the reconciliation is unresolved. |
 
 ## Reviewer source/result and integration status
 
@@ -3922,6 +3958,17 @@ medium/open. Local-main landing, compaction, and cleanup remain unapproved.
   `af092a0c3bfc1b414fb73abcf174bf5af43032b1`, is **integrated exactly** as
   this producer ledger's parent. Roll back this ledger first, then revert
   `7ee00a1c88`; neither operation authorizes local-main movement or cleanup.
+
+- Producer integration ledger `b5b714d976bd1b4725cf459d5bab3182f8669c22`
+  **contains reviewer result `7ee00a1c88cc3122423e7654c443431a06cbb2b3`
+  literally as its sole parent**. Cycle 420 material
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` is its direct child and is
+  independently accepted for canonical research at this exact revision.
+  RV-052 separately blocks local-main landing, compaction, and cleanup; this
+  acceptance must not be read as release authorization. Roll back the material
+  with one ordinary revert of `e6dab7f83e`; roll back the integration record
+  and reviewer result afterward only if their earlier disposition is also
+  being removed.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
@@ -4530,13 +4577,14 @@ and the unreleased Memory in the Loop result.
 Wait directly on producer pane `w1:p6C` and peer goal
 `g_c1b31972-1674-47cb-96d8-c797d768010d` for the next genuinely material
 checkpoint beyond exact reviewed canonical
-`6458b20511455313b5eec86913670d52482e1573`; independent review of the exact
-producer reconciliation checkpoint whose parent is `7ee00a1c88`; evidence that individually
+`e6dab7f83edfa90ed1da978477bf3f5b634982d7`; producer reconciliation of this
+review result; an isolated RV-052 release candidate that explicitly reconciles
+the two protected Scout overlaps and three ignored Herdr files; evidence that individually
 binds the 48 timestamp roles or supplies protected
 retrieval/later-decision value for RV-036; evidence changing RV-004 or RV-034;
 a canonical/local-main landing or cleanup claim; or a concrete regression in
 the reviewed claims. If no material trigger arrives, the next periodic audit
-is no earlier than `2026-09-07T09:21:44+08:00`. Do not poll unchanged state.
+is no earlier than `2026-09-08T05:29:49+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
