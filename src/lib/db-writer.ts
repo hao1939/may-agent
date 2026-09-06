@@ -887,7 +887,9 @@ export class DbWriter {
     ).run(appId, taskId, `event:${eventId}`, observedAt, JSON.stringify(canonical));
     this.db.prepare(
       `UPDATE app_tasks
-       SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?
+       SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?,
+           resource_version = resource_version + 1,
+           resource_json = json_set(resource_json, '$.metadata.resourceVersion', resource_version + 1)
        WHERE app_id = ? AND task_id = ?`,
     ).run(JSON.stringify(trigger), observedAt, appId, taskId);
     advanceTaskResourceRevision(this.db, appId);

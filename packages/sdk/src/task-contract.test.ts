@@ -169,6 +169,26 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("accepts the established human identity for an accountable timed wait", () => {
+    const result = {
+      state: "waiting",
+      summary: "Waiting for the operator",
+      evidence: [],
+      conditions: [
+        {
+          id: "auth-restored",
+          type: "external.fact",
+          subject: "credential:provider",
+          expected: { status: "valid" },
+          owner: "human",
+          reviewAfterMs: 300_000,
+        },
+      ],
+    };
+    expect(Check(taskAgentResultSchema, result)).toBeTrue();
+    expect(admitTaskReconcileResult(result, workflowOptions).ok).toBeTrue();
+  });
+
   it("accepts canonical agent selection and normalizes it for retained Host state", () => {
     const canonicalOutput = {
       state: "converged" as const,

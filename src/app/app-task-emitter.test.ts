@@ -197,7 +197,8 @@ describe("AppTaskEmitter", () => {
   });
 
   it("records an exact target wake in the event transaction before subscribers run", () => {
-    const { db, bus, emitter } = harness();
+    const { db, bus, emitter, store } = harness();
+    const stale = store.readTask("child-1")!;
     const observed: Array<{ changed: number; linked: number }> = [];
     bus.subscribe((event) => {
       if (event.type !== "sample.child.requested") return;
@@ -217,6 +218,14 @@ describe("AppTaskEmitter", () => {
     });
 
     expect(observed).toEqual([{ changed: 1, linked: 1 }]);
+    expect(
+      store.replaceTask({
+        expectedResourceVersion: stale.metadata.resourceVersion,
+        resource: stale,
+        ready: false,
+      }),
+    ).toBeFalse();
+    expect(store.readTrigger("child-1")).not.toBeNull();
   });
 
   it("invalidates a cached task snapshot after an immediate exact wake", () => {

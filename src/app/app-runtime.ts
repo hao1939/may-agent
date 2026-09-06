@@ -218,7 +218,7 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
     appRegistry,
     hostCapacity,
-    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus }),
+    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
     executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
   });
   markStartupPhase("agents-and-tasks");

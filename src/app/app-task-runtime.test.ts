@@ -36,6 +36,7 @@ import {
   projectAppTaskWaitPromptContext,
   projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
+  reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   rejectConvergedDirectAgentResidue,
 } from "./app-task-runtime.js";
@@ -3299,75 +3300,93 @@ describe("canonical App task runtime", () => {
     releaseOld();
   });
 
-  it("uses a registered executor without emitting a CLI Task lifecycle", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    let cliRequests = 0;
-    bus.subscribeDurableRoute((event) => {
-      if (event.type !== "cli.task.requested") return;
-      cliRequests += 1;
-      return { accepted: true, by: "unexpected-cli-runner", route: "direct" };
-    });
-    let calls = 0;
-
-    await installAppTaskRuntimes({
-      ...options(f, bus),
-      executors: {
-        codex: async (attempt) => {
-          calls += 1;
-          expect(attempt.task.executor).toBe("codex");
-          return {
-            state: "converged",
-            summary: "Replacement Codex adapter completed the Task",
-            evidence: ["test:replacement-codex"],
-          };
+  it.each([true, false])(
+    "keeps the registered executor role without a CLI lifecycle (controllers=%s)",
+    async (controllers) => {
+      const f = fixture();
+      const bus = eventBus();
+      let cliRequests = 0;
+      bus.subscribeDurableRoute((event) => {
+        if (event.type !== "cli.task.requested") return;
+        cliRequests += 1;
+        return { accepted: true, by: "unexpected-cli-runner", route: "direct" };
+      });
+      let calls = 0;
+      const runtimeOptions = options(f, bus);
+      Object.assign(runtimeOptions.manager, {
+        agentNames: () => ["sample-owner"],
+        getAgentDefinition: () => ({ name: "sample-owner", systemPrompt: "Fixture selected role" }),
+      });
+      await installAppTaskRuntimes({
+        ...runtimeOptions,
+        installControllers: controllers,
+        executors: {
+          codex: async (attempt) => {
+            calls += 1;
+            expect(attempt.task.executor).toBe("codex");
+            expect(attempt.role.instructions).toBe("Fixture selected role");
+            return {
+              state: "converged",
+              summary: "Replacement Codex adapter completed the Task",
+              evidence: ["test:replacement-codex"],
+            };
+          },
         },
-      },
-      appRegistrySnapshot: {
-        id: "boot:replacement-executor",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    });
-
-    await attachLoadedAppTask({
-      bus,
-      appDir: f.appDir,
-      appId: "sample",
-      attachment: {
-        kind: "desired",
-        intent: {
-          id: "work/replacement-executor",
-          parentId: "operations",
-          outcome: "Use the Host-provided Codex adapter",
-          acceptance: ["The replacement adapter returns evidence"],
-          mode: "achieve",
-          agent: "sample-owner",
-          executor: "codex",
+        appRegistrySnapshot: {
+          id: "boot:replacement-executor",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
         },
-      },
-      idempotencyKey: "attach:replacement-executor",
-      request: {
-        id: "request-replacement-executor",
-        source: { kind: "human", id: "operator" },
-        input: { kind: "sample", data: {} },
-      },
-    });
+      });
 
-    const config = loadedTaskConfig(f);
-    const deadline = Date.now() + 2_000;
-    while (!readTaskSnapshot(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
-      await Bun.sleep(5);
-    }
-    expect(calls).toBe(1);
-    expect(cliRequests).toBe(0);
-    expect(readTaskSnapshot(config).receipts?.["work/replacement-executor"]).toMatchObject({
-      handler: "executor:codex",
-      executor: "codex",
-      summary: "Replacement Codex adapter completed the Task",
-      evidence: ["test:replacement-codex"],
-    });
-  });
+      const replacementIntent = {
+        id: "work/replacement-executor",
+        parentId: "operations",
+        outcome: "Use the Host-provided Codex adapter",
+        acceptance: ["The replacement adapter returns evidence"],
+        mode: "achieve" as const,
+        agent: "sample-owner",
+        executor: "codex",
+      };
+      if (controllers)
+        await attachLoadedAppTask({
+          bus,
+          appDir: f.appDir,
+          appId: "sample",
+          attachment: { kind: "desired", intent: replacementIntent },
+          idempotencyKey: "attach:replacement-executor",
+          request: {
+            id: "request-replacement-executor",
+            source: { kind: "human", id: "operator" },
+            input: { kind: "sample", data: {} },
+          },
+        });
+
+      if (!controllers) {
+        observeAppTaskIntent(loadedTaskConfig(f), { intent: replacementIntent, appAgent: "sample-owner" });
+        await reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId: "work/replacement-executor",
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      }
+
+      const config = loadedTaskConfig(f);
+      const deadline = Date.now() + 2_000;
+      while (!readTaskSnapshot(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
+        await Bun.sleep(5);
+      }
+      expect(calls).toBe(1);
+      expect(cliRequests).toBe(0);
+      expect(readTaskSnapshot(config).receipts?.["work/replacement-executor"]).toMatchObject({
+        handler: "executor:codex",
+        executor: "codex",
+        summary: "Replacement Codex adapter completed the Task",
+        evidence: ["test:replacement-codex"],
+      });
+    },
+  );
 
   it("delegates a controller attempt across the configured execution boundary", async () => {
     const f = fixture();
