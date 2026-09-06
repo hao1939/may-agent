@@ -4,7 +4,7 @@
  * Lifted from scripts/e2e-platform-comment.mjs. The original drove a real
  * browser; this version drives the same daemon command path the HTTP endpoint
  * uses (socket emit of project.comment.created), without the UI dependency.
- * The UI is exercised separately by web-ui.test.ts.
+ * The UI is exercised separately by e8-project-comment-ui.test.ts.
  *
  * Validates documented behavior of:
  *   - user-guide.md § Events in Practice (comment flow)

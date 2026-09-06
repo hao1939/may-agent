@@ -30,11 +30,9 @@
   },
   "include": [
     "src",
-    "packages",
-    "agents/shared/evaluation"
+    "packages"
   ],
   "exclude": [
-    "agents/gym",
     "**/*.test.ts"
   ]
 }

@@ -655,7 +655,13 @@ export class AppTaskResourceStore {
       values.push(this.appId, after, ...livePhases);
     }
     if (includeDone) {
-      clauses.push("SELECT receipt_id AS id FROM app_task_receipts WHERE app_id = ? AND receipt_id > ?");
+      clauses.push(`SELECT receipt_id AS id FROM app_task_receipts
+        WHERE app_id = ? AND receipt_id > ?
+          AND NOT EXISTS (
+            SELECT 1 FROM app_tasks current
+            WHERE current.app_id = app_task_receipts.app_id
+              AND current.task_id = app_task_receipts.receipt_id
+          )`);
       values.push(this.appId, after);
     }
     if (clauses.length === 0) return [];

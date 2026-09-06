@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual, promisify } from "node:util";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
   chmod as chmodAsync,
   lstat as lstatAsync,
@@ -66,7 +66,6 @@ import type {
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
-  TaskView,
 } from "@may-agent/sdk/app";
 import {
   createRuntimeAppRead,
@@ -460,16 +459,6 @@ function domainProjectDir(projectsRoot: string, appDir: string, appId: string, a
   return existsSync(sibling) ? sibling : appDir;
 }
 
-function readJsonObject(path: string): Record<string, unknown> {
-  if (!existsSync(path)) return {};
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8"));
-    return isRecord(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
 function projectReadModel(projectRoot: string, descriptor: AppTaskRuntimeDescriptor): ProjectReadModel {
   const projectJson = loadProjectReadModel(descriptor.appDir);
   const id = typeof projectJson.id === "string" && projectJson.id.trim() ? projectJson.id.trim() : descriptor.id;
@@ -623,6 +612,8 @@ type WorkflowCapability = {
 type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
   state: "converged" | "waiting" | "needs-agent" | "error";
+  /** A rejected contract needs correction, not a transport retry. Host-only. */
+  resultRejected?: true;
   summary: string;
   response?: string;
   result?: Record<string, unknown>;
@@ -659,6 +650,7 @@ export function normalizeTaskHandlerResult(
   if (!admission.ok) {
     return {
       state: "error",
+      resultRejected: true,
       summary: `Handler result was rejected: ${admission.error}`,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -671,6 +663,7 @@ export function normalizeTaskHandlerResult(
       if (problem) {
         return {
           state: "error",
+          resultRejected: true,
           summary: `Handler result was rejected: actions[${index}] ${problem}`,
           evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
@@ -685,6 +678,7 @@ export function normalizeTaskHandlerResult(
       if (problem) {
         return {
           state: "error",
+          resultRejected: true,
           summary: `Handler result was rejected: conditions[${index}] ${problem}`,
           evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
@@ -3457,7 +3451,7 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    if (!primaryResult.unavailable && !agentHandoff) {
+    if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -3478,15 +3472,17 @@ async function reconcileTask(input: {
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-          reason: primaryResult.unavailable
-            ? "HandlerUnavailable"
-            : primaryResult.executionFailed
-              ? "HandlerExecutionFailed"
-              : primaryResult.workspacePreparationFailed
-                ? "WorkspacePreparationFailed"
-                : primaryHandlerResult.state === "needs-agent"
-                  ? "needs-agent"
-                  : "handler-blocked",
+          reason: primaryHandlerResult.resultRejected
+            ? "HandlerResultInvalid"
+            : primaryResult.unavailable
+              ? "HandlerUnavailable"
+              : primaryResult.executionFailed
+                ? "HandlerExecutionFailed"
+                : primaryResult.workspacePreparationFailed
+                  ? "WorkspacePreparationFailed"
+                  : primaryHandlerResult.state === "needs-agent"
+                    ? "needs-agent"
+                    : "handler-blocked",
           wakeParent: !agentHandoff,
         }),
       );

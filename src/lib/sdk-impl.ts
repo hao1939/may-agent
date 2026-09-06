@@ -329,7 +329,7 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
     task: deps.task,
     agent: deps.agentName,
 
-    done(summary: string, opts?: DoneOpts): WorkflowResult {
+    done(summary: string, _opts?: DoneOpts): WorkflowResult {
       const result: WorkflowResult = { status: "done", summary };
       deps.finish(result);
       return result;
