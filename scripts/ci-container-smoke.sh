@@ -16,7 +16,7 @@ cleanup() {
     docker logs "$container_id" > test-results/container.log 2>&1 || true
     docker inspect "$container_id" > test-results/container.json || true
     docker cp "$container_id:/app/.state/runtime-logs" test-results/runtime-logs >/dev/null 2>&1 || true
-    docker stop --time 15 "$container_id" >/dev/null || true
+    docker stop --timeout 15 "$container_id" >/dev/null || true
     docker rm -f "$container_id" >/dev/null || result=1
   fi
   exit "$result"
@@ -30,11 +30,14 @@ docker run --rm --network none --read-only --entrypoint /usr/local/bin/may-agent
   "$image_ref" --help > test-results/help.txt
 grep -q 'Usage: may-agent' test-results/help.txt
 
-container_id=$(docker create --publish 127.0.0.1::8080 \
-  --env MAY_ARGS='--socket' \
+# Exercise the shipped binary as its normal unprivileged user. Desktop/VNC
+# startup is outside this runtime smoke test and needs no display or host mount.
+container_id=$(docker create --init --user mayagent --publish 127.0.0.1::8080 \
+  --entrypoint /usr/local/bin/may-agent \
+  --env STATE_DIR=/tmp/may-ci-state \
   --env MODEL_BASE_URL=http://127.0.0.1:9 \
   --env MODEL_API_KEY=ci-unused \
-  "$image_ref")
+  "$image_ref" --socket --web)
 # The image intentionally ships no operator-owned agents. Supply the same
 # committed test agents as the daemon tests, without mounting an installation.
 docker cp test/e2e/fixtures/agents "$container_id:/app/agents"

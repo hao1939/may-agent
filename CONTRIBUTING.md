@@ -48,7 +48,9 @@ Every PR and push to `main` runs two independent Linux checks:
 - **Quality** runs the checks and portable tests, including real daemon/socket
   and browser tests. JUnit results are kept even when tests fail.
 - **Container** builds the actual image with its source revision embedded and
-  probes an isolated instance. It does not mount `/app`, consume deployment
+  probes the shipped binary's readiness and UI as its unprivileged user with
+  fixture agents. This is not a desktop/VNC or production-App acceptance test.
+  It does not mount `/app`, consume deployment
   credentials, publish an image, or deploy. Logs are retained on failure.
 
 Obsolete runs are cancelled, image layers are cached, and actions are pinned
