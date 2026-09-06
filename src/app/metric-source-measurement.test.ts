@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -42,13 +42,20 @@ describe("source-query metric measurement", () => {
   let persistDir: string;
   let bus: EventBus;
   let measurement: MetricSourceMeasurementRuntime;
+  const originalAppRoot = process.env.APP_ROOT;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-metric-source-test-"));
+    process.env.APP_ROOT = persistDir;
     bus = new EventBus();
     applyDbSchema(getDb(persistDir));
     attachEventPersistence({ bus, persistDir });
     measurement = attachMetricSourceMeasurement({ bus, persistDir });
+  });
+
+  afterEach(() => {
+    if (originalAppRoot === undefined) delete process.env.APP_ROOT;
+    else process.env.APP_ROOT = originalAppRoot;
   });
 
   it("preserves live alert calibration while restoring the subscriber failure source", () => {
@@ -339,13 +346,15 @@ describe("source-query metric measurement", () => {
     const sampler = join(persistDir, "sample.ts");
     writeFileSync(
       sampler,
-      `await Bun.sleep(150); console.log(JSON.stringify({ value: 7, sampleSize: 3, measuredAt: Date.now(), note: { source: "fixture" } }));\n`,
+      `await Bun.sleep(150); console.log(JSON.stringify({ value: 7, sampleSize: 3, measuredAt: Date.now(), note: { cwd: process.cwd() } }));\n`,
     );
     db.run(
       `INSERT INTO metrics
          (id, name, type, owner, current, threshold, priority, status, source_command, measure_interval, updated_at, alert_op)
        VALUES ('command.metric', 'Command', 'gauge', 'may', 0, 5, 'P1', 'active', ?, 300000, 0, '>')`,
-      [`bun ${sampler}`],
+      // Exercise relative command paths in the configured App root. A login
+      // shell need not retain the PATH entry installed by setup-bun in CI.
+      [`'${process.execPath.replaceAll("'", "'\\''")}' sample.ts`],
     );
 
     let timerFired = false;
@@ -375,8 +384,36 @@ describe("source-query metric measurement", () => {
       value: 7,
       sample_size: 3,
       measured_by: "runtime:metric-source-command",
-      note: JSON.stringify({ source: "fixture" }),
+      note: JSON.stringify({ cwd: persistDir }),
     });
+  });
+
+  it("runs batched source commands in the configured App root", async () => {
+    const db = getDb(persistDir);
+    const sampler = join(persistDir, "project-metrics.ts");
+    writeFileSync(sampler, `
+      if (process.argv[2] !== "--batch-json") throw new Error("Expected one batch");
+      console.log(JSON.stringify(Object.fromEntries(process.argv.slice(3).map(
+        id => [id, { value: 9, note: process.cwd() }],
+      ))));
+    `);
+    for (const id of ["batch.first", "batch.second"]) {
+      db.run(
+        `INSERT INTO metrics
+           (id, name, type, owner, threshold, priority, status, source_command, updated_at, alert_op)
+         VALUES (?, ?, 'gauge', 'may', 10, 'P1', 'active', ?, 0, '>')`,
+        [id, id, `bun ${sampler} ${id} --json`],
+      );
+    }
+    bus.emit({ type: "trigger.metrics-snapshot", source: "control-socket", owner: "agent:may", data: {} });
+    await measurement.idle();
+
+    expect(db.prepare(
+      "SELECT metric_id, value, note FROM metric_snapshots WHERE metric_id LIKE 'batch.%' ORDER BY metric_id",
+    ).all()).toEqual([
+      { metric_id: "batch.first", value: 9, note: persistDir },
+      { metric_id: "batch.second", value: 9, note: persistDir },
+    ]);
   });
 
   it("uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample", async () => {

@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { APP_ROOT } from "./installation.js";
 
-describe("May cron config design alignment", () => {
+const cronPath = resolve(APP_ROOT, "agents/may/cron.json");
+
+// Newer App installations no longer have this legacy optional cron file.
+// Report that contract as skipped rather than seven successful no-op tests.
+describe.skipIf(!existsSync(cronPath))("May cron config design alignment", () => {
   it("uses workflow-backed handler objects instead of the legacy run-workflow handler", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{
       handler?: string | { workflow?: string; agent?: string; task?: string };
@@ -19,8 +23,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("does not use detached agent-message jobs for active May triggers", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{
       name?: string;
@@ -38,8 +40,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("routes session recovery through canonical session.end", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
     const recovery = entries.find((entry) => entry.name === "session-recovery");
@@ -51,8 +51,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("routes escalations through canonical escalation.created events", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
     const escalation = entries.find((entry) => entry.name === "escalation");
@@ -63,8 +61,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("keeps manual trigger shortcuts out of subscription lists", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
     const triggerSubscriptions = entries.flatMap((entry) =>
@@ -77,8 +73,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("does not retain the legacy project scheduler or steward", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
     expect(entries.some((entry) => entry.name === "project")).toBe(false);
@@ -87,8 +81,6 @@ describe("May cron config design alignment", () => {
   });
 
   it("declares reachable maintenance context for every trigger entry", () => {
-    const cronPath = "/app/agents/may/cron.json";
-    if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; context?: string[] }>;
     const invalid = entries.flatMap((entry) => {
@@ -103,7 +95,7 @@ describe("May cron config design alignment", () => {
             contextPath.trim() === "" ||
             contextPath.startsWith("/") ||
             contextPath.includes("..") ||
-            !existsSync(`/app/${contextPath}`),
+            !existsSync(resolve(APP_ROOT, contextPath)),
         )
         .map((contextPath) => ({ entry: entry.name, reason: `invalid context path: ${String(contextPath)}` }));
     });
