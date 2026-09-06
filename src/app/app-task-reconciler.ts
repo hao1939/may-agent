@@ -706,8 +706,9 @@ function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, ap
   ) {
     return undefined;
   }
+  // A maintain task normally stays live when up to date. A receipt means it
+  // was explicitly closed, so it is terminal just like achieved work.
   const intent = resourceIntent(resource);
-  if (intent.mode !== "achieve") return undefined;
   const agent = resolvedAgent(tree, intent, appAgent);
   return receipt.specHash === appTaskSpecHash(intent, agent) ? receipt : undefined;
 }
@@ -1742,7 +1743,6 @@ export function observeAppTaskIntent(
     const receiptMatchesDesiredIdentity =
       receipt?.metadata.id === input.intent.id &&
       receipt.specHash === specHash &&
-      input.intent.mode === "achieve" &&
       (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
     if (receiptMatchesDesiredIdentity) {
       const mutationScope = beginResourceMutationScopeForTasks(
