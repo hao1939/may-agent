@@ -24,7 +24,7 @@ export default [
 
   // TypeScript files
   {
-    files: ["src/**/*.ts", "test/**/*.ts"],
+    files: ["src/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"],
     languageOptions: {
       parser: tsParser,
     },
@@ -39,6 +39,9 @@ export default [
 
       // Customizations
       "no-unused-vars": "off",
+      // Callbacks may read a binding before its later initialization. Do not
+      // demand a const rewrite that changes that lifecycle boundary.
+      "prefer-const": ["error", { ignoreReadBeforeAssign: true }],
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {

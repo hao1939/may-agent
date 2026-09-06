@@ -56,6 +56,10 @@ ls /tmp/may-e2e-*/
 | `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
 | `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 
+The browser driver is a pinned dev dependency of this repository. E8 explicitly
+skips on local hosts without Chrome/Chromium, but missing prerequisites or
+`E2E_NO_UI=1` fail under `CI=true`. CI must execute the real browser scenario.
+
 E8 currently covers project-comment UI; broader telegram UI flows and
 the full-LLM variant of E6 are still future work — see roadmap in
 `projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.

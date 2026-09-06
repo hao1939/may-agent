@@ -19,3 +19,5 @@ bundle/
 # Large or host-specific data not copied by the Dockerfile
 pi-deps/
 test/
+test-results/
+evidence/

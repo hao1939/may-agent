@@ -792,7 +792,7 @@ export class HumanTaskService {
     const resolved = this.getTask(input);
     if (!resolved) throw new Error("Task was not found");
     let cancelledAttemptId: string | undefined;
-    let reason = input.reason?.trim() || "human requested cancellation";
+    const reason = input.reason?.trim() || "human requested cancellation";
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const current = this.getTask({ appId: resolved.appId, taskId: resolved.taskId });

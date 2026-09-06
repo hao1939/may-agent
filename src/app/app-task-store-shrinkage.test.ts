@@ -107,7 +107,8 @@ describe("saveTaskState shrinkage guard", () => {
     writeFileSync(shrinkageConfig.statePath, JSON.stringify(makeTree(6, "active")));
     cacheTaskStateReads(shrinkageConfig);
     const shrinkageTree = readTaskState(shrinkageConfig);
-    shrinkageTree.groups = { "task-0": shrinkageTree.groups?.["task-0"]! };
+    expect(shrinkageTree.groups?.["task-0"]).toBeDefined();
+    shrinkageTree.groups = { "task-0": shrinkageTree.groups!["task-0"] };
     expect(() => saveTaskState(shrinkageConfig, shrinkageTree)).toThrow(/shrinkage guard/);
   });
 
