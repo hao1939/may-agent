@@ -1740,6 +1740,13 @@ export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTa
   });
 }
 
+/** Resolve the exact Task's agent, including inheritance, before worker loading. */
+export function readAppTaskAgent(config: AppTaskContext, taskId: string): string | null {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const resource = tree.resources?.[taskId];
+  return resource ? resolvedAgent(tree, resourceIntent(resource), config.agent) : null;
+}
+
 /**
  * Return whether the requested task generation has produced a converged fact.
  * A live resource takes precedence over an older immutable receipt with the
@@ -2088,6 +2095,9 @@ export function recordAppTaskTrigger(
       return { kind: "waiting" };
     }
     const previous = tree.taskTriggers?.[taskId];
+    const resourceVersion = resource.metadata.resourceVersion;
+    // Input shares the Task row; invalidate writers that read before this wake.
+    resource.metadata.resourceVersion += 1;
     const observedAt = new Date().toISOString();
     const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
     const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.agent));
@@ -2107,7 +2117,7 @@ export function recordAppTaskTrigger(
         fences: [
           {
             taskId,
-            resourceVersion: resource.metadata.resourceVersion,
+            resourceVersion,
             generation: resource.metadata.generation,
             currentAttemptId: resource.status.currentAttemptId ?? null,
           },
@@ -2150,14 +2160,22 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: AppTaskContext, taskId: string, nextCheckAt: number | null = null): void {
+function acknowledgeIndexedRecoveryWait(
+  config: AppTaskContext,
+  taskId: string,
+  expectedRevision: number,
+  nextCheckAt: number | null = null,
+): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
   // wake. Clear consumed signals, but preserve a Condition's future review.
+  // Another writer may have changed a trigger, dependency, or Condition since
+  // our read. Reuse the store revision so its newer wake remains recoverable.
   config.resourceStore.setRecoveryState(taskId, {
     ready: false,
     changed: false,
     nextCheckAt,
+    expectedRevision,
   });
 }
 
@@ -2572,7 +2590,9 @@ export function cancelAppTask(
         `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
       );
     }
-    if (tree.receipts?.[input.taskId]) throw new Error(`Task ${input.appId}/${input.taskId} is already terminal`);
+    if (tree.receipts?.[input.taskId]?.metadata.generation === resource.metadata.generation) {
+      throw new Error(`Task ${input.appId}/${input.taskId} is already terminal`);
+    }
     if (resource.spec.mode === "maintain") {
       throw new Error(`Task ${input.appId}/${input.taskId} is maintained and does not allow generic cancellation`);
     }
@@ -2708,6 +2728,7 @@ export function claimObservedAppTask(
   },
 ): AppTaskClaimResult {
   return withTaskTransition(config, () => {
+    const snapshotRevision = config.resourceStore.revision();
     const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
     const resource = tree.resources?.[input.taskId];
     if (config.resourceStore.isCancelled(input.taskId)) {
@@ -2905,7 +2926,7 @@ export function claimObservedAppTask(
       );
     });
     if (dependencyIds.length > 0) {
-      acknowledgeIndexedRecoveryWait(config, input.taskId);
+      acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision);
       return { kind: "waiting", taskId: input.taskId, conditionIds: [], dependencyIds };
     }
 
@@ -2931,7 +2952,12 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, input.taskId, nextTaskConditionReviewAt(tree, input.taskId));
+      acknowledgeIndexedRecoveryWait(
+        config,
+        input.taskId,
+        snapshotRevision,
+        nextTaskConditionReviewAt(tree, input.taskId),
+      );
       return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds, childIds };
     }
     if (
@@ -2941,7 +2967,12 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, input.taskId, nextTaskConditionReviewAt(tree, input.taskId));
+      acknowledgeIndexedRecoveryWait(
+        config,
+        input.taskId,
+        snapshotRevision,
+        nextTaskConditionReviewAt(tree, input.taskId),
+      );
       return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
     }
 
@@ -3559,7 +3590,7 @@ function validateConditions(
       requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);
     }
     const owner = requireNonEmptyString(condition.owner, `Handler result Condition ${identity} owner`);
-    if (!/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+    if (owner !== "human" && !/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
       throw new Error(`Handler result Condition ${identity} owner must be a canonical kind:identity`);
     }
     if (

@@ -453,7 +453,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   }
   const owner = normalizedString(value.owner);
   if (!owner) return `conditions[${index}].owner must be a canonical non-empty identity`;
-  if (!/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+  if (owner !== "human" && !/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
