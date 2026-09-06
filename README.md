@@ -57,10 +57,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for reproducible CI, test boundaries,
 review rules, and the separate deployment procedure.
 
 ```bash
-bun install
-bun run check
-bun run test
-bun run verify
+bun install --frozen-lockfile
+bun run ci
 ```
 
 Useful focused commands:
@@ -91,7 +89,7 @@ definitions and does not deploy runtime code.
 
 ## Requirements
 
-Node.js 22.19 or newer and Bun.
+Node.js 24 and the Bun version recorded in `.bun-version` for CI/image parity.
 
 ## License
 

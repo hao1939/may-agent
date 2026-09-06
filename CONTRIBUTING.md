@@ -22,6 +22,8 @@ format the lines you change without reformatting unrelated code.
 script tests using two isolated Bun workers. The bounded worker count avoids
 oversubscribing small CI machines with daemon and compiler subprocesses.
 No automatic test retries hide a failure. Reproduce and explain flaky results.
+Scheduled daemon fixtures use the existing explicit startup offset to avoid
+random initial delays; real recurring timers and lifecycle assertions remain.
 
 Install Chrome/Chromium for browser tests (or set `CHROME_PATH`). CI requires
 the browser test to execute. Locally, `E2E_NO_UI=1` explicitly skips it; a
@@ -43,19 +45,35 @@ neither those experiments nor a production restart belongs in PR CI.
 
 ## GitHub checks
 
-Every PR and push to `main` runs two independent Linux checks:
+Every PR and push to `main` reports two independent Linux checks:
 
 - **Quality** runs the checks and portable tests, including real daemon/socket
   and browser tests. JUnit results are kept even when tests fail.
 - **Container** builds the actual image with its source revision embedded and
   probes the shipped binary's readiness and UI as its unprivileged user with
   fixture agents. This is not a desktop/VNC or production-App acceptance test.
-  It does not mount `/app`, consume deployment
-  credentials, publish an image, or deploy. Logs are retained on failure.
+  It does not mount `/app`, consume deployment credentials, publish an image,
+  or deploy. Logs are retained on failure. Documentation/portable-test-only
+  PRs report the image build as unnecessary, not as an executed smoke test.
+  Runtime, dependency, container, CI, smoke-fixture, and unknown paths build;
+  the complete PR diff (including deletions) is checked, not just its last
+  commit. `main` and manual runs always build.
 
-Obsolete runs are cancelled, image layers are cached, and actions are pinned
-to commit SHAs. Dependabot groups weekly action updates and proposes base-image
-updates. Bun/npm dependency and embedded CLI updates must include their lockfile
+Keep feedback fast: no OS matrix, no extra coordination job, no repeated
+dependency installation within a job. Quality runs independently of the image
+build. Obsolete runs are cancelled. Main/manual builds populate the image
+cache; PRs read it without uploading another large per-PR cache. Missing caches
+still perform a complete build. Test files are excluded from Docker's source
+layers, so they do not invalidate compiled-image caches.
+
+Measure job and step timings in Actions before adding caches, sharding, or
+removing coverage. The first hosted baseline took about 2 minutes for Quality
+and 5m49s for the cold Container job; image export/load took 101 seconds and
+cache upload took 124 seconds. These are observations, not guaranteed budgets.
+Dependency installation took only 2 seconds, so it does not need another cache.
+
+Actions are pinned to commit SHAs. Dependabot groups weekly action updates and
+proposes base-image updates. Bun/npm dependency and embedded CLI updates must include their lockfile
 or checksum changes and relevant compatibility tests; do not auto-merge them.
 There is no macOS/Windows matrix: the released deployment is Linux/container.
 
