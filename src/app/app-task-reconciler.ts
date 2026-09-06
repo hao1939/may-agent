@@ -706,8 +706,9 @@ function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, ap
   ) {
     return undefined;
   }
+  // A maintain task normally stays live when up to date. A receipt means it
+  // was explicitly closed, so it is terminal just like achieved work.
   const intent = resourceIntent(resource);
-  if (intent.mode !== "achieve") return undefined;
   const agent = resolvedAgent(tree, intent, appAgent);
   return receipt.specHash === appTaskSpecHash(intent, agent) ? receipt : undefined;
 }
@@ -920,29 +921,6 @@ function completedConditionReviewCount(tree: TaskTree, taskId: string, condition
     return !Number.isInteger(Number(data.reviewAttempt));
   }).length;
   return Math.max(highestRecordedAttempt, legacyAttemptCount);
-}
-
-function boundedReviewConditions(
-  claim: AppTaskClaim,
-  conditions: AppTaskConditionSpec[] | undefined,
-): AppTaskConditionSpec[] | undefined {
-  if (!conditions?.length || claim.trigger?.type !== "project.task.condition-review.missed") {
-    return conditions;
-  }
-  const data = isRecord(claim.trigger.data) ? claim.trigger.data : {};
-  if (data.finalReview !== true) return conditions;
-  const exhaustedIds = new Set(
-    Array.isArray(data.conditionIds)
-      ? data.conditionIds.filter((value): value is string => typeof value === "string")
-      : [],
-  );
-  return conditions.map((condition) => {
-    if (!exhaustedIds.has(condition.id) || condition.reviewAfterMs === undefined) {
-      return condition;
-    }
-    const { reviewAfterMs: _reviewAfterMs, ...conditionWithoutReview } = condition;
-    return conditionWithoutReview;
-  });
 }
 
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
@@ -1742,7 +1720,6 @@ export function observeAppTaskIntent(
     const receiptMatchesDesiredIdentity =
       receipt?.metadata.id === input.intent.id &&
       receipt.specHash === specHash &&
-      input.intent.mode === "achieve" &&
       (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
     if (receiptMatchesDesiredIdentity) {
       const mutationScope = beginResourceMutationScopeForTasks(
@@ -2310,14 +2287,14 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   return false;
 }
 
-function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {
+function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string, nextCheckAt: number | null = null): void {
   // The indexed wake has been consumed and the Task is durably blocked. Its
   // dependency, child, or Condition transition will record the next exact
-  // wake; leaving any recovery signal set would make safety recovery retry a no-op.
+  // wake. Clear consumed signals, but preserve a Condition's future review.
   config.resourceStore?.setRecoveryState(taskId, {
     ready: false,
     changed: false,
-    nextCheckAt: null,
+    nextCheckAt,
   });
 }
 
@@ -2935,7 +2912,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
+      acknowledgeIndexedRecoveryWait(config, task.id, resourceWrite(tree, resource).nextCheckAt);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds, childIds };
     }
     if (
@@ -2945,7 +2922,7 @@ export function claimObservedAppTask(
       !hasSatisfiedCondition &&
       missedCheckpointConditionIds.length === 0
     ) {
-      acknowledgeIndexedRecoveryWait(config, task.id);
+      acknowledgeIndexedRecoveryWait(config, task.id, resourceWrite(tree, resource).nextCheckAt);
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
     }
 
@@ -4198,7 +4175,9 @@ export function deferAppTask(
       });
     }
     consumeAcceptedLiveTaskEvents(tree, task, resource, input.acceptedLiveEventIds);
-    const conditions = boundedReviewConditions(claim, input.conditions);
+    // The App owns whether to keep, change, or retire its review deadline.
+    // A missed checkpoint is not proof that the awaited fact is satisfied.
+    const conditions = input.conditions;
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
