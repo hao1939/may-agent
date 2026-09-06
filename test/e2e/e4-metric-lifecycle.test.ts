@@ -40,6 +40,7 @@ describe("E4: metric breach to alert", () => {
             name: "e2e-metric-canary",
             handler: "e2e-metric-canary",
             intervalMs: 10000,
+            offsetMs: 1, // Keep real timed phases, without random startup jitter.
             agent: "may",
             enabled: true,
           },

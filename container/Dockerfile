@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Bun (pinned)
-ARG BUN_VERSION=bun-v1.3.14
-RUN curl -fsSL https://bun.sh/install | bash -s "$BUN_VERSION" && \
+COPY .bun-version /tmp/may-bun-version
+RUN curl -fsSL https://bun.sh/install | bash -s "bun-v$(cat /tmp/may-bun-version)" && \
     cp /root/.bun/bin/bun /usr/local/bin/bun && \
     /usr/local/bin/bun --version
 
