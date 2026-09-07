@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent review accepts Cycle 420 at exact canonical tip e6dab7f83e, and reviewer result e1af785966 is integrated literally by the direct-child producer ledger carrying this cursor. The public SwarmResearch bundle supports nine of fifteen $50 table cells, conflicts on Third-Autocorrelation, and omits five heuristic rows. High/open RV-052 keeps local-main landing, compaction, and cleanup blocked because the 48-path repository candidate includes two divergent protected Scout overlaps and three divergent ignored Herdr files."
+summary: "Independent review accepts Cycle 421's explicit five-path retention planner and isolated rollback evidence through exact canonical tip 6af4d3da01. Reviewer result e1af785966 is integrated literally at stable patch ID f3702911ac, and current-tip validation plus an independent 49-path transition/rollback replay pass. RV-052 remains high/open: the live protected checkout has advanced beyond the isolated base, so local-main landing, compaction, and cleanup still require a fresh exact-boundary preservation gate."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051", "RV-052"]
-last_updated: "2026-09-07"
-source_basis: "Exact linear range 6458b20511455313b5eec86913670d52482e1573..e6dab7f83edfa90ed1da978477bf3f5b634982d7: direct-child reviewer result 7ee00a1c88cc3122423e7654c443431a06cbb2b3, literal producer integration b5b714d976bd1b4725cf459d5bab3182f8669c22, and Cycle 420 material e6dab7f83edfa90ed1da978477bf3f5b634982d7. Independent pinned-source hashes reproduce the arXiv archive, evaluation.tex, cutoff README/CSV, Third-Autocorrelation history, and evaluator; arithmetic reproduces the 9 compatible / 1 incompatible / 5 missing classification. Current-tip validation passes 314 tests / 1,555 assertions, Cycle 420 projection, 112 scoped links, navigation 11/14, 8/8, and 14/14; a 1,550-document / 1,795-link Scout-library audit and health 26 facts / 16 wakes also pass. Release inspection finds 31 Scout paths within 48 repository paths, two divergent protected Scout overlaps, and three divergent ignored Herdr files; the planner fails closed, so no landing, compaction, or cleanup is approved."
+last_updated: "2026-09-08"
+source_basis: "Exact linear range e6dab7f83edfa90ed1da978477bf3f5b634982d7..6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a: literal reviewer result e1af78596616becd6631adc2da16a2ba7288ae48, direct-child producer ledger a6d4b26e621859af48c2cf04c45fbe5f47ff8a21, planner material 43e09580786f27a65a9bf5ca700df4cf8337293e, and Cycle 421 evidence 6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a. Independent current-tip validation passes 316 tests / 1,564 assertions, Cycle 420 projection, 113 scoped links, navigation 11/14, 8/8, and 14/14, 1,551 tracked Markdown documents / 1,796 broad links, producer-tip-clock health 26 facts / 16 wakes, and clean whitespace; review-clock health is 27 / 16 after the calendar boundary. A separate reviewer-owned exact-main fixture independently fails closed without declarations, plans 49 candidate paths with five SHA-bound retained overlaps and 44 clean materializations, advances to the current tip with only those five paths dirty, and rolls back to the exact base, both status streams, and all five protected hashes. The live protected checkout retains the five observed bytes but now has descendant HEAD 6237bd7e60 rather than isolated base 803240b27f, so no real landing, compaction, or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Exact linear range 6458b20511455313b5eec86913670d52482e1573..e6da
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (exact Cycle 420 SwarmResearch cutoff checkpoint)
+  `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` (exact Cycle 421 isolated RV-052 rehearsal)
 - Last material standing commit reviewed:
-  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 SwarmResearch cutoff evidence)
+  `43e09580786f27a65a9bf5ca700df4cf8337293e` (Cycle 421 explicit retained-overlay planner)
 - Last producer research material reviewed:
   `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 SwarmResearch cutoff evidence)
 - Last integrated reviewer result:
-  `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (literally integrated by producer ledger `b5b714d976`)
-- Current review date: `2026-09-07T05:29:49+08:00`
+  `e1af78596616becd6631adc2da16a2ba7288ae48` (literally integrated by producer ledger `a6d4b26e62`)
+- Current review date: `2026-09-08T05:38:13+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -261,19 +261,23 @@ source_basis: "Exact linear range 6458b20511455313b5eec86913670d52482e1573..e6da
   `0292414aff286dc91fe9a5ddcb4aee7766fe3839` (exact amended-cursor integration ledger),
   `6458b20511455313b5eec86913670d52482e1573` (exact RV-051 acceptance checkpoint),
   `7ee00a1c88cc3122423e7654c443431a06cbb2b3` (exact reviewer acceptance),
-  `b5b714d976bd1b4725cf459d5bab3182f8669c22` (literal reviewer-integration ledger), and
-  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 cutoff audit).
+  `b5b714d976bd1b4725cf459d5bab3182f8669c22` (literal reviewer-integration ledger),
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7` (Cycle 420 cutoff audit),
+  `e1af78596616becd6631adc2da16a2ba7288ae48` (exact Cycle 420 reviewer disposition),
+  `a6d4b26e621859af48c2cf04c45fbe5f47ff8a21` (literal reviewer-integration ledger),
+  `43e09580786f27a65a9bf5ca700df4cf8337293e` (Cycle 421 overlay-planner material), and
+  `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` (Cycle 421 isolated rehearsal record).
 - Newly reviewed exact standing span:
-  `6458b20511455313b5eec86913670d52482e1573..e6dab7f83edfa90ed1da978477bf3f5b634982d7`
-  (exact reviewer acceptance, literal producer integration, and Cycle 420
-  SwarmResearch cutoff material; no local-main movement, compaction, deletion,
-  or cleanup change).
-- Review date: `2026-09-07T05:29:49+08:00`
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7..6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a`
+  (exact reviewer acceptance, literal producer integration, planner material,
+  and isolated Cycle 421 rehearsal; no protected-checkout movement, local-main
+  landing, compaction, deletion, or cleanup change).
+- Review date: `2026-09-08T05:38:13+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
-- Overall disposition: **accept exact Cycle 420 canonical research
-  `e6dab7f83edfa90ed1da978477bf3f5b634982d7`; reject new local-main landing,
-  compaction, and cleanup pending RV-052 reconciliation and preservation
-  proof.** The prior completed local-main landing
+- Overall disposition: **accept exact Cycle 421 canonical tip
+  `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` as a safe planner mitigation;
+  reject new local-main landing, compaction, and cleanup pending RV-052's fresh
+  real-boundary preservation proof.** The prior completed local-main landing
   `803240b27fa4b40373524a1ed42d0b9bee7e890c` remains accepted at its exact
   reviewed boundary;
   accept Cycle 408's isolated planner rehearsal and require the same guarded
@@ -3835,6 +3839,36 @@ the public bundle supports part, not all, of the advertised `$50` table. The
 high-severity release block prevents a future landing from silently replacing
 human-owned Scout edits or ignored Herdr files.
 
+### Cycle 421 explicit retained-overlay path — accept mitigation, keep release blocked
+
+The exact successor line is
+`e6dab7f83edfa90ed1da978477bf3f5b634982d7` →
+`e1af78596616becd6631adc2da16a2ba7288ae48` →
+`a6d4b26e621859af48c2cf04c45fbe5f47ff8a21` →
+`43e09580786f27a65a9bf5ca700df4cf8337293e` →
+`6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a`. Reviewer result
+`e1af785966` is contained literally, its stable patch ID independently
+reproduces as `f3702911ac0be9061fcbf69c49a5ede48c067e04`, and its direct child
+truthfully records that integration. The user-declared
+`764cb00eca907fdefcb96df2fdbf49dbfb08f85f` is not a successor of
+`6af4d3da01`: Git resolves it as their merge base and an
+older Cycle 413 ancestor. It remains historically accepted at its reviewed
+boundary but is not relabelled as the current producer tip.
+
+| Rubric dimension | Disposition |
+| --- | --- |
+| Scope, provenance, claim separation, and queue choice | **Accept.** Cycle 421 makes zero new source requests, carries the already accepted Cycle 420 access boundary without inferring a seed delta, and clearly separates the planner implementation, producer-run fixture evidence, independent review, and future real landing. Addressing release-blocking RV-052 before another inaccessible research question is a coherent bounded choice. No source novelty, behavior improvement, or productivity outcome is claimed; RV-004 and RV-034 remain high/open. |
+| Five-path reconciliation, contamination, and regression safety | **Accept the fail-closed planner change.** Once any retention declaration is supplied, every divergent candidate overlap must be explicitly named and SHA-256 matched. Missing declarations, digest drift, duplicate/unsafe paths, unused declarations, candidate-identical declarations, staged indexes, and symlinked parents fail closed. The original undeclared invocation still stops on ignored `projects/herdr-supervisor/README.md`; the 64 MiB subprocess cap fixes the reproduced large-blob transport failure without making output unbounded. The planner reads only and does not import `/app` content into canonical knowledge. |
+| Independent matched baseline, current candidate, rollback, and preservation | **Accept isolated evidence; defer the real release gate.** A separate reviewer-owned fixture at exact main `803240b27fa` copied only the five current protected bytes. The no-declaration baseline failed on the first status-hidden Herdr path. Against exact current tip `6af4d3da01`, the explicit plan reported 49 candidate paths, five retained overlaps, 44 clean materializations, 10 rollback restores, and 34 rollback removals. The forward transition reached exact candidate HEAD with a clean index and exactly the five protected paths dirty; all five hashes matched. Reverse execution restored exact base HEAD, clean index, byte-identical default and ignored status streams, and every protected hash. The live `/app` checkout was not written and still has those five hashes, but it now has descendant HEAD `6237bd7e608de98bb60e27a94ea19b52bf52c838`, not the isolated base. A real landing therefore requires a fresh applicable source/result candidate and full pre/post preservation proof. |
+| Validation, usability, cost, batching, and rollback | **Accept current revision.** Reviewer-owned validation passes 8 focused tests / 35 assertions and the full gate at 316 tests / 1,564 assertions, syntax, TypeScript, formatting, Cycle 420 projection, 113 scoped links, navigation 11/14 + 8/8 + 14/14, 1,551 tracked Markdown documents / 1,796 broad links, and `git diff --check`. Read-only health returns 26 facts / 16 wakes at the producer-tip clock and 27 / 16 at the later review clock, both with `truncated:true`; the calendar boundary, not this change, explains the count difference. The implementation, direct integration ledger, and one evidence record form a reviewable dependency-ordered batch; counts are integrity evidence, not productivity. Roll back the evidence record `6af4d3da01` first, then material `43e0958078`; revert `a6d4b26e62` and `e1af785966` only if removing the earlier review disposition too. Do not delete the retained fixture or history as part of rollback. |
+
+Disposition: **accept exact canonical tip
+`6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` for continued producer work and
+accept Cycle 421 as a material mitigation of RV-052.** RV-052 remains
+high/open and release-blocking because the independent replay is isolated and
+the live protected checkout has advanced beyond its base. Local-main landing,
+compaction, and cleanup remain unapproved.
+
 ## Findings and dispositions
 
 | ID | Severity | Affected artifact | Exact evidence and user impact | Disposition |
@@ -3890,7 +3924,7 @@ human-owned Scout edits or ignored Herdr files.
 | `RV-049` | Medium | Cycle 412 design `0ac800129e6d2432b0bebc5e52966f22b7efa9c8`; six accepted-evidence fragments | Six section fragments did not match their target headings, while the file-only link gate discarded fragments. The defect could make a future compact record appear green with unreachable evidence. | **Resolved exactly on standing.** Reviewer correction `86502d99271207d872057c4874326296d57255b4` is the direct parent of Cycle 413 result `a70923f523`; all 14 corrected fragments resolve uniquely. Exact range `86502d9927..114812e8a0` contains only the stale reviewer cursor, which is neither contained nor claimed equivalent and is superseded by this cursor. |
 | `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; subsequent exact reviewer acceptance `8f5b1a4666` and producer ledger `d3a8a06186` retain that disposition. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
 | `RV-051` | Low | Review-cursor `source_basis` through exact canonical tip `6458b20511455313b5eec86913670d52482e1573` | The phrase “commit-time health 27 facts / 16 wakes” did not identify its clock. Direct replay returns 27 / 16 at reviewed candidate `cf08a2798d`'s `2026-09-05T21:31:46Z` commit time but 26 / 16 at later ledger and acceptance clocks because a calendar boundary elapsed. The ambiguity weakened exact replay but changed no health logic or checkpoint decision. | **Resolved exactly at `6458b20511`.** The candidate and successor clocks are distinguished explicitly; current exact-tip replay returns 26 / 16 with `truncated:true`. |
-| `RV-052` | High | Cycle 420 release preparation from landed main `803240b27fa4b40373524a1ed42d0b9bee7e890c` to canonical `e6dab7f83edfa90ed1da978477bf3f5b634982d7` | The 48-path repository candidate contains 31 Scout paths, including divergent human-owned changes at `projects/scout-knowledge-lib.app/package.json` and `projects/scout-knowledge-lib/knowledge/INDEX.md`. It also adds three Herdr paths that already exist in `/app` as ignored, divergent files, so ordinary status omits them and the overlay planner fails closed. An unreviewed whole-tree transition could overwrite five protected paths or omit canonical content; compaction or cleanup could then erase the only recovery surface. | **Revise; high/open and release-blocking.** Reconcile the two Scout overlaps and three ignored Herdr files explicitly in an isolated candidate, preserve exact pre/post fingerprints and retained refs, rerun current-result validation, and obtain independent review before local-main landing. Do not compact or clean while the reconciliation is unresolved. |
+| `RV-052` | High | Cycle 420-421 release preparation from landed main `803240b27fa4b40373524a1ed42d0b9bee7e890c` through canonical `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` | The original candidate exposed two divergent human-owned Scout paths and three status-hidden divergent Herdr paths. Cycle 421 now requires all five to be explicitly SHA-256-bound, and independent current-tip replay preserves them through a 49-path transition and exact rollback. That evidence is isolated: live `/app` retains the same five bytes but has advanced to descendant HEAD `6237bd7e60`, so the reviewed base is not its current preflight HEAD and the planner correctly cannot authorize that checkout from the old boundary. | **Mitigated; high/open and release-blocking.** Accept `43e0958078..6af4d3da01` as the safe explicit-retention mechanism and independent isolated proof. Before any real landing, derive a fresh applicable source/result boundary, recompute every protected hash and full status fingerprint, require a clean index, execute the reviewed materialization/rollback sets, verify postflight, and retain recoverable refs. Do not compact or clean while that gate is unresolved. |
 
 ## Reviewer source/result and integration status
 
@@ -3979,6 +4013,19 @@ human-owned Scout edits or ignored Herdr files.
   authorize local-main landing, compaction, cleanup, or mutation of the dirty
   checkout. Roll back only the reviewer integration with one ordinary revert
   of `e1af785966`; roll back this producer ledger first if it is still present.
+
+- Producer ledger `a6d4b26e621859af48c2cf04c45fbe5f47ff8a21`
+  **contains reviewer result `e1af78596616becd6631adc2da16a2ba7288ae48`
+  literally as its sole parent**. Cycle 421 material
+  `43e09580786f27a65a9bf5ca700df4cf8337293e` and evidence record
+  `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a` are its ordered descendants
+  and are independently accepted as an isolated RV-052 mitigation. Stable
+  reviewer patch ID is
+  `f3702911ac0be9061fcbf69c49a5ede48c067e04`. This reviewer cursor is pending
+  producer reconciliation; it authorizes neither local-main movement nor
+  cleanup. Roll back the evidence record first, then planner material; retain
+  the earlier reviewer result unless its accepted Cycle 420 disposition is
+  intentionally removed too.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
@@ -4585,16 +4632,16 @@ and the unreleased Memory in the Loop result.
 ## Next trigger
 
 Wait directly on producer pane `w1:p6C` and peer goal
-`g_c1b31972-1674-47cb-96d8-c797d768010d` for the next genuinely material
-checkpoint beyond exact reviewed canonical
-`e6dab7f83edfa90ed1da978477bf3f5b634982d7`; producer reconciliation of this
-review result; an isolated RV-052 release candidate that explicitly reconciles
-the two protected Scout overlaps and three ignored Herdr files; evidence that individually
-binds the 48 timestamp roles or supplies protected
+`g_c1b31972-1674-47cb-96d8-c797d768010d` for producer reconciliation of this
+review result; the next genuinely material checkpoint beyond exact reviewed
+canonical `6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a`; a fresh real-boundary
+RV-052 release candidate that explicitly binds the two protected Scout
+overlaps and three ignored Herdr files against the then-current applicable
+checkout; evidence that individually binds the 48 timestamp roles or supplies protected
 retrieval/later-decision value for RV-036; evidence changing RV-004 or RV-034;
 a canonical/local-main landing or cleanup claim; or a concrete regression in
 the reviewed claims. If no material trigger arrives, the next periodic audit
-is no earlier than `2026-09-08T05:29:49+08:00`. Do not poll unchanged state.
+is no earlier than `2026-09-09T05:38:13+08:00`. Do not poll unchanged state.
 This standing reviewer goal remains active.
 
 ## Supervision
