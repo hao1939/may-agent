@@ -75,48 +75,74 @@ export async function loadHandlersForAgentCrons(
     };
     const workflowCtx: WorkflowHandlerContext = { ...ctx, sdk: fullSdk };
 
-    for (const entry of handlersNeeded) {
-      const workflow = workflowHandler(entry);
-      if (!workflow) continue;
-      cron.registerHandler(entry.name, createWorkflowBackedHandler(workflowCtx, entry, workflow));
-      registered.push(`${agentName}:${entry.name}`);
-      bus.emit({
-        type: "info",
-        message: `[handler] Registered ${agentName}:${entry.name} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
-      });
-    }
-
-    const byFile = new Map<string, CronEntry[]>();
-    for (const entry of handlersNeeded) {
-      if (typeof entry.handler !== "string") continue;
-      const file = entry.handler;
-      if (!byFile.has(file)) byFile.set(file, []);
-      byFile.get(file)!.push(entry);
-    }
-
-    for (const [handlerFile, fileEntries] of byFile) {
-      const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
-      const modulePath = resolveHandlerModule(handlerDir, handlerFile);
-      if (!modulePath) {
-        const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
-        errors.push(msg);
-        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
-        for (const entry of fileEntries) {
-          bus.emit({
-            type: "handler.load-failed",
-            source: "handler-loader",
-            owner: `agent:${agentName}`,
-            data: { handler: entry.name, agent: agentName, path: `${handlerDir}/${handlerFile}.(js|ts)`, error: msg },
-          });
-        }
-        continue;
+    // Startup and late resolution share validation, registration and diagnostics.
+    async function registerHandlers(entries: readonly CronEntry[]) {
+      const result = { registered: [] as string[], errors: [] as string[] };
+      for (const entry of entries) {
+        const workflow = workflowHandler(entry);
+        if (!workflow) continue;
+        cron.registerHandler(entry.name, createWorkflowBackedHandler(workflowCtx, entry, workflow));
+        result.registered.push(`${agentName}:${entry.name}`);
+        bus.emit({
+          type: "info",
+          message: `[handler] Registered ${agentName}:${entry.name} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
+        });
       }
 
-      try {
-        const mod = await importRuntimeModule<HandlerModule>(modulePath);
-        if (typeof mod.create !== "function") {
-          const msg = `Handler ${modulePath} does not export create()`;
-          errors.push(msg);
+      const byFile = new Map<string, CronEntry[]>();
+      for (const entry of entries) {
+        if (!entry.handler || typeof entry.handler !== "string") continue;
+        const file = entry.handler;
+        if (!byFile.has(file)) byFile.set(file, []);
+        byFile.get(file)!.push(entry);
+      }
+
+      for (const [handlerFile, fileEntries] of byFile) {
+        const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
+        const modulePath = resolveHandlerModule(handlerDir, handlerFile);
+        if (!modulePath) {
+          const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
+          result.errors.push(msg);
+          bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+          for (const entry of fileEntries) {
+            bus.emit({
+              type: "handler.load-failed",
+              source: "handler-loader",
+              owner: `agent:${agentName}`,
+              data: { handler: entry.name, agent: agentName, path: `${handlerDir}/${handlerFile}.(js|ts)`, error: msg },
+            });
+          }
+          continue;
+        }
+
+        try {
+          const mod = await importRuntimeModule<HandlerModule>(modulePath);
+          if (typeof mod.create !== "function") {
+            const msg = `Handler ${modulePath} does not export create()`;
+            result.errors.push(msg);
+            bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+            for (const entry of fileEntries) {
+              bus.emit({
+                type: "handler.load-failed",
+                source: "handler-loader",
+                owner: `agent:${agentName}`,
+                data: { handler: entry.name, agent: agentName, path: modulePath, error: msg },
+              });
+            }
+            continue;
+          }
+
+          for (const entry of fileEntries) {
+            cron.registerHandler(entry.name, createReloadableHandler(modulePath, ctx, entry));
+            result.registered.push(`${agentName}:${entry.name}`);
+            bus.emit({
+              type: "info",
+              message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (reloadable)`,
+            });
+          }
+        } catch (err) {
+          const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
+          result.errors.push(msg);
           bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
           for (const entry of fileEntries) {
             bus.emit({
@@ -126,105 +152,17 @@ export async function loadHandlersForAgentCrons(
               data: { handler: entry.name, agent: agentName, path: modulePath, error: msg },
             });
           }
-          continue;
-        }
-
-        for (const entry of fileEntries) {
-          cron.registerHandler(entry.name, createReloadableHandler(modulePath, ctx, entry));
-          registered.push(`${agentName}:${entry.name}`);
-          bus.emit({
-            type: "info",
-            message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (reloadable)`,
-          });
-        }
-      } catch (err) {
-        const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
-        errors.push(msg);
-        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
-        for (const entry of fileEntries) {
-          bus.emit({
-            type: "handler.load-failed",
-            source: "handler-loader",
-            owner: `agent:${agentName}`,
-            data: { handler: entry.name, agent: agentName, path: modulePath, error: msg },
-          });
         }
       }
+      return result;
     }
 
-    cron.setHandlerResolver(async (entryName: string, entry: CronEntry): Promise<boolean> => {
-      if (!entry.handler) return false;
-      const workflow = workflowHandler(entry);
-      if (workflow) {
-        cron.registerHandler(entryName, createWorkflowBackedHandler(workflowCtx, entry, workflow));
-        bus.emit({
-          type: "info",
-          message: `[handler] Dynamically registered ${agentName}:${entryName} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
-        });
-        return true;
-      }
-      if (typeof entry.handler !== "string") return false;
-
-      const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
-      const modulePath = resolveHandlerModule(handlerDir, entry.handler);
-      if (!modulePath) {
-        const loadMsg = `Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`;
-        bus.emit({
-          type: "info",
-          message: `[handler] ⚠️ ${loadMsg}`,
-        });
-        bus.emit({
-          type: "handler.load-failed",
-          source: "handler-loader",
-          owner: `agent:${agentName}`,
-          data: {
-            handler: entryName,
-            agent: agentName,
-            path: `${handlerDir}/${entry.handler}.(js|ts)`,
-            error: loadMsg,
-          },
-        });
-        return false;
-      }
-
-      try {
-        const mod = await importRuntimeModule<HandlerModule>(modulePath);
-        if (typeof mod.create !== "function") {
-          const createMsg = `Handler ${modulePath} does not export create() — cannot resolve "${entryName}"`;
-          bus.emit({
-            type: "info",
-            message: `[handler] ⚠️ ${createMsg}`,
-          });
-          bus.emit({
-            type: "handler.load-failed",
-            source: "handler-loader",
-            owner: `agent:${agentName}`,
-            data: { handler: entryName, agent: agentName, path: modulePath, error: createMsg },
-          });
-          return false;
-        }
-
-        cron.registerHandler(entryName, createReloadableHandler(modulePath, ctx, entry));
-        bus.emit({
-          type: "info",
-          message: `[handler] Dynamically registered ${agentName}:${entryName} → ${entry.handler}.ts (post-startup)`,
-        });
-        return true;
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        const dynMsg = `Failed to dynamically import handler for "${entryName}": ${errMsg}`;
-        bus.emit({
-          type: "info",
-          message: `[handler] ⚠️ ${dynMsg}`,
-        });
-        bus.emit({
-          type: "handler.load-failed",
-          source: "handler-loader",
-          owner: `agent:${agentName}`,
-          data: { handler: entryName, agent: agentName, path: modulePath, error: dynMsg },
-        });
-        return false;
-      }
+    const initial = await registerHandlers(handlersNeeded);
+    registered.push(...initial.registered);
+    errors.push(...initial.errors);
+    cron.setHandlerResolver(async (entryName, entry) => {
+      const result = await registerHandlers([{ ...entry, name: entryName }]);
+      return result.registered.length > 0;
     });
   }
 

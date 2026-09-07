@@ -20,6 +20,7 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
+import { createQueryService } from "../../lib/query-service.js";
 import {
   connectSocketEndpoint,
   daemonSocketPath,
@@ -3311,26 +3312,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleEvents(url: URL): Response {
     const db = _db();
-    const limit = parseInt(url.searchParams.get("limit") || "100", 10);
-    const owner = url.searchParams.get("owner");
-    const eventType = url.searchParams.get("type");
-    let query = "SELECT * FROM events";
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    if (owner) {
-      conditions.push("owner = ?");
-      params.push(owner);
-    }
-    if (eventType) {
-      conditions.push("event_type = ?");
-      params.push(eventType);
-    }
-    if (conditions.length) query += " WHERE " + conditions.join(" AND ");
-    query += " ORDER BY timestamp DESC LIMIT ?";
-    params.push(limit);
+    const query = createQueryService({ getDb: () => db });
     try {
-      const rows = db.prepare(query).all(...params);
-      return json(rows);
+      // Keep the legacy row-array shape; shared limits are 1..500, default 100.
+      return json(
+        query.events({
+          owner: url.searchParams.get("owner") || undefined,
+          type: url.searchParams.get("type") || undefined,
+          limit: parseInt(url.searchParams.get("limit") || "100", 10),
+        }).rows,
+      );
     } catch {
       return json([]); // table may not exist yet
     }
@@ -3338,24 +3329,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleEventDeliveryHealth(url: URL): Response {
     const db = _db();
+    const query = createQueryService({ getDb: () => db });
     const now = Date.now();
-    const lookbackMs = Math.max(
-      1,
-      Math.min(24 * 60 * 60_000, Number(url.searchParams.get("lookbackMs") || 6 * 60 * 60_000)),
-    );
+    const lookbackMs =
+      Math.max(1, Math.min(24 * 60 * 60_000, Number(url.searchParams.get("lookbackMs") || 6 * 60 * 60_000))) ||
+      6 * 60 * 60_000;
     const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || 25)));
     const since = now - lookbackMs;
-    const pendingTtlMs = 2 * 60_000;
-    const eventColumns = `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
-       delivery_status as deliveryStatus, accepted_by as acceptedBy,
-       accepted_at as acceptedAt, delivery_route as deliveryRoute,
-       delivery_note as deliveryNote, data`;
-    const pairColumns = `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
-       p.open_event_id as openEventId, p.close_event_id as closeEventId,
-       p.owner, p.status, p.opened_at as openedAt,
-       p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
-       p.note, e.event_type as openEventType, e.source as openEventSource,
-       e.data as openEventData`;
     try {
       const eventSchema = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: string }>;
       const eventColumnsSet = new Set(eventSchema.map((row) => row.name).filter(Boolean));
@@ -3375,60 +3355,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           overdueOpenPairs: [],
         });
       }
-      const unhandledEvents = db
-        .prepare(
-          `SELECT ${eventColumns}
-         FROM events
-         WHERE delivery_status = 'unhandled'
-           AND timestamp >= ?
-         ORDER BY timestamp DESC, id DESC
-         LIMIT ?`,
-        )
-        .all(since, limit);
-      const overduePendingEvents = db
-        .prepare(
-          `SELECT ${eventColumns}
-         FROM events
-         WHERE delivery_status = 'pending'
-           AND timestamp >= ?
-           AND timestamp + COALESCE(ttl_ms, ?) < ?
-         ORDER BY timestamp DESC, id DESC
-         LIMIT ?`,
-        )
-        .all(since, pendingTtlMs, now, limit);
-      const orphanPairs = db
-        .prepare(
-          `SELECT ${pairColumns}
-         FROM event_pair_runs p
-         LEFT JOIN events e ON e.id = p.open_event_id
-         WHERE p.status = 'orphan'
-           AND p.closed_at IS NULL
-           AND p.opened_at >= ?
-         ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`,
-        )
-        .all(since, limit);
-      const overdueOpenPairs = db
-        .prepare(
-          `SELECT ${pairColumns}
-         FROM event_pair_runs p
-         LEFT JOIN events e ON e.id = p.open_event_id
-         WHERE p.status = 'open'
-           AND p.opened_at >= ?
-           AND p.expected_close_at < ?
-         ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`,
-        )
-        .all(since, now, limit);
       return json({
-        now,
-        since,
+        ...query.eventDeliveryHealth({ now, lookbackMs, limit }),
         lookbackMs,
         schemaReady: true,
-        unhandledEvents,
-        overduePendingEvents,
-        orphanPairs,
-        overdueOpenPairs,
       });
     } catch (error) {
       return json({
