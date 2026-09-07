@@ -12,6 +12,7 @@ export type AppTaskCondition = {
     generation: number;
     resourceVersion: number;
   };
+  /** Historical rows may predate required owner and recovery-checkpoint admission. */
   spec: Omit<Condition, "id">;
   status: {
     observedGeneration: number;
@@ -96,6 +97,18 @@ export type AppTaskAttempt = {
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
+};
+
+/** Immutable terminal evidence that an operator cancelled one exact Task generation. */
+export type AppTaskCancellation = {
+  appId: string;
+  taskId: string;
+  generation: number;
+  resourceVersion: number;
+  outcome: string;
+  reason: string;
+  summary: string;
+  cancelledAt: string;
 };
 
 export type AppTaskTrigger = {

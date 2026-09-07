@@ -1,6 +1,4 @@
 import type { EventBus } from "./event-bus.js";
-import { existsSync, readFileSync } from "node:fs";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
@@ -8,6 +6,8 @@ import type { PersistedSession } from "../lib/persistence.js";
 import { recoverInstalledAppTasks } from "./app-task-runtime.js";
 import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
 import { activateAgentCrons } from "./cron-activation.js";
+import { getDb } from "../lib/requests.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 
 const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 
@@ -15,25 +15,20 @@ export interface CronRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   loaderOpts: AgentLoaderOptions;
+  /** Open Task controllers after the isolated recovery pass settles. */
+  onTaskRecoverySettled?: () => void;
 }
 
-function currentProjectLifecycle(appDir: string): string | null {
-  const paths = projectRuntimePaths(appDir);
-  if (!existsSync(paths.taskStatePath)) return null;
-  try {
-    const tree = JSON.parse(readFileSync(paths.taskStatePath, "utf8")) as {
-      project_lifecycle?: unknown;
-    };
-    return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : null;
-  } catch {
-    return null;
-  }
+function currentProjectLifecycle(projectId: string, persistDir?: string): "active" | "paused" | null {
+  if (!persistDir) return null;
+  return AppTaskResourceStore.activeFromDb(getDb(persistDir), projectId)?.projectLifecycle() ?? null;
 }
 
 export function shouldResumeStartupSession(
   _sessionId: string,
   session: PersistedSession,
-  projectsRoot = "/app/projects",
+  _projectsRoot = "/app/projects",
+  persistDir?: string,
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
@@ -56,11 +51,10 @@ export function shouldResumeStartupSession(
   }
   if (!session.projectId) return { resume: true };
 
-  const appDir = `${projectsRoot}/${session.projectId}.app`;
-  if (currentProjectLifecycle(appDir) === "paused") {
+  if (currentProjectLifecycle(session.projectId, persistDir) === "paused") {
     return {
       resume: false,
-      reason: `Project ${session.projectId} is paused in ${projectRuntimePaths(appDir).taskStatePath}`,
+      reason: `Project ${session.projectId} is paused in its canonical Task resources`,
     };
   }
 
@@ -70,10 +64,19 @@ export function shouldResumeStartupSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts } = options;
 
-  await recoverInstalledAppTasks(bus);
+  // Recovery is Task work. It must not hold startup, human admission, or the
+  // command interface open while it scans and repairs durable Task state.
+  void recoverInstalledAppTasks(bus)
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      log("warn", `[startup] Task recovery failed; bounded recovery will retry: ${message}`);
+      bus.emit({ type: "info", message: `[startup] Task recovery will retry: ${message}` });
+    })
+    .finally(() => options.onTaskRecoverySettled?.());
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
-    shouldResume: shouldResumeStartupSession,
+    shouldResume: (sessionId, session) =>
+      shouldResumeStartupSession(sessionId, session, options.loaderOpts.projectsRoot, options.loaderOpts.persistDir),
   });
   const orphansCleaned: typeof interrupted = [];
   const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });

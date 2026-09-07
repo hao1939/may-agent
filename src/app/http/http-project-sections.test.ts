@@ -91,7 +91,7 @@ describe("project task projection read model", () => {
           },
         },
       },
-      { path: "projects/sample", treePath: ".state/tasks/tree.json" },
+      { path: "projects/sample" },
     );
 
     expect(result).toMatchObject({
@@ -131,7 +131,7 @@ describe("project task projection read model", () => {
           },
         },
       },
-      { path: "projects/sample", treePath: ".state/tasks/tree.json" },
+      { path: "projects/sample" },
     );
 
     expect(result).toMatchObject({

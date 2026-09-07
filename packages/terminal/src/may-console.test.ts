@@ -103,6 +103,14 @@ describe("May Console", () => {
                       metadata: { topicId: "topic_0df0c0edbf95b5bbc5c87598" },
                       createdAt: 2,
                     },
+                    {
+                      id: "command:history",
+                      sequence: 3,
+                      author: { kind: "command", id: "may-console" },
+                      text: "Historical command output that must stay hidden",
+                      metadata: { channel: "may-console", command: "/tasks" },
+                      createdAt: 3,
+                    },
                     ...remoteConversationMessages,
                   ],
                 },
@@ -260,7 +268,9 @@ describe("May Console", () => {
             frame.event?.type === "conversation.message.created" &&
             frame.event?.data?.author?.kind === "human"
           ) {
-            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: frame.type, eventId: 42, delivery: "accepted" })}\n`,
+            );
             socket.write(
               `${JSON.stringify({
                 type: "text",
@@ -328,6 +338,7 @@ describe("May Console", () => {
     expect(output.split("\n").filter((line) => line.startsWith("     detail")).length).toBeGreaterThan(1);
     expect(frames.some((frame) => frame.type === "status")).toBe(false);
     expect(output).not.toContain("Active work:");
+    expect(output).not.toContain("Historical command output that must stay hidden");
     expect(frames.find((frame) => frame.type === "subscribe")).toMatchObject({
       sessions: [],
       conversations: ["may:primary"],
@@ -529,6 +540,7 @@ describe("May Console", () => {
 
     child.stdin.write("please keep the compatibility alias\n");
     await waitFor(() => humanFrames().length === 1);
+    await waitFor(() => output.includes("[may] Working on your request…"));
     const input = humanFrames()[0];
     expect(input).toMatchObject({
       event: {
@@ -734,7 +746,7 @@ describe("May Console", () => {
     await once(child, "exit");
   }, 10_000);
 
-  test("queues early input until the initial Conversation view arrives", async () => {
+  test("publishes early input without waiting for the initial Conversation view", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-early-input-"));
     const instance = "test";
     const socketDir = join(root, "instances", instance);
@@ -748,7 +760,20 @@ describe("May Console", () => {
       id: "may:primary",
       owner: "may",
       version: 1,
-      messages: [],
+      messages: [
+        {
+          id: "historical-task-assignment",
+          sequence: 1,
+          author: { kind: "tool", id: "runtime" },
+          text: "Accepted durable work: old review",
+          metadata: {
+            command: "task-admitted",
+            taskRefs: [{ appId: "evaluation", taskId: "old/review", ref: "deadbeef" }],
+            followTask: { appId: "evaluation", taskId: "old/review" },
+          },
+          createdAt: 1,
+        },
+      ],
     };
     const server: Server = createServer((socket) => {
       client = socket;
@@ -787,19 +812,13 @@ describe("May Console", () => {
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
-    child.stdin.write("hello\n");
     await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
     expect(frames.filter((frame) => frame.type === "app.conversation.get")).toHaveLength(1);
-    await waitFor(() => output.includes("[waiting for May; input queued]"));
-    expect(output).toContain("[waiting for May; input queued]");
 
-    client?.write(
-      `${JSON.stringify({
-        type: "ok",
-        command: "app.conversation.get",
-        conversation,
-      })}\n`,
-    );
+    child.stdin.write("/apps gym\n");
+    await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
+
+    child.stdin.write("hello\n");
     await waitFor(() =>
       frames.some(
         (frame) =>
@@ -808,6 +827,236 @@ describe("May Console", () => {
           frame.event?.data?.text === "hello",
       ),
     );
+    expect(output).not.toContain("input queued");
+
+    client?.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "app.conversation.get",
+        conversation,
+      })}\n`,
+    );
+    await Bun.sleep(25);
+    expect(frames.some((frame) => frame.type === "task.get" && frame.taskId === "old/review")).toBe(false);
+    expect(
+      frames.filter(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello",
+      ),
+    ).toHaveLength(1);
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
+  test("runs disconnected read commands without waiting for Conversation startup", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-disconnected-commands-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const frames: Array<Record<string, any>> = [];
+    let client: Socket | null = null;
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      let inputBuffer = "";
+      socket.on("data", (chunk) => {
+        inputBuffer += chunk.toString();
+        const lines = inputBuffer.split("\n");
+        inputBuffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "apps.list") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "apps.list",
+                apps: [
+                  {
+                    id: frame.appId,
+                    owner: "gym",
+                    description: "Evaluates behavior",
+                    activeTasks: 0,
+                    runningTasks: 0,
+                    waitingTasks: 0,
+                    attentionTasks: 0,
+                  },
+                ],
+              })}\n`,
+            );
+          } else if (frame.type === "tasks.list") {
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+            );
+          } else if (frame.type !== "app.conversation.get") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type })}\n`);
+          }
+        }
+      });
+    });
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    child.stdin.write("/apps gym\n/tasks\nhello\n/reload\n");
+    await Bun.sleep(25);
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
+    await waitFor(() =>
+      frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly),
+    );
+    expect(frames.findIndex((frame) => frame.type === "apps.list")).toBeLessThan(
+      frames.findIndex((frame) => frame.type === "tasks.list" && !frame.humanActionOnly),
+    );
+    expect(
+      frames.filter(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.author?.kind === "human" &&
+          frame.event?.data?.text === "hello",
+      ),
+    ).toHaveLength(1);
+    expect(
+      frames.find(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello",
+      )?.event?.data?.context?.focusedApp,
+    ).toBe("gym");
+    await waitFor(() =>
+      frames.some((frame) => frame.type === "publish" && frame.event?.type === "runtime.reload.requested"),
+    );
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
+  test("uses App context immediately while selection validation remains asynchronous", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-app-selection-"));
+    const instance = "test";
+    const socketDir = join(root, "instances", instance);
+    const socketPath = join(socketDir, "may.sock");
+    mkdirSync(socketDir, { recursive: true });
+
+    const frames: Array<Record<string, any>> = [];
+    const appReads: Array<{ frame: Record<string, any>; socket: Socket }> = [];
+    let client: Socket | null = null;
+    const server: Server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      let inputBuffer = "";
+      socket.on("data", (chunk) => {
+        inputBuffer += chunk.toString();
+        const lines = inputBuffer.split("\n");
+        inputBuffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "app.conversation.get") {
+            socket.write(
+              `${JSON.stringify({
+                type: "ok",
+                command: "app.conversation.get",
+                conversation: { id: "may:primary", owner: "may", version: 1, topics: [], messages: [] },
+              })}\n`,
+            );
+          } else if (frame.type === "apps.list") {
+            appReads.push({ frame, socket });
+          } else if (frame.type === "tasks.list") {
+            socket.write(
+              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+            );
+          } else {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(socketPath);
+    await once(server, "listening");
+
+    const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+    const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
+      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => output.includes("you[may]>"));
+    child.stdin.write("/apps gym\n/tasks\nhello\n/apps evaluation\n/tasks\n");
+
+    await waitFor(
+      () =>
+        appReads.length === 2 &&
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly) &&
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly),
+    );
+    expect(
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "hello" &&
+          frame.event?.data?.context?.focusedApp === "gym",
+      ),
+    ).toBe(true);
+    expect(output).toContain("[apps] Selecting gym…");
+    expect(output).toContain("you[gym]>");
+    expect(output).toContain("you[evaluation]>");
+    expect(output).not.toContain("[waiting for daemon; command queued]");
+
+    // The older validation is stale and must not move the Console away from
+    // the more recent local selection.
+    appReads[0].socket.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "apps.list",
+        apps: [{ id: "gym", description: "Evaluates behavior", activeTasks: 0 }],
+      })}\n`,
+    );
+    appReads[1].socket.write(
+      `${JSON.stringify({
+        type: "ok",
+        command: "apps.list",
+        apps: [{ id: "evaluation", description: "Reviews behavior", activeTasks: 0 }],
+      })}\n`,
+    );
+    await waitFor(() => output.includes("Selected App: evaluation"));
+    expect(output).not.toContain("Selected App: gym");
+
+    child.stdin.write("/apps missing\n");
+    await waitFor(() => appReads.length === 3 && output.includes("you[missing]>"));
+    appReads[2].socket.write(`${JSON.stringify({ type: "ok", command: "apps.list", apps: [] })}\n`);
+    await waitFor(() => output.includes("App missing was not found; restored evaluation."));
+    expect(output).toContain("you[evaluation]>");
 
     child.stdin.write("/exit\n");
     await once(child, "exit");

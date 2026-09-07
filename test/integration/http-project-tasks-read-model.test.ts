@@ -1,5 +1,21 @@
-import { describe, expect, it } from "bun:test";
-import { buildProjectTasksReadModel, normalizeAppTaskPhase } from "../../src/app/http/server.js";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  buildProjectTasksReadModel,
+  normalizeAppTaskPhase,
+  readProjectTaskProjection,
+} from "../../src/app/http/server.js";
+import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
+import type { AppTaskResource } from "../../src/app/app-task-state.js";
+import { openDatabase } from "../../src/lib/db.js";
+
+const roots: string[] = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 function group(children: string[]) {
   return { item_type: "group", id: "project", parent_id: null, children };
@@ -54,6 +70,50 @@ function projection(items: Record<string, unknown>, extra: Record<string, unknow
 }
 
 describe("project task read model", () => {
+  it("reads current Task resources without consulting a legacy projection", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-http-task-resources-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "may.db"));
+    const store = AppTaskResourceStore.fromDb(db, "example");
+    const current: AppTaskResource = {
+      metadata: { id: "current", generation: 1, resourceVersion: 1 },
+      spec: {
+        parentId: "project",
+        outcome: "Current resource",
+        acceptance: ["Current resource is visible"],
+        mode: "achieve",
+      },
+      status: { observedGeneration: 0, phase: "pending", updatedAt: "2026-08-27T00:00:00.000Z" },
+    };
+    store.bootstrapSnapshot(
+      {
+        project: "example",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        groups: { project: { id: "project", parent_id: null } },
+        resources: { current },
+        tasks: {},
+      },
+      "seed:test",
+    );
+    store.setConfiguredMaxConcurrent(4);
+    const result = readProjectTaskProjection(db, "example");
+
+    expect(result?.max_concurrent).toBe(4);
+    expect(result?.tasks.current).toMatchObject({ outcome: "Current resource", phase: "pending" });
+    db.close();
+  });
+
+  it("returns no Task projection without resource authority", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-http-task-legacy-"));
+    roots.push(root);
+    const db = openDatabase(join(root, "may.db"));
+    AppTaskResourceStore.fromDb(db, "schema");
+    expect(readProjectTaskProjection(db, "example")).toBeNull();
+    expect(readProjectTaskProjection(db, "missing")).toBeNull();
+    db.close();
+  });
+
   it("accepts only canonical task phases", () => {
     expect(normalizeAppTaskPhase({ phase: "pending" })).toBe("pending");
     expect(normalizeAppTaskPhase({ phase: "attention" })).toBe("attention");
@@ -83,7 +143,6 @@ describe("project task read model", () => {
       }),
       {
         path: "projects/example",
-        treePath: ".state/tasks/tree.json",
         measuredAt: "2026-07-20T01:00:00.000Z",
         project: { id: "example", owner: "owner", posture: "active" },
       },
@@ -120,10 +179,10 @@ describe("project task read model", () => {
         root_task_id: "missing",
         tasks: { project: { id: "project", state: "backlog", children: [7] } },
       },
-      { path: "projects/example", treePath: ".state/tasks/tree.json" },
+      { path: "projects/example" },
     );
 
-    expect(model).toMatchObject({ available: false, reason: "Task tree is malformed." });
+    expect(model).toMatchObject({ available: false, reason: "Task projection is malformed." });
     expect(model.errors).toEqual(
       expect.arrayContaining([
         "schema_version: expected 2",
@@ -138,11 +197,11 @@ describe("project task read model", () => {
     expect(
       buildProjectTasksReadModel(
         { schema_version: 2, root_task_id: "project" },
-        { path: "projects/example", treePath: ".state/tasks/tree.json" },
+        { path: "projects/example" },
       ),
     ).toMatchObject({
       available: false,
-      reason: "Task tree is malformed.",
+      reason: "Task projection is malformed.",
       errors: ["tasks: missing task map"],
     });
   });

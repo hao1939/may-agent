@@ -13,14 +13,37 @@ import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } 
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 import type { HostCapacity } from "./host-capacity.js";
-import { createCodexGoalExecutor } from "./codex-goal-executor.js";
+import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
+import { getDb } from "../lib/requests.js";
+
+function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
+  return Boolean(
+    getDb(persistDir)
+      .prepare(
+        `SELECT 1
+         FROM app_tasks task
+         WHERE json_extract(task.resource_json, '$.spec.executor') = 'codex-goal-poc'
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancellation
+             WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
+           )
+           AND (
+             task.phase <> 'converged'
+             OR json_extract(task.resource_json, '$.spec.mode') = 'maintain'
+           )
+         LIMIT 1`,
+      )
+      .get(),
+  );
+}
+
+export const daemonAgentInternals = { hasRetainedCodexGoalTrialTask };
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
   sharedRoot: string;
   definitionSharedRoot: string;
   projectsRoot: string;
-  stateProjectsRoot: string;
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -29,6 +52,13 @@ export async function prepareDaemonAgents(opts: {
   cronEnabled: boolean;
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
+  /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
+  taskRuntimeMode?: "controllers" | "manual" | "none";
+  executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
+  executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
+  taskAppIds?: readonly string[];
+  syncTaskReadModels?: boolean;
+  agentNames?: readonly string[];
 }): Promise<{
   loaderOpts: AgentLoaderOptions;
   appTaskOptions?: AppTaskRuntimeOptions;
@@ -45,6 +75,7 @@ export async function prepareDaemonAgents(opts: {
     manager: opts.manager,
     bus: opts.bus,
     cronEnabled: opts.cronEnabled,
+    ...(opts.agentNames ? { agentNames: opts.agentNames } : {}),
   };
 
   const loadResult = await loadAgents(loaderOpts);
@@ -138,7 +169,8 @@ export async function prepareDaemonAgents(opts: {
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
   let startAppTaskControllers = () => {};
-  if (opts.cronEnabled) {
+  const taskRuntimeMode = opts.taskRuntimeMode ?? (opts.cronEnabled ? "controllers" : "none");
+  if (taskRuntimeMode !== "none") {
     let started = false;
     let openStartGate = () => {};
     const startAfter = new Promise<void>((resolve) => {
@@ -149,30 +181,44 @@ export async function prepareDaemonAgents(opts: {
       started = true;
       openStartGate();
     };
+    const codexGoalStateFile = join(opts.persistDir, "codex-goal-bindings.json");
+    const bindingMigration = migrateCodexGoalBindingFile({
+      legacyPath: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+      currentPath: codexGoalStateFile,
+    });
+    if (bindingMigration.migrated) {
+      opts.bus.emit({
+        type: "info",
+        message: `[app-task] Migrated ${bindingMigration.bindings} Codex goal binding(s) to ${codexGoalStateFile}`,
+      });
+    }
+    const retainTrialExecutorAlias = hasRetainedCodexGoalTrialTask(opts.persistDir);
     const codexGoalExecutor = createCodexGoalExecutor({
-      stateFile: join(opts.persistDir, "codex-goal-poc-bindings.json"),
+      stateFile: codexGoalStateFile,
       command: process.env.MAY_CODEX_GOAL_COMMAND,
       executorName: "codex-goal",
     });
     appTaskOptions = {
       projectsRoot: opts.projectsRoot,
-      stateProjectsRoot: opts.stateProjectsRoot,
       projectRoot: opts.projectRoot,
       persistDir: opts.persistDir,
       agentsRoot: opts.agentsRoot,
-      sharedRoot: opts.sharedRoot,
+      sharedRoot: opts.definitionSharedRoot,
       manager: opts.manager,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
+      ...(opts.executeTaskAttempt ? { executeAttempt: opts.executeTaskAttempt } : {}),
+      ...(opts.executeTaskRecovery ? { executeRecovery: opts.executeTaskRecovery } : {}),
+      ...(opts.taskAppIds ? { taskAppIds: opts.taskAppIds } : {}),
+      syncReadModels: opts.syncTaskReadModels !== false,
+      installControllers: taskRuntimeMode === "controllers",
       executors: {
         "codex-goal": codexGoalExecutor,
-        // Existing trial Tasks keep their durable executor name through the
-        // rollout; new Evaluation work uses the production name above.
-        "codex-goal-poc": codexGoalExecutor,
+        ...(retainTrialExecutorAlias ? { "codex-goal-poc": codexGoalExecutor } : {}),
       },
       registerLocalAgent,
       appRegistry: opts.appRegistry,
-      startAfter,
+      ...(taskRuntimeMode === "controllers" ? { startAfter } : {}),
     };
 
     // Publish definitions and gated controllers now. Recovery is activated

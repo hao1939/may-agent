@@ -1,11 +1,11 @@
 /**
- * message-tool.ts — v2 unified inter-agent communication primitive.
+ * message-tool.ts — inter-agent communication primitive.
  *
  * The `message` tool replaces notify-style inbox messages and the removed
  * agents.message action. It does not replace agents.fork, which still starts an
  * immediate background session.
  *
- * Semantics (v2):
+ * Semantics:
  *   - async, persisted, receiver-owned, never blocking RPC.
  *   - default: queue for the receiver's next heartbeat (no immediate session).
  *   - priority P0 + receiver opt-in: trigger heartbeat immediately.
@@ -17,8 +17,6 @@
  *   - Emits a single `message.created` event. The `events` table row carries
  *     `event_type='message.created'` and canonical `owner='agent:<recipient>'`
  *     or `owner='human:<role>'`, which is what inbox queries read.
- *
- * See: shared/may-agent-docs/proposals/v2-architecture.md (Messages)
  */
 
 import { existsSync } from "node:fs";

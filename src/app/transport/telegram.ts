@@ -30,6 +30,7 @@ import {
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
 import type { HumanAppView, HumanTaskService, HumanTaskView } from "../human-task-service.js";
+import { taskCancelRequestedEvent } from "../task-control-events.js";
 
 const TASK_PAGE_SIZE = 10;
 const TODO_PAGE_SIZE = 50;
@@ -46,7 +47,7 @@ export interface TelegramBotOptions {
   persistDir?: string;
   bus: EventBus;
   interfaceAgent: string;
-  humanTasks: HumanTaskService;
+  humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
   publishEvent: (input: EventInput) => EventReceipt;
 }
 
@@ -153,6 +154,8 @@ function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): s
       return "waiting";
     case "attention":
       return task.humanAction ? "needs you" : "needs review";
+    case "up-to-date":
+      return "up to date";
     case "done":
       return "done";
     case "cancelled":
@@ -174,6 +177,8 @@ function currentTaskText(task: HumanTaskView): string {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
+    case "up-to-date":
+      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
@@ -183,6 +188,11 @@ function currentTaskText(task: HumanTaskView): string {
 
 function humanActionText(task: HumanTaskView): string {
   return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
+}
+
+function humanActionLine(task: HumanTaskView): string {
+  const owner = task.humanAction?.task;
+  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${humanActionText(task)}` : humanActionText(task);
 }
 
 function elapsedText(value: number): string {
@@ -243,7 +253,7 @@ export function renderTelegramTask(task: HumanTaskView): string {
       ? acceptance.map((item) => `• ${item}`)
       : ["No separate completion criteria were recorded."]),
     "",
-    `You\n${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`,
+    `You\n${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`,
     ...(task.requestedBy
       ? ["", `Related\nRequested by ${task.requestedBy.ref} · ${task.requestedBy.appId}\n${task.requestedBy.outcome}`]
       : []),
@@ -436,7 +446,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
   let conversationSyncRunning = false;
   let conversationSyncDirty = false;
-  let conversationSyncScheduled = false;
+  let conversationSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function syncConversation(): Promise<void> {
     const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
@@ -481,14 +491,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       conversationSyncDirty = true;
       return;
     }
-    if (conversationSyncScheduled) return;
-    conversationSyncScheduled = true;
+    if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
     // EventBus listeners drain a bounded FIFO asynchronously. Defer the read
     // by one turn so a burst of wake-only events collapses before touching the
     // Conversation resource. An update observed during I/O still requests one
     // dirty retry below.
-    setImmediate(() => {
-      conversationSyncScheduled = false;
+    conversationSyncTimer = setTimeout(() => {
+      conversationSyncTimer = null;
       if (!running) return;
       if (conversationSyncRunning) {
         conversationSyncDirty = true;
@@ -509,7 +518,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             queueConversationSync();
           }
         });
-    });
+    }, 5);
   }
 
   async function refreshWatch(surface: string): Promise<void> {
@@ -550,10 +559,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   function queueWatchRefresh(surface: string): void {
     if (!running || scheduledWatches.has(surface)) return;
     scheduledWatches.add(surface);
-    setImmediate(() => {
+    setTimeout(() => {
       scheduledWatches.delete(surface);
       if (running && watchedTasks.has(surface)) void refreshWatch(surface);
-    });
+    }, 0);
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
@@ -613,7 +622,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   function queueTodoRefresh(surface: string): void {
     if (!running || scheduledTodos.has(surface)) return;
     scheduledTodos.add(surface);
-    setImmediate(() => {
+    setTimeout(() => {
       scheduledTodos.delete(surface);
       if (running) {
         void refreshTodos(surface).catch((error) => {
@@ -623,7 +632,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           });
         });
       }
-    });
+    }, 0);
   }
 
   const unsubscribeConversation = bus.listen(
@@ -1142,15 +1151,23 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       try {
-        const task = opts.humanTasks.cancelTask(
+        const selected = opts.humanTasks.getTask(
           rest[0]
-            ? { ref: rest[0], reason: "human requested cancellation from Telegram" }
+            ? { ref: rest[0] }
             : {
                 appId: watched!.appId,
                 taskId: watched!.taskId,
-                reason: "human requested cancellation from Telegram",
               },
         );
+        if (!selected) throw new Error("Task was not found");
+        const receipt = opts.publishEvent(
+          taskCancelRequestedEvent(selected, "human requested cancellation from Telegram"),
+        );
+        if (receipt.delivery !== "accepted") {
+          throw new Error("Task cancellation was recorded but not accepted; refresh the Task and retry");
+        }
+        const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
+        if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
         await deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task));
       } catch (error) {
@@ -1286,6 +1303,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
+      if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
       unsubscribeConversation();
     },
   };

@@ -2,13 +2,9 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  claimObservedAppTask,
-  completeAppTask,
-  observeAppTaskIntent,
-  taskReconciliationConfig,
-} from "./app-task-reconciler.js";
+import { claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "./app-task-reconciler.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
 
 const roots: string[] = [];
 
@@ -22,12 +18,17 @@ function fixture() {
     `${JSON.stringify({
       root_task_id: "root",
       groups: {
-        root: { id: "root", parent_id: null, state: "backlog", owner: "app-owner", children: ["operations"] },
-        operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+        root: { id: "root", parent_id: null, owner: "app-owner" },
+        operations: { id: "operations", parent_id: "root" },
       },
     })}\n`,
   );
-  return taskReconciliationConfig({ appDir, projectDir: appDir, owner: "app-owner", maxConcurrent: 1 });
+  return appTaskTestContext({
+    appDir,
+    agent: "app-owner",
+    maxConcurrent: 1,
+    databasePath: join(root, "host.sqlite"),
+  });
 }
 
 afterEach(() => {

@@ -9,6 +9,14 @@ import { EventBus } from "../../src/app/event-bus.js";
 import { attachDaemonInfoLog } from "../../src/app/transport/daemon-info-log.js";
 import { addLogSubscriber } from "../../src/lib/log.js";
 
+async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for daemon info log delivery");
+    await Bun.sleep(5);
+  }
+}
+
 describe("attachDaemonInfoLog", () => {
   let captured: Array<{ level: string; message: string }>;
   let detach: () => void;
@@ -29,7 +37,7 @@ describe("attachDaemonInfoLog", () => {
     attachDaemonInfoLog(bus);
     bus.emit({ type: "info", message: "[reload] 1 updated (may)" });
     bus.emit({ type: "info", message: "[telegram] Bot enabled (1 chat)" });
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await waitFor(() => captured.filter((entry) => entry.level === "info").length === 2);
     const infos = captured.filter((c) => c.level === "info");
     expect(infos.map((c) => c.message)).toEqual(["[reload] 1 updated (may)", "[telegram] Bot enabled (1 chat)"]);
   });
@@ -67,7 +75,7 @@ describe("attachDaemonInfoLog", () => {
     attachDaemonInfoLog(bus);
     bus.emit({ type: "info", message: "hello" });
     expect(other).toEqual(["hello"]);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await waitFor(() => captured.some((entry) => entry.level === "info"));
     expect(captured.filter((c) => c.level === "info").map((c) => c.message)).toEqual(["hello"]);
   });
 });

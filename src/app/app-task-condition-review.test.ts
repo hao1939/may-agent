@@ -1,14 +1,14 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { readTaskState, saveTaskState } from "./app-task-store.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
+import { readTaskSnapshot } from "./app-task-store.js";
 import {
   claimObservedAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
-  taskReconciliationConfig,
+  recordAppTaskTrigger,
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
@@ -45,11 +45,11 @@ function fixture() {
       2,
     )}\n`,
   );
-  return taskReconciliationConfig({
+  return appTaskTestContext({
     appDir,
-    projectDir: appDir,
-    owner: "app-owner",
+    agent: "app-owner",
     maxConcurrent: 1,
+    databasePath: join(root, "host.sqlite"),
   });
 }
 
@@ -64,44 +64,116 @@ function claim(config: ReturnType<typeof fixture>) {
   return result;
 }
 
+function makeConditionReviewDue(config: ReturnType<typeof fixture>, conditionId: string): void {
+  const tree = config.resourceStore.readTaskContext({ taskIds: ["human-request"] });
+  const resource = tree.resources?.["human-request"];
+  const condition = tree.conditions?.[conditionId];
+  if (!resource || !condition) throw new Error("expected resource-backed Condition fixture");
+  condition.status.observedAt = new Date(Date.now() - 120_000).toISOString();
+  condition.metadata.resourceVersion += 1;
+  expect(
+    config.resourceStore.commit({
+      fences: [
+        {
+          taskId: resource.metadata.id,
+          resourceVersion: resource.metadata.resourceVersion,
+          generation: resource.metadata.generation,
+        },
+      ],
+      conditions: [condition],
+    }),
+  ).toBe(true);
+  expect(config.resourceStore.setRecoveryState(resource.metadata.id, { nextCheckAt: Date.now() - 1 })).toBe(true);
+}
+
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
 describe("App task Condition review checkpoint", () => {
-  it("preserves a future Condition deadline when duplicate claims find the Task waiting", () => {
-    const legacyConfig = fixture();
-    const store = AppTaskResourceStore.openStandalone(join(legacyConfig.appDir, "host.sqlite"), "sample");
-    store.bootstrapSnapshot(readTaskState(legacyConfig), "seed:duplicate-wait");
-    const config = taskReconciliationConfig({
-      appDir: legacyConfig.appDir,
-      projectDir: legacyConfig.projectDir,
-      agent: "app-owner",
-      maxConcurrent: 1,
-      resourceStore: store,
+  it("does not acknowledge a newer wake admitted after the waiting snapshot was read", () => {
+    const config = fixture();
+    const store = config.resourceStore;
+    deferAppTask(config, claim(config), {
+      disposition: "waiting",
+      summary: "Wait for external review",
+      evidence: [],
+      conditions: [
+        {
+          id: "external-review",
+          type: "review.completed",
+          subject: "task:review",
+          expected: "done",
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
     });
+    const readContext = store.readTaskContext.bind(store);
+    const read = spyOn(store, "readTaskContext").mockImplementationOnce((...args) => {
+      const snapshot = readContext(...args);
+      // Deterministically interleave a second writer between read and acknowledgment.
+      recordAppTaskTrigger(config, "human-request", {
+        type: "review.updated",
+        overrideWait: true,
+        data: { revision: 2 },
+      });
+      return snapshot;
+    });
+    try {
+      expect(
+        claimObservedAppTask(config, {
+          taskId: "human-request",
+          appAgent: "app-owner",
+          handler: "agent",
+        }).kind,
+      ).toBe("waiting");
+      expect(store.listRecoveryCandidates().items).toContainEqual(
+        expect.objectContaining({ taskId: "human-request", ready: true }),
+      );
+      expect(claim(config).trigger).toMatchObject({ type: "review.updated" });
+    } finally {
+      read.mockRestore();
+      store.close();
+    }
+  });
+
+  it("preserves a future Condition deadline when duplicate claims find the Task waiting", () => {
+    const config = fixture();
+    const store = config.resourceStore;
     try {
       deferAppTask(config, claim(config), {
         disposition: "waiting",
         summary: "Wait for an exact capability or its fallback review",
         evidence: [],
-        conditions: [{
-          id: "capability-ready", type: "credential.state", subject: "credential:pilot",
-          expected: { field: "state", equals: "ready" }, reviewAfterMs: 60_000,
-        }],
+        conditions: [
+          {
+            id: "capability-ready",
+            type: "credential.state",
+            subject: "credential:pilot",
+            expected: { field: "state", equals: "ready" },
+            owner: "human",
+            reviewAfterMs: 60_000,
+          },
+        ],
       });
       const due = store.nextDueAt();
       expect(due).toBeGreaterThan(Date.now());
       for (let index = 0; index < 3; index += 1) {
-        expect(claimObservedAppTask(config, {
-          taskId: "human-request", appAgent: "app-owner", handler: "agent",
-        })).toMatchObject({ kind: "waiting", conditionIds: ["capability-ready"] });
+        expect(
+          claimObservedAppTask(config, {
+            taskId: "human-request",
+            appAgent: "app-owner",
+            handler: "agent",
+          }),
+        ).toMatchObject({ kind: "waiting", conditionIds: ["capability-ready"] });
         expect(store.nextDueAt()).toBe(due);
       }
-      expect(Object.keys(readTaskState(config).attempts ?? {})).toHaveLength(1);
-      expect(store.listRecoveryCandidates(due! + 1).items.map(({ taskId }) => taskId))
-        .toContain("human-request");
-    } finally { store.close(); }
+      expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
+      expect(store.listRecoveryCandidates(due! + 1).items.map(({ taskId }) => taskId)).toContain("human-request");
+    } finally {
+      store.close();
+    }
   });
 
   it("wakes the same task owner after a declared checkpoint is missed", () => {
@@ -111,6 +183,7 @@ describe("App task Condition review checkpoint", () => {
       type: "review.completed",
       subject: "task:external-review",
       expected: "done",
+      owner: "app:external-review",
       reviewAfterMs: 60_000,
     };
 
@@ -130,13 +203,11 @@ describe("App task Condition review checkpoint", () => {
       }).kind,
     ).toBe("waiting");
 
-    const stale = readTaskState(config);
-    stale.conditions![condition.id]!.status.observedAt = new Date(Date.now() - 120_000).toISOString();
-    saveTaskState(config, stale);
+    makeConditionReviewDue(config, condition.id);
 
     expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
     const review = claim(config);
-    expect(readTaskState(config).attempts?.[review.attemptId]?.reason).toBe("condition-review-checkpoint-missed");
+    expect(readTaskSnapshot(config).attempts?.[review.attemptId]?.reason).toBe("condition-review-checkpoint-missed");
     expect(review.trigger).toMatchObject({
       type: "project.task.condition-review.missed",
       data: {
@@ -154,13 +225,14 @@ describe("App task Condition review checkpoint", () => {
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 
-  it("preserves the App's checkpoint after three unchanged reviews", () => {
+  it("keeps an unchanged checkpoint recoverable after repeated owner reviews", () => {
     const config = fixture();
     const condition = {
       id: "external-review-finished",
       type: "review.completed",
       subject: "task:external-review",
       expected: "done",
+      owner: "app:external-review",
       reviewAfterMs: 60_000,
     };
 
@@ -172,9 +244,7 @@ describe("App task Condition review checkpoint", () => {
     });
 
     for (let reviewAttempt = 1; reviewAttempt <= 3; reviewAttempt += 1) {
-      const stale = readTaskState(config);
-      stale.conditions![condition.id]!.status.observedAt = new Date(Date.now() - 120_000).toISOString();
-      saveTaskState(config, stale);
+      makeConditionReviewDue(config, condition.id);
 
       const review = claim(config);
       expect(review.trigger).toMatchObject({
@@ -193,25 +263,15 @@ describe("App task Condition review checkpoint", () => {
       });
     }
 
-    const state = readTaskState(config);
+    const state = readTaskSnapshot(config);
     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
+    expect(config.resourceStore.nextDueAt()).not.toBeNull();
   });
 
-  it("clears a consumed stale due index when the Condition remains event-driven", () => {
-    const legacyConfig = fixture();
-    const store = AppTaskResourceStore.openStandalone(
-      join(legacyConfig.appDir, ".state", "resource-store.sqlite"),
-      "sample",
-    );
-    store.bootstrapSnapshot(readTaskState(legacyConfig), "seed:test");
-    const config = taskReconciliationConfig({
-      appDir: legacyConfig.appDir,
-      projectDir: legacyConfig.projectDir,
-      owner: legacyConfig.worker,
-      maxConcurrent: legacyConfig.maxConcurrent,
-      resourceStore: store,
-    });
+  it("replaces an obsolete recovery date with the declared review checkpoint", () => {
+    const config = fixture();
+    const store = config.resourceStore;
 
     deferAppTask(config, claim(config), {
       disposition: "waiting",
@@ -223,6 +283,8 @@ describe("App task Condition review checkpoint", () => {
           type: "approval.submitted",
           subject: "approval:may-ground-truth",
           expected: { field: "status", equals: "submitted" },
+          owner: "human:operator",
+          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -241,7 +303,7 @@ describe("App task Condition review checkpoint", () => {
       }),
     ).toMatchObject({ kind: "waiting", conditionIds: ["approval-submitted"] });
     expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain("human-request");
-    expect(store.nextDueAt()).toBeNull();
+    expect(store.nextDueAt()).toBeGreaterThan(Date.now());
     store.close();
   });
 });

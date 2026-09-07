@@ -229,7 +229,7 @@ export type AppRequestDecision = {
   response?: string;
   evidence?: string[];
   topic: AppRequestTopicDecision;
-  /** Persist one event for the App's standing follow-up Task; the request then completes. */
+  /** Admit one responsible Task directly and link it to the chosen Topic; the request then completes. */
   followUp?: AppRequestFollowUp;
   /** Exact existing Task input or genuinely new App work selected by the model. */
   dependencies?: AppRequestDependency[];
