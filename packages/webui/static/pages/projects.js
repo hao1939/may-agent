@@ -299,6 +299,7 @@ function switchProjectTab(btn, tab) {
 async function loadProjectTab(tab) {
   const el = document.getElementById('project-tab-content');
   if (!el) return;
+  el.dataset.projectTab = tab;
   try {
     el.classList.remove('md-rendered');
     if (tab === 'project') {

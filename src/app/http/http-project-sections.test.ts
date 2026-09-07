@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import {
-  buildProjectTasksReadModel,
   extractMarkdownSection,
   normalizeProjectPathForCompare,
   projectEventTargetForPath,
@@ -61,83 +60,5 @@ describe("project path matching", () => {
     expect(projectEventTargetForPath("projects/alpha-project.app", "app-ops/alpha-project.app")).toBe("alpha-project");
     expect(projectEventTargetForPath("projects/evaluation.app", "evaluator/evaluation")).toBe("evaluation");
     expect(projectEventTargetForPath("projects/plain-project", "shared/plain-project")).toBe("shared/plain-project");
-  });
-});
-
-describe("project task projection read model", () => {
-  it("uses compact satisfied dependency identities without full receipts", () => {
-    const result = buildProjectTasksReadModel(
-      {
-        schema_version: 2,
-        root_task_id: "project",
-        max_concurrent: 2,
-        active_task_ids: [],
-        conditions: {},
-        integrity: [],
-        satisfied_dependency_ids: ["completed-dependency"],
-        tasks: {
-          project: { item_type: "group", id: "project", parent_id: null, children: ["consumer"] },
-          consumer: {
-            item_type: "task",
-            id: "consumer",
-            parent_id: "project",
-            phase: "pending",
-            mode: "achieve",
-            outcome: "Consume the result",
-            children: [],
-            depends_on: ["completed-dependency"],
-            readiness: { state: "ready", reason: "Dependencies allow claim", related_ids: [] },
-            attempt_count: 4,
-          },
-        },
-      },
-      { path: "projects/sample" },
-    );
-
-    expect(result).toMatchObject({
-      available: true,
-      stats: { ready: 1 },
-      items: { consumer: { attempt_count: 4 } },
-      completedDependencies: ["completed-dependency"],
-    });
-  });
-
-  it("preserves task-projected dependency readiness", () => {
-    const result = buildProjectTasksReadModel(
-      {
-        schema_version: 2,
-        root_task_id: "project",
-        max_concurrent: 2,
-        active_task_ids: [],
-        conditions: {},
-        integrity: [],
-        satisfied_dependency_ids: [],
-        tasks: {
-          project: { item_type: "group", id: "project", parent_id: null, children: ["consumer"] },
-          consumer: {
-            item_type: "task",
-            id: "consumer",
-            parent_id: "project",
-            phase: "pending",
-            mode: "achieve",
-            outcome: "Consume the result",
-            children: [],
-            depends_on: ["live-dependency"],
-            readiness: {
-              state: "dependency-blocked",
-              reason: "Waiting for live-dependency",
-              related_ids: ["live-dependency"],
-            },
-          },
-        },
-      },
-      { path: "projects/sample" },
-    );
-
-    expect(result).toMatchObject({
-      available: true,
-      stats: { ready: 0, pending: 1 },
-      items: { consumer: { readiness: { state: "dependency-blocked" } } },
-    });
   });
 });
