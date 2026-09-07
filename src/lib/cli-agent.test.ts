@@ -22,9 +22,15 @@ import {
   type CliAgentOptions,
 } from "./cli-agent.js";
 import { currentAgentSessionId, runWithAgentSessionContext } from "./agent-session-context.js";
-import { readSessionBashProcessGroups } from "./persistence.js";
+import {
+  appendSessionMessage,
+  ensureSessionDir,
+  readSessionMessagesTail,
+  readSessionBashProcessGroups,
+} from "./persistence.js";
 import { drainBashProcessGroup, processGroupContainsLiveMember } from "./tools/bash.js";
-import { createRunCliAgentTool } from "./tools/run-cli-agent.js";
+import { cliCallEvidence, createRunCliAgentTool } from "./tools/run-cli-agent.js";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../app/event-bus.js";
 import { attachEventPersistence } from "../app/daemon-events.js";
 import { closeAllDbs } from "./requests.js";
@@ -85,6 +91,39 @@ function ready(): boolean {
 }
 
 describe("bounded native CLI call", () => {
+  it("projects exact CLI evidence from a persisted tool result, not claims or another session", async () => {
+    const tool = createRunCliAgentTool({ ...options(), getCallerSessionId: () => "caller" });
+    const result = await tool.execute("tool-call", { tool: "codex", prompt: "Review" });
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolName: "run_cli_agent",
+      toolCallId: "tool-call",
+      ...result,
+      isError: false,
+      timestamp: Date.now(),
+    };
+    const [call] = cliCallEvidence("caller", [message]);
+    expect(call).toMatchObject({ sessionId: "caller", toolCallId: "tool-call", tool: "codex", status: "completed" });
+    expect(call.resultPath).toBe(JSON.parse((result.content[0] as { text: string }).text).resultPath);
+    expect(cliCallEvidence("other-caller", [message])).toEqual([]);
+    expect(cliCallEvidence("caller", [{ ...message, toolCallId: "another-call" }])).toEqual([]);
+    expect(cliCallEvidence("caller", [{ ...message, toolName: "bash" }])).toEqual([]);
+    expect(cliCallEvidence("caller", [{ ...message, details: undefined }])).toEqual([]);
+    expect(cliCallEvidence("caller", [{ ...message, role: "user" } as unknown as AgentMessage])).toEqual([]);
+    expect(cliCallEvidence("caller", [message, message])).toEqual([call]);
+
+    ensureSessionDir(persistDir, "caller");
+    appendSessionMessage(persistDir, "caller", message);
+    expect(cliCallEvidence("caller", readSessionMessagesTail(persistDir, "caller", 100))).toEqual([call]);
+    expect(cliCallEvidence("caller", readSessionMessagesTail(persistDir, "caller", 0))).toEqual([]);
+    const many = Array.from({ length: 70 }, (_, index) => ({
+      ...message,
+      toolCallId: `tool-${index}`,
+      details: { cliCall: { ...call, taskId: `cli-${index}`, toolCallId: `tool-${index}` } },
+    }));
+    expect(cliCallEvidence("caller", many)).toHaveLength(64);
+  });
+
   for (const tool of ["codex", "claude"] as const) {
     it(`awaits ${tool} completion and keeps evidence without a second work lifecycle`, async () => {
       const bus = new EventBus();

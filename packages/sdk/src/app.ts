@@ -10,6 +10,7 @@ export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
   AppRead,
   ExecutionResult,
+  CliCallEvidence,
   ExecutionView,
   Logger,
   MetricDefinition,
