@@ -15,6 +15,114 @@ import {
 
 const databases: SqliteDb[] = [];
 
+test("exact diagnostics preserve bounded Conditions and dependency states without a whole-App read", () => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "pending", updatedAt: 30 });
+  insertTask(db, { appId: "alpha", taskId: "live", phase: "waiting", updatedAt: 20 });
+  insertTask(db, { appId: "other", taskId: "missing", phase: "running", updatedAt: 20 });
+  insertReceipt(db, "alpha", "finished", 40);
+  db.prepare("INSERT INTO app_task_groups VALUES ('alpha', 'root', '{}')").run();
+  const resource = JSON.parse(
+    (
+      db.prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'alpha' AND task_id = 'work'").get() as {
+        resource_json: string;
+      }
+    ).resource_json,
+  );
+  resource.spec.dependsOn = [
+    "live",
+    "finished",
+    "root",
+    "missing",
+    ...Array.from({ length: 97 }, (_, n) => `missing-${n}`),
+  ];
+  resource.status.conditionIds = Array.from({ length: 101 }, (_, n) => `condition-${n}`);
+  resource.spec.outputs = ["report.md"];
+  db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = 'alpha' AND task_id = 'work'").run(
+    JSON.stringify(resource),
+  );
+  const condition = {
+    metadata: { id: "condition-0", generation: 1, resourceVersion: 2 },
+    spec: { type: "review.ready", subject: "change/1", expected: true },
+    status: { observedGeneration: 1, state: "false", observed: false },
+  };
+  db.prepare("INSERT INTO app_task_conditions VALUES ('alpha', 'condition-0', 'false', ?)").run(
+    JSON.stringify(condition),
+  );
+  // An unrelated corrupt payload must not enter an exact read.
+  db.prepare("UPDATE app_tasks SET resource_json = 'invalid' WHERE app_id = 'other'").run();
+  const service = new HumanTaskService(db, registry("alpha"));
+  const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
+  expect(detail.diagnostics).toMatchObject({
+    parentId: "root",
+    outputs: ["report.md"],
+    ready: false,
+    conditionsTruncated: true,
+    dependenciesTruncated: true,
+  });
+  expect(detail.diagnostics!.conditions).toHaveLength(100);
+  expect(detail.diagnostics!.conditions.slice(0, 2)).toEqual([
+    { id: "condition-0", condition },
+    { id: "condition-1", condition: null },
+  ]);
+  expect(detail.diagnostics!.dependencies).toHaveLength(100);
+  expect(detail.diagnostics!.dependencies.slice(0, 4)).toEqual([
+    { id: "live", status: "waiting" },
+    { id: "finished", status: "done" },
+    { id: "root", status: "group" },
+    { id: "missing", status: "missing" },
+  ]);
+  expect(
+    service.listTasks({ appId: "alpha" }).items.every((t) => t.diagnostics === undefined && t.history === undefined),
+  ).toBe(true);
+});
+
+test("history is exact, indexed, bounded, and never a substitute for terminal authority", () => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "pending", updatedAt: 1 });
+  const event = db.prepare(
+    "INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, attempt_id, data) VALUES ('project.task.reconciled', 'test', 'test', ?, ?, ?, 'old-attempt', ?)",
+  );
+  for (let n = 0; n < 25; n++)
+    event.run("alpha", "work", n, JSON.stringify({ generation: 1, disposition: "converged", summary: `old-${n}` }));
+  event.run("other", "work", 100, "{}");
+  event.run("alpha", "event-only", 101, '{"disposition":"converged"}');
+  const service = new HumanTaskService(db, registry("alpha"));
+  const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
+  expect(detail).toMatchObject({ status: "pending", terminal: false, historyTruncated: true });
+  expect(detail.history).toHaveLength(20);
+  expect(detail.history![0]).toMatchObject({ summary: "old-24", generation: 1, attemptId: "old-attempt" });
+  expect(service.getTask({ appId: "alpha", taskId: "event-only" })).toBeNull();
+  const plan = db
+    .prepare(
+      "EXPLAIN QUERY PLAN SELECT id FROM events WHERE project_id = ? AND task_id = ? AND event_type LIKE 'project.task.%' ORDER BY timestamp DESC, id DESC LIMIT 21",
+    )
+    .all("alpha", "work");
+  expect(JSON.stringify(plan)).toContain("idx_events_project_task");
+  insertReceipt(db, "alpha", "work", 50);
+  expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["waiting"] }).items).toEqual([]);
+  expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["done"] }).items).toHaveLength(1);
+  expect(service.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
+    status: "done",
+    summary: "work finished",
+    response: "work result",
+  });
+  const failedHistoryDb: SqliteDb = {
+    ...db,
+    prepare(sql) {
+      if (sql.includes("SELECT id, event_type, timestamp, attempt_id, handler, data"))
+        throw new Error("history unavailable");
+      return db.prepare(sql);
+    },
+  };
+  const failedHistory = new HumanTaskService(failedHistoryDb, registry("alpha"));
+  expect(failedHistory.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
+    status: "done",
+    summary: "work finished",
+    historyError: expect.any(String),
+  });
+});
+
 afterEach(() => {
   while (databases.length) databases.pop()?.close();
 });

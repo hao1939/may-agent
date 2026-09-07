@@ -26,19 +26,12 @@ import {
   daemonSocketPath,
   sendDaemonEvent,
   sendSocketCommand,
+  SocketCommandError,
   type SocketEndpoint,
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
 import { loadProjectReadModel } from "../app-task-runtime-state.js";
-import type {
-  AppTaskIntegrityFinding,
-  AppTaskPhase,
-  AppTaskProjectionItem,
-  AppTaskTreeProjection,
-} from "../app-task-store.js";
-import { buildAppTaskTreeProjection } from "../app-task-store.js";
-import { AppTaskResourceStore } from "../app-task-resource-store.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -497,152 +490,6 @@ export function projectEventTargetForPath(path: string, fallbackProjectId: strin
 export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false;
   return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
-}
-
-const PROJECT_TASK_PHASES = new Set<AppTaskPhase>(["pending", "running", "waiting", "attention", "converged"]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-export function normalizeAppTaskPhase(task: { phase?: unknown }): AppTaskPhase | "unknown" {
-  const phase = String(task.phase ?? "");
-  return PROJECT_TASK_PHASES.has(phase as AppTaskPhase) ? (phase as AppTaskPhase) : "unknown";
-}
-
-export type ProjectTasksReadModelOptions = {
-  path: string;
-  measuredAt?: string;
-  project?: {
-    id: string;
-    owner?: string;
-    posture?: string;
-  };
-};
-
-export function readProjectTaskProjection(db: SqliteDb, appId: string): AppTaskTreeProjection | null {
-  const store = AppTaskResourceStore.activeFromDb(db, appId);
-  if (!store) return null;
-  return buildAppTaskTreeProjection(store.readSnapshot(), store.configuredMaxConcurrent() ?? 1);
-}
-
-export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksReadModelOptions) {
-  const errors: string[] = [];
-  if (!isRecord(rawTree)) {
-    return {
-      available: false,
-      path: opts.path,
-      reason: "Task projection must be an object.",
-      errors: ["root: expected object"],
-    };
-  }
-
-  const tree = rawTree as unknown as AppTaskTreeProjection;
-  if (tree.schema_version !== 2) errors.push("schema_version: expected 2");
-  if (tree.tasks !== undefined && !isRecord(tree.tasks)) {
-    errors.push("tasks: expected object keyed by task id");
-  }
-  const rawTasks = isRecord(tree.tasks) ? tree.tasks : {};
-  if (tree.tasks === undefined) errors.push("tasks: missing task map");
-
-  const tasks: Record<string, AppTaskProjectionItem> = {};
-  for (const [taskId, value] of Object.entries(rawTasks)) {
-    if (!isRecord(value)) {
-      errors.push(`tasks.${taskId}: expected object`);
-      continue;
-    }
-    const task = value as unknown as AppTaskProjectionItem;
-    const id = typeof task.id === "string" && task.id ? task.id : taskId;
-    if (task.id !== undefined && task.id !== taskId) {
-      errors.push(`tasks.${taskId}.id: expected "${taskId}", got "${String(task.id)}"`);
-    }
-    if (task.parent_id !== undefined && task.parent_id !== null && typeof task.parent_id !== "string") {
-      errors.push(`tasks.${taskId}.parent_id: expected string or null`);
-    }
-    if (
-      task.children !== undefined &&
-      (!Array.isArray(task.children) || task.children.some((child) => typeof child !== "string"))
-    ) {
-      errors.push(`tasks.${taskId}.children: expected string[]`);
-    }
-    if (!["group", "task"].includes(String(task.item_type))) {
-      errors.push(`tasks.${taskId}.item_type: expected group or task`);
-    }
-    if (task.item_type === "task" && normalizeAppTaskPhase(task) === "unknown") {
-      errors.push(`tasks.${taskId}.phase: expected canonical task phase`);
-    }
-    if (task.item_type === "task" && !["achieve", "maintain"].includes(String(task.mode))) {
-      errors.push(`tasks.${taskId}.mode: expected achieve or maintain`);
-    }
-    const children =
-      Array.isArray(task.children) && task.children.every((child) => typeof child === "string") ? task.children : [];
-    tasks[taskId] = {
-      ...task,
-      id,
-      children,
-    };
-  }
-
-  const rootTaskId = typeof tree.root_task_id === "string" && tree.root_task_id ? tree.root_task_id : "project";
-  if (Object.keys(tasks).length > 0 && !tasks[rootTaskId]) {
-    errors.push(`root_task_id: "${rootTaskId}" is not present in tasks`);
-  }
-  for (const task of Object.values(tasks)) {
-    for (const childId of task.children ?? []) {
-      if (!tasks[childId]) errors.push(`tasks.${task.id}.children: missing child "${childId}"`);
-    }
-  }
-
-  if (errors.length > 0) {
-    return {
-      available: false,
-      path: opts.path,
-      reason: "Task projection is malformed.",
-      errors,
-    };
-  }
-
-  const resources = Object.values(tasks).filter((task) => task.item_type === "task");
-  const count = (predicate: (task: AppTaskProjectionItem) => boolean): number => resources.filter(predicate).length;
-  const stats = {
-    groups: Object.values(tasks).filter((task) => task.item_type === "group").length,
-    resources: resources.length,
-    attention: count((task) => task.phase === "attention"),
-    running: count((task) => task.phase === "running"),
-    ready: count((task) => task.readiness?.state === "ready"),
-    pending: count((task) => task.phase === "pending" && task.readiness?.state !== "ready"),
-    waiting: count((task) => task.phase === "waiting"),
-    healthyStanding: count(
-      (task) => task.mode === "maintain" && task.phase === "converged" && task.synchronized === true,
-    ),
-  };
-
-  const integrity = Array.isArray(tree.integrity)
-    ? tree.integrity.filter((finding): finding is AppTaskIntegrityFinding => isRecord(finding))
-    : [];
-
-  return {
-    available: true,
-    schemaVersion: 2,
-    path: opts.path,
-    measuredAt: opts.measuredAt ?? new Date().toISOString(),
-    taskStateUpdatedAt: tree.updated_at ?? null,
-    rootId: rootTaskId,
-    project: {
-      id: opts.project?.id ?? tree.project ?? "",
-      path: opts.path,
-      owner: opts.project?.owner ?? null,
-      posture: opts.project?.posture ?? tree.project_lifecycle ?? null,
-      maxConcurrent: tree.max_concurrent,
-    },
-    stats,
-    activeTaskIds: Array.isArray(tree.active_task_ids) ? tree.active_task_ids : [],
-    items: tasks,
-    conditions: isRecord(tree.conditions) ? tree.conditions : {},
-    completedDependencies: Array.isArray(tree.satisfied_dependency_ids) ? tree.satisfied_dependency_ids : [],
-    integrity,
-    recentCompletions: [],
-  };
 }
 
 export function startWebUI(opts: WebUIOptions): { port: number } {
@@ -2465,219 +2312,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  function handleProjectTasks(url: URL): Response {
-    const path = url.searchParams.get("path");
-    if (!path) return json({ error: "path required" }, 400);
-    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
-
-    const appDir = appDirForPath(path);
-    if (!appDir) {
-      return json({
-        available: false,
-        path,
-        reason: "Project has no App task attachment.",
-      });
-    }
-    try {
-      const identity = projectTaskIdentity(path, appDir);
-      const projection = readProjectTaskProjection(_db(), identity.id);
-      if (!projection) {
-        return json({
-          available: false,
-          path,
-          reason: "App does not attach task reconciliation.",
-        });
-      }
-      const model = buildProjectTasksReadModel(projection, {
-        path,
-        project: identity,
-      });
-      if (!model.available) return json(model);
-      const liveIds = new Set(Object.keys(model.items ?? {}));
-      let recentCompletions: ReturnType<typeof projectTaskCompletionFromRecord>[] = [];
-      let completionTraceError: string | null = null;
-      try {
-        recentCompletions = projectTaskTimeline(model.project?.id ?? projectNameFromPath(path), undefined, 200)
-          .filter((record) => record.eventType === "project.task.reconciled" && record.disposition === "converged")
-          .filter((record) => !liveIds.has(record.taskId))
-          .filter(
-            (record, index, records) => records.findIndex((candidate) => candidate.taskId === record.taskId) === index,
-          )
-          .slice(0, 12)
-          .map(projectTaskCompletionFromRecord);
-      } catch (error) {
-        completionTraceError = error instanceof Error ? error.message : String(error);
-      }
-      return json({ ...model, recentCompletions, completionTraceError });
-    } catch (e) {
-      return json({
-        available: false,
-        path,
-        reason: "Task view could not be read.",
-        errors: [e instanceof Error ? e.message : String(e)],
-      });
-    }
-  }
-
-  type ProjectTaskTimelineRecord = {
-    eventId: number;
-    eventType: string;
-    taskId: string;
-    timestamp: string;
-    disposition: string | null;
-    summary: string | null;
-    evidence: string[];
-    generation: number | null;
-    attemptId: string | null;
-    sessionId: string | null;
-    workflowRunId: string | null;
-    handler: string | null;
-    outcome: string | null;
-    mode: string | null;
-    owner: string | null;
-    acceptance: string[];
-    acceptanceBasis: unknown;
-  };
-
-  function projectTaskTimeline(projectId: string, taskId?: string, limit = 20): ProjectTaskTimelineRecord[] {
-    const boundedLimit = Math.max(1, Math.min(Math.trunc(limit), 200));
-    const sql = `SELECT id, event_type, data, timestamp, task_id, attempt_id, session_id,
-                        workflow_run_id, handler
-                   FROM events
-                  WHERE project_id = ?
-                    AND event_type LIKE 'project.task.%'
-                    ${taskId ? "AND task_id = ?" : ""}
-               ORDER BY timestamp DESC, id DESC
-                  LIMIT ?`;
-    const rows = (
-      taskId ? _db().prepare(sql).all(projectId, taskId, boundedLimit) : _db().prepare(sql).all(projectId, boundedLimit)
-    ) as Array<Record<string, unknown>>;
-    return rows.map((row) => {
-      const data = parseEventData(row.data);
-      const stringArray = (value: unknown): string[] =>
-        Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-      const stringValue = (primary: unknown, fallback?: unknown): string | null => {
-        const value = typeof primary === "string" && primary ? primary : fallback;
-        return typeof value === "string" && value ? value : null;
-      };
-      const generation = Number(data.generation);
-      const timestamp = Number(row.timestamp);
-      return {
-        eventId: Number(row.id),
-        eventType: String(row.event_type ?? ""),
-        taskId: stringValue(row.task_id, data.taskId) ?? "",
-        timestamp: Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : String(row.timestamp ?? ""),
-        disposition: stringValue(data.disposition),
-        summary: stringValue(data.summary),
-        evidence: stringArray(data.evidence),
-        generation: Number.isFinite(generation) ? generation : null,
-        attemptId: stringValue(row.attempt_id, data.attemptId),
-        sessionId: stringValue(row.session_id, data.sessionId),
-        workflowRunId: stringValue(row.workflow_run_id, data.workflowRunId),
-        handler: stringValue(row.handler, data.handler),
-        outcome: stringValue(data.outcome),
-        mode: stringValue(data.mode),
-        owner: stringValue(data.owner),
-        acceptance: stringArray(data.acceptance),
-        acceptanceBasis: data.acceptanceBasis ?? null,
-      };
-    });
-  }
-
-  function projectTaskCompletionFromRecord(record: ProjectTaskTimelineRecord) {
-    return {
-      taskId: record.taskId,
-      outcome: record.outcome,
-      summary: record.summary,
-      evidence: record.evidence,
-      generation: record.generation,
-      owner: record.owner,
-      mode: record.mode,
-      acceptance: record.acceptance,
-      acceptanceBasis: record.acceptanceBasis,
-      handler: record.handler,
-      attemptId: record.attemptId,
-      sessionId: record.sessionId,
-      workflowRunId: record.workflowRunId,
-      completedAt: record.timestamp,
-    };
-  }
-
-  function handleProjectTask(url: URL): Response {
-    const path = url.searchParams.get("path");
-    const taskId = url.searchParams.get("taskId")?.trim();
-    if (!path) return json({ error: "path required" }, 400);
-    if (!taskId) return json({ error: "taskId required" }, 400);
-    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
-
-    const appDir = appDirForPath(path);
-    if (!appDir) return json({ error: "Project has no App task attachment." }, 404);
-    const identity = projectTaskIdentity(path, appDir);
-    let model: ReturnType<typeof buildProjectTasksReadModel> | null = null;
-    try {
-      const projection = readProjectTaskProjection(_db(), identity.id);
-      if (projection) {
-        model = buildProjectTasksReadModel(projection, {
-          path,
-          project: identity,
-        });
-      }
-    } catch {
-      model = null;
-    }
-
-    let timeline: ProjectTaskTimelineRecord[] = [];
-    let traceError: string | null = null;
-    try {
-      timeline = projectTaskTimeline(identity.id, taskId, 20);
-    } catch (error) {
-      traceError = error instanceof Error ? error.message : String(error);
-    }
-
-    if (model?.available && model.items?.[taskId]) {
-      const items = model.items;
-      const integrity = model.integrity ?? [];
-      const conditions = model.conditions ?? {};
-      const item = items[taskId];
-      const missingDependencyIds = new Set(
-        integrity
-          .filter((finding) => finding.task_id === taskId && finding.code === "missing-dependency")
-          .flatMap((finding) => finding.related_ids),
-      );
-      const completedDependencies = new Set(model.completedDependencies ?? []);
-      const dependencies = (item.depends_on ?? []).map((id) => ({
-        id,
-        disposition: items[id]
-          ? "live"
-          : completedDependencies.has(id)
-            ? "satisfied"
-            : missingDependencyIds.has(id)
-              ? "structurally-invalid"
-              : "missing",
-      }));
-      return json({
-        kind: "live",
-        task: {
-          ...item,
-          conditions: (item.condition_ids ?? []).map((id) => ({ id, condition: conditions[id] ?? null })),
-          dependencies,
-          timeline,
-          traceError,
-        },
-      });
-    }
-
-    const completionRecord = timeline.find(
-      (record) => record.eventType === "project.task.reconciled" && record.disposition === "converged",
-    );
-    if (completionRecord) {
-      return json({
-        kind: "completed",
-        completion: { ...projectTaskCompletionFromRecord(completionRecord), timeline, traceError },
-      });
-    }
-    return json({ error: "Task is neither live nor present in bounded completion evidence." }, 404);
-  }
 
   /**
    * GET /api/projects/detail?path=<projectPath> — dense rollup for the
@@ -2855,6 +2489,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const appDir = appDirForPath(path);
         if (!appDir) return null;
         return {
+          appId: projectTaskIdentity(path, appDir).id,
           appDirName: appDir.split("/").pop(),
           hasUi: existsSync(resolve(appDir, "ui", "index.html")),
         };
@@ -3511,7 +3146,44 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     try {
       return await sendDaemonEvent(conventionSocketPath(), frame, { timeoutMs: 2_000 });
     } catch (error) {
+      if (error instanceof SocketCommandError && error.kind === "definitive") {
+        return { type: "error", message: error.message };
+      }
       throw new Error(`Daemon read unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async function handleHumanTaskRead(url: URL): Promise<Response> {
+    const appId = url.searchParams.get("appId")?.trim();
+    if (!appId) return json({ error: "appId required" }, 400);
+    const detail = url.pathname === "/api/task";
+    const taskId = url.searchParams.get("taskId")?.trim();
+    if (detail && !taskId) return json({ error: "taskId required" }, 400);
+    const includeDone = url.searchParams.get("includeDone");
+    if (includeDone !== null && includeDone !== "true" && includeDone !== "false") {
+      return json({ error: "includeDone must be true or false" }, 400);
+    }
+    try {
+      const response = await daemonRead(
+        detail
+          ? { type: "task.get", appId, taskId }
+          : {
+              type: "tasks.list",
+              appId,
+              includeDone: includeDone === "true",
+              ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
+              ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),
+              ...(url.searchParams.has("cursor") ? { cursor: url.searchParams.get("cursor") } : {}),
+            },
+      );
+      if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
+      if (response.type !== "ok" || (!detail && !response.tasks) || (detail && !("task" in response))) {
+        throw new Error("Invalid daemon Task response");
+      }
+      if (detail) return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
+      return json(response.tasks);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
     }
   }
 
@@ -4097,8 +3769,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
-      if (url.pathname === "/api/projects/tasks") return handleProjectTasks(url);
-      if (url.pathname === "/api/projects/task") return handleProjectTask(url);
+      if (url.pathname === "/api/tasks" || url.pathname === "/api/task") {
+        return req.method === "GET" ? handleHumanTaskRead(url) : json({ error: "GET required" }, 405);
+      }
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/lineage") return handleProjectLineage(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
