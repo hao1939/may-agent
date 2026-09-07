@@ -269,6 +269,13 @@ export async function finalizeAppTaskWorkspace(
       metadata.disposition = "retained-for-recovery";
       return { ok: true, metadata };
     }
+    if (outcome === "waiting") {
+      // Waiting releases execution, not unfinished work. Recreating this
+      // checkout on every wake discards ignored dependencies and local
+      // evidence, turning observation into repeated setup/repair work.
+      metadata.disposition = "active";
+      return { ok: true, metadata };
+    }
 
     const integrated = await isIntegrated(repoDir, metadata);
     await git(repoDir, ["worktree", "remove", metadata.path]);
