@@ -384,6 +384,16 @@ export async function execute(ctx) {
 `,
     );
     const logged: string[] = [];
+    const cliCall = {
+      sessionId: "s_app_step",
+      toolCallId: "native-call",
+      taskId: "cli_1",
+      tool: "codex",
+      status: "completed",
+      resultPath: "/evidence/result.md",
+      structuredResultPath: "/evidence/result.json",
+      eventsPath: "/evidence/events.jsonl",
+    };
     let agentSessionSource: string | undefined;
     let operationAllowance: number | undefined;
     const runner = createWorkflowRunner({
@@ -395,7 +405,17 @@ export async function execute(ctx) {
             sessionId: "s_app_step",
             status: "done",
             lastAssistantText: "fallback",
-            messages: [],
+            messages: [
+              {
+                role: "toolResult",
+                toolName: "run_cli_agent",
+                toolCallId: "native-call",
+                details: { cliCall },
+                content: [],
+                isError: false,
+                timestamp: Date.now(),
+              },
+            ],
             duration: "0s",
             outputDir: "",
             finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
@@ -433,6 +453,8 @@ export async function execute(ctx) {
         status: "done",
         summary: "bounded move complete",
         output: { ok: true },
+        cliCalls: [cliCall],
+        evidence: { status: "success", summary: "bounded move complete", result: { ok: true } },
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
