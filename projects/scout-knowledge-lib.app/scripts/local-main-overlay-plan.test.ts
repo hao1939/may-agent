@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
@@ -18,6 +19,12 @@ function git(root: string, ...args: string[]): string {
   const result = spawnSync("git", args, { cwd: root });
   if (result.status !== 0) throw new Error(result.stderr.toString());
   return result.stdout.toString().trim();
+}
+
+async function sha256(path: string): Promise<string> {
+  return createHash("sha256")
+    .update(Buffer.from(await Bun.file(path).arrayBuffer()))
+    .digest("hex");
 }
 
 async function repo(files: Record<string, string>) {
@@ -258,6 +265,21 @@ describe("local-main overlay plan", () => {
     ]);
   });
 
+  it("reads bounded candidate blobs larger than the subprocess default", async () => {
+    const { root, base } = await repo({ "large.md": "base\n" });
+    await writeFile(join(root, "large.md"), "x".repeat(2 * 1024 * 1024));
+    git(root, "add", "large.md");
+    git(root, "commit", "--quiet", "-m", "candidate");
+    const candidate = git(root, "rev-parse", "HEAD");
+    git(root, "checkout", "--quiet", "--detach", base);
+
+    const plan = inspectLocalMainOverlay(root, base, candidate);
+
+    expect(plan.cleanMaterialization).toEqual([
+      { path: "large.md", rollback: "restore" },
+    ]);
+  });
+
   it("retains a human-owned overlap that differs from the candidate", async () => {
     const { root, base } = await repo({ "note.md": "base\n" });
     await writeFile(join(root, "note.md"), "candidate\n");
@@ -279,6 +301,74 @@ describe("local-main overlay plan", () => {
       rollbackRemoveCount: 0,
     });
     expect(plan.overlapRetained).toEqual([{ path: "note.md", status: "M" }]);
+  });
+
+  it("requires exact retention for tracked and status-hidden overlaps", async () => {
+    const { root, base } = await repo({
+      ".gitignore": "ignored/\n",
+      "tracked.md": "base tracked\n",
+    });
+    await writeFile(join(root, "tracked.md"), "candidate tracked\n");
+    await mkdir(join(root, "ignored"));
+    await writeFile(join(root, "ignored", "one.md"), "candidate one\n");
+    await writeFile(join(root, "ignored", "two.md"), "candidate two\n");
+    git(root, "add", "tracked.md");
+    git(root, "add", "--force", "ignored/one.md", "ignored/two.md");
+    git(root, "commit", "--quiet", "-m", "candidate");
+    const candidate = git(root, "rev-parse", "HEAD");
+    git(root, "checkout", "--quiet", "--detach", base);
+
+    await writeFile(join(root, "tracked.md"), "human tracked\n");
+    await mkdir(join(root, "ignored"));
+    await writeFile(join(root, "ignored", "one.md"), "human one\n");
+    await writeFile(join(root, "ignored", "two.md"), "human two\n");
+    const expectations = await Promise.all(
+      ["tracked.md", "ignored/one.md", "ignored/two.md"].map(async (path) => ({
+        path,
+        sha256: await sha256(join(root, path)),
+      })),
+    );
+
+    expect(() => inspectLocalMainOverlay(root, base, candidate)).toThrow(
+      "status omitted changed candidate path: ignored/one.md",
+    );
+    expect(() =>
+      inspectLocalMainOverlay(root, base, candidate, expectations.slice(1)),
+    ).toThrow(
+      "divergent candidate overlap lacks explicit retention: tracked.md",
+    );
+    expect(() =>
+      inspectLocalMainOverlay(root, base, candidate, [
+        { ...expectations[0], sha256: "0".repeat(64) },
+        ...expectations.slice(1),
+      ]),
+    ).toThrow("retained worktree sha256 changed: tracked.md");
+
+    const plan = inspectLocalMainOverlay(root, base, candidate, expectations);
+    expect(plan).toMatchObject({
+      preflightStatusCount: 1,
+      noRenameCandidatePathCount: 3,
+      overlapCount: 3,
+      unrelatedDirtyCount: 0,
+      expectedPostflightStatusCount: 3,
+      explicitRetainedCount: 3,
+      rollbackRestoreCount: 0,
+      rollbackRemoveCount: 0,
+    });
+    expect(plan.overlapRetained).toEqual([
+      { path: "ignored/one.md", status: "ignored-protected" },
+      { path: "ignored/two.md", status: "ignored-protected" },
+      { path: "tracked.md", status: "M" },
+    ]);
+    expect(await Bun.file(join(root, "tracked.md")).text()).toBe(
+      "human tracked\n",
+    );
+    expect(await Bun.file(join(root, "ignored", "one.md")).text()).toBe(
+      "human one\n",
+    );
+    expect(await Bun.file(join(root, "ignored", "two.md")).text()).toBe(
+      "human two\n",
+    );
   });
 
   it("refuses a preflight index with staged changes", async () => {
