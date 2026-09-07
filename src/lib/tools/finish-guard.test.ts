@@ -401,9 +401,10 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  // === FM-3.3 Verification Guard Tests ===
+  // Apparent write activity suppresses this hint, regardless of later checks.
+  // These cases do not certify that writes or verification actually succeeded.
 
-  it("allows finish(success) when write exists (self-verifying — returns preview)", async () => {
+  it("does not warn when a write call exists", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -416,7 +417,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows finish(success) when edit exists (self-verifying — returns diff)", async () => {
+  it("does not warn when an edit call exists", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -429,7 +430,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows when last write is self-verifying write() even without post-verification", async () => {
+  it("does not require a read after the final write call", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -439,7 +440,7 @@ describe("finish-guard", () => {
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
         assistantWithToolCall("read", { path: "src/foo.ts" }), // verification for first write
-        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }), // second write — self-verifying
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }),
       ],
     );
     const result = await guard(ctx);
@@ -511,7 +512,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows bash-write without verification (Gate 2 removed — covered by verification-depth-guard)", async () => {
+  it("does not grade verification after a write-like bash command", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -524,7 +525,6 @@ describe("finish-guard", () => {
       ],
     );
     const result = await guard(ctx);
-    // Gate 2 was removed (deduplicated with verification-depth-guard T2)
     expect(result).toBeUndefined();
   });
 
