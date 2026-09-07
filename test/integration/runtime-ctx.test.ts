@@ -143,7 +143,7 @@ describe("buildRuntimeCtx", () => {
   it("supplies real Host reads and events without a placeholder command service", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
-    const sdk = buildAgentSDK({ ...opts, callAgent: vi.fn() });
+    const sdk = buildAgentSDK(opts);
     for (const services of [rtx, sdk]) {
       expect(services).not.toHaveProperty("commands");
       expect(services.query.sql).toBeTypeOf("function");
