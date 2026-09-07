@@ -40,6 +40,7 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   rejectConvergedDirectAgentResidue,
+  retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -3584,6 +3585,125 @@ describe("canonical App task runtime", () => {
 
     await recoverInstalledAppTasks(bus);
     expect(recoveries).toBe(1);
+  });
+
+  it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const workflowDir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(
+      join(workflowDir, "claim-check.ts"),
+      `
+      export const name = "claim-check";
+      export const description = "Recheck a previously blocked claim from current input";
+      export async function execute(ctx) {
+        if (ctx.reconciliation.input.confirmed !== true)
+          return ctx.blocked("Current evidence does not confirm the requirement");
+        return ctx.done("Fresh evidence confirmed the requirement", {
+          state: "converged", summary: "Fresh evidence confirmed the requirement",
+          evidence: ["verified:current-input"]
+        });
+      }
+    `,
+    );
+    const runtimeOptions = {
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      appRegistrySnapshot: {
+        id: "boot:explicit-workflow-blocker",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    };
+    await installAppTaskRuntimes(runtimeOptions);
+    const taskId = "work/claim-check";
+    const attach = (confirmed: boolean) =>
+      attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            mode: "achieve",
+            agent: "sample-owner",
+            workflow: "claim-check",
+            outcome: "Confirm the requirement from current evidence",
+            acceptance: ["Fresh verified facts, not a previous failed judgment, decide completion"],
+            input: { confirmed },
+          },
+        },
+        idempotencyKey: `claim-check:${confirmed}`,
+        request: {
+          id: `request-claim-check:${confirmed}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: { confirmed } },
+        },
+      });
+    await attach(false);
+    const deadline = Date.now() + 1500;
+    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" && Date.now() < deadline)
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      id: taskId,
+      status: "attention",
+      generation: 1,
+      summary: "Current evidence does not confirm the requirement",
+      conditions: [],
+    });
+    const config = loadedTaskConfig(f);
+    const attemptsBefore = Object.values(readTaskSnapshot(config).attempts ?? {});
+    expect(attemptsBefore).toHaveLength(1);
+    expect(attemptsBefore[0]).toMatchObject({ state: "failed", failureReason: "handler-blocked" });
+    for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+    await closeInstalledAppTaskRuntimes(bus);
+    await installAppTaskRuntimes(runtimeOptions);
+    await recoverInstalledAppTasks(bus);
+    await Bun.sleep(50);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe("attention");
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
+    const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
+      snapshot: () => runtimeOptions.appRegistrySnapshot,
+    });
+    const blocked = humanTasks.getTask({ appId: "sample", taskId });
+    if (!blocked) throw new Error("expected blocked Task");
+    retryLoadedFailedAppTask({
+      bus,
+      appId: "sample",
+      taskId,
+      expectedGeneration: blocked.generation,
+      expectedResourceVersion: blocked.resourceVersion,
+    });
+    const retryDeadline = Date.now() + 1500;
+    while (
+      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" &&
+      Date.now() < retryDeadline
+    )
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      status: "attention",
+      generation: 1,
+      conditions: [],
+    });
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
+    await attach(true);
+    const completionDeadline = Date.now() + 1500;
+    while (
+      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "done" &&
+      Date.now() < completionDeadline
+    )
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      id: taskId,
+      status: "done",
+      generation: 2,
+      evidence: ["verified:current-input"],
+    });
   });
 
   it("parks invalid handler results instead of retrying them through recovery", async () => {
