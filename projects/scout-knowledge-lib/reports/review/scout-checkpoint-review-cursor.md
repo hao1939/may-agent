@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent review accepts Cycle 420 at exact canonical tip e6dab7f83e: the public SwarmResearch bundle supports nine of fifteen $50 table cells, conflicts on Third-Autocorrelation, and omits five heuristic rows. Reviewer result 7ee00a1c88 is integrated literally through b5b714d976. A separate high-severity release-safety finding keeps local-main landing, compaction, and cleanup blocked because the 48-path repository candidate includes two divergent protected Scout overlaps and three divergent ignored Herdr files."
+summary: "Independent review accepts Cycle 420 at exact canonical tip e6dab7f83e, and reviewer result e1af785966 is integrated literally by the direct-child producer ledger carrying this cursor. The public SwarmResearch bundle supports nine of fifteen $50 table cells, conflicts on Third-Autocorrelation, and omits five heuristic rows. High/open RV-052 keeps local-main landing, compaction, and cleanup blocked because the 48-path repository candidate includes two divergent protected Scout overlaps and three divergent ignored Herdr files."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051", "RV-052"]
 last_updated: "2026-09-07"
 source_basis: "Exact linear range 6458b20511455313b5eec86913670d52482e1573..e6dab7f83edfa90ed1da978477bf3f5b634982d7: direct-child reviewer result 7ee00a1c88cc3122423e7654c443431a06cbb2b3, literal producer integration b5b714d976bd1b4725cf459d5bab3182f8669c22, and Cycle 420 material e6dab7f83edfa90ed1da978477bf3f5b634982d7. Independent pinned-source hashes reproduce the arXiv archive, evaluation.tex, cutoff README/CSV, Third-Autocorrelation history, and evaluator; arithmetic reproduces the 9 compatible / 1 incompatible / 5 missing classification. Current-tip validation passes 314 tests / 1,555 assertions, Cycle 420 projection, 112 scoped links, navigation 11/14, 8/8, and 14/14; a 1,550-document / 1,795-link Scout-library audit and health 26 facts / 16 wakes also pass. Release inspection finds 31 Scout paths within 48 repository paths, two divergent protected Scout overlaps, and three divergent ignored Herdr files; the planner fails closed, so no landing, compaction, or cleanup is approved."
@@ -3969,6 +3969,16 @@ human-owned Scout edits or ignored Herdr files.
   with one ordinary revert of `e6dab7f83e`; roll back the integration record
   and reviewer result afterward only if their earlier disposition is also
   being removed.
+
+- Cycle 420 reviewer result `e1af78596616becd6631adc2da16a2ba7288ae48`
+  is **integrated literally** by the direct-child producer ledger carrying
+  this entry. Its sole parent is accepted source
+  `e6dab7f83edfa90ed1da978477bf3f5b634982d7`, and the exact reviewer patch ID
+  is `f3702911ac0be9061fcbf69c49a5ede48c067e04`. The result accepts the
+  canonical research while opening release-blocking RV-052; it does not
+  authorize local-main landing, compaction, cleanup, or mutation of the dirty
+  checkout. Roll back only the reviewer integration with one ordinary revert
+  of `e1af785966`; roll back this producer ledger first if it is still present.
 
 - Cycle 412 reviewer correction `86502d99271207d872057c4874326296d57255b4`
   is **contained exactly** as producer `a70923f523`'s direct parent. Exact
