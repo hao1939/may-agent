@@ -1064,7 +1064,10 @@ describe("App inbox host", () => {
   });
 
   it("reads the captured May attention result without reattaching or mutating its existing Task", async () => {
-    const fixtureUrl = new URL("./fixtures/may-inbox-existing-task-correlation-20260818.json", import.meta.url);
+    const fixtureUrl = new URL(
+      "../../test/fixtures/may-inbox-existing-task-correlation-20260818.json",
+      import.meta.url,
+    );
     const fixtureBytes = readFileSync(fixtureUrl);
     expect(createHash("sha256").update(fixtureBytes).digest("hex")).toBe(
       "478b54c083fa4fa53dc61b83ef57565c59a31a85827d1a722527ebcb0118e508",

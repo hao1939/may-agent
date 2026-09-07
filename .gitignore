@@ -6,6 +6,8 @@ dist/
 bundle/
 workspace/
 results/
+/artifacts/
+/evidence/
 pi-deps/
 temp-*.cjs
 tsconfig.tsbuildinfo
