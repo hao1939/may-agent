@@ -1456,10 +1456,10 @@ export const create: HandlerModule["create"] = (
         now - 2 * 3600000,
       ); // Exclude just-created metrics; 2h window for snapshot staleness; only may-owned metrics
 
-      let missingEndSessions = terminalSessionsWithoutEndEvent(
+      const missingEndSessions = terminalSessionsWithoutEndEvent(
         now - 24 * 3600000,
       );
-      let terminalSessionsWithoutEnd = missingEndSessions.length;
+      const terminalSessionsWithoutEnd = missingEndSessions.length;
 
       // Only check agents that have an enabled heartbeat cron job.
       const heartbeatAgents = listEnabledHeartbeatAgents(
@@ -1483,39 +1483,8 @@ export const create: HandlerModule["create"] = (
         if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
       }
 
-      // ── Reconciliation: emit session.end for orphaned terminal sessions before recording state ──
-      if (terminalSessionsWithoutEnd > 0) {
-        try {
-          const orphaned = missingEndSessions.slice(0, 50);
-          const insert = db.prepare(
-            "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-          );
-          for (const s of orphaned) {
-            insert.run(
-              "session.end",
-              JSON.stringify({
-                sessionId: s.sessionId,
-                agent: s.agent,
-                status: s.status,
-                reconciled: true,
-              }),
-              s.endedAt || now,
-            );
-          }
-          if (orphaned.length > 0)
-            ctx.sdk.log(
-              "info",
-              `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`,
-            );
-          missingEndSessions = terminalSessionsWithoutEndEvent(
-            now - 24 * 3600000,
-          );
-          terminalSessionsWithoutEnd = missingEndSessions.length;
-        } catch (reconErr) {
-          /* best-effort reconciliation */
-        }
-      }
-
+      // Missing lifecycle evidence is a finding, not permission to manufacture
+      // session.end rows. Session recovery and event persistence own repairs.
       const mismatchCount =
         staleActiveProjects +
         staleActiveMetrics +

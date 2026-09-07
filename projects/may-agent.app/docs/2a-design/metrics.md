@@ -144,6 +144,11 @@ must not block unrelated App work. Database retention, filesystem pruning, WAL
 maintenance, and compaction are Host maintenance, not metric work; see
 [storage.md](storage.md).
 
+A collector must not repair the evidence it is measuring. In particular,
+missing session lifecycle events remain visible findings; recording a snapshot
+cannot synthesize `session.end` rows to clear them. Session lifecycle and
+recovery code own any separately justified repair through normal persistence.
+
 A periodic measurement trigger is a record-only fact. It queues measurement
 for a later event-loop turn and never accepts semantic event delivery; the next
 cadence repairs a missed optional observation.
