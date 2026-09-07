@@ -46,7 +46,7 @@ export async function execute(ctx) {
 export const name = "cancel";
 export const description = "Cancellation test workflow";
 export async function execute(ctx) {
-  await ctx.runAgent("worker", "wait forever");
+  await ctx.agents.call("worker", "wait forever");
   return ctx.done("must not complete");
 }
 `,
@@ -98,9 +98,9 @@ export const name = "timeout";
 export const description = "Timeout test workflow";
 export async function execute(ctx) {
   try {
-    await ctx.runAgent("worker", "wait forever");
+    await ctx.agents.call("worker", "wait forever");
   } catch {}
-  ctx.emit({ type: "test.late-effect" });
+  await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
 }
 `,
@@ -188,7 +188,7 @@ describe("App workflow authoring context", () => {
 export const name = "emit";
 export const description = "Unfenced event test";
 export async function execute(ctx) {
-  ctx.emit({ type: "test.child.requested", data: { child: "one" } });
+  await ctx.events.emit({ type: "test.child.requested", data: { child: "one" } });
   return ctx.done("must not finish");
 }
 `,
@@ -201,7 +201,7 @@ export async function execute(ctx) {
 
     expect(await runner.run("emit", "test")).toMatchObject({
       type: "error",
-      error: expect.stringContaining("ctx.events.emit"),
+      error: expect.stringContaining("stable localKey"),
     });
     rmSync(root, { recursive: true, force: true });
   });

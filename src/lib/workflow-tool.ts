@@ -8,7 +8,6 @@ import type { SubagentManager } from "./manager.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";
 import type { TaskBinding } from "./persistence.js";
 import type {
-  WorkflowContext,
   WorkflowModule,
   WorkflowResult,
   WorkflowEvent,
@@ -18,9 +17,6 @@ import type {
   WorkflowGuard,
   WorkflowGuardEvent,
   Demand,
-  SessionOptions,
-  SessionHandle,
-  WorkflowAgentOptions,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 import { appOwnerReviewEvent } from "../app/app-input-event.js";
@@ -62,23 +58,22 @@ export interface WorkflowStep {
   lastAssistantText: string | null;
 }
 import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
-import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { AppTaskEvents } from "../app/app-task-emitter.js";
-import { createUnavailableQueryService } from "./query-service.js";
-import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/event-bus.js";
 import type {
   AppRead,
+  AgentCallOptions,
   ExecutionResult as AppExecutionResult,
   TaskReconciliationContext,
   WorkflowContext as AppWorkflowContext,
 } from "@may-agent/sdk/app";
 import { createRuntimeAppRead } from "../app/app-read.js";
+import { canonicalAppEvent } from "../app/canonical-app-event.js";
 import { cliCallEvidence } from "./tools/run-cli-agent.js";
 
 function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
@@ -96,6 +91,7 @@ function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
     kind: "agent",
     status,
     summary:
+      (result.status === "error" ? result.error?.trim() : undefined) ||
       result.finishResult?.summary?.trim() ||
       result.lastAssistantText?.trim() ||
       result.error?.trim() ||
@@ -119,20 +115,6 @@ function normalizeAuthoredWorkflowResult(
     throw new Error("Workflow returned no terminal execution result");
   }
   const result = value as Record<string, unknown>;
-  if (result.type === "done" && typeof result.summary === "string") {
-    return {
-      type: "done",
-      summary: result.summary,
-      ...(result.output !== undefined ? { output: result.output } : {}),
-    };
-  }
-  if (result.type === "blocked" && typeof result.reason === "string") {
-    return {
-      type: "blocked",
-      reason: result.reason,
-      ...(result.context !== undefined ? { context: result.context } : {}),
-    };
-  }
   const isExecutionResult =
     (result.kind === "agent" || result.kind === "workflow") &&
     typeof result.id === "string" &&
@@ -750,7 +732,7 @@ export interface RunWorkflowDirectOpts {
 /**
  * Run a workflow through the typed runner shared with the model tool.
  * Used by system-level callers like the project handler.
- * Gets the same guards, step tracking, persistence, and createSession
+ * Gets the same guards, step tracking, persistence, and scoped SDK capabilities
  * as agent-invoked workflows.
  */
 export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
@@ -831,8 +813,7 @@ export interface WorkflowToolOptions {
   /** The caller's session ID — used as parentSessionId for spawned sessions.
    *  Can be a string or a function returning a string (for lazy resolution). */
   callerSessionId?: string | (() => string);
-  /** The name of the agent that owns this workflow tool.
-   *  Exposed as `ctx.agent` so reusable workflow code can delegate to the calling agent. */
+  /** The agent that owns this workflow catalog and its execution provenance. */
   agentName?: string;
   /** Exact source stored on agent sessions started by this workflow. */
   sessionSource?: string;
@@ -1214,18 +1195,16 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       agentName: string,
       agentTask: string,
       reuseSessionId?: string,
-      stepOpts?: WorkflowAgentOptions,
+      stepOpts?: AgentCallOptions & { schema?: TSchema },
     ): Promise<TaskResult> => {
       assertExecutionActive();
       validateOperationAllowance(stepOpts?.operationAllowance);
       // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
       // where they'd produce the confusing "Agent \"undefined\" not registered" error.
-      // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
       if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
         throw new Error(
-          `runAgent called with invalid agent name: ${JSON.stringify(agentName)}. ` +
-            `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
-            `and that the binary has been restarted after deploy.`,
+          `agents.call called with invalid agent name: ${JSON.stringify(agentName)}. ` +
+            `Pass an explicit agent name or the selected ctx.reconciliation.agent.`,
         );
       }
       const currentStep = stepCounter++;
@@ -1472,63 +1451,47 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       return { sub };
     };
 
-    const runtimeCtx =
-      opts.runtimeCtx ??
-      ({
-        emit: (event: { type: string; [key: string]: unknown }) => {
-          onEvent?.(event as WorkflowEvent);
-        },
-        dispatchEvent: (_eventType: string, _data?: Record<string, unknown>) => {},
-        getDb: () => {
-          throw new Error("No runtimeCtx — getDb unavailable");
-        },
-        query: createUnavailableQueryService("No runtimeCtx - query unavailable"),
-        commands: createUnavailableCommandService("No runtimeCtx - commands unavailable"),
-        log: (_msg: string) => {},
-        notify: (_msg: string) => {},
-        metrics: createUnavailableMetricService("No runtimeCtx - metrics unavailable"),
-        persistDir: persistDir ?? "",
-        projectRoot: "",
-        agentsRoot: "",
-        sharedRoot: "",
-        projectsRoot: "",
-      } satisfies RuntimeCtx);
+    // Runtime services stay private. Authored workflows get only SDK capabilities.
+    const metricService =
+      opts.runtimeCtx?.metrics ?? createUnavailableMetricService("No runtimeCtx - metrics unavailable");
     const appRead =
       opts.read ??
       createRuntimeAppRead({
-        getDb: runtimeCtx.getDb,
-        metrics: runtimeCtx.metrics,
+        getDb: opts.runtimeCtx?.getDb ?? (() => { throw new Error("No runtimeCtx - read unavailable"); }),
+        metrics: metricService,
       });
-    const workflowLog = Object.assign((message: string) => runtimeCtx.log(message), {
-      debug: (message: string) => runtimeCtx.log(`[debug] ${message}`),
-      info: (message: string) => runtimeCtx.log(message),
-      warn: (message: string) => runtimeCtx.log(`[warn] ${message}`),
-      error: (message: string) => runtimeCtx.log(`[error] ${message}`),
-    });
-    const workflowMetrics = {
-      ...runtimeCtx.metrics,
-      record(id: string, value: number, noteOrOptions?: string | Parameters<typeof runtimeCtx.metrics.record>[2]) {
-        runtimeCtx.metrics.record(
-          id,
-          value,
-          typeof noteOrOptions === "string" ? { note: noteOrOptions } : noteOrOptions,
-        );
-      },
-    };
+    const workflowLog = (message: string) => opts.runtimeCtx?.log(message);
     const taskEventUnsubscribers = new Set<() => void>();
 
-    const ctx = {
-      task,
-      agent: opts.agentName && opts.agentName !== "undefined" ? opts.agentName : "unknown",
+    const ctx: AppWorkflowContext = {
       input: authoredInput ? authoredInput.value : task,
       ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
       read: appRead,
 
-      // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
-      ...runtimeCtx,
-      ...(opts.executionPaths ?? {}),
-      log: workflowLog,
-      metrics: workflowMetrics,
+      log: {
+        debug: (message) => workflowLog(`[debug] ${message}`),
+        info: workflowLog,
+        warn: (message) => workflowLog(`[warn] ${message}`),
+        error: (message) => workflowLog(`[error] ${message}`),
+      },
+      metrics: {
+        define: (definition) => {
+          assertExecutionActive();
+          metricService.define(definition);
+        },
+        defineMany: (definitions) => {
+          assertExecutionActive();
+          metricService.defineMany(definitions);
+        },
+        record: (id, value, options) => {
+          assertExecutionActive();
+          metricService.record(id, value, typeof options === "string" ? { note: options } : options);
+        },
+        evaluate: (id) => {
+          assertExecutionActive();
+          return metricService.evaluate(id);
+        },
+      },
       ...(opts.executionPaths
         ? {
             workspace: {
@@ -1539,39 +1502,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             },
           }
         : {}),
-      // Overlay emit to also call onEvent for workflow lifecycle logging
-      emit: (event: { type: string; [key: string]: unknown }) => {
-        assertExecutionActive();
-        if (opts.taskEmitter) {
-          throw new Error("Task-owned workflows must emit through ctx.events.emit with a stable localKey");
-        }
-        emitRuntimeEvent(event);
-        onEvent?.(event as WorkflowEvent);
-      },
-      dispatchEvent: (eventType: string, data?: Record<string, unknown>) => {
-        assertExecutionActive();
-        if (opts.taskEmitter) {
-          throw new Error("Task-owned workflows must emit through ctx.events.emit with a stable localKey");
-        }
-        emitRuntimeEvent({ type: eventType, data: data ?? {} });
-      },
-
-      runAgent: ((agentName: string, agentTask: string, stepOpts?: WorkflowAgentOptions): Promise<TaskResult> =>
-        runAgentStep(agentName, agentTask, undefined, stepOpts)) as WorkflowContext["runAgent"],
-      runAgentSession: ((
-        agentName: string,
-        agentTask: string,
-        sessionId?: string,
-        stepOpts?: WorkflowAgentOptions,
-      ): Promise<TaskResult> =>
-        runAgentStep(agentName, agentTask, sessionId, stepOpts)) as WorkflowContext["runAgentSession"],
-
       agents: {
-        call: async (
-          agentName: string,
-          agentTask: string,
-          callOptions?: WorkflowAgentOptions & { sessionId?: string },
-        ) => appAgentExecutionResult(await runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions)),
+        call: async (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
+          appAgentExecutionResult(await runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions)),
       },
 
       events: {
@@ -1588,10 +1521,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           }
           onEvent?.(event as WorkflowEvent);
         },
-        onEvent: (listener: (event: unknown) => void) => {
+        onEvent: (listener) => {
           assertExecutionActive();
           if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
-          const unsubscribe = opts.taskEmitter.onEvent((event) => listener(event));
+          const unsubscribe = opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
           const tracked = () => {
             taskEventUnsubscribers.delete(tracked);
             unsubscribe();
@@ -1599,110 +1532,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           taskEventUnsubscribers.add(tracked);
           return tracked;
         },
-      },
-
-      runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
-        assertExecutionActive();
-        const start = Date.now();
-        onEvent?.({ type: "workflow.step_started", step: `fn:${label}` });
-
-        let output: string;
-        let hadError = false;
-        let errorMsg: string | undefined;
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        try {
-          const timeout = 30_000;
-          output = await Promise.race([
-            fn(),
-            new Promise<never>((_, reject) => {
-              timer = setTimeout(
-                () => reject(new Error(`runFunction("${label}") timed out after ${timeout}ms`)),
-                timeout,
-              );
-            }),
-          ]);
-          // Truncate output to 50KB
-          if (output.length > 50_000) {
-            output = output.slice(0, 50_000) + "\n…(truncated)";
-          }
-        } catch (err) {
-          hadError = true;
-          errorMsg = err instanceof Error ? err.message : String(err);
-          output = `ERROR: ${errorMsg}`;
-        } finally {
-          if (timer) clearTimeout(timer);
-        }
-        assertExecutionActive();
-        const duration = `${((Date.now() - start) / 1000).toFixed(1)}s`;
-        const taskResult: TaskResult = {
-          sessionId: `fn_${label}_${Date.now()}`,
-          status: hadError ? "error" : "done",
-          lastAssistantText: output,
-          messages: [],
-          duration,
-          outputDir: "",
-          turnsUsed: 0,
-          ...(hadError && errorMsg ? { error: errorMsg } : {}),
-        };
-
-        const step: CompletedStep = { step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult };
-        localSteps.push(step);
-        completedSteps.push(step);
-        pruneCompletedSteps(completedSteps);
-
-        onEvent?.({
-          type: "workflow.step_completed",
-          step: `fn:${label}`,
-          sessionId: taskResult.sessionId,
-          result: taskResult,
-        });
-
-        // Guard: step_done for function steps
-        if (guards.length > 0) {
-          const guardEvent: WorkflowGuardEvent = {
-            type: "step_done",
-            source: "function",
-            step: label,
-            sessionId: taskResult.sessionId,
-            result: taskResult,
-            completedSteps,
-            task: label,
-          };
-          const demands = emitAndCollectDemands(guards, guardEvent);
-          if (demands.length > 0) {
-            await resolveDemands(
-              demands,
-              guardEvent,
-              runId,
-              completedSteps,
-              steeringQueue,
-              injectedStepCount,
-              maxInjected,
-              manager,
-              opts.agentDefinitions,
-              parentSessionId,
-              effectiveProjectId,
-              opts.recoveryOwner,
-              resolveTrace(),
-              onEvent,
-              run,
-              persistDir ?? undefined,
-              guardWarnings,
-              emitGuardSignal,
-            );
-          }
-        }
-
-        return taskResult;
-      },
-
-      summarize: (result: TaskResult, handoffOpts?: Parameters<typeof summarizeForHandoff>[1]) => {
-        return summarizeForHandoff(result, handoffOpts);
-      },
-
-      runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
-        const nested = await runNestedWorkflow(wfName, wfTask);
-        return "reason" in nested ? { type: "blocked", reason: nested.reason } : nested.sub.result;
       },
 
       workflows: {
@@ -1732,132 +1561,21 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         },
       },
 
-      done: (summary: string, output?: unknown) => ({
-        type: "done" as const,
+      done: (summary, output) => ({
         id: runId,
-        kind: "workflow" as const,
-        status: "done" as const,
+        kind: "workflow",
+        status: "done",
         summary,
-        output,
+        ...(output !== undefined ? { output } : {}),
       }),
-      blocked: (reason: string, context?: unknown) => ({
-        type: "blocked" as const,
+      blocked: (reason, evidence) => ({
         id: runId,
-        kind: "workflow" as const,
-        status: "blocked" as const,
+        kind: "workflow",
+        status: "blocked",
         summary: reason,
-        reason,
-        evidence: context,
-        context,
+        ...(evidence !== undefined ? { evidence } : {}),
       }),
-
-      createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
-        const history: Array<{ role: string; text: string }> = [];
-        let lastResponse = "";
-        const label = sessionOpts.label || "session";
-        const agentName = ctx.agent;
-
-        return {
-          async prompt(message: string) {
-            assertExecutionActive();
-            // Build accumulated prompt with history
-            let fullPrompt = sessionOpts.systemPrompt + "\n\n";
-            for (const h of history) {
-              fullPrompt += `[${h.role}]: ${h.text}\n\n`;
-            }
-            fullPrompt += message;
-            history.push({ role: "user", text: message });
-
-            const stepName = `session:${label}`;
-            onEvent?.({ type: "workflow.step_started", step: stepName });
-
-            const taskResult = await callAgent(agentName, fullPrompt, {
-              parentSessionId,
-              workflowRunId: runId,
-              projectId: effectiveProjectId,
-              recoveryOwner: opts.recoveryOwner,
-              stepLabel: stepName,
-              source: opts.sessionSource ?? `workflow:${label}`,
-              trace: resolveTrace(),
-              requireFinish: true,
-              toolPolicy: sessionOpts.tools,
-            });
-            assertExecutionActive();
-
-            lastResponse = taskResult.lastAssistantText || "";
-            history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
-
-            // Track as a workflow step
-            const step: CompletedStep = { step: stepName, sessionId: taskResult.sessionId, result: taskResult };
-            localSteps.push(step);
-            completedSteps.push(step);
-            pruneCompletedSteps(completedSteps);
-
-            // Persist step
-            const wfStep: WorkflowStep = {
-              sessionId: taskResult.sessionId,
-              agent: agentName,
-              task: message.slice(0, 200),
-              status: taskResult.status,
-              startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-              endedAt: Date.now(),
-              lastAssistantText: taskResult.lastAssistantText,
-            };
-            run.steps.push(wfStep);
-            // Step data persisted via sessions table (db-writer)
-
-            onEvent?.({
-              type: "workflow.step_completed",
-              step: stepName,
-              sessionId: taskResult.sessionId,
-              result: taskResult,
-            });
-
-            // Fire guards
-            if (guards.length > 0) {
-              const guardEvent: WorkflowGuardEvent = {
-                type: "step_done",
-                source: "agent",
-                step: stepName,
-                sessionId: taskResult.sessionId,
-                result: taskResult,
-                completedSteps,
-                task: message,
-              };
-              const demands = emitAndCollectDemands(guards, guardEvent);
-              if (demands.length > 0) {
-                await resolveDemands(
-                  demands,
-                  guardEvent,
-                  runId,
-                  completedSteps,
-                  steeringQueue,
-                  injectedStepCount,
-                  maxInjected,
-                  manager,
-                  opts.agentDefinitions,
-                  parentSessionId,
-                  effectiveProjectId,
-                  opts.recoveryOwner,
-                  resolveTrace(),
-                  onEvent,
-                  run,
-                  persistDir ?? undefined,
-                  guardWarnings,
-                  emitGuardSignal,
-                );
-              }
-            }
-          },
-          lastText() {
-            return lastResponse;
-          },
-          close() {
-            /* no-op — each prompt() is an independent session */
-          },
-        };
-      },
-    } as unknown as WorkflowContext & AppWorkflowContext;
+    };
 
     try {
       opts.signal?.throwIfAborted();

@@ -2,7 +2,7 @@
  * RuntimeCtx — internal infrastructure surface used by workflow-tool and sdk-impl.
  *
  * NOT exported to handlers — they use HandlerContext (which has sdk + helpers).
- * This is the internal plumbing that WorkflowContext spreads from.
+ * Workflow execution adapts this into the narrow SDK context; it is never spread into App code.
  */
 
 import type { EventBus } from "../app/event-bus.js";
@@ -27,7 +27,7 @@ import { mayConversationNoticeEvent } from "../app/app-input-event.js";
 
 /**
  * RuntimeCtx — internal type for workflow/sdk infra.
- * Provides emit, getDb, log, notify, paths for WorkflowContext construction.
+ * Owns services used to implement scoped workflow capabilities and Host handlers.
  */
 export interface RuntimeCtx {
   emit(event: { type: string; [key: string]: unknown }): void;

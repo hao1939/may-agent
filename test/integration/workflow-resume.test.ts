@@ -342,9 +342,9 @@ describe("workflow tool: resume", () => {
       export const name = "two-step";
       export const description = "Two step: coder then done";
       export async function execute(ctx) {
-        const step1 = await ctx.runAgent("coder", "implement " + ctx.task);
-        const step2 = await ctx.runAgent("reviewer", "review: " + (step1.lastAssistantText ?? ""));
-        return ctx.done("step1=" + (step1.lastAssistantText ?? "") + " step2=" + (step2.lastAssistantText ?? ""));
+        const step1 = await ctx.agents.call("coder", "implement " + ctx.input);
+        const step2 = await ctx.agents.call("reviewer", "review: " + (step1.summary ?? ""));
+        return ctx.done("step1=" + (step1.summary ?? "") + " step2=" + (step2.summary ?? ""));
       }
     `,
     );
@@ -413,8 +413,8 @@ describe("workflow tool: resume", () => {
       export const name = "one-step";
       export const description = "One step then done";
       export async function execute(ctx) {
-        const step1 = await ctx.runAgent("coder", "implement " + ctx.task);
-        return ctx.done("result=" + (step1.lastAssistantText ?? ""));
+        const step1 = await ctx.agents.call("coder", "implement " + ctx.input);
+        return ctx.done("result=" + (step1.summary ?? ""));
       }
     `,
     );
