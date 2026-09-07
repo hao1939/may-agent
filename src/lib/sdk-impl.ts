@@ -4,8 +4,8 @@
  * Used by Host maintenance handlers, not the public bounded workflow SDK.
  */
 
-import type { AgentSDK, RunOpts, TaskResult, WorkflowResult, EscalationOptions, EscalationRef } from "./sdk.js";
-import { EVENT_ROW_ID, type EventBus } from "../app/event-bus.js";
+import type { AgentSDK, RunOpts, WorkflowResult } from "./sdk.js";
+import type { EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";
@@ -29,14 +29,6 @@ export interface SDKDeps {
   agentName: string;
   /** Manager instance — for runWorkflow delegation. */
   manager?: SubagentManager;
-  /** Manager's callAgent — async, blocks until agent finishes. */
-  callAgent: (
-    agent: string,
-    task: string,
-    opts?: { source?: string; projectId?: string; timeout?: number },
-  ) => Promise<TaskResult>;
-  /** Cron triggerNow — fire a handler on next tick. */
-  triggerNow?: (handlerName: string) => boolean;
 }
 
 // ── Workflow path helpers ──────────────────────────────────────────────
@@ -97,29 +89,10 @@ function messageOwner(target: string): string {
   return normalizeEventOwner(target);
 }
 
-function urgencyForSeverity(severity: EscalationOptions["severity"]): "low" | "normal" | "high" | "immediate" {
-  if (severity === "P0") return "immediate";
-  if (severity === "P1") return "high";
-  if (severity === "P3") return "low";
-  return "normal";
-}
-
-function createEscalationId(): string {
-  return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 // ── Build AgentSDK ────────────────────────────────────────────────────
 
 export function buildAgentSDK(deps: SDKDeps): AgentSDK {
   return {
-    runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult> {
-      return deps.callAgent(agent, task, {
-        source: opts?.source,
-        projectId: opts?.projectId,
-        timeout: opts?.timeout,
-      });
-    },
-
     async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
       const { runWorkflowDirect } = await import("./workflow-tool.js");
       if (!deps.manager) throw new Error("runWorkflow requires manager in SDKDeps");
@@ -232,62 +205,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
           priority: "P2",
         },
       } as any);
-    },
-
-    escalate(reason: string, opts?: EscalationOptions): EscalationRef {
-      if (typeof (opts as unknown) === "string") {
-        throw new Error(
-          "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
-        );
-      }
-      opts = opts ?? {};
-      const owner = normalizeEventOwner(opts.owner);
-      const severity = opts.severity ?? "P2";
-      const escalationId = createEscalationId();
-      const requestedAction = opts.requestedAction ?? `Investigate and resolve or answer this blocker: ${reason}`;
-      const resumeCondition =
-        typeof opts.resumeCondition === "string" && opts.resumeCondition.trim()
-          ? opts.resumeCondition.trim()
-          : undefined;
-      const resume = opts.resume
-        ? {
-            ...opts.resume,
-            ...(resumeCondition && typeof opts.resume.condition !== "string" ? { condition: resumeCondition } : {}),
-          }
-        : resumeCondition && opts.sourceSessionId
-          ? {
-              kind: "session",
-              sessionId: opts.sourceSessionId,
-              condition: resumeCondition,
-            }
-          : undefined;
-      const event = {
-        type: "escalation.created",
-        source: opts.source ?? `agent:${deps.agentName}`,
-        owner,
-        urgency: opts.urgency ?? urgencyForSeverity(severity),
-        ...(typeof opts.ttl_ms === "number" ? { ttl_ms: opts.ttl_ms } : {}),
-        data: {
-          escalationId,
-          sourceAgent: deps.agentName,
-          ...(opts.sourceSessionId ? { sourceSessionId: opts.sourceSessionId } : {}),
-          ...(opts.projectId ? { projectId: opts.projectId } : {}),
-          reason,
-          requestedAction,
-          ...(resumeCondition ? { resumeCondition } : {}),
-          severity,
-          ...(opts.evidence ? { evidence: opts.evidence } : {}),
-          ...(resume ? { resume } : {}),
-          ...(opts.dedupKey ? { dedupKey: opts.dedupKey } : {}),
-        },
-      };
-
-      deps.bus.emit(event as any);
-      const eventId = Number((event as any)[EVENT_ROW_ID]);
-      if (!Number.isInteger(eventId) || eventId <= 0) {
-        throw new Error("escalation.created was not persisted before routing");
-      }
-      return { eventId, compatibilityId: escalationId };
     },
 
     paths: {
