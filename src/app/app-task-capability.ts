@@ -13,15 +13,18 @@ import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   attachLoadedAppTask,
+  cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
   getLoadedAppTaskView,
+  hasLoadedAppTask,
   listLoadedAppTaskOutcomeViews,
   listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
   retryLoadedFailedAppTask,
+  wakeLoadedAppTasks,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
 
@@ -52,11 +55,23 @@ export type AppTaskCapability = {
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
+  has(input: { appId: string; taskId: string }): boolean;
+  wake(input: { appId: string; taskIds: string[]; supersededSessionIds?: string[] }): void;
   retry(input: {
     appId: string;
     taskId: string;
     expectedGeneration: number;
+    expectedResourceVersion: number;
+    controlKey?: string;
   }): ReturnType<typeof retryLoadedFailedAppTask>;
+  cancel(input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    reason: string;
+    controlKey?: string;
+  }): ReturnType<typeof cancelLoadedAppTask>;
   publishGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
@@ -117,7 +132,32 @@ export function createAppTaskCapability(options: {
         ...(projection ? { projection } : {}),
       }),
     get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
-    retry: ({ appId, taskId, expectedGeneration }) =>
-      retryLoadedFailedAppTask({ bus: options.bus, appId, taskId, expectedGeneration }),
+    has: ({ appId, taskId }) => hasLoadedAppTask({ bus: options.bus, appId, taskId }),
+    wake: ({ appId, taskIds, supersededSessionIds }) =>
+      wakeLoadedAppTasks({
+        bus: options.bus,
+        appId,
+        taskIds,
+        ...(supersededSessionIds ? { supersededSessionIds } : {}),
+      }),
+    retry: ({ appId, taskId, expectedGeneration, expectedResourceVersion, controlKey }) =>
+      retryLoadedFailedAppTask({
+        bus: options.bus,
+        appId,
+        taskId,
+        expectedGeneration,
+        expectedResourceVersion,
+        ...(controlKey ? { controlKey } : {}),
+      }),
+    cancel: ({ appId, taskId, expectedGeneration, expectedResourceVersion, reason, controlKey }) =>
+      cancelLoadedAppTask({
+        bus: options.bus,
+        appId,
+        taskId,
+        expectedGeneration,
+        expectedResourceVersion,
+        reason,
+        ...(controlKey ? { controlKey } : {}),
+      }),
   };
 }

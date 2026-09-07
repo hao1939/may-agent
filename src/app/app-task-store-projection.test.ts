@@ -12,6 +12,7 @@ function resource(
     conditionIds?: string[];
     currentAttemptId?: string;
     input?: Record<string, unknown>;
+    owner?: string;
   } = {},
 ): AppTaskResource {
   return {
@@ -23,6 +24,7 @@ function resource(
       mode: options.mode ?? "achieve",
       dependsOn: options.dependsOn,
       input: options.input,
+      owner: options.owner,
     },
     status: {
       observedGeneration: phase === "converged" ? 2 : 1,
@@ -162,5 +164,27 @@ describe("canonical project task projection", () => {
       input: { approval: { id: "approval-1" } },
       trigger: { type: "project.approval.submitted", approvalId: "approval-1" },
     });
+  });
+
+  it("derives relationships and inherited ownership from resources instead of the compatibility tree", () => {
+    const tree: TaskTree = {
+      groups: { root: { id: "root", parent_id: null, owner: "root-owner" } },
+      resources: {
+        parent: resource("parent", "pending", { owner: "task-owner" }),
+        child: resource("child", "pending", { parentId: "parent" }),
+      },
+      tasks: {
+        root: { id: "root", children: ["stale"] },
+        parent: { id: "parent", owner: "stale-owner", children: [] },
+        stale: { id: "stale", parent_id: "root" },
+      },
+    };
+
+    const result = buildAppTaskTreeProjection(tree, 2);
+
+    expect(result.tasks.root.children).toEqual(["parent"]);
+    expect(result.tasks.parent).toMatchObject({ owner: "task-owner", children: ["child"] });
+    expect(result.tasks.child).toMatchObject({ owner: "task-owner", children: [] });
+    expect(result.tasks.stale).toBeUndefined();
   });
 });

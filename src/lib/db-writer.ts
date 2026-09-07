@@ -1,10 +1,9 @@
 /**
  * DbWriter — EventBus subscriber that persists events to SQLite.
  *
- * This is the ONLY component that writes to the DB.
- * Core emits events, DbWriter persists them.
- *
- * See: shared/may-agent-docs/events.md
+ * Core emits events; DbWriter persists the EventHub record and any exact
+ * Task wake that must be atomic with it. Other resource owners persist their
+ * own state in the same database.
  */
 
 import { createHash } from "node:crypto";
@@ -25,6 +24,7 @@ import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/e
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
+import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
 import type { TaskBinding } from "./persistence.js";
@@ -464,9 +464,12 @@ export class DbWriter {
   private lastHousekeepingAt = Date.now();
   private housekeepingIntervalMs: number;
 
-  constructor(persistDir: string, opts: { housekeepingIntervalMs?: number } = {}) {
+  constructor(
+    persistDir: string,
+    opts: { housekeepingIntervalMs?: number; existingSchemaOnly?: boolean } = {},
+  ) {
     this.persistDir = persistDir;
-    this.db = getDb(persistDir);
+    this.db = getDb(persistDir, { existingSchemaOnly: opts.existingSchemaOnly });
     this.housekeepingIntervalMs = Math.max(0, opts.housekeepingIntervalMs ?? EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS);
   }
 
@@ -884,13 +887,12 @@ export class DbWriter {
     ).run(appId, taskId, `event:${eventId}`, observedAt, JSON.stringify(canonical));
     this.db.prepare(
       `UPDATE app_tasks
-       SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?
+       SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?,
+           resource_version = resource_version + 1,
+           resource_json = json_set(resource_json, '$.metadata.resourceVersion', resource_version + 1)
        WHERE app_id = ? AND task_id = ?`,
     ).run(JSON.stringify(trigger), observedAt, appId, taskId);
-    this.db.prepare(
-      `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
-       ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
-    ).run(appId);
+    advanceTaskResourceRevision(this.db, appId);
   }
 
   private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {

@@ -6,8 +6,6 @@
  *
  * System logging (log.ts) is a separate, independent channel — never routed
  * through the bus — to avoid circular dependencies.
- *
- * See: shared/may-agent-docs/events.md
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -589,8 +587,33 @@ export type SystemEvent =
       };
     }
   | {
+      type: "app.task.retry.requested";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        expectedGeneration: number;
+        expectedResourceVersion: number;
+      };
+    }
+  | {
+      type: "app.task.cancel.requested";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: {
+        appId: string;
+        taskId: string;
+        expectedGeneration: number;
+        expectedResourceVersion: number;
+        reason: string;
+      };
+    }
+  | {
       type: "app.task.cancelled";
-      source: "human-task-service";
+      source: "app-task-reconciler";
       owner: "human:operator";
       target: { appId: string; taskId: string };
       data: {
@@ -968,8 +991,11 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
 
-const EVENT_LISTENER_BATCH_SIZE = 64;
+// One listener notification per turn keeps socket polling responsive even
+// when several independent listeners have accumulated worker Event bursts.
+const EVENT_LISTENER_BATCH_SIZE = 1;
 const EVENT_LISTENER_BACKLOG_LIMIT = 256;
+const EVENT_LISTENER_BACKLOG_DELAY_MS = 1;
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 /** Exact synchronous durable-route acceptance observed for this emission. */
 export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
@@ -1018,8 +1044,6 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  *   - The required persistence subscriber runs first and fails closed.
  *   - "first" subscribers then run before "normal" subscribers, in registration order.
  * This guarantees that if a handler triggers work, the originating event is already on disk.
- *
- * See: shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
  */
 export class EventBus {
   private persistenceSubscriber: Subscriber | undefined;
@@ -1030,6 +1054,7 @@ export class EventBus {
   private deliveryRecorder: DeliveryRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
+  private failureFlushScheduled = false;
   private pendingFailureEvents: AgentEvent[] = [];
   private subscriberLabels = new WeakMap<Subscriber | EventListener, string>();
 
@@ -1137,6 +1162,28 @@ export class EventBus {
     Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
     Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    return this.dispatch(event, false);
+  }
+
+  /**
+   * Fan out an event that a trusted execution worker already appended to the
+   * shared journal. The interface process must not append it again, but its
+   * local admission routes and presentation listeners still need to observe
+   * the exact durable event. Task/resource fences make repeated fan-out
+   * idempotent.
+   */
+  fanoutPersisted(
+    input: AgentEvent,
+    eventId: number,
+  ): AgentEvent & {
+    [EVENT_ROW_ID]?: number;
+    [EVENT_DELIVERY_RESULT]?: DeliveryResult;
+  } {
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+      throw new Error("Persisted event fan-out requires a positive event id");
+    }
+    const event = Object.isExtensible(input) ? input : ({ ...input } as AgentEvent);
+    Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     return this.dispatch(event, false);
   }
 
@@ -1248,7 +1295,7 @@ export class EventBus {
       state.pending.push(event);
       if (state.scheduled) continue;
       state.scheduled = true;
-      setImmediate(() => void this.drainListenerEvents(state));
+      setTimeout(() => void this.drainListenerEvents(state), 0);
     }
   }
 
@@ -1283,7 +1330,9 @@ export class EventBus {
       }
     }
     if (state.active && state.pending.length > 0) {
-      setImmediate(() => void this.drainListenerEvents(state));
+      // A non-empty listener backlog is background work. Leave a real poll
+      // window so continuously arriving observations cannot starve interfaces.
+      setTimeout(() => void this.drainListenerEvents(state), EVENT_LISTENER_BACKLOG_DELAY_MS);
     } else {
       state.scheduled = false;
     }
@@ -1328,12 +1377,15 @@ export class EventBus {
   }
 
   private flushFailureEvents(): void {
-    if (this.reportingFailures) return;
-    this.reportingFailures = true;
-    try {
-      while (this.pendingFailureEvents.length > 0) {
-        const failure = this.pendingFailureEvents.shift();
-        if (!failure) continue;
+    if (this.reportingFailures || this.failureFlushScheduled || this.pendingFailureEvents.length === 0) return;
+    this.failureFlushScheduled = true;
+    setTimeout(() => {
+      this.failureFlushScheduled = false;
+      if (this.reportingFailures) return;
+      const failure = this.pendingFailureEvents.shift();
+      if (!failure) return;
+      this.reportingFailures = true;
+      try {
         try {
           this.emit(failure);
         } catch (error) {
@@ -1346,10 +1398,11 @@ export class EventBus {
             `[event-bus] failed to persist subscriber.failed: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
+      } finally {
+        this.reportingFailures = false;
+        this.flushFailureEvents();
       }
-    } finally {
-      this.reportingFailures = false;
-    }
+    }, 0);
   }
 }
 

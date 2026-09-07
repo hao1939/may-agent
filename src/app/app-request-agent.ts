@@ -73,8 +73,8 @@ function requestPrompt(app: Readonly<AppDefinition>, request: Readonly<AppReques
     "Add durable work only when the human asks for an outcome that cannot be fulfilled in this bounded answer. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
     ...(usesStandingFollowUp
       ? [
-          `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Choose another App from Installed Apps when it owns the outcome; choose ${app.id} only when this App is genuinely the best owner. Do not return dependencies; the standing App Task owns Task linkage and follow-through.`,
-          "A followUp must include a useful immediate response explaining what you understood. The bounded conversation request completes when that durable event is accepted; it does not wait for another App.",
+          `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Choose another App from Installed Apps when it owns the outcome; choose ${app.id} only when this App is genuinely the best owner. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
+          "A followUp must include a useful immediate response explaining what you understood. The bounded conversation request completes when the responsible App request is durably accepted; it does not wait for that Task to finish.",
         ]
       : [
           "Continue an exact unfinished Task with taskId whenever its owner and goal can fulfill the intent. Omit taskId only for genuinely new work whose outcome or accountable owner changed. Never create a sibling merely because work is pending or waiting.",

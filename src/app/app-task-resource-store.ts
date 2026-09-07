@@ -1,19 +1,20 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { basename } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
-import { getDb } from "../lib/requests.js";
-import { ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
+import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import type { AppTaskAttempt, AppTaskCondition, AppTaskResource, AppTaskTrigger } from "./app-task-state.js";
+import type {
+  AppTaskAttempt,
+  AppTaskCancellation,
+  AppTaskCondition,
+  AppTaskResource,
+  AppTaskTrigger,
+} from "./app-task-state.js";
 import {
   normalizeTaskStateInPlace,
-  readTaskState,
-  withTaskStateLock,
+  normalizeTaskGroup,
   type AppTaskAdmission,
   type TaskCompletionReceipt,
-  type TaskNode,
-  type TaskStateConfig,
+  type TaskGroup,
   type TaskTree,
 } from "./app-task-store.js";
 
@@ -112,6 +113,18 @@ export type TaskResourceWrite = {
   nextCheckAt?: number | null;
 };
 
+export type AppTaskControlReceipt = {
+  controlKey: string;
+  appId: string;
+  taskId: string;
+  action: "retry" | "cancel";
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  appliedResourceVersion: number;
+  appliedAt: number;
+  result?: unknown;
+};
+
 export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
   expectMissingTaskIds?: string[];
@@ -121,12 +134,13 @@ export type AppTaskResourceMutation = {
   deleteAttemptIds?: string[];
   conditions?: AppTaskCondition[];
   deleteConditionIds?: string[];
+  pruneConditionIds?: string[];
   receipts?: TaskCompletionReceipt[];
   deleteReceiptIds?: string[];
-  groups?: TaskNode[];
-  deleteGroupIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
+  cancellations?: AppTaskCancellation[];
+  controlReceipts?: AppTaskControlReceipt[];
 };
 
 export class AppTaskResourceStore {
@@ -150,7 +164,7 @@ export class AppTaskResourceStore {
     return new AppTaskResourceStore(db, normalized, false);
   }
 
-  /** Discover an already-cut-over App without creating or activating state. */
+  /** Discover an active App without creating or activating state. */
   static activeFromDb(db: SqliteDb, appId: string): AppTaskResourceStore | null {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) return null;
@@ -269,24 +283,20 @@ export class AppTaskResourceStore {
     }
   }
 
-  importPausedSnapshot(
+  /** Atomically establish resource authority for a brand-new App seed. */
+  bootstrapSnapshot(
     treeInput: TaskTree,
     sourceRevision: string,
     readyTaskIds: Iterable<string> = [],
-    options: { activate?: boolean; finalLifecycle?: "active" | "paused" } = {},
   ): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
-    if (tree.project_lifecycle !== "paused") throw new Error("Task resource import requires project_lifecycle=paused");
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
       throw new Error(`Task snapshot project ${tree.project} does not match App ${this.appId}`);
     }
     const ready = new Set(readyTaskIds);
     transaction(this.db, () => {
       const currentAuthority = this.meta("authority");
-      if (currentAuthority === "resources") {
-        throw new Error(`Task resource authority for ${this.appId} is already active`);
-      }
-      if (options.activate && currentAuthority) {
+      if (currentAuthority) {
         throw new Error(`Task resource bootstrap for ${this.appId} found existing ${currentAuthority} authority`);
       }
       for (const table of [
@@ -376,25 +386,15 @@ export class AppTaskResourceStore {
           version: tree.version,
           project: tree.project,
           updated_at: tree.updated_at,
-          project_lifecycle: options.finalLifecycle ?? tree.project_lifecycle,
+          project_lifecycle: tree.project_lifecycle === "paused" ? "paused" : "active",
           root_task_id: tree.root_task_id,
-          satisfied_dependency_ids: tree.satisfied_dependency_ids ?? [],
         }),
       );
       this.setMeta("source_revision", sourceRevision);
-      this.setMeta("imported_at", new Date().toISOString());
-      this.setMeta("authority", options.activate ? "resources" : "shadow");
-      if (options.activate) this.setMeta("activated_at", new Date().toISOString());
+      this.setMeta("authority", "resources");
+      this.setMeta("activated_at", new Date().toISOString());
       this.bumpRevision();
     });
-  }
-
-  /** Atomically establish resource authority for a brand-new App seed. */
-  bootstrapSnapshot(treeInput: TaskTree, sourceRevision: string): void {
-    const tree = structuredClone(treeInput);
-    const finalLifecycle = tree.project_lifecycle === "paused" ? "paused" : "active";
-    tree.project_lifecycle = "paused";
-    this.importPausedSnapshot(tree, sourceRevision, [], { activate: true, finalLifecycle });
   }
 
   sourceRevision(): string | null {
@@ -411,25 +411,7 @@ export class AppTaskResourceStore {
   }
 
   private bumpRevision(): void {
-    this.db
-      .prepare(
-        `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
-         ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
-      )
-      .run(this.appId);
-  }
-
-  activate(expectedSourceRevision: string): void {
-    transaction(this.db, () => {
-      const sourceRevision = this.sourceRevision();
-      if (!sourceRevision || sourceRevision !== expectedSourceRevision) {
-        throw new Error(
-          `Task resource activation revision mismatch: expected ${expectedSourceRevision}, found ${sourceRevision ?? "none"}`,
-        );
-      }
-      this.setMeta("authority", "resources");
-      this.setMeta("activated_at", new Date().toISOString());
-    });
+    advanceTaskResourceRevision(this.db, this.appId);
   }
 
   setProjectLifecycle(lifecycle: "active" | "paused"): void {
@@ -443,6 +425,29 @@ export class AppTaskResourceStore {
       );
       this.bumpRevision();
     });
+  }
+
+  /** Refresh the loaded App policy projected for resource-backed read models. */
+  setConfiguredMaxConcurrent(maxConcurrent: number): void {
+    if (!Number.isSafeInteger(maxConcurrent) || maxConcurrent < 1) {
+      throw new Error("Task resource maxConcurrent must be a positive safe integer");
+    }
+    transaction(this.db, () => {
+      if (!this.isActive()) throw new Error("Task resource configuration requires active resource authority");
+      const rawMetadata = this.meta("app_metadata");
+      if (!rawMetadata) throw new Error("Task resource store has no App metadata");
+      const metadata = parseJson<Record<string, unknown>>(rawMetadata);
+      if (metadata.max_concurrent === maxConcurrent) return;
+      this.setMeta("app_metadata", json({ ...metadata, max_concurrent: maxConcurrent }));
+      this.bumpRevision();
+    });
+  }
+
+  configuredMaxConcurrent(): number | null {
+    const rawMetadata = this.meta("app_metadata");
+    if (!rawMetadata) return null;
+    const value = Number(parseJson<Record<string, unknown>>(rawMetadata).max_concurrent);
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
   }
 
   rootTaskId(): string | null {
@@ -487,6 +492,13 @@ export class AppTaskResourceStore {
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
   }
 
+  readControlReceipt(controlKey: string): AppTaskControlReceipt | null {
+    const row = this.db
+      .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = ? AND app_id = ?")
+      .get(controlKey, this.appId) as { receipt_json?: string } | null;
+    return row?.receipt_json ? parseJson<AppTaskControlReceipt>(row.receipt_json) : null;
+  }
+
   readTaskConditions(taskId: string): AppTaskCondition[] {
     const rows = this.db
       .prepare(
@@ -507,6 +519,13 @@ export class AppTaskResourceStore {
         .prepare("SELECT 1 AS cancelled FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
         .get(this.appId, taskId),
     );
+  }
+
+  readCancellation(taskId: string): AppTaskCancellation | null {
+    const row = this.db
+      .prepare("SELECT cancellation_json FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
+      .get(this.appId, taskId) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseJson<AppTaskCancellation>(row.cancellation_json) : null;
   }
 
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
@@ -544,7 +563,10 @@ export class AppTaskResourceStore {
   /** One event-type-first lookup across all resource-backed Apps. */
   readConditionRoutesForAllApps(
     eventType: string,
+    subjects?: readonly string[],
   ): Array<{ appId: string; condition: AppTaskCondition; taskIds: string[] }> {
+    const exactSubjects = subjects ? [...new Set(subjects.map((value) => value.trim()).filter(Boolean))] : undefined;
+    if (exactSubjects?.length === 0) return [];
     const rows = this.db
       .prepare(
         `SELECT c.app_id, c.condition_id, c.condition_json, linked.task_id
@@ -554,11 +576,16 @@ export class AppTaskResourceStore {
          JOIN app_tasks task
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE json_extract(c.condition_json, '$.spec.type') = ?
+           ${
+             exactSubjects
+               ? `AND json_extract(c.condition_json, '$.spec.subject') IN (${exactSubjects.map(() => "?").join(", ")})`
+               : ""
+           }
            AND c.state <> 'true'
            AND task.phase IN ('waiting', 'running')
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
-      .all(eventType) as Array<{
+      .all(eventType, ...(exactSubjects ?? [])) as Array<{
       app_id?: string;
       condition_id?: string;
       condition_json?: string;
@@ -673,32 +700,42 @@ export class AppTaskResourceStore {
       resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
       if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
     }
-    return normalizeTaskStateInPlace({
+    return {
       ...(typeof metadata.version === "number" ? { version: metadata.version } : {}),
       ...(typeof metadata.project === "string" ? { project: metadata.project } : {}),
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
       ...(typeof metadata.project_lifecycle === "string" ? { project_lifecycle: metadata.project_lifecycle } : {}),
       ...(typeof metadata.root_task_id === "string" ? { root_task_id: metadata.root_task_id } : {}),
-      satisfied_dependency_ids: Array.isArray(metadata.satisfied_dependency_ids)
-        ? metadata.satisfied_dependency_ids.filter((value): value is string => typeof value === "string")
-        : [],
       resources,
       taskTriggers,
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
-      groups: this.jsonMap<TaskNode>("app_task_groups", "group_id", "group_json"),
+      groups: Object.fromEntries(
+        Object.entries(this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json")).map(([id, group]) => [
+          id,
+          normalizeTaskGroup(id, group),
+        ]),
+      ),
       appTaskAdmissions: this.jsonMap<AppTaskAdmission>("app_task_admissions", "task_id", "admission_json"),
-      tasks: {},
-    });
+    };
   }
 
   /**
    * Read the bounded graph needed to reconcile named tasks. This includes
    * their parent chain, direct children, dependencies, attempts, Conditions,
-   * and completed direct children, but never unrelated App history.
+   * and completed direct children, but never unrelated App history. A current
+   * projection may bound direct children and omit attempt and completed-child
+   * history. A child limit of zero omits related children entirely.
    */
-  readTaskContext(input: { taskIds: Iterable<string>; admissionIds?: Iterable<string> }): TaskTree {
+  readTaskContext(
+    input: {
+      taskIds: Iterable<string>;
+      admissionIds?: Iterable<string>;
+      conditionIds?: Iterable<string>;
+    },
+    options: { includeHistory?: boolean; childLimit?: number } = {},
+  ): TaskTree {
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
     const metadata = parseJson<Record<string, unknown>>(rawMetadata);
@@ -731,18 +768,58 @@ export class AppTaskResourceStore {
       }
     }
 
-    if (requested.size > 0) {
+    const requestedChildLimit = options.childLimit;
+    if (requested.size > 0 && requestedChildLimit !== 0) {
       const relatedTo = [...requested];
+      const childLimit =
+        Number.isInteger(requestedChildLimit) && Number(requestedChildLimit) > 0
+          ? Math.min(1_000, Number(requestedChildLimit))
+          : undefined;
+      const rows = this.db
+        .prepare(
+          childLimit === undefined
+            ? `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
+               FROM app_task_relations relation
+               JOIN app_tasks task
+                 ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+               WHERE relation.app_id = ?
+                 AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})`
+            : `SELECT task_id, resource_json, trigger_json FROM (
+                 SELECT task.task_id, task.resource_json, task.trigger_json,
+                   ROW_NUMBER() OVER (
+                     PARTITION BY relation.target_task_id ORDER BY relation.source_task_id
+                   ) AS position
+                 FROM app_task_relations relation
+                 JOIN app_tasks task
+                   ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
+                 WHERE relation.app_id = ? AND relation.relation_kind = 'parent'
+                   AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})
+               ) WHERE position <= ?`,
+        )
+        .all(this.appId, ...relatedTo, ...(childLimit === undefined ? [] : [childLimit])) as Array<{
+        task_id?: string;
+        resource_json?: string;
+        trigger_json?: string | null;
+      }>;
+      for (const row of rows) {
+        if (!row.task_id || !row.resource_json) continue;
+        resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
+        if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
+      }
+    }
+
+    const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
+    if (requestedConditionIds.length > 0) {
       const rows = this.db
         .prepare(
           `SELECT DISTINCT task.task_id, task.resource_json, task.trigger_json
-           FROM app_task_relations relation
+           FROM app_task_condition_routes route
            JOIN app_tasks task
-             ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
-           WHERE relation.app_id = ?
-             AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})`,
+             ON task.app_id = route.app_id AND task.task_id = route.task_id
+           WHERE route.app_id = ?
+             AND route.condition_id IN (${requestedConditionIds.map(() => "?").join(", ")})`,
         )
-        .all(this.appId, ...relatedTo) as Array<{
+        .all(this.appId, ...requestedConditionIds) as Array<{
         task_id?: string;
         resource_json?: string;
         trigger_json?: string | null;
@@ -755,31 +832,35 @@ export class AppTaskResourceStore {
     }
 
     const taskIds = Object.keys(resources);
-    const attempts = taskIds.length
-      ? Object.fromEntries(
-          (
-            this.db
-              .prepare(
-                `SELECT attempt_id, attempt_json FROM (
+    const attempts =
+      options.includeHistory !== false && taskIds.length
+        ? Object.fromEntries(
+            (
+              this.db
+                .prepare(
+                  `SELECT attempt_id, attempt_json FROM (
                    SELECT attempt_id, attempt_json,
                      ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
                  ) WHERE position <= ?`,
-              )
-              .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
-              attempt_id?: string;
-              attempt_json?: string;
-            }>
-          ).flatMap((row) =>
-            row.attempt_id && row.attempt_json
-              ? [[row.attempt_id, parseJson<AppTaskAttempt>(row.attempt_json)] as const]
-              : [],
-          ),
-        )
-      : {};
+                )
+                .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                attempt_id?: string;
+                attempt_json?: string;
+              }>
+            ).flatMap((row) =>
+              row.attempt_id && row.attempt_json
+                ? [[row.attempt_id, parseJson<AppTaskAttempt>(row.attempt_json)] as const]
+                : [],
+            ),
+          )
+        : {};
     const conditionIds = [
-      ...new Set(Object.values(resources).flatMap((resource) => resource.status.conditionIds ?? [])),
+      ...new Set([
+        ...Object.values(resources).flatMap((resource) => resource.status.conditionIds ?? []),
+        ...(input.conditionIds ?? []),
+      ]),
     ];
     const conditions = conditionIds.length
       ? Object.fromEntries(
@@ -808,7 +889,7 @@ export class AppTaskResourceStore {
             )
             .all(this.appId, ...receiptIds) as Array<{ receipt_id?: string; receipt_json?: string }>)
         : []),
-      ...(requested.size
+      ...(options.includeHistory !== false && requested.size
         ? (this.db
             .prepare(
               `SELECT receipt_id, receipt_json FROM app_task_receipts
@@ -842,7 +923,7 @@ export class AppTaskResourceStore {
         )
       : {};
 
-    const groups: Record<string, TaskNode> = {};
+    const groups: Record<string, TaskGroup> = {};
     let pendingGroupIds = [
       ...new Set([
         ...[...requested].filter((id) => !resources[id]),
@@ -861,7 +942,7 @@ export class AppTaskResourceStore {
       pendingGroupIds = [];
       for (const row of rows) {
         if (!row.group_id || !row.group_json || groups[row.group_id]) continue;
-        const group = parseJson<TaskNode>(row.group_json);
+        const group = normalizeTaskGroup(row.group_id, parseJson<TaskGroup>(row.group_json));
         groups[row.group_id] = group;
         if (group.parent_id && !groups[group.parent_id] && !resources[group.parent_id]) {
           pendingGroupIds.push(group.parent_id);
@@ -869,13 +950,12 @@ export class AppTaskResourceStore {
       }
     }
 
-    return normalizeTaskStateInPlace({
+    return {
       ...(typeof metadata.version === "number" ? { version: metadata.version } : {}),
       ...(typeof metadata.project === "string" ? { project: metadata.project } : {}),
       ...(typeof metadata.updated_at === "string" ? { updated_at: metadata.updated_at } : {}),
       ...(typeof metadata.project_lifecycle === "string" ? { project_lifecycle: metadata.project_lifecycle } : {}),
       ...(typeof metadata.root_task_id === "string" ? { root_task_id: metadata.root_task_id } : {}),
-      satisfied_dependency_ids: [],
       resources,
       taskTriggers,
       attempts,
@@ -883,8 +963,7 @@ export class AppTaskResourceStore {
       receipts,
       groups,
       appTaskAdmissions,
-      tasks: {},
-    });
+    };
   }
 
   listRecoveryCandidates(now = Date.now(), limit = 256, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage {
@@ -1195,6 +1274,19 @@ export class AppTaskResourceStore {
           .run(this.appId, condition.metadata.id, condition.status.state, json(condition));
       }
       for (const write of mutation.tasks ?? []) this.putTaskConditionRoutes(write.resource);
+      for (const conditionId of new Set(mutation.pruneConditionIds ?? [])) {
+        this.db
+          .prepare(
+            `DELETE FROM app_task_conditions
+             WHERE app_id = ? AND condition_id = ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_condition_routes route
+                 WHERE route.app_id = app_task_conditions.app_id
+                   AND route.condition_id = app_task_conditions.condition_id
+               )`,
+          )
+          .run(this.appId, conditionId);
+      }
       for (const receiptId of new Set(mutation.deleteReceiptIds ?? [])) {
         this.db.prepare("DELETE FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?").run(this.appId, receiptId);
       }
@@ -1209,17 +1301,6 @@ export class AppTaskResourceStore {
           .run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
         indexTaskReference(this.db, this.appId, receipt.metadata.id);
       }
-      for (const groupId of new Set(mutation.deleteGroupIds ?? [])) {
-        this.db.prepare("DELETE FROM app_task_groups WHERE app_id = ? AND group_id = ?").run(this.appId, groupId);
-      }
-      for (const group of mutation.groups ?? []) {
-        this.db
-          .prepare(
-            `INSERT INTO app_task_groups(app_id, group_id, group_json) VALUES (?, ?, ?)
-           ON CONFLICT(app_id, group_id) DO UPDATE SET group_json=excluded.group_json`,
-          )
-          .run(this.appId, group.id, json(group));
-      }
       for (const admissionId of new Set(mutation.deleteAdmissionIds ?? [])) {
         this.db
           .prepare("DELETE FROM app_task_admissions WHERE app_id = ? AND task_id = ?")
@@ -1233,6 +1314,42 @@ export class AppTaskResourceStore {
           )
           .run(this.appId, admission.taskId, json(admission.value));
       }
+      for (const cancellation of mutation.cancellations ?? []) {
+        if (cancellation.appId !== this.appId) throw new Error("Task cancellation belongs to another App");
+        this.db
+          .prepare(
+            `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+             VALUES (?, ?, ?, ?, ?)`,
+          )
+          .run(
+            cancellation.appId,
+            cancellation.taskId,
+            epoch(cancellation.cancelledAt) ?? 0,
+            cancellation.reason,
+            json(cancellation),
+          );
+      }
+      for (const receipt of mutation.controlReceipts ?? []) {
+        if (receipt.appId !== this.appId) throw new Error("Task control receipt belongs to another App");
+        this.db
+          .prepare(
+            `INSERT INTO app_task_control_receipts(
+               control_key, app_id, task_id, action, expected_generation,
+               expected_resource_version, applied_resource_version, applied_at, receipt_json
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            receipt.controlKey,
+            receipt.appId,
+            receipt.taskId,
+            receipt.action,
+            receipt.expectedGeneration,
+            receipt.expectedResourceVersion,
+            receipt.appliedResourceVersion,
+            receipt.appliedAt,
+            json(receipt),
+          );
+      }
       this.bumpRevision();
       return true;
     });
@@ -1240,97 +1357,55 @@ export class AppTaskResourceStore {
 
   setRecoveryState(
     taskId: string,
-    input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null },
+    input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null; expectedRevision?: number },
   ): boolean {
     const assignments: string[] = [];
-    const values: unknown[] = [];
+    const assignmentValues: unknown[] = [];
+    const changedPredicates: string[] = [];
+    const expectedValues: unknown[] = [];
     if (input.ready !== undefined) {
       assignments.push("ready = ?");
-      values.push(input.ready ? 1 : 0);
+      assignmentValues.push(input.ready ? 1 : 0);
+      changedPredicates.push("ready IS NOT ?");
+      expectedValues.push(input.ready ? 1 : 0);
     }
     if (input.changed !== undefined) {
       assignments.push("changed = ?");
-      values.push(input.changed ? 1 : 0);
+      assignmentValues.push(input.changed ? 1 : 0);
+      changedPredicates.push("changed IS NOT ?");
+      expectedValues.push(input.changed ? 1 : 0);
     }
     if (input.nextCheckAt !== undefined) {
       assignments.push("next_check_at = ?");
-      values.push(input.nextCheckAt);
+      assignmentValues.push(input.nextCheckAt);
+      changedPredicates.push("next_check_at IS NOT ?");
+      expectedValues.push(input.nextCheckAt);
     }
     if (!assignments.length) return false;
-    values.push(this.appId, taskId);
     const changed =
       this.db
         .prepare(
           `UPDATE app_tasks SET ${assignments.join(", ")}
            WHERE app_id = ? AND task_id = ?
+             AND (${changedPredicates.join(" OR ")})
+             AND (? IS NULL OR ? = (
+               SELECT CAST(value AS INTEGER) FROM app_task_store_meta
+               WHERE app_id = app_tasks.app_id AND key = 'revision'
+             ))
              AND NOT EXISTS (
                SELECT 1 FROM app_task_cancellations cancelled
                WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
              )`,
         )
-        .run(...values).changes > 0;
-    if (changed) this.bumpRevision();
+        .run(
+          ...assignmentValues,
+          this.appId,
+          taskId,
+          ...expectedValues,
+          input.expectedRevision ?? null,
+          input.expectedRevision ?? null,
+        ).changes > 0;
     return changed;
   }
 
-  shadowCompare(treeInput: TaskTree): string[] {
-    const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
-    const snapshot = this.readSnapshot();
-    const mismatches: string[] = [];
-    const registries: Array<[string, unknown, unknown]> = [
-      ["resources", tree.resources ?? {}, snapshot.resources ?? {}],
-      ["triggers", tree.taskTriggers ?? {}, snapshot.taskTriggers ?? {}],
-      ["attempts", tree.attempts ?? {}, snapshot.attempts ?? {}],
-      ["conditions", tree.conditions ?? {}, snapshot.conditions ?? {}],
-      ["receipts", tree.receipts ?? {}, snapshot.receipts ?? {}],
-      ["groups", tree.groups ?? {}, snapshot.groups ?? {}],
-      ["admissions", tree.appTaskAdmissions ?? {}, snapshot.appTaskAdmissions ?? {}],
-    ];
-    for (const [name, source, stored] of registries) if (json(source) !== json(stored)) mismatches.push(name);
-    if (tree.project !== snapshot.project) mismatches.push("metadata:project");
-    if (tree.project_lifecycle !== snapshot.project_lifecycle) mismatches.push("metadata:lifecycle");
-    if (tree.root_task_id !== snapshot.root_task_id) mismatches.push("metadata:root-task");
-    return mismatches.sort();
-  }
-}
-
-function appIdFor(config: TaskStateConfig, tree: TaskTree): string {
-  return (tree.project?.trim() || basename(config.appDir).replace(/\.app$/, "")).replace(/\.app$/, "");
-}
-
-export function importPausedTaskStateToResourceStore(
-  config: TaskStateConfig,
-  persistDir: string,
-  readyTaskIds: Iterable<string> = [],
-  options: { activate?: boolean; expectedSourceRevision?: string } = {},
-): { appId: string; sourceRevision: string; mismatches: string[] } {
-  return withTaskStateLock(config, () => {
-    const tree = readTaskState(config);
-    const runningAttempts = Object.values(tree.attempts ?? {}).filter((attempt) => attempt.state === "running");
-    if (runningAttempts.length) {
-      throw new Error(
-        `Task resource migration requires drained attempts; still running: ${runningAttempts
-          .slice(0, 8)
-          .map((attempt) => attempt.metadata.id)
-          .join(", ")}`,
-      );
-    }
-    const sourceRevision = createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
-    if (options.expectedSourceRevision && sourceRevision !== options.expectedSourceRevision) {
-      throw new Error(
-        `Task resource source revision mismatch: expected ${options.expectedSourceRevision}, found ${sourceRevision}`,
-      );
-    }
-    const appId = appIdFor(config, tree);
-    const store = AppTaskResourceStore.fromDb(getDb(persistDir), appId);
-    store.importPausedSnapshot(tree, sourceRevision, readyTaskIds);
-    const mismatches = store.shadowCompare(tree);
-    if (options.activate) {
-      if (mismatches.length) throw new Error(`Task resource shadow comparison failed: ${mismatches.join(", ")}`);
-      const currentRevision = createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
-      if (currentRevision !== sourceRevision) throw new Error("Task state changed during resource activation");
-      store.activate(sourceRevision);
-    }
-    return { appId, sourceRevision, mismatches };
-  });
 }

@@ -1,19 +1,18 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
+import { isDeepStrictEqual, promisify } from "node:util";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
-  chmodSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  readlinkSync,
-  readdirSync,
-  rmSync,
-  rmdirSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+  chmod as chmodAsync,
+  lstat as lstatAsync,
+  mkdir as mkdirAsync,
+  readFile as readFileAsync,
+  readlink as readlinkAsync,
+  rm as rmAsync,
+  rmdir as rmdirAsync,
+  symlink as symlinkAsync,
+  writeFile as writeFileAsync,
+} from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { SubagentManager } from "../lib/index.js";
@@ -55,9 +54,9 @@ import {
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
-  cacheTaskStateReads,
+  cacheTaskSnapshots,
   ResourceTaskMutationStaleError,
-  type ResourceTaskStateConfig,
+  type AppTaskContext,
   type TaskTree,
 } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
@@ -82,7 +81,6 @@ import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.j
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
-import { executeTaskWithCli, type TaskCliTool } from "./app-task-cli-executor.js";
 import { HostCapacity } from "./host-capacity.js";
 import type { AppTaskQueueOptions } from "./app-task-queue.js";
 import {
@@ -104,6 +102,7 @@ import {
   assertAppTaskEffectFresh,
   associateAppTaskSession,
   claimObservedAppTask,
+  cancelAppTask,
   completeAppTask,
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
@@ -135,13 +134,14 @@ import {
   retryFailedAppTask,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
-  taskReconciliationConfig,
+  appTaskContext,
   renewAppTaskAttemptLease,
   APP_TASK_ATTEMPT_LEASE_DURATION_MS,
   APP_TASK_RECOVERY_OWNER,
   type AppTaskAttemptRecovery,
   type AppTaskChildContext,
   type AppTaskClaim,
+  type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
 import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace, type PreparedTaskWorkspace } from "./app-task-workspace.js";
 
@@ -212,12 +212,10 @@ function publishAppTaskTiming(
 
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
-const APP_TASK_CLI_TIMEOUT_MS = 30 * 60_000;
+const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
 
 export interface AppTaskRuntimeDescriptor {
   id: string;
-  /** Stable writable App root; definition code may live in a release checkout. */
-  stateAppDir?: string;
   appDir: string;
   projectDir: string;
   agent: string;
@@ -229,8 +227,6 @@ export interface AppTaskRuntimeDescriptor {
 
 export interface AppTaskRuntimeOptions {
   projectsRoot: string;
-  /** Canonical writable projects root, independent of definition releases. */
-  stateProjectsRoot?: string;
   projectRoot: string;
   persistDir?: string;
   agentsRoot?: string;
@@ -238,6 +234,20 @@ export interface AppTaskRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
   hostCapacity: HostCapacity;
+  /**
+   * Optional execution boundary for one claimed Task attempt. Production uses
+   * an isolated process; tests and explicit single-process tools may omit it.
+   * The canonical Task resource remains the scheduling and fencing authority.
+   */
+  executeAttempt?: (input: { appId: string; taskId: string; dispatch: AppTaskDispatch }) => Promise<string[]>;
+  /** Optional process boundary for the startup repair pass. */
+  executeRecovery?: () => Promise<void>;
+  /** Install descriptors and routing without starting local controllers. */
+  installControllers?: boolean;
+  /** Limit descriptor preparation to exact Apps in a one-attempt worker. */
+  taskAppIds?: readonly string[];
+  /** The parent publishes read models; execution workers reuse them. */
+  syncReadModels?: boolean;
   /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
   executors?: Readonly<Record<string, TaskExecutor>>;
   appRegistry?: AppRegistry;
@@ -519,11 +529,12 @@ function appWorkflowRuntimePaths(
   sharedGuardsDir: string;
 } {
   const runtime = requireWorkflowRuntimeOptions(opts);
-  const appAgentDir = localAgentDir(descriptor.appDir, agentName);
+  const sourceAppDir = join(opts.projectsRoot, basename(descriptor.appDir));
+  const appAgentDir = localAgentDir(sourceAppDir, agentName);
   const globalAgentDir = join(runtime.agentsRoot, agentName);
   const agentDir = appAgentDir ?? globalAgentDir;
   return {
-    agentsRoot: appAgentDir ? join(descriptor.appDir, "agents") : runtime.agentsRoot,
+    agentsRoot: appAgentDir ? join(sourceAppDir, "agents") : runtime.agentsRoot,
     workflowDir: join(agentDir, "workflows"),
     guardsDir: join(agentDir, "guards"),
     sharedGuardsDir: join(runtime.sharedRoot, "guards"),
@@ -574,7 +585,7 @@ async function ensureAppAgentRegistered(
 ): Promise<boolean> {
   if (opts.manager.hasAgent(agentName)) return true;
 
-  const agentDir = localAgentDir(descriptor.appDir, agentName);
+  const agentDir = localAgentDir(join(opts.projectsRoot, basename(descriptor.appDir)), agentName);
   const registered = opts.registerLocalAgent
     ? await opts.registerLocalAgent(agentName, descriptor.appDir, agentDir)
     : false;
@@ -708,7 +719,7 @@ function readPersistedTerminalAgentResult(persistDir: string | undefined, sessio
 
 export function consumePersistedTerminalAgentResult(input: {
   persistDir?: string;
-  config: ResourceTaskStateConfig;
+  config: AppTaskContext;
   descriptor: AppTaskRuntimeDescriptor;
   taskId: string;
   sessionId: string;
@@ -1099,7 +1110,7 @@ function runtimeTaskAttempt(input: {
     claim.taskId,
   );
   if (!task || task.generation !== claim.generation) {
-    throw new Error(`Task ${descriptor.id}/${claim.taskId} is no longer current`);
+    throw new ResourceTaskMutationStaleError();
   }
   const events = createAppTaskEvents({
     bus: opts.bus,
@@ -1226,6 +1237,8 @@ export function admitTaskAppDependencies(input: {
       type: "app.dependency.completed",
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
+      owner: `app:${item.appId}`,
+      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     } satisfies AppTaskConditionSpec,
   });
 
@@ -1387,13 +1400,22 @@ export function admitTaskAppDependencies(input: {
       type: "app.dependency.completed",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
+      owner: `app:${dependency.appId}`,
+      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     });
   }
 
-  return input.dependencies.map((dependency) => matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!);
+  return input.dependencies.map((dependency) => {
+    const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
+    return {
+      ...condition,
+      owner: condition.owner ?? `app:${dependency.appId}`,
+      reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
+    };
+  });
 }
 
-function openTaskAppDependencyConditions(config: ResourceTaskStateConfig, taskId: string): AppTaskConditionSpec[] {
+function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
   return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
@@ -1463,11 +1485,26 @@ export function projectAppTaskWaitPromptContext(
   };
 }
 
-function mergeTaskConditions(conditions: AppTaskConditionSpec[]): AppTaskConditionSpec[] {
+export function mergeTaskConditions(
+  conditions: AppTaskConditionSpec[],
+  authoritativeIds: ReadonlySet<string> = new Set(),
+): AppTaskConditionSpec[] {
   const merged = new Map<string, AppTaskConditionSpec>();
   for (const condition of conditions) {
     const current = merged.get(condition.id);
     if (current && !isDeepStrictEqual(current, condition)) {
+      // Persisted Conditions are the reconciliation authority. An executor may
+      // echo different advisory metadata from its bounded prompt, but the
+      // observable identity must still match. Retargeting the subject, type, or
+      // expected fact remains a conflict rather than silently changing a wait.
+      if (
+        authoritativeIds.has(condition.id) &&
+        current.type === condition.type &&
+        current.subject === condition.subject &&
+        isDeepStrictEqual(current.expected, condition.expected)
+      ) {
+        continue;
+      }
       throw new Error(`Task result conflicts with existing Condition ${condition.id}`);
     }
     merged.set(condition.id, condition);
@@ -1696,6 +1733,8 @@ type PlannedResidueFileRestore = {
   restore: ResidueFileSnapshot | "index";
 };
 
+const execFileAsync = promisify(execFile);
+
 export type CanonicalAgentResidueCleanupPlan = {
   guard: CanonicalUntrackedResidueGuard;
   expectedIndexData: Buffer;
@@ -1703,20 +1742,25 @@ export type CanonicalAgentResidueCleanupPlan = {
   files: Map<string, PlannedResidueFileRestore>;
 };
 
-function gitPathSet(projectDir: string, args: string[]): Set<string> {
-  const output = execFileSync("git", ["-C", projectDir, ...args]);
+async function gitPathSet(projectDir: string, args: string[]): Promise<Set<string>> {
+  const { stdout } = await execFileAsync("git", ["-C", projectDir, ...args], {
+    encoding: "buffer",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const output = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
   return new Set(output.toString("utf8").split("\0").filter(Boolean));
 }
 
-function canonicalUntrackedFiles(projectDir: string): Set<string> {
+async function canonicalUntrackedFiles(projectDir: string): Promise<Set<string>> {
   return gitPathSet(projectDir, ["ls-files", "--others", "--exclude-standard", "--full-name", "-z"]);
 }
 
-function canonicalDirtyTrackedFiles(projectDir: string): Set<string> {
-  return new Set([
-    ...gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]),
-    ...gitPathSet(projectDir, ["diff", "--cached", "--name-only", "-z"]),
+async function canonicalDirtyTrackedFiles(projectDir: string): Promise<Set<string>> {
+  const [modified, staged] = await Promise.all([
+    gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]),
+    gitPathSet(projectDir, ["diff", "--cached", "--name-only", "-z"]),
   ]);
+  return new Set([...modified, ...staged]);
 }
 
 function safeResiduePath(projectDir: string, relativePath: string): string {
@@ -1728,25 +1772,34 @@ function safeResiduePath(projectDir: string, relativePath: string): string {
   return absolutePath;
 }
 
-function snapshotResidueFile(projectDir: string, relativePath: string): ResidueFileSnapshot {
+async function snapshotResidueFile(projectDir: string, relativePath: string): Promise<ResidueFileSnapshot> {
   const absolutePath = safeResiduePath(projectDir, relativePath);
-  if (!existsSync(absolutePath)) return { exists: false };
-  const stat = lstatSync(absolutePath);
-  if (stat.isSymbolicLink()) return { exists: true, kind: "symlink", target: readlinkSync(absolutePath) };
-  return { exists: true, kind: "file", data: readFileSync(absolutePath), mode: stat.mode };
+  let stat;
+  try {
+    stat = await lstatAsync(absolutePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { exists: false };
+    throw error;
+  }
+  if (stat.isSymbolicLink()) return { exists: true, kind: "symlink", target: await readlinkAsync(absolutePath) };
+  return { exists: true, kind: "file", data: await readFileAsync(absolutePath), mode: stat.mode };
 }
 
-function restoreResidueFile(projectDir: string, relativePath: string, snapshot: ResidueFileSnapshot): void {
+async function restoreResidueFile(
+  projectDir: string,
+  relativePath: string,
+  snapshot: ResidueFileSnapshot,
+): Promise<void> {
   const absolutePath = safeResiduePath(projectDir, relativePath);
-  if (existsSync(absolutePath)) rmSync(absolutePath, { recursive: true, force: true });
+  await rmAsync(absolutePath, { recursive: true, force: true });
   if (!snapshot.exists) return;
-  mkdirSync(dirname(absolutePath), { recursive: true });
+  await mkdirAsync(dirname(absolutePath), { recursive: true });
   if (snapshot.kind === "symlink") {
-    symlinkSync(snapshot.target, absolutePath);
+    await symlinkAsync(snapshot.target, absolutePath);
     return;
   }
-  writeFileSync(absolutePath, snapshot.data);
-  chmodSync(absolutePath, snapshot.mode);
+  await writeFileAsync(absolutePath, snapshot.data);
+  await chmodAsync(absolutePath, snapshot.mode);
 }
 
 function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnapshot): boolean {
@@ -1764,31 +1817,40 @@ function residueSnapshotsEqual(left: ResidueFileSnapshot, right: ResidueFileSnap
  * disturbing dirt that predated the attempt. Workflow task worktrees have a
  * distinct workspaceDir and bypass this guard.
  */
-export function beginCanonicalAgentResidueGuard(paths: AppTaskExecutionPaths): CanonicalUntrackedResidueGuard | null {
+export async function beginCanonicalAgentResidueGuard(
+  paths: AppTaskExecutionPaths,
+): Promise<CanonicalUntrackedResidueGuard | null> {
   if (paths.workspaceDir !== paths.projectDir) return null;
   try {
-    const topLevel = resolve(
-      execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim(),
-    );
-    if (topLevel !== resolve(paths.projectDir)) return null;
-    const rawIndexPath = execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--git-path", "index"], {
+    const topLevelResult = await execFileAsync("git", ["-C", paths.projectDir, "rev-parse", "--show-toplevel"], {
       encoding: "utf8",
-    }).trim();
+    });
+    const topLevel = resolve(topLevelResult.stdout.trim());
+    if (topLevel !== resolve(paths.projectDir)) return null;
+    const indexResult = await execFileAsync("git", ["-C", paths.projectDir, "rev-parse", "--git-path", "index"], {
+      encoding: "utf8",
+    });
+    const rawIndexPath = indexResult.stdout.trim();
     const indexPath = isAbsolute(rawIndexPath) ? rawIndexPath : resolve(paths.projectDir, rawIndexPath);
-    const dirtyTrackedPaths = canonicalDirtyTrackedFiles(paths.projectDir);
-    const untrackedPaths = canonicalUntrackedFiles(paths.projectDir);
-    const indexData = readFileSync(indexPath);
-    const dirtyTracked = new Map(
-      [...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
-    );
-    const untracked = new Map(
-      [...untrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
-    );
+    const [dirtyTrackedPaths, untrackedPaths, indexData, indexStat] = await Promise.all([
+      canonicalDirtyTrackedFiles(paths.projectDir),
+      canonicalUntrackedFiles(paths.projectDir),
+      readFileAsync(indexPath),
+      lstatAsync(indexPath),
+    ]);
+    const dirtyTracked = new Map<string, ResidueFileSnapshot>();
+    for (const path of dirtyTrackedPaths) {
+      dirtyTracked.set(path, await snapshotResidueFile(paths.projectDir, path));
+    }
+    const untracked = new Map<string, ResidueFileSnapshot>();
+    for (const path of untrackedPaths) {
+      untracked.set(path, await snapshotResidueFile(paths.projectDir, path));
+    }
     return {
       projectDir: paths.projectDir,
       indexPath,
       indexData,
-      indexMode: lstatSync(indexPath).mode,
+      indexMode: indexStat.mode,
       dirtyTracked,
       untracked,
     };
@@ -1883,14 +1945,16 @@ export function hasDeployReceiptWake(events: TaskAttempt["events"]): boolean {
   return events.items.some(({ event }) => event.data?.reason === "restart-aware-deploy-receipt");
 }
 
-export function planCanonicalAgentResidueCleanup(
+export async function planCanonicalAgentResidueCleanup(
   guard: CanonicalUntrackedResidueGuard | null,
-): CanonicalAgentResidueCleanupPlan | null {
+): Promise<CanonicalAgentResidueCleanupPlan | null> {
   if (!guard || !existsSync(guard.indexPath)) return null;
 
-  const expectedIndexData = readFileSync(guard.indexPath);
-  const dirtyTrackedPaths = canonicalDirtyTrackedFiles(guard.projectDir);
-  const untrackedPaths = canonicalUntrackedFiles(guard.projectDir);
+  const [expectedIndexData, dirtyTrackedPaths, untrackedPaths] = await Promise.all([
+    readFileAsync(guard.indexPath),
+    canonicalDirtyTrackedFiles(guard.projectDir),
+    canonicalUntrackedFiles(guard.projectDir),
+  ]);
   const currentPaths = new Set([
     ...guard.dirtyTracked.keys(),
     ...guard.untracked.keys(),
@@ -1899,7 +1963,7 @@ export function planCanonicalAgentResidueCleanup(
   ]);
   const files = new Map<string, PlannedResidueFileRestore>();
   for (const path of currentPaths) {
-    const expected = snapshotResidueFile(guard.projectDir, path);
+    const expected = await snapshotResidueFile(guard.projectDir, path);
     const baseline = guard.dirtyTracked.get(path) ?? guard.untracked.get(path);
     if (baseline) {
       if (!residueSnapshotsEqual(expected, baseline)) files.set(path, { expected, restore: baseline });
@@ -1915,38 +1979,43 @@ export function planCanonicalAgentResidueCleanup(
   };
 }
 
-function restoreResidueFileFromBaselineIndex(guard: CanonicalUntrackedResidueGuard, relativePath: string): void {
+async function restoreResidueFileFromBaselineIndex(
+  guard: CanonicalUntrackedResidueGuard,
+  relativePath: string,
+): Promise<void> {
   const temporaryIndex = `${guard.indexPath}.agent-residue-${process.pid}-${Date.now()}`;
   try {
-    writeFileSync(temporaryIndex, guard.indexData);
-    chmodSync(temporaryIndex, guard.indexMode);
-    execFileSync("git", ["-C", guard.projectDir, "checkout-index", "--force", "--", relativePath], {
+    await writeFileAsync(temporaryIndex, guard.indexData);
+    await chmodAsync(temporaryIndex, guard.indexMode);
+    await execFileAsync("git", ["-C", guard.projectDir, "checkout-index", "--force", "--", relativePath], {
       env: { ...process.env, GIT_INDEX_FILE: temporaryIndex },
     });
   } finally {
-    rmSync(temporaryIndex, { force: true });
+    await rmAsync(temporaryIndex, { force: true });
   }
 }
 
-export function applyCanonicalAgentResidueCleanup(plan: CanonicalAgentResidueCleanupPlan | null): string[] {
+export async function applyCanonicalAgentResidueCleanup(
+  plan: CanonicalAgentResidueCleanupPlan | null,
+): Promise<string[]> {
   if (!plan) return [];
   const { guard } = plan;
   const restored: string[] = [];
 
   for (const [relativePath, filePlan] of plan.files) {
-    const current = snapshotResidueFile(guard.projectDir, relativePath);
+    const current = await snapshotResidueFile(guard.projectDir, relativePath);
     if (!residueSnapshotsEqual(current, filePlan.expected)) continue;
     if (filePlan.restore === "index") {
-      restoreResidueFileFromBaselineIndex(guard, relativePath);
+      await restoreResidueFileFromBaselineIndex(guard, relativePath);
     } else {
-      restoreResidueFile(guard.projectDir, relativePath, filePlan.restore);
+      await restoreResidueFile(guard.projectDir, relativePath, filePlan.restore);
     }
     restored.push(`file:${relativePath}`);
     if (filePlan.restore === "index" || filePlan.restore.exists) continue;
     let parent = dirname(safeResiduePath(guard.projectDir, relativePath));
     while (parent !== guard.projectDir) {
       try {
-        rmdirSync(parent);
+        await rmdirAsync(parent);
       } catch {
         break;
       }
@@ -1957,17 +2026,19 @@ export function applyCanonicalAgentResidueCleanup(plan: CanonicalAgentResidueCle
   if (
     plan.restoreIndex &&
     existsSync(guard.indexPath) &&
-    readFileSync(guard.indexPath).equals(plan.expectedIndexData)
+    (await readFileAsync(guard.indexPath)).equals(plan.expectedIndexData)
   ) {
-    writeFileSync(guard.indexPath, guard.indexData);
-    chmodSync(guard.indexPath, guard.indexMode);
+    await writeFileAsync(guard.indexPath, guard.indexData);
+    await chmodAsync(guard.indexPath, guard.indexMode);
     restored.push("index");
   }
   return restored;
 }
 
-export function finishCanonicalAgentResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
-  return applyCanonicalAgentResidueCleanup(planCanonicalAgentResidueCleanup(guard));
+export async function finishCanonicalAgentResidueGuard(
+  guard: CanonicalUntrackedResidueGuard | null,
+): Promise<string[]> {
+  return applyCanonicalAgentResidueCleanup(await planCanonicalAgentResidueCleanup(guard));
 }
 
 export function rejectConvergedDirectAgentResidue(
@@ -1985,6 +2056,15 @@ export function rejectConvergedDirectAgentResidue(
 
 export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
   "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
+
+export function hasSuppliedDependencyObservation(events: { items?: readonly unknown[] }): boolean {
+  return (events.items ?? []).some((item) => {
+    if (!isRecord(item) || !isRecord(item.event)) return false;
+    const event = item.event;
+    if (event.type !== "app.task.requested" || !isRecord(event.data) || !isRecord(event.data.request)) return false;
+    return isRecord(event.data.request.dependency) && Object.keys(event.data.request.dependency).length > 0;
+  });
+}
 
 function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnapshot["entries"] {
   return opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
@@ -2292,7 +2372,7 @@ async function executeTaskAgent(input: {
     trace,
     requireFinish: true,
     outputSchema: appTaskAgentResultSchema,
-    toolPolicy: "full" as const,
+    toolPolicy: hasSuppliedDependencyObservation(reconciliationEvents) ? ("full-no-tasks" as const) : ("full" as const),
     timeout: APP_TASK_AGENT_TIMEOUT_MS,
     executionRoot: input.executionPaths.workspaceDir,
   };
@@ -2355,7 +2435,7 @@ async function executeTaskAgent(input: {
           }
         })()
       : await opts.manager.callAgent(claim.agent, prompt, agentOptions);
-  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
+  const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredAgentResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchAgent>>;
   try {
@@ -2363,8 +2443,8 @@ async function executeTaskAgent(input: {
     result = await dispatchAgent();
   } finally {
     input.observer?.providerFinished();
-    const cleanupPlan = planCanonicalAgentResidueCleanup(residueGuard);
-    restoredAgentResidue = applyCanonicalAgentResidueCleanup(cleanupPlan);
+    const cleanupPlan = await planCanonicalAgentResidueCleanup(residueGuard);
+    restoredAgentResidue = await applyCanonicalAgentResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
   const handlerResult = rejectConvergedDirectAgentResidue(
@@ -2391,150 +2471,6 @@ async function executeTaskAgent(input: {
     handlerResult,
     runId: result.sessionId || null,
     ...(!done ? { executionFailed: true } : {}),
-  };
-}
-
-function appTaskCliProtocol(appId: string): string {
-  return [
-    `You are the CLI executor pursuing one Task goal owned by App ${appId}.`,
-    "Keep working through as many internal turns and tool calls as needed to satisfy the Task. The Task resource, not this CLI process or native session, owns durable status and recovery.",
-    "Do not edit Host task storage. Use the supplied workspace and paths only.",
-    "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
-    'Return {"state":"converged"|"waiting","summary":"...","evidence":[...],"actions":[],"conditions":[],"dependencies":[]} and add response for a caller-facing answer or result for App-defined machine-readable state. A waiting Task may preserve current machine state in result.',
-    "Omit optional fields when unused. Converge only when the acceptance criteria are supported by current evidence.",
-    "Do not return merely because one useful step or process turn ended.",
-    "Wait only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise keep working now.",
-    "For another App outcome, choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, put the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
-    "Task events that arrive after this process starts remain durable and will wake the next attempt; do not invent a separate work lifecycle.",
-    DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  ].join("\n");
-}
-
-async function executeTaskCli(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  attempt: TaskAttempt;
-  intent: AppTaskIntent;
-  claim: AppTaskClaim;
-  defaultParentId: string;
-  executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
-  childContext: AppTaskChildContext;
-  event?: EventEnvelope;
-  fallbackReason?: string;
-  observer?: AppTaskExecutionObserver;
-  tool: TaskCliTool;
-}): Promise<TaskCapabilityRun> {
-  const { opts, descriptor, intent, claim } = input;
-  if (!opts.persistDir) {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: `Task executor ${input.tool} requires the Host persistence directory`,
-        evidence: [],
-        actions: [],
-      },
-      runId: null,
-      unavailable: true,
-    };
-  }
-  const reconciliationEvents = input.attempt.events;
-  const dependencyCatalog = appTaskDependencyCatalog(opts, descriptor.id);
-  const prompt = [
-    appTaskCliProtocol(descriptor.id),
-    "",
-    "## Reconciliation Task",
-    "```json",
-    JSON.stringify(
-      {
-        appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        resourceVersion: claim.resourceVersion,
-        agent: claim.agent,
-        executor: input.tool,
-        role: input.attempt.role,
-        mode: claim.mode,
-        outcome: intent.outcome,
-        acceptance: intent.acceptance,
-        input: intent.input ?? {},
-        children: projectAppTaskChildPromptContext(input.childContext),
-        waits: input.attempt.waits,
-        paths: input.executionPaths,
-        declaredOutputs: input.declaredOutputPaths,
-        fallbackReason: input.fallbackReason ?? null,
-      },
-      null,
-      2,
-    ),
-    "```",
-    ...(dependencyCatalog.length
-      ? [
-          "",
-          "## Installed Apps",
-          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
-          "```json",
-          JSON.stringify(dependencyCatalog, null, 2),
-          "```",
-        ]
-      : []),
-    ...(reconciliationEvents.items.length
-      ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
-      : []),
-  ].join("\n");
-  const residueGuard = beginCanonicalAgentResidueGuard(input.executionPaths);
-  let restoredResidue: string[] = [];
-  let execution: Awaited<ReturnType<typeof executeTaskWithCli>>;
-  try {
-    input.observer?.providerStarted(Buffer.byteLength(prompt));
-    execution = await executeTaskWithCli({
-      bus: opts.bus,
-      persistDir: opts.persistDir,
-      appId: descriptor.id,
-      taskId: claim.taskId,
-      generation: claim.generation,
-      attemptId: claim.attemptId,
-      owner: claim.agent,
-      tool: input.tool,
-      cwd: input.executionPaths.workspaceDir,
-      prompt,
-      timeoutMs: APP_TASK_CLI_TIMEOUT_MS,
-      signal: input.attempt.signal,
-      ...(childEventTrace(input.event) ? { trace: childEventTrace(input.event) } : {}),
-    });
-  } finally {
-    input.observer?.providerFinished();
-    restoredResidue = finishCanonicalAgentResidueGuard(residueGuard);
-  }
-  if (execution.status === "failed") {
-    return {
-      handlerResult: {
-        state: "error",
-        summary: execution.summary,
-        evidence: execution.evidence,
-        actions: [],
-      },
-      runId: execution.cliTaskId,
-      executionFailed: true,
-    };
-  }
-  const normalized = normalizeTaskHandlerResult(
-    execution.result,
-    { type: "done", summary: `${input.tool} CLI completed`, runId: execution.cliTaskId },
-    {
-      allowNeedsAgent: false,
-      defaultParentId: input.defaultParentId,
-      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-      validateAction: input.descriptor.app.tasks?.validateAction,
-      validateCondition: input.descriptor.app.tasks?.validateCondition,
-    },
-  );
-  normalized.evidence = [...new Set([...normalized.evidence, ...execution.evidence])];
-  const handlerResult = rejectConvergedDirectAgentResidue(normalized, restoredResidue);
-  return {
-    handlerResult,
-    runId: execution.cliTaskId,
-    ...(handlerResult.state === "error" ? { executionFailed: true } : {}),
   };
 }
 
@@ -2595,19 +2531,6 @@ async function runTaskAgent(
     childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: (attempt) => executeTaskAgent({ ...input, attempt }),
-  });
-}
-
-async function runTaskCli(input: Omit<Parameters<typeof executeTaskCli>[0], "attempt">): Promise<TaskCapabilityRun> {
-  return runTaskExecutorAttempt({
-    opts: input.opts,
-    descriptor: input.descriptor,
-    claim: input.claim,
-    executionPaths: input.executionPaths,
-    declaredOutputPaths: input.declaredOutputPaths,
-    childContext: input.childContext,
-    ...(input.event ? { event: input.event } : {}),
-    execute: (attempt) => executeTaskCli({ ...input, attempt }),
   });
 }
 
@@ -2765,7 +2688,7 @@ function emitTaskReconciliationEvent(
 }
 
 function recoverStaleTaskResult(
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: AppTaskContext,
   claim: AppTaskClaim,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
   const recovery = releaseStaleAppTaskResult(
@@ -2780,7 +2703,7 @@ function recoverStaleTaskResult(
 }
 
 function recoverStaleTaskActionResult(
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: AppTaskContext,
   claim: AppTaskClaim,
   error: unknown,
 ): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
@@ -3222,29 +3145,6 @@ async function reconcileTask(input: {
           name: executorKey,
           execute: registered,
         });
-      } else if (executorKey === "codex" || executorKey === "claude") {
-        primaryResult ??= await runTaskCli({
-          opts,
-          descriptor,
-          intent,
-          claim: primary,
-          defaultParentId,
-          executionPaths,
-          declaredOutputPaths,
-          childContext,
-          event,
-          tool: executorKey,
-          ...(primary.handoff
-            ? {
-                fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-                  primary.handoff.evidence.length
-                    ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
-                    : ""
-                }`,
-              }
-            : {}),
-          observer,
-        });
       } else {
         primaryResult ??= {
           handlerResult: {
@@ -3471,11 +3371,10 @@ async function reconcileTask(input: {
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
             })
           : [];
-        const conditions = mergeTaskConditions([
-          ...existingAppDependencyConditions,
-          ...(primaryHandlerResult.conditions ?? []),
-          ...dependencyConditions,
-        ]);
+        const conditions = mergeTaskConditions(
+          [...existingAppDependencyConditions, ...(primaryHandlerResult.conditions ?? []), ...dependencyConditions],
+          new Set(existingAppDependencyConditions.map((condition) => condition.id)),
+        );
         primaryHandlerResult.conditions = conditions.length > 0 ? conditions : undefined;
       } catch (error) {
         const stale = rejectStaleEffect(error);
@@ -3556,6 +3455,7 @@ async function reconcileTask(input: {
     if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
+      if (retry.status !== "released") return [];
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -3564,7 +3464,6 @@ async function reconcileTask(input: {
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
       });
-      if (retry.status === "missing") return [];
       throw new Error(primaryHandlerResult.summary);
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
@@ -3615,6 +3514,29 @@ async function reconcileTask(input: {
     });
     return [intent.id];
   } catch (error) {
+    if (activeConfig && activeClaim) {
+      const stale = recoverStaleTaskActionResult(activeConfig, activeClaim, error);
+      if (stale) {
+        timing.outcome = "completed";
+        emitTaskReconciliationEvent(
+          opts,
+          descriptor,
+          activeClaim.trigger as EventEnvelope | undefined,
+          "project.task.reconciled",
+          activeClaim.taskId,
+          {
+            generation: activeClaim.generation,
+            attemptId: activeClaim.attemptId,
+            handler: activeClaim.handler,
+            disposition: "stale",
+            summary:
+              "The claimed Task changed before executor startup; stale work was discarded without retrying it as a handler failure.",
+            staleRecovery: stale.staleRecovery,
+          },
+        );
+        return stale.reconcileTaskIds;
+      }
+    }
     timing.outcome = "failed";
     if (activeConfig && activeClaim) {
       const failedConfig = activeConfig;
@@ -3685,8 +3607,37 @@ function appDependencyUpdateSubject(event: Record<string, unknown>): string | nu
   return id ? `id:${id}` : null;
 }
 
+function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
+  const containers = [event, isRecord(event.target) ? event.target : {}, isRecord(event.data) ? event.data : {}];
+  const values = new Map<string, string>();
+  for (const container of containers) {
+    for (const [field, value] of Object.entries(container)) {
+      if ((typeof value === "string" && value.trim()) || typeof value === "number" || typeof value === "boolean") {
+        values.set(field, String(value).trim());
+      }
+    }
+  }
+  const candidates = new Set<string>();
+  for (const [field, value] of values) candidates.add(`${field}:${value}`);
+  const typed: Record<string, string[]> = {
+    task: ["taskId", "task_id"],
+    session: ["sessionId", "session_id"],
+    "workflow-run": ["workflowRunId", "workflow_run_id", "runId"],
+    metric: ["metricId", "metric_id"],
+    alert: ["alertId", "alert_id"],
+    project: ["project", "projectId", "project_id"],
+    "pipeline-run": ["pipelineRunId", "pipeline_run_id", "runId", "run_id"],
+    "pull-request": ["pullRequestId", "pull_request_id", "prId", "pr_id"],
+  };
+  for (const [kind, fields] of Object.entries(typed)) {
+    const value = fields.map((field) => values.get(field)).find(Boolean);
+    if (value) candidates.add(`${kind}:${value}`);
+  }
+  return [...candidates];
+}
+
 function appDependencyUpdateWakeTaskIds(
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   event: Record<string, unknown>,
   allowedTaskIds?: Iterable<string>,
 ): string[] {
@@ -3704,16 +3655,22 @@ function appDependencyUpdateWakeTaskIds(
   ].sort();
 }
 
+type AppTaskAdmissionResult = {
+  delivery?: DeliveryResult;
+  taskIds: string[];
+  supersededSessionIds: string[];
+};
+
 function admitResolvedAppTaskEvent(input: {
-  opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   controller?: AppTaskController;
   event: Record<string, unknown>;
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
   conditionTaskIds?: string[];
-}): DeliveryResult | undefined {
-  const { opts, descriptor, controller, event, intent } = input;
+  interruptSuperseded?(observation: AppTaskObservationResult): void;
+}): AppTaskAdmissionResult {
+  const { descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
   const config = appTaskConfig(descriptor);
   const selectedConditionTaskIds = [
@@ -3731,6 +3688,7 @@ function admitResolvedAppTaskEvent(input: {
       enqueueAppTask(controller, config, taskId, { promote: true });
     }
   }
+  const wokenTaskIds = new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes]);
   // A frozen Condition route is idempotent admission authority. On recovery,
   // its task may already have consumed the fact or left its wait. Accept that
   // no-op instead of retrying the immutable plan forever. Exact targets with
@@ -3748,43 +3706,63 @@ function admitResolvedAppTaskEvent(input: {
       )
     : undefined;
   if (targetedTaskId) {
-    const existingIntent = readAppTaskIntent(config, targetedTaskId);
-    if (existingIntent && intent?.id === targetedTaskId) {
-      const observation = observeAppTaskIntent(config, {
-        intent,
-        appAgent: descriptor.agent,
-        trigger: event,
-      });
-      interruptSupersededObservationSessions(opts, observation);
-    }
+    // An exact target is feedback for existing work, not another declaration
+    // of its goal. Re-observing the resolver's intent here both changed the
+    // Task accidentally and loaded its complete subtree before a simple wake.
     const triggerResult = recordAppTaskTrigger(config, targetedTaskId, event);
     if (triggerResult.kind === "recorded") {
+      wokenTaskIds.add(targetedTaskId);
       if (controller) enqueueAppTask(controller, config, targetedTaskId, { promote: true });
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     if (triggerResult.kind === "waiting") {
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+      return {
+        delivery: appTaskDelivery(
+          descriptor,
+          targetedTaskId,
+          "existing targeted task remains asleep on open Conditions",
+        ),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     if (readAppTaskIntent(config, targetedTaskId)) {
-      return appTaskDelivery(descriptor, targetedTaskId, "existing targeted task remains asleep on open Conditions");
+      return {
+        delivery: appTaskDelivery(
+          descriptor,
+          targetedTaskId,
+          "existing targeted task remains asleep on open Conditions",
+        ),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
     }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
-    return conditionDelivery;
+    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   }
-  if (!intent) return conditionDelivery;
+  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   const observation = observeAppTaskIntent(config, {
     intent,
     appAgent: descriptor.agent,
     trigger: event,
   });
-  interruptSupersededObservationSessions(opts, observation);
+  input.interruptSuperseded?.(observation);
+  if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       promote: event.type === "project.comment.created",
     });
   }
-  return appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
+  return {
+    delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),
+    taskIds: [...wokenTaskIds],
+    supersededSessionIds: observation.supersededSessionIds ?? [],
+  };
 }
 
 /**
@@ -3809,14 +3787,94 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
-    opts,
     descriptor,
     controller,
     event: canonicalTaskEvent(input.event),
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
+    interruptSuperseded: (observation) => interruptSupersededObservationSessions(opts, observation),
+  }).delivery;
+}
+
+/**
+ * Canonical Task admission without an in-process controller. A persistent
+ * admission worker uses this boundary, then returns exact Task wakes to the
+ * daemon's lightweight controllers.
+ */
+export function admitStandaloneCanonicalAppTaskEvent(input: {
+  descriptor: AppTaskRuntimeDescriptor;
+  event: AgentEvent;
+  intent: AppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): AppTaskAdmissionResult {
+  if (!input.descriptor.app.tasks) throw new Error(`App ${input.descriptor.id} has no Task capability`);
+  if (input.descriptor.reconciliationPaused) throw new Error(`App ${input.descriptor.id} reconciliation is paused`);
+  return admitResolvedAppTaskEvent({
+    descriptor: input.descriptor,
+    event: canonicalTaskEvent(input.event),
+    intent: input.intent,
+    targetedTaskId: input.targetedTaskId,
+    conditionTaskIds: input.conditionTaskIds,
   });
+}
+
+/** Prepare only canonical Task state needed by the admission worker. */
+export function standaloneAppTaskAdmissionDescriptors(input: {
+  persistDir: string;
+  projectsRoot: string;
+  entries: AppRegistrySnapshot["entries"];
+}): Map<string, AppTaskRuntimeDescriptor> {
+  const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
+  for (const { appDir, definition: app } of input.entries) {
+    if (!app.tasks) continue;
+    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app.id, appDir);
+    const descriptor: AppTaskRuntimeDescriptor = {
+      id: app.id,
+      appDir,
+      projectDir: domainProjectDir(input.projectsRoot, appDir, app.id, app),
+      agent: configuredAppAgent(app, appDir),
+      app,
+      reconciliationPaused: resourceStore.projectLifecycle() === "paused",
+      resourceStore,
+    };
+    validatePreparedAppTaskRuntime(descriptor);
+    descriptors.set(descriptor.id, descriptor);
+  }
+  return descriptors;
+}
+
+/** Wake already-admitted Task identities without repeating their mutation. */
+export function wakeLoadedAppTasks(input: {
+  bus: EventBus;
+  appId: string;
+  taskIds: string[];
+  supersededSessionIds?: string[];
+}): void {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
+  if (!descriptor?.app.tasks || !controller || descriptor.reconciliationPaused) return;
+  const config = appTaskConfig(descriptor);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const admittedTaskId = input.taskIds.at(-1);
+  if (opts && admittedTaskId) {
+    interruptSupersededObservationSessions(opts, {
+      taskId: admittedTaskId,
+      generation: descriptor.resourceStore.readTask(admittedTaskId)?.metadata.generation ?? 1,
+      supersededSessionIds: input.supersededSessionIds,
+    });
+  }
+  for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
+    enqueueAppTask(controller, config, taskId, { promote: true });
+  }
+}
+
+/** Bounded exact-identity check used before asynchronously admitting feedback. */
+export function hasLoadedAppTask(input: { bus: EventBus; appId: string; taskId: string }): boolean {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId.trim().replace(/\.app$/, ""));
+  return Boolean(descriptor?.resourceStore.readTask(input.taskId.trim()));
 }
 
 /** Read-only canonical-state task-Condition preflight for the App coordinator. */
@@ -3841,17 +3899,18 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   if (descriptors.length === 0) return [];
   const event = canonicalTaskEvent(input.event);
   const updateSubject = appDependencyUpdateSubject(event);
+  const subjects = conditionSubjectCandidates(event);
   const matchesByApp = new Map<string, Set<string>>();
   const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
   const store = descriptors[0]!.resourceStore;
-  for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""))) {
+  for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""), subjects)) {
     if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
     const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
     for (const taskId of route.taskIds) taskIds.add(taskId);
     matchesByApp.set(route.appId, taskIds);
   }
   if (updateSubject) {
-    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed")) {
+    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed", [updateSubject])) {
       if (!loadedApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
       const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
       for (const taskId of route.taskIds) taskIds.add(taskId);
@@ -3866,7 +3925,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
 function replayPersistedConditionEvents(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
-  config: ResourceTaskStateConfig,
+  config: AppTaskContext,
   input: { conditionIds?: string[] } = {},
 ): string[] {
   if (!opts.persistDir) return [];
@@ -3931,6 +3990,16 @@ function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
 ): Map<string, AppTaskController> {
+  if (opts.installControllers === false) {
+    const previous = appTaskControllersByBus.get(opts.bus);
+    for (const scheduler of appTaskRecoverySchedulersByBus.get(opts.bus)?.values() ?? []) scheduler.close();
+    for (const controller of previous?.values() ?? []) controller.close();
+    const empty = new Map<string, AppTaskController>();
+    appTaskControllersByBus.set(opts.bus, empty);
+    appTaskRecoverySchedulersByBus.set(opts.bus, new Map());
+    appTaskControllerBindingsByBus.set(opts.bus, new Map());
+    return empty;
+  }
   const controllers = appTaskControllersByBus.get(opts.bus) ?? new Map<string, AppTaskController>();
   const recoverySchedulers =
     appTaskRecoverySchedulersByBus.get(opts.bus) ?? new Map<string, AppTaskRecoveryScheduler>();
@@ -3971,13 +4040,15 @@ function installConventionTaskControllers(
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;
         const config = appTaskConfig(activeDescriptor);
-        const dependentTaskIds = await reconcileTask({
-          opts: activeOpts,
-          descriptor: activeDescriptor,
-          taskId,
-          dispatch,
-          reason: "task-controller",
-        });
+        const dependentTaskIds = activeOpts.executeAttempt
+          ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
+          : await reconcileTask({
+              opts: activeOpts,
+              descriptor: activeDescriptor,
+              taskId,
+              dispatch,
+              reason: "task-controller",
+            });
         const dependentEntries = new Map(
           appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
         );
@@ -4037,6 +4108,27 @@ function installConventionTaskControllers(
   return controllers;
 }
 
+/** Execute one exact Task locally inside an already prepared worker process. */
+export async function reconcileLoadedAppTaskOnce(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  dispatch: AppTaskDispatch;
+}): Promise<string[]> {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  if (!descriptor?.app.tasks || !opts) {
+    throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  }
+  return reconcileTask({
+    opts: { ...opts, agentDefinitions: captureAgentDefinitions(opts) },
+    descriptor,
+    taskId: input.taskId,
+    dispatch: input.dispatch,
+    reason: "task-worker-process",
+  });
+}
+
 /**
  * Stop the task-controller generation currently attached to one process bus.
  * Closing is synchronous; the returned promise additionally waits for work
@@ -4067,12 +4159,17 @@ export function retryLoadedFailedAppTask(input: {
   appId: string;
   taskId: string;
   expectedGeneration: number;
+  expectedResourceVersion: number;
+  controlKey?: string;
 }): ReturnType<typeof retryFailedAppTask> & { queued: boolean } {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const taskId = input.taskId.trim();
   if (!appId || !taskId) throw new Error("App Task retry requires exact appId and taskId");
   if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
     throw new Error("App Task retry requires a positive integer expectedGeneration");
+  }
+  if (!Number.isSafeInteger(input.expectedResourceVersion) || input.expectedResourceVersion < 1) {
+    throw new Error("App Task retry requires a positive integer expectedResourceVersion");
   }
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
@@ -4085,14 +4182,67 @@ export function retryLoadedFailedAppTask(input: {
     appId,
     taskId,
     expectedGeneration: input.expectedGeneration,
+    expectedResourceVersion: input.expectedResourceVersion,
+    ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
   const queued = enqueueAppTask(controller, config, taskId, { promote: true });
   return { ...receipt, queued };
 }
 
+export function cancelLoadedAppTask(input: {
+  bus: EventBus;
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  reason: string;
+  controlKey?: string;
+}): ReturnType<typeof cancelAppTask> {
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const taskId = input.taskId.trim();
+  if (!appId || !taskId) throw new Error("App Task cancellation requires exact appId and taskId");
+  if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration < 1) {
+    throw new Error("App Task cancellation requires a positive integer expectedGeneration");
+  }
+  if (!Number.isSafeInteger(input.expectedResourceVersion) || input.expectedResourceVersion < 1) {
+    throw new Error("App Task cancellation requires a positive integer expectedResourceVersion");
+  }
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
+  if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
+  const result = cancelAppTask(appTaskConfig(descriptor), {
+    appId,
+    taskId,
+    expectedGeneration: input.expectedGeneration,
+    expectedResourceVersion: input.expectedResourceVersion,
+    reason: input.reason,
+    ...(input.controlKey ? { controlKey: input.controlKey } : {}),
+  });
+  if (result.applied) {
+    input.bus.emit({
+      type: "app.task.cancelled",
+      source: "app-task-reconciler",
+      owner: "human:operator",
+      target: { appId, taskId },
+      data: {
+        appId,
+        taskId,
+        ...(result.cancelledAttemptId ? { attemptId: result.cancelledAttemptId } : {}),
+        reason: result.cancellation.reason,
+      },
+    });
+    input.bus.emit({
+      type: "app.dependency.updated",
+      source: "app-task-reconciler",
+      owner: "human:operator",
+      data: { kind: "task", id: taskId, appId },
+    });
+  }
+  return result;
+}
+
 function enqueueAppTask(
   controller: AppTaskController,
-  config: ReturnType<typeof taskReconciliationConfig>,
+  config: AppTaskContext,
   taskId: string,
   overrides: AppTaskQueueOptions = {},
 ): boolean {
@@ -4103,20 +4253,19 @@ function enqueueAppTask(
   });
 }
 
-const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, ResourceTaskStateConfig>();
+const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, AppTaskContext>();
 
-function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): ResourceTaskStateConfig {
+function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskContext {
   const existing = appTaskConfigs.get(descriptor);
   if (existing) return existing;
-  const config = taskReconciliationConfig({
+  const config = appTaskContext({
     appDir: descriptor.appDir,
-    stateAppDir: descriptor.stateAppDir,
     projectDir: descriptor.projectDir,
     agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     resourceStore: descriptor.resourceStore,
   });
-  cacheTaskStateReads(config);
+  cacheTaskSnapshots(config);
   appTaskConfigs.set(descriptor, config);
   return config;
 }
@@ -4478,6 +4627,11 @@ function recoverInterruptedAppTasks(
 export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
+  if (opts.executeRecovery) {
+    await opts.executeRecovery();
+    for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+    return;
+  }
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
@@ -4696,7 +4850,7 @@ function discoverAppTaskResourceStore(
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
     throw new Error(
-      `App ${appId} still has legacy task state but no active resource authority; complete the guarded resource cutover before loading it`,
+      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that evidence outside the Host or restore the canonical resource database`,
     );
   }
 
@@ -4727,17 +4881,18 @@ function discoverAppTaskResourceStore(
 async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Promise<AppTaskRuntimeDescriptor[]> {
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
+  const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
   for (const { appDir, definition: app } of entries) {
     if (!app.tasks) continue;
     const id = app.id;
+    if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
     const resourceStore = discoverAppTaskResourceStore(opts.persistDir, id, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
-      stateAppDir: opts.stateProjectsRoot ? resolve(opts.stateProjectsRoot, basename(appDir)) : appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       agent: configuredAppAgent(app, appDir),
       app,
@@ -4746,6 +4901,7 @@ async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Pr
     };
     descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
     validatePreparedAppTaskRuntime(descriptor);
+    resourceStore.setConfiguredMaxConcurrent(app.tasks.maxConcurrent ?? 1);
     descriptors.push(descriptor);
   }
   return descriptors;
@@ -4773,7 +4929,7 @@ async function commitAppTaskRuntimeDescriptors(
       });
       continue;
     }
-    syncProjectReadModel(opts, descriptor);
+    if (opts.syncReadModels !== false) syncProjectReadModel(opts, descriptor);
     installed.push(descriptor);
   }
 

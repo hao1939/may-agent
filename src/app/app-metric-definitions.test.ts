@@ -48,4 +48,24 @@ describe("App metric definitions", () => {
     syncAppMetricDefinitions([{ definition }], { define: (metric) => installed.push(metric) });
     expect(installed[0]).toMatchObject({ owner: "operator", project: "host" });
   });
+
+  it("retries ordinary SQLite contention while installing a definition", () => {
+    const definition = defineApp({
+      id: "evaluation",
+      version: 1,
+      agent: "evaluator",
+      inputSchema: Type.Object({}),
+      metrics: [{ id: "evaluation.coverage" }],
+    });
+    let attempts = 0;
+
+    syncAppMetricDefinitions([{ definition }], {
+      define() {
+        attempts += 1;
+        if (attempts === 1) throw new Error("database is locked");
+      },
+    });
+
+    expect(attempts).toBe(2);
+  });
 });

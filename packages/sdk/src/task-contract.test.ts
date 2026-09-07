@@ -169,6 +169,26 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("accepts the established human identity for an accountable timed wait", () => {
+    const result = {
+      state: "waiting",
+      summary: "Waiting for the operator",
+      evidence: [],
+      conditions: [
+        {
+          id: "auth-restored",
+          type: "external.fact",
+          subject: "credential:provider",
+          expected: { status: "valid" },
+          owner: "human",
+          reviewAfterMs: 300_000,
+        },
+      ],
+    };
+    expect(Check(taskAgentResultSchema, result)).toBeTrue();
+    expect(admitTaskReconcileResult(result, workflowOptions).ok).toBeTrue();
+  });
+
   it("accepts canonical agent selection and normalizes it for retained Host state", () => {
     const canonicalOutput = {
       state: "converged" as const,
@@ -520,6 +540,7 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: { field: "state", equals: "ready" },
+              owner: "app:credential-provider",
               requestedAction: "Restore the xhs credential or confirm that it should remain disabled.",
               reviewAfterMs: 300000,
             },
@@ -560,6 +581,7 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: "ready",
+              owner: "app:credential-provider",
               reviewAfterMs: 1000,
             },
           ],
@@ -567,6 +589,45 @@ describe("project task handler contract", () => {
         workflowOptions,
       ).ok,
     ).toBe(false);
+
+    const incompleteCondition = {
+      state: "waiting",
+      summary: "Waiting without accountable recovery",
+      evidence: [],
+      conditions: [
+        {
+          id: "credential-ready:xhs",
+          type: "credential.ready",
+          subject: "credential:xhs",
+          expected: "ready",
+        },
+      ],
+    };
+    expect(admitTaskReconcileResult(incompleteCondition, workflowOptions)).toEqual({
+      ok: false,
+      error: "conditions[0].owner must be a canonical non-empty identity",
+    });
+    expect(
+      admitTaskReconcileResult(
+        {
+          ...incompleteCondition,
+          conditions: [{ ...incompleteCondition.conditions[0], owner: "Hao", reviewAfterMs: 60_000 }],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({ ok: false, error: "conditions[0].owner must be a canonical kind:identity" });
+    expect(
+      admitTaskReconcileResult(
+        {
+          ...incompleteCondition,
+          conditions: [{ ...incompleteCondition.conditions[0], owner: "app:credential-provider" }],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "conditions[0].reviewAfterMs must be an integer of at least 60000",
+    });
   });
 
   it("rejects Conditions that turn task state into a second scheduler", () => {

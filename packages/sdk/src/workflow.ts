@@ -57,6 +57,8 @@ export type TaskPage = {
 export type TaskOutcomeProjection = {
   /** Include immutable completed receipts. Omitted means active Tasks only. */
   includeDone?: boolean;
+  /** Return only the reviewed outcome containing this exact Task. */
+  taskId?: string;
 };
 
 export type TaskOutcomeView = {

@@ -97,6 +97,20 @@ describe("canonical database schema", () => {
       expect(trigger.sql).toContain("i.origin_event_id = OLD.id");
       expect(trigger.sql).not.toContain("json_extract");
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
+      for (const domainTable of [
+        "gym_runs",
+        "gym_checks",
+        "gym_prompts",
+        "convention_checks",
+        "convention_maturity",
+        "knowledge_entries",
+        "hypotheses",
+        "experiments",
+      ]) {
+        expect(
+          db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(domainTable),
+        ).toBeNull();
+      }
     } finally {
       db.close();
     }

@@ -590,6 +590,7 @@ describe("CLI task runner", () => {
           },
         } as any);
       }
+      await waitFor(() => events.filter((event) => event.type === "subscriber.failed").length === negativeCases.length);
 
       const failures = events.filter((event) => event.type === "subscriber.failed") as any[];
       expect(failures).toHaveLength(4);

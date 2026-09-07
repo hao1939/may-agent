@@ -242,6 +242,88 @@ describe("App inbox host", () => {
     ]);
   });
 
+  it("reconsiders a terminal historical Task before promising to reuse it", async () => {
+    const may = defineApp({
+      id: "may",
+      version: 1,
+      agent: "may",
+      inputSchema: probeInput,
+      requests: { mode: "agent", inputKinds: ["probe"] },
+      task: (input) => desiredTask(input.id),
+      tasks: {},
+    });
+    createConversationTopic(db, {
+      id: "topic-backlog",
+      appId: "may",
+      conversationId: "may:primary",
+      title: "Gym backlog",
+      openedBy: "human",
+      originMessageId: "message-old",
+      now: 1,
+    });
+    linkConversationTopicTask(db, "topic-backlog", "evaluation", "probe/old-review", 1);
+
+    let calls = 0;
+    const handoffs: Array<{ task?: { appId: string; taskId: string }; outcome: string }> = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [may, app()],
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "done" }),
+      resolveRequest: async ({ request }) => {
+        calls += 1;
+        if (calls === 1) {
+          return {
+            summary: "Reuse the earlier review.",
+            response: "I will continue the earlier review.",
+            topic: { kind: "existing", id: "topic-backlog" },
+            followUp: {
+              outcome: "Review the current backlog",
+              acceptance: ["Return one proposal"],
+              appId: "evaluation",
+              task: { appId: "evaluation", taskId: "probe/old-review" },
+              input: { kind: "probe", data: { value: "review" } },
+            },
+          };
+        }
+        expect(request.referencedTasks).toContainEqual({
+          appId: "evaluation",
+          task: { kind: "task", id: "probe/old-review", status: "done" },
+        });
+        return {
+          summary: "The old review is complete, so this is new work.",
+          response: "The earlier review is complete. I am starting this current review as new work.",
+          topic: { kind: "existing", id: "topic-backlog" },
+          followUp: {
+            outcome: "Review the current backlog",
+            acceptance: ["Return one proposal"],
+            appId: "evaluation",
+            input: { kind: "probe", data: { value: "review" } },
+          },
+        };
+      },
+      onRequestFollowUp: (_item, followUp) => handoffs.push(followUp),
+    });
+    host.admit({
+      id: "turn-review-current",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 2,
+      topicId: "topic-backlog",
+      source: { kind: "human", id: "message-current" },
+      input: { kind: "probe", data: { value: "review the current backlog" } },
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
+    expect(calls).toBe(2);
+    expect(handoffs).toHaveLength(1);
+    expect(handoffs[0]).toMatchObject({ outcome: "Review the current backlog" });
+    expect(handoffs[0]?.task).toBeUndefined();
+    expect(host.get("turn-review-current")).toMatchObject({
+      status: "done",
+      result: { response: expect.stringContaining("starting this current review") },
+    });
+  });
+
   it("uses a focused Task as evidence for advice without mutating it", async () => {
     const conversationalInput = Type.Object({
       kind: Type.Literal("probe"),
@@ -1192,6 +1274,42 @@ describe("App inbox host", () => {
     expect(host.get("evaluation-1")?.availableAt).toBeDefined();
     expect(host.get("evaluation-2")?.availableAt).toBeDefined();
     expect(host.get("aks-1")?.availableAt).toBeUndefined();
+  });
+
+  it("yields control traffic between dependency recovery items from one App", async () => {
+    let reads = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      attachTask: async ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      }),
+      readDependency: async ({ dependency }) => {
+        reads += 1;
+        return { ...dependency, status: "running" };
+      },
+    });
+    for (const [id, taskId] of [
+      ["first", "probe/first"],
+      ["second", "probe/second"],
+    ] as const) {
+      host.admit({
+        id,
+        appId: "evaluation",
+        targetTaskId: taskId,
+        source: { kind: "system", id: "test" },
+        input: { kind: "probe", data: { value: id } },
+      });
+      await host.reconcileOnce("evaluation");
+    }
+    reads = 0;
+
+    const recovery = host.recoverTaskDependencies();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(reads).toBe(1);
+    await recovery;
+    expect(reads).toBe(2);
   });
 
   it("revisits a nonterminal dependency when repaired App policy assigns request-specific achieve work", async () => {

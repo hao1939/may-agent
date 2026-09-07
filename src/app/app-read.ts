@@ -9,7 +9,7 @@ import type {
   TaskPage,
   TaskView,
 } from "@may-agent/sdk/app";
-import type { ResourceTaskStateConfig, TaskTree } from "./app-task-store.js";
+import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 import { getExecutionResultFromDb } from "../lib/execution-result.js";
 import type { MetricService } from "../lib/metrics.js";
 import type { SqliteDb } from "../lib/db.js";
@@ -21,7 +21,7 @@ export type RuntimeAppReadOptions = {
   metrics: MetricService;
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
-  taskStateConfig?: ResourceTaskStateConfig;
+  taskStateConfig?: AppTaskContext;
 };
 
 export function readRuntimeTaskView(
@@ -67,9 +67,7 @@ function resourceTaskView(resource: NonNullable<TaskTree["resources"]>[string]):
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
     response: resource.status.response,
-    result: resource.status.result
-      ? structuredClone(resource.status.result)
-      : undefined,
+    result: resource.status.result ? structuredClone(resource.status.result) : undefined,
     evidence: resource.status.evidence ? [...resource.status.evidence] : undefined,
   };
 }
@@ -157,6 +155,16 @@ export function listRuntimeTaskOutcomeViews(
   projection: TaskOutcomeProjection = {},
 ): TaskOutcomePage {
   if (!opts.taskStateConfig) return projectTaskOutcomes([], null, projection);
+  const manifest = readTaskOutcomeManifest(opts.taskStateConfig.appDir);
+  const exactTaskId = projection.taskId?.trim();
+  if (exactTaskId) {
+    const group = manifest?.groups.find(({ taskIds }) => taskIds.includes(exactTaskId));
+    const items = (group?.taskIds ?? [exactTaskId]).flatMap((taskId) => {
+      const task = readRuntimeTaskView(opts, taskId);
+      return task ? [task] : [];
+    });
+    return projectTaskOutcomes(items, manifest, projection);
+  }
   const items: TaskView[] = [];
   let cursor: string | undefined;
   do {
@@ -164,7 +172,7 @@ export function listRuntimeTaskOutcomeViews(
     items.push(...page.items);
     cursor = page.nextCursor;
   } while (cursor);
-  return projectTaskOutcomes(items, readTaskOutcomeManifest(opts.taskStateConfig.appDir), projection);
+  return projectTaskOutcomes(items, manifest, projection);
 }
 
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
