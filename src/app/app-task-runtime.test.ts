@@ -51,6 +51,7 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
+  retryFailedAppTask,
   appTaskContext,
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
@@ -3727,12 +3728,14 @@ describe("canonical App task runtime", () => {
       executors: {
         residue: async (attempt) => {
           calls++;
-          writeFileSync(join(attempt.cwd, "retained.txt"), "unfinished source\n");
-          if (scenario.committed) {
-            await git(attempt.cwd, "add", "retained.txt");
-            await git(attempt.cwd, "commit", "-m", "retained change");
+          if (calls === 1) {
+            writeFileSync(join(attempt.cwd, "retained.txt"), "unfinished source\n");
+            if (scenario.committed) {
+              await git(attempt.cwd, "add", "retained.txt");
+              await git(attempt.cwd, "commit", "-m", "retained change");
+            }
           }
-          return { state: scenario.state, summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
+          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
         },
       },
       appRegistrySnapshot: {
@@ -3768,6 +3771,21 @@ describe("canonical App task runtime", () => {
       expect.objectContaining({ state: "failed", failureReason: "handler-blocked",
         workspace: expect.objectContaining({ disposition: scenario.committed ? "branch-retained" : "retained-for-recovery" }) }),
     ]);
+    const retained = Object.values(tree.attempts ?? {})[0]!.workspace!;
+    // Simulate explicit repair/integration in this local Git fixture. A prior
+    // guard rejection must not make the same Task permanently unfinishable.
+    if (!scenario.committed) {
+      await git(retained.path, "add", "retained.txt");
+      await git(retained.path, "commit", "-m", "explicit fixture recovery");
+    }
+    await git(f.appDir, "merge", "--ff-only", retained.branch);
+    const resource = config.resourceStore.readTask(taskId)!;
+    retryFailedAppTask(config, { appId: "sample", taskId,
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion });
+    await run();
+    expect(calls).toBe(2);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({ status: "done", generation: 1 });
   });
 
   it("parks invalid handler results instead of retrying them through recovery", async () => {
