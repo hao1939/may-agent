@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import {
   SubagentManager,
@@ -259,9 +260,9 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             projectRoot,
             persistDir,
             emit: (event) => bus.emit(event as any),
-            getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerTrace: () => {
-              const sid = opts.getAgentSessionId(config.name);
+              const sid = currentAgentSessionId(config.name);
               return sid ? manager.activeSessions.get(sid)?.trace : undefined;
             },
           }),
