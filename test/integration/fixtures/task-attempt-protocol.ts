@@ -15,9 +15,14 @@ const request: TaskAttemptProcessRequest = {
 };
 
 function scriptedWorker(source: string): ChildProcess {
-  return spawn(process.execPath, ["-e", source], {
-    stdio: ["pipe", "ignore", "ignore", "pipe"],
-  });
+  return spawn(
+    process.execPath,
+    ["-e", `${source}\nif (process.connected && !process.listenerCount("message")) process.disconnect();`],
+    {
+      stdio: ["ignore", "ignore", "ignore", "ipc"],
+      serialization: "json",
+    },
+  );
 }
 
 const scenarios: Record<string, () => void | Promise<void>> = {
@@ -54,9 +59,7 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       definitionSource: () => source,
       spawnWorker: (work) => {
         dispatched = work;
-        return scriptedWorker(
-          'require("node:fs").writeSync(3, JSON.stringify({ kind: "result", dependentTaskIds: [] }) + "\\n");',
-        );
+        return scriptedWorker('process.send({ kind: "result", dependentTaskIds: [] });');
       },
     });
     await execute(request);
@@ -75,9 +78,9 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus,
       spawnWorker: () =>
         scriptedWorker(`
-          const fs = require("node:fs");
-          fs.writeSync(3, JSON.stringify({kind:"event",eventId:41,event:{type:"info",message:"working"}})+"\\n");
-          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:["work/one","work/two"]})+"\\n");
+
+          process.send({kind:"event",eventId:41,event:{type:"info",message:"working"}});
+          process.send({kind:"result",dependentTaskIds:["work/one","work/two"]});
         `),
     });
 
@@ -100,20 +103,18 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       timeoutMs: 2_000,
       spawnWorker: () =>
         scriptedWorker(`
-        const fs = require("node:fs");
+
         const seen = [];
-        const input = require("node:readline").createInterface({ input: process.stdin });
-        input.on("line", (line) => {
-          const frame = JSON.parse(line);
+        process.on("message", (frame) => {
           seen.push(frame.event.type + ":" + frame.eventId);
           if (frame.event.type === "app.task.cancelled") {
-            fs.writeSync(3, JSON.stringify({ kind: "result", dependentTaskIds: seen }) + "\\n");
-            process.exit(0);
+            process.send({ kind: "result", dependentTaskIds: seen });
+            process.disconnect();
           }
         });
-        fs.writeSync(3, JSON.stringify({ kind: "event", eventId: 41, event: {
+        process.send({ kind: "event", eventId: 41, event: {
           type: "info", message: "ready-for-input", target: { appId: "sample", taskId: "work/one" }
-        } }) + "\\n");
+        } });
       `),
     });
     try {
@@ -129,10 +130,10 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus,
       spawnWorker: () =>
         scriptedWorker(`
-          const fs = require("node:fs");
+
           const until = Date.now() + 300;
           while (Date.now() < until) {}
-          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+          process.send({kind:"result",dependentTaskIds:[]});
         `),
     });
 
@@ -161,11 +162,11 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus,
       spawnWorker: () =>
         scriptedWorker(`
-          const fs = require("node:fs");
+
           for (let eventId = 1; eventId <= 64; eventId += 1) {
-            fs.writeSync(3, JSON.stringify({kind:"event",eventId,event:{type:"info",message:"progress"}})+"\\n");
+            process.send({kind:"event",eventId,event:{type:"info",message:"progress"}});
           }
-          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+          process.send({kind:"result",dependentTaskIds:[]});
         `),
     });
 
@@ -194,14 +195,14 @@ const scenarios: Record<string, () => void | Promise<void>> = {
     });
     const worker = (type: string) =>
       scriptedWorker(`
-        const fs = require("node:fs");
+
         const base = ${type === "info" ? 100 : 200};
         const until = Date.now() + 50;
         while (Date.now() < until) {}
         for (let index = 1; index <= 16; index += 1) {
-          fs.writeSync(3, JSON.stringify({kind:"event",eventId:base+index,event:{type:"${type}",message:"working"}})+"\\n");
+          process.send({kind:"event",eventId:base+index,event:{type:"${type}",message:"working"}});
         }
-        fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+        process.send({kind:"result",dependentTaskIds:[]});
       `);
     const first = createTaskAttemptProcessExecutor({ bus, spawnWorker: () => worker("info") });
     const second = createTaskAttemptProcessExecutor({ bus, spawnWorker: () => worker("prompt") });
@@ -218,13 +219,51 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus: new EventBus(),
       spawnWorker: () =>
         scriptedWorker(`
-          const fs = require("node:fs");
-          fs.writeSync(3, JSON.stringify({kind:"error",error:"attempt failed"})+"\\n");
-          process.exit(1);
+
+          process.send({kind:"error",error:"attempt failed"});
+          process.exitCode = 1;
         `),
     });
 
     await expect(execute(request)).rejects.toThrow("attempt failed");
+  },
+
+  async abruptExit() {
+    const execute = createTaskAttemptProcessExecutor({
+      bus: new EventBus(),
+      timeoutMs: 2_000,
+      spawnWorker: () => scriptedWorker("process.exit(7);"),
+    });
+    await expect(execute(request)).rejects.toThrow("Task worker exited with code 7");
+  },
+
+  async missingResult() {
+    const execute = createTaskAttemptProcessExecutor({
+      bus: new EventBus(),
+      timeoutMs: 2_000,
+      spawnWorker: () => scriptedWorker(""),
+    });
+    await expect(execute(request)).rejects.toThrow("Task worker exited without a result frame");
+  },
+
+  async workerChurn() {
+    const execute = createTaskAttemptProcessExecutor({
+      bus: new EventBus(),
+      timeoutMs: 2_000,
+      spawnWorker: () => {
+        const child = scriptedWorker(`
+
+        await Bun.sleep(20);
+        process.send({kind:"result",dependentTaskIds:[]});
+        `);
+        return child;
+      },
+    });
+    for (let wave = 0; wave < 30; wave += 1) {
+      const attempts = Array.from({ length: 3 }, () => execute(request));
+      Bun.gc(true);
+      await Promise.all(attempts);
+    }
   },
 
   async recovery() {
@@ -232,8 +271,8 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus: new EventBus(),
       spawnWorker: () =>
         scriptedWorker(`
-          const fs = require("node:fs");
-          fs.writeSync(3, JSON.stringify({kind:"result",dependentTaskIds:[]})+"\\n");
+
+          process.send({kind:"result",dependentTaskIds:[]});
         `),
     });
 
