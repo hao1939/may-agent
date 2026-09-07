@@ -327,6 +327,7 @@ function reachableHumanConditionOwners(
                 AND NOT EXISTS (
                   SELECT 1 FROM app_task_receipts receipt
                   WHERE receipt.app_id = task.app_id AND receipt.receipt_id = task.task_id
+                    AND json_extract(receipt.receipt_json, '$.metadata.generation') >= task.generation
                 )
                 AND NOT EXISTS (
                   SELECT 1 FROM app_task_cancellations cancellation
@@ -478,25 +479,31 @@ function rowIdentity(row: TaskRow): { appId: string; taskId: string } | null {
 }
 
 function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | null {
+  // Preserve cancellation semantics, but an older completion cannot hide a
+  // revised live Task (including the generation/version needed by retry).
   return db
     .prepare(
-      `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-         t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
+      `SELECT * FROM (
+       SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
+         t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
+         t.generation AS current_generation
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
          ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
        WHERE t.app_id = ? AND t.task_id = ?
        UNION ALL
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
+         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+         json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
        UNION ALL
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-         c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
+         c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+         json_extract(c.cancellation_json, '$.generation') AS current_generation
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
-       ORDER BY terminal DESC LIMIT 1`,
+       ) ORDER BY (terminal = 2) DESC, current_generation DESC, terminal DESC LIMIT 1`,
     )
     .get(appId, taskId, appId, taskId, appId, taskId) as TaskRow | null;
 }
@@ -631,6 +638,7 @@ export class HumanTaskService {
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r
              WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
+               AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c
@@ -719,6 +727,7 @@ export class HumanTaskService {
          WHERE t.phase IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
+               AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
@@ -733,6 +742,9 @@ export class HumanTaskService {
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
+         ) AND NOT EXISTS (
+           SELECT 1 FROM app_tasks t WHERE t.app_id = r.app_id AND t.task_id = r.receipt_id
+             AND t.generation > json_extract(r.receipt_json, '$.metadata.generation')
          )${appId ? " AND r.app_id = ?" : ""}`,
       );
       if (appId) values.push(appId);

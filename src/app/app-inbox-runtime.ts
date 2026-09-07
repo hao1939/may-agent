@@ -907,14 +907,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!options.admitTaskEvent) {
           throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
         }
-        if (command.kind !== "inbox" && taskAdmissionWorker) {
+        if (command.kind === "task" && taskAdmissionWorker) {
+          const worker = taskAdmissionWorker;
           let admitted: { taskIds: string[]; supersededSessionIds: string[] };
           try {
-            admitted = await taskAdmissionWorker.dispatch(command, event);
+            admitted = await worker.dispatch(command, event);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            if (message.startsWith("Task admission worker ") || message.startsWith("Invalid Task admission worker ")) {
-              taskAdmissionWorker.close();
+            if (
+              !closed &&
+              taskAdmissionWorker === worker &&
+              (message.startsWith("Task admission worker ") || message.startsWith("Invalid Task admission worker "))
+            ) {
+              worker.close();
               taskAdmissionWorker = options.createTaskAdmissionWorker?.();
             }
             throw error;
@@ -1040,11 +1045,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (plan.status === "superseded") {
       throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
     }
-    if (
-      !taskAdmissionWorker &&
-      plan.status === "pending" &&
-      plan.commands.every((command) => command.kind === "exact-task")
-    ) {
+    // An exact wake is already resolved. Persist its bounded Task update here;
+    // broad App admission or a busy worker must not gate reconciliation liveness.
+    if (plan.status === "pending" && plan.commands.every((command) => command.kind === "exact-task")) {
       for (const command of plan.commands) {
         if (command.status !== "pending") continue;
         try {
