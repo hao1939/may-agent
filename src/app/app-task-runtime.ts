@@ -961,6 +961,17 @@ async function executeTaskCapability(input: {
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     );
+    // A deliberate blocker is not a transport retry, but its diagnostic
+    // context must remain visible to the same Task and its parent. Keep one
+    // bounded evidence entry; the full context remains on the workflow run.
+    if (result.type === "blocked" && result.context !== undefined) {
+      const context = JSON.stringify(result.context);
+      handlerResult.evidence.push(
+        Buffer.byteLength(context, "utf8") <= 8192
+          ? `workflow-blocker-context:${context}`
+          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task evidence bound)`,
+      );
+    }
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,

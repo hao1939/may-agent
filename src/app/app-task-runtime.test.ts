@@ -3600,7 +3600,7 @@ describe("canonical App task runtime", () => {
       export const description = "Recheck a previously blocked claim from current input";
       export async function execute(ctx) {
         if (ctx.reconciliation.input.confirmed !== true)
-          return ctx.blocked("Current evidence does not confirm the requirement");
+          return ctx.blocked("Current evidence does not confirm the requirement", { finding: "exact assertion missing", runId: "123" });
         return ctx.done("Fresh evidence confirmed the requirement", {
           state: "converged", summary: "Fresh evidence confirmed the requirement",
           evidence: ["verified:current-input"]
@@ -3655,6 +3655,7 @@ describe("canonical App task runtime", () => {
       generation: 1,
       summary: "Current evidence does not confirm the requirement",
       conditions: [],
+      evidence: expect.arrayContaining(['workflow-blocker-context:{"finding":"exact assertion missing","runId":"123"}']),
     });
     const config = loadedTaskConfig(f);
     const attemptsBefore = Object.values(readTaskSnapshot(config).attempts ?? {});
