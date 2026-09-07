@@ -437,9 +437,8 @@ describe("Guard integration: combined warn + inject", () => {
       // 1. step-one runs
       // 2. Guards fire: warn-on-step-done emits warn, inject-step emits run_step
       //    resolveDemands processes in order: warn (accumulated), then run_step (injected agent call)
-      // 3. Injected step "verifier" runs
-      //    After verifier completes, guards fire again (step_done for "guard:verify-step-one")
-      //    warn-on-step-done warns again
+      // 3. Injected step "verifier" runs without recursively firing guards.
+      //    Pending warnings remain for the next authored workflow step.
       // 4. step-two runs with accumulated warnings in its task
       expect(calls.length).toBeGreaterThanOrEqual(3); // at least step-one, verifier, step-two
 
