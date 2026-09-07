@@ -607,6 +607,40 @@ describe("App task reconciler state", () => {
     ).toMatchObject({ status: "applied", actionsApplied: [`created ${action.id}`] });
   });
 
+  it("coalesces pending ticks without losing feedback or updates arriving during a pass", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 1 });
+    recordAppTaskTrigger(config, first.taskId, {
+      type: "project.comment.created",
+      eventId: 2,
+      data: { content: "Review this" },
+    });
+    for (let id = 3; id <= 100; id++)
+      recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: id });
+    const beforeReplay = config.resourceStore.readTask(first.taskId)!.metadata.resourceVersion;
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 50 });
+    expect(config.resourceStore.readTask(first.taskId)!.metadata.resourceVersion).toBe(beforeReplay);
+    expect(config.resourceStore.readTrigger(first.taskId)?.events?.map((item) => item.event.eventId)).toEqual([2, 100]);
+    expect(completeAppTask(config, first, { summary: "Read initial state" }).taskContinues).toBe(true);
+    const second = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+    expect(second.events.map((item) => item.event.eventId)).toEqual([2, 100]);
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 101 });
+    expect(completeAppTask(config, second, { summary: "Read through wake 100" }).taskContinues).toBe(true);
+    expect(config.resourceStore.readTrigger(first.taskId)?.events?.map((item) => item.event.eventId)).toEqual([101]);
+  });
+
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
     const state = fixture();
     const { config } = resourceFixture(state, "bounded-event-prefix");

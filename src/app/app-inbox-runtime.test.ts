@@ -1402,7 +1402,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("runs canonical Task mutation through the admission worker and only wakes the local controller", async () => {
+  it("admits an exact Task wake directly even when an admission worker is configured", async () => {
     const bus = persistentBus();
     let localAdmissions = 0;
     const workerAdmissions: string[] = [];
@@ -1436,10 +1436,50 @@ describe("App inbox runtime", () => {
       data: { project: "evaluation" },
     });
 
-    await waitUntil(() => workerAdmissions.length === 1);
-    expect(localAdmissions).toBe(0);
-    expect(workerAdmissions).toEqual(["existing-task"]);
-    expect(wakes).toEqual(["evaluation:existing-task"]);
+    expect(localAdmissions).toBe(1);
+    expect(workerAdmissions).toEqual([]);
+    expect(wakes).toEqual([]);
+    expect(getAppEventAdmissionPlan(db, 1)?.status).toBe("completed");
+  });
+
+  it("admits an exact wake while unrelated broad admission is unanswered", async () => {
+    const bus = persistentBus();
+    let workerCalls = 0;
+    const exactWakes: string[] = [];
+    let release = () => {};
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      admitTaskEvent: ({ targetedTaskId }) => {
+        if (targetedTaskId) exactWakes.push(targetedTaskId);
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "sample.changed" ? [{ appId: "evaluation", taskIds: ["child"] }] : [],
+      createTaskAdmissionWorker: () => ({
+        dispatch: () => {
+          workerCalls += 1;
+          return new Promise((resolve) => {
+            release = () => resolve({ taskIds: ["child"], supersededSessionIds: [] });
+          });
+        },
+        close: () => release(),
+      }),
+      scanIntervalMs: 10_000,
+    });
+    bus.emit({ type: "sample.changed", source: "test", data: {} });
+    await waitUntil(() => workerCalls === 1);
+    bus.emit({
+      type: "project.task.tick",
+      source: "test",
+      target: { appId: "evaluation", taskId: "parent" },
+      data: {},
+    });
+    expect(exactWakes).toEqual(["parent"]);
+    expect(getAppEventAdmissionPlan(db, 2)?.status).toBe("completed");
+    release();
+    await waitUntil(() => getAppEventAdmissionPlan(db, 1)?.status === "completed");
   });
 
   it("keeps failed asynchronous admission durable and retries it through bounded recovery", async () => {
