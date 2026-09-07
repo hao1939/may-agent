@@ -51,6 +51,36 @@ export type HumanTaskView = {
   waitingOn?: HumanTaskWait[];
   requestedBy?: HumanTaskLink;
   humanAction?: HumanTaskAction;
+  /** Exact, bounded diagnostics; never included in compact list cards. */
+  diagnostics?: HumanTaskDiagnostics;
+  history?: HumanTaskHistory[];
+  historyTruncated?: boolean;
+  historyError?: string;
+};
+
+export type HumanTaskHistory = {
+  eventId: number;
+  eventType: string;
+  timestamp: number;
+  attemptId?: string;
+  generation?: number;
+  summary?: string;
+  disposition?: string;
+  handler?: string;
+};
+
+export type HumanTaskDiagnostics = Pick<
+  AppTaskResource["spec"],
+  "parentId" | "owner" | "mode" | "priority" | "workflow" | "executor" | "category" | "outputs"
+> & {
+  observedGeneration: number;
+  ready: boolean;
+  attemptCount: number;
+  attempt?: Pick<AppTaskAttempt, "handler" | "state" | "reason" | "startedAt" | "trigger">;
+  conditions: Array<{ id: string; condition: AppTaskCondition | null }>;
+  conditionsTruncated: boolean;
+  dependencies: Array<{ id: string; status: HumanTaskStatus | "missing" | "group" }>;
+  dependenciesTruncated: boolean;
 };
 
 export type HumanTaskLink = {
@@ -616,6 +646,112 @@ function taskRequester(db: SqliteDb, appId: string, taskId: string): HumanTaskLi
     : null;
 }
 
+// Detail reads inspect only the selected Task and a bounded set of direct links.
+// Do not project a partial graph as though it were a complete scheduler snapshot.
+const TASK_DETAIL_LINK_LIMIT = 100;
+const TASK_HISTORY_LIMIT = 20;
+
+function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
+  const { spec, status } = JSON.parse(row.payload!) as AppTaskResource;
+  const { parentId, owner, mode, priority, workflow, executor, category, outputs } = spec;
+  const conditionIds = status.conditionIds ?? [];
+  const dependencyIds = spec.dependsOn ?? [];
+  const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
+  const count = db
+    .prepare("SELECT COUNT(*) AS count FROM app_task_attempts WHERE app_id = ? AND task_id = ?")
+    .get(row.app_id!, row.task_id!) as { count: number };
+  return {
+    parentId,
+    owner,
+    mode,
+    priority,
+    workflow,
+    executor,
+    category,
+    outputs,
+    observedGeneration: status.observedGeneration,
+    ready: row.ready === 1,
+    attemptCount: count.count,
+    ...(attempt
+      ? {
+          attempt: {
+            handler: attempt.handler,
+            state: attempt.state,
+            reason: attempt.reason,
+            startedAt: attempt.startedAt,
+            ...(attempt.trigger ? { trigger: attempt.trigger } : {}),
+          },
+        }
+      : {}),
+    conditions: conditionIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {
+      const condition = db
+        .prepare("SELECT condition_json FROM app_task_conditions WHERE app_id = ? AND condition_id = ?")
+        .get(row.app_id!, id) as { condition_json: string } | null;
+      return { id, condition: parseJson<AppTaskCondition>(condition?.condition_json) };
+    }),
+    conditionsTruncated: conditionIds.length > TASK_DETAIL_LINK_LIMIT,
+    dependencies: dependencyIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {
+      const dependency = readTaskRow(db, row.app_id!, id);
+      const group =
+        !dependency &&
+        db.prepare("SELECT 1 FROM app_task_groups WHERE app_id = ? AND group_id = ?").get(row.app_id!, id);
+      return {
+        id,
+        status: dependency
+          ? dependency.terminal === 2
+            ? "cancelled"
+            : taskStatus(dependency.phase, dependency.terminal === 1)
+          : group
+            ? "group"
+            : "missing",
+      };
+    }),
+    dependenciesTruncated: dependencyIds.length > TASK_DETAIL_LINK_LIMIT,
+  };
+}
+
+function taskHistory(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+): Pick<HumanTaskView, "history" | "historyTruncated" | "historyError"> {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT id, event_type, timestamp, attempt_id, handler, data FROM events
+      WHERE project_id = ? AND task_id = ? AND event_type LIKE 'project.task.%'
+      ORDER BY timestamp DESC, id DESC LIMIT ?`,
+      )
+      .all(appId, taskId, TASK_HISTORY_LIMIT + 1) as Array<{
+      id: number;
+      event_type: string;
+      timestamp: number;
+      attempt_id: string | null;
+      handler: string | null;
+      data: string;
+    }>;
+    return {
+      history: rows.slice(0, TASK_HISTORY_LIMIT).map((row) => {
+        const data = parseJson<Record<string, unknown>>(row.data) ?? {};
+        return {
+          eventId: row.id,
+          eventType: row.event_type,
+          timestamp: row.timestamp,
+          ...(row.attempt_id ? { attemptId: row.attempt_id } : {}),
+          ...(row.handler ? { handler: row.handler } : {}),
+          ...(typeof data.generation === "number" ? { generation: data.generation } : {}),
+          ...(typeof data.summary === "string" ? { summary: data.summary } : {}),
+          ...(typeof data.disposition === "string" ? { disposition: data.disposition } : {}),
+        };
+      }),
+      historyTruncated: rows.length > TASK_HISTORY_LIMIT,
+    };
+  } catch (error) {
+    // History is evidence, not authority for the current Task's state.
+    return { historyError: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export class HumanTaskService {
   constructor(
     private readonly db: SqliteDb,
@@ -693,8 +829,10 @@ export class HumanTaskService {
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
     const includeLive = !statuses || [...statuses].some((status) => status !== "done" && status !== "cancelled");
-    const includeDone = !humanActionOnly && (input.includeDone === true || statuses?.has("done") === true);
-    const includeCancelled = !humanActionOnly && (input.includeDone === true || statuses?.has("cancelled") === true);
+    const includeDone =
+      !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("done") === true);
+    const includeCancelled =
+      !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("cancelled") === true);
     const livePhases = statuses
       ? [...statuses].flatMap((status) =>
           status === "done" || status === "cancelled" ? [] : [status === "up-to-date" ? "converged" : status],
@@ -844,12 +982,17 @@ export class HumanTaskService {
     const view = projectTask(row, refs.get(`${identity.appId}\0${identity.taskId}`) ?? identity.digest.slice(0, 8));
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
-    const linkedView = requestedBy ? { ...view, requestedBy } : view;
+    const linkedView = {
+      ...view,
+      ...(requestedBy ? { requestedBy } : {}),
+      ...taskHistory(this.db, identity.appId, identity.taskId),
+    };
     if (view.terminal) return linkedView;
     const progress = latestTaskProgress(this.db, identity.appId, identity.taskId, view.execution?.attemptId);
     const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
     const detail = {
       ...linkedView,
+      diagnostics: taskDiagnostics(this.db, row),
       ...(progress ? { progress } : {}),
       ...(waitingOn.length > 0 ? { waitingOn } : {}),
     };
