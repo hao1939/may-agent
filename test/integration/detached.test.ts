@@ -1,17 +1,19 @@
 /**
- * Tests for Phase 1 Detached Sub-Agent Design.
+ * Retained instance identity and socket-control compatibility.
  *
  * Tests:
- * 1. src/detached.ts — readIdentity() helper
+ * 1. src/lib/instance-identity.ts — shared reader/writer
  * 2. src/socket-client.ts — sendSocketCommand() and waitForSocketEvent()
- * 3. src/manager.ts — waitForDetached(), detached cancel, detached waitFor tool action
+ * Detached launching/polling is retired; existing instances remain controllable.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { Duplex } from "node:stream";
-import { readIdentity, type InstanceIdentity } from "../../src/lib/detached.js";
+import { readIdentity, type InstanceIdentity } from "../../src/lib/instance-identity.js";
+import { createIdentityWriter } from "../../src/app/daemon-lifecycle.js";
 import { sendSocketCommand, waitForSocketEvent, type SocketEndpoint } from "../../src/lib/socket-client.js";
 
 type ClientHandler = (socket: Duplex) => void;
@@ -76,10 +78,11 @@ function onSubscription(socket: Duplex, emit: () => void): void {
 // ── readIdentity() tests ───────────────────────────────────────────────
 
 describe("readIdentity", () => {
-  const tmpDir = resolve("/tmp/test-detached-" + process.pid);
+  let tmpDir: string;
   const instanceName = "job-test_123";
 
   beforeEach(() => {
+    tmpDir = mkdtempSync(resolve(tmpdir(), "may-instance-"));
     mkdirSync(resolve(tmpDir, "instances", instanceName), { recursive: true });
   });
 
@@ -111,6 +114,16 @@ describe("readIdentity", () => {
   it("returns null for missing identity.json", () => {
     const result = readIdentity(tmpDir, "nonexistent-instance");
     expect(result).toBeNull();
+  });
+
+  it("reads daemon identity writes without a second record shape", () => {
+    const write = createIdentityWriter({ persistDir: tmpDir, instanceLabel: "daemon" });
+    write({ pid: process.pid, instance: "daemon", status: "running", socket: "/fixture.sock" });
+    expect(readIdentity(tmpDir, "daemon")).toEqual({
+      pid: process.pid, instance: "daemon", status: "running", socket: "/fixture.sock",
+    });
+    write({ pid: process.pid, status: "done", exitCode: 0 });
+    expect(readIdentity(tmpDir, "daemon")).toEqual({ pid: process.pid, status: "done", exitCode: 0 });
   });
 
   it("returns null for invalid JSON", () => {
@@ -337,184 +350,5 @@ describe("waitForSocketEvent", () => {
     const event = await waitForSocketEvent(endpoint, "info", { timeoutMs: 5000 });
     expect(event.type).toBe("info");
     expect(event.message).toBe("[task] Completed");
-  });
-});
-
-// ── waitForDetached() tests (via SubagentManager) ──────────────────────
-
-describe("waitForDetached", () => {
-  const tmpDir = resolve("/tmp/test-manager-" + process.pid);
-
-  // We need to create a minimal SubagentManager to test waitForDetached.
-  let SubagentManager: typeof import("../../src/lib/manager.js").SubagentManager;
-
-  beforeAll(async () => {
-    // Heavy dynamic import — do once, not per-test (avoids 10s hook timeout)
-    const mod = await import("../../src/lib/manager.js");
-    SubagentManager = mod.SubagentManager;
-  }, 30_000);
-
-  beforeEach(() => {
-    mkdirSync(resolve(tmpDir, "sessions"), { recursive: true });
-    mkdirSync(resolve(tmpDir, "instances"), { recursive: true });
-  });
-
-  afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  function writeSessionMeta(sessionId: string, data: Record<string, unknown>) {
-    const dir = resolve(tmpDir, "sessions", sessionId);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(resolve(dir, "meta.json"), JSON.stringify(data, null, 2));
-  }
-
-  function writeStoredSession(sessionId: string, data: Record<string, unknown>, messages: unknown[]) {
-    writeSessionMeta(sessionId, data);
-    const sessionPath = resolve(tmpDir, "sessions", sessionId);
-    mkdirSync(sessionPath, { recursive: true });
-    const jsonlContent = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
-    writeFileSync(resolve(sessionPath, "session.jsonl"), jsonlContent);
-  }
-
-  function writeInstanceIdentity(instanceName: string, data: Record<string, unknown>) {
-    const dir = resolve(tmpDir, "instances", instanceName);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(resolve(dir, "identity.json"), JSON.stringify(data, null, 2));
-  }
-
-  it("resolves immediately for already-completed session", async () => {
-    const manager = new SubagentManager({ persistDir: tmpDir });
-    const sessionId = "s_done_1";
-
-    writeStoredSession(
-      sessionId,
-      {
-        agent: "bob",
-        task: "test",
-        status: "done",
-        startedAt: Date.now() - 5000,
-        endedAt: Date.now(),
-        detached: true,
-        instance: "job-" + sessionId,
-      },
-      [
-        { role: "user", content: [{ type: "text", text: "Do it" }], timestamp: Date.now() - 5000 },
-        { role: "assistant", content: [{ type: "text", text: "Done!" }], timestamp: Date.now() },
-      ],
-    );
-
-    const result = await manager.waitForDetached(sessionId);
-    expect(result.status).toBe("done");
-    expect(result.lastAssistantText).toBe("Done!");
-  });
-
-  it("polls until session completes", async () => {
-    const manager = new SubagentManager({ persistDir: tmpDir });
-    const sessionId = "s_poll_1";
-
-    writeSessionMeta(sessionId, {
-      agent: "bob",
-      task: "test",
-      status: "running",
-      startedAt: Date.now(),
-      detached: true,
-      instance: "job-" + sessionId,
-    });
-
-    writeInstanceIdentity("job-" + sessionId, {
-      pid: process.pid,
-      status: "running",
-      socket: "",
-    });
-
-    // After 500ms, update meta to "done" and write archive
-    setTimeout(() => {
-      writeStoredSession(
-        sessionId,
-        {
-          agent: "bob",
-          task: "test",
-          status: "done",
-          startedAt: Date.now() - 1000,
-          endedAt: Date.now(),
-          detached: true,
-          instance: "job-" + sessionId,
-        },
-        [{ role: "assistant", content: [{ type: "text", text: "Working..." }], timestamp: Date.now() }],
-      );
-    }, 500);
-
-    const result = await manager.waitForDetached(sessionId, { pollIntervalMs: 200 });
-    expect(result.status).toBe("done");
-  });
-
-  it("detects process death via identity.json", async () => {
-    const manager = new SubagentManager({ persistDir: tmpDir });
-    const sessionId = "s_dead_1";
-    const instanceName = "job-" + sessionId;
-
-    writeSessionMeta(sessionId, {
-      agent: "bob",
-      task: "test",
-      status: "running",
-      startedAt: Date.now(),
-      detached: true,
-      instance: instanceName,
-    });
-
-    writeInstanceIdentity(instanceName, {
-      pid: 99999999,
-      status: "running",
-      socket: "",
-    });
-
-    const sessionPath = resolve(tmpDir, "sessions", sessionId);
-    writeFileSync(
-      resolve(sessionPath, "session.jsonl"),
-      JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Crashed" }], timestamp: Date.now() }) + "\n",
-    );
-
-    // After 300ms, update identity to show process exited
-    setTimeout(() => {
-      writeInstanceIdentity(instanceName, {
-        pid: 99999999,
-        status: "error",
-        exitCode: 1,
-        socket: "",
-      });
-    }, 300);
-
-    const result = await manager.waitForDetached(sessionId, { pollIntervalMs: 200 });
-    expect(result.status).toBe("error");
-  });
-
-  it("throws on timeout", async () => {
-    const manager = new SubagentManager({ persistDir: tmpDir });
-    const sessionId = "s_timeout_1";
-
-    writeSessionMeta(sessionId, {
-      agent: "bob",
-      task: "test",
-      status: "running",
-      startedAt: Date.now(),
-      detached: true,
-      instance: "job-" + sessionId,
-    });
-
-    writeInstanceIdentity("job-" + sessionId, {
-      pid: process.pid,
-      status: "running",
-      socket: "",
-    });
-
-    await expect(manager.waitForDetached(sessionId, { pollIntervalMs: 100, timeoutMs: 400 })).rejects.toThrow(
-      "Timeout waiting for detached session",
-    );
-  });
-
-  it("throws for unknown session", async () => {
-    const manager = new SubagentManager({ persistDir: tmpDir });
-    await expect(manager.waitForDetached("nonexistent")).rejects.toThrow("not found");
   });
 });
