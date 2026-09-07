@@ -543,7 +543,7 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
 
   const routes = db
     .prepare(
-      `SELECT app_id, route_kind, route_id, status
+      `SELECT app_id, route_kind, route_id, status, last_error
        FROM app_event_admission_commands
        WHERE event_id = ?
        ORDER BY app_id`,
@@ -576,6 +576,7 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
         kind: "task",
         id: `${routeAppId}/${routeId}`,
         ...(typeof route.status === "string" ? { state: route.status } : {}),
+        ...(optionalText(route.last_error) ? { summary: optionalText(route.last_error) } : {}),
       });
     }
   }

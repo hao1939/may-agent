@@ -7,6 +7,7 @@ import { closeDb, getDb } from "../lib/requests.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
 import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./event-bus.js";
 import { createEventInterface } from "./event-interface.js";
+import { createAppEventAdmissionPlan, recordAppEventAdmissionCommandFailure } from "./app-event-admission-store.js";
 
 const roots: string[] = [];
 
@@ -37,6 +38,39 @@ function fixture() {
 }
 
 describe("simple event interface", () => {
+  it("exposes the recorded failure on a pending Task admission link", () => {
+    const { db, events } = fixture();
+    const receipt = events.publish(
+      { type: "project.owner.requested", target: { appId: "sample", taskId: "review/one" }, data: { reason: "review" } },
+      { source: "control-socket" },
+    );
+    createAppEventAdmissionPlan(db, {
+      eventId: receipt.eventId,
+      registrySnapshotId: "test",
+      registryGeneration: 1,
+      routes: [
+        {
+          appId: "sample",
+          kind: "exact-task",
+          routeId: "review/one",
+          targetedTaskId: "review/one",
+          conditionTaskIds: [],
+        },
+      ],
+    });
+    recordAppEventAdmissionCommandFailure(db, {
+      eventId: receipt.eventId,
+      appId: "sample",
+      error: new Error("Task admission worker exceeded its deadline"),
+    });
+    expect(events.get(receipt.eventId)?.links).toContainEqual({
+      kind: "task",
+      id: "sample/review/one",
+      state: "pending",
+      summary: "Task admission worker exceeded its deadline",
+    });
+  });
+
   it("admits only exact fenced Task control Events", () => {
     const { bus, events } = fixture();
     bus.subscribeDurableRoute((event) =>

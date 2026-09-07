@@ -601,6 +601,8 @@ type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
+  /** The workflow deliberately stopped; repeating it is not transport recovery. */
+  handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
 };
 
@@ -959,6 +961,17 @@ async function executeTaskCapability(input: {
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     );
+    // A deliberate blocker is not a transport retry, but its diagnostic
+    // context must remain visible to the same Task and its parent. Keep one
+    // bounded evidence entry; the full context remains on the workflow run.
+    if (result.type === "blocked" && result.context !== undefined) {
+      const context = JSON.stringify(result.context);
+      handlerResult.evidence.push(
+        Buffer.byteLength(context, "utf8") <= 8192
+          ? `workflow-blocker-context:${context}`
+          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task evidence bound)`,
+      );
+    }
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -981,7 +994,7 @@ async function executeTaskCapability(input: {
     return {
       handlerResult,
       runId,
-      ...(!done ? { executionFailed: true } : {}),
+      ...(!done ? { handlerBlocked: true as const } : {}),
       ...(verifier
         ? {
             verifier: {
@@ -3229,9 +3242,12 @@ async function reconcileTask(input: {
         if (stale) return stale.reconcileTaskIds;
         const finalized = await finalizeWorkspace("accepted");
         if (!finalized.ok) {
+          // A retained dirty/unintegrated workspace needs inspection, not an
+          // identical replay of the handler's already rejected completion.
+          primaryResult.handlerBlocked = true;
           primaryHandlerResult.state = "error";
           primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-          primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+          primaryHandlerResult.evidence = [...primaryHandlerResult.evidence, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
         }
       }
       if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
@@ -3316,9 +3332,10 @@ async function reconcileTask(input: {
       if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
+        primaryResult.handlerBlocked = true;
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-        primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+        primaryHandlerResult.evidence = [...primaryHandlerResult.evidence, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
       }
     }
 
@@ -3416,7 +3433,12 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
+    if (
+      !primaryResult.unavailable &&
+      !primaryResult.handlerBlocked &&
+      !agentHandoff &&
+      !primaryHandlerResult.resultRejected
+    ) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
       if (retry.status !== "released") return [];

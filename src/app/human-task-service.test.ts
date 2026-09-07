@@ -56,10 +56,12 @@ function insertTask(
     ready?: boolean;
     acceptance?: string[];
     category?: string;
+    generation?: number;
   },
 ): void {
+  const generation = input.generation ?? 2;
   const resource = {
-    metadata: { id: input.taskId, generation: 2, resourceVersion: 3 },
+    metadata: { id: input.taskId, generation, resourceVersion: 3 },
     spec: {
       parentId: "root",
       outcome: `Handle ${input.taskId}`,
@@ -69,7 +71,7 @@ function insertTask(
       ...(input.category ? { category: input.category } : {}),
     },
     status: {
-      observedGeneration: 2,
+      observedGeneration: generation,
       phase: input.phase,
       summary: `${input.taskId} summary`,
       updatedAt: new Date(input.updatedAt).toISOString(),
@@ -79,8 +81,11 @@ function insertTask(
     `INSERT INTO app_tasks(
        app_id, task_id, generation, resource_version, observed_generation, phase, lane,
        changed, ready, updated_at, resource_json
-     ) VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, ?, ?, ?)`,
-  ).run(input.appId, input.taskId, input.phase, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource));
+     ) VALUES (?, ?, ?, 3, ?, ?, 'normal', 0, ?, ?, ?)`,
+  ).run(
+    input.appId, input.taskId, generation, generation, input.phase,
+    input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource),
+  );
 }
 
 function taskConfig(db: SqliteDb, store: AppTaskResourceStore, appId: string): AppTaskContext {
@@ -738,9 +743,9 @@ describe("Human Task service", () => {
     expect(detail?.evidence).toEqual(["full evidence"]);
   });
 
-  test("does not project a stale live row as active after its completion receipt exists", () => {
+  test.each([2, 4])("does not project live generation %s as active after its completion receipt exists", (generation) => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30 });
+    insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
     insertReceipt(db, "alpha", "completed-but-stale", 40);
     const service = new HumanTaskService(db, registry("alpha"));
 
@@ -749,6 +754,21 @@ describe("Human Task service", () => {
     expect(service.listTasks({ includeDone: true }).items).toEqual([
       expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
     ]);
+  });
+
+  test("a newer live generation supersedes historical completion in detail, lists, and App counts", () => {
+    const db = database();
+    insertReceipt(db, "alpha", "same-pr", 40);
+    insertTask(db, { appId: "alpha", taskId: "same-pr", generation: 8, phase: "attention", updatedAt: 50 });
+    const service = new HumanTaskService(db, registry("alpha"));
+    const expected = { taskId: "same-pr", generation: 8, status: "attention", terminal: false };
+    expect(service.getTask({ appId: "alpha", taskId: "same-pr" })).toMatchObject(expected);
+    expect(service.listTasks().items).toEqual([expect.objectContaining(expected)]);
+    expect(service.listTasks({ includeDone: true }).items).toEqual([expect.objectContaining(expected)]);
+    expect(service.listTasks({ status: ["done"] }).items).toEqual([]);
+    expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 1, attentionTasks: 1 })]);
+    const ref = service.listTasks().items[0]!.ref;
+    expect(service.getTask({ ref })).toMatchObject(expected);
   });
 
   test("does not present the previous observation as progress for a newer running attempt", () => {
