@@ -569,9 +569,11 @@ export function assertLegacyCliTasksSettled(persistDir: string): void {
     } catch {
       /* Fail closed below. */
     }
-    if (["completed", "failed", "orphaned"].includes(String(status))) continue;
+    // The old runner marked orphaned without draining the native process.
+    // Its record is not proof that mutation has stopped; require operator review.
+    if (["completed", "failed"].includes(String(status))) continue;
     throw new Error(
-      `Unfinished or unreadable legacy CLI work at ${dir}. Drain or cancel it using the previous Host before upgrading; no artifacts were changed.`,
+      `Unfinished, orphaned, or unreadable legacy CLI work at ${dir}. Drain or cancel active work using the previous Host. Inspect orphaned/unreadable records and archive them only after confirming their work and processes are settled; no artifacts were changed.`,
     );
   }
 }

@@ -425,7 +425,7 @@ describe("read-only legacy upgrade fence", () => {
       writeFileSync(join(dir, "request.json"), '{"taskId":"legacy"}');
       const original = status === "broken" ? "unreadable JSON" : JSON.stringify({ status });
       if (status !== "missing") writeFileSync(join(dir, "task.json"), original);
-      if (["completed", "failed", "orphaned"].includes(status)) assertLegacyCliTasksSettled(persistDir);
+      if (["completed", "failed"].includes(status)) assertLegacyCliTasksSettled(persistDir);
       else expect(() => assertLegacyCliTasksSettled(persistDir)).toThrow("previous Host");
       if (status !== "missing") expect(readFileSync(join(dir, "task.json"), "utf8")).toBe(original);
       rmSync(dir, { recursive: true });
