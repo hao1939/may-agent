@@ -1,7 +1,7 @@
 /**
  * HandlerContext — the harness passed to agent-owned cron handlers.
  *
- * Handlers access the system through ctx.sdk (AgentSDK) for all standard
+ * Handlers access the system through ctx.sdk (HandlerSDK) for all standard
  * operations. A few handler-specific helpers remain on ctx directly.
  */
 
@@ -45,7 +45,7 @@ export interface EventEnvelope {
 /**
  * HandlerContext — flat interface for handler code.
  *
- * Use ctx.sdk for all standard operations (runAgent, emit, getDb, log, paths).
+ * Use ctx.sdk for mechanical operations (emit, getDb, log, paths).
  * Handler-specific session lifecycle helpers remain on ctx directly.
  */
 export interface HandlerContext {
