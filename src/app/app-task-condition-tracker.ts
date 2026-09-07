@@ -1,4 +1,4 @@
-import { commitTaskMutation, withTaskTransition, type AppTaskContext, type TaskTree } from "./app-task-store.js";
+import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
 
 export type AppTaskConditionWake = {
@@ -410,16 +410,14 @@ export function trackAppTaskConditionEventForTasks(
 ): AppTaskConditionWake[] {
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
-  return withTaskTransition(config, () => {
-    // One Condition event changes only the selected Tasks and their Conditions.
-    // Loading their children and attempt history makes a wake proportional to
-    // the size of an unrelated Task subtree and can block the interface loop.
-    const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
-    const wakes = new Map<string, AppTaskConditionWake>();
-    const changedConditionIds = new Set<string>();
-    if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {
-      saveConditionMutation(config, tree, wakes, changedConditionIds);
-    }
-    return [...wakes.values()];
-  });
+  // One Condition event changes only the selected Tasks and their Conditions.
+  // Loading their children and attempt history makes a wake proportional to
+  // the size of an unrelated Task subtree and can block the interface loop.
+  const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
+  const wakes = new Map<string, AppTaskConditionWake>();
+  const changedConditionIds = new Set<string>();
+  if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {
+    saveConditionMutation(config, tree, wakes, changedConditionIds);
+  }
+  return [...wakes.values()];
 }

@@ -1,8 +1,8 @@
 /**
- * sdk.ts — Agent SDK interface (pure types, zero runtime code)
+ * Host-internal capabilities for maintenance handlers (pure types).
  *
- * The canonical capability surface of the may-agent system.
- * Agent tools, handlers, workflows, and gym runners all go through this.
+ * App definitions and bounded workflows use @may-agent/sdk. This interface
+ * includes Host storage and execution internals and is not the public App SDK.
  */
 
 import type { SqliteDb } from "./db.js";
@@ -53,20 +53,6 @@ export interface AgentSDK {
   };
 }
 
-// ── Workflow SDK ───────────────────────────────────────────────────────
-
-export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
-  /** The task this workflow was invoked with. */
-  task: string;
-  /** The agent this workflow runs as. */
-  agent: string;
-
-  /** Terminate the workflow successfully. */
-  done(summary: string, opts?: DoneOpts): WorkflowResult;
-  /** Terminate this local workflow as blocked; does not emit escalation.created. */
-  blocked(reason: string, context?: unknown): WorkflowResult;
-};
-
 // ── Supporting types ──────────────────────────────────────────────────
 
 export interface RunOpts {
@@ -116,17 +102,6 @@ export interface TaskResult {
   sessionId: string;
   status: string;
   lastAssistantText: string;
-}
-
-export interface DoneOpts {
-  deliverables?: Deliverable[];
-  contextUpdates?: string[];
-  nextSteps?: string[];
-}
-
-export interface Deliverable {
-  path: string;
-  description?: string;
 }
 
 export interface WorkflowResult {
