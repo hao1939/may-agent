@@ -10,7 +10,6 @@ import {
 import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
-import { attachCliTaskRunner, markOrphanedCliTasks, recoverMissingCliTaskRecords } from "./cli-task-runner.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
 
@@ -198,25 +197,8 @@ export function attachDaemonEventSubscribers(opts: {
   interfaceAgent?: string;
 }): void {
   const { bus, manager, persistDir, projectRoot } = opts;
-  const sourceSessionAvailable = (sessionId: string) => manager.activeSessions.has(sessionId);
-
-  attachCliTaskRunner({ bus, persistDir, projectRoot, sourceSessionAvailable });
   attachMetricSourceMeasurement({ bus, persistDir });
   bus.subscribe(createMetricMutationSubscriber(persistDir), { label: "metric-mutation" });
-  const recoveredCliAdmissions = recoverMissingCliTaskRecords({ bus, persistDir });
-  if (recoveredCliAdmissions > 0) {
-    bus.emit({
-      type: "info",
-      message: `[cli-task-runner] Failed ${recoveredCliAdmissions} accepted CLI request(s) that lacked runner records`,
-    });
-  }
-  const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir, sourceSessionAvailable });
-  if (orphanedCliTasks > 0) {
-    bus.emit({
-      type: "info",
-      message: `[cli-task-runner] Marked ${orphanedCliTasks} stale CLI task(s) orphaned after restart`,
-    });
-  }
   const restartedHandlerPairs = closeRestartedHandlerPairs({ bus, persistDir });
   if (restartedHandlerPairs > 0) {
     bus.emit({
