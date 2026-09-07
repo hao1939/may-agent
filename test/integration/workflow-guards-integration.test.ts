@@ -24,6 +24,7 @@ function makeTaskResult(overrides: Partial<TaskResult> = {}): TaskResult {
   return {
     sessionId: `s_mock_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     status: "done",
+    finishResult: { status: "success", summary: overrides.lastAssistantText ?? "Mock agent completed successfully." },
     lastAssistantText: "Mock agent completed successfully.",
     messages: [],
     duration: "0.1s",
@@ -104,6 +105,10 @@ describe("Guard integration: warn demand delivery", () => {
 
       const parsed = JSON.parse((result.content[0] as any).text) as WorkflowToolResult;
       expect(parsed.type).toBe("done");
+      if (parsed.type === "done") {
+        expect(parsed.summary).toContain("Step1: step-one completed:");
+        expect(parsed.summary).toContain("Step2: step-two completed:");
+      }
 
       // The warn guard fires on step_done for step-one.
       // The warning should be injected into step-two's task.

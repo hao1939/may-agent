@@ -173,7 +173,7 @@ describe("workflow run persistence", () => {
       export const name = "no-steps";
       export const description = "No agent steps";
       export async function execute(ctx) {
-        return ctx.done("done without steps: " + ctx.task);
+        return ctx.done("done without steps: " + ctx.input);
       }
     `,
     );
@@ -329,8 +329,8 @@ describe("workflow nesting depth cap", () => {
       export const name = "outer";
       export const description = "Calls inner";
       export async function execute(ctx) {
-        const inner = await ctx.runWorkflow("inner", "sub-task");
-        if (inner.type === "done") return ctx.done("outer+inner: " + inner.summary);
+        const inner = await ctx.workflows.run("inner", "sub-task");
+        if (inner.status === "done") return ctx.done("outer+inner: " + inner.summary);
         return ctx.blocked("inner failed");
       }
     `,
@@ -363,8 +363,8 @@ describe("workflow nesting depth cap", () => {
       export const name = "recursive";
       export const description = "Calls itself";
       export async function execute(ctx) {
-        const sub = await ctx.runWorkflow("recursive", "recurse");
-        if (sub.type === "blocked" || sub.type === "escalate") return ctx.blocked("hit depth: " + sub.reason);
+        const sub = await ctx.workflows.run("recursive", "recurse");
+        if (sub.status === "blocked") return ctx.blocked("hit depth: " + sub.summary);
         return ctx.done("should not get here");
       }
     `,
@@ -387,8 +387,8 @@ describe("workflow nesting depth cap", () => {
       export const name = "parent-wf";
       export const description = "Parent";
       export async function execute(ctx) {
-        const sub = await ctx.runWorkflow("child-wf", "child task");
-        if (sub.type === "done") return ctx.done("parent+child");
+        const sub = await ctx.workflows.run("child-wf", "child task");
+        if (sub.status === "done") return ctx.done("parent+child");
         return ctx.blocked("child failed");
       }
     `,
@@ -515,8 +515,8 @@ describe("trace()", () => {
       export const name = "nested-trace";
       export const description = "Calls inner";
       export async function execute(ctx) {
-        const sub = await ctx.runWorkflow("inner-trace", "inner task");
-        return sub.type === "done" ? ctx.done("outer: " + sub.summary) : ctx.blocked("fail");
+        const sub = await ctx.workflows.run("inner-trace", "inner task");
+        return sub.status === "done" ? ctx.done("outer: " + sub.summary) : ctx.blocked("fail");
       }
     `,
     );
