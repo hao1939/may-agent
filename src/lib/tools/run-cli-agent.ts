@@ -1,10 +1,7 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { EventTrace } from "../../app/event-bus.js";
-
-const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
+import { runCliAgent, type CliAgentOptions } from "../cli-agent.js";
 
 const paramsSchema = Type.Object({
   tool: Type.Union([Type.Literal("claude"), Type.Literal("codex")], {
@@ -49,10 +46,13 @@ const paramsSchema = Type.Object({
     }),
   ),
   expectedOutput: Type.Optional(
-    Type.Object({
-      format: Type.Union([Type.Literal("markdown"), Type.Literal("json")]),
-      requiredFields: Type.Optional(Type.Array(Type.String())),
-    }, { description: "Optional deterministic output contract checked by the runner." }),
+    Type.Object(
+      {
+        format: Type.Union([Type.Literal("markdown"), Type.Literal("json")]),
+        requiredFields: Type.Optional(Type.Array(Type.String())),
+      },
+      { description: "Optional deterministic output contract checked before returning." },
+    ),
   ),
   resumeSessionId: Type.Optional(
     Type.String({
@@ -61,7 +61,7 @@ const paramsSchema = Type.Object({
   ),
   reuseSession: Type.Optional(
     Type.Boolean({
-      description: "Resume/store May's default native CLI session for this tool.",
+      description: "Deprecated: implicit shared session reuse is rejected. Pass resumeSessionId explicitly.",
     }),
   ),
 });
@@ -75,30 +75,8 @@ export interface RunCliAgentToolOptions {
   emit?: (event: { type: string; [key: string]: unknown }) => void;
   getCallerSessionId?: () => string | undefined;
   getCallerTrace?: () => EventTrace | undefined;
-}
-
-function textResult(text: string): AgentToolResult<undefined> {
-  return { content: [{ type: "text" as const, text }], details: undefined };
-}
-
-function createTaskId(): string {
-  return `cli_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function ensureInside(root: string, path: string): string {
-  const base = resolve(root);
-  const resolved = resolve(base, path);
-  if (resolved === base || resolved.startsWith(`${base}/`)) return resolved;
-  throw new Error(`Path outside project root: ${path}`);
-}
-
-function safeCwd(projectRoot: string, cwd?: string): string {
-  if (!cwd || !cwd.trim()) return resolve(projectRoot);
-  return ensureInside(projectRoot, cwd);
-}
-
-function defaultSandbox(_tool: RunCliAgentParams["tool"], _mode: NonNullable<RunCliAgentParams["mode"]>): string {
-  return "danger-full-access";
+  spawnCommand?: CliAgentOptions["spawnCommand"];
+  drainProcessGroup?: CliAgentOptions["drainProcessGroup"];
 }
 
 export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
@@ -106,145 +84,31 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
     name: "run_cli_agent",
     label: "Run CLI Agent",
     description:
-      "Delegate focused work to Claude Code or Codex through the durable async CLI task runner. Returns accepted immediately; completion arrives as cli.task.completed/failed.",
+      "Run one bounded Codex or Claude investigation, review, or patch. Waits for completion and returns a terminal result with evidence paths. Cancellation stops the native process; work that must outlive this call belongs to a Task.",
     parameters: paramsSchema,
-    execute: async (_toolCallId: string, rawParams: unknown): Promise<AgentToolResult<undefined>> => {
-      const params = rawParams as RunCliAgentParams;
-      if (!params.prompt || !params.prompt.trim()) {
-        return textResult(JSON.stringify({ error: "prompt is required" }));
-      }
-
-      const taskId = createTaskId();
-      const dir = join(opts.persistDir, "cli-tasks", taskId);
-      const promptPath = join(dir, "prompt.md");
-      const resultPath = join(dir, "result.md");
-      const structuredResultPath = join(dir, "result.json");
-      const eventsPath = join(dir, "events.jsonl");
-      const cwd = safeCwd(opts.projectRoot, params.cwd);
-      const mode = params.mode ?? "investigate";
-      if (mode === "patch" && params.worktreePolicy === "require" && !params.worktree) {
-        return textResult(JSON.stringify({ error: "patch mode requires an explicitly prepared worktree" }));
-      }
-      const sandbox = params.sandbox ?? defaultSandbox(params.tool, mode);
-      const timeoutMs = params.timeoutMs && Number.isFinite(params.timeoutMs) ? params.timeoutMs : DEFAULT_TIMEOUT_MS;
-
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(promptPath, params.prompt);
-      const requestedAt = new Date().toISOString();
-      const request = {
-        taskId,
-        tool: params.tool,
-        mode,
-        cwd,
-        promptPath,
-        resultPath,
-        structuredResultPath,
-        eventsPath,
-        sandbox,
-        timeoutMs,
-        sourceOwner: `agent:${opts.agentName}`,
-        sourceSessionId: opts.getCallerSessionId?.(),
-        resumeSessionId: params.resumeSessionId,
-        reuseSession: params.reuseSession === true,
-        files: params.files,
-        worktree: params.worktree,
-        worktreePolicy: params.worktreePolicy,
-        expectedOutput: params.expectedOutput,
-        requestedAt,
-      };
-      writeFileSync(join(dir, "request.json"), `${JSON.stringify(request, null, 2)}\n`);
-
-      const trace = opts.getCallerTrace?.();
-      opts.emit?.({
-        type: "cli.task.requested",
-        source: `agent:${opts.agentName}`,
-        owner: "runtime:cli-task-runner",
-        urgency: "normal",
-        data: {
-          taskId,
-          tool: params.tool,
-          mode,
-          cwd,
-          promptPath,
-          resultPath,
-          structuredResultPath,
-          eventsPath,
-          sandbox,
-          timeoutMs,
-          sourceOwner: `agent:${opts.agentName}`,
-          sourceSessionId: opts.getCallerSessionId?.(),
-          resumeSessionId: params.resumeSessionId,
-          reuseSession: params.reuseSession === true,
-          files: params.files,
-          worktree: params.worktree,
-          worktreePolicy: params.worktreePolicy,
-          expectedOutput: params.expectedOutput,
-        },
-        ...(trace ? { trace } : {}),
-      });
-
-      const taskPath = join(dir, "task.json");
-      if (!existsSync(taskPath)) {
-        const error = "CLI task admission failed before a durable runner record was created";
-        const finishedAt = new Date().toISOString();
-        writeFileSync(resultPath, "");
-        writeFileSync(
-          structuredResultPath,
-          `${JSON.stringify(
-            {
-              status: "failed",
-              summary: error,
-              evidenceRefs: [resultPath, eventsPath],
-              error,
-              failureCategory: "admission",
-            },
-            null,
-            2,
-          )}\n`,
-        );
-        writeFileSync(
-          taskPath,
-          `${JSON.stringify(
-            {
-              ...request,
-              status: "failed",
-              finishedAt,
-              error,
-              failureCategory: "admission",
-              summary: error,
-            },
-            null,
-            2,
-          )}\n`,
-        );
-        opts.emit?.({
-          type: "cli.task.failed",
-          source: "run-cli-agent",
-          owner: `agent:${opts.agentName}`,
-          data: {
-            taskId,
-            tool: params.tool,
-            resultPath,
-            structuredResultPath,
-            eventsPath,
-            error,
-            failureCategory: "admission",
-            sourceSessionId: opts.getCallerSessionId?.(),
-          },
-          ...(trace ? { trace } : {}),
+    execute: async (_toolCallId, rawParams, signal): Promise<AgentToolResult<undefined>> => {
+      try {
+        // Capture identity once, before awaiting: tools can be shared by concurrent sessions.
+        const sessionId = opts.getCallerSessionId?.();
+        if (!sessionId) throw new Error("CLI execution requires its exact caller session");
+        const result = await runCliAgent(rawParams as RunCliAgentParams, {
+          ...opts,
+          sessionId,
+          trace: opts.getCallerTrace?.(),
+          signal,
         });
-        return textResult(JSON.stringify({ taskId, status: "failed", error, structuredResultPath, eventsPath }));
+        return { content: [{ type: "text", text: JSON.stringify(result) }], details: undefined };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ status: "failed", error: error instanceof Error ? error.message : String(error) }),
+            },
+          ],
+          details: undefined,
+        };
       }
-
-      return textResult(
-        JSON.stringify({
-          taskId,
-          status: "accepted",
-          resultPath,
-          structuredResultPath,
-          eventsPath,
-        }),
-      );
     },
   };
 }

@@ -364,10 +364,11 @@ describe("shared agent execution preparation", () => {
       "finish",
       "query_db",
       "read",
+      "run_cli_agent",
       "workflow",
       "write",
     ]);
-    expect(deputy.tools.map((candidate) => candidate.name)).toEqual(["agents", "finish", "query_db", "read"]);
+    expect(deputy.tools.map((candidate) => candidate.name)).toEqual(["agents", "finish", "query_db", "read", "run_cli_agent"]);
   });
 
   test("leaves compatibility deputy sessions unchanged during migration", () => {
