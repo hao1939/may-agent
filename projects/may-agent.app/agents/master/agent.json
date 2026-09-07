@@ -4,6 +4,5 @@
   "domain": "complex implementation via durable agent delegation",
   "model": "claude-opus-5",
   "heartbeat": false,
-  "tools": ["agents", "cli-delegation", "finish"],
-  "context_files": ["last-eval.md"]
+  "tools": ["agents", "cli-delegation", "finish"]
 }

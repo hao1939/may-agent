@@ -118,6 +118,7 @@ const deferredMetrics = new Set([
   "project.health.finding-count",
   "project.owner-incomplete-count",
   "project.agent-judgment-needed-count",
+  "project.owner-judgment-needed-count",
   "capability.zombie-session-count",
   "runtime.stale-running-session-count",
 ]);

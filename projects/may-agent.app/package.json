@@ -8,7 +8,7 @@
     "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
     "syntax": "rm -rf .state/syntax-check && bun build ./app.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./app.test.ts --timeout 30000",
+    "test": "bun test --timeout 30000",
     "format": "bun x prettier --write app.ts app.test.ts package.json project.json tsconfig.json",
     "format:check": "bun x prettier --check app.ts app.test.ts package.json project.json tsconfig.json"
   },

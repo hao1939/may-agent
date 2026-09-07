@@ -51,27 +51,26 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       `If you cannot finish within 30 calls, call finish({status: "partial"}) with what you have.\n\n` +
       `## Context\n${task}\n\n` +
       `## Instructions\n` +
-      `1. Read \`projects/may-agent.app/agents/coach/workspace/todo.md\` — find all growth cycle candidates.\n` +
-      `2. Read \`projects/may-agent.app/agents/*/ERROR_LOG.jsonl\` — find error patterns worth fixing.\n` +
-      `3. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — check for untested methods\n` +
+      `1. Treat the supplied Task and its exact evaluation or session references as the candidate set. Do not scan an agent inbox or source-controlled error log.\n` +
+      `2. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — check for untested methods\n` +
       `   AND check for "hypothesis" entries (invented methods) that need testing.\n` +
-      `4. Read \`projects/may-agent.app/agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
+      `3. Read \`projects/may-agent.app/agents/coach/workspace/experiments.jsonl\` if it exists — skip patterns already tested.\n` +
       `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
-      `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
+      `4. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
       `   \`cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/projects/gym/scenarios test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
       `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
       `   Only keep experiments where baseline FAILS at least one check.\n` +
       `   If ALL candidates are removed by this gate, your output should be:\n` +
       `   "GATE: ALL SKIPPED — ceiling effect on all candidates. Need harder scenarios."\n` +
       `   This gate prevents wasting ~4 LLM sessions per experiment on zero-improvement cycles.\n` +
-      `6. Select 3-5 experiments. For each, specify:\n` +
+      `5. Select 3-5 experiments. For each, specify:\n` +
       `   - Target agent\n` +
       `   - Error pattern (FM code) or method to learn\n` +
       `   - Method to apply (can be a hypothesis from the catalog)\n` +
       `   - Gym scenario(s) to test against (check \`ls /app/projects/gym/scenarios/\`)\n` +
       `   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n` +
-      `7. Write the plan to \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\`\n` +
-      `8. Report the full plan.`,
+      `6. Write the plan to \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\`\n` +
+      `7. Report the full plan.`,
   );
   if (plan.status === "error") {
     return ctx.blocked("sprint planning failed", plan.evidence ?? plan.summary);

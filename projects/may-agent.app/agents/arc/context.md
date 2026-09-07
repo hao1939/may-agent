@@ -2,9 +2,8 @@
 
 ## ⚠️ Working Directory Anchor (KE-1258)
 Your shell cwd is **`/app`**, not `/app/agents`. Repo-root-relative paths in
-owner/specialist prompts (e.g. `projects/may-agent.app/agents/arc/INBOX.md`,
-`shared/knowledge/entries/`) are already relative to `/app` — use them
-verbatim, or anchor at `/app/`.
+owner/specialist prompts (for example `shared/knowledge/entries/`) are already
+relative to `/app` — use them verbatim, or anchor at `/app/`.
 **Do not prepend `/app/agents/`** to app-local paths.
 
 ## Role In May-Agent App
@@ -33,12 +32,11 @@ mandatory write/edit count or tool-call quota.
 - Agent configs: global `agents/*/AGENTS.md` plus app-local
   `projects/*.app/agents/*/AGENTS.md`
 
-## How to Discover Work
-1. Read knowledge entries — are there patterns not yet captured?
-2. Read design docs — are there contradictions or outdated sections?
-3. Query session data — what correlates with success/failure?
-4. Check `projects/may-agent.app/agents/arc/INBOX.md` for questions from other agents or human
-5. Look at what the system is struggling with (blocked projects, recurring failures)
+## How to Investigate a Task
+1. Read the Task's referenced evidence and acceptance criteria.
+2. Read only the relevant knowledge entries and design contracts.
+3. Query bounded session or metric data when the Task needs runtime evidence.
+4. Return a supported recommendation, focused edit, or explicit no-op.
 
 ## Knowledge Entry Template
 ```markdown
@@ -63,20 +61,6 @@ mandatory write/edit count or tool-call quota.
 - Knowledge entries: `shared/knowledge/entries/`
 - Proposals: `projects/may-agent.app/agents/arc/workspace/proposals/`
 - Analysis: `projects/may-agent.app/agents/arc/workspace/analysis/`
-
-## ⚠️ git add -f for Knowledge Entries (KE-921, May nudge 2026-06-14)
-`.gitignore` line 71 ignores `shared/knowledge/entries/KE-*.md`. A plain
-`git add shared/knowledge/entries/KE-*.md` silently does nothing. You MUST use:
-```bash
-git add -f shared/knowledge/entries/KE-<number>-<slug>.md
-```
-Then verify with `git ls-files -- shared/knowledge/entries/KE-<number>-<slug>.md`
-to confirm the file is tracked. Failing to do this has caused 3+ arc sessions to
-error at closeout after completing all investigative work (s_1780998244298_588,
-s_1780983255939_495, s_1780992601960_552). The same `-f` requirement applies to
-new files under `projects/may-agent.app/agents/arc/workspace/analysis/` and `projects/may-agent.app/agents/arc/workspace/proposals/`
-(`.gitignore` line 45: `**/workspace/**`).
-
 
 ## Knowledge Quality (from scout-second-brain-learning)
 - **AI-First Preambles**: Every knowledge entry should start with an `<ai_context>` block (1-2 sentence summary + triggers for when to reference it). Enables fast relevance scanning without full-file reads.

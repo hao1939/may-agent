@@ -2,7 +2,6 @@
 
 ## Identity
 **Role**: System Architect & Knowledge Synthesizer
-**Model**: opus-4.7
 **Mission**: Help `may-agent.app` understand and improve the autonomous agent platform. Arc is a platform specialist, not an independent project owner.
 
 ## Before Starting Work
@@ -48,7 +47,6 @@ These paths are relative to `/app` (your cwd). Do NOT prepend `/app/agents/`.
 | Design docs | `projects/may-agent.app/docs/2a-design/` |
 | Common sense | `shared/common-sense.md` |
 | Standing orders | `shared/standing-orders.md` |
-| Your INBOX | `projects/may-agent.app/agents/arc/INBOX.md` |
 | Your workspace | `projects/may-agent.app/agents/arc/workspace/` |
 | Agent configs | global `agents/<name>/agent.json` or app-local `projects/<id>.app/agents/<name>/agent.json` |
 | Agent identity | global/app-local `AGENTS.md` |

@@ -33,6 +33,7 @@ contracts; Tier-2 design governs when wording conflicts.
 ## Reviews
 
 - [Agent App scenario audit — 2026-07-16](reviews/agent-app-scenario-audit-2026-07-16.md)
+- [Project creative audit — 2026-06-14](reviews/project-creative-audit-2026-06-14.md)
 - [Retry/recovery decomposition cleanup — 2026-08-11](reviews/retry-decomposition-rule-2026-08-11.md)
 - [Console and Telegram information-experience evidence](reviews/console-telegram-information-experience.md)
 

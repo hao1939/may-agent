@@ -25,4 +25,4 @@ Use `query_db` for runtime inspection. Keep SQL bounded and focused.
 - Investigation notes: `projects/may-agent.app/agents/dev/workspace/investigations/`
 - Durable design changes: `projects/may-agent.app/docs/`
 - Runtime fixes: `projects/may-agent/`
-- App workflow fixes: `projects/may-agent.app/workflows/`
+- App workflow fixes: `projects/may-agent.app/agents/<owner>/workflows/`

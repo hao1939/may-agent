@@ -4,7 +4,6 @@ import { pathToFileURL } from "node:url";
 import type { AppDefinition } from "@may-agent/sdk";
 
 const expectedApps = [
-  "aks-rp-e2e",
   "evaluation",
   "gym",
   "may",

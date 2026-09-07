@@ -13,5 +13,5 @@
     "workflow",
     "finish"
   ],
-  "context_files": ["context.md", "last-eval.md"]
+  "context_files": ["context.md"]
 }

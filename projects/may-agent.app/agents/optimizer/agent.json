@@ -5,5 +5,5 @@
   "model": "claude-opus-5",
   "heartbeat": false,
   "tools": ["coding", "agents", "message", "workflow", "checkpoint", "finish"],
-  "context_files": ["context.md", "last-eval.md"]
+  "context_files": ["context.md"]
 }
