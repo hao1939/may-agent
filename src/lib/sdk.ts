@@ -12,10 +12,7 @@ import type { QueryAPI } from "./query-service.js";
 // ── Core SDK ──────────────────────────────────────────────────────────
 
 export interface AgentSDK {
-  /** Run an agent on a task and wait for its result. */
-  runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
-
-  /** Run a named workflow synchronously. Returns when workflow completes. */
+  /** Retained standalone cron adapter only; not exposed to maintenance handler files. */
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
   /** Emit a typed event (persisted to events table). */
@@ -36,9 +33,6 @@ export interface AgentSDK {
   /** Send an async message to a target. "human" → Telegram/web. Agent name → agent inbox. */
   message(target: string, content: string): void;
 
-  /** External escalation. Defaults to owner agent:may. */
-  escalate(reason: string, opts?: EscalationOptions): EscalationRef;
-
   /** System paths. */
   paths: {
     persist: string; // .state directory (DB, logs)
@@ -58,7 +52,6 @@ export interface RunOpts {
   projectId?: string;
   /** Structured workflow input; never encode control data into task prose. */
   input?: unknown;
-  timeout?: number;
 }
 
 export interface EventEnvelopeOptions {
@@ -74,30 +67,6 @@ export interface EventEnvelopeOptions {
     parentEventId?: number;
     links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }>;
   };
-}
-
-export interface EscalationOptions extends EventEnvelopeOptions {
-  requestedAction?: string;
-  resumeCondition?: string;
-  evidence?: Record<string, unknown>;
-  severity?: "P0" | "P1" | "P2" | "P3";
-  projectId?: string;
-  sourceSessionId?: string;
-  resume?: Record<string, unknown>;
-  dedupKey?: string;
-}
-
-export interface EscalationRef {
-  /** Canonical identity of the persisted escalation.created event. */
-  eventId: number;
-  /** Temporary key for compatibility with legacy producers and stored rows. */
-  compatibilityId: string;
-}
-
-export interface TaskResult {
-  sessionId: string;
-  status: string;
-  lastAssistantText: string;
 }
 
 export interface WorkflowResult {
