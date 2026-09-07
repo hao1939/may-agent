@@ -1,20 +1,10 @@
 /**
- * sdk-impl.ts — Concrete AgentSDK implementation wrapping existing internals.
+ * Host-internal AgentSDK implementation wrapping existing services.
  *
- * This is the bridge: handlers/workflows get an AgentSDK object,
- * which delegates to manager, bus, DB under the hood.
+ * Used by Host maintenance handlers, not the public bounded workflow SDK.
  */
 
-import type {
-  AgentSDK,
-  WorkflowSDK,
-  RunOpts,
-  TaskResult,
-  DoneOpts,
-  WorkflowResult,
-  EscalationOptions,
-  EscalationRef,
-} from "./sdk.js";
+import type { AgentSDK, RunOpts, TaskResult, WorkflowResult, EscalationOptions, EscalationRef } from "./sdk.js";
 import { EVENT_ROW_ID, type EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
@@ -309,36 +299,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       agents: deps.agentsRoot,
       shared: deps.sharedRoot,
       projects: deps.projectsRoot,
-    },
-  };
-}
-
-// ── Build WorkflowSDK ─────────────────────────────────────────────────
-
-export interface WorkflowSDKDeps extends SDKDeps {
-  task: string;
-  /** Callback to terminate the workflow. */
-  finish: (result: WorkflowResult) => void;
-}
-
-export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
-  const base = buildAgentSDK(deps);
-
-  return {
-    ...base,
-    task: deps.task,
-    agent: deps.agentName,
-
-    done(summary: string, _opts?: DoneOpts): WorkflowResult {
-      const result: WorkflowResult = { status: "done", summary };
-      deps.finish(result);
-      return result;
-    },
-
-    blocked(reason: string, _context?: unknown): WorkflowResult {
-      const result: WorkflowResult = { status: "blocked", summary: reason };
-      deps.finish(result);
-      return result;
     },
   };
 }
