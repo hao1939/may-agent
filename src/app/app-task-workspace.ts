@@ -112,11 +112,19 @@ async function interruptedOperationBranch(path: string): Promise<string | undefi
 }
 
 async function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): Promise<boolean> {
-  return (
+  if (
     metadata.headCommit === metadata.baseCommit ||
     (await git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true)).status === 0 ||
     (await git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true)).status === 0
-  );
+  ) return true;
+  // Squash/rebase integration need not preserve commit ancestry. Prove that
+  // merging the retained change adds nothing to one pinned target snapshot.
+  // merge-tree changes no refs, index, or worktree. Conflict/unsupported Git is
+  // unknown integration, so the branch remains available for recovery.
+  const target = (await git(repoDir, ["rev-parse", metadata.baseRef])).stdout;
+  const merged = await git(repoDir, ["merge-tree", "--write-tree", target, metadata.headCommit], true);
+  if (merged.status !== 0) return false;
+  return merged.stdout.split("\n")[0] === (await git(repoDir, ["rev-parse", `${target}^{tree}`])).stdout;
 }
 
 function unintegratedResult(metadata: AppTaskWorkspace): FinalizedTaskWorkspace {
@@ -259,6 +267,13 @@ export async function finalizeAppTaskWorkspace(
     }
     if (outcome === "failed") {
       metadata.disposition = "retained-for-recovery";
+      return { ok: true, metadata };
+    }
+    if (outcome === "waiting") {
+      // Waiting releases execution, not unfinished work. Recreating this
+      // checkout on every wake discards ignored dependencies and local
+      // evidence, turning observation into repeated setup/repair work.
+      metadata.disposition = "active";
       return { ok: true, metadata };
     }
 

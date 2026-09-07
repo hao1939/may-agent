@@ -40,6 +40,7 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   rejectConvergedDirectAgentResidue,
+  retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
 import {
   claimObservedAppTask,
@@ -50,6 +51,7 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
+  retryFailedAppTask,
   appTaskContext,
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
@@ -3584,6 +3586,206 @@ describe("canonical App task runtime", () => {
 
     await recoverInstalledAppTasks(bus);
     expect(recoveries).toBe(1);
+  });
+
+  it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const workflowDir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(
+      join(workflowDir, "claim-check.ts"),
+      `
+      export const name = "claim-check";
+      export const description = "Recheck a previously blocked claim from current input";
+      export async function execute(ctx) {
+        if (ctx.reconciliation.input.confirmed !== true)
+          return ctx.blocked("Current evidence does not confirm the requirement", { finding: "exact assertion missing", runId: "123" });
+        return ctx.done("Fresh evidence confirmed the requirement", {
+          state: "converged", summary: "Fresh evidence confirmed the requirement",
+          evidence: ["verified:current-input"]
+        });
+      }
+    `,
+    );
+    const runtimeOptions = {
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      appRegistrySnapshot: {
+        id: "boot:explicit-workflow-blocker",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    };
+    await installAppTaskRuntimes(runtimeOptions);
+    const taskId = "work/claim-check";
+    const attach = (confirmed: boolean) =>
+      attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            mode: "achieve",
+            agent: "sample-owner",
+            workflow: "claim-check",
+            outcome: "Confirm the requirement from current evidence",
+            acceptance: ["Fresh verified facts, not a previous failed judgment, decide completion"],
+            input: { confirmed },
+          },
+        },
+        idempotencyKey: `claim-check:${confirmed}`,
+        request: {
+          id: `request-claim-check:${confirmed}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: { confirmed } },
+        },
+      });
+    await attach(false);
+    const deadline = Date.now() + 1500;
+    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" && Date.now() < deadline)
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      id: taskId,
+      status: "attention",
+      generation: 1,
+      summary: "Current evidence does not confirm the requirement",
+      conditions: [],
+      evidence: expect.arrayContaining(['workflow-blocker-context:{"finding":"exact assertion missing","runId":"123"}']),
+    });
+    const config = loadedTaskConfig(f);
+    const attemptsBefore = Object.values(readTaskSnapshot(config).attempts ?? {});
+    expect(attemptsBefore).toHaveLength(1);
+    expect(attemptsBefore[0]).toMatchObject({ state: "failed", failureReason: "handler-blocked" });
+    for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+    await closeInstalledAppTaskRuntimes(bus);
+    await installAppTaskRuntimes(runtimeOptions);
+    await recoverInstalledAppTasks(bus);
+    await Bun.sleep(50);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe("attention");
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
+    const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
+      snapshot: () => runtimeOptions.appRegistrySnapshot,
+    });
+    const blocked = humanTasks.getTask({ appId: "sample", taskId });
+    if (!blocked) throw new Error("expected blocked Task");
+    retryLoadedFailedAppTask({
+      bus,
+      appId: "sample",
+      taskId,
+      expectedGeneration: blocked.generation,
+      expectedResourceVersion: blocked.resourceVersion,
+    });
+    const retryDeadline = Date.now() + 1500;
+    while (
+      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" &&
+      Date.now() < retryDeadline
+    )
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      status: "attention",
+      generation: 1,
+      conditions: [],
+    });
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
+    await attach(true);
+    const completionDeadline = Date.now() + 1500;
+    while (
+      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "done" &&
+      Date.now() < completionDeadline
+    )
+      await Bun.sleep(5);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      id: taskId,
+      status: "done",
+      generation: 2,
+      evidence: ["verified:current-input"],
+    });
+  });
+
+  it.each([
+    { state: "converged", committed: false },
+    { state: "converged", committed: true },
+    { state: "waiting", committed: false },
+  ] as const)("parks workspace rejection without losing recovery ($state, committed=$committed)", async (scenario) => {
+    const f = fixture();
+    const bus = eventBus();
+    const git = (cwd: string, ...args: string[]) => promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+    await git(f.appDir, "init", "-b", "main");
+    await git(f.appDir, "config", "user.email", "test@example.com");
+    await git(f.appDir, "config", "user.name", "Test");
+    await git(f.appDir, "add", ".");
+    await git(f.appDir, "commit", "-m", "fixture baseline");
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        residue: async (attempt) => {
+          calls++;
+          if (calls === 1) {
+            writeFileSync(join(attempt.cwd, "retained.txt"), "unfinished source\n");
+            if (scenario.committed) {
+              await git(attempt.cwd, "add", "retained.txt");
+              await git(attempt.cwd, "commit", "-m", "retained change");
+            }
+          }
+          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:workspace-rejection",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: {
+          ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" },
+        } }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/workspace-rejection";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Preserve unfinished work",
+        acceptance: ["No workspace loss or unchanged automatic retry"], mode: "achieve",
+        agent: "sample-owner", executor: "residue" },
+    });
+    const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    await run();
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      status: "attention",
+      summary: expect.stringContaining(scenario.committed ? "not integrated" : "dirty"),
+      evidence: expect.arrayContaining(["provider:evidence"]),
+    });
+    for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+    await run();
+    expect(calls).toBe(1);
+    const tree = readTaskSnapshot(config);
+    expect(tree.receipts?.[taskId]).toBeUndefined();
+    expect(Object.values(tree.attempts ?? {})).toEqual([
+      expect.objectContaining({ state: "failed", failureReason: "handler-blocked",
+        workspace: expect.objectContaining({ disposition: scenario.committed ? "branch-retained" : "retained-for-recovery" }) }),
+    ]);
+    const retained = Object.values(tree.attempts ?? {})[0]!.workspace!;
+    // Simulate explicit repair/integration in this local Git fixture. A prior
+    // guard rejection must not make the same Task permanently unfinishable.
+    if (!scenario.committed) {
+      await git(retained.path, "add", "retained.txt");
+      await git(retained.path, "commit", "-m", "explicit fixture recovery");
+    }
+    await git(f.appDir, "merge", "--ff-only", retained.branch);
+    const resource = config.resourceStore.readTask(taskId)!;
+    retryFailedAppTask(config, { appId: "sample", taskId,
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion });
+    await run();
+    expect(calls).toBe(2);
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({ status: "done", generation: 1 });
   });
 
   it("parks invalid handler results instead of retrying them through recovery", async () => {

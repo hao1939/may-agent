@@ -297,6 +297,9 @@ function hasUnacceptedLiveEvents(
   if (!pending) return false;
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
   return taskTriggerEvents(pending).some(({ event }) => {
+    // A clock wake carries no new evidence or intent. Normal settlement still
+    // handles the wake; passing time alone does not invalidate useful work.
+    if (event.type === "project.task.tick") return false;
     const eventId = Number(event.eventId);
     return !Number.isSafeInteger(eventId) || eventId <= 0 || !accepted.has(eventId);
   });
@@ -341,6 +344,27 @@ function appendTaskTriggerEvent(
 ): AppTaskTriggerEvent[] {
   const identity = taskEventIdentity(event);
   if (events.some((entry) => taskEventIdentity(entry.event) === identity)) return events;
+  if (event.type === "project.task.tick") {
+    // Ticks carry no unique work input: one latest durable wake is enough to
+    // reconcile current state. Preserve all feedback/facts alongside that wake.
+    const previous = events.filter((entry) => entry.event.type === "project.task.tick").at(-1);
+    if (previous) {
+      const previousId = Number(previous.event.eventId);
+      const incomingId = Number(event.eventId);
+      if (
+        Number.isSafeInteger(previousId) &&
+        previousId > 0 &&
+        Number.isSafeInteger(incomingId) &&
+        incomingId > 0 &&
+        previousId > incomingId
+      )
+        return events;
+    }
+    return [
+      ...events.filter((entry) => entry.event.type !== "project.task.tick"),
+      { event: structuredClone(event), observedAt },
+    ];
+  }
   return [...events, { event: structuredClone(event), observedAt }];
 }
 
@@ -2053,6 +2077,7 @@ export function recordAppTaskTrigger(
   resource.metadata.resourceVersion += 1;
   const observedAt = new Date().toISOString();
   const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
+  if (previous && events === previous.events) return { kind: "recorded" };
   const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.agent));
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
@@ -3064,13 +3089,16 @@ export function releaseStaleAppTaskResult(
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const resource = tree.resources?.[claim.taskId];
   if (!resource) return { status: "missing", taskId: claim.taskId };
-  if (resource.status.currentAttemptId !== claim.attemptId) {
+  if (resource.metadata.generation !== claim.generation || resource.status.currentAttemptId !== claim.attemptId) {
     return { status: "superseded", taskId: claim.taskId };
   }
   const attempt = tree.attempts?.[claim.attemptId];
   if (!attempt || attempt.state !== "running") {
     return { status: "superseded", taskId: claim.taskId };
   }
+  // The rejected claim's version predates the very update we must preserve.
+  // Fence this freshly read state, still requiring the same intent/attempt.
+  const resourceVersion = resource.metadata.resourceVersion;
   const now = new Date().toISOString();
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", summary, now);
@@ -3089,7 +3117,7 @@ export function releaseStaleAppTaskResult(
       fences: [
         {
           taskId: claim.taskId,
-          resourceVersion: claim.resourceVersion,
+          resourceVersion,
           generation: claim.generation,
           currentAttemptId: claim.attemptId,
         },

@@ -11,6 +11,7 @@ import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } f
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {
   associateAppTaskSession,
+  assertAppTaskEffectFresh,
   cancelAppTask,
   claimObservedAppTask,
   completeAppTask,
@@ -605,6 +606,132 @@ describe("App task reconciler state", () => {
         acceptedLiveEventIds: [101],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: [`created ${action.id}`] });
+  });
+
+  it.each(["waiting", "converged"] as const)("admits %s parent actions across a newer clock wake", (state) => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      trigger: { type: "project.task.tick", eventId: 100 },
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 101 });
+    expect(() => assertAppTaskEffectFresh(config, claim)).not.toThrow();
+    const result = {
+      summary: "Admit useful independent child work",
+      evidence: ["inventory:current"],
+      actions: [{
+        kind: "create-task" as const,
+        id: "work/next-child",
+        parentId: claim.taskId,
+        mode: "achieve" as const,
+        outcome: "Process the next item",
+        acceptance: ["Exact proof"],
+        outputs: [],
+      }],
+    };
+    const applied = state === "waiting"
+      ? deferAppTask(config, claim, { ...result, disposition: "waiting" })
+      : completeAppTask(config, claim, result);
+    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["created work/next-child"] });
+    expect(config.resourceStore.readTask("work/next-child")).not.toBeNull();
+    // Waiting settlement consumes an irrelevant clock hint; completion keeps
+    // it for the next pass. Neither discards the accepted child action.
+    expect(config.resourceStore.readTrigger(claim.taskId)?.events?.map((row) => row.event.eventId)).toEqual(
+      state === "waiting" ? undefined : [101],
+    );
+  });
+
+  it("releases a rejected parent from current state while preserving new human input", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      trigger: { type: "project.task.tick", eventId: 100 },
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskTrigger(config, claim.taskId, {
+      type: "project.comment.created", eventId: 101, data: { content: "Change scope before admitting more work" },
+    });
+    recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 102 });
+    expect(() => assertAppTaskEffectFresh(config, claim)).toThrow("newer Task evidence is pending");
+    expect(config.resourceStore.readTask(claim.taskId)!.metadata.resourceVersion).toBeGreaterThan(claim.resourceVersion);
+    expect(releaseStaleAppTaskResult(config, claim)).toEqual({ status: "released", taskId: claim.taskId });
+    const next = claimObservedAppTask(config, {
+      taskId: claim.taskId, appAgent: "app-owner", handler: "workflow:worker", reason: "current-evidence",
+    });
+    if (next.kind !== "claimed") throw new Error("expected current claim");
+    expect(next.events.map((row) => row.event.eventId)).toEqual([101, 102]);
+    expect(releaseStaleAppTaskResult(config, claim).status).toBe("superseded");
+    expect(config.resourceStore.readTask(claim.taskId)!.status.currentAttemptId).toBe(next.attemptId);
+  });
+
+  it("still fences a newer mutation arriving during stale-attempt release", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const store = config.resourceStore;
+    const commit = store.commit.bind(store);
+    let injected = false;
+    store.commit = (mutation) => {
+      if (!injected) {
+        injected = true;
+        recordAppTaskTrigger(config, claim.taskId, {
+          type: "project.comment.created", eventId: 101, data: { content: "Preserve concurrent input" },
+        });
+      }
+      return commit(mutation);
+    };
+    try {
+      expect(() => releaseStaleAppTaskResult(config, claim)).toThrow("stale fence");
+    } finally {
+      store.commit = commit;
+    }
+    expect(store.readTask(claim.taskId)!.status.currentAttemptId).toBe(claim.attemptId);
+    expect(store.readTrigger(claim.taskId)?.event.eventId).toBe(101);
+    expect(releaseStaleAppTaskResult(config, claim).status).toBe("released");
+    expect(store.readTrigger(claim.taskId)?.event.eventId).toBe(101);
+  });
+
+  it("coalesces pending ticks without losing feedback or updates arriving during a pass", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 1 });
+    recordAppTaskTrigger(config, first.taskId, {
+      type: "project.comment.created",
+      eventId: 2,
+      data: { content: "Review this" },
+    });
+    for (let id = 3; id <= 100; id++)
+      recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: id });
+    const beforeReplay = config.resourceStore.readTask(first.taskId)!.metadata.resourceVersion;
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 50 });
+    expect(config.resourceStore.readTask(first.taskId)!.metadata.resourceVersion).toBe(beforeReplay);
+    expect(config.resourceStore.readTrigger(first.taskId)?.events?.map((item) => item.event.eventId)).toEqual([2, 100]);
+    expect(completeAppTask(config, first, { summary: "Read initial state" }).taskContinues).toBe(true);
+    const second = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:worker",
+      reason: "event",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+    expect(second.events.map((item) => item.event.eventId)).toEqual([2, 100]);
+    recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 101 });
+    expect(completeAppTask(config, second, { summary: "Read through wake 100" }).taskContinues).toBe(true);
+    expect(config.resourceStore.readTrigger(first.taskId)?.events?.map((item) => item.event.eventId)).toEqual([101]);
   });
 
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {

@@ -86,7 +86,7 @@ export function createStuckDetector(
 }
 
 // ── Auto-Resume ─────────────────────────────────────────────────────────
-// Detects interrupted sessions that did real work and schedules a resume.
+// Detects interrupted independent jobs that did real work and schedules a resume.
 // Emits a resume command after a backoff delay.
 
 const MAX_RESUME_ATTEMPTS = 2;
@@ -101,6 +101,10 @@ export function createAutoResume(
     if (event.type !== "session.end") return;
     const info = eventData(event) as any;
     if (info.status !== "interrupted") return;
+    // A call is one bounded execution owned by its caller. Its workflow/Task
+    // already receives this interruption; resuming the session separately
+    // would outlive that attempt and bypass its admission and result fences.
+    if (info.kind === "call" || info.interruptionKind === "cancelled") return;
     const finishStatus = typeof info.finishParams?.status === "string" ? info.finishParams.status : "";
     if (finishStatus && finishStatus !== "success") return;
     // Use opCount as the work indicator — turnCount is not reliably persisted
