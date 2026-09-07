@@ -18,7 +18,6 @@ import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type
 import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
-import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
 import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
@@ -390,7 +389,6 @@ function buildGuards(definition: SubagentDefinition, projectRoot: string): Befor
     };
   return [
     named("path-hallucination", createPathHallucinationGuard()),
-    named("completeness", createCompletenessGuard(definition.name)),
     named("finish-evidence", createFinishGuard()),
     named("commit", createCommitGuard(definition.name, projectRoot)),
     named("read-dedup", createReadDedupGuard()),

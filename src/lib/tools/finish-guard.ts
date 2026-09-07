@@ -1,14 +1,11 @@
 /**
- * finish() Evidence Validation Guard — beforeToolCall hook.
+ * finish() write-activity signal — beforeToolCall hook.
  *
- * Intercepts `finish(status: "success")` calls and validates TWO things:
- * 1. Write evidence: the session transcript contains write/edit evidence when
- *    deliverables are claimed. (Original guard — 8 FM-3.1/FM-2.2 failures.)
- * 2. Post-write verification is handled by verification-depth-guard.ts.
- *    Keeping it there avoids duplicate or conflicting finish() signals.
- *
- * Policy: Common Sense 7.1 (Don't lie), 7.2 (Don't fabricate), 2.3 (Verify after acting)
- * Source: exp-056 via Coach → Optimizer → Tech Lead; FM-3.3 analysis via Bob → Optimizer
+ * Warn when success claims file deliverables but the transcript has no apparent
+ * writing or delegation activity. This heuristic examines calls, not outcomes:
+ * silence does not prove writes succeeded or verification was meaningful.
+ * The finish tool checks required evidence and file existence; the caller/App
+ * judges correctness against its acceptance criteria.
  */
 
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
@@ -72,11 +69,8 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
 /**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
  *
- * Two gates:
- * 1. Write Evidence Guard: signals when deliverables are listed but no write/edit
- *    evidence exists in the transcript.
- * 2. Verification Guard (FM-3.3): signals when writes exist but no verification
- *    (read-back, test, type-check) occurs after the last write.
+ * Signals absent apparent write activity for typed file claims. It does not
+ * grade verification depth or enforce a checklist/process artifact.
  *
  * Exceptions (no signal):
  * - `finish()` with status other than "success"
@@ -146,11 +140,6 @@ export function createFinishGuard(): (
       };
     }
 
-    // Gate 2 (FM-3.3 post-write verification) removed — deduplicated.
-    // verification-depth-guard.ts T2 covers this with better per-call-index tracking.
-    // Keeping both caused duplicate signals: agents saw two messages for one issue.
-
-    // All gates passed — allow
     return undefined;
   };
 }
