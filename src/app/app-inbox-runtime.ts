@@ -1323,16 +1323,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
         }
       }
-      if (
-        event.type === "cli.task.completed" ||
-        event.type === "cli.task.failed" ||
-        event.type === "cli.task.orphaned"
-      ) {
-        const analysisId = typeof data.taskId === "string" ? data.taskId.trim() : "";
-        if (analysisId) {
-          for (const appId of host.wakeAppIds({ kind: "analysis", id: analysisId })) schedule(appId);
-        }
-      }
       if (event.type === "session.end") {
         const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
         if (sessionId) {
