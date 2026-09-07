@@ -57,8 +57,6 @@ export async function loadHandlersForAgentCrons(
       projectsRoot,
       agentName,
       manager,
-      callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
-      triggerNow: (name) => cron.triggerNow(name),
     });
     const sdk: HandlerSDK = {
       emit: fullSdk.emit,
