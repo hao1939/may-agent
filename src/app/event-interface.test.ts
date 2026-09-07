@@ -37,6 +37,35 @@ function fixture() {
 }
 
 describe("simple event interface", () => {
+  it("admits only exact fenced Task control Events", () => {
+    const { bus, events } = fixture();
+    bus.subscribeDurableRoute((event) =>
+      event.type === "app.task.retry.requested" ? { accepted: true, by: "task-control", route: "direct" } : undefined,
+    );
+    expect(
+      events.publish(
+        {
+          type: "app.task.retry.requested",
+          target: { appId: "sample", taskId: "review/one" },
+          data: { expectedGeneration: 2, expectedResourceVersion: 7 },
+          idempotencyKey: "app-task-retry:sample:review/one:2:7",
+        },
+        { source: "control-socket" },
+      ),
+    ).toMatchObject({ eventType: "app.task.retry.requested", delivery: "accepted" });
+    expect(() =>
+      events.publish(
+        {
+          type: "app.task.cancel.requested",
+          target: { appId: "sample", taskId: "review/one" },
+          data: { expectedGeneration: 2, expectedResourceVersion: 0, reason: "stop" },
+          idempotencyKey: "app-task-cancel:sample:review/one:2:0",
+        },
+        { source: "telegram" },
+      ),
+    ).toThrow("expectedResourceVersion must be a positive integer");
+  });
+
   it("derives trusted envelope fields and exposes one bounded event view", () => {
     const { events } = fixture();
     const receipt = events.publish(
@@ -288,7 +317,7 @@ describe("simple event interface", () => {
       { source: "control-socket" },
     );
     expect(observed).toHaveLength(0);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
     unsubscribe();
 
     expect(observed).toHaveLength(1);

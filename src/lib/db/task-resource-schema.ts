@@ -1,5 +1,13 @@
 import type { SqliteDb } from "../db.js";
 
+/** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
+export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
+  db.prepare(
+    `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '1')
+     ON CONFLICT(app_id, key) DO UPDATE SET value = CAST(value AS INTEGER) + 1`,
+  ).run(appId);
+}
+
 /** Resource-local Task rows share the EventHub database for atomic fenced emission. */
 export const TASK_RESOURCE_SCHEMA = `
 CREATE TABLE IF NOT EXISTS app_task_store_meta (
@@ -102,6 +110,18 @@ CREATE TABLE IF NOT EXISTS app_task_cancellations (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_cancellations_time
   ON app_task_cancellations(requested_at DESC, app_id, task_id);
+CREATE TABLE IF NOT EXISTS app_task_control_receipts (
+  control_key TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('retry', 'cancel')),
+  expected_generation INTEGER NOT NULL,
+  expected_resource_version INTEGER NOT NULL,
+  applied_resource_version INTEGER NOT NULL,
+  applied_at INTEGER NOT NULL,
+  receipt_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_control_receipts_task
+  ON app_task_control_receipts(app_id, task_id, applied_at DESC);
 CREATE TABLE IF NOT EXISTS app_task_groups (
   app_id TEXT NOT NULL, group_id TEXT NOT NULL, group_json TEXT NOT NULL,
   PRIMARY KEY(app_id, group_id)

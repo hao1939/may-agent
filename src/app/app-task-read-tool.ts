@@ -6,7 +6,7 @@ import type { EventBus } from "./event-bus.js";
 const parameters = Type.Object(
   {
     action: Type.Union([Type.Literal("list"), Type.Literal("outcomes"), Type.Literal("get"), Type.Literal("publish")]),
-    taskId: Type.Optional(Type.String({ minLength: 1 })),
+    taskId: Type.Optional(Type.String({ minLength: 1, description: "Exact Task id; required for get and outcomes" })),
     localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
     eventType: Type.Optional(Type.String({ minLength: 3 })),
     data: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
@@ -85,7 +85,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List/get Tasks owned by the current App, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
+      "List Tasks owned by the current App, get one exact Task (optionally in target.appId), read the outcome containing an owned task, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -118,24 +118,38 @@ export function createAppTaskReadTool(options: {
           return result({ eventId, type: eventType });
         }
         if (params.action === "outcomes") {
-          const projection = params.includeDone === undefined ? undefined : { includeDone: params.includeDone };
+          const taskId = params.taskId?.trim();
+          if (!taskId) return result({ error: "taskId is required for outcomes; use list for bounded discovery" });
+          const projection: TaskOutcomeProjection = {
+            taskId,
+            ...(params.includeDone === undefined ? {} : { includeDone: params.includeDone }),
+          };
           const value = options.reader?.outcomes
             ? await options.reader.outcomes({ bus: options.bus, appId, projection })
-            : await (await import("./app-task-runtime.js")).listLoadedAppTaskOutcomeViews({
+            : await (
+                await import("./app-task-runtime.js")
+              ).listLoadedAppTaskOutcomeViews({
                 bus: options.bus,
                 appId,
                 projection,
               });
-          return result(value);
+          const outcomes = value.outcomes.filter((outcome) => outcome.memberTaskIds.includes(taskId));
+          return result({
+            ...value,
+            sourceCount: outcomes.reduce((count, outcome) => count + outcome.memberCount, 0),
+            outcomeCount: outcomes.length,
+            outcomes,
+          });
         }
         if (params.action === "get") {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
+          const readAppId = params.target?.appId?.trim() || appId;
           const reader = options.reader ?? (await import("./app-task-runtime.js"));
           const value =
             "get" in reader
-              ? await reader.get({ bus: options.bus, appId, taskId })
-              : await reader.getLoadedAppTaskView({ bus: options.bus, appId, taskId });
+              ? await reader.get({ bus: options.bus, appId: readAppId, taskId })
+              : await reader.getLoadedAppTaskView({ bus: options.bus, appId: readAppId, taskId });
           return result(value);
         }
         const listOptions: TaskListOptions = {

@@ -28,7 +28,7 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus, type AgentEvent } from "./event-bus.js";
+import { EventBus } from "./event-bus.js";
 import { createEventInterface, type EventInterface } from "./event-interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
@@ -38,7 +38,10 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
+import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
+import { createTaskAdmissionProcess } from "./task-admission-process.js";
 import { prepareAgentGeneration } from "./agent-loader.js";
+import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -191,23 +194,7 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
   });
-  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry, {
-    onCancelled: ({ appId, taskId, attemptId, reason }) => {
-      bus.emit({
-        type: "app.task.cancelled",
-        source: "human-task-service",
-        owner: "human:operator",
-        target: { appId, taskId },
-        data: { appId, taskId, attemptId, reason },
-      } as unknown as AgentEvent);
-      bus.emit({
-        type: "app.dependency.updated",
-        source: "human-task-service",
-        owner: "human:operator",
-        data: { kind: "task", id: taskId, appId },
-      });
-    },
-  });
+  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry);
 
   attachDaemonEventSubscribers({
     bus,
@@ -223,7 +210,6 @@ export async function runAppRuntime(opts: {
     sharedRoot: opts.sharedRoot,
     definitionSharedRoot: activeAppSource.sharedRoot,
     projectsRoot: activeAppSource.projectsRoot,
-    stateProjectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -232,12 +218,44 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
     appRegistry,
     hostCapacity,
+    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
+    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
   });
   markStartupPhase("agents-and-tasks");
 
   const appTasks = createAppTaskCapability({
     bus,
     runtime: appTaskOptions,
+  });
+  attachTaskControlEventRoute(bus, {
+    retryTask: ({ appId, taskId, generation, resourceVersion, controlKey }) =>
+      appTasks.retry({
+        appId,
+        taskId,
+        expectedGeneration: generation,
+        expectedResourceVersion: resourceVersion,
+        controlKey,
+      }),
+    cancelTask: ({ appId, taskId, generation, resourceVersion, reason, controlKey }) =>
+      appTasks.cancel({
+        appId,
+        taskId,
+        reason,
+        expectedGeneration: generation,
+        expectedResourceVersion: resourceVersion,
+        controlKey,
+      }),
+  });
+  const events = createEventInterface({
+    bus,
+    db: getDb(opts.persistDir),
+    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
+    hasApp: (appId) =>
+      appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
+    hasAgent: (agent) => manager.hasAgent(agent),
+    hasSession: (sessionId) =>
+      manager.getSessionSummary(sessionId).status !== "unknown" ||
+      Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
   });
   const appMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
   syncAppMetricDefinitions(appRegistry.snapshot().entries, appMetrics);
@@ -253,14 +271,22 @@ export async function runAppRuntime(opts: {
     resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
     controlTask: async ({ control }) => {
       if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
-      humanTasks.cancelTask({
-        appId: control.appId,
-        taskId: control.taskId,
-        reason: control.reason,
+      const task = humanTasks.getTask({ appId: control.appId, taskId: control.taskId });
+      if (!task) throw new Error(`Task ${control.appId}/${control.taskId} was not found`);
+      const receipt = events.publish(taskCancelRequestedEvent(task, control.reason), {
+        source: "app-inbox",
+        inputSource: { kind: "human", id: "app-inbox" },
       });
+      if (receipt.delivery !== "accepted") {
+        throw new Error(`Task ${control.appId}/${control.taskId} cancellation was recorded but not accepted`);
+      }
     },
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+    createTaskAdmissionWorker: () => createTaskAdmissionProcess(),
+    wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
+      appTasks.wake({ appId, taskIds, supersededSessionIds }),
+    hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
     readDependency: (input) =>
@@ -393,17 +419,6 @@ export async function runAppRuntime(opts: {
     process.exit(1);
   }
 
-  const events = createEventInterface({
-    bus,
-    db: getDb(opts.persistDir),
-    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
-    hasApp: (appId) => appInboxRuntime?.host.hasApp(appId) ?? false,
-    hasAgent: (agent) => manager.hasAgent(agent),
-    hasSession: (sessionId) =>
-      manager.getSessionSummary(sessionId).status !== "unknown" ||
-      Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
-  });
-
   // Open the Conversation adapter before external ingress or cron work so it
   // can observe every later shared Conversation update. Its writes use the
   // same semantic event boundary as Console and HTTP.
@@ -412,7 +427,11 @@ export async function runAppRuntime(opts: {
         bus,
         persistDir: opts.persistDir,
         interfaceAgent,
-        humanTasks,
+        humanTasks: {
+          getTask: (input) => humanTasks.getTask(input),
+          listApps: (appId) => humanTasks.listApps(appId),
+          listTasks: (options) => humanTasks.listTasks(options),
+        },
         publishEvent: (input) =>
           events.publish(input, {
             source: "telegram",
@@ -447,13 +466,11 @@ export async function runAppRuntime(opts: {
       });
     },
     getAppTask: (appId, taskId) => appTasks.get({ appId, taskId }),
-    retryAppTask: ({ appId, taskId, expectedGeneration }) => appTasks.retry({ appId, taskId, expectedGeneration }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     listApps: (appId) => humanTasks.listApps(appId),
     listTasks: (options) => humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]),
     getTask: (input) => humanTasks.getTask(input),
-    cancelTask: (input) => humanTasks.cancelTask(input),
     describeProjectActions: projectActions.describe,
     invokeProjectAction: projectActions.invoke,
   });
@@ -508,18 +525,16 @@ export async function runAppRuntime(opts: {
     sessionId: taskSessionId,
   });
 
+  await appInboxRuntime.start();
   if (CRON_ENABLED) {
     await startCronRuntime({
       manager,
       bus,
       loaderOpts,
+      // App work begins after recovery succeeds or yields to bounded retry;
+      // neither path is allowed to hold the already-open interfaces.
+      onTaskRecoverySettled: startAppTaskControllers,
     });
-  }
-  await appInboxRuntime.start();
-  if (CRON_ENABLED) {
-    // App work is asynchronous, but it must not compete with state recovery,
-    // session fencing, or opening the human interfaces during daemon startup.
-    startAppTaskControllers();
   }
 
   if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {

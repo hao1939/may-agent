@@ -22,12 +22,10 @@ export interface InterfaceStartupOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
-  retryAppTask?: AttachControlSocketOptions["retryAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  cancelTask?: AttachControlSocketOptions["cancelTask"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
@@ -82,12 +80,10 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         getAppConversation: options.getAppConversation,
         listAppTasks: options.listAppTasks,
         getAppTask: options.getAppTask,
-        retryAppTask: options.retryAppTask,
         resolveAppTask: options.resolveAppTask,
         listApps: options.listApps,
         listTasks: options.listTasks,
         getTask: options.getTask,
-        cancelTask: options.cancelTask,
         describeProjectActions: options.describeProjectActions,
         invokeProjectAction: options.invokeProjectAction,
         agentName: options.interfaceAgent,

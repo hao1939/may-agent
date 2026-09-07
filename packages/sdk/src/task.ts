@@ -18,7 +18,7 @@ export type TaskIntent = {
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
   workflow?: string;
-  /** Bounded executor adapter. Omit or use `agent` for the managed agent; `codex` and `claude` are built in. */
+  /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
   executor?: TaskExecutorName;
   input?: Record<string, unknown>;
   outputs?: string[];
@@ -35,7 +35,9 @@ export type Condition = {
   expected: unknown;
   /** Plain-language action shown when this Condition explicitly belongs to a human. */
   requestedAction?: string;
+  /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
   owner?: string;
+  /** Required on newly admitted waits; elapsed time never makes the Condition true. */
   reviewAfterMs?: number;
 };
 
@@ -51,7 +53,7 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Desired task-tree mutations returned by one fenced reconciliation attempt. */
+/** Desired Task mutations returned by one fenced reconciliation attempt. */
 export type TaskAction =
   | {
       kind: "create-task";

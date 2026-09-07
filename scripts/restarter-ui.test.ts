@@ -12,6 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 
 const roots: string[] = [];
@@ -26,7 +27,10 @@ function executable(path: string, body = "#!/bin/sh\nexit 0\n"): void {
   chmodSync(path, 0o755);
 }
 
-function fixture(healthy: boolean, options: { failUiSwitch?: boolean; previousSdk?: boolean } = {}) {
+async function fixture(
+  healthy: boolean,
+  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean } = {},
+) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
   roots.push(root);
   const binDir = join(root, "bin");
@@ -92,35 +96,64 @@ function fixture(healthy: boolean, options: { failUiSwitch?: boolean; previousSd
   writeFileSync(sdkMarker, `${sdkRelease}\n`);
   writeFileSync(uiMarker, `${uiRelease}\n`);
 
-  const result = Bun.spawnSync({
-    cmd: ["sh", "container/may-agent-supervisor-restart.sh"],
-    cwd: resolve(import.meta.dir, ".."),
-    env: {
-      ...process.env,
-      PATH: `${binDir}:${process.env.PATH}`,
-      MAY_AGENT_BUNDLE_PATH: bundle,
-      MAY_AGENT_BIN_PATH: target,
-      MAY_CONSOLE_BUNDLE_PATH: consoleBundle,
-      MAY_CONSOLE_BIN_PATH: consoleTarget,
-      MAY_AGENT_DEPLOY_MARKER: deployMarker,
-      MAY_AGENT_SDK_DEPLOY_MARKER: sdkMarker,
-      MAY_AGENT_DEPLOY_SDK_ROOT: bundleRoot,
-      MAY_AGENT_SDK_LINK: sdkLink,
-      MAY_AGENT_UI_DEPLOY_MARKER: uiMarker,
-      MAY_AGENT_DEPLOY_UI_ROOT: bundleRoot,
-      MAY_AGENT_UI_PATH: uiTarget,
-      MAY_AGENT_DEPLOY_RECEIPT_TOOL: resolve(import.meta.dir, "deploy-receipt.ts"),
-      MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
-      MAY_AGENT_RUNTIME_USER: String(process.getuid?.() ?? 0),
-      MAY_AGENT_RUNTIME_GROUP: String(process.getgid?.() ?? 0),
-      MAY_AGENT_RESTART_DELAY: "0",
-      MAY_AGENT_HEALTH_ATTEMPTS: "1",
-      MAY_AGENT_HEALTH_DELAY: "0",
-      MAY_TEST_UI_TARGET: uiTarget,
-    },
-    stdout: "pipe",
-    stderr: "pipe",
+  const healthSocket = join(root, "health.sock");
+  const server = createServer((socket) => {
+    socket.once("data", () =>
+      socket.end(
+        JSON.stringify({
+          type: options.socketHealthy === false ? "error" : "ok",
+          command: "apps.list",
+          apps: [],
+        }) + "\n",
+      ),
+    );
   });
+  await new Promise<void>((resolveReady, reject) => {
+    server.once("error", reject);
+    server.listen(healthSocket, resolveReady);
+  });
+  let result: { exitCode: number; stderr: string };
+  try {
+    const child = Bun.spawn({
+      cmd: ["sh", "container/may-agent-supervisor-restart.sh"],
+      cwd: resolve(import.meta.dir, ".."),
+      env: {
+        ...process.env,
+        PATH: `${binDir}:${process.env.PATH}`,
+        MAY_AGENT_BUNDLE_PATH: bundle,
+        MAY_AGENT_BIN_PATH: target,
+        MAY_CONSOLE_BUNDLE_PATH: consoleBundle,
+        MAY_CONSOLE_BIN_PATH: consoleTarget,
+        MAY_AGENT_DEPLOY_MARKER: deployMarker,
+        MAY_AGENT_SDK_DEPLOY_MARKER: sdkMarker,
+        MAY_AGENT_DEPLOY_SDK_ROOT: bundleRoot,
+        MAY_AGENT_SDK_LINK: sdkLink,
+        MAY_AGENT_UI_DEPLOY_MARKER: uiMarker,
+        MAY_AGENT_DEPLOY_UI_ROOT: bundleRoot,
+        MAY_AGENT_UI_PATH: uiTarget,
+        MAY_AGENT_DEPLOY_RECEIPT_TOOL: resolve(import.meta.dir, "deploy-receipt.ts"),
+        MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+        MAY_AGENT_RUNTIME_USER: String(process.getuid?.() ?? 0),
+        MAY_AGENT_RUNTIME_GROUP: String(process.getgid?.() ?? 0),
+        MAY_AGENT_RESTART_DELAY: "0",
+        MAY_AGENT_HEALTH_ATTEMPTS: "1",
+        MAY_AGENT_HEALTH_DELAY: "0",
+        MAY_AGENT_HEALTH_SOCKET: healthSocket,
+        MAY_TEST_UI_TARGET: uiTarget,
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 10_000,
+    });
+    const [exitCode, stderr] = await Promise.all([
+      child.exited,
+      new Response(child.stderr).text(),
+      new Response(child.stdout).text(),
+    ]);
+    result = { exitCode, stderr };
+  } finally {
+    await new Promise<void>((resolveClosed) => server.close(() => resolveClosed()));
+  }
 
   return {
     root,
@@ -138,8 +171,9 @@ function fixture(healthy: boolean, options: { failUiSwitch?: boolean; previousSd
 }
 
 describe("supervisor UI release", () => {
-  it("activates the versioned UI with the healthy binary and SDK", () => {
-    const f = fixture(true);
+  it("activates the versioned UI with the healthy binary and SDK", async () => {
+    const f = await fixture(true);
+    expect(f.result.stderr).toBe("");
     expect(f.result.exitCode).toBe(0);
     expect(lstatSync(f.uiTarget).isSymbolicLink()).toBeTrue();
     expect(readlinkSync(f.uiTarget)).toBe(join(f.bundleRoot, f.uiRelease));
@@ -148,8 +182,8 @@ describe("supervisor UI release", () => {
     expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "succeeded", health: "healthy" });
   });
 
-  it("restores the prior UI and SDK when readiness fails", () => {
-    const f = fixture(false);
+  it("restores the prior UI and SDK when readiness fails", async () => {
+    const f = await fixture(false);
     expect(f.result.exitCode).not.toBe(0);
     expect(lstatSync(f.uiTarget).isDirectory()).toBeTrue();
     expect(readFileSync(join(f.uiTarget, "old.txt"), "utf8")).toBe("old-ui");
@@ -157,8 +191,8 @@ describe("supervisor UI release", () => {
     expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "rolled_back" });
   });
 
-  it("restores all prior artifacts when activation fails partway through", () => {
-    const f = fixture(true, { failUiSwitch: true });
+  it("restores all prior artifacts when activation fails partway through", async () => {
+    const f = await fixture(true, { failUiSwitch: true });
     expect(f.result.exitCode).toBe(42);
     expect(lstatSync(f.uiTarget).isDirectory()).toBeTrue();
     expect(readFileSync(join(f.uiTarget, "old.txt"), "utf8")).toBe("old-ui");
@@ -170,11 +204,18 @@ describe("supervisor UI release", () => {
     expect(existsSync(f.uiMarker)).toBeFalse();
   });
 
-  it("restores an absent SDK link when the first activation fails readiness", () => {
-    const f = fixture(false, { previousSdk: false });
+  it("restores an absent SDK link when the first activation fails readiness", async () => {
+    const f = await fixture(false, { previousSdk: false });
     expect(f.result.exitCode).not.toBe(0);
     expect(existsSync(f.sdkLink)).toBeFalse();
     expect(lstatSync(f.uiTarget).isDirectory()).toBeTrue();
     expect(readFileSync(join(f.uiTarget, "old.txt"), "utf8")).toBe("old-ui");
+  });
+
+  it("rolls back when HTTP is healthy but the control socket rejects the probe", async () => {
+    const f = await fixture(true, { socketHealthy: false });
+    expect(f.result.exitCode).not.toBe(0);
+    expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "rolled_back" });
+    expect(readlinkSync(f.sdkLink)).toBe("sdk-old");
   });
 });

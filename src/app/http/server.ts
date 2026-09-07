@@ -29,13 +29,15 @@ import {
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
-import { loadProjectReadModel, projectRuntimePaths } from "../app-task-runtime-state.js";
+import { loadProjectReadModel } from "../app-task-runtime-state.js";
 import type {
   AppTaskIntegrityFinding,
   AppTaskPhase,
   AppTaskProjectionItem,
   AppTaskTreeProjection,
 } from "../app-task-store.js";
+import { buildAppTaskTreeProjection } from "../app-task-store.js";
+import { AppTaskResourceStore } from "../app-task-resource-store.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -509,7 +511,6 @@ export function normalizeAppTaskPhase(task: { phase?: unknown }): AppTaskPhase |
 
 export type ProjectTasksReadModelOptions = {
   path: string;
-  treePath: string;
   measuredAt?: string;
   project?: {
     id: string;
@@ -518,14 +519,19 @@ export type ProjectTasksReadModelOptions = {
   };
 };
 
+export function readProjectTaskProjection(db: SqliteDb, appId: string): AppTaskTreeProjection | null {
+  const store = AppTaskResourceStore.activeFromDb(db, appId);
+  if (!store) return null;
+  return buildAppTaskTreeProjection(store.readSnapshot(), store.configuredMaxConcurrent() ?? 1);
+}
+
 export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksReadModelOptions) {
   const errors: string[] = [];
   if (!isRecord(rawTree)) {
     return {
       available: false,
       path: opts.path,
-      treePath: opts.treePath,
-      reason: "Task tree JSON must be an object.",
+      reason: "Task projection must be an object.",
       errors: ["root: expected object"],
     };
   }
@@ -590,8 +596,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     return {
       available: false,
       path: opts.path,
-      treePath: opts.treePath,
-      reason: "Task tree is malformed.",
+      reason: "Task projection is malformed.",
       errors,
     };
   }
@@ -619,7 +624,6 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksR
     available: true,
     schemaVersion: 2,
     path: opts.path,
-    treePath: opts.treePath,
     measuredAt: opts.measuredAt ?? new Date().toISOString(),
     taskStateUpdatedAt: tree.updated_at ?? null,
     rootId: rootTaskId,
@@ -1696,167 +1700,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ digest: content, date: target.replace(".md", ""), available });
   }
 
-  function handleBenchmarks(url: URL): Response {
-    try {
-      const agentFilter = url.searchParams.get("agent") || undefined;
-      const batchId = url.searchParams.get("batch") || undefined;
-
-      // Detailed batch view
-      if (batchId) {
-        const runs = _db()
-          .prepare(
-            `SELECT r.id, r.scenario, r.passed, r.duration_ms, r.timestamp, r.categories, r.tags, r.tier, r.prompt_hash, r.model FROM gym_runs r WHERE r.batch_id = ? ORDER BY r.scenario`,
-          )
-          .all(batchId) as any[];
-        const checks: Record<number, any[]> = {};
-        for (const run of runs) {
-          checks[run.id] = _db()
-            .prepare("SELECT check_name, passed, detail FROM gym_checks WHERE run_id = ?")
-            .all(run.id) as any[];
-        }
-        return json({ batch_id: batchId, runs, checks });
-      }
-
-      const where = agentFilter ? "WHERE r.agent_name = ?" : "";
-      const params = agentFilter ? [agentFilter] : [];
-
-      // Batch listing
-      const batchWhere = agentFilter
-        ? "WHERE r.agent_name = ? AND r.batch_id IS NOT NULL"
-        : "WHERE r.batch_id IS NOT NULL";
-      const batches = _db()
-        .prepare(
-          `SELECT r.batch_id, r.agent_name, r.run_tag, r.prompt_hash, r.model, r.framework_sha, COUNT(*) as total, SUM(r.passed) as passed, MIN(r.timestamp) as started_at FROM gym_runs r ${batchWhere} GROUP BY r.batch_id ORDER BY started_at DESC LIMIT 50`,
-        )
-        .all(...params) as any[];
-
-      // Per-agent per-scenario summary
-      const summary = _db()
-        .prepare(
-          `
-        SELECT r.agent_name as agent, r.scenario, COUNT(*) as runs, SUM(r.passed) as passes,
-          MAX(r.timestamp) as lastRun, AVG(r.duration_ms) as avgMs, r.categories, r.tags, r.tier
-        FROM gym_runs r ${where} GROUP BY r.agent_name, r.scenario ORDER BY r.agent_name, r.scenario
-      `,
-        )
-        .all(...params) as any[];
-      const agents: Record<string, any[]> = {};
-      for (const row of summary) {
-        if (!agents[row.agent]) agents[row.agent] = [];
-        agents[row.agent].push({
-          scenario: row.scenario,
-          runs: row.runs,
-          passes: row.passes,
-          passRate: row.runs > 0 ? row.passes / row.runs : 0,
-          lastRun: row.lastRun,
-          avgMs: row.avgMs ? Math.round(row.avgMs) : null,
-          categories: row.categories ? JSON.parse(row.categories) : [],
-          tags: row.tags ? JSON.parse(row.tags) : [],
-          tier: row.tier,
-        });
-      }
-      const checkDetails: Record<string, any[]> = {};
-      if (agentFilter) {
-        const latestRuns = _db()
-          .prepare(
-            `SELECT r.id, r.scenario FROM gym_runs r WHERE r.agent_name = ? AND r.id = (SELECT MAX(r2.id) FROM gym_runs r2 WHERE r2.agent_name = r.agent_name AND r2.scenario = r.scenario) ORDER BY r.scenario`,
-          )
-          .all(agentFilter) as any[];
-        for (const run of latestRuns) {
-          checkDetails[run.scenario] = _db()
-            .prepare("SELECT check_name, passed, detail FROM gym_checks WHERE run_id = ?")
-            .all(run.id) as any[];
-        }
-      }
-      const totalRuns = _db().prepare("SELECT COUNT(*) as cnt FROM gym_runs").get() as any;
-      return json({
-        agents,
-        scenarios: [...new Set(summary.map((r) => r.scenario))].sort(),
-        runs: totalRuns?.cnt || 0,
-        checkDetails,
-        batches,
-      });
-    } catch (err) {
-      return json({ error: String(err), agents: {}, scenarios: [], runs: 0, batches: [] });
-    }
-  }
-
-  function handleBenchmarkPrompts(url: URL): Response {
-    try {
-      const hash = url.searchParams.get("hash");
-      const diffWith = url.searchParams.get("diff");
-      if (hash && diffWith) {
-        const a = _db()
-          .prepare("SELECT prompt_text, agent_name, model FROM gym_prompts WHERE prompt_hash = ?")
-          .get(hash) as any;
-        const b = _db()
-          .prepare("SELECT prompt_text, agent_name, model FROM gym_prompts WHERE prompt_hash = ?")
-          .get(diffWith) as any;
-        if (!a || !b) return json({ error: "Prompt not found" }, 404);
-        return json({
-          a: { hash, text: a.prompt_text, agent: a.agent_name, model: a.model },
-          b: { hash: diffWith, text: b.prompt_text, agent: b.agent_name, model: b.model },
-        });
-      }
-      if (hash) {
-        const row = _db().prepare("SELECT * FROM gym_prompts WHERE prompt_hash = ?").get(hash) as any;
-        if (!row) return json({ error: "Prompt not found" }, 404);
-        return json(row);
-      }
-      const rows = _db()
-        .prepare(
-          `SELECT p.prompt_hash, p.agent_name, p.model, p.framework_sha, p.created_at, (SELECT COUNT(*) FROM gym_runs r WHERE r.prompt_hash = p.prompt_hash) as run_count FROM gym_prompts p ORDER BY p.created_at DESC`,
-        )
-        .all() as any[];
-      return json({ prompts: rows });
-    } catch (err) {
-      return json({ error: String(err) });
-    }
-  }
-
-  function handleBenchmarkCompare(url: URL): Response {
-    try {
-      const batchA = url.searchParams.get("a");
-      const batchB = url.searchParams.get("b");
-      if (!batchA || !batchB) return json({ error: "Need ?a=<batch_id>&b=<batch_id>" }, 400);
-      const runsA = _db()
-        .prepare("SELECT scenario, passed, duration_ms, prompt_hash FROM gym_runs WHERE batch_id = ?")
-        .all(batchA) as any[];
-      const runsB = _db()
-        .prepare("SELECT scenario, passed, duration_ms, prompt_hash FROM gym_runs WHERE batch_id = ?")
-        .all(batchB) as any[];
-      const mapA: Record<string, any> = {};
-      for (const r of runsA) mapA[r.scenario] = r;
-      const mapB: Record<string, any> = {};
-      for (const r of runsB) mapB[r.scenario] = r;
-      const allScenarios = [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])].sort();
-      const regressions: any[] = [],
-        improvements: any[] = [],
-        unchanged: any[] = [];
-      for (const s of allScenarios) {
-        const a = mapA[s],
-          b = mapB[s];
-        const passedA = a ? !!a.passed : null,
-          passedB = b ? !!b.passed : null;
-        const entry = { scenario: s, a: passedA, b: passedB };
-        if (passedA === true && passedB === false) regressions.push(entry);
-        else if (passedA === false && passedB === true) improvements.push(entry);
-        else unchanged.push(entry);
-      }
-      return json({
-        batchA,
-        batchB,
-        regressions,
-        improvements,
-        unchanged,
-        promptHashA: runsA[0]?.prompt_hash || null,
-        promptHashB: runsB[0]?.prompt_hash || null,
-      });
-    } catch (err) {
-      return json({ error: String(err) });
-    }
-  }
-
   function handleStats(): Response {
     const now = Date.now();
     const day = now - 86400000;
@@ -2631,28 +2474,22 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({
         available: false,
         path,
-        treePath: null,
         reason: "Project has no App task attachment.",
       });
     }
-    const treePath = projectRuntimePaths(appDir).taskTreePath;
-    if (treePath !== appDir && !treePath.startsWith(`${appDir}/`)) return json({ error: "Access denied" }, 403);
-
-    if (!existsSync(treePath)) {
-      return json({
-        available: false,
-        path,
-        treePath: `${projectNameFromPath(path)}.app/.state/tasks/tree.json`,
-        reason: "App does not attach task reconciliation.",
-      });
-    }
-
     try {
-      const tree = JSON.parse(readFileSync(treePath, "utf-8"));
-      const model = buildProjectTasksReadModel(tree, {
+      const identity = projectTaskIdentity(path, appDir);
+      const projection = readProjectTaskProjection(_db(), identity.id);
+      if (!projection) {
+        return json({
+          available: false,
+          path,
+          reason: "App does not attach task reconciliation.",
+        });
+      }
+      const model = buildProjectTasksReadModel(projection, {
         path,
-        treePath: ".state/tasks/tree.json",
-        project: projectTaskIdentity(path, appDir),
+        project: identity,
       });
       if (!model.available) return json(model);
       const liveIds = new Set(Object.keys(model.items ?? {}));
@@ -2675,8 +2512,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({
         available: false,
         path,
-        treePath: ".state/tasks/tree.json",
-        reason: "Task tree JSON could not be parsed.",
+        reason: "Task view could not be read.",
         errors: [e instanceof Error ? e.message : String(e)],
       });
     }
@@ -2776,18 +2612,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const appDir = appDirForPath(path);
     if (!appDir) return json({ error: "Project has no App task attachment." }, 404);
     const identity = projectTaskIdentity(path, appDir);
-    const treePath = projectRuntimePaths(appDir).taskTreePath;
     let model: ReturnType<typeof buildProjectTasksReadModel> | null = null;
-    if (existsSync(treePath)) {
-      try {
-        model = buildProjectTasksReadModel(JSON.parse(readFileSync(treePath, "utf-8")), {
+    try {
+      const projection = readProjectTaskProjection(_db(), identity.id);
+      if (projection) {
+        model = buildProjectTasksReadModel(projection, {
           path,
-          treePath: ".state/tasks/tree.json",
           project: identity,
         });
-      } catch {
-        model = null;
       }
+    } catch {
+      model = null;
     }
 
     let timeline: ProjectTaskTimelineRecord[] = [];
@@ -4320,9 +4155,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/digest") return handleDigest(url);
-      if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
-      if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
-      if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);

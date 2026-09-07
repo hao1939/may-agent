@@ -12,9 +12,10 @@ import {
   readAppTaskTrigger,
   recordAppTaskTrigger,
   releaseStaleAppTaskResult,
-  taskReconciliationConfig,
+  appTaskContext,
 } from "./app-task-reconciler.ts";
-import { readTaskState } from "./app-task-store.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
+import { readTaskSnapshot } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -66,15 +67,15 @@ function fixture() {
       2,
     )}\n`,
   );
-  return taskReconciliationConfig({
+  return appTaskTestContext({
     appDir,
-    projectDir: appDir,
-    owner: "app-owner",
+    agent: "app-owner",
     maxConcurrent: 2,
+    databasePath: join(root, "host.sqlite"),
   });
 }
 
-function claimChild(config: ReturnType<typeof taskReconciliationConfig>) {
+function claimChild(config: ReturnType<typeof appTaskContext>) {
   const claim = claimObservedAppTask(config, {
     taskId: "child",
     appAgent: "app-owner",
@@ -130,7 +131,7 @@ describe("App task parent semantics", () => {
       }),
     ).toMatchObject({ status: "applied", taskContinues: true });
     expect(readAppTaskIntent(config, "parent")).not.toBeNull();
-    const parentStatus = readTaskState(config).resources?.parent?.status;
+    const parentStatus = readTaskSnapshot(config).resources?.parent?.status;
     expect(parentStatus).toMatchObject({ phase: "waiting" });
     expect(parentStatus).not.toHaveProperty("currentAttemptId");
     expect(listRunnableAppTaskIds(config)).toEqual(["child"]);
@@ -197,6 +198,8 @@ describe("App task parent semantics", () => {
           type: "sample.child.observed",
           subject: "task:child",
           expected: "done",
+          owner: "app:sample-observer",
+          reviewAfterMs: 60_000,
         },
       ],
     });

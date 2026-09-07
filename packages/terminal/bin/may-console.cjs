@@ -28,13 +28,13 @@ let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
-let conversationReady = false;
 let lastRenderedMayMessageId = null;
-let appSelectionInFlight = false;
+let appSelectionVersion = 0;
 let todoCount = 0;
 let todoReadInFlight = false;
 let todoReadDirty = false;
-const pendingInputLines = [];
+const pendingInputFrames = [];
+const maxPendingInputFrames = 100;
 
 const renderedConversationMessages = new Set();
 const conversationResultsByTask = new Map();
@@ -58,11 +58,13 @@ let nextTaskPage = null;
 let nextTodoPage = null;
 let nextTopicPage = null;
 const pendingRuntimeControls = new Map();
+const pendingPublishReceipts = [];
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const knownTopicRefs = new Set();
 const shownTaskRevisions = new Map();
 let shownTodoActions = new Map();
+const pendingCommandLines = [];
 
 function rememberCompletion(set, value, limit) {
   if (set.has(value)) set.delete(value);
@@ -302,6 +304,7 @@ function sendFrame(frame, opts = {}) {
   }
   try {
     socket.write(`${JSON.stringify(frame)}\n`);
+    if (frame?.type === "publish") pendingPublishReceipts.push(opts.receiptKind || null);
     return true;
   } catch (err) {
     if (!opts.silent) printLine(`[socket write failed] ${err && err.message ? err.message : String(err)}`);
@@ -380,8 +383,8 @@ function readWillComplete(sent) {
   return true;
 }
 
-function requestApps(appId = null, command = "/apps", select = false) {
-  const pending = { appId, command, select };
+function requestApps(appId = null, command = "/apps", select = false, selection = {}) {
+  const pending = { appId, command, select, ...selection };
   pendingAppReads.push(pending);
   const sent = sendAppRead(pending);
   if (!readWillComplete(sent)) pendingAppReads.pop();
@@ -645,20 +648,24 @@ function taskProgress(task) {
 
 function renderApps(apps, pending) {
   if (!Array.isArray(apps)) return;
-  let stoppedWatch = null;
-  if (pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim()) {
+  if (pending?.select && pending.selectionVersion !== appSelectionVersion) return;
+  const selected = pending?.select && apps.length === 1 && typeof apps[0]?.id === "string" && apps[0].id.trim();
+  if (selected) {
     const nextApp = apps[0].id.trim();
-    if (nextApp !== selectedApp) {
-      desiredAutoFollow = null;
-      if (watchedTask) {
-        stoppedWatch = watchedTask.ref;
-        setWatchedTask(null);
-      }
-    }
     selectAppContext(nextApp);
     nextTaskPage = null;
+  } else if (pending?.select) {
+    selectAppContext(pending.previousAppId);
   }
-  const lines = ["", pending?.select && apps.length === 1 ? `Selected App: ${selectedApp}` : "Apps:", ""];
+  const lines = [
+    "",
+    pending?.select
+      ? selected
+        ? `Selected App: ${selectedApp}`
+        : `App ${pending.appId} was not found; restored ${selectedApp}.`
+      : "Apps:",
+    "",
+  ];
   if (apps.length === 0) lines.push("  Nothing found.");
   for (const app of apps) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
@@ -676,7 +683,9 @@ function renderApps(apps, pending) {
     }
     lines.push("");
   }
-  if (stoppedWatch) lines.push(`  Stopped following ${stoppedWatch}; the Task continues unchanged.`);
+  if (pending?.stoppedWatch) {
+    lines.push(`  Stopped following ${pending.stoppedWatch}; the Task continues unchanged.`);
+  }
   if (lines.at(-1) !== "") lines.push("");
   presentView(pending?.command || "/apps", renderedLines(lines));
 }
@@ -725,6 +734,8 @@ function taskStatusLabel(task) {
       return "waiting";
     case "attention":
       return task?.humanAction ? "needs you" : "needs review";
+    case "up-to-date":
+      return "up to date";
     case "done":
       return "done";
     case "cancelled":
@@ -746,6 +757,8 @@ function currentTaskText(task) {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
+    case "up-to-date":
+      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
@@ -762,6 +775,12 @@ function humanActionText(task) {
     : typeof task?.summary === "string" && task.summary.trim()
       ? task.summary.trim()
       : String(task?.outcome || "Human input is required.");
+}
+
+function humanActionLine(task) {
+  const action = humanActionText(task);
+  const owner = task?.humanAction?.task;
+  return owner?.ref && owner?.appId ? `On Task ${owner.ref} · ${owner.appId}: ${action}` : action;
 }
 
 function elapsedText(value) {
@@ -868,7 +887,7 @@ function renderTask(task, command, options = {}) {
     : [];
   if (acceptance.length > 0) lines.push(...acceptance.map((item) => `    - ${item.trim()}`));
   else lines.push("    No separate completion criteria were recorded.");
-  lines.push("", "  You", `    ${task.humanAction ? humanActionText(task) : "Nothing needed right now."}`);
+  lines.push("", "  You", `    ${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`);
   if (task.requestedBy) {
     lines.push(
       "",
@@ -1024,7 +1043,7 @@ function formatWorkTime(value) {
     .replace(/\.\d{3}Z$/, " UTC");
 }
 
-function renderConversation(messages) {
+function renderConversation(messages, options = {}) {
   if (!Array.isArray(messages)) return;
   let latestFollowTask = null;
   for (const message of messages) {
@@ -1033,6 +1052,14 @@ function renderConversation(messages) {
     if (!id || !text || renderedConversationMessages.has(id)) continue;
     const channel = message.metadata && typeof message.metadata.channel === "string" ? message.metadata.channel : "";
     const kind = message.author && typeof message.author.kind === "string" ? message.author.kind : "agent";
+    // Command results remain useful Conversation context for a later human
+    // reference, but they are interface views rather than conversation turns.
+    // The command already rendered where it was invoked; replaying it on
+    // startup produces a misleading duplicate `command>` message.
+    if (kind === "command") {
+      rememberRenderedConversationMessage(id);
+      continue;
+    }
     const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     const metadataTaskRefs = Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : [];
@@ -1074,7 +1101,10 @@ function renderConversation(messages) {
       };
     }
   }
-  if (latestFollowTask) autoFollowTask(latestFollowTask);
+  // Catch-up history restores context for the human, but it must not change
+  // the current App or start watching old work. Only a live Conversation wake
+  // may turn a newly observed assignment into an automatic follow.
+  if (latestFollowTask && options.autoFollow === true) autoFollowTask(latestFollowTask);
 }
 
 function runtimeFrame(type) {
@@ -1191,19 +1221,21 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
+      const receiptKind = event.command === "publish" ? pendingPublishReceipts.shift() : null;
       if (event.command === "publish" && Number.isSafeInteger(event.eventId) && event.eventId > 0) {
         // Non-human Conversation events are projected by durable event row ID.
         // Marking every local publish receipt is harmless for other event kinds.
         rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
+      if (receiptKind === "human-turn") {
+        printNotice("[may] Working on your request…");
+      }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
-          conversationReady = true;
-          flushPendingInput();
         } else if (pending?.kind === "sync") {
-          renderConversation(event.conversation?.messages);
+          renderConversation(event.conversation?.messages, { autoFollow: true });
         } else if (pending?.kind === "topics") {
           renderTopics(event.conversation, pending);
         } else if (pending?.kind === "topic") {
@@ -1214,10 +1246,6 @@ function handleEvent(event) {
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
         renderApps(event.apps, pending);
-        if (pending?.select) {
-          appSelectionInFlight = false;
-          flushPendingInput();
-        }
       }
       if (event.command === "tasks.list") {
         const pending = pendingTaskListReads.shift();
@@ -1303,18 +1331,14 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
+      if (event.command === "publish") pendingPublishReceipts.shift();
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
-        if (pending?.kind === "startup") {
-          conversationReady = true;
-          flushPendingInput();
-        }
       }
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
-        if (pending?.select) {
-          appSelectionInFlight = false;
-          flushPendingInput();
+        if (pending?.select && pending.selectionVersion === appSelectionVersion) {
+          selectAppContext(pending.previousAppId);
         }
       }
       if (event.command === "tasks.list") {
@@ -1405,6 +1429,8 @@ function connectSocket() {
       refreshWatchedTask();
     }
     if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
+    flushPendingCommands();
+    flushPendingInput();
     refreshPrompt();
   });
 
@@ -1433,8 +1459,8 @@ function connectSocket() {
 
   socket.on("close", () => {
     connected = false;
-    conversationReady = false;
     socket = null;
+    pendingPublishReceipts.length = 0;
     // Reads are idempotent. Preserve and replay them after reconnect so a
     // daemon restart cannot silently swallow /tasks, /task, /apps, or sync.
     if (pendingConversationReads.length > 0) {
@@ -1490,8 +1516,23 @@ function handleCommand(input) {
         printLine("Usage: /apps [app]");
         return;
       }
-      if (rest) appSelectionInFlight = true;
-      if (!requestApps(rest || null, input, Boolean(rest))) appSelectionInFlight = false;
+      if (rest) {
+        const previousAppId = selectedApp;
+        let stoppedWatch = null;
+        if (rest !== selectedApp) {
+          desiredAutoFollow = null;
+          if (watchedTask) {
+            stoppedWatch = watchedTask.ref;
+            setWatchedTask(null);
+          }
+          selectAppContext(rest);
+        }
+        const selectionVersion = ++appSelectionVersion;
+        printNotice(`[apps] Selecting ${rest}…`);
+        requestApps(rest, input, true, { previousAppId, selectionVersion, stoppedWatch });
+      } else {
+        requestApps(null, input, false);
+      }
       return;
     case "topics":
       if (restParts.length > 1 || (restParts.length === 1 && restParts[0].toLowerCase() !== "more")) {
@@ -1673,6 +1714,20 @@ function handleCommand(input) {
   }
 }
 
+function commandNeedsConnection(input) {
+  const command = input.slice(1).trim().split(/\s+/, 1)[0]?.toLowerCase();
+  return command === "cancel" || command === "reload" || command === "restart";
+}
+
+function flushPendingCommands() {
+  while (pendingCommandLines.length > 0) {
+    const input = pendingCommandLines[0];
+    if (commandNeedsConnection(input) && !connected) return;
+    pendingCommandLines.shift();
+    handleCommand(input);
+  }
+}
+
 function handleInput(line) {
   const input = line.trim();
   if (!input) {
@@ -1680,37 +1735,49 @@ function handleInput(line) {
     return;
   }
 
-  // Ordinary turns should follow the Conversation history the human is about
-  // to see. Preserve early keystrokes until the initial Conversation snapshot
-  // arrives instead of executing them against an empty local view.
-  if (!connected || !conversationReady) {
-    pendingInputLines.push(input);
-    printLine("[waiting for May; input queued]");
-    return;
-  }
-
-  // A selected App changes the meaning of the next bare turn and /tasks.
-  // Keep terminal input ordered across that one asynchronous lookup while
-  // leaving the daemon's event handlers independent and non-blocking.
-  if (appSelectionInFlight) {
-    pendingInputLines.push(input);
-    refreshPrompt();
-    return;
-  }
-
+  // Commands are structured control reads/actions and do not depend on the
+  // Conversation transcript. Reconnect-safe reads register immediately;
+  // direct controls wait only for a live socket. App selection is local
+  // presentation state, so following commands can use it without waiting for
+  // the asynchronous App read that validates and describes it.
   if (input.startsWith("/")) {
+    if (commandNeedsConnection(input) && !connected) {
+      pendingCommandLines.push(input);
+      printLine("[waiting for daemon; command queued]");
+      return;
+    }
     handleCommand(input);
     return;
   }
 
-  sendFrame(mayInputFrame(input));
+  // Conversation history is presentation context, not an admission gate.
+  // The daemon owns authoritative context and orders message handling within
+  // the Conversation after this Event has been durably accepted.
+  const frame = mayInputFrame(input);
+  if (!connected) {
+    if (pendingInputFrames.length >= maxPendingInputFrames) {
+      printLine(`[offline] Message not saved; this Console already holds ${maxPendingInputFrames} unsent messages.`);
+      return;
+    }
+    pendingInputFrames.push(frame);
+    printLine("[offline] Message saved in this Console; it will send after reconnect.");
+    return;
+  }
+
+  if (!sendFrame(frame, { receiptKind: "human-turn" })) {
+    pendingInputFrames.push(frame);
+    printLine("[offline] Message saved in this Console; it will send after reconnect.");
+  }
   refreshPrompt();
 }
 
 function flushPendingInput() {
-  if (!connected || !conversationReady || pendingInputLines.length === 0) return;
-  const queued = pendingInputLines.splice(0);
-  for (const input of queued) handleInput(input);
+  if (!connected || pendingInputFrames.length === 0) return;
+  while (connected && pendingInputFrames.length > 0) {
+    const frame = pendingInputFrames[0];
+    if (!sendFrame(frame, { receiptKind: "human-turn" })) return;
+    pendingInputFrames.shift();
+  }
 }
 
 function closeAndExit(code) {

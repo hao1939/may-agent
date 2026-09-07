@@ -292,7 +292,7 @@ describe("AppTaskController", () => {
     controllerB.close();
   });
 
-  it("starts newly arrived human work through reserved capacity ahead of a normal waiter", async () => {
+  it("keeps Task priority inside the controller without consuming interactive capacity", async () => {
     const capacity = new HostCapacity(2);
     const releaseBackground = capacity.tryAcquire();
     const started: string[] = [];
@@ -310,14 +310,15 @@ describe("AppTaskController", () => {
     controller.enqueue("normal", { lane: "normal", priority: "P0" });
     await waitUntil(() => capacity.snapshot().waiting === 1);
     controller.enqueue("human", { lane: "human", priority: "P2" });
-    await waitUntil(() => started.length === 1);
+    await Bun.sleep(20);
 
-    expect(started).toEqual(["human"]);
-    await waitUntil(() => capacity.snapshot().waiting === 1);
-    expect(capacity.snapshot()).toEqual({ running: 2, waiting: 1 });
+    expect(started).toEqual([]);
+    expect(capacity.snapshot()).toEqual({ running: 1, waiting: 1 });
 
-    releases.get("human")?.();
     releaseBackground?.();
+    await waitUntil(() => started.length === 1);
+    expect(started).toEqual(["human"]);
+    releases.get("human")?.();
     await waitUntil(() => started.includes("normal"));
     releases.get("normal")?.();
     await waitUntil(() => capacity.snapshot().running === 0);

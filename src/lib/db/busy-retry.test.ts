@@ -14,6 +14,18 @@ describe("withSqliteBusyRetry", () => {
     expect(attempts).toBe(3);
   });
 
+  it("outlasts a short competing writer instead of restarting the Host", () => {
+    let attempts = 0;
+    const result = withSqliteBusyRetry("persist event", () => {
+      attempts += 1;
+      if (attempts < 6) throw new Error("SQLITE_BUSY");
+      return "recorded";
+    });
+
+    expect(result).toBe("recorded");
+    expect(attempts).toBe(6);
+  });
+
   it("does not retry non-busy errors", () => {
     let attempts = 0;
     expect(() =>

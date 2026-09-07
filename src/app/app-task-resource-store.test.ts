@@ -5,18 +5,16 @@ import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import {
-  cacheTaskStateReads,
-  readTaskState,
-  saveTaskState,
-  setProjectLifecycle,
-  type ResourceTaskStateConfig,
-  type TaskStateConfig,
+  cacheTaskSnapshots,
+  readTaskSnapshot,
+  commitTaskMutation,
+  type AppTaskContext,
   type TaskTree,
 } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -60,7 +58,7 @@ function fixture(): TaskTree {
     project: "example",
     project_lifecycle: "paused",
     root_task_id: "project",
-    groups: { project: { id: "project", parent_id: null, goal: "example" } },
+    groups: { project: { id: "project", parent_id: null } },
     resources: { human: resource("human"), normal: resource("normal", "waiting"), active },
     attempts: {
       "attempt-1": {
@@ -155,10 +153,12 @@ describe("AppTaskResourceStore", () => {
     ).toEqual({ value: "2" });
     expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
     expect(
-      db.prepare(
-        `SELECT source_task_id, relation_kind, target_task_id
+      db
+        .prepare(
+          `SELECT source_task_id, relation_kind, target_task_id
          FROM app_task_relations WHERE app_id = 'example'`,
-      ).all(),
+        )
+        .all(),
     ).toEqual([{ source_task_id: "legacy", relation_kind: "parent", target_task_id: "project" }]);
     db.close();
   });
@@ -177,7 +177,7 @@ describe("AppTaskResourceStore", () => {
     tree.resources = { normal: tree.resources!.normal!, child, dependent, unrelated };
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child", "dependent", "normal"]);
@@ -197,23 +197,117 @@ describe("AppTaskResourceStore", () => {
     db.close();
   });
 
-  it("imports and shadow-compares a paused App snapshot", () => {
+  it("bounds direct children for read-only context without loading dependents", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "revision-1", ["human"]);
+    tree.resources = { normal: tree.resources!.normal! };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    for (let index = 0; index < 20; index += 1) {
+      const suffix = String(index).padStart(2, "0");
+      const child = resource(`child-${suffix}`);
+      child.spec.parentId = "normal";
+      tree.resources[child.metadata.id] = child;
+      const dependent = resource(`dependent-${suffix}`);
+      dependent.spec.dependsOn = ["normal"];
+      tree.resources[dependent.metadata.id] = dependent;
+    }
+    store.bootstrapSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 2 });
+
+    expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child-00", "child-01", "normal"]);
+    expect(Object.keys(context.attempts ?? {})).toEqual([]);
+    store.close();
+  });
+
+  it("can read one exact Task without loading its children or attempt history", () => {
+    const store = open();
+    const tree = fixture();
+    tree.resources = { normal: tree.resources!.normal! };
+    tree.attempts = {};
+    tree.taskTriggers = {};
+    for (let index = 0; index < 20; index += 1) {
+      const child = resource(`child-${index}`);
+      child.spec.parentId = "normal";
+      tree.resources[child.metadata.id] = child;
+    }
+    store.bootstrapSnapshot(tree, "revision-1");
+
+    const context = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 0 });
+
+    expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
+    expect(Object.keys(context.attempts ?? {})).toEqual([]);
+    store.close();
+  });
+
+  it("prunes a detached Condition only after its final Task reference is gone", () => {
+    const store = open();
+    const tree = fixture();
+    const shared = resource("shared", "waiting");
+    tree.resources!.normal!.status.conditionIds = ["shared-condition"];
+    shared.status.conditionIds = ["shared-condition"];
+    tree.resources!.shared = shared;
+    tree.conditions = {
+      "shared-condition": {
+        metadata: { id: "shared-condition", generation: 1, resourceVersion: 1 },
+        spec: { type: "review.completed", subject: "shared", expected: "done" },
+        status: {
+          observedGeneration: 0,
+          state: "unknown",
+          createdAt: "2026-08-21T00:00:00.000Z",
+          observedAt: "2026-08-21T00:00:00.000Z",
+        },
+      },
+    };
+    store.bootstrapSnapshot(tree, "revision-1");
+
+    for (const taskId of ["normal", "shared"]) {
+      const current = store.readTask(taskId)!;
+      const next = structuredClone(current);
+      next.metadata.resourceVersion += 1;
+      next.status.conditionIds = [];
+      expect(
+        store.commit({
+          fences: [{ taskId, resourceVersion: current.metadata.resourceVersion }],
+          tasks: [{ resource: next, ready: false }],
+          pruneConditionIds: ["shared-condition"],
+        }),
+      ).toBeTrue();
+      expect(store.readSnapshot().conditions?.["shared-condition"] !== undefined).toBe(taskId === "normal");
+    }
+    store.close();
+  });
+
+  it("bootstraps a normalized resource snapshot", () => {
+    const store = open();
+    const tree = fixture() as TaskTree & { satisfied_dependency_ids?: string[] };
+    const legacyGroup = tree.groups!.project as TaskTree["groups"][string] & {
+      children?: string[];
+      goal?: string;
+      state?: string;
+    };
+    legacyGroup.children = ["human", "normal", "active"];
+    legacyGroup.goal = "legacy group task";
+    legacyGroup.state = "backlog";
+    tree.satisfied_dependency_ids = ["legacy-derived-copy"];
+    store.bootstrapSnapshot(tree, "revision-1", ["human"]);
 
     expect(store.sourceRevision()).toBe("revision-1");
-    expect(store.isActive()).toBeFalse();
+    expect(store.isActive()).toBeTrue();
     expect(store.readTask("human")).toEqual(tree.resources?.human);
-    expect(store.shadowCompare(tree)).toEqual([]);
     expect(store.listRecoveryCandidates().items).toEqual([
       expect.objectContaining({ taskId: "human", lane: "human", ready: true, changed: true }),
       expect.objectContaining({ taskId: "active", lane: "normal", leaseUntil: 1_787_270_401_000 }),
       expect.objectContaining({ taskId: "normal", lane: "normal", ready: false, changed: true }),
     ]);
-    store.activate("revision-1");
     expect(store.isActive()).toBeTrue();
-    expect(store.readSnapshot().resources).toEqual(tree.resources);
+    const snapshot = store.readSnapshot();
+    expect(snapshot.resources).toEqual(tree.resources);
+    expect(snapshot.groups?.project).not.toHaveProperty("state");
+    expect(snapshot.groups?.project).not.toHaveProperty("children");
+    expect(snapshot.groups?.project).not.toHaveProperty("goal");
+    expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
   });
 
@@ -231,23 +325,40 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("does not overwrite an existing shadow authority during bootstrap", () => {
+  it("projects loaded App concurrency without changing it when the value is unchanged", () => {
+    const root = mkdtempSync(join(tmpdir(), "app-task-config-"));
+    roots.push(root);
+    const store = AppTaskResourceStore.openStandalone(join(root, "tasks.sqlite"), "example");
+    store.bootstrapSnapshot({ project: "example", resources: {} }, "seed:empty");
+
+    const before = store.revision();
+    store.setConfiguredMaxConcurrent(4);
+    expect(store.configuredMaxConcurrent()).toBe(4);
+    expect(store.revision()).toBe(before + 1);
+
+    store.setConfiguredMaxConcurrent(4);
+    expect(store.revision()).toBe(before + 1);
+    expect(() => store.setConfiguredMaxConcurrent(0)).toThrow("positive safe integer");
+    store.close();
+  });
+
+  it("does not overwrite existing resource authority during bootstrap", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "migration-revision");
+    store.bootstrapSnapshot(tree, "initial-revision");
     const seed = fixture();
     seed.project_lifecycle = "active";
 
-    expect(() => store.bootstrapSnapshot(seed, "seed:revision-1")).toThrow("existing shadow authority");
-    expect(store.sourceRevision()).toBe("migration-revision");
-    expect(store.isActive()).toBeFalse();
+    expect(() => store.bootstrapSnapshot(seed, "seed:revision-1")).toThrow("existing resources authority");
+    expect(store.sourceRevision()).toBe("initial-revision");
+    expect(store.isActive()).toBeTrue();
     store.close();
   });
 
   it("updates one fenced task and exposes due work through the index", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const next = structuredClone(tree.resources!.normal!);
     next.metadata.resourceVersion = 2;
     next.status.observedGeneration = 1;
@@ -268,9 +379,24 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("updates the private recovery index without invalidating the canonical snapshot", () => {
+    const store = open();
+    store.bootstrapSnapshot(fixture(), "revision-1");
+    const revision = store.revision();
+
+    expect(store.setRecoveryState("normal", { ready: true, changed: false, nextCheckAt: null })).toBeTrue();
+
+    expect(store.revision()).toBe(revision);
+    expect(store.listRecoveryCandidates().items).toContainEqual(
+      expect.objectContaining({ taskId: "normal", ready: true, changed: false }),
+    );
+    expect(store.setRecoveryState("normal", { ready: true, changed: false, nextCheckAt: null })).toBeFalse();
+    store.close();
+  });
+
   it("pages through every indexed recovery candidate", () => {
     const store = open();
-    store.importPausedSnapshot(fixture(), "revision-1", ["human"]);
+    store.bootstrapSnapshot(fixture(), "revision-1", ["human"]);
 
     const first = store.listRecoveryCandidates(Date.now() + 10_000, 2);
     const second = store.listRecoveryCandidates(Date.now() + 10_000, 2, first.nextCursor ?? undefined);
@@ -299,7 +425,7 @@ describe("AppTaskResourceStore", () => {
       delete attempt.sessionId;
       tree.attempts![attempt.metadata.id] = attempt;
     }
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
@@ -307,6 +433,9 @@ describe("AppTaskResourceStore", () => {
     expect(context.resources?.active).toBeUndefined();
     expect(Object.keys(context.groups ?? {})).toEqual(["project"]);
     expect(Object.keys(context.attempts ?? {})).toHaveLength(16);
+    const currentOnly = store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false });
+    expect(Object.keys(currentOnly.attempts ?? {})).toEqual([]);
+    expect(currentOnly.resources?.active?.status.currentAttemptId).toBe("attempt-1");
     store.close();
   });
 
@@ -409,8 +538,7 @@ describe("AppTaskResourceStore", () => {
       "2026-08-21T01:00:06.000Z",
       { state: "completed" },
     );
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const taskIds = store.listHandlerExecutionRecoveryTaskIds("target-owner");
     expect(taskIds).toEqual(["execution-failed", "legacy-failed"]);
@@ -425,13 +553,10 @@ describe("AppTaskResourceStore", () => {
     roots.push(configRoot);
     const appDir = join(configRoot, "example.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, configRoot);
-    const config: ResourceTaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: configRoot,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "test",
+      agent: "test",
       maxConcurrent: 2,
       resourceStore: store,
     };
@@ -456,14 +581,13 @@ describe("AppTaskResourceStore", () => {
     tree.resources = {};
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["first-request", "project"] });
 
     expect(context.groups).toEqual({
-      project: { id: "project", parent_id: null, goal: "example" },
+      project: { id: "project", parent_id: null },
     });
-    expect(context.tasks?.project).toMatchObject({ id: "project", parent_id: null });
     expect(context.resources).toEqual({});
     store.close();
   });
@@ -479,19 +603,15 @@ describe("AppTaskResourceStore", () => {
     delete tree.attempts?.["attempt-1"];
     delete tree.taskTriggers?.human;
     tree.resources!.human!.status.observedGeneration = 1;
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    store.bootstrapSnapshot(tree, "revision-1");
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
     recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 92 });
     const claim = claimObservedAppTask(config, {
       taskId: "normal",
@@ -511,6 +631,7 @@ describe("AppTaskResourceStore", () => {
             type: "example.completed",
             subject: "example:later",
             expected: "done",
+            owner: "app:example-observer",
             reviewAfterMs: 60_000,
           },
         ],
@@ -523,6 +644,10 @@ describe("AppTaskResourceStore", () => {
     expect(store.readConditionRoutesForAllApps("example.completed")).toEqual([
       expect.objectContaining({ appId: "example", taskIds: ["normal"] }),
     ]);
+    expect(store.readConditionRoutesForAllApps("example.completed", ["example:later"])).toEqual([
+      expect.objectContaining({ appId: "example", taskIds: ["normal"] }),
+    ]);
+    expect(store.readConditionRoutesForAllApps("example.completed", ["example:other"])).toEqual([]);
     expect(store.readTaskConditions("normal")).toEqual([
       expect.objectContaining({
         metadata: expect.objectContaining({ id: "example:later" }),
@@ -570,7 +695,7 @@ describe("AppTaskResourceStore", () => {
         status: { observedGeneration: 1, state: "true" },
       },
     };
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
 
     expect(store.readConditionRoutes("pipeline-run.state")).toEqual([]);
     store.close();
@@ -578,7 +703,7 @@ describe("AppTaskResourceStore", () => {
 
   it("does not treat an unchanged running attempt as a fresh wake", () => {
     const store = open();
-    store.importPausedSnapshot(fixture(), "revision-1");
+    store.bootstrapSnapshot(fixture(), "revision-1");
     const active = store.listRecoveryCandidates(Date.now() + 10_000).items.find((entry) => entry.taskId === "active");
     expect(active).toMatchObject({ ready: false, changed: false });
     store.close();
@@ -587,7 +712,7 @@ describe("AppTaskResourceStore", () => {
   it("serializes competing transitions with the task resource fence", () => {
     const store = open();
     const tree = fixture();
-    store.importPausedSnapshot(tree, "revision-1");
+    store.bootstrapSnapshot(tree, "revision-1");
     const first = structuredClone(tree.resources!.normal!);
     first.metadata.resourceVersion = 2;
     first.status.summary = "first";
@@ -617,25 +742,21 @@ describe("AppTaskResourceStore", () => {
     const appDir = join(root, "resource-test.app");
     mkdirSync(appDir, { recursive: true });
     const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
-    store.importPausedSnapshot(fixture(), "revision-1");
-    store.activate("revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    store.bootstrapSnapshot(fixture(), "revision-1");
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "test",
+      agent: "test",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
-    const tree = readTaskState(config);
+    cacheTaskSnapshots(config);
+    const tree = readTaskSnapshot(config);
     const next = tree.resources!.normal!;
     next.metadata.resourceVersion += 1;
     next.status.summary = "resource local";
 
-    saveTaskState(config, tree, {
+    commitTaskMutation(config, tree, {
       resourceMutation: {
         fences: [{ taskId: "normal", resourceVersion: 1 }],
         tasks: [{ resource: next, ready: false }],
@@ -643,7 +764,7 @@ describe("AppTaskResourceStore", () => {
     });
 
     expect(store.readTask("normal")?.status.summary).toBe("resource local");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     expect(readRuntimeTaskView({ taskStateConfig: config }, "normal")).toMatchObject({
       id: "normal",
       summary: "resource local",
@@ -652,10 +773,52 @@ describe("AppTaskResourceStore", () => {
       "active",
       "human",
     ]);
-    setProjectLifecycle(config, "paused", "resource lifecycle test");
+    store.setProjectLifecycle("paused");
     expect(store.projectLifecycle()).toBe("paused");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     store.close();
+  });
+
+  it.each(["trigger", "condition"])("fences a stale Task write after a newer %s wake", (ingress) => {
+    const store = open();
+    store.bootstrapSnapshot(fixture(), "revision-1");
+    const config: AppTaskContext = {
+      appDir: "/fixture/example.app",
+      projectDir: "/fixture",
+      agent: "may",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    const claim = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "Wait for review",
+      evidence: [],
+      conditions: [
+        {
+          id: "review",
+          type: "review.completed",
+          subject: "task:review",
+          expected: "done",
+          owner: "human",
+          reviewAfterMs: 60_000,
+        },
+      ],
+    });
+    const stale = store.readTask("normal")!;
+    const event = { type: "review.completed", taskId: "review", state: "done", overrideWait: true };
+    if (ingress === "trigger") recordAppTaskTrigger(config, "normal", event);
+    else trackAppTaskConditionEventForTasks(config, event, ["normal"]);
+    try {
+      expect(store.readTrigger("normal")).not.toBeNull();
+      expect(
+        store.replaceTask({ expectedResourceVersion: stale.metadata.resourceVersion, resource: stale, ready: false }),
+      ).toBeFalse();
+      expect(store.readTrigger("normal")).not.toBeNull();
+    } finally {
+      store.close();
+    }
   });
 
   it("records and claims one resource-backed task without whole-App persistence", () => {
@@ -667,19 +830,15 @@ describe("AppTaskResourceStore", () => {
     const tree = fixture();
     delete tree.resources?.active;
     delete tree.attempts?.["attempt-1"];
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    store.bootstrapSnapshot(tree, "revision-1");
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 91 })).toEqual({
       kind: "recorded",
@@ -717,7 +876,7 @@ describe("AppTaskResourceStore", () => {
     ).toMatchObject({ kind: "observed", taskId: "new-task", generation: 1 });
     expect(store.readTask("new-task")?.spec.outcome).toBe("handle new task");
     expect(store.readSnapshot().appTaskAdmissions?.["new-task-admission"]?.taskId).toBe("new-task");
-    expect(existsSync(paths.taskStatePath)).toBeFalse();
+    expect(existsSync(join(appDir, ".state", "tasks", "state.json"))).toBeFalse();
     store.close();
   });
 
@@ -731,19 +890,15 @@ describe("AppTaskResourceStore", () => {
     tree.resources = {};
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    store.bootstrapSnapshot(tree, "revision-1");
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(
       observeAppTaskIntent(config, {
@@ -776,19 +931,15 @@ describe("AppTaskResourceStore", () => {
     tree.resources = { dependency, dependent };
     tree.attempts = {};
     tree.taskTriggers = {};
-    store.importPausedSnapshot(tree, "revision-1");
-    store.activate("revision-1");
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    store.bootstrapSnapshot(tree, "revision-1");
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
+    cacheTaskSnapshots(config);
 
     expect(
       claimObservedAppTask(config, {
@@ -818,14 +969,6 @@ describe("AppTaskResourceStore", () => {
     expect(store.listRecoveryCandidates().items).toContainEqual(
       expect.objectContaining({ taskId: dependent.metadata.id, ready: true }),
     );
-    store.close();
-  });
-
-  it("refuses to import a live mutable authority", () => {
-    const store = open();
-    const tree = fixture();
-    tree.project_lifecycle = "active";
-    expect(() => store.importPausedSnapshot(tree, "revision-1")).toThrow("project_lifecycle=paused");
     store.close();
   });
 });

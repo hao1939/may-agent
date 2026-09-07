@@ -48,7 +48,6 @@ export interface AttachControlSocketOptions {
   ) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (appId: string, taskId: string) => unknown;
-  retryAppTask?: (input: { appId: string; taskId: string; expectedGeneration: number }) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
   listTasks?: (options?: {
@@ -60,7 +59,6 @@ export interface AttachControlSocketOptions {
     cursor?: string;
   }) => unknown;
   getTask?: (input: { ref?: string; appId?: string; taskId?: string }) => unknown;
-  cancelTask?: (input: { ref?: string; appId?: string; taskId?: string; reason?: string }) => unknown;
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -214,12 +212,10 @@ export interface ControlSocketCoreOptions {
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
-  retryAppTask?: AttachControlSocketOptions["retryAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  cancelTask?: AttachControlSocketOptions["cancelTask"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   agentName: string;
@@ -241,12 +237,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getAppConversation,
     listAppTasks,
     getAppTask,
-    retryAppTask,
     resolveAppTask,
     listApps,
     listTasks,
     getTask,
-    cancelTask,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -800,7 +794,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             typeof expectedGeneration !== "number" ||
             !Number.isSafeInteger(expectedGeneration) ||
             expectedGeneration < 1 ||
-            !retryAppTask
+            !publishEvent ||
+            !getTask
           ) {
             writeFrame(socket, {
               type: "error",
@@ -818,10 +813,32 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             continue;
           }
           try {
+            const task = getTask({ appId, taskId }) as Record<string, unknown> | null;
+            if (!task) throw new Error(`Task ${appId}/${taskId} was not found`);
+            if (task.generation !== expectedGeneration) {
+              throw new Error(
+                `Task ${appId}/${taskId} generation changed: expected ${expectedGeneration}, current ${String(task.generation)}`,
+              );
+            }
+            if (!Number.isSafeInteger(task.resourceVersion) || Number(task.resourceVersion) < 1) {
+              throw new Error(`Task ${appId}/${taskId} has no valid resource version`);
+            }
+            const receipt = publishEvent({
+              type: "app.task.retry.requested",
+              target: { appId, taskId },
+              data: {
+                expectedGeneration,
+                expectedResourceVersion: Number(task.resourceVersion),
+              },
+              idempotencyKey: `app-task-retry:${appId}:${taskId}:${expectedGeneration}:${Number(task.resourceVersion)}`,
+            });
+            if (receipt.delivery !== "accepted") {
+              throw new Error(`Task ${appId}/${taskId} retry was recorded but not accepted; read the Task and retry`);
+            }
             writeFrame(socket, {
               type: "ok",
               command: normalized.command,
-              receipt: retryAppTask({ appId, taskId, expectedGeneration }),
+              receipt,
             });
           } catch (error) {
             writeFrame(socket, {
@@ -917,17 +934,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
-        if (
-          normalized.kind === "control" &&
-          (normalized.command === "task.get" || normalized.command === "task.cancel")
-        ) {
-          const operation = normalized.command === "task.get" ? getTask : cancelTask;
-          if (!operation) {
+        if (normalized.kind === "control" && normalized.command === "task.get") {
+          if (!getTask) {
             writeFrame(socket, {
               type: "error",
               command: normalized.command,
-              message:
-                normalized.command === "task.get" ? "Task reads are unavailable" : "Task cancellation is unavailable",
+              message: "Task reads are unavailable",
             });
             continue;
           }
@@ -941,7 +953,66 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             writeFrame(socket, {
               type: "ok",
               command: normalized.command,
-              task: operation(input),
+              task: getTask(input),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "task.cancel") {
+          if (!getTask || !publishEvent) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: "Task cancellation is unavailable",
+            });
+            continue;
+          }
+          try {
+            const input = {
+              ...(typeof frame.ref === "string" && frame.ref.trim() ? { ref: frame.ref.trim() } : {}),
+              ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
+              ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
+            };
+            const task = getTask(input) as Record<string, unknown> | null;
+            if (!task) throw new Error("Task was not found");
+            const appId = typeof task.appId === "string" ? task.appId.trim() : "";
+            const taskId = typeof task.taskId === "string" ? task.taskId.trim() : "";
+            const generation = Number(task.generation);
+            const resourceVersion = Number(task.resourceVersion);
+            if (!appId || !taskId || !Number.isSafeInteger(generation) || !Number.isSafeInteger(resourceVersion)) {
+              throw new Error("Task has no exact mutable resource identity");
+            }
+            const reason =
+              typeof frame.reason === "string" && frame.reason.trim()
+                ? frame.reason.trim()
+                : "human requested cancellation";
+            const receipt = publishEvent({
+              type: "app.task.cancel.requested",
+              target: { appId, taskId },
+              data: {
+                expectedGeneration: generation,
+                expectedResourceVersion: resourceVersion,
+                reason,
+              },
+              idempotencyKey: `app-task-cancel:${appId}:${taskId}:${generation}:${resourceVersion}`,
+            });
+            if (receipt.delivery !== "accepted") {
+              throw new Error(
+                `Task ${appId}/${taskId} cancellation was recorded but not accepted; read the Task and retry`,
+              );
+            }
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              receipt,
+              task: getTask({ appId, taskId }),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -1080,12 +1151,10 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
-    retryAppTask: opts.retryAppTask,
     resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,
-    cancelTask: opts.cancelTask,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,

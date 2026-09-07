@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -7,7 +7,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "./app-inbox-store.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { observeAppTaskIntent, taskReconciliationConfig } from "./app-task-reconciler.js";
+import { observeAppTaskIntent, appTaskContext } from "./app-task-reconciler.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;
@@ -36,9 +36,7 @@ describe("App read projections", () => {
           review: {
             id: "review",
             parent_id: null,
-            state: "backlog",
             owner: "evaluation",
-            children: [],
           },
         },
         resources: {},
@@ -46,7 +44,7 @@ describe("App read projections", () => {
       },
       "seed:test",
     );
-    return taskReconciliationConfig({
+    return appTaskContext({
       appDir,
       projectDir: root,
       agent: "evaluation",
@@ -175,5 +173,39 @@ describe("App read projections", () => {
       intent: { id: "second", parentId: "review", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
     });
     await expect(read.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
+  });
+
+  it("reads only the outcome containing an exact Task", async () => {
+    const config = resourceConfig();
+    for (const id of ["review/a", "review/b", "review/unrelated"]) {
+      observeAppTaskIntent(config, {
+        appAgent: "evaluation",
+        intent: { id, parentId: "review", outcome: `Complete ${id}`, acceptance: ["Done"], mode: "achieve" },
+      });
+    }
+    mkdirSync(join(config.appDir, "tasks"), { recursive: true });
+    writeFileSync(
+      join(config.appDir, "tasks", "outcome-projection.json"),
+      JSON.stringify({
+        version: 1,
+        groups: [{ id: "review-pair", outcome: "Complete the pair", taskIds: ["review/a", "review/b"] }],
+      }),
+    );
+    const read = createRuntimeAppRead({
+      getDb: () => db,
+      metrics: { get: () => null } as any,
+      taskStateConfig: config,
+    });
+
+    await expect(read.tasks.outcomes({ taskId: "review/a" })).resolves.toMatchObject({
+      sourceCount: 2,
+      outcomeCount: 1,
+      outcomes: [{ id: "review-pair", memberTaskIds: ["review/a", "review/b"] }],
+    });
+    await expect(read.tasks.outcomes({ taskId: "missing" })).resolves.toMatchObject({
+      sourceCount: 0,
+      outcomeCount: 0,
+      outcomes: [],
+    });
   });
 });

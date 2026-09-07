@@ -9,8 +9,7 @@ import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
 import { EventBus } from "./event-bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
-import { cacheTaskStateReads, readTaskState, type TaskStateConfig, type TaskTree } from "./app-task-store.js";
-import { projectRuntimePaths } from "./app-task-runtime-state.js";
+import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -76,8 +75,7 @@ function harness(sessionId: string | null = "session-1") {
   roots.push(root);
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "sample");
-  store.importPausedSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
-  store.activate("revision-1");
+  store.bootstrapSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
@@ -199,7 +197,8 @@ describe("AppTaskEmitter", () => {
   });
 
   it("records an exact target wake in the event transaction before subscribers run", () => {
-    const { db, bus, emitter } = harness();
+    const { db, bus, emitter, store } = harness();
+    const stale = store.readTask("child-1")!;
     const observed: Array<{ changed: number; linked: number }> = [];
     bus.subscribe((event) => {
       if (event.type !== "sample.child.requested") return;
@@ -219,24 +218,29 @@ describe("AppTaskEmitter", () => {
     });
 
     expect(observed).toEqual([{ changed: 1, linked: 1 }]);
+    expect(
+      store.replaceTask({
+        expectedResourceVersion: stale.metadata.resourceVersion,
+        resource: stale,
+        ready: false,
+      }),
+    ).toBeFalse();
+    expect(store.readTrigger("child-1")).not.toBeNull();
   });
 
   it("invalidates a cached task snapshot after an immediate exact wake", () => {
     const { root, emitter, store } = harness();
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskStateReads(config);
-    expect(readTaskState(config).taskTriggers?.["child-1"]).toBeUndefined();
+    cacheTaskSnapshots(config);
+    expect(readTaskSnapshot(config).taskTriggers?.["child-1"]).toBeUndefined();
 
     emitter.emit("wake-cached-child", {
       type: "sample.child.requested",
@@ -244,7 +248,7 @@ describe("AppTaskEmitter", () => {
       data: { child: "one" },
     });
 
-    expect(readTaskState(config).taskTriggers?.["child-1"]?.event).toMatchObject({
+    expect(readTaskSnapshot(config).taskTriggers?.["child-1"]?.event).toMatchObject({
       type: "sample.child.requested",
     });
   });
@@ -284,13 +288,10 @@ describe("AppTaskEmitter", () => {
     const { root, db, emitter, store } = harness();
     const appDir = join(root, "sample.app");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, root);
-    const config: TaskStateConfig = {
+    const config: AppTaskContext = {
       appDir,
       projectDir: root,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "may",
+      agent: "may",
       maxConcurrent: 2,
       resourceStore: store,
     };

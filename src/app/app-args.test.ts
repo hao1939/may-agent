@@ -55,4 +55,26 @@ describe("app args", () => {
       "Task file not found: /tmp/no-such-task-file",
     );
   });
+
+  it("parses the private one-attempt worker payload", () => {
+    const payload = JSON.stringify({ appId: "sample", taskId: "work/one" });
+    const args = parseAppArgs(["may-agent", "--task-worker-once", payload], {});
+
+    expect(args.taskWorkerRequest).toBe(payload);
+    expect(args.taskRecoveryWorker).toBe(false);
+  });
+
+  it("rejects a private worker invocation without its payload", () => {
+    expect(() => parseAppArgs(["may-agent", "--task-worker-once"], {})).toThrow(
+      "--task-worker-once requires one request payload",
+    );
+  });
+
+  it("parses the private one-shot recovery worker", () => {
+    expect(parseAppArgs(["may-agent", "--task-recovery-once"], {}).taskRecoveryWorker).toBe(true);
+  });
+
+  it("parses the private persistent Task admission worker", () => {
+    expect(parseAppArgs(["bun", "may.ts", "--task-admission-worker"], {}).taskAdmissionWorker).toBeTrue();
+  });
 });

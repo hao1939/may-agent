@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { claimObservedAppTask } from "./app-task-reconciler.js";
+import { cancelAppTask, claimObservedAppTask } from "./app-task-reconciler.js";
 import { HumanTaskService } from "./human-task-service.js";
-import type { TaskStateConfig, TaskTree } from "./app-task-store.js";
+import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 
 const roots: string[] = [];
 
@@ -30,7 +30,7 @@ describe("Task cancellation fence", () => {
       project: "sample",
       project_lifecycle: "paused",
       root_task_id: "root",
-      groups: { root: { id: "root", parent_id: null, goal: "sample" } },
+      groups: { root: { id: "root", parent_id: null } },
       resources: {
         work: {
           metadata: { id: "work", generation: 1, resourceVersion: 1 },
@@ -51,8 +51,7 @@ describe("Task cancellation fence", () => {
       },
       tasks: {},
     };
-    store.importPausedSnapshot(tree, "revision-1", ["work"]);
-    store.activate("revision-1");
+    store.bootstrapSnapshot(tree, "revision-1", ["work"]);
     store.setProjectLifecycle("active");
     const db = openDatabase(dbPath);
     applyDbSchema(db);
@@ -62,7 +61,37 @@ describe("Task cancellation fence", () => {
     const service = new HumanTaskService(db, {
       snapshot: () => ({ id: "test:1", generation: 1, entries: [] }),
     });
-    service.cancelTask({ appId: "sample", taskId: "work", reason: "superseded" });
+    const config: AppTaskContext = {
+      appDir,
+      projectDir,
+      agent: "test",
+      maxConcurrent: 1,
+      resourceStore: store,
+    };
+    const before = service.getTask({ appId: "sample", taskId: "work" });
+    if (!before) throw new Error("expected Task before cancellation");
+    expect(() =>
+      cancelAppTask(config, {
+        appId: "sample",
+        taskId: "work",
+        reason: "stale control",
+        expectedGeneration: before.generation,
+        expectedResourceVersion: before.resourceVersion + 1,
+      }),
+    ).toThrow("resource version changed");
+    const control = {
+      appId: "sample",
+      taskId: "work",
+      reason: "superseded",
+      expectedGeneration: before.generation,
+      expectedResourceVersion: before.resourceVersion,
+      controlKey: "app-task-cancel:sample:work:1:1",
+    };
+    expect(cancelAppTask(config, control).applied).toBeTrue();
+    expect(cancelAppTask(config, control).applied).toBeFalse();
+    expect(
+      db.prepare("SELECT action FROM app_task_control_receipts WHERE control_key = ?").get(control.controlKey),
+    ).toEqual({ action: "cancel" });
 
     // Recovery must trust the terminal cancellation even if a legacy writer
     // left stale scheduling columns behind. Cancellation is a fence, not a
@@ -72,15 +101,6 @@ describe("Task cancellation fence", () => {
        WHERE app_id = 'sample' AND task_id = 'work'`,
     ).run();
 
-    const config: TaskStateConfig = {
-      appDir,
-      projectDir,
-      statePath: join(appDir, ".state", "tasks.json"),
-      journalPath: join(appDir, ".state", "tasks.jsonl"),
-      worker: "test",
-      maxConcurrent: 1,
-      resourceStore: store,
-    };
     expect(
       claimObservedAppTask(config, {
         taskId: "work",

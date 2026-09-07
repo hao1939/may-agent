@@ -5,6 +5,7 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
+  type AppRequest,
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
@@ -28,9 +29,12 @@ import {
 } from "./app-inbox-host.js";
 import {
   linkConversationTopicTask,
+  listConversationTopicLinksForTask,
+  listStaleConversationTopicTasks,
   listAppInboxItemsWaitingOnTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
+  readAppConversationResource,
   readConversationTopic,
   type AppInboxItem,
 } from "./app-inbox-store.js";
@@ -66,11 +70,12 @@ export type AppInboxRuntime = {
   reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
 };
 
-// Admission normally completes on the event's synchronous durable-route pass.
-// This recovery pass exists only for an interrupted or transiently failed
-// pass, so it stays bounded and never becomes the normal work path.
+// The Event turn persists a small admission plan. Canonical Task mutation runs
+// in one persistent worker; this process only records routes and exact wakes.
+// The Event journal remains the sole recovery authority.
 const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
+const ADMISSION_COMMAND_TURN_GAP_MS = 2;
 
 function assignmentText(item: AppInboxItem): string {
   const data = item.input.data;
@@ -96,6 +101,16 @@ export type StartAppInboxRuntimeOptions = {
     targetedTaskId?: string;
     conditionTaskIds?: string[];
   }) => DeliveryResult | undefined;
+  /** Persistent process boundary for canonical Task mutation after routing. */
+  createTaskAdmissionWorker?: () => {
+    dispatch(
+      command: AppEventAdmissionCommand,
+      event: AgentEvent,
+    ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+    close(): void;
+  };
+  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
+  hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   /** One event-type-first Condition lookup across all loaded Task Apps. */
   previewTaskEventRoutes?: (input: { event: AgentEvent }) => Array<{ appId: string; taskIds: string[] }>;
@@ -298,6 +313,7 @@ function addressedAgentMessage(event: AgentEvent):
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
+  let taskAdmissionWorker = options.createTaskAdmissionWorker?.();
   let registrySnapshot = options.registry.snapshot();
   let loaded = options.registry.entries();
   if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
@@ -320,16 +336,85 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     : undefined;
 
+  const pendingConversationUpdates = new Map<string, { appId: string; conversationId: string }>();
+  let conversationUpdateHandle: ReturnType<typeof setTimeout> | null = null;
+  const armConversationUpdate = (): void => {
+    if (conversationUpdateHandle || pendingConversationUpdates.size === 0) return;
+    conversationUpdateHandle = setTimeout(() => {
+      conversationUpdateHandle = null;
+      const entry = pendingConversationUpdates.entries().next().value as
+        [string, { appId: string; conversationId: string }] | undefined;
+      if (!entry) return;
+      const [key, update] = entry;
+      pendingConversationUpdates.delete(key);
+      try {
+        options.bus.emit({
+          type: "conversation.updated",
+          source: "app-inbox",
+          owner: `app:${update.appId}`,
+          data: update,
+        });
+      } catch (error) {
+        // This is a level-triggered presentation wake; the Conversation is
+        // already durable. A failed optional wake must not crash the Host.
+        console.warn(
+          `[app-inbox] Conversation update wake failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      armConversationUpdate();
+    }, 1);
+  };
   const notifyConversationUpdated = (appId: string, conversationId?: string): void => {
     const normalizedAppId = appId.trim();
     const normalizedConversationId = conversationId?.trim();
     if (!normalizedAppId || !normalizedConversationId) return;
-    options.bus.emit({
-      type: "conversation.updated",
-      source: "app-inbox",
-      owner: `app:${normalizedAppId}`,
-      data: { appId: normalizedAppId, conversationId: normalizedConversationId },
+    const key = `${normalizedAppId}\0${normalizedConversationId}`;
+    pendingConversationUpdates.set(key, { appId: normalizedAppId, conversationId: normalizedConversationId });
+    armConversationUpdate();
+  };
+
+  const emitConversationTaskChanged = (
+    link: { appId: string; conversationId: string; topicId: string },
+    taskRef: { appId: string; taskId: string },
+    change: {
+      followUpId: string;
+      idempotencyKey: string;
+      disposition?: string;
+      summary?: string;
+      reason?: string;
+    },
+  ): void => {
+    const topic = readConversationTopic(options.db, link.appId, link.conversationId, link.topicId);
+    const conversation = readAppConversationResource(options.db, link.appId, link.conversationId, {
+      limit: 20,
+      topicId: link.topicId,
     });
+    options.bus.emit({
+      type: "conversation.task.changed",
+      source: change.reason ? "conversation-supervision-recovery" : "app-task",
+      owner: `app:${link.appId}`,
+      target: { appId: link.appId, project: link.appId },
+      data: {
+        appId: link.appId,
+        conversationId: link.conversationId,
+        topicId: link.topicId,
+        followUpId: change.followUpId,
+        taskRef,
+        ...(change.disposition ? { disposition: change.disposition } : {}),
+        ...(change.summary ? { summary: change.summary } : {}),
+        ...(change.reason ? { reason: change.reason } : {}),
+        topicTitle: topic?.title,
+        messages: conversation.messages
+          .filter((message) => message.metadata?.topicId === link.topicId)
+          .slice(-12)
+          .map((message) => ({
+            messageId: message.id,
+            author: message.author,
+            text: message.text,
+          })),
+      },
+      idempotencyKey: change.idempotencyKey,
+    } as unknown as AgentEvent);
   };
   const oneItemPerConversationTask = (items: AppInboxItem[]): AppInboxItem[] => {
     const selected = new Map<string, AppInboxItem>();
@@ -387,12 +472,58 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         },
       });
     },
-    onRequestFollowUp(item, followUp, topicId) {
+    async onRequestFollowUp(item, followUp, topicId) {
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
+      const requestId = `appreq_${createHash("sha256").update(`${item.id}\0follow-up`).digest("hex").slice(0, 24)}`;
+      const target = loadedById.get(followUp.appId);
+      if (!target?.definition.task || !target.definition.tasks) {
+        throw new Error(`App follow-up targets non-Task App ${followUp.appId}`);
+      }
+      if (!attachTask) throw new Error("App follow-up Task admission is not configured");
+      const source = { kind: "app" as const, id: item.appId };
+      const request: AppRequest = {
+        id: requestId,
+        source,
+        ...(item.source.kind === "human" ? { humanRequested: true } : {}),
+        input: followUp.input,
+      };
+      const attachment = followUp.task
+        ? ({ kind: "existing", taskId: followUp.task.taskId } as const)
+        : target.definition.task({ id: requestId, source, input: followUp.input });
+      if (!attachment) throw new Error(`App ${followUp.appId} returned no Task for conversational follow-up`);
+      const attached = await attachTask({
+        appId: followUp.appId,
+        attachment,
+        idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
+        request,
+      });
+      linkConversationTopicTask(options.db, topicId, followUp.appId, attached.taskId, now());
       options.bus.emit({
-        type: "app.follow-up.requested",
+        type: "conversation.message.created",
+        source: "app-task-admission",
+        owner: `app:${item.appId}`,
+        data: {
+          appId: item.appId,
+          conversationId: item.conversationId,
+          author: { kind: "tool", id: "runtime" },
+          text: `Accepted durable work: ${followUp.outcome}`,
+          metadata: {
+            command: "task-admitted",
+            channel: item.channel,
+            channelTargetId: item.channelTargetId,
+            channelThreadId: item.channelThreadId,
+            requestId: item.id,
+            topicId,
+            taskRefs: [{ appId: followUp.appId, taskId: attached.taskId }],
+            followTask: { appId: followUp.appId, taskId: attached.taskId },
+          },
+          idempotencyKey: `conversation-task-assigned:${item.conversationId}:${requestId}:${followUp.appId}:${attached.taskId}`,
+        },
+      });
+      options.bus.emit({
+        type: "conversation.task.linked",
         source: "app-inbox",
         owner: `app:${item.appId}`,
         target: { appId: item.appId, project: item.appId },
@@ -400,15 +531,52 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           appId: item.appId,
           conversationId: item.conversationId,
           topicId,
-          requestId: item.id,
-          sourceMessageId: item.source.id,
-          followUp,
+          requestId,
+          taskRef: { appId: followUp.appId, taskId: attached.taskId },
         },
-        idempotencyKey: `may-follow-up:${item.id}`,
+        idempotencyKey: `conversation-task-linked:${item.conversationId}:${topicId}:${followUp.appId}:${attached.taskId}`,
       } as unknown as AgentEvent);
     },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
+      if (item.conversationId && item.topicId && !item.parentId) {
+        options.bus.emit({
+          type: "conversation.message.created",
+          source: "app-task-admission",
+          owner: `app:${item.source.id}`,
+          data: {
+            appId: item.source.id,
+            conversationId: item.conversationId,
+            author: { kind: "tool", id: "runtime" },
+            text: assignmentText(item),
+            metadata: {
+              channel: item.channel,
+              channelTargetId: item.channelTargetId,
+              channelThreadId: item.channelThreadId,
+              requestId: item.replyToSourceId ?? item.id,
+              topicId: item.topicId,
+              taskRefs: [{ appId: item.appId, taskId }],
+              followTask: { appId: item.appId, taskId },
+            },
+            idempotencyKey: `conversation-task-assigned:${item.conversationId}:${item.id}:${item.appId}:${taskId}`,
+          },
+        });
+        options.bus.emit({
+          type: "conversation.task.linked",
+          source: "app-inbox",
+          owner: `app:${item.source.id}`,
+          target: { appId: item.source.id, project: item.source.id },
+          data: {
+            appId: item.source.id,
+            conversationId: item.conversationId,
+            topicId: item.topicId,
+            requestId: item.id,
+            taskRef: { appId: item.appId, taskId },
+          },
+          idempotencyKey: `conversation-task-linked:${item.conversationId}:${item.topicId}:${item.appId}:${taskId}`,
+        } as unknown as AgentEvent);
+        return;
+      }
       const directParent = item.parentId ? host.get(item.parentId) : null;
       if (directParent?.conversationId) {
         options.bus.emit({
@@ -485,7 +653,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const dirty = new Set<string>();
   const pending: string[] = [];
   const queued = new Set<string>();
-  let pumpHandle: ReturnType<typeof setImmediate> | null = null;
+  let pumpHandle: ReturnType<typeof setTimeout> | null = null;
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
   if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
     throw new Error("App request concurrency must be a positive safe integer");
@@ -544,10 +712,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const armPump = (): void => {
     if (closed || !started || pumpHandle) return;
-    pumpHandle = setImmediate(() => {
+    pumpHandle = setTimeout(() => {
       pumpHandle = null;
       pump();
-    });
+    }, 0);
   };
 
   const pump = (): void => {
@@ -557,7 +725,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const foregroundActive = active.get("may") ?? 0;
     const backgroundActive = totalActive - foregroundActive;
     const backgroundLimit = maxConcurrentRequests === 1 ? 1 : maxConcurrentRequests - 1;
-    const foregroundIndex = pending.findIndex((appId) => appId === "may" && (active.get(appId) ?? 0) === 0);
+    const foregroundIndex = pending.findIndex((appId) => appId === "may");
     const backgroundIndex = pending.findIndex((appId) => appId !== "may");
     const nextIndex =
       foregroundIndex >= 0 && totalActive < maxConcurrentRequests
@@ -601,7 +769,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const remaining = (active.get(appId) ?? 1) - 1;
         if (remaining > 0) active.set(appId, remaining);
         else active.delete(appId);
-        if (dirty.has(appId)) schedule(appId);
+        // A later Turn in the same Conversation becomes claimable only after
+        // this handler releases its lease. Recheck here rather than keeping a
+        // fake ready item spinning while the earlier Turn is still active.
+        if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
         armPump();
       });
     armPump();
@@ -621,8 +792,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let nextDependencyRecoveryAt = 0;
   const recoverTaskDependencies = (): Promise<void> => {
     if (taskRecovery) return taskRecovery;
-    const current = host
-      .recoverTaskDependencies()
+    const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
+      .then(() => (closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies()))
       .then((outcome) => {
         for (const appId of outcome.wokenAppIds) schedule(appId);
         if (outcome.errors.length > 0) {
@@ -704,11 +875,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) ${note}`,
   });
 
-  const dispatchAdmissionCommand = (
+  const dispatchAdmissionCommand = async (
     plan: AppEventAdmissionPlan,
     command: AppEventAdmissionCommand,
     event: AgentEvent,
-  ): void => {
+  ): Promise<void> => {
     const identity = `event:${plan.eventId}`;
     try {
       const entry = loaded.find(({ definition }) => definition.id === command.appId);
@@ -736,16 +907,31 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!options.admitTaskEvent) {
           throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
         }
-        const delivery = options.admitTaskEvent({
-          appId: command.appId,
-          appDir: entry.appDir,
-          event,
-          intent: command.kind === "task" ? command.intent : null,
-          ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
-          conditionTaskIds: command.conditionTaskIds,
-        });
-        if (!delivery) {
-          throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+        if (command.kind !== "inbox" && taskAdmissionWorker) {
+          let admitted: { taskIds: string[]; supersededSessionIds: string[] };
+          try {
+            admitted = await taskAdmissionWorker.dispatch(command, event);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.startsWith("Task admission worker ") || message.startsWith("Invalid Task admission worker ")) {
+              taskAdmissionWorker.close();
+              taskAdmissionWorker = options.createTaskAdmissionWorker?.();
+            }
+            throw error;
+          }
+          options.wakeAdmittedTasks?.({ appId: command.appId, ...admitted });
+        } else {
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: command.kind === "task" ? command.intent : null,
+            ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery) {
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          }
         }
         if (String(event.type) === "app.follow-up.requested" && command.kind === "task" && command.intent) {
           const data = eventData(event);
@@ -793,61 +979,154 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
 
+  const pendingAdmissionEvents = new Map<number, AgentEvent>();
+  let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
+  let admissionDispatching = false;
+
+  const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
+    if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
+    pendingAdmissionEvents.set(plan.eventId, event);
+    if (!admissionDispatchHandle) {
+      admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    }
+  };
+
+  async function dispatchNextAdmissionCommand(): Promise<void> {
+    admissionDispatchHandle = null;
+    if (closed || admissionDispatching) return;
+    const next = pendingAdmissionEvents.entries().next().value as [number, AgentEvent] | undefined;
+    if (!next) return;
+    const [eventId, event] = next;
+    admissionDispatching = true;
+    let reschedule: AppEventAdmissionPlan | null = null;
+    try {
+      const plan = getAppEventAdmissionPlan(options.db, eventId);
+      if (plan?.status === "pending") {
+        const command = plan.commands.find((candidate) => candidate.status === "pending");
+        if (command) {
+          try {
+            await dispatchAdmissionCommand(plan, command, event);
+          } catch {
+            // The durable command retains the error for bounded recovery. A
+            // failed handler must not prevent unrelated plans from advancing.
+          }
+        }
+        const updated = getAppEventAdmissionPlan(options.db, eventId);
+        if (updated?.status === "pending") {
+          const pendingCommands = updated.commands.filter((candidate) => candidate.status === "pending");
+          if (pendingCommands.length === 0) {
+            completeAppEventAdmissionPlan(options.db, eventId, now());
+          } else if (pendingCommands.some((candidate) => !candidate.lastError)) {
+            reschedule = updated;
+          }
+        }
+      }
+    } catch {
+      // The journal remains authoritative; bounded recovery will retry a
+      // transient coordinator read without blocking other Event plans.
+    } finally {
+      // Keep the Event present while its command runs so nested Event delivery
+      // cannot schedule the same plan twice.
+      pendingAdmissionEvents.delete(eventId);
+      admissionDispatching = false;
+    }
+    if (reschedule) scheduleAdmissionDispatch(reschedule, event);
+    if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
+      admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    }
+  }
+
   const admitAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
     if (plan.status === "superseded") {
       throw new Error(`Frozen App admission plan for event:${plan.eventId} is superseded`);
     }
-    if (plan.status === "pending") {
+    if (
+      !taskAdmissionWorker &&
+      plan.status === "pending" &&
+      plan.commands.every((command) => command.kind === "exact-task")
+    ) {
       for (const command of plan.commands) {
-        if (command.status === "pending") dispatchAdmissionCommand(plan, command, event);
+        if (command.status !== "pending") continue;
+        try {
+          const entry = loaded.find(({ definition }) => definition.id === command.appId);
+          if (!entry || command.kind !== "exact-task" || !options.admitTaskEvent) {
+            throw new Error(`Canonical App ${command.appId} exact Task admission is unavailable`);
+          }
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: null,
+            targetedTaskId: command.targetedTaskId,
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery)
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          markAppEventAdmissionCommandAdmitted(options.db, { eventId: plan.eventId, appId: command.appId, now: now() });
+        } catch (error) {
+          recordAppEventAdmissionCommandFailure(options.db, {
+            eventId: plan.eventId,
+            appId: command.appId,
+            error,
+            now: now(),
+          });
+          throw error;
+        }
       }
       if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
         throw new Error(`Frozen App admission plan for event:${plan.eventId} still has pending commands`);
       }
+      return admissionPlanDelivery(getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan, "admitted durably");
     }
-    const admitted = getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan;
+    scheduleAdmissionDispatch(plan, event);
     return admissionPlanDelivery(
-      admitted,
-      plan.status === "completed" ? "already admitted durably" : "admitted durably",
+      plan,
+      plan.status === "completed" ? "already admitted durably" : "routing recorded durably",
     );
   };
 
   let nextAdmissionRecoveryAt = 0;
-  let admissionRecoveryHandle: ReturnType<typeof setImmediate> | null = null;
+  let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
     if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
+    // Freeze this bounded recovery slice before yielding. Otherwise the
+    // zero-delay callback can accidentally capture and immediately retry a
+    // plan created by a newer Event turn.
     const plans = listPendingAppEventAdmissionPlans(options.db, {
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
-    if (plans.length === 0) return;
-    let index = 0;
-    const recoverNext = (): void => {
+    admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
-      const plan = plans[index++];
-      if (!plan) return;
-      const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
-      if (!event) {
-        for (const command of plan.commands) {
-          if (command.status !== "pending") continue;
-          recordAppEventAdmissionCommandFailure(options.db, {
-            eventId: plan.eventId,
-            appId: command.appId,
-            error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
-            now: now(),
-          });
+      let index = 0;
+      const recoverNext = (): void => {
+        admissionRecoveryHandle = null;
+        if (closed) return;
+        const plan = plans[index++];
+        if (!plan) return;
+        const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
+        if (!event) {
+          for (const command of plan.commands) {
+            if (command.status !== "pending") continue;
+            recordAppEventAdmissionCommandFailure(options.db, {
+              eventId: plan.eventId,
+              appId: command.appId,
+              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+              now: now(),
+            });
+          }
+        } else {
+          // EventBus re-runs only idempotent durable routes and records delivery
+          // acceptance on the original row; ordinary subscribers never replay.
+          options.bus.redeliverPersisted(event, plan.eventId);
         }
-      } else {
-        // EventBus re-runs only idempotent durable routes and records delivery
-        // acceptance on the original row; ordinary subscribers never replay.
-        options.bus.redeliverPersisted(event, plan.eventId);
-      }
-      if (index < plans.length) admissionRecoveryHandle = setImmediate(recoverNext);
-    };
-    admissionRecoveryHandle = setImmediate(recoverNext);
+        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
+      };
+      recoverNext();
+    }, 0);
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute(
@@ -951,6 +1230,34 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: data.transient === true ? "transient conversation transport" : "durable conversation context",
         };
       }
+      if (String(event.type) === "conversation.supervision.review") {
+        const appId = typeof data.project === "string" ? data.project.trim() : "";
+        const minQuietMs = Math.max(60_000, Math.floor(Number(data.minQuietMs) || 900_000));
+        const limit = Math.min(100, Math.max(1, Math.floor(Number(data.limit) || 100)));
+        if (!appId) throw new Error("Conversation supervision review requires its App");
+        const links = listStaleConversationTopicTasks(options.db, appId, {
+          updatedBefore: now() - minQuietMs,
+          limit,
+        });
+        for (const link of links) {
+          const reviewId = eventRowId(event) ?? eventIdentity(event) ?? "review";
+          emitConversationTaskChanged(
+            link,
+            { appId: link.taskAppId, taskId: link.taskId },
+            {
+              followUpId: `recovery:${reviewId}:${link.taskAppId}:${link.taskId}`,
+              reason: "No Task update was observed during the review interval.",
+              idempotencyKey: `conversation-task-recovery:${reviewId}:${link.topicId}:${link.taskAppId}:${link.taskId}`,
+            },
+          );
+        }
+        return {
+          accepted: true,
+          by: `conversation-supervision:${appId}`,
+          route: "direct",
+          note: `${links.length} quiet linked Task(s) selected for bounded review`,
+        };
+      }
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
         const identity = eventIdentity(event);
@@ -1037,6 +1344,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
+        if (appId && taskId && !(appId === "may" && taskId === "conversation/follow-up")) {
+          for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
+            emitConversationTaskChanged(
+              link,
+              { appId, taskId },
+              {
+                followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
+                disposition,
+                summary,
+                idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
+              },
+            );
+          }
+        }
         const conversationResult = record(record(data.result).conversation);
         const conversationId =
           typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";
@@ -1162,6 +1483,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           if (!tasks) {
             throw new Error(
               `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
+            );
+          }
+          if (
+            taskAdmissionWorker &&
+            options.hasTaskTarget &&
+            !options.hasTaskTarget({ appId: exactTarget.appId, taskId: exactTarget.taskId })
+          ) {
+            throw new Error(
+              `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} does not exist`,
             );
           }
           const conditionTaskIds =
@@ -1307,18 +1637,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     start() {
       if (closed) return Promise.resolve();
       if (startPromise) return startPromise;
-      startPromise = (async () => {
-        await recoverTaskDependencies();
-        if (closed) return;
-        started = true;
-        // One bounded startup pass repairs work interrupted by the previous
-        // process. Subsequent recovery observes the normal cooldown.
-        recoverAdmissionPlans(true);
-        timer = setInterval(scanNow, scanIntervalMs);
-        timer.unref?.();
-        scanNow();
-        armPump();
-      })();
+      started = true;
+      // Recovery is scheduled behind admission. It must not delay the caller
+      // that opens the human interface or activates this message handler.
+      void recoverTaskDependencies();
+      recoverAdmissionPlans(true);
+      timer = setInterval(scanNow, scanIntervalMs);
+      timer.unref?.();
+      setTimeout(scanNow, 0);
+      armPump();
+      startPromise = Promise.resolve();
       return startPromise;
     },
     scanNow,
@@ -1362,6 +1690,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           throw error;
         }
       }, projectsRoot);
+      taskAdmissionWorker?.close();
+      taskAdmissionWorker = options.createTaskAdmissionWorker?.();
       // App definitions may have made a previously unavailable frozen route
       // admissible. Retry one bounded slice immediately after the reload.
       recoverAdmissionPlans(true);
@@ -1373,10 +1703,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       closed = true;
       if (timer) clearInterval(timer);
       timer = null;
-      if (pumpHandle) clearImmediate(pumpHandle);
+      if (pumpHandle) clearTimeout(pumpHandle);
       pumpHandle = null;
-      if (admissionRecoveryHandle) clearImmediate(admissionRecoveryHandle);
+      if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
+      if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
+      admissionDispatchHandle = null;
+      pendingAdmissionEvents.clear();
+      taskAdmissionWorker?.close();
+      taskAdmissionWorker = undefined;
+      if (conversationUpdateHandle) clearTimeout(conversationUpdateHandle);
+      conversationUpdateHandle = null;
+      pendingConversationUpdates.clear();
       observerRuntime.close();
       unsubscribe();
       pending.length = 0;
