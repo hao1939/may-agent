@@ -139,7 +139,12 @@ function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> 
         process.exit(0);
       `,
         ],
-        { cwd: f.root, env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" }, stdio: ["pipe", "pipe", "pipe", "pipe"] },
+        {
+          cwd: f.root,
+          env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+          stdio: ["ignore", "pipe", "pipe", "ipc"],
+          serialization: "json",
+        },
       );
       f.child = child;
       children.push({
@@ -169,7 +174,7 @@ const scenarios: Record<string, () => Promise<void>> = {
   async parentLoss() {
     const f = fixture("owner", true);
     f.bus.subscribe((event) => {
-      if (event.type === "worker.ready") f.child!.stdin!.end();
+      if (event.type === "worker.ready") f.child!.disconnect();
     });
     await assert.rejects(run(f), /code 143/);
     const attemptId = f.store.readTask("work/one")!.status.currentAttemptId!;
