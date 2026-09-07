@@ -104,9 +104,7 @@ export type { SocketResponse, SocketEvent } from "./socket-client.js";
 export type { SubagentDefinition, ModelWithApiKey, SessionInfo, TaskResult } from "./types.js";
 export type { Registry, PersistedAgentConfig, PersistedSession, SessionKind } from "./persistence.js";
 
-export { createQueryService, createUnavailableQueryService } from "./query-service.js";
-export { createCommandService, createUnavailableCommandService } from "./command-service.js";
-export type { CommandAPI, CommandServiceOptions } from "./command-service.js";
+export { createQueryService } from "./query-service.js";
 export type {
   QueryAPI,
   QueryResult,

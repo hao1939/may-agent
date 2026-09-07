@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "bun:test";
 import { buildRuntimeCtx } from "../../src/lib/runtime-ctx.js";
+import { buildAgentSDK } from "../../src/lib/sdk-impl.js";
 
 // Minimal mock bus
 function mockBus() {
@@ -139,28 +140,22 @@ describe("buildRuntimeCtx", () => {
     expect(opts.bus.emit).toHaveBeenCalledTimes(1);
   });
 
-  it("spreads into HandlerContext without conflict", () => {
+  it("supplies real Host reads and events without a placeholder command service", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
-
-    // Simulate what agent-loader does
-    const handlerCtx = {
-      ...rtx,
-      manager: {} as any,
-      agentName: "test-agent",
-      getSessionId: () => null,
-      triggerNow: () => false,
-      trackRequest: () => "req-1",
-      loadAllSessionMetas: () => ({}),
-      evaluateTask: async () => null,
-    };
-
-    // RuntimeCtx fields still work through the spread
-    expect(handlerCtx.persistDir).toBe("/tmp/test-persist");
-    expect(handlerCtx.emit).toBe(rtx.emit);
-    expect(handlerCtx.getDb).toBe(rtx.getDb);
-    expect(handlerCtx.notify).toBe(rtx.notify);
-    expect(handlerCtx.log).toBe(rtx.log);
+    const sdk = buildAgentSDK({ ...opts, callAgent: vi.fn() });
+    for (const services of [rtx, sdk]) {
+      expect(services).not.toHaveProperty("commands");
+      expect(services.query.sql).toBeTypeOf("function");
+      expect(services.query.eventDeliveryHealth).toBeTypeOf("function");
+      expect(services.metrics.record).toBeTypeOf("function");
+    }
+    sdk.emit("host.observed", { healthy: true });
+    expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "host.observed",
+      source: "agent:test-agent",
+      owner: "agent:test-agent",
+      data: { healthy: true },
+    });
   });
-
 });
