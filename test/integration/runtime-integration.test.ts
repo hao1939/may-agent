@@ -129,7 +129,7 @@ describe("runtime integration", () => {
     });
   });
 
-  it("sends SDK escalation and messages through the bus into the events table", () => {
+  it("persists Host observations and messages without inventing an escalation", () => {
     const { root, stateDir } = makeRoot("may-sdk-runtime-");
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
@@ -143,34 +143,24 @@ describe("runtime integration", () => {
       sharedRoot: join(root, "shared"),
       projectsRoot: join(root, "projects"),
       agentName: "dev",
-      callAgent: async (agent: string) => ({
-        sessionId: `s_${agent}`,
-        status: "done",
-        lastAssistantText: "ok",
-      }),
     };
     const sdk = buildAgentSDK(deps);
 
-    sdk.escalate("Blocked on production credentials");
+    sdk.emit("host.credentials.observed", { available: false });
     sdk.message("reviewer", "Please inspect the migration.");
 
     const db = getDb(stateDir);
-    const escalation = db
-      .prepare("SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
-      .get("escalation.created") as { source: string; owner: string; urgency: string; data: string };
-    const escalationData = JSON.parse(escalation.data);
-    expect(escalation).toMatchObject({
+    const observation = db
+      .prepare("SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
+      .get("host.credentials.observed") as { source: string; owner: string; data: string };
+    expect(observation).toMatchObject({
       source: "agent:dev",
-      owner: "agent:may",
-      urgency: "normal",
+      owner: "agent:dev",
     });
-    expect(escalationData).toMatchObject({
-      sourceAgent: "dev",
-      reason: "Blocked on production credentials",
-      requestedAction: "Investigate and resolve or answer this blocker: Blocked on production credentials",
-      severity: "P2",
+    expect(JSON.parse(observation.data)).toEqual({ available: false });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get("escalation.created")).toEqual({
+      count: 0,
     });
-    expect(escalationData).not.toHaveProperty("owner");
 
     const messages = db
       .prepare("SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC")
@@ -198,11 +188,6 @@ describe("runtime integration", () => {
       sharedRoot: join(root, "shared"),
       projectsRoot: join(root, "projects"),
       agentName: "dev",
-      callAgent: async (agent: string) => ({
-        sessionId: `s_${agent}`,
-        status: "done",
-        lastAssistantText: "ok",
-      }),
     });
 
     sdk.metrics.define({
@@ -230,7 +215,7 @@ describe("runtime integration", () => {
     expect(JSON.parse(breach.data)).not.toHaveProperty("owner");
   });
 
-  it("keeps workflow blocker local until the caller promotes it across the workflow boundary", async () => {
+  it("keeps a workflow blocker local instead of manufacturing an external handoff", async () => {
     const { root, stateDir } = makeRoot("may-workflow-boundary-");
     const workflowDir = join(root, "agents", "dev", "workflows");
     mkdirSync(workflowDir, { recursive: true });
@@ -238,7 +223,7 @@ describe("runtime integration", () => {
       join(workflowDir, "blocked.ts"),
       `
       export const name = "blocked";
-      export const description = "Blocks locally until the caller promotes the ownership boundary";
+      export const description = "Reports a local blocker without owning a handoff";
       export async function execute(ctx) {
         return ctx.blocked("missing approval", {
           owner: "human:operator",
@@ -286,38 +271,10 @@ describe("runtime integration", () => {
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
-    const beforePromotion = getDb(stateDir)
+    const escalations = getDb(stateDir)
       .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?")
       .get("escalation.created") as { count: number };
-    expect(beforePromotion.count).toBe(0);
-
-    const sdk = buildAgentSDK({
-      bus,
-      persistDir: stateDir,
-      projectRoot: root,
-      agentsRoot: join(root, "agents"),
-      sharedRoot: join(root, "shared"),
-      projectsRoot: join(root, "projects"),
-      agentName: "dev",
-      callAgent: async (agent: string) => ({
-        sessionId: `s_${agent}`,
-        status: "done",
-        lastAssistantText: "ok",
-      }),
-    });
-    if (parsed.type === "blocked") {
-      sdk.escalate(parsed.reason, parsed.context as never);
-    }
-
-    const escalation = getDb(stateDir)
-      .prepare("SELECT owner, data FROM events WHERE event_type = ?")
-      .get("escalation.created") as { owner: string; data: string };
-    expect(escalation.owner).toBe("human:operator");
-    expect(JSON.parse(escalation.data)).toMatchObject({
-      sourceAgent: "dev",
-      reason: "missing approval",
-      requestedAction: "Approve or reject the rollout",
-      evidence: { change: "database migration" },
-    });
+    expect(escalations.count).toBe(0);
+    expect(parsed).toMatchObject({ type: "blocked", reason: "missing approval" });
   });
 });
