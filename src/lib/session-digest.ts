@@ -1,25 +1,20 @@
 /**
- * Session Digest System — structured lifecycle understanding per session.
+ * Session digests — explicit evidence from lifecycle events and Host handlers.
  *
  * Captures what happened, why, and what's still open at each lifecycle event.
  * Digests are stored in the session_digests DB table (append-only per session).
  *
- * Three operations:
- * - CREATE (session.start): metadata only, no LLM
- * - DIGEST (checkpoint, end, etc.): LLM synthesizes what happened from transcript delta
- * - CLASSIFY (recovery triggers): code-level decision on what to do next
+ * Writers record supplied metadata, summaries, and file claims without invoking
+ * an agent or guessing changes from transcript text. The retained standalone
+ * recovery classifier annotates explicit recovery observations; it does not
+ * dispatch work or decide whether an App Task is complete.
  *
  * See projects/may-agent.app/docs/2a-design/sessions.md for the contract.
  */
 
 import { getDb } from "./requests.js";
 import { describeText, sessionMetaRef } from "./artifacts.js";
-import { readSessionMessages } from "./persistence.js";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { SubagentManager } from "./manager.js";
 import { log } from "./log.js";
-import { Type } from "typebox";
-import { Check } from "typebox/value";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -52,21 +47,6 @@ export interface DigestInput {
   details?: Record<string, unknown>;
 }
 
-const sessionDigestResultSchema = Type.Object(
-  {
-    what_happened: Type.String({ minLength: 1, maxLength: 2_000 }),
-    outcome: Type.Union([
-      Type.Literal("success"),
-      Type.Literal("partial"),
-      Type.Literal("failure"),
-      Type.Literal("in_progress"),
-      Type.Literal("interrupted"),
-    ]),
-    still_open: Type.Union([Type.String({ minLength: 1, maxLength: 2_000 }), Type.Null()]),
-  },
-  { additionalProperties: false },
-);
-
 export type DigestAction = "resume" | "requeue" | "escalate" | "kill" | "nothing";
 
 // ── Triggers that invoke the classifier ────────────────────────────────
@@ -94,223 +74,6 @@ export function getLastDigest(persistDir: string, sessionId: string): DigestRow 
     .prepare(`SELECT * FROM session_digests WHERE sessionId = ? ORDER BY step DESC LIMIT 1`)
     .get(sessionId) as unknown as DigestRow | undefined;
   return row ?? null;
-}
-
-/**
- * Get recent digests for an agent (for context injection).
- * Deduplicates — returns only the latest row per session.
- */
-export function getRecentDigests(persistDir: string, agent: string, limit = 10): DigestRow[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare(
-      `SELECT d.* FROM session_digests d
-       INNER JOIN (
-         SELECT sessionId, MAX(step) as maxStep
-         FROM session_digests 
-         WHERE agent = ? AND trigger IN ('end', 'checkpoint')
-         GROUP BY sessionId
-       ) latest ON d.sessionId = latest.sessionId AND d.step = latest.maxStep
-       ORDER BY d.created_at DESC LIMIT ?`,
-    )
-    .all(agent, limit) as unknown as DigestRow[];
-}
-
-/**
- * Get recent digests from OTHER agents that modified files the current agent also recently touched.
- * This provides cross-agent awareness: "someone else changed something you care about."
- */
-/**
- * Get digests with unresolved `still_open` items — sessions that ended partial/in_progress/interrupted
- * and were never followed by a success in the same session. Surfaced regardless of recency (within 24h).
- */
-export function getUnresolvedDigests(
-  persistDir: string,
-  agent: string,
-  windowMs = 24 * 60 * 60 * 1000,
-  limit = 3,
-): DigestRow[] {
-  const db = getDb(persistDir);
-  const cutoff = Date.now() - windowMs;
-  return db
-    .prepare(
-      `SELECT * FROM session_digests
-       WHERE agent = ? AND still_open IS NOT NULL
-         AND outcome IN ('partial', 'in_progress', 'interrupted')
-         AND created_at > ?
-         AND sessionId NOT IN (
-           SELECT sessionId FROM session_digests
-           WHERE outcome = 'success' AND created_at > ?
-         )
-       ORDER BY created_at DESC LIMIT ?`,
-    )
-    .all(agent, cutoff, cutoff, limit) as unknown as DigestRow[];
-}
-
-/**
- * Format digest data into a context block for injection into agent sessions.
- * Supports same-agent history, cross-agent activity, and unresolved items.
- *
- * Output format:
- *   - YYYY-MM-DD HH:MM: Description — outcome (duration) — what happened
- *     [files: a.ts, b.ts] [open: unfinished work]
- *   ### Cross-Agent Activity (last 2h)
- *   - agent HH:MM: What happened
- *     [files: ...]
- *   ### Unresolved Items
- *   - YYYY-MM-DD HH:MM: Description — outcome — what happened
- *     [open: ...]
- */
-export function formatDigestContext(
-  digests: DigestRow[],
-  crossAgentDigests?: DigestRow[],
-  unresolvedDigests?: DigestRow[],
-): string | null {
-  if (digests.length === 0 && !crossAgentDigests?.length && !unresolvedDigests?.length) return null;
-
-  const lines: string[] = [];
-
-  // Same-agent recent history (oldest first)
-  const ordered = [...digests].reverse();
-  for (const d of ordered) {
-    lines.push(...formatDigestEntry(d));
-  }
-
-  // Unresolved items section — sessions with open items that were never resolved
-  if (unresolvedDigests && unresolvedDigests.length > 0) {
-    // Filter out any that are already in the main digests list
-    const mainSessionIds = new Set(digests.map((d) => d.sessionId));
-    const unique = unresolvedDigests.filter((d) => !mainSessionIds.has(d.sessionId));
-    if (unique.length > 0) {
-      lines.push("", "### Unresolved Items");
-      for (const d of unique) {
-        lines.push(...formatDigestEntry(d));
-      }
-    }
-  }
-
-  // Cross-agent section
-  if (crossAgentDigests && crossAgentDigests.length > 0) {
-    lines.push("", "### Cross-Agent Activity (last 2h)");
-    for (const d of crossAgentDigests) {
-      lines.push(...formatCrossAgentEntry(d));
-    }
-  }
-
-  // Overflow protection: if total chars > 10,000 (~2,500 tokens), trim
-  let result = lines.join("\n");
-  if (result.length > 10000) {
-    // Rebuild without cross-agent, limit to 5 same-agent entries
-    const trimLines: string[] = [];
-    const trimmed = ordered.slice(-5); // keep most recent 5
-    for (const d of trimmed) {
-      trimLines.push(...formatDigestEntry(d, 100)); // shorter what_happened
-    }
-    result = trimLines.join("\n");
-  }
-
-  return result || null;
-}
-
-/**
- * Format a single digest entry for same-agent history.
- */
-function formatDigestEntry(d: DigestRow, whatHappenedMaxLen = 200): string[] {
-  const ts = formatDigestTimestamp(d.created_at);
-  const details: Record<string, unknown> = d.details ? JSON.parse(d.details) : {};
-  const duration = (details.duration as string) ?? "";
-  const outcome = d.outcome ?? d.trigger;
-  const durationStr = duration ? ` (${duration})` : "";
-
-  // Use what_happened as primary description; fall back to cleaned task text
-  const description = d.what_happened
-    ? truncateStr(d.task ?? "unknown task", 80)
-    : (cleanTaskText(d.task) ?? "unknown task");
-
-  let line = `- ${ts}: ${description} — ${outcome}${durationStr}`;
-
-  if (d.what_happened) {
-    line += ` — ${truncateStr(d.what_happened, whatHappenedMaxLen)}`;
-  }
-
-  const result: string[] = [line];
-
-  // Sub-details
-  const extras: string[] = [];
-  if (d.files_modified) {
-    try {
-      const files = JSON.parse(d.files_modified) as string[];
-      if (files.length > 0) {
-        extras.push(`files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}`);
-      }
-    } catch {
-      /* skip */
-    }
-  }
-  if (d.still_open) {
-    extras.push(`open: ${truncateStr(d.still_open, 100)}`);
-  }
-  if (extras.length > 0) {
-    result.push(`  [${extras.join("] [")}]`);
-  }
-
-  return result;
-}
-
-/**
- * Format a single digest entry for cross-agent section.
- * More compact: "- agent HH:MM: What happened [files: ...]"
- */
-function formatCrossAgentEntry(d: DigestRow): string[] {
-  const ts = formatDigestTimestamp(d.created_at);
-  const timeOnly = ts.split(" ")[1]; // just "HH:MM"
-  const what = d.what_happened ? truncateStr(d.what_happened, 150) : (cleanTaskText(d.task) ?? "unknown activity");
-
-  const result: string[] = [`- ${d.agent} ${timeOnly}: ${what}`];
-
-  if (d.files_modified) {
-    try {
-      const files = JSON.parse(d.files_modified) as string[];
-      if (files.length > 0) {
-        result.push(`  [files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}]`);
-      }
-    } catch {
-      /* skip */
-    }
-  }
-
-  return result;
-}
-
-/** Format epoch ms → "YYYY-MM-DD HH:MM" in UTC. */
-function formatDigestTimestamp(epochMs: number): string {
-  const d = new Date(epochMs);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
-
-/** Truncate a string to maxLen chars, adding "…" if truncated. */
-function truncateStr(s: string, maxLen: number): string {
-  if (s.length <= maxLen) return s;
-  return s.slice(0, maxLen - 1) + "…";
-}
-
-/**
- * Clean task text for display — strip heartbeat boilerplate and injected content.
- * Used as a fallback when `what_happened` is null.
- */
-function cleanTaskText(task: string | null): string | null {
-  if (!task) return null;
-  let cleaned = task;
-  if (cleaned.startsWith("[heartbeat]")) {
-    cleaned = "Heartbeat";
-  } else if (cleaned.startsWith("[WORK SESSION] ")) {
-    cleaned = cleaned.replace("[WORK SESSION] ", "");
-  }
-  // Strip injected content after ---
-  const dashIdx = cleaned.indexOf("\n---");
-  if (dashIdx > 0) cleaned = cleaned.slice(0, dashIdx);
-  return truncateStr(cleaned.trim(), 80) || null;
 }
 
 /**
@@ -381,195 +144,6 @@ function updateDigestAction(persistDir: string, id: number, action: string, reas
   db.prepare(`UPDATE session_digests SET action = ?, action_reason = ? WHERE id = ?`).run(action, reason, id);
 }
 
-// ── Transcript helpers ─────────────────────────────────────────────────
-
-/**
- * Format messages into a compact transcript for the LLM.
- * Similar to evaluator's formatTranscript but lighter — focuses on what happened.
- */
-function formatTranscriptCompact(messages: AgentMessage[]): string {
-  const lines: string[] = [];
-  for (const msg of messages) {
-    if (!("role" in msg)) continue;
-
-    if (msg.role === "assistant") {
-      const content = msg.content;
-      if (Array.isArray(content)) {
-        for (const block of content) {
-          if (block.type === "text") {
-            lines.push(`ASSISTANT: ${block.text.slice(0, 300)}`);
-          } else if (block.type === "toolCall") {
-            const args = JSON.stringify(block.arguments ?? {}).slice(0, 200);
-            lines.push(`TOOL_CALL: ${block.name}(${args})`);
-          }
-        }
-      }
-    } else if (msg.role === "toolResult") {
-      const text =
-        msg.content?.map((c: { type: string; text?: string }) => (c.type === "text" ? c.text : "")).join("") ?? "";
-      const preview = text.slice(0, 300);
-      const suffix = text.length > 300 ? `... [${text.length} chars]` : "";
-      lines.push(`TOOL_RESULT(${msg.toolName}): ${preview}${suffix}`);
-    } else if (msg.role === "user") {
-      const text = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
-      lines.push(`USER: ${text.slice(0, 300)}`);
-    }
-  }
-  return lines.join("\n");
-}
-
-/**
- * Read transcript messages since a given timestamp (approximate — uses message index).
- * Falls back to full transcript if no previous digest exists.
- */
-function readTranscriptDelta(
-  persistDir: string,
-  sessionId: string,
-  lastDigestStep: number,
-): { messages: AgentMessage[]; full: boolean } {
-  const messages = readSessionMessages(persistDir, sessionId);
-  if (lastDigestStep <= 1 || messages.length === 0) {
-    return { messages, full: true };
-  }
-
-  // Heuristic: estimate messages consumed by previous digests.
-  // Each digest covers roughly (totalMessages / currentStep) messages.
-  // Take the latter portion.
-  const estimatedStartIdx = Math.floor((messages.length * (lastDigestStep - 1)) / (lastDigestStep + 1));
-  const startIdx = Math.max(0, Math.min(estimatedStartIdx, messages.length - 1));
-  return { messages: messages.slice(startIdx), full: false };
-}
-
-/**
- * Extract files modified from tool calls in messages.
- */
-function extractFilesModified(messages: AgentMessage[]): string[] {
-  // Known file extensions for project files
-  const FILE_EXTS = new Set([
-    "ts",
-    "js",
-    "tsx",
-    "jsx",
-    "json",
-    "md",
-    "yaml",
-    "yml",
-    "toml",
-    "css",
-    "html",
-    "sh",
-    "sql",
-    "txt",
-    "env",
-    "lock",
-    "jsonl",
-  ]);
-
-  function isLikelyFilePath(s: string): boolean {
-    // Must contain a / (real paths) or start with known project dirs
-    if (!s.includes("/") && !s.startsWith("package.")) return false;
-    // Must have a known extension
-    const ext = s.split(".").pop()?.toLowerCase() ?? "";
-    if (!FILE_EXTS.has(ext)) return false;
-    // Reject paths with spaces or special chars
-    if (/\s|[(){}[\]|;`]/.test(s)) return false;
-    // Reject very short segments (t.name, s.time, etc.)
-    if (!s.includes("/") && s.split(".")[0].length <= 2) return false;
-    return true;
-  }
-
-  const files = new Set<string>();
-  for (const msg of messages) {
-    if (!("role" in msg) || msg.role !== "assistant") continue;
-    const content = msg.content;
-    if (!Array.isArray(content)) continue;
-    for (const block of content) {
-      if (block?.type === "toolCall") {
-        const args = block.arguments ?? {};
-        // Common patterns: edit(path), write(path)
-        if (typeof args.path === "string" && ["edit", "write"].includes(block.name)) {
-          files.add(args.path);
-        }
-        // bash commands — extract file paths from write operations
-        if (block.name === "bash" && typeof args.command === "string") {
-          const writePatterns = args.command.match(/(?:>\s*|tee\s+|cp\s+\S+\s+)([\w./-]+\.\w+)/g);
-          if (writePatterns) {
-            for (const match of writePatterns) {
-              const file = match.replace(/^[>|\s]+|^tee\s+|^cp\s+\S+\s+/, "").trim();
-              if (file && !file.startsWith("-") && isLikelyFilePath(file)) {
-                files.add(file);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return [...files];
-}
-
-// ── LLM Synthesis ──────────────────────────────────────────────────────
-
-/**
- * Use the evaluator agent to synthesize a digest from transcript data.
- * Returns structured digest fields.
- */
-async function llmSynthesize(
-  manager: SubagentManager,
-  opts: {
-    agent: string;
-    trigger: string;
-    previous?: string | null;
-    delta: string;
-    triggerContext?: string;
-  },
-): Promise<{
-  what_happened: string;
-  outcome: string;
-  still_open: string | null;
-}> {
-  const contextSection = opts.previous
-    ? `Previous digest: ${opts.previous}`
-    : "This is the first digest for this session.";
-
-  const triggerSection = opts.triggerContext ? `\nTrigger context: ${opts.triggerContext}` : "";
-
-  const prompt = [
-    `# Session Digest Request`,
-    ``,
-    `Agent: ${opts.agent}`,
-    `Trigger: ${opts.trigger}`,
-    `${contextSection}${triggerSection}`,
-    ``,
-    `## Transcript (delta)`,
-    opts.delta.slice(0, 8000),
-    ``,
-    `## Instructions`,
-    `Decide the concise session digest requested by the finish() result schema.`,
-    `Use null for still_open only when no work remains.`,
-  ].join("\n");
-
-  try {
-    const sessionId = manager.run("evaluator", prompt, {
-      kind: "job",
-      requireFinish: true,
-      outputSchema: sessionDigestResultSchema,
-    });
-    const result = await manager.waitFor(sessionId);
-    if (!Check(sessionDigestResultSchema, result.structuredResult)) {
-      throw new Error("evaluator returned no schema-validated session digest");
-    }
-    return result.structuredResult;
-  } catch (err) {
-    log("warn", `[digest] LLM synthesis failed for ${opts.agent}: ${err}`);
-    return {
-      what_happened: `[digest synthesis failed: ${String(err).slice(0, 100)}]`,
-      outcome: "in_progress",
-      still_open: null,
-    };
-  }
-}
-
 // ── Classifier ─────────────────────────────────────────────────────────
 
 /**
@@ -625,49 +199,15 @@ export function classifyDigest(
   }
 }
 
-// ── Shadow Comparison Logging ───────────────────────────────────────────
-
-/**
- * Log a shadow comparison between the existing recovery action and the digest classifier's recommendation.
- * Used during Phase 3 to observe classifier accuracy before switchover.
- */
-export function logShadowComparison(
-  sessionId: string,
-  trigger: string,
-  existingAction: string,
-  digest: DigestRow | null,
-): void {
-  try {
-    const classifierAction = digest?.action ?? "none(no_digest)";
-    const match = existingAction === classifierAction;
-    log(
-      "info",
-      `[digest-shadow] ${sessionId} trigger=${trigger} existing_action=${existingAction} classifier_action=${classifierAction} match=${match}`,
-    );
-  } catch {
-    /* best-effort — shadow logging must never crash */
-  }
-}
-
 // ── Core Entry Point ───────────────────────────────────────────────────
 
 /**
- * The single entry point for all digest operations.
- *
- * - session.start: CREATE (no LLM, just metadata)
- * - checkpoint, end, etc.: DIGEST (LLM synthesis)
- * - Recovery triggers: DIGEST + CLASSIFY
- *
- * @param persistDir - Path to the persistence directory
- * @param input - Digest input data
- * @param manager - SubagentManager for LLM calls (optional for session.start)
- * @param triggerContext - Additional context for the LLM
+ * Append a Host handler's supplied observation and optional recovery annotation.
+ * Omitted evidence stays unknown. The async return is retained for handler callers.
  */
 export async function upsertDigest(
   persistDir: string,
   input: DigestInput,
-  manager?: SubagentManager,
-  triggerContext?: string,
 ): Promise<DigestRow | null> {
   try {
     const last = getLastDigest(persistDir, input.sessionId);
@@ -688,39 +228,9 @@ export async function upsertDigest(
       return getLastDigest(persistDir, input.sessionId);
     }
 
-    // ── DIGEST: LLM synthesis ────────────────────────────────────────
-    let what_happened = input.what_happened ?? null;
-    let outcome = input.outcome ?? null;
-    let still_open = input.still_open ?? null;
-    let files_modified = input.files_modified ?? null;
-
-    // Read transcript delta once — reused for both LLM synthesis and file extraction
-    const needsLlm = !what_happened && manager;
-    const needsFiles = !files_modified;
-    const delta = needsLlm || needsFiles ? readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0) : null;
-
-    // If what_happened is already provided (e.g., piggybacked on eval), skip LLM
-    if (needsLlm && delta) {
-      const transcript = formatTranscriptCompact(delta.messages);
-
-      if (transcript.length > 0) {
-        const synthesized = await llmSynthesize(manager!, {
-          agent: input.agent,
-          trigger: input.trigger,
-          previous: last?.what_happened,
-          delta: transcript,
-          triggerContext,
-        });
-        what_happened = synthesized.what_happened;
-        outcome = outcome ?? synthesized.outcome;
-        still_open = still_open ?? synthesized.still_open;
-      }
-    }
-
-    // Extract files if not provided (reuse delta from above)
-    if (needsFiles && delta) {
-      files_modified = extractFilesModified(delta.messages);
-    }
+    const what_happened = input.what_happened ?? null;
+    const outcome = input.outcome ?? null;
+    const still_open = input.still_open ?? null;
 
     const id = insertDigest(persistDir, {
       sessionId: input.sessionId,
@@ -731,7 +241,7 @@ export async function upsertDigest(
       what_happened,
       outcome,
       still_open,
-      files_modified: files_modified && files_modified.length > 0 ? files_modified : null,
+      files_modified: input.files_modified ?? null,
       details: input.details ?? null,
       created_at: now,
     });
