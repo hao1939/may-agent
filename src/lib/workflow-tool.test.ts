@@ -274,7 +274,6 @@ export async function execute(ctx) {
           throw new Error("unused");
         },
         query: {} as any,
-        commands: {} as any,
         log: () => undefined,
         notify: () => undefined,
         metrics: {} as any,
@@ -432,7 +431,6 @@ export async function execute(ctx) {
           throw new Error("unused");
         },
         query: {} as any,
-        commands: {} as any,
         log: (message) => logged.push(message),
         notify: () => undefined,
         metrics: {} as any,
