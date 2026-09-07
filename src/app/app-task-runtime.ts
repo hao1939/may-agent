@@ -601,6 +601,8 @@ type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
+  /** The workflow deliberately stopped; repeating it is not transport recovery. */
+  handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
 };
 
@@ -981,7 +983,7 @@ async function executeTaskCapability(input: {
     return {
       handlerResult,
       runId,
-      ...(!done ? { executionFailed: true } : {}),
+      ...(!done ? { handlerBlocked: true as const } : {}),
       ...(verifier
         ? {
             verifier: {
@@ -3416,7 +3418,12 @@ async function reconcileTask(input: {
     await finalizeWorkspace("failed");
 
     const agentHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-agent");
-    if (!primaryResult.unavailable && !agentHandoff && !primaryHandlerResult.resultRejected) {
+    if (
+      !primaryResult.unavailable &&
+      !primaryResult.handlerBlocked &&
+      !agentHandoff &&
+      !primaryHandlerResult.resultRejected
+    ) {
       const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
       const retry = releaseStaleAppTaskResult(config, primary, summary);
       if (retry.status !== "released") return [];
