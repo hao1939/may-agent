@@ -133,6 +133,10 @@ export type WorkflowMetricCapability = {
 };
 
 export type AgentCallOptions = {
+  /** Restrict this bounded call to observation tools plus finish(). */
+  tools?: "full" | "readonly";
+  /** Explicit skill used by this bounded call. */
+  skill?: string;
   sessionId?: string;
   timeoutMs?: number;
   /** Finite positive integer tool-operation allowance before bounded completion is requested. */

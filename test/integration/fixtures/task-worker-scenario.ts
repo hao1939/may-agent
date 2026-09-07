@@ -186,13 +186,12 @@ const scenarios: Record<string, () => Promise<void>> = {
       join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
       `
       import { readFileSync } from "node:fs";
-      import { join } from "node:path";
       export const name = "probe";
       export const description = "Captured workflow and shared definitions";
       export async function execute(ctx) {
         return ctx.done("done", {
           state: "converged",
-          summary: "original workflow: " + readFileSync(join(ctx.sharedRoot, "common-sense.md"), "utf8").trim(),
+          summary: "original workflow: " + readFileSync(new URL("../../../../../shared/common-sense.md", import.meta.url), "utf8").trim(),
           evidence: []
         });
       }

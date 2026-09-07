@@ -73,8 +73,6 @@ export type {
   Demand,
   GuardModule,
 } from "./workflow.js";
-export { summarizeForHandoff, extractHandoff } from "./handoff.js";
-export type { HandoffOptions } from "./handoff.js";
 export { extractKeyFacts } from "./compaction.js";
 export type { KeyFacts } from "./compaction.js";
 export { isOverflowError } from "./overflow.js";
