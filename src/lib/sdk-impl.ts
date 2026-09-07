@@ -13,7 +13,6 @@ import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
-import { createCommandService } from "./command-service.js";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
@@ -194,8 +193,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     query: createQueryService({
       getDb: () => getDb(deps.persistDir),
     }),
-
-    commands: createCommandService(),
 
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),
