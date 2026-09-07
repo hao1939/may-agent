@@ -21,6 +21,7 @@ pi-deps/
 test/
 test-results/
 evidence/
+artifacts/
 
 # Unit tests are not compiled into the shipped runtime. Editing them should
 # not invalidate the source-copy/build layers.
