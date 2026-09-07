@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { execFileSync, spawn } from "node:child_process";
+import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { Type, defineApp, type AppDefinition, type AppRequest, type TaskExecutor } from "@may-agent/sdk";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
@@ -2413,6 +2414,137 @@ describe("canonical App task runtime", () => {
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
     expect(readTaskSnapshot(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
+  });
+
+  it.each([
+    { name: "executor uses App branch", git: true, branch: "main", expectedBase: "main" },
+    { name: "executor defaults to dev", git: true, expectedBase: "dev" },
+    { name: "local executor needs no worktree", git: false },
+    { name: "workflow uses App branch", git: true, branch: "main", workspace: "task", expectedBase: "main" },
+    { name: "workflow defaults to dev", git: true, workspace: "task", expectedBase: "dev" },
+    {
+      name: "workflow overrides App branch",
+      git: true,
+      branch: "main",
+      workspace: { kind: "task", baseBranch: "release" },
+      expectedBase: "release",
+    },
+    { name: "shared workflow needs no worktree", git: true, branch: "main", workspace: "shared" },
+    { name: "task workflow rejects a local App", git: false, workspace: "task", preparationFails: true },
+  ])("preserves workspace admission: $name", async (scenario) => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const workflowDir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    if (scenario.workspace) {
+      writeFileSync(
+        join(workflowDir, "workspace-check.ts"),
+        `export const name = "workspace-check";
+           export const description = "Deterministic workspace admission fixture";
+           export const workspace = ${JSON.stringify(scenario.workspace)};
+           export async function execute(ctx) {
+             return ctx.done("Fixture workflow ran", {
+               state: "converged", summary: "Fixture workflow ran", evidence: [ctx.workspaceDir]
+             });
+           }`,
+      );
+    }
+    if (scenario.git) {
+      const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+      await git("init", "-b", "main");
+      await git("config", "user.email", "test@example.com");
+      await git("config", "user.name", "Test");
+      await git("add", ".");
+      await git("commit", "-m", "fixture baseline");
+      await git("branch", "dev");
+      await git("branch", "release");
+    }
+
+    let executorCwd: string | undefined;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      installControllers: false,
+      executors: {
+        reviewer: async (attempt) => {
+          executorCwd = attempt.cwd;
+          return { state: "converged", summary: "Fixture executor ran", evidence: [attempt.cwd] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:workspace-admission",
+        generation: 1,
+        entries: [
+          {
+            appDir: f.appDir,
+            definition: {
+              ...definition(),
+              workspace: scenario.git
+                ? { kind: "git", localPath: ".", ...(scenario.branch ? { branch: scenario.branch } : {}) }
+                : { kind: "local", localPath: "." },
+            },
+          },
+        ],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/workspace-admission";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Execute through the selected workspace",
+        acceptance: ["Selected handler ran in the correct workspace"],
+        mode: "achieve",
+        agent: "sample-owner",
+        ...(scenario.workspace ? { workflow: "workspace-check" } : { executor: "reviewer" }),
+      },
+    });
+    const reconciliation = reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    if (scenario.preparationFails) {
+      await expect(reconciliation).rejects.toThrow("requires a task worktree but app workspace is not Git");
+    } else {
+      await reconciliation;
+    }
+    const tree = readTaskSnapshot(config);
+    if (scenario.preparationFails) {
+      expect(tree.receipts?.[taskId]).toBeUndefined();
+      expect(tree.resources?.[taskId]?.status.phase).toBe("pending");
+      expect(Object.values(tree.attempts ?? {})).toEqual([
+        expect.objectContaining({
+          state: "interrupted",
+          summary: expect.stringContaining("requires a task worktree but app workspace is not Git"),
+        }),
+      ]);
+      expect(executorCwd).toBeUndefined();
+      expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+      return;
+    }
+    const receipt = tree.receipts?.[taskId];
+    expect(receipt?.summary).toBe(scenario.workspace ? "Fixture workflow ran" : "Fixture executor ran");
+    if (scenario.expectedBase) {
+      expect(receipt?.workspace).toMatchObject({
+        kind: "task-worktree",
+        baseRef: scenario.expectedBase,
+        disposition: "removed",
+      });
+      expect(receipt?.workspace?.path).not.toBe(f.appDir);
+      expect(receipt?.evidence).toContain(receipt!.workspace!.path);
+      if (!scenario.workspace) expect(executorCwd).toBe(receipt!.workspace!.path);
+      expect(existsSync(receipt!.workspace!.path)).toBe(false);
+    } else {
+      expect(receipt?.workspace).toBeUndefined();
+      expect(receipt?.evidence).toContain(f.appDir);
+      expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+    }
   });
 
   it("does not create task worktrees while startup installs and recovers work", async () => {

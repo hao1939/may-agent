@@ -3016,55 +3016,56 @@ async function reconcileTask(input: {
       }
     };
     let primaryResult: TaskCapabilityRun | undefined;
-    if (workflowKey) {
-      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.agent);
-      const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
-      if (
-        definition.workspace === "task" ||
-        (typeof definition.workspace === "object" && definition.workspace.kind === "task")
-      ) {
-        try {
-          if (descriptor.app.workspace?.kind !== "git") {
-            throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
-          }
-          const previous = Object.values(
-            config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {},
-          )
-            .filter(
-              (attempt) =>
-                attempt.taskId === primary.taskId &&
-                attempt.taskGeneration === primary.generation &&
-                attempt.workspace?.kind === "task-worktree",
-            )
-            .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-          taskWorkspace = await prepareAppTaskWorkspace({
-            repoDir: descriptor.projectDir,
-            workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-            taskId: primary.taskId,
-            generation: primary.generation,
-            baseBranch:
-              typeof definition.workspace === "object"
-                ? definition.workspace.baseBranch
-                : (descriptor.app.workspace.branch ?? "dev"),
-            previous,
-          });
-          executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-          if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
-            throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
-          }
-        } catch (error) {
-          primaryResult = {
-            handlerResult: {
-              state: "error",
-              summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-              evidence: [],
-              actions: [],
-            },
-            runId: null,
-            workspacePreparationFailed: true,
-          };
+    const workflowWorkspace = workflowKey
+      ? (await inspectWorkflowDefinition(appWorkflowRuntimePaths(opts, descriptor, primary.agent).workflowDir, workflowKey))
+          .workspace
+      : undefined;
+    const workflowNeedsWorktree =
+      workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
+    // Both execution paths share workspace lineage, admission fencing, and
+    // failure handling. Only the workflow may override the App's base branch.
+    if (workflowNeedsWorktree || (executorKey && descriptor.app.workspace?.kind === "git")) {
+      try {
+        if (descriptor.app.workspace?.kind !== "git") {
+          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
         }
+        const previous = Object.values(config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {})
+          .filter(
+            (attempt) =>
+              attempt.taskId === primary.taskId &&
+              attempt.taskGeneration === primary.generation &&
+              attempt.workspace?.kind === "task-worktree",
+          )
+          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+        taskWorkspace = await prepareAppTaskWorkspace({
+          repoDir: descriptor.projectDir,
+          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+          taskId: primary.taskId,
+          generation: primary.generation,
+          baseBranch:
+            typeof workflowWorkspace === "object"
+              ? workflowWorkspace.baseBranch
+              : (descriptor.app.workspace.branch ?? "dev"),
+          previous,
+        });
+        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+        if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
+          throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
+        }
+      } catch (error) {
+        primaryResult = {
+          handlerResult: {
+            state: "error",
+            summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
+            evidence: [],
+            actions: [],
+          },
+          runId: null,
+          workspacePreparationFailed: true,
+        };
       }
+    }
+    if (workflowKey) {
       primaryResult ??= await runTaskCapability({
         opts,
         descriptor,
@@ -3093,43 +3094,6 @@ async function reconcileTask(input: {
         observer,
       });
     } else if (executorKey) {
-      if (descriptor.app.workspace?.kind === "git") {
-        try {
-          const previous = Object.values(
-            config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {},
-          )
-            .filter(
-              (attempt) =>
-                attempt.taskId === primary.taskId &&
-                attempt.taskGeneration === primary.generation &&
-                attempt.workspace?.kind === "task-worktree",
-            )
-            .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-          taskWorkspace = await prepareAppTaskWorkspace({
-            repoDir: descriptor.projectDir,
-            workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-            taskId: primary.taskId,
-            generation: primary.generation,
-            baseBranch: descriptor.app.workspace.branch ?? "dev",
-            previous,
-          });
-          executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-          if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
-            throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
-          }
-        } catch (error) {
-          primaryResult = {
-            handlerResult: {
-              state: "error",
-              summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-              evidence: [],
-              actions: [],
-            },
-            runId: null,
-            workspacePreparationFailed: true,
-          };
-        }
-      }
       const registered = opts.executors?.[executorKey];
       if (registered) {
         primaryResult ??= await runRegisteredTaskExecutor({

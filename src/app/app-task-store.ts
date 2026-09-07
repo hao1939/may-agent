@@ -180,11 +180,6 @@ export function normalizeStringArray(value: unknown): string[] {
   return [];
 }
 
-/** Group one read/decide/commit transition; the resource commit owns serialization and fencing. */
-export function withTaskTransition<T>(_context: AppTaskContext, operation: () => T): T {
-  return operation();
-}
-
 export function readTaskSnapshot(
   context: AppTaskContext,
   scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },
@@ -207,7 +202,7 @@ export function readTaskSnapshot(
 
 export type CommitTaskMutationOptions = {
   /** Exact resource rows changed by this transition. Required by resource authority. */
-  resourceMutation?: AppTaskResourceMutation;
+  resourceMutation: AppTaskResourceMutation;
 };
 
 export class ResourceTaskMutationStaleError extends Error {
@@ -217,7 +212,8 @@ export class ResourceTaskMutationStaleError extends Error {
   }
 }
 
-export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, options?: CommitTaskMutationOptions): void {
+/** The resource commit owns serialization and fencing; callers supply the exact write set. */
+export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, options: CommitTaskMutationOptions): void {
   if (!options?.resourceMutation) {
     throw new Error("Task state mutation requires an exact resourceMutation");
   }
