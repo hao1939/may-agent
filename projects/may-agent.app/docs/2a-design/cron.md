@@ -2,9 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Canonical App input/event schedules, observers, and
-host-maintenance jobs use the shared scheduler. Host metric snapshots are
-currently declared by both an App schedule and a Cron job; convergence to one
-authority remains open.
+host-maintenance jobs use the shared scheduler. Cron is the sole Host
+`metrics-snapshot` schedule; Runtime samples App-defined sources on that same
+event and applies each source's minimum cadence.
 
 ## Purpose
 

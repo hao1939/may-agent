@@ -5,6 +5,10 @@
 Canonical App-ID Task list/get routes are implemented as daemon-read adapters.
 The default project UI still uses older path-based project endpoints and a
 generated projection while it migrates.
+Session evaluation generation still embeds evaluator instructions in HTTP, and
+evaluation comments still append feedback files directly. These are known gaps
+in the thin-adapter boundary, not exceptions to the contract below; their paired
+Host/Evaluation change is tracked in the convergence tracker.
 
 ## Purpose
 

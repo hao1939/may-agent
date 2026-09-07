@@ -12,9 +12,9 @@ storage boundary and does not expose it as Task ownership. Normal Runtime
 descriptor construction requires resource authority, and routing and recovery
 have no JSON fallback. The generic store/reconciler still compiles retained
 JSON support for the guarded offline importer and focused fixtures; separating
-and then retiring that compatibility boundary remains open. Condition owner
-and review fields are still optional, and current recovery can remove a review
-deadline from an unresolved wait; those are convergence gaps.
+and then retiring that compatibility boundary remains open. New handler-returned
+Conditions require a canonical owner and a bounded review interval. Unresolved
+waits retain their review deadlines; retained legacy Conditions remain readable.
 
 The task engine is the single Host execution path for App-owned work. Read
 [agent-app.md](agent-app.md) first.

@@ -2,10 +2,15 @@
 
 **Status:** Active convergence tracker
 
-**Last reviewed:** 2026-08-27
+**Last reviewed:** 2026-09-07 (source review; not a deployment audit)
 
 **Scope:** Keep the complete May Host, Apps, executors, Conversation adapters,
 and documentation aligned with the accepted event-driven Task model.
+
+The latest [whole-system source review](../archive/implementation/system-review-20260907.md)
+records exact revisions, evidence, verification, and the next paired change.
+It is review evidence, not another active tracker. Its metrics fix is a source
+candidate; no rollout or live-state repair is claimed.
 
 ## Purpose
 
@@ -85,9 +90,9 @@ inspected only direct Conditions and missed legacy display owner `Hao`.
 
 The repair now preserves the next review, follows exact dependency leaves for
 human action, points `/todo` at the Task that owns the action, and keeps legacy
-`Hao` approvals visible during canonical-owner migration. The remaining
-contract tightening is to require canonical owners on every newly admitted
-Condition without breaking retained legacy Conditions.
+`Hao` approvals visible. New handler-returned Conditions require a canonical
+owner and review interval; retained legacy Conditions remain readable. Runtime
+validation and wait-deadline regression tests cover these boundaries.
 
 ## Open simplification gaps
 
@@ -277,6 +282,28 @@ Check unfinished dependencies, archive completed proof, and retain a small
 stable contract such as owner review, platform obligation, deployment request,
 and runtime capability request.
 
+### 4. Evaluation reports failed or invalid owner reviews as converged
+
+The full Evaluation App check against the reviewed Host fails three heartbeat
+tests: their Conditions omit required owner/review fields or use a noncanonical
+owner. More importantly, the production fallback records a converged no-op and
+returns `ctx.done` for invalid structured output or executor failure. It preserves
+child state and records failure evidence, but successful review acceptance is
+not justified. Correct that outcome boundary and the valid fixtures together;
+do not weaken validation or add another retry coordinator. A legitimately
+verified no-op must remain distinct from a failed review.
+
+### 5. HTTP retains evaluation policy and feedback persistence
+
+The current source review also found HTTP-owned evaluator instructions and
+direct session-feedback file writes. Move those meanings through the existing
+Evaluation App/event path in a paired change, preserving UI compatibility and
+testing retries and exact evidence identity.
+
+The same review removed the metric collector's independent session-end
+backfill on its source branch so observation no longer conceals missing
+evidence; deployment remains separate.
+
 ## Documentation gaps
 
 The active reading path had three structural problems at this review:
@@ -354,13 +381,17 @@ Resolved rows do not remain implementation steps in this tracker.
 
 ## Repair order
 
-1. Require canonical owners on newly admitted Conditions while retaining
-   readable legacy waits.
-2. Reduce the central metrics catalog in bounded App-owned steps.
-3. Retire the isolated JSON import/test constructor as fixtures and supported
-   cutovers migrate.
-4. Remove incident-specific public contracts.
-5. Run a final document-by-document status, link, and code-reference audit.
+1. Review the observational-metrics fix and integrate pending companion source
+   and design changes explicitly; do not equate Host main with an App release.
+2. Fix Evaluation's failed/invalid review result and its stale Condition fixtures
+   using the existing Host non-success result path.
+3. Move session evaluation policy and feedback writes out of HTTP through a
+   paired Host/Evaluation change using the existing event/App path.
+4. Classify remaining central metrics and move demonstrated domain meaning to
+   its App; preserve useful Host-owned measurements.
+5. Retire the isolated JSON import/test constructor when supported consumers
+   permit it, and incident-specific public contracts after checking live waits.
+6. Run the final document-by-document status, link, and code-reference audit.
 
 Each step is independently reviewable and reversible. Do not combine them into
 a broad rewrite.
