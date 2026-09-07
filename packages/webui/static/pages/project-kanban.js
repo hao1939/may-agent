@@ -1,201 +1,35 @@
-// Default task reconciliation surface. The server owns classification; this
-// file presents the canonical projection and sends asynchronous App requests.
-
+// Human Task reads are shared with Console and Telegram.
+// This adapter owns only one page and one detail, never a work lifecycle.
 const TASK_SECTIONS = [
-  { id: "attention", label: "Attention" },
-  { id: "running", label: "Running" },
-  { id: "ready", label: "Ready" },
-  { id: "pending", label: "Pending" },
+  { id: "attention", label: "Needs review" },
+  { id: "running", label: "Working" },
+  { id: "pending", label: "Queued" },
   { id: "waiting", label: "Waiting" },
-  { id: "healthy", label: "Healthy standing" },
+  { id: "up-to-date", label: "Up to date" },
+  { id: "done", label: "Done" },
+  { id: "cancelled", label: "Cancelled" },
 ];
-
-const TASK_PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
-
-function projectTaskItems(model) {
-  return model?.items && typeof model.items === "object" ? model.items : {};
-}
-
-function projectTaskResources(model) {
-  return Object.values(projectTaskItems(model)).filter((item) => item?.item_type === "task");
-}
-
-function projectTaskChildren(item) {
-  return Array.isArray(item?.children) ? item.children : [];
-}
-
-function projectTaskSection(item) {
-  if (!item || item.item_type !== "task") return null;
-  if (item.phase === "attention") return "attention";
-  if (item.phase === "running") return "running";
-  if (item.phase === "waiting") return "waiting";
-  if (item.phase === "pending" && item.readiness?.state === "ready") return "ready";
-  if (item.phase === "pending") return "pending";
-  if (item.phase === "converged" && item.mode === "maintain") return "healthy";
-  return null;
-}
-
-function projectTaskSort(left, right) {
-  return (
-    (TASK_PRIORITY_ORDER[left?.priority] ?? 9) - (TASK_PRIORITY_ORDER[right?.priority] ?? 9) ||
-    String(left?.id || "").localeCompare(String(right?.id || ""))
-  );
-}
+const PROJECT_TASK_PAGE_SIZE = 30;
+let projectTaskBoard = null;
 
 function projectTaskFormatTime(value) {
-  if (!value) return "unknown";
-  const parsed = Date.parse(value);
-  if (!Number.isFinite(parsed)) return String(value);
-  const delta = Math.max(0, Date.now() - parsed);
-  const minutes = Math.floor(delta / 60_000);
+  const parsed = typeof value === "number" ? value : Date.parse(value);
+  if (!Number.isFinite(parsed)) return "unknown";
+  const minutes = Math.floor(Math.max(0, Date.now() - parsed) / 60_000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  return hours < 48 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
 }
 
-function projectTaskConditionLabel(model, conditionId) {
-  const condition = model?.conditions?.[conditionId];
-  if (!condition) return conditionId;
-  const type = condition.spec?.type || "Condition";
-  const subject = condition.spec?.subject || conditionId;
-  return `${type}: ${subject}`;
-}
-
-function projectTaskCard(item, model) {
-  const conditions = (item.condition_ids || []).map((id) => projectTaskConditionLabel(model, id));
-  const agent = item.agent || item.owner;
-  const drift =
-    item.synchronized === false ? `generation ${item.observed_generation ?? 0}/${item.generation ?? 0}` : "";
-  const secondary = [agent ? `agent ${agent}` : "", item.workflow ? `workflow ${item.workflow}` : "", drift]
-    .filter(Boolean)
-    .join(" · ");
-  const search = [item.id, item.outcome, item.summary, agent, item.workflow, item.category, ...conditions]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return `<button class="kanban-card" data-task-search="${attrEsc(search)}" onclick="showTaskDetail(${jsStringAttr(item.id)})">
-    <span class="kanban-card-top">
-      <span class="task-priority">${esc(item.priority || "P?")}</span>
-      <span class="task-status">${esc(item.phase || "unknown")}</span>
-      <span class="task-status">${esc(item.mode || "unknown")}</span>
-    </span>
-    <span class="task-goal">${esc(item.outcome || item.id)}</span>
-    <span class="task-id">${esc(item.id)}</span>
-    <span class="task-reason">${esc(item.readiness?.reason || item.summary || "No current observation")}</span>
-    ${conditions.length ? `<span class="task-reason">${esc(conditions.join(" · "))}</span>` : ""}
-    ${secondary ? `<span class="task-output">${esc(secondary)}</span>` : ""}
+function projectTaskCard(task) {
+  const search = [task.taskId, task.ref, task.outcome, task.summary].filter(Boolean).join(" ").toLowerCase();
+  return `<button class="kanban-card" data-task-search="${attrEsc(search)}" onclick="showTaskDetail(${jsStringAttr(task.taskId)})">
+    <span class="task-id">${esc(task.ref)} · ${esc(task.taskId)}</span>
+    <span class="task-goal">${esc(task.outcome)}</span>
+    <span class="task-reason">${esc(task.summary || task.statusDetail || "No current observation")}</span>
+    <span class="task-output">${esc(projectTaskFormatTime(task.updatedAt))} · ${task.humanAction ? "needs you" : "no action from you"}</span>
   </button>`;
-}
-
-function projectTaskSectionHtml(section, model) {
-  const items = projectTaskResources(model)
-    .filter((item) => projectTaskSection(item) === section.id)
-    .sort(projectTaskSort);
-  let cards = items.length
-    ? items.map((item) => projectTaskCard(item, model)).join("")
-    : '<div class="lane-empty">empty</div>';
-  if (section.id === "waiting" && items.length) {
-    const groups = new Map();
-    for (const item of items) {
-      const key = item.condition_ids?.length
-        ? item.condition_ids.map((id) => projectTaskConditionLabel(model, id)).join(" · ")
-        : "Missing Condition";
-      groups.set(key, [...(groups.get(key) || []), item]);
-    }
-    cards = [...groups.entries()]
-      .map(
-        ([label, waiting]) =>
-          `<div class="task-reason"><b>${esc(label)}</b> · ${waiting.length}</div>${waiting.map((item) => projectTaskCard(item, model)).join("")}`,
-      )
-      .join("");
-  }
-  const body = `<div class="kanban-lane-body">${cards}</div>`;
-  if (section.id === "healthy") {
-    return `<details class="kanban-lane done-lane"><summary><span>${esc(section.label)}</span><b>${items.length}</b></summary>${body}</details>`;
-  }
-  return `<section class="kanban-lane"><header><span>${esc(section.label)}</span><b>${items.length}</b></header>${body}</section>`;
-}
-
-function projectTaskDescendantSummary(model, itemId) {
-  const items = projectTaskItems(model);
-  const counts = {};
-  const visit = (id, seen) => {
-    if (seen.has(id)) return;
-    seen.add(id);
-    const item = items[id];
-    if (!item) return;
-    const section = projectTaskSection(item);
-    if (section) counts[section] = (counts[section] || 0) + 1;
-    for (const childId of projectTaskChildren(item)) visit(childId, seen);
-  };
-  visit(itemId, new Set());
-  return TASK_SECTIONS.filter((section) => counts[section.id])
-    .map((section) => `${section.label.toLowerCase()} ${counts[section.id]}`)
-    .join(" · ");
-}
-
-function projectTaskTreeNode(model, itemId, depth = 0, seen = new Set()) {
-  const item = projectTaskItems(model)[itemId];
-  if (!item || seen.has(itemId)) return "";
-  const nextSeen = new Set(seen);
-  nextSeen.add(itemId);
-  const children = projectTaskChildren(item);
-  const summary = projectTaskDescendantSummary(model, itemId);
-  const label = item.outcome || item.id;
-  const type = item.item_type === "group" ? "group" : item.phase || "task";
-  const row = `<div class="task-tree-row" style="padding-left:${Math.min(depth * 14, 70)}px">
-    <button class="tree-task-main" onclick="showTaskDetail(${jsStringAttr(item.id)});event.stopPropagation()">
-      <span class="task-priority">${esc(item.priority || (item.item_type === "group" ? "group" : "P?"))}</span>
-      <span class="tree-task-id">${esc(label)}</span>
-      <span class="task-status">${esc(type)}</span>
-      ${summary ? `<span class="tree-counts">${esc(summary)}</span>` : ""}
-    </button>
-  </div>`;
-  if (!children.length) return row;
-  return `<details class="task-tree-node"${depth < 2 ? " open" : ""}><summary>${row}</summary>${children
-    .slice(0, 100)
-    .map((childId) => projectTaskTreeNode(model, childId, depth + 1, nextSeen))
-    .join(
-      "",
-    )}${children.length > 100 ? `<div class="lane-empty">${children.length - 100} more children</div>` : ""}</details>`;
-}
-
-function projectTaskStatusStrip(model) {
-  const stats = model.stats || {};
-  const integrity = Array.isArray(model.integrity) ? model.integrity : [];
-  const capacity = Number.isInteger(model.project?.maxConcurrent) ? model.project.maxConcurrent : "unknown";
-  const metric = (label, value, tone = "ok") =>
-    `<div class="readout-metric readout-${tone}"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`;
-  return `<section class="project-readout"><div class="readout-panel readout-compact-panel">
-    <div class="readout-head"><div><div class="readout-kicker">Task reconciliation</div><h3>${esc(model.project?.id || "Project")}</h3>
-      <p>Observed ${esc(projectTaskFormatTime(model.taskStateUpdatedAt))}. The UI presents controller-projected state; it does not decide what runs.</p></div>
-      <div class="readout-status"><span>${esc(model.project?.posture || "posture unknown")}</span><span>capacity ${esc(capacity)}</span></div>
-    </div>
-    <div class="readout-metrics">
-      ${metric("Attention", stats.attention || 0, stats.attention ? "bad" : "ok")}
-      ${metric("Running", stats.running || 0)}
-      ${metric("Ready", stats.ready || 0)}
-      ${metric("Pending", stats.pending || 0, stats.pending ? "watch" : "ok")}
-      ${metric("Waiting", stats.waiting || 0, stats.waiting ? "watch" : "ok")}
-      ${metric("Integrity", integrity.length, integrity.length ? "bad" : "ok")}
-    </div>
-    ${
-      integrity.length
-        ? `<details class="readout-diagnostics"><summary><span>Integrity findings</span><b>${integrity.length}</b></summary><div class="diagnostic-section issue-list">${integrity
-            .map(
-              (finding) =>
-                `<button class="issue-row issue-p1" onclick="showTaskDetail(${jsStringAttr(finding.task_id)})"><div><b>${esc(finding.code)}</b><span>${esc(finding.task_id)}</span></div><div><small>Observed</small><span>${esc(finding.message)}</span></div></button>`,
-            )
-            .join("")}</div></details>`
-        : ""
-    }
-  </div></section>`;
-}
-
-function projectTaskSelectedId() {
-  return new URLSearchParams(location.search).get("task") || "";
 }
 
 function projectTaskSetSelection(taskId) {
@@ -205,52 +39,105 @@ function projectTaskSetSelection(taskId) {
   history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
-async function renderProjectKanban(el) {
-  const res = await fetch(`/api/projects/tasks?path=${encodeURIComponent(_projectDetailPath)}`);
-  const contentType = res.headers.get("content-type") || "";
-  if (!res.ok || !contentType.includes("application/json")) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Task API returned HTTP ${res.status}: ${body.slice(0, 160) || res.statusText}`);
-  }
-  const model = await res.json();
-  if (!model.available) {
-    const details = model.errors?.length ? `<pre>${esc(model.errors.join("\n"))}</pre>` : "";
-    el.innerHTML = `<div class="empty-state">${esc(model.reason || "This App has no task attachment.")}${details}</div>`;
+function projectTaskBoardIsCurrent(board) {
+  return (
+    projectTaskBoard === board &&
+    board.el.isConnected &&
+    board.el.dataset.projectTab === "kanban" &&
+    _projectDetailPath === board.path
+  );
+}
+
+async function projectTaskRead(path, params) {
+  const res = await fetch(`${path}?${new URLSearchParams(params)}`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `Task API returned HTTP ${res.status}`);
+  return body;
+}
+
+async function renderProjectKanban(el, options = {}) {
+  el.dataset.projectTab = "kanban";
+  const board = {
+    el,
+    path: _projectDetailPath,
+    appId: _currentProjectDetail?.app?.appId,
+    status: options.status || "",
+    includeDone: options.includeDone === true,
+    page: options.page || 1,
+    task: null,
+    detailRead: null,
+  };
+  projectTaskBoard = board;
+  if (!board.appId) {
+    el.innerHTML = '<div class="empty-state">This project has no App Task identity.</div>';
     return;
   }
+  el.innerHTML = '<div class="empty-state">Loading Tasks…</div>';
+  try {
+    const page = await projectTaskRead("/api/tasks", {
+      appId: board.appId,
+      limit: String(PROJECT_TASK_PAGE_SIZE),
+      includeDone: String(board.includeDone),
+      ...(board.status ? { status: board.status } : {}),
+      ...(options.cursor ? { cursor: options.cursor } : {}),
+    });
+    if (!projectTaskBoardIsCurrent(board)) return;
+    if (!Array.isArray(page.items)) throw new Error("Invalid Task page");
+    board.nextCursor = page.nextCursor;
+    el.className = "";
+    el.innerHTML = `<div class="kanban-shell">
+      <div class="readout-panel readout-compact-panel task-board-controls">
+        <h3>${esc(board.appId)} Tasks</h3>
+        <p>Page ${board.page} · ${page.items.length} Tasks · newest changes first. Counts and text filtering apply to this page only.</p>
+        <p class="task-reason">Up to date means recurring work is currently satisfied, not finished. Open a Task for its full goal, Conditions, dependencies, and history.</p>
+        <label>State <select id="project-task-status" onchange="reloadProjectTasks()">
+          <option value="">All states</option>${TASK_SECTIONS.map((s) => `<option value="${s.id}"${s.id === board.status ? " selected" : ""}>${s.label}</option>`).join("")}
+        </select></label>
+        <label><input id="project-task-history" type="checkbox"${board.includeDone ? " checked" : ""} onchange="reloadProjectTasks()">Include finished/cancelled Tasks</label>
+        <button onclick="reloadProjectTasks()">Refresh / newest page</button>
+        <button id="project-tasks-next" onclick="nextProjectTasks()"${page.nextCursor ? "" : " disabled"}>Next page</button>
+        <label for="project-task-filter">Filter this page</label>
+        <input id="project-task-filter" type="search" placeholder="goal, Task ID, reference, summary" oninput="filterProjectTasks(this.value)">
+      </div>
+      <div class="kanban-board">${
+        TASK_SECTIONS.filter((s) => page.items.some((t) => t.status === s.id))
+          .map((s) => {
+            const tasks = page.items.filter((t) => t.status === s.id);
+            return `<section class="kanban-lane"><header><span>${s.label}</span><b>${tasks.length}</b></header><div class="kanban-lane-body">${tasks.map(projectTaskCard).join("")}</div></section>`;
+          })
+          .join("") || '<div class="empty-state">No Tasks in this page/filter.</div>'
+      }</div>
+      <div id="task-detail-drawer" class="task-detail-drawer hidden"></div>
+    </div>`;
+    const selected = new URLSearchParams(location.search).get("task");
+    if (selected) await showTaskDetail(selected, false);
+  } catch (error) {
+    if (projectTaskBoardIsCurrent(board))
+      el.innerHTML = `<div class="empty-state">Task read unavailable: ${esc(error.message)} <button onclick="reloadProjectTasks()">Retry</button></div>`;
+  }
+}
 
-  window._currentProjectTaskTree = model;
-  const root =
-    model.rootId && model.items?.[model.rootId]
-      ? projectTaskTreeNode(model, model.rootId)
-      : Object.values(model.items || {})
-          .filter((item) => !item.parent_id || !model.items?.[item.parent_id])
-          .map((item) => projectTaskTreeNode(model, item.id))
-          .join("");
-  el.className = "";
-  el.innerHTML = `<div class="kanban-shell">
-    ${projectTaskStatusStrip(model)}
-    <div class="readout-panel readout-compact-panel"><label class="task-reason" for="project-task-filter">Filter live tasks</label><input id="project-task-filter" type="search" placeholder="outcome, id, agent, workflow, Condition" oninput="filterProjectTasks(this.value)" style="width:100%;background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:8px 10px"></div>
-    <div class="kanban-board">${TASK_SECTIONS.map((section) => projectTaskSectionHtml(section, model)).join("")}</div>
-    <div class="task-tree-panel"><h3>Task tree · groups show structure only</h3><div class="task-tree">${root || '<div class="lane-empty">No live resources</div>'}</div></div>
-    ${model.completionTraceError ? `<div class="empty-state">Recent completion trace unavailable: ${esc(model.completionTraceError)}</div>` : ""}
-    ${model.recentCompletions?.length ? `<div class="task-tree-panel"><h3>Recent completions</h3><div class="task-tree">${model.recentCompletions.map((completion) => `<button class="tree-task-main" onclick="showTaskDetail(${jsStringAttr(completion.taskId)})"><span class="tree-task-id">${esc(completion.summary || completion.taskId)}</span><span class="task-status">${esc(projectTaskFormatTime(completion.completedAt))}</span></button>`).join("")}</div></div>` : ""}
-    <div id="task-detail-drawer" class="task-detail-drawer hidden"></div>
-  </div>`;
+function reloadProjectTasks() {
+  const board = projectTaskBoard;
+  if (!board || !projectTaskBoardIsCurrent(board)) return;
+  return renderProjectKanban(board.el, {
+    status: document.getElementById("project-task-status")?.value ?? board.status,
+    includeDone: document.getElementById("project-task-history")?.checked ?? board.includeDone,
+  });
+}
 
-  const selected = projectTaskSelectedId();
-  if (selected) await showTaskDetail(selected, false);
+function nextProjectTasks() {
+  const board = projectTaskBoard;
+  if (!board?.nextCursor || !projectTaskBoardIsCurrent(board)) return;
+  return renderProjectKanban(board.el, { ...board, page: board.page + 1, cursor: board.nextCursor });
 }
 
 function projectTaskList(label, values) {
-  return values?.length
-    ? `<h4>${esc(label)}</h4><ul>${values.map((value) => `<li>${esc(value)}</li>`).join("")}</ul>`
-    : "";
+  return values?.length ? `<h4>${esc(label)}</h4><ul>${values.map((v) => `<li>${esc(v)}</li>`).join("")}</ul>` : "";
 }
 
 function projectTaskEvidenceHref(reference) {
-  const value = String(reference || "");
-  const [kind, ...rest] = value.split(":");
+  const [kind, ...rest] = String(reference || "").split(":");
   const target = rest.join(":");
   if (!target) return "";
   if (kind === "session") return `/sessions/${encodeURIComponent(target)}`;
@@ -259,102 +146,97 @@ function projectTaskEvidenceHref(reference) {
 }
 
 function projectTaskEvidenceList(values) {
-  if (!values?.length) return "";
-  return `<h4>Evidence</h4><ul>${values
-    .map((value) => {
-      const href = projectTaskEvidenceHref(value);
-      return `<li>${href ? `<a href="${attrEsc(href)}">${esc(value)}</a>` : esc(value)}</li>`;
-    })
-    .join("")}</ul>`;
+  return values?.length
+    ? `<h4>Evidence</h4><ul>${values
+        .map((v) => {
+          const href = projectTaskEvidenceHref(v);
+          return `<li>${href ? `<a href="${attrEsc(href)}">${esc(v)}</a>` : esc(v)}</li>`;
+        })
+        .join("")}</ul>`
+    : "";
 }
 
-function projectTaskConditionHtml(condition, id) {
+function projectTaskConditionHtml({ condition, id }) {
   if (!condition) return `<li><b>${esc(id)}</b> · missing Condition</li>`;
-  const observed =
-    condition.status?.observed === undefined ? "not observed" : JSON.stringify(condition.status.observed);
-  return `<li><b>${esc(condition.spec?.type || id)}</b> · ${esc(condition.spec?.subject || id)} · ${esc(condition.status?.state || "unknown")}
-    <div class="task-reason">expected ${esc(JSON.stringify(condition.spec?.expected))} · observed ${esc(observed)} · ${esc(projectTaskFormatTime(condition.status?.observedAt))}</div></li>`;
+  return `<li><b>${esc(condition.spec.type)}</b> · ${esc(condition.spec.subject)} · ${esc(condition.status.state)}
+    <div class="task-reason">expected ${esc(JSON.stringify(condition.spec.expected))} · observed ${esc(JSON.stringify(condition.status.observed) ?? "not observed")} · ${esc(projectTaskFormatTime(condition.status.observedAt))}</div>
+    <pre>${esc(JSON.stringify(condition.spec, null, 2))}</pre></li>`;
 }
 
-function projectTaskBasicDetail(item, model) {
-  const conditions = (item.condition_ids || [])
-    .map((id) => projectTaskConditionHtml(model.conditions?.[id], id))
-    .join("");
-  const attempt = item.active_attempt;
-  return `<div class="task-detail-head"><div><div class="task-detail-id">${esc(item.id)}</div><div class="task-detail-meta">${esc(item.priority || "P?")} · ${esc(item.phase || item.item_type)} · ${esc(item.mode || item.category || "structure")}</div></div>
-    <button onclick="closeTaskDetail()">Close</button></div>
-    <p>${esc(item.outcome || item.summary || "Structural group")}</p>
+function projectTaskDetailHtml(task) {
+  const d = task.diagnostics;
+  const field = (label, value) => `<div><b>${esc(label)}</b><span>${esc(value ?? "unknown")}</span></div>`;
+  return `<div class="task-detail-head"><div class="task-detail-id">${esc(task.appId)} / ${esc(task.taskId)} · ${esc(task.ref)}</div><button onclick="closeTaskDetail()">Close</button></div>
+    <h4>Goal</h4><p>${esc(task.outcome)}</p>
+    <h4>State</h4><p>${esc(task.status)} · ${esc(task.statusDetail)}</p>
+    ${task.progress ? `<h4>Current progress</h4><p>${esc(task.progress.stage)} · ${esc(task.progress.message || "")} · ${esc(projectTaskFormatTime(task.progress.updatedAt))}</p>` : ""}
+    ${task.summary ? `<h4>Current observation</h4><p>${esc(task.summary)}</p>` : ""}
+    ${task.response ? `<h4>Result</h4><pre>${esc(task.response)}</pre>` : ""}
+    ${projectTaskList("Expected result", task.acceptance)}
+    <h4>You</h4><p>${esc(task.humanAction?.requestedAction || "Nothing needed right now.")}</p>
+    ${task.humanAction?.task ? `<p>Action belongs to ${esc(task.humanAction.task.appId)} / ${esc(task.humanAction.task.taskId)} · ${esc(task.humanAction.task.ref)}</p>` : ""}
+    ${projectTaskList(
+      "Waiting on",
+      task.waitingOn?.map((w) =>
+        w.kind === "condition"
+          ? `${w.type}: ${w.subject}`
+          : `${w.appId}${w.taskId ? ` / ${w.taskId}` : ""}: ${w.status}`,
+      ),
+    )}
+    ${task.requestedBy ? `<h4>Requested by</h4><p>${esc(task.requestedBy.appId)} / ${esc(task.requestedBy.taskId)} · ${esc(task.requestedBy.outcome)}</p>` : ""}
     <div class="task-detail-grid">
-      <div><b>Agent</b><span>${esc(item.agent || item.owner || model.project?.agent || model.project?.owner || "convention fallback")}</span></div>
-      <div><b>Attempt mechanism</b><span>${esc(item.workflow ? `workflow ${item.workflow}` : item.executor ? `executor ${item.executor}` : "agent")}</span></div>
-      <div><b>Parent</b><span>${esc(item.parent_id || "none")}</span></div>
-      <div><b>Category</b><span>${esc(item.category || "work")}</span></div>
-      <div><b>Generation</b><span>${esc(`${item.observed_generation ?? "-"} observed / ${item.generation ?? "-"} desired`)}</span></div>
-      <div><b>Readiness</b><span>${esc(item.readiness ? `${item.readiness.state}: ${item.readiness.reason}` : "not applicable")}</span></div>
-      <div><b>Status updated</b><span>${esc(projectTaskFormatTime(item.status_updated_at))}</span></div>
-      <div><b>Attempts</b><span>${esc(item.attempt_count ?? 0)}</span></div>
+      ${field("Generation", `${d?.observedGeneration ?? "—"} observed / ${task.generation} desired`)}
+      ${field("Resource version", task.resourceVersion)}${field("Updated", projectTaskFormatTime(task.updatedAt))}
+      ${d ? `${field("Parent", d.parentId)}${field("Owner override", d.owner || "not specified")}${field("Mode", d.mode)}${field("Priority", d.priority || "P2")}${field("Category", d.category || "work")}${field("Mechanism", d.workflow ? `workflow ${d.workflow}` : d.executor || "agent")}${field("Ready to claim", d.ready ? "yes" : "no")}${field("Retained attempts", d.attemptCount)}` : ""}
     </div>
-    ${item.summary ? `<h4>Current observation</h4><p>${esc(item.summary)}</p>` : ""}
-    ${projectTaskList("Acceptance", item.acceptance || [])}
-    ${projectTaskList("Outputs", item.outputs || [])}
-    ${projectTaskEvidenceList(item.evidence || [])}
-    ${conditions ? `<h4>Conditions</h4><ul>${conditions}</ul>` : ""}
-    ${attempt ? `<h4>Current attempt</h4><p>${esc(attempt.handler)} · ${esc(attempt.state)} · ${esc(attempt.reason)} · ${esc(projectTaskFormatTime(attempt.started_at))}</p>` : ""}
-    ${item.trigger ? `<details><summary class="task-reason">Trigger</summary><pre>${esc(JSON.stringify(item.trigger, null, 2))}</pre></details>` : ""}
-    <div id="task-detail-trace" class="task-reason">Loading reconciliation trace…</div>
-    ${item.item_type === "task" ? projectTaskSteeringHtml() : ""}`;
+    ${projectTaskList("Outputs", d?.outputs)}${projectTaskEvidenceList(task.evidence)}
+    ${task.execution ? `<h4>Current attempt</h4><p>${esc(task.execution.attemptId)}${d?.attempt ? ` · ${esc(d.attempt.handler)} · ${esc(d.attempt.state)} · ${esc(d.attempt.reason)} · ${esc(projectTaskFormatTime(d.attempt.startedAt))}` : ""}</p>${projectTaskEvidenceList(task.execution.sessionId ? [`session:${task.execution.sessionId}`] : [])}` : ""}
+    ${d?.attempt?.trigger ? `<details><summary>Attempt trigger</summary><pre>${esc(JSON.stringify(d.attempt.trigger, null, 2))}</pre></details>` : ""}
+    ${d?.conditions.length ? `<h4>Conditions</h4><ul>${d.conditions.map(projectTaskConditionHtml).join("")}</ul>` : ""}
+    ${d?.conditionsTruncated ? "<p>Only the first 100 Conditions are shown.</p>" : ""}
+    ${d?.dependencies.length ? `<h4>Dependencies</h4><ul>${d.dependencies.map((dep) => `<li>${["missing", "group"].includes(dep.status) ? esc(dep.id) : `<button onclick="showTaskDetail(${jsStringAttr(dep.id)})">${esc(dep.id)}</button>`} · ${esc(dep.status)}</li>`).join("")}</ul>` : ""}
+    ${d?.dependenciesTruncated ? "<p>Only the first 100 dependencies are shown.</p>" : ""}
+    <h4>Recent reconciliation history</h4><p class="task-reason">Historical evidence, including older generations/attempts; not the current Task state.</p>
+    ${task.historyError ? `<p>History unavailable: ${esc(task.historyError)}</p>` : projectTaskHistoryHtml(task.history)}
+    ${task.historyTruncated ? "<p>Only the newest 20 records are shown.</p>" : ""}
+    ${!task.terminal ? projectTaskSteeringHtml() : ""}`;
 }
 
-function projectTaskSteeringHtml() {
-  return `<h4>Steer the App</h4>
-    <textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Prepare an audit, challenge, split, unblock, or escalation request."></textarea>
-    <div class="kanban-steer-actions"><button onclick="sendProjectSteering()">Send request</button><button onclick="prefillTaskSteering('audit')">Audit</button><button onclick="prefillTaskSteering('split')">Split</button><button onclick="prefillTaskSteering('challenge')">Challenge</button><button onclick="prefillTaskSteering('unblock')">Unblock</button><button onclick="prefillTaskSteering('escalate')">Escalate</button></div>
-    <div id="kanban-steer-status" class="kanban-steer-status"></div>`;
-}
-
-function projectTaskTimelineHtml(timeline) {
-  if (!timeline?.length) return '<div class="task-reason">No task-linked reconciliation records are available.</div>';
-  return `<h4>Recent reconciliation</h4><ul>${timeline.map((row) => `<li><b>${esc(row.eventType)}</b> · ${esc(projectTaskFormatTime(row.timestamp))}<div class="task-reason">${esc(row.disposition || row.summary || "No summary")}${row.handler ? ` · ${esc(row.handler)}` : ""}</div></li>`).join("")}</ul>`;
+function projectTaskHistoryHtml(history) {
+  return history?.length
+    ? `<ul>${history.map((h) => `<li><a href="/events/${encodeURIComponent(h.eventId)}">${esc(h.eventType)}</a> · ${esc(projectTaskFormatTime(h.timestamp))}<div class="task-reason">${esc(h.summary || h.disposition || "No summary")} · generation ${esc(h.generation ?? "unknown")} · attempt ${esc(h.attemptId || "unknown")}${h.handler ? ` · ${esc(h.handler)}` : ""}</div></li>`).join("")}</ul>`
+    : "<p>No task-linked records retained.</p>";
 }
 
 async function showTaskDetail(taskId, updateUrl = true) {
-  const model = window._currentProjectTaskTree;
+  const board = projectTaskBoard;
   const drawer = document.getElementById("task-detail-drawer");
-  if (!model || !drawer || !taskId) return;
-  const item = projectTaskItems(model)[taskId];
+  if (!board || !drawer || !taskId || !projectTaskBoardIsCurrent(board)) return;
+  const read = {};
+  board.detailRead = read;
+  board.task = null;
   drawer.classList.remove("hidden");
-  drawer.dataset.taskId = taskId;
+  drawer.innerHTML = '<button onclick="closeTaskDetail()">Close</button><p>Loading Task…</p>';
   if (updateUrl) projectTaskSetSelection(taskId);
-  drawer.innerHTML = item
-    ? projectTaskBasicDetail(item, model)
-    : `<div class="task-detail-head"><div><div class="task-detail-id">${esc(taskId)}</div><div class="task-detail-meta">Looking for completed task</div></div><button onclick="closeTaskDetail()">Close</button></div><div id="task-detail-trace">Loading…</div>`;
   drawer.scrollIntoView({ block: "nearest" });
-
+  const current = () => projectTaskBoardIsCurrent(board) && board.detailRead === read && drawer.isConnected;
   try {
-    const res = await fetch(
-      `/api/projects/task?path=${encodeURIComponent(_projectDetailPath)}&taskId=${encodeURIComponent(taskId)}`,
-    );
-    const detail = await res.json().catch(() => ({}));
-    if (drawer.dataset.taskId !== taskId) return;
-    if (!res.ok) throw new Error(detail.error || `HTTP ${res.status}`);
-    if (detail.kind === "completed") {
-      const completion = detail.completion || {};
-      drawer.innerHTML = `<div class="task-detail-head"><div><div class="task-detail-id">${esc(taskId)}</div><div class="task-detail-meta">completed finite work · generation ${esc(completion.generation ?? "unknown")}</div></div><button onclick="closeTaskDetail()">Close</button></div>
-        <p>${esc(completion.outcome || completion.summary || "Task completed and left the live graph.")}</p>
-        ${projectTaskEvidenceList(completion.evidence || [])}${projectTaskTimelineHtml(completion.timeline)}`;
-      return;
-    }
-    const trace = document.getElementById("task-detail-trace");
-    if (trace)
-      trace.outerHTML = `${detail.task?.dependencies?.length ? `<h4>Dependencies</h4><ul>${detail.task.dependencies.map((dependency) => `<li><b>${esc(dependency.id)}</b> · ${esc(dependency.disposition)}</li>`).join("")}</ul>` : ""}${projectTaskTimelineHtml(detail.task?.timeline)}`;
+    const task = await projectTaskRead("/api/task", { appId: board.appId, taskId });
+    if (!current()) return;
+    if (task.appId !== board.appId || task.taskId !== taskId) throw new Error("Task identity mismatch");
+    drawer.innerHTML = projectTaskDetailHtml(task);
+    board.task = task;
   } catch (error) {
-    const trace = document.getElementById("task-detail-trace");
-    if (trace)
-      trace.innerHTML = `<span style="color:var(--red)">Trace unavailable: ${esc(error?.message || String(error))}</span>`;
+    if (current())
+      drawer.innerHTML = `<button onclick="closeTaskDetail()">Close</button><p>Task read unavailable: ${esc(error.message)}</p>`;
   }
 }
 
 function closeTaskDetail() {
+  if (projectTaskBoard) {
+    projectTaskBoard.detailRead = null;
+    projectTaskBoard.task = null;
+  }
   document.getElementById("task-detail-drawer")?.classList.add("hidden");
   projectTaskSetSelection("");
 }
@@ -364,21 +246,26 @@ function filterProjectTasks(value) {
     .trim()
     .toLowerCase();
   for (const card of document.querySelectorAll(".kanban-card[data-task-search]")) {
-    card.hidden = Boolean(needle) && !String(card.dataset.taskSearch || "").includes(needle);
+    card.hidden = Boolean(needle) && !card.dataset.taskSearch.includes(needle);
   }
 }
 
+function projectTaskSteeringHtml() {
+  return `<h4>Steer the App</h4><textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Prepare an audit, challenge, split, unblock, or escalation request."></textarea>
+    <div class="kanban-steer-actions"><button onclick="sendProjectSteering()">Send request</button>${["audit", "split", "challenge", "unblock", "escalate"].map((a) => `<button onclick="prefillTaskSteering('${a}')">${a}</button>`).join("")}</div>
+    <div id="kanban-steer-status" class="kanban-steer-status"></div>`;
+}
+
 function selectedTaskForSteering() {
-  const id = document.getElementById("task-detail-drawer")?.dataset.taskId;
-  return id ? projectTaskItems(window._currentProjectTaskTree)[id] || null : null;
+  const board = projectTaskBoard;
+  return board && projectTaskBoardIsCurrent(board) && !board.task?.terminal ? board.task : null;
 }
 
 function prefillTaskSteering(action) {
   const task = selectedTaskForSteering();
   const textarea = document.getElementById("kanban-steer-text");
   if (!task || !textarea) return;
-  const conditionIds = (task.condition_ids || []).join(", ") || "none";
-  textarea.value = `[task-app-request]\nproject: ${window._currentProjectTaskTree?.project?.id || projectIdFromPath(_projectDetailPath)}\ntask: ${task.id}\naction: ${action}\noutcome: ${task.outcome || "unspecified"}\nphase: ${task.phase}\ngeneration: ${task.generation}\nsummary: ${task.summary || "none"}\nconditions: ${conditionIds}\nreadiness: ${task.readiness?.state || "not-applicable"} — ${task.readiness?.reason || ""}\n\nExpected response: inspect current evidence, then record concrete progress, an exact wait, an escalation, a task split, or an accepted no-op.`;
+  textarea.value = `[task-app-request]\nproject: ${task.appId}\ntask: ${task.taskId}\naction: ${action}\noutcome: ${task.outcome}\nstate: ${task.status}\ngeneration: ${task.generation}\nsummary: ${task.summary || "none"}\n\nExpected response: inspect current evidence, then record concrete progress, an exact wait, an escalation, a task split, or an accepted no-op.`;
   textarea.focus();
 }
 
@@ -388,24 +275,22 @@ async function sendProjectSteering() {
   const message = String(textarea?.value || "").trim();
   const task = selectedTaskForSteering();
   if (!message || !task) {
-    if (status) status.textContent = "Select a task and prepare a request first.";
+    if (status) status.textContent = "Select a Task and prepare a request first.";
     return;
   }
   if (status) status.textContent = "Submitting…";
   try {
-    const project =
-      window._currentProjectTaskTree?.project?.id || projectIdFromPath(_projectDetailPath).replace(/\.app$/, "");
     const res = await fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "project.owner.requested",
-        target: { appId: project, taskId: task.id },
+        target: { appId: task.appId, taskId: task.taskId },
         data: {
-          project,
-          projectId: project,
-          projectPath: _projectDetailPath,
-          taskId: task.id,
+          project: task.appId,
+          projectId: task.appId,
+          projectPath: projectTaskBoard.path,
+          taskId: task.taskId,
           action: "task-review",
           reason: message,
           params: { comment: message },
@@ -420,12 +305,6 @@ async function sendProjectSteering() {
         ? `Recorded as event ${body.eventId}. Await later delivery and reconciliation evidence.`
         : "Request sent, but no durable event receipt was returned.";
   } catch (error) {
-    if (status) status.textContent = `Failed: ${error?.message || String(error)}`;
+    if (status) status.textContent = `Failed: ${error.message}`;
   }
 }
-
-window.showTaskDetail = showTaskDetail;
-window.closeTaskDetail = closeTaskDetail;
-window.filterProjectTasks = filterProjectTasks;
-window.prefillTaskSteering = prefillTaskSteering;
-window.sendProjectSteering = sendProjectSteering;
