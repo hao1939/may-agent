@@ -28,12 +28,10 @@ test/
   e2e/          Full process and transport tests
   fixtures/     Shared test data
   helpers/      Shared test utilities
-  poc/          Narrow proofs of concept
   deployment/   Explicit installed-App compatibility checks
 
 container/   Container image and supervisor configuration
 scripts/     Current build, deploy, maintenance, and diagnostic commands
-evidence/    Retained incident evidence, not current design or runtime state
 ```
 
 Unit tests normally live beside the source they test. Put cross-component
@@ -90,6 +88,7 @@ definitions and does not deploy runtime code.
 ## Layout rules
 
 - Keep generated output in ignored directories such as `bundle/`.
+- Keep runtime evidence and generated artifacts outside version control.
 - Keep app-specific workflows and tests in their owning project app.
 - Add Gym scenarios to `/app/projects/gym`.
 - Delete obsolete scripts when their owner or data model disappears.
