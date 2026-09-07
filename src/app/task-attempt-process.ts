@@ -1,8 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { writeSync } from "node:fs";
 import { resolve } from "node:path";
-import { createInterface } from "node:readline";
-import type { Readable } from "node:stream";
 import { SubagentManager } from "../lib/index.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import { AppRegistry } from "./app-registry.js";
@@ -26,8 +23,7 @@ import type { ModelRegistry } from "./model-registry.js";
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
 const WORKER_RELAY_BATCH_SIZE = 1;
 const WORKER_RELAY_TURN_DELAY_MS = 5;
-const WORKER_RELAY_PAUSE_AT = 256;
-const WORKER_RELAY_RESUME_AT = 128;
+const WORKER_RELAY_BACKLOG_LIMIT = 256;
 
 type WorkerRelayScheduler = {
   pending: Array<() => void>;
@@ -88,9 +84,11 @@ function required(value: string, label: string): string {
   return normalized;
 }
 
-function parseWorkerFrame(line: string): WorkerFrame {
-  if (Buffer.byteLength(line, "utf8") > WORKER_FRAME_LIMIT) throw new Error("Task worker frame is too large");
-  const parsed = JSON.parse(line) as Partial<WorkerFrame>;
+function parseWorkerFrame(value: unknown): WorkerFrame {
+  if (Buffer.byteLength(JSON.stringify(value), "utf8") > WORKER_FRAME_LIMIT)
+    throw new Error("Task worker frame is too large");
+  if (!value || typeof value !== "object") throw new Error("Task worker returned an invalid frame");
+  const parsed = value as Partial<WorkerFrame>;
   if (parsed.kind === "event") {
     if (!Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0 || !parsed.event) {
       throw new Error("Task worker returned an invalid event frame");
@@ -135,15 +133,17 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
   return spawn(invocation.command, [...invocation.prefix, ...args], {
     cwd: process.cwd(),
     env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-    // Stdin carries live input and parent lifetime. If the daemon exits, it closes
-    // and the worker stops instead of surviving as an orphaned old Runtime.
-    stdio: ["pipe", "inherit", "inherit", "pipe"],
+    // Runtime-owned IPC has one descriptor owner. Wrapping an extra raw pipe
+    // lets Bun's collected ChildProcess close a descriptor reused by a later
+    // worker. IPC also carries parent lifetime without a second input pipe.
+    stdio: ["ignore", "inherit", "inherit", "ipc"],
+    serialization: "json",
   });
 }
 
 /**
  * Run the expensive Task attempt outside the interface event loop. Task state
- * remains in the shared canonical resource store; fd 3 carries only wake-like
+ * remains in the shared canonical resource store; IPC carries only wake-like
  * event observations and the final dependent identities back to the parent.
  */
 export function createTaskAttemptProcessExecutor(input: {
@@ -198,13 +198,11 @@ async function runWorkerProcess(
   timeoutMs?: number,
   task?: TaskAttemptProcessRequest,
 ): Promise<string[]> {
-  const relay = child.stdio[3] as Readable | null;
-  if (!relay) {
+  if (!child.connected) {
     child.kill("SIGKILL");
-    throw new Error("Task worker event pipe is unavailable");
+    throw new Error("Task worker IPC is unavailable");
   }
 
-  let buffer = "";
   let result: string[] | undefined;
   let workerError: string | undefined;
   let protocolError: Error | undefined;
@@ -236,7 +234,6 @@ async function runWorkerProcess(
       frames.length = 0;
       child.kill("SIGKILL");
     }
-    if (relay.isPaused() && frames.length <= WORKER_RELAY_RESUME_AT) relay.resume();
     if (frames.length > 0) {
       relayScheduled = true;
       scheduleWorkerRelay(bus, drainFrames);
@@ -247,43 +244,29 @@ async function runWorkerProcess(
   };
   const enqueueFrame = (frame: WorkerFrame) => {
     frames.push(frame);
-    if (frames.length >= WORKER_RELAY_PAUSE_AT) relay.pause();
+    if (frames.length > WORKER_RELAY_BACKLOG_LIMIT) {
+      protocolError = new Error("Task worker event backlog exceeded its bound");
+      child.kill("SIGKILL");
+    }
     if (relayScheduled) return;
     relayScheduled = true;
     scheduleWorkerRelay(bus, drainFrames);
   };
-  relay.setEncoding("utf8");
-  relay.on("data", (chunk: string) => {
+  child.on("message", (message) => {
     if (protocolError) return;
-    buffer += chunk;
-    if (Buffer.byteLength(buffer, "utf8") > WORKER_FRAME_LIMIT) {
-      protocolError = new Error("Task worker event buffer exceeded its bound");
+    try {
+      enqueueFrame(parseWorkerFrame(message));
+    } catch (error) {
+      protocolError = error instanceof Error ? error : new Error(String(error));
       child.kill("SIGKILL");
-      return;
     }
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        enqueueFrame(parseWorkerFrame(line));
-      } catch (error) {
-        protocolError = error instanceof Error ? error : new Error(String(error));
-        child.kill("SIGKILL");
-        return;
-      }
-    }
-  });
-  const relayEnded = new Promise<void>((resolveEnd, rejectEnd) => {
-    relay.once("end", resolveEnd);
-    relay.once("error", rejectEnd);
   });
 
   const failInput = (error: Error) => {
     protocolError = error;
     child.kill("SIGKILL");
   };
-  child.stdin?.on("error", failInput);
+  let pendingInputBytes = 0;
   const stopInput = task
     ? bus.listen(
         (event) => {
@@ -298,29 +281,26 @@ async function runWorkerProcess(
             target?.taskId !== task.taskId ||
             !Number.isSafeInteger(eventId) ||
             Number(eventId) <= 0 ||
-            !child.stdin?.writable
+            !child.connected
           )
             return;
-          // Reuse the lifetime pipe for live observations. Durable Task input and
-          // cancellation remain authoritative if a process or its pipe disappears.
-          const line =
-            JSON.stringify({ kind: "event", eventId: Number(eventId), event } satisfies WorkerEventFrame) + "\n";
-          if (Buffer.byteLength(line) + child.stdin.writableLength > WORKER_FRAME_LIMIT) {
+          const frame = { kind: "event", eventId: Number(eventId), event } satisfies WorkerEventFrame;
+          const bytes = Buffer.byteLength(JSON.stringify(frame));
+          if (bytes + pendingInputBytes > WORKER_FRAME_LIMIT) {
             failInput(new Error("Task worker input exceeded its bound"));
             return;
           }
-          child.stdin.write(line);
+          pendingInputBytes += bytes;
+          child.send(frame, (error: Error | null) => {
+            pendingInputBytes -= bytes;
+            if (error) failInput(error);
+          });
         },
         { label: "task-worker-input" },
       )
     : () => {};
   try {
     const exit = await waitForChild(child, timeoutMs);
-    await relayEnded;
-    if (protocolError) throw protocolError;
-    if (buffer.trim()) {
-      enqueueFrame(parseWorkerFrame(buffer));
-    }
     await relayDrained();
     if (protocolError) throw protocolError;
     if (workerError) throw new Error(workerError);
@@ -331,7 +311,7 @@ async function runWorkerProcess(
     return result;
   } finally {
     stopInput();
-    if (child.stdin?.writable) child.stdin.end();
+    if (child.connected) child.disconnect();
   }
 }
 
@@ -353,15 +333,20 @@ function waitForChild(
       if (timer) clearTimeout(timer);
       reject(error);
     });
-    child.once("exit", (code, signal) => {
+    // close follows the final IPC messages; there is no separate raw-pipe end
+    // promise that can hold a capacity slot forever after the worker exits.
+    child.once("close", (code, signal) => {
       if (timer) clearTimeout(timer);
       resolveExit({ code, signal });
     });
   });
 }
 
-function writeWorkerFrame(frame: WorkerFrame): void {
-  writeSync(3, `${JSON.stringify(frame)}\n`);
+function writeWorkerFrame(frame: WorkerFrame): Promise<void> {
+  return new Promise((resolveSent, reject) => {
+    if (!process.send || !process.connected) return reject(new Error("Task worker IPC is unavailable"));
+    process.send(frame, (error: Error | null) => (error ? reject(error) : resolveSent()));
+  });
 }
 
 export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessRequest {
@@ -392,7 +377,7 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
   };
 }
 
-/** Entry used only by a parent Task controller through the private fd-3 protocol. */
+/** Entry used only by a parent Task controller through private IPC. */
 export async function runTaskAttemptWorker(input: {
   request: TaskAttemptProcessRequest;
   roots: TaskAttemptWorkerRoots;
@@ -434,25 +419,23 @@ async function runTaskWorker(input: {
     throw new Error("Task worker mode is private to the parent runtime");
   }
   const stopWithParent = () => process.exit(143);
-  process.stdin.once("end", stopWithParent);
-  process.stdin.once("error", stopWithParent);
-  process.stdin.resume();
+  process.once("disconnect", stopWithParent);
   const bus = new EventBus();
   attachEventPersistence({ bus, persistDir: input.roots.persistDir });
   const receivedEvents = new WeakSet<AgentEvent>();
-  const incoming = createInterface({ input: process.stdin });
-  incoming.on("line", (line) => {
-    const frame = parseWorkerFrame(line);
+  const incoming = (message: unknown) => {
+    const frame = parseWorkerFrame(message);
     if (frame.kind !== "event") throw new Error("Task worker input must be a persisted event");
     receivedEvents.add(frame.event);
     bus.fanoutPersisted(frame.event, frame.eventId);
-  });
+  };
+  process.on("message", incoming);
   bus.subscribe(
     (event) => {
       if (receivedEvents.has(event)) return;
       const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
       if (Number.isSafeInteger(eventId) && Number(eventId) > 0) {
-        writeWorkerFrame({ kind: "event", eventId: Number(eventId), event });
+        void writeWorkerFrame({ kind: "event", eventId: Number(eventId), event }).catch(stopWithParent);
       }
     },
     { label: "task-worker-event-relay" },
@@ -513,15 +496,13 @@ async function runTaskWorker(input: {
       agentNames,
     });
     const dependentTaskIds = await input.run(bus);
-    writeWorkerFrame({ kind: "result", dependentTaskIds });
+    await writeWorkerFrame({ kind: "result", dependentTaskIds });
   } catch (error) {
-    writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });
+    await writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });
     throw error;
   } finally {
-    incoming.close();
-    process.stdin.off("end", stopWithParent);
-    process.stdin.off("error", stopWithParent);
-    process.stdin.pause();
+    process.off("message", incoming);
+    process.off("disconnect", stopWithParent);
     await closeInstalledAppTaskRuntimes(bus);
     closeAllDbs();
   }

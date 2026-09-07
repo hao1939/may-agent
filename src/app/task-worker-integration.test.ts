@@ -2,8 +2,7 @@ import { describe, it } from "bun:test";
 import { runTaskWorkerProbe } from "../../test/integration/fixtures/run-task-worker-probe.js";
 
 // Exercise a real parent and its workers outside the test runner's reused VM.
-// In-runner repeated abrupt exits exposed premature descriptor closures; this also
-// keeps the parent-loss probe from touching another test's database or pipes.
+// This keeps the parent-loss probe from touching another test's database or IPC.
 describe("real Task worker boundary", () => {
   it.each([
     ["parentLoss", "stops with its parent and recovers the same unfinished Task"],
