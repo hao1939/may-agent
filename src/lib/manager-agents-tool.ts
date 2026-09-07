@@ -10,6 +10,7 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
+import { readIdentity } from "./instance-identity.js";
 import type { EventTrace } from "../app/event-bus.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
@@ -58,27 +59,6 @@ export interface CreateAgentsToolOptions {
   triggerHeartbeat?: (agentName: string) => boolean;
   /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
   bus?: { emit(event: Record<string, unknown>): void };
-}
-
-// ── Detached cancel helpers ────────────────────────────────────────────
-// Lazy-imported to avoid pulling in socket-client at module level.
-
-let _readIdentity: typeof import("./detached.js").readIdentity | undefined;
-let _sendSocketCommand: typeof import("./socket-client.js").sendSocketCommand | undefined;
-
-async function loadDetachedHelpers(): Promise<{
-  readIdentity: typeof import("./detached.js").readIdentity;
-  sendSocketCommand: typeof import("./socket-client.js").sendSocketCommand;
-}> {
-  if (!_readIdentity) {
-    const mod = await import("./detached.js");
-    _readIdentity = mod.readIdentity;
-  }
-  if (!_sendSocketCommand) {
-    const mod = await import("./socket-client.js");
-    _sendSocketCommand = mod.sendSocketCommand;
-  }
-  return { readIdentity: _readIdentity, sendSocketCommand: _sendSocketCommand };
 }
 
 // ── Main export ────────────────────────────────────────────────────────
@@ -455,7 +435,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Detached: try socket, fall back to SIGTERM
             const cancelMeta = manager.registry.getSession(params.sessionId);
             if (cancelMeta?.detached) {
-              const { readIdentity, sendSocketCommand } = await loadDetachedHelpers();
+              const { sendSocketCommand } = await import("./socket-client.js");
               if (cancelMeta.instance) {
                 const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
                 if (cancelIdentity?.socket) {

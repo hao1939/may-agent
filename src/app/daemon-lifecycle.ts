@@ -1,6 +1,6 @@
-import { mkdirSync, writeFileSync } from "node:fs";
 import { execFile } from "node:child_process";
-import { resolve } from "node:path";
+import type { InstanceIdentity } from "../lib/instance-identity.js";
+export { createIdentityWriter, type InstanceIdentity } from "../lib/instance-identity.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
@@ -26,21 +26,6 @@ type ExecFileFn = (
   callback: (error: Error | null, stdout: string, stderr: string) => void,
 ) => unknown;
 
-export interface InstanceIdentity {
-  pid: number;
-  agent: string;
-  instance: string;
-  socket: string;
-  startedAt: string;
-  startedBy: string;
-  task: string | null;
-  status: "running" | "done" | "error";
-  exitCode?: number | null;
-  endedAt?: string;
-  duration?: string;
-  sessionId?: string;
-}
-
 export function formatDurationMs(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return seconds + "s";
@@ -50,18 +35,6 @@ export function formatDurationMs(ms: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return hours + "h" + mins + "m";
-}
-
-export function createIdentityWriter(opts: {
-  persistDir: string;
-  instanceLabel: string;
-}): (data: Partial<InstanceIdentity>) => void {
-  const identityPath = resolve(opts.persistDir, "instances", opts.instanceLabel, "identity.json");
-  return (data: Partial<InstanceIdentity>) => {
-    const dir = resolve(opts.persistDir, "instances", opts.instanceLabel);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(identityPath, JSON.stringify(data, null, 2));
-  };
 }
 
 export function startSupervisorRestarter(bus: Pick<EventBus, "emit">, execFileImpl: ExecFileFn = execFile): void {
