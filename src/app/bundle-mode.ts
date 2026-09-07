@@ -3,7 +3,7 @@
  *
  * When may-agent is compiled via `bun build --compile`, the binary embeds
  * all source into a virtual filesystem ($bunfs). This module detects that
- * and adjusts spawning + path resolution accordingly.
+ * and adjusts project path resolution accordingly.
  */
 
 import { existsSync } from "node:fs";
@@ -16,27 +16,6 @@ import { fileURLToPath } from "node:url";
  */
 export function isBundled(): boolean {
   return import.meta.url.startsWith("file:///$bunfs/");
-}
-
-/**
- * Get the command to spawn a worker process.
- * In bundled mode: spawn self (the compiled binary).
- * In dev mode: spawn bun with .ts path directly.
- */
-export function getWorkerCommand(args: string[], mayTsPath: string) {
-  if (isBundled()) {
-    return {
-      cmd: process.execPath,
-      args: args,
-      env: process.env,
-    };
-  } else {
-    return {
-      cmd: process.execPath,
-      args: [mayTsPath, ...args],
-      env: process.env,
-    };
-  }
 }
 
 /**
