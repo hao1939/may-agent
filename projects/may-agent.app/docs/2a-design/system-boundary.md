@@ -2,9 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** The Host/App boundary is implemented for current
-Apps. Installed Task runtimes require resource authority; retained JSON support
-is limited to offline import and test compatibility. The retired inbox delivery
-table is retained only as historical schema evidence. Incident-shaped public
+Apps. Task runtimes and test fixtures use resource authority; the legacy JSON
+store and completed offline cutover path have been removed. The retired inbox
+delivery table is retained only as historical schema evidence. Incident-shaped public
 inputs remain a convergence gap rather than an alternate accepted boundary.
 
 There is one architectural split:

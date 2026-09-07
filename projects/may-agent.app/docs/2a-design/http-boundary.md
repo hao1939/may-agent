@@ -3,8 +3,10 @@
 **Design status:** Accepted.
 **Implementation status:** Controls use the shared event publication path.
 Canonical App-ID Task list/get routes are implemented as daemon-read adapters.
-The default project UI still uses older path-based project endpoints and a
-generated projection while it migrates.
+[Host PR #70](https://github.com/hao1939/may-agent/pull/70), revision
+`154581de`, is pending integration: it replaces the default Task board's
+path-based snapshot projection with paged human Task reads. This is not a
+deployment claim.
 Session evaluation generation still embeds evaluator instructions in HTTP, and
 evaluation comments still append feedback files directly. These are known gaps
 in the thin-adapter boundary, not exceptions to the contract below; their paired
@@ -68,12 +70,39 @@ GET /api/apps/:appId/tasks
 GET /api/apps/:appId/tasks/:taskId
 ```
 
-The collection is bounded and filtered; the detail is exact and includes a
-bounded reconciliation timeline. Their responses use the shared resource
-shape (`kind`, `metadata`, `spec`, and `status`) returned by in-process and
-agent-tool reads. HTTP is only scope and transport binding, not a separate read
-model. Existing path-based project task reads are compatibility adapters over
-the same service. Neither form permits task mutation.
+These are the App SDK's bounded `TaskView`/`TaskDetail` contracts, forwarded
+through `app.tasks.list` and `app.task.get`; they are not persisted resource
+rows (`kind`, `metadata`, `spec`, `status`). They do not include a timeline.
+
+Human Task reads use the same `tasks.list` and `task.get` service as Console
+and Telegram:
+
+```text
+GET /api/tasks?appId=<app>&limit=30&cursor=<opaque-cursor>
+GET /api/task?appId=<app>&taskId=<exact-task-id>
+```
+
+The board shows one page at a time, newest changes first, with a server-side
+state filter and an option to include retained finished/cancelled Tasks.
+Counts and text filtering explicitly apply only to the displayed page. The
+board does not rebuild a whole-App tree or claim global integrity/capacity
+from a partial page. Exact detail keeps the full goal, acceptance, current
+attempt/progress, parent identity, outputs, Conditions, dependencies, and
+retained evidence. It shows at most 100 direct Conditions/dependencies and
+20 reconciliation events, with visible truncation notices. History includes
+older generations/attempts and cannot establish current completion.
+
+A live converged maintain Task is `up-to-date`, not terminal `done`.
+Completion/cancellation comes from canonical retained records, not inferred
+events. Read failures remain failures, never empty boards or fabricated
+completion. Browser selection is local; late responses cannot replace a
+newer Task selection, closed drawer, or changed project.
+
+The new board retires `/api/projects/tasks` and `/api/projects/task`; audited
+current callers are confined to the shipped board. Upgrade the Host and its
+generated UI together. App SDK routes remain unchanged. No read route permits
+Task mutation; steering still publishes an exact `project.owner.requested`
+event through `/api/events`.
 
 Resource APIs share `get`/`list`, identity, pagination, and error conventions,
 but they remain typed by resource kind. The out-of-process HTTP adapter asks

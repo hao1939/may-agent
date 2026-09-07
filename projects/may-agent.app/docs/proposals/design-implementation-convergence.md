@@ -258,14 +258,12 @@ attention-notification, unavailable-handler, and failed-execution recovery now
 require the exact candidate IDs selected by the resource index; none can fall
 back to a whole-App snapshot.
 
-The reconciler config is now resource-only: constructing it requires an
-`AppTaskResourceStore`, and it cannot create or fall back to JSON state. The
-JSON store exposes one explicitly named `legacyTaskStateConfig` used only by
-guarded offline cutover and fixture setup; those fixtures activate resources
-before exercising reconciliation. Continue migrating fixtures in bounded
-slices, then delete the JSON constructor with the offline importer when no
-supported cutover remains. Retain old state files as read-only evidence; do not
-add a legacy/modern Runtime abstraction.
+The reconciler config and fixtures are resource-only: constructing the config
+requires an `AppTaskResourceStore`, with no JSON fallback. Host commits
+`33905c4a` and `07ad8764` removed the legacy JSON store, its
+`legacyTaskStateConfig`, and the completed offline cutover path. This cleanup
+is complete; do not plan another fixture migration or reintroduce an importer.
+Retained old state files are read-only historical evidence, not Runtime inputs.
 
 ### 3. Host Operations exposes historical incidents as public inputs
 

@@ -11,6 +11,9 @@ Human-action projection follows exact dependency leaves and preserves legacy
 `Hao` approval visibility while canonical `human:<role>` ownership is adopted.
 Durable May admission exposes the responsible Task directly; the supervision
 Task remains separately visible for diagnostics.
+The browser Task board's migration onto these same reads is pending Host
+integration; see [http-boundary.md](http-boundary.md). This changes the Task
+read surface, not browser Conversation or App event routing.
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
