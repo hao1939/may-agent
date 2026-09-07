@@ -99,8 +99,8 @@ export { createBackgroundExecTool } from "./background-exec.js";
 
 export { createCronTool } from "./cron-tool.js";
 export type { CronEntry } from "./cron-tool.js";
-export { spawnDetachedAgent, readIdentity } from "./detached.js";
-export type { InstanceIdentity } from "./detached.js";
+export { readIdentity } from "./instance-identity.js";
+export type { InstanceIdentity } from "./instance-identity.js";
 export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
 export type { SocketResponse, SocketEvent } from "./socket-client.js";
 export type { SubagentDefinition, ModelWithApiKey, SessionInfo, TaskResult } from "./types.js";

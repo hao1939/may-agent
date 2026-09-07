@@ -68,7 +68,6 @@ import {
   updateWorkflowRun,
   getDb,
 } from "./requests.js";
-import { readIdentity } from "./detached.js";
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";
@@ -1504,41 +1503,6 @@ export class SubagentManager {
       return undefined;
     }
     return sessionOutputDir(this._persistDir, sessionId);
-  }
-
-  async waitForDetached(
-    sessionId: string,
-    opts?: { pollIntervalMs?: number; timeoutMs?: number },
-  ): Promise<TaskResult> {
-    const pollInterval = opts?.pollIntervalMs ?? 2000;
-    const timeoutMs = opts?.timeoutMs ?? 600_000;
-    const initialMeta = this._registry.getSession(sessionId);
-    if (!initialMeta) throw new Error(`Session "${sessionId}" not found`);
-    if (initialMeta.status !== "running" && initialMeta.status !== "idle") {
-      return this.resultFromStoredSession(sessionId);
-    }
-
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const meta = this._registry.getSession(sessionId);
-      if (meta && meta.status !== "running" && meta.status !== "idle") {
-        return this.resultFromStoredSession(sessionId);
-      }
-      if (initialMeta.instance) {
-        const identity = readIdentity(this._persistDir, initialMeta.instance);
-        if (identity && identity.status !== "running") {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          const finalMeta = this._registry.getSession(sessionId);
-          if (finalMeta && finalMeta.status !== "running" && finalMeta.status !== "idle") {
-            return this.resultFromStoredSession(sessionId);
-          }
-          this._registry.updateSessionStatus(sessionId, "error", "Process exited without completing");
-          return this.resultFromStoredSession(sessionId);
-        }
-      }
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    }
-    throw new Error(`Timeout waiting for detached session "${sessionId}" (${timeoutMs}ms)`);
   }
 
   private cleanupStaleWorkflowRuns(): void {
