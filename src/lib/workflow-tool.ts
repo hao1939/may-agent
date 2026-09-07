@@ -513,18 +513,9 @@ async function resolveDemands(
   sourceEvent: WorkflowGuardEvent,
   runId: string,
   completedSteps: CompletedStep[],
-  steeringQueue: string[],
   injectedCount: { value: number },
   maxInjected: number,
-  manager: SubagentManager,
-  agentDefinitions: ReadonlyMap<string, SubagentDefinition> | undefined,
-  parentSessionId: string | undefined,
-  projectId: string | undefined,
-  recoveryOwner: string | undefined,
-  trace: EventTrace | undefined,
-  onEvent: ((event: WorkflowEvent) => void) | undefined,
-  run: WorkflowRun,
-  persistDir: string | undefined,
+  runRepair: (agent: string, task: string, label: string) => Promise<TaskResult>,
   warnings: string[],
   emitGuardSignal?: GuardSignalEmitter,
 ): Promise<void> {
@@ -615,46 +606,7 @@ async function resolveDemands(
           injectedAgent: demand.step.agent,
         });
 
-        onEvent?.({ type: "workflow.step_started", step: label });
-
-        const callOptions = {
-          parentSessionId,
-          workflowRunId: runId,
-          projectId,
-          recoveryOwner,
-          stepLabel: label,
-          source: "guard",
-          trace,
-          requireFinish: true,
-        };
-        const pinnedDefinition = agentDefinitions?.get(demand.step.agent);
-        const taskResult = pinnedDefinition
-          ? await manager.callAgentDefinition(pinnedDefinition, demand.step.task, callOptions)
-          : await manager.callAgent(demand.step.agent, demand.step.task, callOptions);
-
-        const step: CompletedStep = { step: label, sessionId: taskResult.sessionId, result: taskResult };
-        completedSteps.push(step);
-        pruneCompletedSteps(completedSteps);
-
-        // Persist step
-        const wfStep: WorkflowStep = {
-          sessionId: taskResult.sessionId,
-          agent: demand.step.agent,
-          task: demand.step.task,
-          status: taskResult.status,
-          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-          endedAt: Date.now(),
-          lastAssistantText: taskResult.lastAssistantText,
-        };
-        run.steps.push(wfStep);
-        // Step data persisted via sessions table (db-writer)
-
-        onEvent?.({
-          type: "workflow.step_completed",
-          step: label,
-          sessionId: taskResult.sessionId,
-          result: taskResult,
-        });
+        await runRepair(demand.step.agent, demand.step.task, label);
         break;
       }
     }
@@ -1196,6 +1148,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       agentTask: string,
       reuseSessionId?: string,
       stepOpts?: AgentCallOptions & { schema?: TSchema },
+      repairLabel?: string,
     ): Promise<TaskResult> => {
       assertExecutionActive();
       validateOperationAllowance(stepOpts?.operationAllowance);
@@ -1207,12 +1160,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             `Pass an explicit agent name or the selected ctx.reconciliation.agent.`,
         );
       }
-      const currentStep = stepCounter++;
+      const label = repairLabel ?? agentName;
+      const isRepair = repairLabel !== undefined;
+      const currentStep = isRepair ? -1 : stepCounter++;
       const sessionToReuse = typeof reuseSessionId === "string" && reuseSessionId.trim() ? reuseSessionId.trim() : "";
 
       // Replay applies to ordinary workflow steps. Task-bound sessions represent
       // actual fresh/resumed work and should not be satisfied from replay alone.
-      if (!sessionToReuse && previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
+      if (!isRepair && !sessionToReuse && previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
         const prevStep = previousRun.steps[currentStep];
         if (prevStep.agent === agentName && prevStep.task === agentTask) {
           try {
@@ -1252,7 +1207,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
       let effectiveTask = agentTask;
-      if (guardWarnings.length > 0) {
+      if (!isRepair && guardWarnings.length > 0) {
         effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map((w) => "- " + w).join("\n")}`;
         guardWarnings.length = 0;
       }
@@ -1330,15 +1285,15 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         }
       }
       if (!taskResult || !sid) {
-        onEvent?.({ type: "workflow.step_started", step: agentName });
+        onEvent?.({ type: "workflow.step_started", step: label });
         taskResult = await callAgent(agentName, effectiveTask, {
           parentSessionId,
-          source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
+          source: isRepair ? "guard" : stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
           workflowRunId: runId,
           projectId: effectiveProjectId,
           taskBinding: opts.taskBinding,
           recoveryOwner: opts.recoveryOwner,
-          stepLabel: agentName,
+          stepLabel: label,
           timeout: stepOpts?.timeoutMs,
           operationAllowance: stepOpts?.operationAllowance,
           trace: resolveTrace(),
@@ -1356,7 +1311,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       taskResult = enforceStructuredWorkflowResult(taskResult, !!stepOpts?.schema);
       sid = taskResult.sessionId || sid;
 
-      const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
+      const step: CompletedStep = { step: label, sessionId: sid, result: taskResult };
       localSteps.push(step);
       completedSteps.push(step);
       pruneCompletedSteps(completedSteps);
@@ -1371,9 +1326,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         lastAssistantText: taskResult.lastAssistantText,
       });
 
-      onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
+      onEvent?.({ type: "workflow.step_completed", step: label, sessionId: sid, result: taskResult });
 
-      if (guards.length > 0) {
+      // Repair is one ordinary bounded call, not another opportunity to inject repairs.
+      if (!isRepair && guards.length > 0) {
         const guardEvent: WorkflowGuardEvent = {
           type: "step_done",
           source: "agent",
@@ -1390,18 +1346,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             guardEvent,
             runId,
             completedSteps,
-            steeringQueue,
             injectedStepCount,
             maxInjected,
-            manager,
-            opts.agentDefinitions,
-            parentSessionId,
-            effectiveProjectId,
-            opts.recoveryOwner,
-            resolveTrace(),
-            onEvent,
-            run,
-            persistDir ?? undefined,
+            (agent, task, label) => runAgentStep(agent, task, undefined, undefined, label),
             guardWarnings,
             emitGuardSignal,
           );
@@ -1579,7 +1526,35 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
     try {
       opts.signal?.throwIfAborted();
-      const execution = workflow.execute(ctx);
+      const execution = (async () => {
+        const authoredResult = await workflow.execute(ctx);
+        assertExecutionActive();
+        const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId);
+
+        // ── Guard: workflow_done event ──────────────────────────────────
+        if (guards.length > 0) {
+          const doneEvent: WorkflowGuardEvent = {
+            type: "workflow_done",
+            workflow: workflow.name,
+            summary: result.type === "done" ? result.summary : result.reason,
+            completedSteps,
+          };
+          const demands = emitAndCollectDemands(guards, doneEvent);
+          await resolveDemands(
+            demands,
+            doneEvent,
+            runId,
+            completedSteps,
+            injectedStepCount,
+            maxInjected,
+            (agent, task, label) => runAgentStep(agent, task, undefined, undefined, label),
+            guardWarnings,
+            emitGuardSignal,
+          );
+        }
+        assertExecutionActive();
+        return result;
+      })();
       let executionTimer: ReturnType<typeof setTimeout> | undefined;
       let stopForAbort: (() => void) | undefined;
       const stops: Array<Promise<never>> = [];
@@ -1606,42 +1581,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           }),
         );
       }
-      const authoredResult = await Promise.race([execution, ...stops]).finally(() => {
+      const result = await Promise.race([execution, ...stops]).finally(() => {
         if (executionTimer) clearTimeout(executionTimer);
         if (stopForAbort) opts.signal?.removeEventListener("abort", stopForAbort);
       });
-      const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId);
-
-      // ── Guard: workflow_done event ──────────────────────────────────
-      if (guards.length > 0) {
-        const doneEvent: WorkflowGuardEvent = {
-          type: "workflow_done",
-          workflow: workflow.name,
-          summary: result.type === "done" ? result.summary : result.reason,
-          completedSteps,
-        };
-        const demands = emitAndCollectDemands(guards, doneEvent);
-        await resolveDemands(
-          demands,
-          doneEvent,
-          runId,
-          completedSteps,
-          steeringQueue,
-          injectedStepCount,
-          maxInjected,
-          manager,
-          opts.agentDefinitions,
-          parentSessionId,
-          effectiveProjectId,
-          opts.recoveryOwner,
-          resolveTrace(),
-          onEvent,
-          run,
-          persistDir ?? undefined,
-          guardWarnings,
-          emitGuardSignal,
-        );
-      }
 
       // Finalize the workflow run
       run.endedAt = Date.now();
