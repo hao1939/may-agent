@@ -46,6 +46,7 @@ export type {
   AppWorkspace,
   EventSelector,
   ExecutionResult,
+  CliCallEvidence,
   ExecutionView,
   Logger,
   MetricDefinition,

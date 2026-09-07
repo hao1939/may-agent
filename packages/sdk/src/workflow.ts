@@ -164,6 +164,19 @@ export type ObserverContext = {
   };
 };
 
+/** Host-recorded terminal CLI call, not an agent's completion claim or a durable Task. */
+export type CliCallEvidence = {
+  sessionId: string;
+  toolCallId: string;
+  taskId: string;
+  tool: "codex" | "claude";
+  status: "completed" | "failed";
+  failureCategory?: string;
+  resultPath: string;
+  structuredResultPath: string;
+  eventsPath: string;
+};
+
 /** One terminal result vocabulary for bounded Agent and workflow execution. */
 export type ExecutionResult<T = unknown> = {
   id: string;
@@ -172,6 +185,9 @@ export type ExecutionResult<T = unknown> = {
   summary: string;
   output?: T;
   evidence?: unknown;
+  /** Up to 64 CLI results from this session's retained transcript tail. Positive
+   * evidence only: absence does not prove a call never ran. Old Hosts omit it. */
+  cliCalls?: CliCallEvidence[];
 };
 
 /** The input is App/workflow-owned; the runtime only carries it across the boundary. */
