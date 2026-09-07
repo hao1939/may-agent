@@ -290,7 +290,7 @@ describe("workflow tool: typed execution", () => {
       export const name = "recovery-owned";
       export const description = "Recovery ownership fixture";
       export async function execute(ctx) {
-        await ctx.runAgent("worker", "do the step");
+        await ctx.agents.call("worker", "do the step");
         return ctx.done("done");
       }
     `,
@@ -350,7 +350,7 @@ describe("workflow tool: run", () => {
       export const name = "simple";
       export const description = "A simple workflow";
       export async function execute(ctx) {
-        return ctx.done("completed: " + ctx.task);
+        return ctx.done("completed: " + ctx.input);
       }
     `,
     );
@@ -438,7 +438,7 @@ describe("workflow tool: run", () => {
       export const name = "evented";
       export const description = "Emits custom events";
       export async function execute(ctx) {
-        await ctx.runFunction("custom-step", async () => "ok");
+        await ctx.events.emit({ type: "test.custom-step", data: { result: "ok" } });
         return ctx.done("done with events");
       }
     `,
@@ -458,12 +458,9 @@ describe("workflow tool: run", () => {
       task: "evented task",
     });
 
-    // Should have: workflow.started, workflow.step_started, workflow.step_completed, workflow.completed
-    expect(events.length).toBe(4);
-    expect(events[0].type).toBe("workflow.started");
-    expect(events[1].type).toBe("workflow.step_started");
-    expect(events[2].type).toBe("workflow.step_completed");
-    expect(events[3].type).toBe("workflow.completed");
+    expect(events.map((event) => event.type)).toEqual([
+      "workflow.started", "test.custom-step", "workflow.completed",
+    ]);
   });
 
   it("emits workflow.blocked event on local workflow blocker", async () => {
@@ -778,62 +775,14 @@ describe("workflow tool: run", () => {
   // can't be tested here. Verified manually with node --input-type=module.
 });
 
-describe("workflow tool: ctx.agent", () => {
-  it("exposes agentName as ctx.agent when provided", async () => {
-    writeWorkflow(
-      "agent-echo.ts",
-      `
-      export const name = "agent-echo";
-      export const description = "Returns ctx.agent";
-      export async function execute(ctx) {
-        return ctx.done("agent=" + ctx.agent);
-      }
-    `,
-    );
-
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir, agentName: "optimizer" });
-
-    const result = await tool.execute("tc1", { action: "run", name: "agent-echo", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("done");
-    if (parsed.type === "done") {
-      expect(parsed.summary).toBe("agent=optimizer");
-    }
-  });
-
-  it("falls back to 'unknown' when agentName not provided", async () => {
-    writeWorkflow(
-      "agent-echo2.ts",
-      `
-      export const name = "agent-echo2";
-      export async function execute(ctx) {
-        return ctx.done("agent=" + ctx.agent);
-      }
-    `,
-    );
-
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir });
-
-    const result = await tool.execute("tc1", { action: "run", name: "agent-echo2", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("done");
-    if (parsed.type === "done") {
-      expect(parsed.summary).toBe("agent=unknown");
-    }
-  });
-
-  it("rejects runAgent with undefined agent name (defensive guard)", async () => {
+describe("workflow tool: agent name validation", () => {
+  it("rejects agents.call with undefined agent name (defensive guard)", async () => {
     writeWorkflow(
       "bad-agent.ts",
       `
       export const name = "bad-agent";
       export async function execute(ctx) {
-        // Simulate the bug: ctx.agent is undefined (binary compiled before agent field existed)
-        await ctx.runAgent(undefined, "task");
+        await ctx.agents.call(undefined, "task");
         return ctx.done("should not reach");
       }
     `,
@@ -851,14 +800,14 @@ describe("workflow tool: ctx.agent", () => {
     }
   });
 
-  it("rejects runAgent with the literal string 'undefined' as agent name", async () => {
+  it("rejects agents.call with the literal string 'undefined' as agent name", async () => {
     writeWorkflow(
       "bad-agent-str.ts",
       `
       export const name = "bad-agent-str";
       export async function execute(ctx) {
         // Simulate serialization bug: agentName becomes the string "undefined"
-        await ctx.runAgent("undefined", "task");
+        await ctx.agents.call("undefined", "task");
         return ctx.done("should not reach");
       }
     `,
@@ -875,32 +824,9 @@ describe("workflow tool: ctx.agent", () => {
       expect(parsed.error).toContain("invalid agent name");
     }
   });
-
-  it("coerces ctx.agent to 'unknown' when agentName is string 'undefined'", async () => {
-    writeWorkflow(
-      "agent-echo-undef.ts",
-      `
-      export const name = "agent-echo-undef";
-      export async function execute(ctx) {
-        return ctx.done("agent=" + ctx.agent);
-      }
-    `,
-    );
-
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir, agentName: "undefined" });
-
-    const result = await tool.execute("tc1", { action: "run", name: "agent-echo-undef", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("done");
-    if (parsed.type === "done") {
-      expect(parsed.summary).toBe("agent=unknown");
-    }
-  });
 });
 
-describe("workflow tool: ctx.runAgentSession", () => {
+describe("workflow tool: agents.call session reuse", () => {
   function mockManager(mockOpts: { resumeMissing?: boolean; archived?: Record<string, string> } = {}) {
     const calls: Array<{ method: string; sessionId?: string; agent?: string; task?: string; source?: string }> = [];
     const results = new Map<
@@ -918,6 +844,7 @@ describe("workflow tool: ctx.runAgentSession", () => {
       Promise.resolve({
         sessionId,
         status: "done" as const,
+        finishResult: { status: "success" as const, summary: text },
         lastAssistantText: text,
         messages: [{ timestamp: 1 }],
         duration: "0.0s",
@@ -934,6 +861,7 @@ describe("workflow tool: ctx.runAgentSession", () => {
             return {
               sessionId,
               status: "done" as const,
+              finishResult: { status: "success" as const, summary: archivedText },
               lastAssistantText: archivedText,
               messages: [{ timestamp: 1 }],
               duration: "0.0s",
@@ -983,8 +911,9 @@ describe("workflow tool: ctx.runAgentSession", () => {
       `
       export const name = "session-reuse";
       export async function execute(ctx) {
-        const result = await ctx.runAgentSession("worker", "continue task", "s_existing");
-        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+        const result = await ctx.agents.call("worker", "continue task", { sessionId: "s_existing" });
+        if (result.status !== "done") throw new Error(result.summary);
+        return ctx.done(result.id + ":" + result.summary);
       }
     `,
     );
@@ -1009,8 +938,8 @@ describe("workflow tool: ctx.runAgentSession", () => {
       `
       export const name = "session-archived";
       export async function execute(ctx) {
-        const result = await ctx.runAgentSession("worker", "do not repeat", "s_done");
-        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+        const result = await ctx.agents.call("worker", "do not repeat", { sessionId: "s_done" });
+        return ctx.done(result.id + ":" + result.summary);
       }
     `,
     );
@@ -1042,8 +971,8 @@ describe("workflow tool: ctx.runAgentSession", () => {
       `
       export const name = "session-create-durable";
       export async function execute(ctx) {
-        const result = await ctx.runAgentSession("worker", "start durable task", "s_task_existing");
-        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+        const result = await ctx.agents.call("worker", "start durable task", { sessionId: "s_task_existing" });
+        return ctx.done(result.id + ":" + result.summary);
       }
     `,
     );
@@ -1068,8 +997,8 @@ describe("workflow tool: ctx.runAgentSession", () => {
       `
       export const name = "session-new";
       export async function execute(ctx) {
-        const result = await ctx.runAgentSession("worker", "start task");
-        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+        const result = await ctx.agents.call("worker", "start task");
+        return ctx.done(result.id + ":" + result.summary);
       }
     `,
     );
@@ -1103,8 +1032,8 @@ describe("workflow tool: structured agent results", () => {
         additionalProperties: false,
       };
       export async function execute(ctx) {
-        const review = await ctx.runAgent("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
-        return ctx.done(review.status + ":" + review.structuredResult.verdict);
+        const review = await ctx.agents.call("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
+        return ctx.done(review.status + ":" + review.output.verdict);
       }
     `,
     );
@@ -1147,8 +1076,8 @@ describe("workflow tool: structured agent results", () => {
       export const name = "reject-prose";
       export const description = "Rejects a prose-only agent result";
       export async function execute(ctx) {
-        const result = await ctx.runAgent("worker", "do it");
-        return ctx.done(result.status + ":" + result.error);
+        const result = await ctx.agents.call("worker", "do it");
+        return ctx.done(result.status + ":" + result.summary);
       }
     `,
     );
@@ -1269,7 +1198,7 @@ describe("workflow tool: steering", () => {
     expect(tool.activeWorkflow).toBeNull();
   });
 
-  it("steer() queues a signal that interrupts the workflow at the next runAgent call", async () => {
+  it("steer() queues a signal that interrupts the workflow at the next agents.call", async () => {
     // This workflow calls runAgent but we pre-queue a steering signal.
     // Since runAgent checks the queue before running the agent, it should
     // throw WorkflowInterrupted immediately without ever calling manager.run().
@@ -1280,7 +1209,7 @@ describe("workflow tool: steering", () => {
       export const description = "Workflow that can be steered";
       export async function execute(ctx) {
         // This will never actually reach runAgent because steering is pre-queued
-        const result = await ctx.runAgent("coder", "do something");
+        const result = await ctx.agents.call("coder", "do something");
         return ctx.done("should not reach here");
       }
     `,
@@ -1311,7 +1240,7 @@ describe("workflow tool: steering", () => {
     // before runAgent checks it.
     //
     // The way this works: the workflow.execute() is an async function.
-    // It runs synchronously until the first await. ctx.runAgent is async,
+    // It runs synchronously until the first await. ctx.agents.call is async,
     // so the first thing it does is check steeringQueue.shift().
     // If we call steer() before execute(), the signal will be in the queue.
     //
@@ -1331,7 +1260,7 @@ describe("workflow tool: steering", () => {
     expect(parsed.type).toBe("error");
   });
 
-  it("pre-queued steering signal interrupts workflow before first runAgent", async () => {
+  it("pre-queued steering signal interrupts workflow before first agents.call", async () => {
     // Write a workflow that uses a global signal to indicate it's ready,
     // then waits for a signal to proceed. This avoids flaky setTimeout timing.
     writeWorkflow(
@@ -1342,11 +1271,11 @@ describe("workflow tool: steering", () => {
       export async function execute(ctx) {
         // Signal readiness via a custom event, then wait for the steering signal
         // to be queued before proceeding to runAgent
-        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
+        await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         // Small yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.runAgent("coder", "do something");
+        const result = await ctx.agents.call("coder", "do something");
         return ctx.done("should not reach here");
       }
     `,
@@ -1368,7 +1297,7 @@ describe("workflow tool: steering", () => {
     });
 
     // Wait for the workflow to signal it's ready for steering
-    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
     // Now the workflow is running and waiting — steer it
     expect(tool.isRunning).toBe(true);
@@ -1403,17 +1332,17 @@ describe("workflow tool: steering", () => {
       export const name = "two-step";
       export const description = "Two step workflow";
       export async function execute(ctx) {
-        ctx.emit({ type: "test.planning_started", step: "planning" });
-        ctx.emit({ type: "test.planning_completed", step: "planning" });
+        await ctx.events.emit({ type: "test.planning_started", data: { step: "planning" } });
+        await ctx.events.emit({ type: "test.planning_completed", data: { step: "planning" } });
 
         // Signal that we're past step 1 and ready for steering
-        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
+        await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         // Yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
 
         // This runAgent will check steering queue
-        const result = await ctx.runAgent("coder", "implement");
+        const result = await ctx.agents.call("coder", "implement");
         return ctx.done("done");
       }
     `,
@@ -1434,7 +1363,7 @@ describe("workflow tool: steering", () => {
     });
 
     // Wait for the workflow to signal readiness
-    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
     expect(tool.isRunning).toBe(true);
     tool.steer("abort now");
@@ -1459,10 +1388,10 @@ describe("workflow tool: steering", () => {
       export const name = "multi-steer";
       export const description = "Multi-steer test";
       export async function execute(ctx) {
-        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
+        await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.runAgent("coder", "first");
+        const result = await ctx.agents.call("coder", "first");
         return ctx.done("done");
       }
     `,
@@ -1482,7 +1411,7 @@ describe("workflow tool: steering", () => {
       task: "task",
     });
 
-    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
     tool.steer("first signal");
     tool.steer("second signal");
