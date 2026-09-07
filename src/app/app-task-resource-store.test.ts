@@ -12,6 +12,7 @@ import {
   cacheTaskSnapshots,
   readTaskSnapshot,
   commitTaskMutation,
+  ResourceTaskMutationStaleError,
   type AppTaskContext,
   type TaskTree,
 } from "./app-task-store.js";
@@ -734,6 +735,44 @@ describe("AppTaskResourceStore", () => {
     ).toBeFalse();
     expect(store.readTask("normal")?.status.summary).toBe("first");
     store.close();
+  });
+
+  it("rejects a stale transition at commit without replacing the accepted snapshot", () => {
+    const store = open();
+    store.bootstrapSnapshot(fixture(), "revision-1");
+    const config: AppTaskContext = {
+      appDir: roots.at(-1)!,
+      projectDir: roots.at(-1)!,
+      agent: "test",
+      maxConcurrent: 2,
+      resourceStore: store,
+    };
+    try {
+      cacheTaskSnapshots(config);
+      const accepted = readTaskSnapshot(config);
+      const stale = structuredClone(accepted);
+      for (const [tree, summary] of [
+        [accepted, "accepted"],
+        [stale, "stale"],
+      ] as const) {
+        const resource = tree.resources!.normal!;
+        resource.metadata.resourceVersion += 1;
+        resource.status.summary = summary;
+      }
+      const commit = (tree: TaskTree) =>
+        commitTaskMutation(config, tree, {
+          resourceMutation: {
+            fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
+            tasks: [{ resource: tree.resources!.normal!, ready: false }],
+          },
+        });
+      commit(accepted);
+      expect(() => commit(stale)).toThrow(ResourceTaskMutationStaleError);
+      expect(store.readTask("normal")?.status.summary).toBe("accepted");
+      expect(readTaskSnapshot(config).resources!.normal!.status.summary).toBe("accepted");
+    } finally {
+      store.close();
+    }
   });
 
   it("persists an exact configured mutation without recreating whole-App JSON", () => {

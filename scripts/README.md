@@ -10,7 +10,7 @@ Current design and operating procedures live in `may-agent.app/docs`, not here.
 | Build | `build-runtime-binary.ts`, `build-webui.ts`, `build-image.sh` | Builds are not deployments. Use `MAY_AGENT_UI_OUTPUT_DIR` to keep UI output in an isolated checkout. |
 | Image verification | `ci-container-smoke.sh` | Disposable candidate container with fixture agents; no host mounts or desktop stack. |
 | Diagnostics | `sample-runtime-quiet.ts`, `event-graph-check.ts`, `log-viewer.html` | Select the intended installation; do not confuse source fixtures with live evidence. |
-| Installed-App operations | `deploy.sh`, `deploy-receipt.ts`, `cutover-task-resources.ts`, `reconcile-human-approval-backlog.ts` | Read each tool's usage and the operating manual. State changes require explicit task/owner authority. |
+| Installed-App operations | `deploy.sh`, `deploy-receipt.ts` | Read each tool's usage and the operating manual. State changes require explicit task/owner authority. |
 | Manual experiments | `poc/`, `gym-*`, `benchmark-human-task-interface.ts`, `telegram-reply-smoke.ts`, `smoke-steering.ts` | May call models, send messages, or change state. Not part of PR CI; use an authorized disposable installation. |
 | Legacy offline inspection | `session-query.ts` | Reads the old `.state/sessions/history` layout under the working directory, not current daemon status. |
 
