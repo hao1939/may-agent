@@ -41,7 +41,7 @@ describe("simple event interface", () => {
   it("exposes the recorded failure on a pending Task admission link", () => {
     const { db, events } = fixture();
     const receipt = events.publish(
-      { type: "project.owner.requested", target: { appId: "sample", taskId: "review/one" }, data: {} },
+      { type: "project.owner.requested", target: { appId: "sample", taskId: "review/one" }, data: { reason: "review" } },
       { source: "control-socket" },
     );
     createAppEventAdmissionPlan(db, {
