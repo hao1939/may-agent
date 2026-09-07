@@ -23158,6 +23158,25 @@ and Reddit made zero public requests and retain their recorded evidence and
 triggers. The next ranked control applies the duplicate-key question to the
 separately parsed freeze manifest.
 
+## Cycle 421 checkpoint — isolated RV-052 retention rehearsal
+
+Cycle 421 reused Cycle 420's accepted seed observation and made zero XHS or
+public-source requests. Added/changed identities remain unknown, removals are
+`[]`, and all 132 durable seeds remain unavailable. RV-052 was the highest
+accessible queue item because it blocked safe release preparation.
+
+Exact material `43e09580786f27a65a9bf5ca700df4cf8337293e` makes every
+retained divergent overlap explicit and SHA-256-bound, including ignored paths
+that ordinary status omits. Eight focused tests / 35 assertions pass. A
+goal-owned fixture reproduced the original fail-closed result, then advanced
+the 48-path candidate while retaining exactly five protected byte states and
+reversed to the original HEAD and status streams. `/app` was not written.
+
+RV-052 remains high/open pending independent review and a fresh exact-boundary
+replay. No local-main landing, compaction, or cleanup is authorized. Next seek
+that review before any release attempt; RV-004/RV-034 remain the highest
+substantive evidence gaps.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, traceable, and safely integrated into local main at reviewed release boundaries until the human explicitly stops or replaces this goal.

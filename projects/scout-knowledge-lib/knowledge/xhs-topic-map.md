@@ -11136,6 +11136,31 @@ Next seek an exact per-commit cost ledger or author-supplied fifteen-task
 table-to-commit manifest; if neither is accessible, prefer a different primary
 contradiction or released denominator over another internal score conversion.
 
+### Cycle 421 checkpoint — RV-052 has an explicit isolated retention path
+
+The bounded seed reconciliation reused Cycle 420's accepted observation and
+made zero source requests: additions/changes remain unknown, removals remain
+`[]`, and all 132 durable seeds remain unavailable. Release-blocking RV-052
+outranked another research question because its two tracked Scout overlaps and
+three status-hidden Herdr overlaps lacked an executable explicit-retention
+path.
+
+The [Cycle 421 isolated exercise](../reports/review/scout-rv052-isolated-overlay-cycle421-2026-09-07.md)
+adds exact SHA-256 declarations for every retained divergent overlap. The
+unchanged baseline still fails closed; missing declarations and byte drift also
+fail. In a disposable exact-main fixture, the 48-path candidate retained all
+five observed bytes, advanced with exactly five modified paths, and reversed
+to the original HEAD, status streams, and hashes. A newly exposed large-blob
+subprocess failure is bounded and regression-tested too.
+
+Confidence is high in the isolated planner behavior and exact five-path byte
+preservation. It is low in transfer to a later dirty-checkout state until the
+same invariants are independently reviewed and freshly recomputed. RV-052 is
+mitigated but stays high/open; local-main landing, compaction, and cleanup stay
+blocked. Next obtain independent review of this material checkpoint, then
+recompute a fresh exact candidate only if that review declares a safe release
+boundary. RV-004/RV-034 remain the highest substantive evidence gaps.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.
