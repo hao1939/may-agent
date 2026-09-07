@@ -341,6 +341,27 @@ function appendTaskTriggerEvent(
 ): AppTaskTriggerEvent[] {
   const identity = taskEventIdentity(event);
   if (events.some((entry) => taskEventIdentity(entry.event) === identity)) return events;
+  if (event.type === "project.task.tick") {
+    // Ticks carry no unique work input: one latest durable wake is enough to
+    // reconcile current state. Preserve all feedback/facts alongside that wake.
+    const previous = events.filter((entry) => entry.event.type === "project.task.tick").at(-1);
+    if (previous) {
+      const previousId = Number(previous.event.eventId);
+      const incomingId = Number(event.eventId);
+      if (
+        Number.isSafeInteger(previousId) &&
+        previousId > 0 &&
+        Number.isSafeInteger(incomingId) &&
+        incomingId > 0 &&
+        previousId > incomingId
+      )
+        return events;
+    }
+    return [
+      ...events.filter((entry) => entry.event.type !== "project.task.tick"),
+      { event: structuredClone(event), observedAt },
+    ];
+  }
   return [...events, { event: structuredClone(event), observedAt }];
 }
 
@@ -2053,6 +2074,7 @@ export function recordAppTaskTrigger(
   resource.metadata.resourceVersion += 1;
   const observedAt = new Date().toISOString();
   const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], event, observedAt);
+  if (previous && events === previous.events) return { kind: "recorded" };
   const next = preferredTriggerFromEvents(events, resolvedAgent(tree, resourceIntent(resource), config.agent));
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
