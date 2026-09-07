@@ -32,14 +32,14 @@ afterEach(() => {
 });
 
 describe("workflow composition: runWorkflow", () => {
-  it("runs a sub-workflow via ctx.runWorkflow()", async () => {
+  it("runs a sub-workflow via ctx.workflows.run()", async () => {
     writeWorkflow(
       "sub.ts",
       `
       export const name = "sub";
       export const description = "Sub-workflow";
       export async function execute(ctx) {
-        return ctx.done("sub completed: " + ctx.task);
+        return ctx.done("sub completed: " + ctx.input);
       }
     `,
     );
@@ -50,8 +50,8 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent";
       export const description = "Parent workflow that calls sub";
       export async function execute(ctx) {
-        const result = await ctx.runWorkflow("sub", "child task");
-        if (result.type === "done") {
+        const result = await ctx.workflows.run("sub", "child task");
+        if (result.status === "done") {
           return ctx.done("parent got: " + result.summary);
         }
         return ctx.blocked("sub-workflow failed");
@@ -93,9 +93,9 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-esc";
       export const description = "Parent that handles sub blocker";
       export async function execute(ctx) {
-        const result = await ctx.runWorkflow("failing-sub", "task");
-        if (result.type === "blocked" || result.type === "escalate") {
-          return ctx.blocked("sub blocked: " + result.reason);
+        const result = await ctx.workflows.run("failing-sub", "task");
+        if (result.status === "blocked") {
+          return ctx.blocked("sub blocked: " + result.summary);
         }
         return ctx.done("should not reach");
       }
@@ -125,9 +125,9 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-missing";
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
-        const result = await ctx.runWorkflow("nonexistent", "task");
-        if (result.type === "blocked" || result.type === "escalate") {
-          return ctx.blocked("sub not found: " + result.reason);
+        const result = await ctx.workflows.run("nonexistent", "task");
+        if (result.status === "blocked") {
+          return ctx.blocked("sub not found: " + result.summary);
         }
         return ctx.done("should not reach");
       }
@@ -157,7 +157,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "sub-events";
       export const description = "Sub with events";
       export async function execute(ctx) {
-        ctx.emit({ type: "test.sub_step", step: "sub-step" });
+        await ctx.events.emit({ type: "test.sub_step", data: { step: "sub-step" } });
         return ctx.done("sub done");
       }
     `,
@@ -169,7 +169,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-events";
       export const description = "Parent with sub events";
       export async function execute(ctx) {
-        const result = await ctx.runWorkflow("sub-events", "task");
+        const result = await ctx.workflows.run("sub-events", "task");
         return ctx.done("parent done");
       }
     `,
@@ -212,10 +212,10 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "sub-steerable";
       export const description = "Sub that can be steered";
       export async function execute(ctx) {
-        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
+        await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.runAgent("coder", "something");
+        const result = await ctx.agents.call("coder", "something");
         return ctx.done("should not reach");
       }
     `,
@@ -227,7 +227,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-steerable";
       export const description = "Parent that delegates to steerable sub";
       export async function execute(ctx) {
-        const result = await ctx.runWorkflow("sub-steerable", "task");
+        const result = await ctx.workflows.run("sub-steerable", "task");
         return ctx.done("done");
       }
     `,
@@ -262,7 +262,7 @@ describe("workflow composition: runWorkflow", () => {
       task: "task",
     });
 
-    await waitForEvent((e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent((e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
     // Steer the parent — should propagate to sub-workflow since they share the queue
     expect(tool.isRunning).toBe(true);

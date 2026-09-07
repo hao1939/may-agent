@@ -163,41 +163,4 @@ describe("buildRuntimeCtx", () => {
     expect(handlerCtx.log).toBe(rtx.log);
   });
 
-  it("spreads into WorkflowContext without conflict", () => {
-    const opts = baseOpts();
-    const rtx = buildRuntimeCtx(opts);
-
-    // Simulate what workflow-tool does
-    const workflowCtx = {
-      task: "do something",
-      agent: "test-agent",
-      ...rtx,
-      runAgent: async () => ({} as any),
-      runWorkflow: async () => ({ type: "done" as const, summary: "ok" }),
-      runFunction: async () => ({} as any),
-      summarize: () => "",
-      done: (s: string) => ({ type: "done" as const, summary: s }),
-      blocked: (r: string) => ({ type: "blocked" as const, reason: r }),
-    };
-
-    expect(workflowCtx.persistDir).toBe("/tmp/test-persist");
-    expect(workflowCtx.emit).toBe(rtx.emit);
-    expect(workflowCtx.getDb).toBe(rtx.getDb);
-  });
-
-  it("same rtx instance can be shared across handler and workflow", () => {
-    const opts = baseOpts();
-    const rtx = buildRuntimeCtx(opts);
-
-    // Both contexts get the same emit function
-    const handler = { ...rtx, manager: {} as any };
-    const workflow = { ...rtx, task: "x", agent: "y" };
-
-    handler.emit({ type: "from.handler", value: 1 });
-    workflow.emit({ type: "from.workflow", value: 2 });
-
-    expect(opts.bus.emit).toHaveBeenCalledTimes(2);
-    expect(opts.bus.events[0]).toMatchObject({ type: "from.handler", data: { value: 1 } });
-    expect(opts.bus.events[1]).toMatchObject({ type: "from.workflow", data: { value: 2 } });
-  });
 });

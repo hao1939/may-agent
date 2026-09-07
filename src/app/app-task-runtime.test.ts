@@ -2445,7 +2445,7 @@ describe("canonical App task runtime", () => {
            export const workspace = ${JSON.stringify(scenario.workspace)};
            export async function execute(ctx) {
              return ctx.done("Fixture workflow ran", {
-               state: "converged", summary: "Fixture workflow ran", evidence: [ctx.workspaceDir]
+               state: "converged", summary: "Fixture workflow ran", evidence: [ctx.workspace.root]
              });
            }`,
       );
