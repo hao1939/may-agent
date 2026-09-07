@@ -50,7 +50,6 @@ RUN MAY_AGENT_BUILD_COMMIT="${MAY_AGENT_BUILD_COMMIT}" bun scripts/build-runtime
 FROM ${DEBIAN_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bubblewrap \
     ca-certificates \
     curl \
     git \
