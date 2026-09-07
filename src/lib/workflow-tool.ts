@@ -79,6 +79,7 @@ import type {
   WorkflowContext as AppWorkflowContext,
 } from "@may-agent/sdk/app";
 import { createRuntimeAppRead } from "../app/app-read.js";
+import { cliCallEvidence } from "./tools/run-cli-agent.js";
 
 function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
   const finishStatus = result.finishResult?.status;
@@ -105,6 +106,7 @@ function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
         ? { output: result.finishResult.result }
         : {}),
     ...(result.finishResult ? { evidence: result.finishResult } : {}),
+    cliCalls: cliCallEvidence(result.sessionId, result.messages),
   };
 }
 

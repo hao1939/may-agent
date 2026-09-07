@@ -35,6 +35,7 @@ const expectedRootExports = [
   "AppTaskPolicy",
   "AppWorkspace",
   "Condition",
+  "CliCallEvidence",
   "Demand",
   "EventSelector",
   "ExecutionResult",
