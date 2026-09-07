@@ -267,4 +267,60 @@ describe("project task workspace", () => {
 
     expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "retained-for-recovery" } });
   });
+
+  for (const retained of [false, true]) {
+    it(`recognizes a squash-integrated branch after unrelated target changes (retained=${retained})`, async () => {
+      const f = await fixture();
+      const prepared = await prepareAppTaskWorkspace({
+        repoDir: f.repo,
+        workspaceRoot: f.worktrees,
+        taskId: "squash-integrated",
+        generation: 1,
+        baseBranch: "dev",
+        refreshRemote: false,
+      });
+      for (const value of ["first", "final"]) {
+        writeFileSync(join(prepared.metadata.path, "change.txt"), `${value}\n`);
+        await git(prepared.metadata.path, "add", "change.txt");
+        await git(prepared.metadata.path, "commit", "-m", value);
+      }
+      if (retained) await finalizeAppTaskWorkspace(prepared, "waiting");
+      await git(f.repo, "merge", "--squash", prepared.metadata.branch);
+      await git(f.repo, "commit", "-m", "human squash merge");
+      writeFileSync(join(f.repo, "unrelated.txt"), "later work\n");
+      await git(f.repo, "add", "unrelated.txt");
+      await git(f.repo, "commit", "-m", "later unrelated change");
+      const target = await git(f.repo, "rev-parse", "HEAD");
+
+      const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
+
+      expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+      expect(await git(f.repo, "rev-parse", "HEAD")).toBe(target);
+      expect(await git(f.repo, "status", "--porcelain")).toBe("");
+      expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    });
+  }
+
+  it("retains conflicting branches instead of inferring squash integration", async () => {
+    const f = await fixture();
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "conflicting-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    for (const [cwd, content] of [[prepared.metadata.path, "task"], [f.repo, "target"]]) {
+      writeFileSync(join(cwd!, "README.md"), `${content}\n`);
+      await git(cwd!, "add", "README.md");
+      await git(cwd!, "commit", "-m", content!);
+    }
+    const target = await git(f.repo, "rev-parse", "HEAD");
+    const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
+    expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "branch-retained" } });
+    expect(await git(f.repo, "rev-parse", "HEAD")).toBe(target);
+    expect(await git(f.repo, "status", "--porcelain")).toBe("");
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
+  });
 });
