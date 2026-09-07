@@ -567,7 +567,7 @@ export type SystemEvent =
     }
   | {
       type: "cli.task.started";
-      source: "cli-task-runner";
+      source: string;
       owner: string;
       data: {
         taskId: string;
@@ -625,7 +625,7 @@ export type SystemEvent =
     }
   | {
       type: "cli.task.completed";
-      source: "cli-task-runner";
+      source: string;
       owner: string;
       data: {
         taskId: string;
@@ -645,7 +645,7 @@ export type SystemEvent =
     }
   | {
       type: "cli.task.failed";
-      source: "cli-task-runner";
+      source: string;
       owner: string;
       data: {
         taskId: string;

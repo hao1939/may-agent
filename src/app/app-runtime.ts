@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
 import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import type { AppEvent, AppInput } from "@may-agent/sdk";
@@ -123,6 +124,7 @@ export async function runAppRuntime(opts: {
   processStartTime: number;
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
 }): Promise<void> {
+  assertLegacyCliTasksSettled(opts.persistDir);
   const startupStartedAt = performance.now();
   let priorStartupPhaseAt = startupStartedAt;
   const startupPhases: string[] = [];
