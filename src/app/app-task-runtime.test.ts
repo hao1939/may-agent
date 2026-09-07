@@ -3707,6 +3707,69 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it.each([
+    { state: "converged", committed: false },
+    { state: "converged", committed: true },
+    { state: "waiting", committed: false },
+  ] as const)("parks workspace rejection without losing recovery ($state, committed=$committed)", async (scenario) => {
+    const f = fixture();
+    const bus = eventBus();
+    const git = (cwd: string, ...args: string[]) => promisify(execFile)("git", ["-C", cwd, ...args], { timeout: 10_000 });
+    await git(f.appDir, "init", "-b", "main");
+    await git(f.appDir, "config", "user.email", "test@example.com");
+    await git(f.appDir, "config", "user.name", "Test");
+    await git(f.appDir, "add", ".");
+    await git(f.appDir, "commit", "-m", "fixture baseline");
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        residue: async (attempt) => {
+          calls++;
+          writeFileSync(join(attempt.cwd, "retained.txt"), "unfinished source\n");
+          if (scenario.committed) {
+            await git(attempt.cwd, "add", "retained.txt");
+            await git(attempt.cwd, "commit", "-m", "retained change");
+          }
+          return { state: scenario.state, summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:workspace-rejection",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: {
+          ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" },
+        } }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/workspace-rejection";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Preserve unfinished work",
+        acceptance: ["No workspace loss or unchanged automatic retry"], mode: "achieve",
+        agent: "sample-owner", executor: "residue" },
+    });
+    const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    await run();
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+      status: "attention",
+      summary: expect.stringContaining(scenario.committed ? "not integrated" : "dirty"),
+      evidence: expect.arrayContaining(["provider:evidence"]),
+    });
+    for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+    await run();
+    expect(calls).toBe(1);
+    const tree = readTaskSnapshot(config);
+    expect(tree.receipts?.[taskId]).toBeUndefined();
+    expect(Object.values(tree.attempts ?? {})).toEqual([
+      expect.objectContaining({ state: "failed", failureReason: "handler-blocked",
+        workspace: expect.objectContaining({ disposition: scenario.committed ? "branch-retained" : "retained-for-recovery" }) }),
+    ]);
+  });
+
   it("parks invalid handler results instead of retrying them through recovery", async () => {
     const f = fixture();
     const bus = eventBus();
