@@ -624,8 +624,7 @@ export interface WorkflowTool extends AgentTool {
 }
 
 export interface WorkflowRunner {
-  run(name: string, task: string): Promise<WorkflowToolResult>;
-  resolve(name: string): Promise<WorkflowModule | null>;
+  run(name: string, task: string, catalog?: WorkflowCatalog): Promise<WorkflowToolResult>;
   steer(message: string): boolean;
   readonly isRunning: boolean;
   readonly activeWorkflow: string | null;
@@ -692,6 +691,9 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   runId: string;
   verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
 }> {
+  // Execution and its verifier must come from the same dispatch snapshot.
+  const catalog = await buildWorkflowCatalog(opts.workflowDir ?? "");
+  const { workflow } = findWorkflow(catalog, opts.workflowName);
   const runner = createWorkflowRunner({
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
@@ -717,8 +719,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     signal: opts.signal,
   });
 
-  const workflow = await runner.resolve(opts.workflowName);
-  const parsed = await runner.run(opts.workflowName, opts.task);
+  const parsed = await runner.run(opts.workflowName, opts.task, catalog);
   const verifier = workflow?.verify
     ? { name: workflow.name, sourcePath: workflow.sourcePath, verify: workflow.verify }
     : undefined;
@@ -1789,11 +1790,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
   const runner: WorkflowRunner = {
     run: runTyped,
-
-    async resolve(name: string): Promise<WorkflowModule | null> {
-      const catalog = await buildWorkflowCatalog(workflowDir);
-      return findWorkflow(catalog, name).workflow;
-    },
 
     steer(message: string): boolean {
       if (!activeSteeringQueue) return false;
