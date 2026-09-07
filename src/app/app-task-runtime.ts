@@ -3242,9 +3242,12 @@ async function reconcileTask(input: {
         if (stale) return stale.reconcileTaskIds;
         const finalized = await finalizeWorkspace("accepted");
         if (!finalized.ok) {
+          // A retained dirty/unintegrated workspace needs inspection, not an
+          // identical replay of the handler's already rejected completion.
+          primaryResult.handlerBlocked = true;
           primaryHandlerResult.state = "error";
           primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-          primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+          primaryHandlerResult.evidence = [...primaryHandlerResult.evidence, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
         }
       }
       if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
@@ -3329,9 +3332,10 @@ async function reconcileTask(input: {
       if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
+        primaryResult.handlerBlocked = true;
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-        primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+        primaryHandlerResult.evidence = [...primaryHandlerResult.evidence, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
       }
     }
 
