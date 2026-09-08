@@ -2433,6 +2433,13 @@ describe("canonical App task runtime", () => {
     },
     { name: "shared workflow needs no worktree", git: true, branch: "main", workspace: "shared" },
     { name: "task workflow rejects a local App", git: false, workspace: "task", preparationFails: true },
+    {
+      name: "failed Git preparation can recover on the same Task",
+      git: true,
+      branch: "main",
+      missingRemote: true,
+      preparationFails: true,
+    },
   ])("preserves workspace admission: $name", async (scenario) => {
     const f = fixture();
     const bus = eventBus();
@@ -2461,6 +2468,7 @@ describe("canonical App task runtime", () => {
       await git("commit", "-m", "fixture baseline");
       await git("branch", "dev");
       await git("branch", "release");
+      if (scenario.missingRemote) await git("remote", "add", "origin", join(f.root, "provider.git"));
     }
 
     let executorCwd: string | undefined;
@@ -2511,23 +2519,53 @@ describe("canonical App task runtime", () => {
       taskId,
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
-    if (scenario.preparationFails) {
-      await expect(reconciliation).rejects.toThrow("requires a task worktree but app workspace is not Git");
-    } else {
-      await reconciliation;
-    }
+    await reconciliation;
     const tree = readTaskSnapshot(config);
     if (scenario.preparationFails) {
       expect(tree.receipts?.[taskId]).toBeUndefined();
-      expect(tree.resources?.[taskId]?.status.phase).toBe("pending");
+      expect(tree.resources?.[taskId]?.status.phase).toBe("attention");
       expect(Object.values(tree.attempts ?? {})).toEqual([
         expect.objectContaining({
-          state: "interrupted",
-          summary: expect.stringContaining("requires a task worktree but app workspace is not Git"),
+          state: "failed",
+          failureReason: "WorkspacePreparationFailed",
+          summary: expect.stringContaining(
+            scenario.missingRemote ? "git fetch" : "requires a task worktree but app workspace is not Git",
+          ),
         }),
       ]);
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
       expect(executorCwd).toBeUndefined();
       expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+      if (scenario.missingRemote) {
+        const git = (...args: string[]) => promisify(execFile)("git", args, { timeout: 10_000 });
+        await git("init", "--bare", join(f.root, "provider.git"));
+        await git("-C", f.appDir, "push", "origin", "main");
+        // Repair the prerequisite, then use the existing exact retry boundary.
+        // No replacement Task or private state repair is needed.
+        const resource = config.resourceStore.readTask(taskId)!;
+        retryFailedAppTask(config, {
+          appId: "sample",
+          taskId,
+          expectedGeneration: resource.metadata.generation,
+          expectedResourceVersion: resource.metadata.resourceVersion,
+        });
+        await reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+        const recovered = readTaskSnapshot(config);
+        expect(recovered.receipts?.[taskId]?.summary).toBe("Fixture executor ran");
+        expect(Object.keys(recovered.attempts ?? {})).toHaveLength(2);
+        expect(executorCwd).toBeDefined();
+      }
       return;
     }
     const receipt = tree.receipts?.[taskId];

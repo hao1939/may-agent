@@ -3436,6 +3436,7 @@ async function reconcileTask(input: {
     if (
       !primaryResult.unavailable &&
       !primaryResult.handlerBlocked &&
+      !primaryResult.workspacePreparationFailed &&
       !agentHandoff &&
       !primaryHandlerResult.resultRejected
     ) {
