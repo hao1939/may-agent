@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { prepareAgentExecution } from "../../src/lib/agent-execution.js";
+import type { SubagentDefinition } from "../../src/lib/types.js";
 
 import { APP_ROOT } from "./installation.js";
 const SHARED_SKILLS = resolve(APP_ROOT, "shared/skills");
@@ -93,13 +95,43 @@ describe("shared system skills", () => {
   it("always-loaded agent guidance does not recreate legacy project scheduling", () => {
     const mayAgents = readSkill("agents/may/AGENTS.md");
     const mayContext = readSkill("agents/may/context.md");
-    expect(mayAgents).toContain("Apps own durable work");
-    expect(mayContext).toContain("May request remembers who is owed an answer");
-    expect(mayContext).toContain("responsible App Task(s)");
-    expect(mayContext).not.toContain("May Task");
+    expect(mayAgents).toContain("Apps own durable");
+    expect(mayContext).toContain("The frontend request then");
+    expect(mayContext).toContain("supervision Task");
+    expect(mayContext).toContain("Closing Console does not stop the responsible Task");
+    expect(mayContext).not.toContain("Task results wake the same request");
     expect(mayContext).not.toContain("project.feedback.created");
     expect(mayAgents).not.toContain("persistent-task");
     expect(mayAgents).not.toContain("project.task.assigned");
+  });
+
+  it("assembles May and Host Operations guidance without mixing their procedures", () => {
+    const prompt = (name: string, agentDir: string) =>
+      prepareAgentExecution({
+        sessionId: `role-context-${name}`,
+        projectRoot: APP_ROOT,
+        task: "Inspect the supplied evidence without changing state.",
+        definition: {
+          name,
+          description: "Role context test; no inference is performed",
+          agentDir: resolve(APP_ROOT, agentDir),
+          sharedRoot: resolve(APP_ROOT, "shared"),
+          tools: [],
+          model: { id: "fixture", contextWindow: 128_000 } as SubagentDefinition["model"],
+        },
+      }).systemPrompt;
+
+    const may = prompt("may", "agents/may");
+    const hostOwner = prompt("tech-lead", "projects/may-agent.app/agents/tech-lead");
+    expect(may).toContain("Never bypass missing");
+    expect(may).toContain("Return the requested schema");
+    expect(may).toContain("An older Task may not contain them yet");
+    expect(may).toContain("projects/may.app/app.ts");
+    expect(may).not.toContain("canonical delivery and remediation receipts");
+    expect(may).not.toContain("result.conversation");
+    expect(hostOwner).toContain("canonical delivery and remediation receipts");
+    expect(hostOwner).toContain("zero count and empty list");
+    expect(hostOwner).not.toContain("An older Task may not contain them yet");
   });
 
   it("reading-metrics treats metrics as signals and avoids schema guessing", () => {
