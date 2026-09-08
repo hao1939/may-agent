@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 420: a scheduled observational pass records a profile-class login wall without inferring a seed delta, and a primary-artifact audit narrows SwarmResearch's public $50 result support."
+summary: "Seed-first Scout continuity through Cycle 422: a scheduled observational pass reproduces a profile-class login wall without inferring a seed delta, and a fresh isolated release rehearsal preserves the two protected Scout overlaps applicable to current main."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
-last_updated: "2026-09-06"
-latest_seed_basis: "Cycle 420 observational reconciliation through 2026-09-06T02:05:21.407Z reproduces public Explore at 30 notes and observes supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in seed-ledger row 420. Access-shell class and bytes changed without exposing a collection delta."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 420 at 2026-09-06T02:05:21.407Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 420 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+last_updated: "2026-09-08"
+latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduces public Explore at 30 notes and supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 420 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; isolated dirty-overlay transition evidence through Cycle 422; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -23176,6 +23176,55 @@ RV-052 remains high/open pending independent review and a fresh exact-boundary
 replay. No local-main landing, compaction, or cleanup is authorized. Next seek
 that review before any release attempt; RV-004/RV-034 remain the highest
 substantive evidence gaps.
+
+## Cycle 422 checkpoint — current-main overlay path rehearsed
+
+The due seed-first pass ran from `2026-09-08T03:33:09.007Z` through
+`03:33:16.091Z`. Direct localhost 9222 refused worker UID 1000 with curl exit 7
+and HTTP 000. The established effective-UID-0 read-only browser path then ran
+exactly one public `status` and one non-navigating `saved-status`. Explore
+remained ready with 30 notes. The saved target remained an HTTP-200
+`profile`-class login wall with access fingerprint `74a9cdb7…5cc2e44`, zero
+attributable items, and empty ID fingerprint `e3b0c442…b855`; only byte length
+103,020→103,435 and body SHA `7a5b5602…5c44b`→`ecabd28f…2abb` changed.
+Additions and metadata changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable. No feed, search, detail, or account
+mutation ran.
+
+RV-052 remained the highest accessible item because a release candidate had
+not yet been exercised against current main. Read-only `/app` observation
+found exact HEAD `6237bd7e608de98bb60e27a94ea19b52bf52c838`, clean index,
+76 default records, 4,393 fully expanded records, and the unchanged 23-record
+Scout status. A goal-owned merge candidate
+`876222a5ecc56f5ebad98bbbaa411838fa93c1c2` has that main as first parent and
+exact canonical `fcd91b1725c6cedb350b3a7ff398f0a91622c085` as second parent.
+
+The candidate changes 32 no-rename paths. Three ignored Herdr files implicated
+at the older boundary are absent from both current trees and therefore are not
+candidate paths; declaring them now correctly fails as unused. The two
+remaining divergent Scout paths preserve exact SHA-256 values
+`d15c253f…b2ded` and `487a560c…cf2f2`. The live no-write plan admits exactly
+those two, lists 30 clean materializations, nine inverse restores, 21 inverse
+removals, and 4,391 unrelated dirty records.
+
+The exact commands, full hashes, candidate tree, and rollback evidence are in
+the [Cycle 422 live-transition report](../review/scout-rv052-live-transition-cycle422-2026-09-08.md).
+
+A new disposable fixture at exact main copied only the two protected bytes.
+Its forward transition reached exact candidate with a clean index and exactly
+those two modified paths. The inverse returned to exact main, byte-identical
+two-record status fingerprint `51d890af…60c0a`, and both original hashes.
+The clean candidate passes 316 tests / 1,564 assertions. `/app` itself was
+never written.
+
+RV-052 stays high/open pending independent review and a fresh immediate
+preflight/postflight at any actual landing. Candidate
+`5ed6252f02c1479fc0111c68978e8cc5ba7677dd` is retained as historical
+pre-ledger preparation and superseded for landing by `876222a5ec`. No local
+main, compaction, or cleanup action is authorized by this evidence. After the
+review decision, RV-004 remains the highest substantive question but still
+lacks its protected query-to-later-outcome join; RV-034 remains at the external
+runtime boundary.
 
 ## Supervision
 

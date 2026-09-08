@@ -1,23 +1,23 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-06"
-latest_seed_basis: "Cycle 420 observational reconciliation through 2026-09-06T02:05:21.407Z reproduced public Explore at 30 notes and observed the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 420. Access-shell class, byte length, access fingerprint, and body hash changed from Cycle 409 without exposing a collection delta."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 420 at 2026-09-06T02:05:21.407Z, with bounded no-request reconciliation in Cycles 406-408; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycle 408; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 420 read-only XHS boundary through 2026-09-06T02:05:21.407Z."
+last_updated: "2026-09-08"
+latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+latest_seed_observation: "Cycle 422 read-only XHS boundary through 2026-09-08T03:33:16.091Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 420 used the established direct localhost Chrome
+authenticated window. Cycle 422 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
 worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
-returned a 103,020-byte profile-class login wall and zero attributable items.
-The shell class and bytes changed from Cycle 409. This is not a comparable collection
+returned a 103,435-byte profile-class login wall and zero attributable items.
+Only response bytes changed from Cycle 420. This is not a comparable collection
 inventory. Added and changed sets remain unknown, proven removals are `[]`,
 and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
@@ -11160,6 +11160,42 @@ mitigated but stays high/open; local-main landing, compaction, and cleanup stay
 blocked. Next obtain independent review of this material checkpoint, then
 recompute a fresh exact candidate only if that review declares a safe release
 boundary. RV-004/RV-034 remain the highest substantive evidence gaps.
+
+### Cycle 422 checkpoint — current-boundary transition is reversible in isolation
+
+The due bounded seed pass ran once through
+`2026-09-08T03:33:16.091Z`. Public Explore remained readable at 30 notes; the
+saved surface remained a `profile`-class login wall with zero attributable
+items. Only its byte length and body hash changed. Added and changed identities
+remain unknown, removals remain `[]`, and all 132 durable seeds remain
+unavailable. No feed, search, detail, or account-mutating action ran.
+
+Release-blocking RV-052 remained the highest accessible queue item. Live main
+had externally advanced to `6237bd7e608de98bb60e27a94ea19b52bf52c838`,
+while exact canonical integration source
+`fcd91b1725c6cedb350b3a7ff398f0a91622c085` retained reviewer
+`27c72864189c3fb95fe31f5fd878826b2881b203` as its direct parent. A new clean
+merge candidate `876222a5ecc56f5ebad98bbbaa411838fa93c1c2` contains both.
+The current candidate has 32 no-rename paths. The three formerly implicated
+ignored Herdr files are absent from both trees, so the planner correctly
+rejects them as unused declarations. Exactly two divergent Scout paths remain
+and are bound to their live SHA-256 values.
+
+The [Cycle 422 live-transition report](../reports/review/scout-rv052-live-transition-cycle422-2026-09-08.md)
+records that the no-write live plan reports two retained overlaps, 30 clean
+materializations, nine rollback restores, 21 rollback removals, and 4,391
+unrelated dirty records. A separate goal-owned fixture copied only the two
+protected bytes, advanced to the exact candidate with those two paths still
+modified, and reversed to exact main, exact status bytes, and both original
+hashes. Candidate validation passes 316 tests / 1,564 assertions.
+
+Confidence is high in the current merge identity, the two applicable protected
+hashes, and isolated transition/inverse. It is low in any future live transfer
+after further canonical or dirty-checkout drift. RV-052 therefore remains
+high/open and release-blocking pending independent review plus a fresh
+immediate preflight/postflight at the actual landing boundary. No local-main
+movement, compaction, or cleanup is claimed. RV-004 and RV-034 remain the
+highest substantive evidence gaps after this release decision.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
