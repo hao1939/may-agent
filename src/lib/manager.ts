@@ -942,6 +942,7 @@ export class SubagentManager {
       kind: "call",
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
+      taskBinding: opts?.taskBinding,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
