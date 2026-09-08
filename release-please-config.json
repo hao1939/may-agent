@@ -1,5 +1,6 @@
 {
   "release-type": "node",
+  "bootstrap-sha": "78fe7123253c64a161a963d87bf3d40eaa593898",
   "include-component-in-tag": false,
   "changelog-path": "CHANGELOG.md",
   "packages": {
