@@ -474,44 +474,54 @@ conversational kinds; the former catalog excluded May even though its prompt
 allowed May-owned work. No new role router, SDK field, scheduler, or persistence
 path is introduced. The shared public schema and generic request runtime remain.
 
-Initial instruction-slice verification: 27 focused App and owner-workflow tests pass; May App type checking
-and formatting pass. Paired installation checks pass 34 tests, with 7 explicit
-retired-cron skips. The checks include real prompt assembly and preserve Gym's
-resource-backed admission/emission coverage. Model judgment and live operation
-have not been tested; shorter instructions alone are not proof of better
-behavior. Host `bun run ci` passed 2,493 tests with 3 explicit installation-only
-skips and no failures, including real daemon/socket/browser checks. The paired
-Host commits are `6242bdd742724e0eb4c29388f159970e8cd434a6` (repair the stale Gym
-fixture) and `faff58d3d861e21380fc55a02465903f7323e850` (prompt-assembly checks),
-based on `e1a36126229826a0848ec6687bd07c5c950c75e7`. Those initial Host changes are tests
-only. Design checks
-reported no errors and three local scratch-directory warnings. All verification
-used isolated checkouts; nothing was published, deployed, or restarted.
-
-The direct-handoff continuation is Host
-`0667491ae419d237358484a97f8f41426eb107d3`, paired with App instruction commit
-`be40354546` and this documentation update. The final Host revision passes
-`bun run ci`: 2,499 passed, 3 installation-only skips, no failures. Six new
-regression tests cover new and retained request contracts; one
-creates a legacy child wait and completes it through the real inbox Host after
-recreating that Host with the current May definition. Paired installation
-checks still pass 34 tests (7 retired-cron skips), and 27 focused App tests pass.
-The Host source change adds 27 lines and removes 7; the 191-line test file
-checks the preserved and narrowed contracts. This removes an unnecessary model
-choice, not the public waiting runtime. No SDK contract or storage format
-changes, model-backed behavior claim, publication, or deployment is included.
-
 C: HTTP/Evaluation policy and feedback ownership remains a separate known gap,
 excluded from this May-focused pass by the human's clarification. No Evaluation
 implementation, partial migration, live state change, or rollout is included.
 
-### Source review publication
+### Published source and verification
 
-After the local implementation, the human requested PRs. The Host candidate
-was rebased onto main `78fe7123253c64a161a963d87bf3d40eaa593898`; its source
-revision is now `508b506b` on `codex/may-focused-conversation-20260908`.
-The original local commits above remain audit evidence, not current PR heads.
-The paired App source uses the same branch name, based on App main `d8baf6e0c7`.
-It remains in the existing bare Git repository, which has no PR interface;
-the Host PR must identify the exact App review revision. Source-branch and PR
-publication is authorized, not merging, deploying, or restarting any instance.
+[Host PR #77](https://github.com/hao1939/may-agent/pull/77) contains candidate
+`4ff36da53b53599c501b4a3d4b104821fc6bac67`, based on main `78fe7123253c64a161a963d87bf3d40eaa593898`.
+The paired App source includes instruction commit `be40354546` and the current
+documentation on `codex/may-focused-conversation-20260908`, based on App main
+`d8baf6e0c7`. It is published to the existing bare Git repository
+`azureuser@74.176.66.242:/opt/may-agents.git`, which has no PR interface.
+The Host PR records the exact paired App revision. Earlier local commit IDs
+remain audit history, not the current review heads.
+
+Verification on the current Host candidate, with Node 24.20.0 and Bun 1.3.14:
+
+- Full Host CI: 2,509 passed, 3 installation-only skips, no failures. Typechecks,
+  SDK/boundary checks, lint, and real daemon/socket/browser tests passed.
+- Paired installation checks: 34 passed, 7 retired-cron skips, no failures.
+  These include actual prompt assembly for May and Host Operations and Gym's
+  resource-backed admission/emission fixtures, not a live installation trial.
+- Focused App and owner-workflow checks: 27 passed, no failures.
+- Design integrity: no errors; three local scratch-directory warnings.
+
+Six request-contract tests cover new and retained protocols. One creates a
+legacy child wait, recreates the inbox Host with the current May definition,
+and completes the same request without attaching replacement work. The existing
+May-owned-goal runtime test now uses the real request resolver: it checks the
+model's own-App catalog and schema, then one decision, one Task attachment, and
+the exact Topic link. Inference and Task execution are fixture capabilities;
+this proves the handoff contract, not model judgment or full task completion.
+
+The production Host change adds 27 lines and removes 7, narrowing an unnecessary
+model choice without deleting the public runtime. No SDK or storage migration,
+role router, queue, or extra work lifecycle is introduced.
+
+### Completion boundary
+
+| Item | Status and remaining work |
+| --- | --- |
+| A: source caller audit | Complete for the inspected sources; the public waiting path stays supported. |
+| A: delete the waiting path | Deferred until a designated affected installation and SDK callers are audited, and retained obligations are drained or migrated. |
+| B: focused instructions and direct-handoff context | Implemented and verified as a source candidate; review both repositories together. |
+| Better model behavior | Not established. Run the approved conversation cases against baseline and candidate only with separate model/credential authority. |
+| Merge and rollout | Not performed. CI and publication do not authorize either. |
+| C and the earlier delivery pilot | Outside this May-only pass, not prerequisites or implied new work. |
+
+The scoped source cleanup is implemented; the full historical proposal and
+live rollout are not complete. GitHub's current-candidate checks and review
+discussions remain the readiness authority, not this dated evidence record.
