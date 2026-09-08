@@ -377,8 +377,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     });
 
     let buffer = "";
+    socket.setEncoding("utf8");
     socket.on("data", (data) => {
-      buffer += data.toString();
+      buffer += data;
       const lines = buffer.split("\n");
       buffer = lines.pop()!;
       if (Buffer.byteLength(buffer) > CONTROL_SOCKET_LIMITS.maxIncompleteBufferBytes) {

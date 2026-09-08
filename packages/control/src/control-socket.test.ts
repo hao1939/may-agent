@@ -1082,6 +1082,53 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("preserves human text when a command arrives one UTF-8 byte at a time", async () => {
+    const received: ControlEvent[] = [];
+    const core = createCore({
+      emitEvent: (event) => {
+        received.push(event);
+        return { eventId: 1 };
+      },
+    });
+    const stream = (core.endpoint as () => Duplex)();
+    try {
+      await nextFrame(stream);
+      const response = nextFrame(stream);
+      const message = "继续检查 café 🐑";
+      const command = {
+        type: "project.comment.created",
+        source: "fixture",
+        owner: "app:sample",
+        data: { comment: message },
+      };
+      for (const byte of Buffer.from(JSON.stringify(command) + "\n")) stream.write(Buffer.from([byte]));
+      await expect(response).resolves.toMatchObject({ type: "ok", command: command.type });
+      expect(received).toContainEqual(expect.objectContaining({ data: expect.objectContaining({ comment: message }) }));
+    } finally {
+      stream.destroy();
+    }
+  });
+
+  it.each([true, false])("keeps UTF-8 size limits byte-based (complete frame: %s)", async (complete) => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    try {
+      await nextFrame(stream);
+      const response = nextFrame(stream);
+      const limit = complete ? CONTROL_SOCKET_LIMITS.maxFrameBytes : CONTROL_SOCKET_LIMITS.maxIncompleteBufferBytes;
+      const text = "好".repeat(Math.floor(limit / Buffer.byteLength("好")) + 1);
+      expect(text.length).toBeLessThan(limit);
+      stream.write(text + (complete ? "\n" : ""));
+      await expect(response).resolves.toMatchObject({
+        type: "error",
+        message: complete ? "Control socket frame is too large" : "Incomplete control socket frame is too large",
+      });
+      expect(core.emitted).toEqual([]);
+    } finally {
+      stream.destroy();
+    }
+  });
+
   it("creates the socket parent directory before listening", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-control-socket-"));
     try {
