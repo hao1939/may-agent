@@ -38,6 +38,42 @@ afterEach(() => {
 });
 
 describe("project task workspace", () => {
+  it("fetches an exact base without competing with worker remote-tracking refs or FETCH_HEAD", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const original = await git(f.repo, "rev-parse", "origin/dev");
+    const writer = join(f.root, "writer");
+    await git(f.root, "clone", "--branch", "dev", remote, writer);
+    await git(writer, "config", "user.email", "test@example.com");
+    await git(writer, "config", "user.name", "Test");
+    writeFileSync(join(writer, "advanced.txt"), "new remote base\n");
+    await git(writer, "add", "advanced.txt");
+    await git(writer, "commit", "-m", "advance remote independently");
+    await git(writer, "push", "origin", "dev");
+    const current = await git(writer, "rev-parse", "HEAD");
+
+    // A separate worker owns these shared Git files. Host preparation must
+    // neither wait for them nor delete/rewrite them to recover from contention.
+    const trackingLock = join(f.repo, ".git/refs/remotes/origin/dev.lock");
+    const fetchHead = join(f.repo, ".git/FETCH_HEAD");
+    writeFileSync(trackingLock, "owned by worker\n");
+    writeFileSync(fetchHead, "worker fetch result\n");
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "independent-fetch", generation: 1, baseBranch: "dev",
+    });
+    expect(prepared.metadata.baseCommit).toBe(current);
+    expect(prepared.metadata.headCommit).toBe(current);
+    expect(await git(f.repo, "rev-parse", prepared.metadata.baseRef)).toBe(current);
+    expect(await git(f.repo, "rev-parse", "origin/dev")).toBe(original);
+    expect(await git(f.repo, "rev-parse", "HEAD")).toBe(original);
+    expect(readFileSync(trackingLock, "utf8")).toBe("owned by worker\n");
+    expect(readFileSync(fetchHead, "utf8")).toBe("worker fetch result\n");
+    expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+  });
+
   it("keeps the event loop available while Git prepares the worktree", async () => {
     const f = await fixture();
     let controlTurnObserved = false;
@@ -56,6 +92,38 @@ describe("project task workspace", () => {
 
     expect(controlTurnObserved).toBe(true);
     await finalizeAppTaskWorkspace(prepared, "failed");
+  });
+
+  it("isolates fetched base snapshots across Tasks and preserves unfinished work when refreshing", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const first = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
+    });
+    writeFileSync(join(first.metadata.path, "unfinished.txt"), "retain this repair\n");
+    writeFileSync(join(f.repo, "advanced.txt"), "new target\n");
+    await git(f.repo, "add", "advanced.txt");
+    await git(f.repo, "commit", "-m", "advance remote");
+    await git(f.repo, "push", "origin", "dev");
+    const current = await git(f.repo, "rev-parse", "HEAD");
+    const second = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "second-fetch", generation: 1, baseBranch: "dev",
+    });
+    expect(second.metadata.baseRef).not.toBe(first.metadata.baseRef);
+    expect(await git(f.repo, "rev-parse", first.metadata.baseRef)).toBe(first.metadata.baseCommit);
+    expect(second.metadata.headCommit).toBe(current);
+    const resumed = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
+      previous: first.metadata,
+    });
+    expect(resumed.metadata.path).toBe(first.metadata.path);
+    expect(resumed.metadata.headCommit).toBe(first.metadata.headCommit);
+    expect(resumed.metadata.baseCommit).toBe(first.metadata.baseCommit);
+    expect(await git(f.repo, "rev-parse", resumed.metadata.baseRef)).toBe(current);
+    expect(readFileSync(join(resumed.metadata.path, "unfinished.txt"), "utf8")).toBe("retain this repair\n");
   });
 
   it("reuses one deterministic worktree for retries of the same task generation", async () => {
@@ -234,6 +302,8 @@ describe("project task workspace", () => {
     await git(f.repo, "commit", "-m", "advance dev");
     await git(f.repo, "push", "origin", "dev");
     const advancedBase = await git(f.repo, "rev-parse", "HEAD");
+    const remoteTaskLock = join(f.repo, `.git/refs/remotes/origin/${prepared.metadata.branch}.lock`);
+    writeFileSync(remoteTaskLock, "worker task-branch fetch\n");
 
     const retry = await prepareAppTaskWorkspace({
       repoDir: f.repo,
@@ -246,6 +316,7 @@ describe("project task workspace", () => {
 
     expect(retry.metadata.headCommit).toBe(testedCommit);
     expect(retry.metadata.headCommit).not.toBe(advancedBase);
+    expect(readFileSync(remoteTaskLock, "utf8")).toBe("worker task-branch fetch\n");
   });
 
   it("removes the task branch after its commit reaches the base branch", async () => {

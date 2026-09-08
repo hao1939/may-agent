@@ -154,18 +154,30 @@ export async function prepareAppTaskWorkspace(input: {
     const path = resolve(join(input.workspaceRoot, leaf));
     const remote = "origin";
     const hasRemote = await remoteExists(repoDir, remote);
+    let fetchedBaseRef: string | undefined;
+    let fetchedTaskRef: string | undefined;
     if (hasRemote && input.refreshRemote !== false) {
-      await git(repoDir, ["fetch", "--prune", remote, input.baseBranch]);
-      await git(repoDir, ["fetch", remote, `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`], true);
+      // Worker subprocesses share remote-tracking refs and FETCH_HEAD with
+      // the Host, but not its in-process lock. Fetch into this generation's
+      // private refs and disable Git's implicit remote/tag/FETCH_HEAD writes.
+      const fetchArgs = ["fetch", "--no-tags", "--no-write-fetch-head", "--refmap=", remote];
+      fetchedBaseRef = `refs/may/workspaces/${leaf}/base`;
+      await git(repoDir, [...fetchArgs, `+refs/heads/${input.baseBranch}:${fetchedBaseRef}`]);
+      const taskRef = `refs/may/workspaces/${leaf}/head`;
+      if ((await git(repoDir, [...fetchArgs, `+refs/heads/${branch}:${taskRef}`], true)).status === 0) {
+        fetchedTaskRef = taskRef;
+      }
     }
     const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
-    const remoteTaskRef = `refs/remotes/${remote}/${branch}`;
+    const remoteTaskRef = fetchedTaskRef ?? `refs/remotes/${remote}/${branch}`;
     const localRef = `refs/heads/${input.baseBranch}`;
-    const baseRef = (await refExists(repoDir, remoteRef))
-      ? `${remote}/${input.baseBranch}`
-      : (await refExists(repoDir, localRef))
-        ? input.baseBranch
-        : "HEAD";
+    const baseRef = fetchedBaseRef ?? (
+      (await refExists(repoDir, remoteRef))
+        ? `${remote}/${input.baseBranch}`
+        : (await refExists(repoDir, localRef))
+          ? input.baseBranch
+          : "HEAD"
+    );
     const currentBaseCommit = (await git(repoDir, ["rev-parse", baseRef])).stdout;
 
     let entries = await worktreeEntries(repoDir);
@@ -204,7 +216,7 @@ export async function prepareAppTaskWorkspace(input: {
           "-b",
           branch,
           path,
-          remoteTaskBranchExists ? `${remote}/${branch}` : currentBaseCommit,
+          remoteTaskBranchExists ? remoteTaskRef : currentBaseCommit,
         ]);
       }
     }
