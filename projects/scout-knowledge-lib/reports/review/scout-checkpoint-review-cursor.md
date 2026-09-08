@@ -4696,13 +4696,46 @@ or authorize local-main landing, cleanup, or compaction. Roll back only this
 producer refresh with one ordinary revert of its standing commit; it does not
 roll back reviewer result `27c7286418` or producer research.
 
+## Producer release preparation through Cycle 426
+
+Cycle 425 canonical `ed7de4d92950c1daa8b5829531079928ff592cc5`
+descends linearly from the accepted Cycle 421 reviewer result and producer
+ledger. It adds the source-bound Organizational Memory run/scenario
+qualification; its full exact-tip gate passes 321 tests / 1,632 assertions,
+121 scoped links, navigation 11/14 + 8/8 + 14/14, 1,555 documents / 1,804
+broad links, and health 26 facts / 16 wakes with truncation.
+
+Fresh release preparation uses unchanged live main
+`6237bd7e608de98bb60e27a94ea19b52bf52c838` and exact canonical
+`ed7de4d929` as the ordered parents of clean isolated candidate
+`584395df7c2c25f5737eb4a392dc8c75d2852b53`, tree
+`aee432c4fe174159ec389f151cf652607d9d646f`. Read-only live fingerprints remain
+76 / `7f5d6f52…f2ca6d`, 4,393 / `71cd339b…38549`, and Scout-only 23 /
+`b9d6fb9c…a12c`; the index is clean. Package and INDEX hashes remain
+`d15c253f…b2ded` and `487a560c…cf2f2`.
+
+The no-write planner reports 38 paths, two explicit retained overlaps, 36
+clean materializations, nine rollback restores, 27 removals, and 4,391
+unrelated dirty records. A separate goal-owned fixture reached exact candidate
+with a clean index and only the two retained hashes dirty, then returned to
+exact live main with byte-identical two-record status fingerprint
+`51d890af61a84a3b2847fd2023fe1a4496ea970affc690fc65214ae2a4f60c0a`.
+The candidate independently passes the same full 321-test / 1,632-assertion
+gate, links, navigation, broad audit, diff check, and health summary.
+
+Disposition: retain candidate and fixture as current preparation. RV-052 stays
+high/open and release-blocking pending independent exact-candidate review and
+an immediate matching live gate. No local-main movement, cleanup, compaction,
+or reviewer acceptance is claimed. Rollback of preparation requires no main
+operation; revert only the Cycle 426 canonical report checkpoint if its durable
+record must be removed.
+
 ## Next trigger
 
-The next independent-review trigger is the clean producer integration-ledger
-correction after source `5b730b02df83974c3bd33f55755d4278c01f49f0`, including literal reviewer
-integration through `fcd91b1725`, the corrected Cycle 422 identity, the exact
-current validation scope, Cycle 422's isolated RV-052 result, and the Cycle
-423-424 SwarmResearch qualifications. A later trigger may be evidence
+The next independent-review trigger is the clean Cycle 426 producer checkpoint
+after canonical `ed7de4d92950c1daa8b5829531079928ff592cc5`, including Cycle
+425 Organizational Memory qualification, candidate `584395df7c`, and the
+current isolated transition/rollback evidence. A later trigger may be evidence
 that changes RV-052, RV-004, RV-034, RV-036, or RV-038; a separately reviewed
 current release candidate; a local-main landing or cleanup claim; or a concrete
 regression. The reviewer lifecycle is currently `done`, not durably waiting,

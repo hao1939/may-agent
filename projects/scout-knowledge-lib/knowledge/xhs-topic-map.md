@@ -11288,6 +11288,28 @@ workflows. Next seek a preregistered held-out scenario suite or independently
 authored policy tasks. RV-004/RV-034 remain high/open, RV-036/RV-038
 medium/open, and RV-052 high/open and release-blocking.
 
+### Cycle 426 checkpoint — current RV-052 preparation reproduces in isolation
+
+Cycle 426 started from clean canonical
+`ed7de4d92950c1daa8b5829531079928ff592cc5`. Cycle 422's direct XHS
+observation was about 84 minutes old, so the bounded reconciliation made zero
+XHS requests and no collection-equality claim. The highest-value accessible
+gap was stale release preparation: Cycle 422's candidate omitted Cycles
+423-425.
+
+The [current RV-052 candidate report](../reports/review/scout-rv052-current-candidate-cycle426-2026-09-08.md)
+records exact live main `6237bd7e60`, canonical `ed7de4d929`, and isolated
+candidate `584395df7c` with those commits as its ordered parents. The live
+no-write plan reports 38 paths, two retained Scout overlaps, 36 clean
+materializations, nine inverse restores, 27 inverse removals, and 4,391
+unrelated dirty records. A new disposable fixture reached the candidate with
+only the two protected hashes dirty and returned to byte-identical base status.
+
+This is current preparation, not landing approval. RV-052 remains high/open
+until independent review accepts the exact candidate and an immediate live
+gate still matches. RV-004/RV-034 remain high/open and RV-036/RV-038
+medium/open. No local-main movement, compaction, or cleanup occurred.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

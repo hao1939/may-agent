@@ -44,6 +44,13 @@ so no XHS request ran. Additions/changes remain unknown, removals remain `[]`,
 and all 132 durable seeds remain unavailable rather than removed. This is a
 no-request decision, not a new direct observation or collection-equality claim.
 
+Cycle 426 cadence decision at `2026-09-08T04:57:22Z`: Cycle 422's direct
+observation was about 84 minutes old and remained inside the six-hour cadence,
+so no XHS request ran. Additions/changes remain unknown, removals remain `[]`,
+and all 132 durable seeds remain unavailable rather than removed. This is a
+no-request release-preparation decision, not a new direct observation or
+collection-equality claim.
+
 ## Compact post-Cycle-76 reconciliations
 
 Rows 206–214 remain an explicit exactness gap. Read-only inspection of their

@@ -23334,6 +23334,25 @@ independently authored policies and scenario-level uncertainty. RV-004/RV-034
 remain high/open, RV-036/RV-038 medium/open, and RV-052 high/open and
 release-blocking.
 
+## Cycle 426 checkpoint — current release preparation preserves the overlay
+
+At `2026-09-08T04:57:22Z`, the last direct XHS observation was about 84
+minutes old, so this bounded reconciliation made zero XHS requests. The cycle
+performed release preparation rather than source research because stale
+RV-052 evidence was the highest-value accessible gap.
+
+The [current isolated candidate](../review/scout-rv052-current-candidate-cycle426-2026-09-08.md)
+combines live main `6237bd7e60` and exact Cycle 425 canonical `ed7de4d929` as
+ordered parents at `584395df7c`. Its 38-path no-write plan retains the two
+divergent Scout bytes, and a goal-owned fixture reaches the candidate and
+returns to byte-identical base/status/hashes. Candidate validation passes 321
+tests / 1,632 assertions, 121 scoped links, all three navigation gates, and
+1,555 documents / 1,804 broad links.
+
+RV-052 remains high/open pending independent review and a fresh immediate live
+gate; this is not local-main movement or cleanup permission. RV-004/RV-034
+remain high/open and RV-036/RV-038 medium/open.
+
 ## Supervision
 
 - Goal: Continuously turn Scout Knowledge Library's collected seeds, unresolved topic-map questions, and newly discovered evidence into the highest-value validated knowledge improvements, keeping the library and living topic map useful, current, traceable, and safely integrated into local main at reviewed release boundaries until the human explicitly stops or replaces this goal.
