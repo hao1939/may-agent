@@ -417,20 +417,6 @@ function restoreAttemptEvents(
   return true;
 }
 
-function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
-  if (!trigger) return false;
-  if (
-    trigger.type === "project.comment.created" ||
-    trigger.type === "message.created" ||
-    trigger.type === "app.input.requested" ||
-    trigger.type === "app.task.requested"
-  ) {
-    return true;
-  }
-  const data = isRecord(trigger.data) ? trigger.data : {};
-  return trigger.overrideWait === true || data.overrideWait === true;
-}
-
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue);
   if (!value || typeof value !== "object") return value;
@@ -964,8 +950,11 @@ function materializeWaitingConditions(
     if (current && !sameSpec && linkedToAnotherTask) {
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
     }
+    // Unrelated reevaluation must not postpone a future recovery checkpoint.
+    // Once due, an accepted recheck may renew it without satisfying the wait.
+    const reviewDue = current && Date.parse(current.status.observedAt ?? "") + spec.reviewAfterMs <= Date.parse(now);
     registry[id] = sameSpec
-      ? previousIds.has(id) && current.status.state !== "true"
+      ? previousIds.has(id) && current.status.state !== "true" && reviewDue
         ? {
             ...current,
             metadata: {
@@ -1131,6 +1120,7 @@ export function expiredAgentSessionAppTaskAttempt(
   };
 }
 
+/** Recovery replaces execution, not the accepted Task generation or its waits. */
 export function releaseInterruptedAppTaskAttempt(
   config: AppTaskContext,
   recovery: AppTaskAttemptRecovery,
@@ -1163,7 +1153,6 @@ export function releaseInterruptedAppTaskAttempt(
   attempt.failureReason = "previous-runtime-attempt-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
   });
   commitTaskMutation(config, tree, {
@@ -1220,10 +1209,8 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
   attempt.failureReason = "terminal-agent-session-expired-lease-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
     summary: recoveredSummary,
-    conditionIds: [],
   });
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
@@ -1256,10 +1243,8 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
   attempt.failureReason = "late-terminal-workflow-result-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
     summary: recoveredSummary,
-    conditionIds: [],
   });
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
@@ -1292,10 +1277,8 @@ export function repairPreviousRuntimeRecoveryAttention(
     attempt.failureReason = "previous-runtime-attempt-requeued";
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({
       taskId: resource.metadata.id,
@@ -1391,10 +1374,8 @@ export function repairRunningAppTasksWithoutAttempt(
     }
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({
       taskId: resource.metadata.id,
@@ -1675,13 +1656,8 @@ export function observeAppTaskIntent(
     // only the old task-generation link is retired.
     if (tree.taskTriggers) delete tree.taskTriggers[input.intent.id];
   }
-  const suppressTrigger =
-    input.trigger &&
-    resource.status.phase === "waiting" &&
-    openTaskConditionIds(tree, input.intent.id).length > 0 &&
-    !hasSatisfiedTaskCondition(tree, input.intent.id) &&
-    !triggerOverridesWait(input.trigger);
-  if (input.trigger && !suppressTrigger) {
+  // Routing establishes relevance. Open waits never filter admitted input.
+  if (input.trigger) {
     const previousTrigger = tree.taskTriggers?.[input.intent.id];
     const events = appendTaskTriggerEvent(
       previousTrigger ? taskTriggerEvents(previousTrigger) : [],
@@ -2056,21 +2032,13 @@ export function recordAppTaskTrigger(
   config: AppTaskContext,
   taskId: string,
   event: Record<string, unknown>,
-): { kind: "recorded" | "waiting" | "missing" } {
+): { kind: "recorded" | "missing" } {
   // A wake updates one existing Task. Its children and attempt history do
   // not participate in trigger selection, so keep this interface-path read
   // proportional to the exact Task rather than its whole subtree.
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] }, { includeHistory: false, childLimit: 0 });
   const resource = tree.resources?.[taskId];
   if (!resource) return { kind: "missing" };
-  if (
-    resource.status.phase === "waiting" &&
-    openTaskConditionIds(tree, taskId).length > 0 &&
-    !hasSatisfiedTaskCondition(tree, taskId) &&
-    !triggerOverridesWait(event)
-  ) {
-    return { kind: "waiting" };
-  }
   const previous = tree.taskTriggers?.[taskId];
   const resourceVersion = resource.metadata.resourceVersion;
   // Input shares the Task row; invalidate writers that read before this wake.
@@ -2803,10 +2771,8 @@ export function claimObservedAppTask(
     }
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
   }
   const canRecoverPreviousRuntime = Boolean(
@@ -2841,10 +2807,8 @@ export function claimObservedAppTask(
     changedAttempts.add(previousAttempt);
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
   }
   if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {
@@ -4206,31 +4170,11 @@ export function deferAppTask(
     ...(!conditions?.length ? { conditionIds: [] } : {}),
   });
 
-  // A trigger can arrive while the attempt is running. Re-evaluate it against
-  // the wait the attempt just installed instead of replaying it blindly. A
-  // matching semantic observation wakes the task again; an unrelated stale
-  // pulse is consumed. Explicit human/override triggers still bypass the wait.
-  if (pendingEvents.length > 0) {
-    delete tree.taskTriggers![claim.taskId];
-    for (const entry of pendingEvents.filter(({ event }) => !triggerOverridesWait(event))) {
-      for (const wake of applyAppTaskConditionEvent(tree, entry.event)) {
-        trackResourceMutationTask(mutationScope, tree, wake.taskId);
-      }
-    }
-    for (const entry of pendingEvents.filter(({ event }) => triggerOverridesWait(event))) {
-      const previous = tree.taskTriggers?.[claim.taskId];
-      const events = appendTaskTriggerEvent(previous ? taskTriggerEvents(previous) : [], entry.event, entry.observedAt);
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [claim.taskId]: {
-          taskId: claim.taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-          event: structuredClone(preferredTriggerFromEvents(events, claim.agent)),
-          events,
-          observedAt: entry.observedAt,
-        },
-      };
+  // New input remains pending until accepted, whether or not it satisfies a
+  // Condition. Also apply matching facts to waits installed by this attempt.
+  for (const entry of pendingEvents) {
+    for (const wake of applyAppTaskConditionEvent(tree, entry.event)) {
+      trackResourceMutationTask(mutationScope, tree, wake.taskId);
     }
   }
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
