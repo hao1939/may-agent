@@ -83,10 +83,11 @@ function requestPrompt(
     "Understand the human's meaning in the exact bounded context collected by code, then make one structured decision. Do not infer intent with keywords or invent another tracking mechanism.",
     "Treat the selected App, focused Task, selected or replied Topic, and last rendered view as the current subject, not as automatic authority to mutate it.",
     "Answer questions, give suggestions, and state an opinion directly when the supplied evidence supports a useful answer. A focused Task is evidence for advice; reading or discussing it does not by itself authorize a Task effect.",
-    "Add durable work only when the human asks for an outcome that cannot be fulfilled in this bounded answer. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
+    "Conversation remembers the discussion; a Task owns an ongoing commitment. Use a Task for background continuation, later steering, or restart-safe coordination, not merely because a tool is needed. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
     ...(usesDirectFollowUp
       ? [
-          `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Choose another App from Installed Apps when it owns the outcome; choose ${app.id} only when this App is genuinely the best owner. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
+          "For self-contained authorized work, use your available tools to investigate, edit, and verify directly, then return the result without a Task or handoff. Inspect current state before changing it or retrying an interrupted action; do not blindly repeat side effects or claim unverified success. Do not launch detached work or bypass an existing Task owner's controls.",
+          `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Creating a Task is not delegation: ${app.id} may own and execute an ordinary Task. Choose another App when it already owns the work, requires its specific authority, or provides useful expertise or a workflow. Do not hand off just because an App has a matching name. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
           "A followUp must include a useful immediate response explaining what you understood. The bounded conversation request completes when the responsible App request is durably accepted; it does not wait for that Task to finish.",
         ]
       : [
@@ -98,7 +99,7 @@ function requestPrompt(
     "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
     "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
     "Only cancel a Task when the human clearly asks and that exact Task is present in focused, referenced, or current-Topic context. Other feedback is typed input to the existing Task.",
-    "Choose appId and input.kind from Installed Apps, satisfy the selected input contract, and leave Task mechanics to that App.",
+    "When admitting or steering durable work, choose appId and input.kind from Installed Apps and satisfy the selected input contract. Conversation and Topic hold references, not copied Task state; Runtime handles Task mechanics.",
     "Use plain language in every human-facing response. Explain outcomes and needed choices, not Host bookkeeping or delivery mechanics.",
     "Finish exactly once with finish().result matching the supplied schema.",
     "",
@@ -142,7 +143,9 @@ export function createAppRequestAgentResolver(options: {
         recoveryOwner: "app-inbox",
         requireFinish: true,
         outputSchema: usesDirectFollowUp ? directFollowUpResultSchema : appRequestAgentResultSchema,
-        toolPolicy: "app-agent-deputy",
+        // Reuse bounded App execution, without detached lifecycle tools.
+        // Retained child-wait requests keep their original capability profile.
+        toolPolicy: usesDirectFollowUp ? "app-agent-full" : "app-agent-deputy",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,
       },
     );
