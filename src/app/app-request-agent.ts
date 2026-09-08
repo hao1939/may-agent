@@ -14,6 +14,9 @@ import { findConversationTopics, readAppConversationResource, readConversationTo
 import type { AppRequestResolver } from "./app-inbox-host.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
+const directFollowUpResultSchema = Type.Omit(appRequestAgentResultSchema, ["dependencies"], {
+  additionalProperties: false,
+});
 
 function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): AgentTool | null {
   const conversation = request.conversation;
@@ -62,16 +65,26 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
   };
 }
 
-function requestPrompt(app: Readonly<AppDefinition>, request: Readonly<AppRequest>, registry: AppRegistry): string {
-  const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
-  const usesStandingFollowUp = Boolean(app.requests?.inputKinds && app.tasks);
+function requestPrompt(
+  app: Readonly<AppDefinition>,
+  request: Readonly<AppRequest>,
+  registry: AppRegistry,
+  usesDirectFollowUp: boolean,
+): string {
+  const apps = appDependencyCatalog(registry.snapshot().entries, usesDirectFollowUp ? "" : app.id)
+    .map((entry) =>
+      entry.appId === app.id
+        ? { ...entry, inputs: entry.inputs.filter((input) => !app.requests?.inputKinds?.includes(input.kind)) }
+        : entry,
+    )
+    .filter((entry) => entry.appId !== app.id || entry.inputs.length > 0);
   return [
     `You are ${app.agent ?? app.owner}, the conversational agent for App ${app.id}.`,
     "Understand the human's meaning in the exact bounded context collected by code, then make one structured decision. Do not infer intent with keywords or invent another tracking mechanism.",
     "Treat the selected App, focused Task, selected or replied Topic, and last rendered view as the current subject, not as automatic authority to mutate it.",
     "Answer questions, give suggestions, and state an opinion directly when the supplied evidence supports a useful answer. A focused Task is evidence for advice; reading or discussing it does not by itself authorize a Task effect.",
     "Add durable work only when the human asks for an outcome that cannot be fulfilled in this bounded answer. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
-    ...(usesStandingFollowUp
+    ...(usesDirectFollowUp
       ? [
           `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Choose another App from Installed Apps when it owns the outcome; choose ${app.id} only when this App is genuinely the best owner. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
           "A followUp must include a useful immediate response explaining what you understood. The bounded conversation request completes when the responsible App request is durably accepted; it does not wait for that Task to finish.",
@@ -85,7 +98,7 @@ function requestPrompt(app: Readonly<AppDefinition>, request: Readonly<AppReques
     "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
     "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
     "Only cancel a Task when the human clearly asks and that exact Task is present in focused, referenced, or current-Topic context. Other feedback is typed input to the existing Task.",
-    "Choose dependency appId and input.kind only from Installed Apps, satisfy its input contract, and leave Task mechanics to that App.",
+    "Choose appId and input.kind from Installed Apps, satisfy the selected input contract, and leave Task mechanics to that App.",
     "Use plain language in every human-facing response. Explain outcomes and needed choices, not Host bookkeeping or delivery mechanics.",
     "Finish exactly once with finish().result matching the supplied schema.",
     "",
@@ -113,15 +126,22 @@ export function createAppRequestAgentResolver(options: {
     if (!registered) throw new Error(`Agent ${agent} is not registered`);
     const contextTool = conversationContextTool(options.db, request);
     const definition = contextTool ? { ...registered, tools: [...registered.tools, contextTool] } : registered;
+    // Retained child requests must finish under their original protocol even
+    // after an App adopts direct Task handoff. Other Topics' work is context,
+    // not a child obligation of this request.
+    const usesDirectFollowUp =
+      Boolean(app.requests?.inputKinds && app.tasks) &&
+      !request.dependencies?.length &&
+      request.dependency?.kind !== "app";
     const execution = await options.manager.callAgentDefinition(
       definition,
-      requestPrompt(app, request, options.registry),
+      requestPrompt(app, request, options.registry, usesDirectFollowUp),
       {
         source: "app-request-agent",
         projectId: app.id,
         recoveryOwner: "app-inbox",
         requireFinish: true,
-        outputSchema: appRequestAgentResultSchema,
+        outputSchema: usesDirectFollowUp ? directFollowUpResultSchema : appRequestAgentResultSchema,
         toolPolicy: "app-agent-deputy",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,
       },
