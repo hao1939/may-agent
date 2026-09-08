@@ -127,3 +127,11 @@ An ignore rule does not unpublish an already tracked file. If sensitive data
 was published, stop copying it into reports and coordinate cleanup of Git
 history, PR text and retained artifacts. After a privacy history rewrite,
 reclone; do not merge or push the old history back into the cleaned repository.
+
+Docker's automatic provenance and downloadable build records can contain the
+raw GitHub webhook, including private pusher/owner email addresses even when
+commits use noreply addresses. CI and release builds disable provenance in
+metadata and image attestations, plus automatic build summaries/record uploads.
+Ordinary build logs, test reports, smoke diagnostics, image digests, and the
+embedded source revision remain. Do not re-enable raw exports as diagnostics;
+any future attestation must use an explicitly reviewed, safe field set.
