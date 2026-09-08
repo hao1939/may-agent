@@ -174,12 +174,21 @@ export async function prepareAppTaskWorkspace(input: {
       fetchedBaseRef = `refs/may/workspaces/${leaf}/base`;
       await git(repoDir, [...fetchArgs, `+refs/heads/${input.baseBranch}:${fetchedBaseRef}`]);
       const taskRef = `refs/may/workspaces/${leaf}/head`;
-      if ((await git(repoDir, [...fetchArgs, `+refs/heads/${branch}:${taskRef}`], true)).status === 0) {
+      const published = await git(repoDir, ["ls-remote", "--exit-code", "--heads", remote, `refs/heads/${branch}`], true);
+      if (published.status === 0) {
+        // An existing branch must be fetched successfully. A lock, transport
+        // error, or deletion racing this probe must not reset work to the base.
+        await git(repoDir, [...fetchArgs, `+refs/heads/${branch}:${taskRef}`]);
         fetchedTaskRef = taskRef;
+      } else if (published.status !== 2) {
+        // ls-remote reserves status 2 for a successful query with no matching ref.
+        throw new Error(`Cannot determine published Task branch ${branch}: ${published.stderr || published.stdout}`);
       }
     }
     const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
-    const remoteTaskRef = fetchedTaskRef ?? `refs/remotes/${remote}/${branch}`;
+    const remoteTaskRef = hasRemote && input.refreshRemote !== false
+      ? fetchedTaskRef
+      : `refs/remotes/${remote}/${branch}`;
     const localRef = `refs/heads/${input.baseBranch}`;
     const baseRef = fetchedBaseRef ?? (
       (await refExists(repoDir, remoteRef))
@@ -200,7 +209,7 @@ export async function prepareAppTaskWorkspace(input: {
 
     const branchRef = `refs/heads/${branch}`;
     const branchExists = await refExists(repoDir, branchRef);
-    const remoteTaskBranchExists = await refExists(repoDir, remoteTaskRef);
+    const remoteTaskBranchExists = remoteTaskRef !== undefined && await refExists(repoDir, remoteTaskRef);
     const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
     if (branchRegistration) {
       throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);

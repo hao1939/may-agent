@@ -77,6 +77,38 @@ describe("project task workspace", () => {
     expect(readFileSync(fetchHead, "utf8")).toBe("worker fetch result\n");
   });
 
+  it("does not restore stale fetch refs when origin confirms the Task branch is absent", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const input = {
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "deleted-remote", generation: 1, baseBranch: "dev",
+    };
+    const prepared = await prepareAppTaskWorkspace(input);
+    const oldHead = prepared.metadata.headCommit;
+    await git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
+    expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+
+    // Remote deletion need not prune the worker's tracking ref or an old
+    // private fetch snapshot. Neither proves that the branch still exists.
+    await git(remote, "update-ref", "-d", `refs/heads/${prepared.metadata.branch}`);
+    const privateHead = prepared.metadata.baseRef.replace(/\/base$/, "/head");
+    await git(f.repo, "update-ref", privateHead, oldHead);
+    writeFileSync(join(f.repo, "advanced.txt"), "new base\n");
+    await git(f.repo, "add", "advanced.txt");
+    await git(f.repo, "commit", "-m", "advance dev");
+    await git(f.repo, "push", "origin", "dev");
+    const current = await git(f.repo, "rev-parse", "HEAD");
+
+    const restored = await prepareAppTaskWorkspace(input);
+    expect(restored.metadata.headCommit).toBe(current);
+    expect(restored.metadata.headCommit).not.toBe(oldHead);
+    expect(await git(f.repo, "rev-parse", `origin/${prepared.metadata.branch}`)).toBe(oldHead);
+    expect(await git(f.repo, "rev-parse", privateHead)).toBe(oldHead);
+  });
+
   it("keeps the event loop available while Git prepares the worktree", async () => {
     const f = await fixture();
     let controlTurnObserved = false;
@@ -310,6 +342,20 @@ describe("project task workspace", () => {
     const remoteTaskLock = join(f.repo, `.git/refs/remotes/origin/${prepared.metadata.branch}.lock`);
     mkdirSync(dirname(remoteTaskLock), { recursive: true });
     writeFileSync(remoteTaskLock, "worker task-branch fetch\n");
+
+    // A failed private fetch must not masquerade as an absent published branch
+    // and recreate the checkout at the newer base. Only the fixture owns this lock.
+    const privateHeadLock = join(f.repo, `.git/${prepared.metadata.baseRef.replace(/\/base$/, "/head")}.lock`);
+    mkdirSync(dirname(privateHeadLock), { recursive: true });
+    writeFileSync(privateHeadLock, "another Host fetch\n");
+    await expect(prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-live-proof", generation: 1,
+      baseBranch: "dev", previous: finalized.metadata,
+    })).rejects.toThrow("cannot lock ref");
+    expect(existsSync(prepared.metadata.path)).toBe(false);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(readFileSync(privateHeadLock, "utf8")).toBe("another Host fetch\n");
+    rmSync(privateHeadLock);
 
     const configLock = join(f.repo, ".git/config.lock");
     writeFileSync(configLock, "another worker configuring Git\n");
