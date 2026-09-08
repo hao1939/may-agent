@@ -710,8 +710,9 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("serializes competing transitions with the task resource fence", () => {
+  it("fences competing connections and retains the accepted transition after reopening", () => {
     const store = open();
+    const databasePath = join(roots.at(-1)!, "host.sqlite");
     const tree = fixture();
     store.bootstrapSnapshot(tree, "revision-1");
     const first = structuredClone(tree.resources!.normal!);
@@ -721,20 +722,40 @@ describe("AppTaskResourceStore", () => {
     second.metadata.resourceVersion = 2;
     second.status.summary = "second";
 
-    expect(
-      store.commit({
-        fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
-        tasks: [{ resource: first, ready: false }],
-      }),
-    ).toBeTrue();
-    expect(
-      store.commit({
-        fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
-        tasks: [{ resource: second, ready: false }],
-      }),
-    ).toBeFalse();
-    expect(store.readTask("normal")?.status.summary).toBe("first");
-    store.close();
+    const peer = AppTaskResourceStore.openStandalone(databasePath, "example");
+    try {
+      expect(
+        store.commit({
+          fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
+          tasks: [{ resource: first, ready: false }],
+        }),
+      ).toBeTrue();
+      expect(
+        peer.commit({
+          fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
+          tasks: [{ resource: second, ready: false }],
+        }),
+      ).toBeFalse();
+      expect(peer.readTask("normal")).toEqual(first);
+    } finally {
+      peer.close();
+      store.close();
+    }
+
+    // Reopen only after both connections close; no surviving connection can
+    // supply the accepted state or its stale-write fence.
+    const reopened = AppTaskResourceStore.openStandalone(databasePath, "example");
+    try {
+      expect(reopened.readTask("normal")).toEqual(first);
+      expect(
+        reopened.commit({
+          fences: [{ taskId: "normal", generation: 1, resourceVersion: 1, currentAttemptId: null }],
+          tasks: [{ resource: second, ready: false }],
+        }),
+      ).toBeFalse();
+    } finally {
+      reopened.close();
+    }
   });
 
   it("rejects a stale transition at commit without replacing the accepted snapshot", () => {
