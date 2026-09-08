@@ -2529,7 +2529,7 @@ describe("canonical App task runtime", () => {
           state: "failed",
           failureReason: "WorkspacePreparationFailed",
           summary: expect.stringContaining(
-            scenario.missingRemote ? "git fetch" : "requires a task worktree but app workspace is not Git",
+            scenario.missingRemote ? "git ls-remote" : "requires a task worktree but app workspace is not Git",
           ),
         }),
       ]);
@@ -2544,6 +2544,8 @@ describe("canonical App task runtime", () => {
       expect(existsSync(join(f.root, "worktrees"))).toBe(false);
       if (scenario.missingRemote) {
         const git = (...args: string[]) => promisify(execFile)("git", args, { timeout: 10_000 });
+        const privateRefs = () => git("-C", f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/");
+        expect((await privateRefs()).stdout.trim()).toBe("");
         await git("init", "--bare", join(f.root, "provider.git"));
         await git("-C", f.appDir, "push", "origin", "main");
         // Repair the prerequisite, then use the existing exact retry boundary.
@@ -2565,6 +2567,7 @@ describe("canonical App task runtime", () => {
         expect(recovered.receipts?.[taskId]?.summary).toBe("Fixture executor ran");
         expect(Object.keys(recovered.attempts ?? {})).toHaveLength(2);
         expect(executorCwd).toBeDefined();
+        expect((await privateRefs()).stdout.trim()).toBe("");
       }
       return;
     }

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace } from "./app-task-workspace.js";
 
@@ -38,6 +38,144 @@ afterEach(() => {
 });
 
 describe("project task workspace", () => {
+  it("fetches an exact base without competing with worker remote-tracking refs or FETCH_HEAD", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const original = await git(f.repo, "rev-parse", "origin/dev");
+    const writer = join(f.root, "writer");
+    await git(f.root, "clone", "--branch", "dev", remote, writer);
+    await git(writer, "config", "user.email", "test@example.com");
+    await git(writer, "config", "user.name", "Test");
+    writeFileSync(join(writer, "advanced.txt"), "new remote base\n");
+    await git(writer, "add", "advanced.txt");
+    await git(writer, "commit", "-m", "advance remote independently");
+    await git(writer, "push", "origin", "dev");
+    const current = await git(writer, "rev-parse", "HEAD");
+
+    // A separate worker owns these shared Git files. Host preparation must
+    // neither wait for them nor delete/rewrite them to recover from contention.
+    const trackingLock = join(f.repo, ".git/refs/remotes/origin/dev.lock");
+    const fetchHead = join(f.repo, ".git/FETCH_HEAD");
+    writeFileSync(trackingLock, "owned by worker\n");
+    writeFileSync(fetchHead, "worker fetch result\n");
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "independent-fetch", generation: 1, baseBranch: "dev",
+    });
+    expect(prepared.metadata.baseCommit).toBe(current);
+    expect(prepared.metadata.headCommit).toBe(current);
+    expect(await git(f.repo, "rev-parse", prepared.metadata.baseRef)).toBe(current);
+    expect(await git(f.repo, "rev-parse", "origin/dev")).toBe(original);
+    expect(await git(f.repo, "rev-parse", "HEAD")).toBe(original);
+    expect(readFileSync(trackingLock, "utf8")).toBe("owned by worker\n");
+    expect(readFileSync(fetchHead, "utf8")).toBe("worker fetch result\n");
+    expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
+    expect(readFileSync(trackingLock, "utf8")).toBe("owned by worker\n");
+    expect(readFileSync(fetchHead, "utf8")).toBe("worker fetch result\n");
+  });
+
+  it("does not restore stale fetch refs when origin confirms the Task branch is absent", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const input = {
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "deleted-remote", generation: 1, baseBranch: "dev",
+    };
+    const prepared = await prepareAppTaskWorkspace(input);
+    const oldHead = prepared.metadata.headCommit;
+    await git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
+    expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+
+    // Remote deletion need not prune the worker's tracking ref or an old
+    // private fetch snapshot. Neither proves that the branch still exists.
+    await git(remote, "update-ref", "-d", `refs/heads/${prepared.metadata.branch}`);
+    const privateHead = prepared.metadata.baseRef.replace(/\/base$/, "/head");
+    await git(f.repo, "update-ref", privateHead, oldHead);
+    writeFileSync(join(f.repo, "advanced.txt"), "new base\n");
+    await git(f.repo, "add", "advanced.txt");
+    await git(f.repo, "commit", "-m", "advance dev");
+    await git(f.repo, "push", "origin", "dev");
+    const current = await git(f.repo, "rev-parse", "HEAD");
+
+    const restored = await prepareAppTaskWorkspace(input);
+    expect(restored.metadata.headCommit).toBe(current);
+    expect(restored.metadata.headCommit).not.toBe(oldHead);
+    expect(await git(f.repo, "rev-parse", `origin/${prepared.metadata.branch}`)).toBe(oldHead);
+    expect(await git(f.repo, "rev-parse", privateHead)).toBe(oldHead);
+  });
+
+  for (const retained of [false, true]) {
+    for (const failure of ["probe", "fetch", "checkout"] as const) {
+      it(`rolls back failed preparation without losing recovery refs (${failure}, retained: ${retained})`, async () => {
+        const f = await fixture();
+        const remote = join(f.root, "remote.git");
+        await git(f.root, "init", "--bare", remote);
+        await git(f.repo, "remote", "add", "origin", remote);
+        await git(f.repo, "push", "-u", "origin", "dev");
+        const input = {
+          repoDir: f.repo,
+          workspaceRoot: f.worktrees,
+          taskId: "failed-prepare",
+          generation: 1,
+          baseBranch: "dev",
+        };
+        const prepared = await prepareAppTaskWorkspace(input);
+        await git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
+        await prepareAppTaskWorkspace(input); // Retain both private refs before refreshing.
+        if (!retained) expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+        else writeFileSync(join(prepared.metadata.path, "unfinished.txt"), "keep this work\n");
+        await prepareAppTaskWorkspace({ ...input, generation: 2 });
+        const privateRefs = () =>
+          git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/");
+        const before = await privateRefs();
+
+        writeFileSync(join(f.repo, "advanced.txt"), "new base\n");
+        await git(f.repo, "add", "advanced.txt");
+        await git(f.repo, "commit", "-m", "advance dev");
+        await git(f.repo, "push", "origin", "dev");
+        if (retained) {
+          // Both refs would advance, but the unfinished checkout must stay put.
+          await git(
+            remote,
+            "update-ref",
+            `refs/heads/${prepared.metadata.branch}`,
+            await git(f.repo, "rev-parse", "HEAD"),
+          );
+        }
+        const lock = join(f.repo, `.git/${prepared.metadata.baseRef.replace(/\/base$/, "/head")}.lock`);
+        if (failure === "probe") await git(f.repo, "config", "remote.origin.uploadpack", "false");
+        else if (failure === "fetch") {
+          mkdirSync(dirname(lock), { recursive: true });
+          writeFileSync(lock, "another fetch\n");
+        } else if (retained) await git(prepared.metadata.path, "checkout", "--detach");
+        else mkdirSync(prepared.metadata.path);
+
+        await expect(prepareAppTaskWorkspace({ ...input, previous: prepared.metadata })).rejects.toThrow();
+        expect(await privateRefs()).toBe(before);
+        if (retained) {
+          expect(await git(prepared.metadata.path, "rev-parse", "HEAD")).toBe(prepared.metadata.headCommit);
+          expect(readFileSync(join(prepared.metadata.path, "unfinished.txt"), "utf8")).toBe("keep this work\n");
+        } else expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+
+        // Release only fixture-owned failures and prove the same generation retries.
+        if (failure === "probe") await git(f.repo, "config", "--unset", "remote.origin.uploadpack");
+        else if (failure === "fetch") {
+          expect(readFileSync(lock, "utf8")).toBe("another fetch\n");
+          rmSync(lock);
+        } else if (retained) await git(prepared.metadata.path, "checkout", prepared.metadata.branch);
+        else rmSync(prepared.metadata.path, { recursive: true });
+        const retry = await prepareAppTaskWorkspace({ ...input, previous: prepared.metadata });
+        expect(retry.metadata.headCommit).toBe(prepared.metadata.headCommit);
+        expect(retry.metadata.baseCommit).toBe(prepared.metadata.baseCommit);
+      });
+    }
+  }
+
   it("keeps the event loop available while Git prepares the worktree", async () => {
     const f = await fixture();
     let controlTurnObserved = false;
@@ -56,6 +194,38 @@ describe("project task workspace", () => {
 
     expect(controlTurnObserved).toBe(true);
     await finalizeAppTaskWorkspace(prepared, "failed");
+  });
+
+  it("isolates fetched base snapshots across Tasks and preserves unfinished work when refreshing", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const first = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
+    });
+    writeFileSync(join(first.metadata.path, "unfinished.txt"), "retain this repair\n");
+    writeFileSync(join(f.repo, "advanced.txt"), "new target\n");
+    await git(f.repo, "add", "advanced.txt");
+    await git(f.repo, "commit", "-m", "advance remote");
+    await git(f.repo, "push", "origin", "dev");
+    const current = await git(f.repo, "rev-parse", "HEAD");
+    const second = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "second-fetch", generation: 1, baseBranch: "dev",
+    });
+    expect(second.metadata.baseRef).not.toBe(first.metadata.baseRef);
+    expect(await git(f.repo, "rev-parse", first.metadata.baseRef)).toBe(first.metadata.baseCommit);
+    expect(second.metadata.headCommit).toBe(current);
+    const resumed = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "first-fetch", generation: 1, baseBranch: "dev",
+      previous: first.metadata,
+    });
+    expect(resumed.metadata.path).toBe(first.metadata.path);
+    expect(resumed.metadata.headCommit).toBe(first.metadata.headCommit);
+    expect(resumed.metadata.baseCommit).toBe(first.metadata.baseCommit);
+    expect(await git(f.repo, "rev-parse", resumed.metadata.baseRef)).toBe(current);
+    expect(readFileSync(join(resumed.metadata.path, "unfinished.txt"), "utf8")).toBe("retain this repair\n");
   });
 
   it("reuses one deterministic worktree for retries of the same task generation", async () => {
@@ -234,6 +404,37 @@ describe("project task workspace", () => {
     await git(f.repo, "commit", "-m", "advance dev");
     await git(f.repo, "push", "origin", "dev");
     const advancedBase = await git(f.repo, "rev-parse", "HEAD");
+    const remoteTaskRef = `refs/remotes/origin/${prepared.metadata.branch}`;
+    await git(f.repo, "update-ref", "-d", remoteTaskRef);
+    const remoteTaskLock = join(f.repo, `.git/refs/remotes/origin/${prepared.metadata.branch}.lock`);
+    mkdirSync(dirname(remoteTaskLock), { recursive: true });
+    writeFileSync(remoteTaskLock, "worker task-branch fetch\n");
+
+    // A failed private fetch must not masquerade as an absent published branch
+    // and recreate the checkout at the newer base. Only the fixture owns this lock.
+    const privateHeadLock = join(f.repo, `.git/${prepared.metadata.baseRef.replace(/\/base$/, "/head")}.lock`);
+    mkdirSync(dirname(privateHeadLock), { recursive: true });
+    writeFileSync(privateHeadLock, "another Host fetch\n");
+    await expect(prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-live-proof", generation: 1,
+      baseBranch: "dev", previous: finalized.metadata,
+    })).rejects.toThrow("cannot lock ref");
+    expect(existsSync(prepared.metadata.path)).toBe(false);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
+    expect(readFileSync(privateHeadLock, "utf8")).toBe("another Host fetch\n");
+    rmSync(privateHeadLock);
+
+    const configLock = join(f.repo, ".git/config.lock");
+    writeFileSync(configLock, "another worker configuring Git\n");
+    await expect(prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "waiting-live-proof", generation: 1,
+      baseBranch: "dev", previous: finalized.metadata,
+    })).rejects.toThrow("could not lock config file");
+    expect(existsSync(prepared.metadata.path)).toBe(false);
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
+    rmSync(configLock);
 
     const retry = await prepareAppTaskWorkspace({
       repoDir: f.repo,
@@ -246,6 +447,86 @@ describe("project task workspace", () => {
 
     expect(retry.metadata.headCommit).toBe(testedCommit);
     expect(retry.metadata.headCommit).not.toBe(advancedBase);
+    expect(readFileSync(remoteTaskLock, "utf8")).toBe("worker task-branch fetch\n");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", remoteTaskRef)).toBe("");
+    expect(await git(retry.metadata.path, "config", `branch.${retry.metadata.branch}.remote`)).toBe("origin");
+    expect(await git(retry.metadata.path, "config", `branch.${retry.metadata.branch}.merge`)).toBe(
+      `refs/heads/${retry.metadata.branch}`,
+    );
+    // Only the fixture releases its own lock. Ordinary recovery commands
+    // must then work without another manual upstream setup step.
+    rmSync(remoteTaskLock);
+    await git(retry.metadata.path, "pull", "--ff-only");
+    await git(retry.metadata.path, "push", "--dry-run");
+  });
+
+  for (const retainedState of ["worktree", "branch-only", "removed"] as const) {
+    it(`cleans only the finalized generation's private refs (${retainedState})`, async () => {
+      const f = await fixture();
+      const remote = join(f.root, "remote.git");
+      await git(f.root, "init", "--bare", remote);
+      await git(f.repo, "remote", "add", "origin", remote);
+      await git(f.repo, "push", "-u", "origin", "dev");
+      const input = {
+        repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "generation-cleanup", generation: 1, baseBranch: "dev",
+      };
+      const first = await prepareAppTaskWorkspace(input);
+      await git(first.metadata.path, "push", "-u", "origin", first.metadata.branch);
+      const previous = await prepareAppTaskWorkspace({ ...input, previous: first.metadata });
+      const headRef = previous.metadata.baseRef.replace(/\/base$/, "/head");
+      expect(await git(f.repo, "rev-parse", headRef)).toBe(previous.metadata.headCommit);
+      const current = await prepareAppTaskWorkspace({ ...input, generation: 2 });
+      if (retainedState !== "worktree") await git(f.repo, "worktree", "remove", previous.metadata.path);
+      if (retainedState === "removed") await git(f.repo, "branch", "-D", previous.metadata.branch);
+
+      expect(await finalizeAppTaskWorkspace(previous, "accepted")).toMatchObject({
+        ok: true, metadata: { disposition: "removed" },
+      });
+      expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe(
+        current.metadata.baseRef,
+      );
+      expect(await git(f.repo, "rev-parse", current.metadata.baseRef)).toBe(current.metadata.baseCommit);
+      expect(existsSync(current.metadata.path)).toBe(true);
+      expect(await git(f.repo, "rev-parse", `origin/${previous.metadata.branch}`)).toBe(previous.metadata.headCommit);
+      // Cleanup can be repeated after a crash between Git cleanup and state persistence.
+      expect((await finalizeAppTaskWorkspace(previous, "accepted")).ok).toBe(true);
+    });
+  }
+
+  it("retains private refs for waiting, failed and unintegrated work until explicitly removed", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const input = {
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "retained-refs", generation: 1, baseBranch: "dev",
+    };
+    const first = await prepareAppTaskWorkspace(input);
+    writeFileSync(join(first.metadata.path, "change.txt"), "unfinished change\n");
+    await git(first.metadata.path, "add", "change.txt");
+    await git(first.metadata.path, "commit", "-m", "unintegrated work");
+    await git(first.metadata.path, "push", "-u", "origin", first.metadata.branch);
+    const prepared = await prepareAppTaskWorkspace({ ...input, previous: first.metadata });
+    const refs = await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/");
+    expect(refs.split("\n")).toHaveLength(2);
+    const dirtyFile = join(prepared.metadata.path, "dirty.txt");
+    writeFileSync(dirtyFile, "preserve recovery evidence\n");
+    expect(await finalizeAppTaskWorkspace(prepared, "failed")).toMatchObject({
+      ok: true, metadata: { disposition: "retained-for-recovery" },
+    });
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/")).toBe(refs);
+    rmSync(dirtyFile);
+    for (const outcome of ["waiting", "failed", "accepted"] as const) {
+      const finalized = await finalizeAppTaskWorkspace(prepared, outcome);
+      expect(finalized.ok).toBe(outcome !== "accepted");
+      expect(await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/")).toBe(refs);
+    }
+    // The rejected branch is intentionally removed by its owner, not inferred
+    // to be disposable merely because a newer generation or a failure exists.
+    await git(f.repo, "branch", "-D", prepared.metadata.branch);
+    expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
   });
 
   it("removes the task branch after its commit reaches the base branch", async () => {
