@@ -117,6 +117,28 @@ function simpleEventEndpoint(): SocketEndpoint {
   };
 }
 
+// Feed the readable side, rather than emitting synthetic data events, so the
+// fixture exercises the same stream decoder as a real network connection.
+function fragmentedEndpoint(frames: unknown[]): SocketEndpoint {
+  return () => {
+    const stream = new Duplex({
+      read() {},
+      write(_chunk, _encoding, callback) {
+        queueMicrotask(() => {
+          const wire = Buffer.from(frames.map((frame) => JSON.stringify(frame) + "\n").join(""));
+          for (const byte of wire) {
+            if (stream.destroyed) break;
+            stream.push(Buffer.from([byte]));
+          }
+        });
+        callback();
+      },
+    });
+    queueMicrotask(() => stream.emit("connect"));
+    return stream;
+  };
+}
+
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
     expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" })).toBe(
@@ -149,6 +171,20 @@ describe("simple event client", () => {
 });
 
 describe("sendDaemonEvent", () => {
+  it("preserves UTF-8 in a fragmented acknowledgement", async () => {
+    const message = "继续检查 café 🐑";
+    await expect(
+      sendSocketCommand(
+        fragmentedEndpoint([
+          { type: "connected" },
+          { type: "info", message: "Not an acknowledgement" },
+          { type: "ok", command: "task.get", task: { summary: message } },
+        ]),
+        { type: "task.get", ref: "fixture" },
+      ),
+    ).resolves.toMatchObject({ task: { summary: message } });
+  });
+
   it("returns the daemon transport ack", async () => {
     await expect(sendDaemonEvent(okEndpoint(), { type: "trigger.metrics-snapshot" })).resolves.toMatchObject({
       type: "ok",
@@ -294,6 +330,23 @@ describe("emitDaemonEventWithRetry", () => {
 });
 
 describe("waitForSocketEvent", () => {
+  it("preserves split UTF-8 in both event identity and content after subscription", async () => {
+    const sessionId = "会话-🐑";
+    const message = "继续检查 café 🐑";
+    await expect(
+      waitForSocketEvent(
+        fragmentedEndpoint([
+          { type: "session.end", data: { sessionId, message: "Before subscription" } },
+          { type: "ok", command: "subscribe" },
+          { type: "session.end", data: { sessionId: "another", message: "Wrong session" } },
+          { type: "session.end", data: { sessionId, message } },
+        ]),
+        "session.end",
+        { sessionId, timeoutMs: 100 },
+      ),
+    ).resolves.toMatchObject({ data: { sessionId, message } });
+  });
+
   it("subscribes before accepting a matching event", async () => {
     const writes: Array<Record<string, unknown>> = [];
     const endpoint: SocketEndpoint = () => {
