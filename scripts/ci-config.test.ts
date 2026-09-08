@@ -27,4 +27,13 @@ describe("portable CI contract", () => {
     expect(workflow).not.toContain("push: true");
     expect(read("scripts/ci-container-smoke.sh")).not.toMatch(/--(?:volume|mount)|docker compose/);
   });
+
+  it("configures the root package for manifest releases", () => {
+    const config = JSON.parse(read("release-please-config.json"));
+    const manifest = JSON.parse(read(".release-please-manifest.json"));
+    const packageJson = JSON.parse(read("package.json"));
+
+    expect(config.packages).toHaveProperty(".");
+    expect(manifest["."]).toBe(packageJson.version);
+  });
 });
