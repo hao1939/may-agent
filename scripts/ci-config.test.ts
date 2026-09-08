@@ -33,7 +33,7 @@ describe("portable CI contract", () => {
     const manifest = JSON.parse(read(".release-please-manifest.json"));
     const packageJson = JSON.parse(read("package.json"));
 
-    expect(config.packages).toHaveProperty(".");
+    expect(config.packages).toHaveProperty(["."]);
     expect(manifest["."]).toBe(packageJson.version);
   });
 });
