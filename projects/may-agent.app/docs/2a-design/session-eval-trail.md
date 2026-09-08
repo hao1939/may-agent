@@ -1,10 +1,14 @@
 # Design: Session Evaluation Trail
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for append-only trails, the SQLite
-summary projection, heuristic routing, selective evaluator review, inline Web
-UI review, and human feedback. Calibration and richer effectiveness analysis
-remain ongoing evaluation concerns.
+**Implementation status:** Partially aligned. Summary evaluation and its SQLite
+projection, historical trail reads, and direct HTTP human-feedback append are
+present. The current Evaluation Task drops an HTTP review's selected line and
+instructions; its aftermath executor does not generate the requested line
+trail. HTTP-owned policy and feedback writes also remain a boundary gap. See
+[the convergence tracker](../proposals/design-implementation-convergence.md#5-http-retains-evaluation-policy-and-feedback-persistence).
+The pipeline below describes the accepted trail behavior, not proof that every
+step currently runs. Calibration remains an ongoing evaluation concern.
 **Aligned with**: `sessions.md`, `webui.md`, `runtime.md`, `sdk.md`
 
 ## Purpose
@@ -115,7 +119,7 @@ A later evaluator pass appends new rows instead of rewriting old rows. That pres
 
 ## Pipeline
 
-`evaluator-aftermath` owns generation:
+Evaluation owns generation. The required trail behavior is:
 
 1. Read `session.jsonl`.
 2. Classify the session and write/update the `evaluations` table as the summary projection.

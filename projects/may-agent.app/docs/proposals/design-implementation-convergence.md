@@ -298,6 +298,29 @@ direct session-feedback file writes. Move those meanings through the existing
 Evaluation App/event path in a paired change, preserving UI compatibility and
 testing retries and exact evidence identity.
 
+The September 8 direct source check reproduced a more specific break: passing
+`evaluation.session.requested` with `focusLine: 12`, `focusRaw`, and
+`instructions` through `taskInputForEvent` retains the fields, but
+`taskIntentForInput` drops all of them. The resulting aftermath Task receives
+only `sessionId`. Its evaluator prompt forbids file writes and can return an
+existing summary; this is not the requested fresh, line-focused trail review.
+Moving the HTTP prompt alone would not repair that behavior.
+
+The same Host revision accepts that event as record-only, not as proof that
+Evaluation owns an admitted request. The comment endpoint directly appends a
+JSONL row without a submission identity, and the UI treats a successful response
+as saved rows. Existing history must remain readable. The next paired slice
+must preserve the selected raw line through admission and execution, use the
+existing request/event identities for retries, and display pending or failed
+delivery honestly. Evaluation owns review policy and feedback meaning; Host
+mechanics own durable recording. Do not give App workflows arbitrary Host
+storage paths or copy the HTTP file writer into an App to claim convergence.
+
+Prove the same submission once across retry/restart, a distinct later review
+of the same line, retained feedback visibility, and persistence failure without
+a false saved response. These are source findings and next-slice requirements,
+not a completed migration or live reproduction.
+
 The same review removed the metric collector's independent session-end
 backfill on its source branch so observation no longer conceals missing
 evidence; deployment remains separate.
