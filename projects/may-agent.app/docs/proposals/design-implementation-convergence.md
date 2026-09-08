@@ -504,3 +504,14 @@ changes, model-backed behavior claim, publication, or deployment is included.
 C: HTTP/Evaluation policy and feedback ownership remains a separate known gap,
 excluded from this May-focused pass by the human's clarification. No Evaluation
 implementation, partial migration, live state change, or rollout is included.
+
+### Source review publication
+
+After the local implementation, the human requested PRs. The Host candidate
+was rebased onto main `78fe7123253c64a161a963d87bf3d40eaa593898`; its source
+revision is now `508b506b` on `codex/may-focused-conversation-20260908`.
+The original local commits above remain audit evidence, not current PR heads.
+The paired App source uses the same branch name, based on App main `d8baf6e0c7`.
+It remains in the existing bare Git repository, which has no PR interface;
+the Host PR must identify the exact App review revision. Source-branch and PR
+publication is authorized, not merging, deploying, or restarting any instance.

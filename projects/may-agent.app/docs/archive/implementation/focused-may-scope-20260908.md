@@ -11,6 +11,10 @@ assistant to implement directly. The saved goal is audit history, not an active
 execution authority. This snapshot preserves the approved source scope; no
 deployment, PR publication, or model-backed live experiment is authorized.
 
+Later authority: after direct implementation, the human explicitly requested
+PRs. Publishing the paired source branches and Host PR is now authorized;
+merging, deployment, and model-backed live experiments remain outside scope.
+
 ### Proposed decision
 
 Make May a conversational deputy with reliable follow-through, supported by
