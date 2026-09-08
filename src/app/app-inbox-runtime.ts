@@ -811,6 +811,21 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     return current;
   };
 
+  const publishScheduledEvent = (event: AgentEvent, identity: string): boolean => {
+    try {
+      options.bus.emit(event);
+      return true;
+    } catch (error) {
+      // Persistence can fail before the fact exists. Keep lastSlot unchanged;
+      // the next ordinary scan publishes the latest slot, not a replay queue.
+      // Reporting through the same unavailable database could throw again.
+      console.error(
+        `[app-schedule:${identity}] publication failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return false;
+    }
+  };
+
   const scanNow = () => {
     if (closed || !started) return;
     const currentTime = now();
@@ -835,8 +850,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           // Event schedules publish facts; they do not create a reliable
           // command channel or make a passive observer the delivery owner.
           Object.defineProperty(scheduledFact, EVENT_RECORD_ONLY, { value: true, configurable: true });
-          options.bus.emit(scheduledFact);
-          activation.lastSlot = slot;
+          if (publishScheduledEvent(scheduledFact, `${definition.id}/${configuredSchedule.id}`)) {
+            activation.lastSlot = slot;
+          }
           continue;
         }
         if (activation.lastSlot !== undefined && slot <= activation.lastSlot) continue;
@@ -845,18 +861,21 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           activation.lastSlot = slot;
           continue;
         }
-        options.bus.emit({
-          type: "app.input.requested",
-          source: `app:${definition.id}:schedule:${configuredSchedule.id}`,
-          owner: `app:${definition.id}`,
-          data: {
-            appId: definition.id,
-            input: configuredSchedule.input,
-            source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
-            idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+        const published = publishScheduledEvent(
+          {
+            type: "app.input.requested",
+            source: `app:${definition.id}:schedule:${configuredSchedule.id}`,
+            owner: `app:${definition.id}`,
+            data: {
+              appId: definition.id,
+              input: configuredSchedule.input,
+              source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
+              idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+            },
           },
-        });
-        activation.lastSlot = slot;
+          `${definition.id}/${configuredSchedule.id}`,
+        );
+        if (published) activation.lastSlot = slot;
       }
     }
     for (const appId of host.readyAppIds()) schedule(appId);
@@ -1625,6 +1644,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App inbox scanIntervalMs must be positive");
   }
   let timer: ReturnType<typeof setInterval> | null = null;
+  const scanFromTimer = () => {
+    try {
+      scanNow();
+    } catch (error) {
+      // A failed storage read/recovery scan must not escape a timer callback
+      // and terminate unrelated work. Durable state is recollected next scan.
+      console.error(`[app-runtime:scan] failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
   const runtime: AppInboxRuntime = {
     host,
     start() {
@@ -1635,9 +1663,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // that opens the human interface or activates this message handler.
       void recoverTaskDependencies();
       recoverAdmissionPlans(true);
-      timer = setInterval(scanNow, scanIntervalMs);
+      timer = setInterval(scanFromTimer, scanIntervalMs);
       timer.unref?.();
-      setTimeout(scanNow, 0);
+      setTimeout(scanFromTimer, 0);
       armPump();
       startPromise = Promise.resolve();
       return startPromise;
