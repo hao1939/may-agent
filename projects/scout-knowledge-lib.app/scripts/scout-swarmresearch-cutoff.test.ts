@@ -18,6 +18,31 @@ type Fixture = {
   analysis_kind: string;
   source_tip: string;
   recovery_source: string;
+  cost_provenance: {
+    analysis_kind: string;
+    settings_sha256: string;
+    declared_model: string;
+    transcript_model: string;
+    transcript_file_count: number;
+    transcript_manifest_sha256: string;
+    transcript_interval: string[];
+    usage_rows: number;
+    unique_message_ids: number;
+    unique_message_usage_pairs: number;
+    usage_keys: string[];
+    deduplicated_token_totals: {
+      input_tokens: number;
+      cache_creation_input_tokens: number;
+      cache_read_input_tokens: number;
+      output_tokens: number;
+    };
+    monetary_cost_scalar_count: number;
+    pricing_snapshot: string;
+    cutoff_generation_code: string;
+    cutoff_reference_files: string[];
+    cutoff_commit_session_links: Record<string, string>;
+    decision: string;
+  };
   cutoff_rows: CutoffRow[];
   missing_cutoff_rows: string[];
 };
@@ -101,4 +126,42 @@ test("Third-Autocorrelation needs an uncosted later trajectory score", () => {
     intervalsOverlap({ ...row, cutoff_score: row.later_compatible_score! }),
   ).toBe(true);
   expect(row.later_commit_cost).toBe("unretained");
+});
+
+test("Third-Autocorrelation token traces do not reconstruct dollar cost", () => {
+  const cost = fixture.cost_provenance;
+  expect(cost.analysis_kind).toBe("producer-authored post-hoc inventory");
+  expect(cost.settings_sha256).toBe(
+    "acc74784126df1912c69842774819bc6732aa9d633421b5f478e65265ec28dc3",
+  );
+  expect(cost.declared_model).toBe("us.anthropic.claude-opus-4-6-v1");
+  expect(cost.transcript_model).toBe("claude-opus-4-6");
+  expect(cost.transcript_file_count).toBe(50);
+  expect(cost.transcript_manifest_sha256).toBe(
+    "1082a0f18b20532e1b66bbd55c51b2608fb422e525f171d5154246e520258f0f",
+  );
+  expect(cost.transcript_interval).toEqual([
+    "2026-05-21T00:32:38.049Z",
+    "2026-05-21T07:03:58.975Z",
+  ]);
+  expect(cost.usage_rows).toBe(3659);
+  expect(cost.unique_message_ids).toBe(1940);
+  expect(cost.unique_message_usage_pairs).toBe(1940);
+  expect(cost.usage_rows).toBeGreaterThan(cost.unique_message_ids);
+  expect(cost.usage_keys).not.toContain("cost");
+  expect(cost.deduplicated_token_totals).toEqual({
+    input_tokens: 76543,
+    cache_creation_input_tokens: 12818433,
+    cache_read_input_tokens: 101200732,
+    output_tokens: 2342017,
+  });
+  expect(cost.monetary_cost_scalar_count).toBe(0);
+  expect(cost.pricing_snapshot).toBe("absent");
+  expect(cost.cutoff_generation_code).toBe("absent");
+  expect(cost.cutoff_reference_files).toEqual(["data/swarmresearch/README.md"]);
+  expect(cost.cutoff_commit_session_links).toEqual({
+    "3180635": "present",
+    f018f27: "present",
+  });
+  expect(cost.decision).toContain("cannot assign");
 });

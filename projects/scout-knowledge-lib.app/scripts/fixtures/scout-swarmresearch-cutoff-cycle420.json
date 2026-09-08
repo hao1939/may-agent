@@ -26,6 +26,49 @@
     "third_autocorr_log_sha256": "bfbb791126c26ce2b3e8ab47a5b65f46c4777f69634d24012bbb79560beda75b",
     "third_autocorr_evaluator_sha256": "3fb1c3a1e881435b7b8ea663fc69d1a811b58fd16c5b81f1711b19a4cca62287"
   },
+  "cost_provenance": {
+    "analysis_kind": "producer-authored post-hoc inventory",
+    "inspected_at": "2026-09-08T03:53:56.661Z",
+    "settings_sha256": "acc74784126df1912c69842774819bc6732aa9d633421b5f478e65265ec28dc3",
+    "declared_model": "us.anthropic.claude-opus-4-6-v1",
+    "transcript_model": "claude-opus-4-6",
+    "transcript_file_count": 50,
+    "transcript_manifest_sha256": "1082a0f18b20532e1b66bbd55c51b2608fb422e525f171d5154246e520258f0f",
+    "transcript_interval": [
+      "2026-05-21T00:32:38.049Z",
+      "2026-05-21T07:03:58.975Z"
+    ],
+    "usage_rows": 3659,
+    "unique_message_ids": 1940,
+    "unique_message_usage_pairs": 1940,
+    "usage_keys": [
+      "cache_creation",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens",
+      "inference_geo",
+      "input_tokens",
+      "iterations",
+      "output_tokens",
+      "server_tool_use",
+      "service_tier",
+      "speed"
+    ],
+    "deduplicated_token_totals": {
+      "input_tokens": 76543,
+      "cache_creation_input_tokens": 12818433,
+      "cache_read_input_tokens": 101200732,
+      "output_tokens": 2342017
+    },
+    "monetary_cost_scalar_count": 0,
+    "pricing_snapshot": "absent",
+    "cutoff_generation_code": "absent",
+    "cutoff_reference_files": ["data/swarmresearch/README.md"],
+    "cutoff_commit_session_links": {
+      "3180635": "present",
+      "f018f27": "present"
+    },
+    "decision": "The retained transcripts expose token usage and commit/session evidence but cannot assign the later compatible commit an exact cumulative dollar cost."
+  },
   "cutoff_rows": [
     {
       "id": "circle_packing",

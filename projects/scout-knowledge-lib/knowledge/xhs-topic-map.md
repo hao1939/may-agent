@@ -4,6 +4,7 @@ triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit c
 last_updated: "2026-09-08"
 latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
 source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; retained SwarmResearch Third-Autocorrelation transcripts and producer-authored cost-provenance inventory."
 latest_seed_observation: "Cycle 422 read-only XHS boundary through 2026-09-08T03:33:16.091Z."
 </ai_context>
 
@@ -11196,6 +11197,37 @@ high/open and release-blocking pending independent review plus a fresh
 immediate preflight/postflight at the actual landing boundary. No local-main
 movement, compaction, or cleanup is claimed. RV-004 and RV-034 remain the
 highest substantive evidence gaps after this release decision.
+
+### Cycle 423 checkpoint — retained usage traces stop before dollar attribution
+
+Cycle 423 began from clean exact source
+`1156e7e4c115e26c42a2f962fb51d87b8919fd86`. Cycle 422's supported XHS
+observation was about 21 minutes old, inside the six-hour cadence, so the
+bounded reconciliation made zero XHS requests. Added and changed identities
+remain unknown, removals remain `[]`, and all 132 durable seeds remain
+unavailable. A single read-only Git ref check found Mnemosyne main and v2
+unchanged, leaving RV-034 at its external-runtime boundary.
+
+RV-004 remains highest consequence but still requires a protected
+query-to-later-outcome join. The highest accessible primary-artifact gap was
+whether retained SwarmResearch Third-Autocorrelation transcripts could assign
+the later paper-compatible commit `f018f27` to the advertised `$50` boundary.
+The [Cycle 423 cost-provenance audit](../reports/review/scout-swarmresearch-cost-provenance-cycle423-2026-09-08.md)
+finds 50 transcript files and 1,940 unique message/usage pairs. Both cutoff
+commit `3180635` and later commit `f018f27` are session-linked, but the bundle
+has no monetary-cost field, historical price snapshot, or cutoff-generation
+code. Deduplicated token totals therefore cannot establish an exact dollar
+position without importing an unrecorded price and allocation rule.
+
+Confidence is high in the pinned transcript manifest, counts, token totals,
+commit/session occurrences, and absence of cost-generation evidence. It is low
+for historical pricing, cache discounts, concurrent-session allocation, and
+the exact cost of `f018f27`. This preserves Cycle 420's partial-support result
+and still does not prove overspending. Next seek an author-retained cost ledger
+or table-to-commit manifest; otherwise prefer a different released primary
+contradiction. RV-004/RV-034 remain high/open, RV-036/RV-038 medium/open, and
+RV-052 high/open and release-blocking. No local-main movement, compaction, or
+cleanup is claimed.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

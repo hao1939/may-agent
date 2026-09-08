@@ -24,6 +24,14 @@ useful evidence, but do not prove collection membership.
 | Representative availability          | Public `/explore` remains `ready=true` with 30 notes and no login wall. The saved-profile request resolved to a `profile`-class login wall with zero attributable items, so no representative saved-post read was supported or attempted. This is public availability evidence, not collection-membership or semantic evidence.                                                                                                                                                                                                                                                                                                                                                        |
 | Removal policy                       | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
+Cycle 423 cadence decision at `2026-09-08T03:53:56.661Z`: Cycle 422's exact
+observation through `03:33:16.091Z` was about 21 minutes old and inside the
+six-hour cadence, so no XHS browser, feed, search, detail, or saved-surface
+request ran. Additions/changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable rather than removed. Cycle 422 remains
+the latest direct observation; this no-request reconciliation does not infer
+unchanged membership from unavailable evidence, and no account state changed.
+
 ## Compact post-Cycle-76 reconciliations
 
 Rows 206–214 remain an explicit exactness gap. Read-only inspection of their
