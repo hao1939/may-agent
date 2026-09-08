@@ -1120,6 +1120,7 @@ export function expiredAgentSessionAppTaskAttempt(
   };
 }
 
+/** Recovery replaces execution, not the accepted Task generation or its waits. */
 export function releaseInterruptedAppTaskAttempt(
   config: AppTaskContext,
   recovery: AppTaskAttemptRecovery,
@@ -1152,7 +1153,6 @@ export function releaseInterruptedAppTaskAttempt(
   attempt.failureReason = "previous-runtime-attempt-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
   });
   commitTaskMutation(config, tree, {
@@ -1209,10 +1209,8 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
   attempt.failureReason = "terminal-agent-session-expired-lease-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
     summary: recoveredSummary,
-    conditionIds: [],
   });
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
@@ -1245,10 +1243,8 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
   attempt.failureReason = "late-terminal-workflow-result-requeued";
   touchResource(resource, {
     phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
     summary: recoveredSummary,
-    conditionIds: [],
   });
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
@@ -1281,10 +1277,8 @@ export function repairPreviousRuntimeRecoveryAttention(
     attempt.failureReason = "previous-runtime-attempt-requeued";
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({
       taskId: resource.metadata.id,
@@ -1380,10 +1374,8 @@ export function repairRunningAppTasksWithoutAttempt(
     }
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     repairs.push({
       taskId: resource.metadata.id,
@@ -2779,10 +2771,8 @@ export function claimObservedAppTask(
     }
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
   }
   const canRecoverPreviousRuntime = Boolean(
@@ -2817,10 +2807,8 @@ export function claimObservedAppTask(
     changedAttempts.add(previousAttempt);
     touchResource(resource, {
       phase: "pending",
-      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
   }
   if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {

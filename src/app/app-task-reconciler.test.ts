@@ -3646,6 +3646,104 @@ describe("App task reconciler state", () => {
     expect(released.attempts?.[reclaimed.attemptId]?.trigger).toBeUndefined();
   });
 
+  it.each([
+    "restart",
+    "claim-recovery",
+    "missing-attempt",
+    "missing-attempt-scan",
+    "late-terminal",
+    "expired-session",
+    "legacy-attention",
+  ])("preserves accepted waits when %s replaces an attempt of the same generation", (kind) => {
+    const { config } = fixture();
+    const taskIntent = intent("maintain");
+    const first = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    const conditions = [
+      { id: "ci", type: "pipeline-run.state", subject: "pipeline-run:42", expected: "completed" },
+      { id: "review", type: "project.task.reconciled", subject: "task:review", expected: "done" },
+    ];
+    deferAppTask(config, first, { disposition: "waiting", summary: "Both facts are outstanding", conditions });
+    const accepted = readTaskSnapshot(config).conditions;
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.updated", eventId: 101 });
+    const running = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    if (running.kind !== "claimed") throw new Error("expected running claim");
+    recordAppTaskAttemptSession(config, running, "interrupted-session");
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.updated", eventId: 102 });
+    if (kind === "restart" || kind === "claim-recovery") {
+      mutateAttemptFixture(config, first.taskId, running.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+      });
+      if (kind === "restart") {
+        const [recovery] = recoverableAppTaskAttempts(config, Date.now(), true, [first.taskId]);
+        expect(releaseInterruptedAppTaskAttempt(config, recovery, "Runtime replaced").released).toBe(true);
+      }
+    } else if (kind.startsWith("missing-attempt")) {
+      mutateAttemptFixture(config, first.taskId, running.attemptId, (attempt) => {
+        attempt.state = "interrupted";
+      });
+      if (kind === "missing-attempt-scan")
+        expect(repairRunningAppTasksWithoutAttempt(config, [first.taskId])).toHaveLength(1);
+    } else if (kind === "legacy-attention") {
+      mutateAttemptFixture(config, first.taskId, running.attemptId, (attempt) => {
+        attempt.state = "interrupted";
+        attempt.failureReason = "previous-runtime-attempt-not-recoverable";
+      });
+      mutateTaskResourceFixture(config, first.taskId, (resource) => {
+        resource.status.phase = "attention";
+        resource.status.currentAttemptId = undefined;
+      });
+      expect(repairPreviousRuntimeRecoveryAttention(config, [first.taskId])).toHaveLength(1);
+    } else if (kind === "late-terminal") {
+      expect(
+        releaseLateTerminalWorkflowAppTaskAttempt(
+          config,
+          { taskId: first.taskId, generation: running.generation },
+          "interrupted-session",
+          "Workflow stack lost",
+        ).released,
+      ).toBe(true);
+    } else {
+      mutateAttemptFixture(config, first.taskId, running.attemptId, (attempt) => {
+        attempt.lease!.expiresAt = "2000-01-01T00:00:00.000Z";
+      });
+      const expired = expiredAgentSessionAppTaskAttempt(config, first.taskId);
+      if (!expired) throw new Error("expected expired attempt");
+      expect(
+        releaseTerminalSessionExpiredAppTaskAttempt(
+          config,
+          { ...expired, sessionId: "interrupted-session", terminalStatus: "done" },
+          "Caller lost",
+        ).released,
+      ).toBe(true);
+    }
+    const replacement = claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "agent:app-owner",
+    });
+    expect(replacement.kind).toBe("claimed");
+    if (replacement.kind !== "claimed") throw new Error("expected replacement claim");
+    expect(replacement.generation).toBe(running.generation);
+    expect(replacement.events.map(({ event }) => event.eventId)).toContain(102);
+    expect(readTaskSnapshot(config).conditions).toEqual(accepted);
+    expect(readTaskSnapshot(config).resources[first.taskId].status.conditionIds).toEqual(["ci", "review"]);
+    expect(completeAppTask(config, running, { summary: "Stale result" }).status).toBe("stale");
+    deferAppTask(config, replacement, { disposition: "waiting", summary: "Still outstanding", conditions });
+    expect(readTaskSnapshot(config).conditions).toEqual(accepted);
+    expect(
+      trackAppTaskConditionEvent(config, { type: "pipeline-run.state", pipelineRunId: "42", state: "completed" }),
+    ).toMatchObject([{ taskId: first.taskId, conditionId: "ci" }]);
+  });
+
   it("atomically fences an interrupted orphan claim and accepts exactly one later wake (events 5446564 and 5446878)", () => {
     const fixtureState = fixture();
     const { root } = fixtureState;
@@ -3796,8 +3894,15 @@ describe("App task reconciler state", () => {
 
     const repaired = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(repaired.resources?.["evaluate:session-1"]).toMatchObject({
-      status: { phase: "pending", observedGeneration: 0 },
+      status: { phase: "pending", observedGeneration: claim.generation },
     });
+    expect(
+      claimObservedAppTask(resourceConfig, {
+        taskId: claim.taskId,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+      }).kind,
+    ).toBe("claimed");
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
