@@ -301,12 +301,15 @@ describe("SubagentManager.resumeStaleSessions()", () => {
         expect(events.find((event) => event.type === "session.start")).toMatchObject({
           data: { sessionId: "session-work", taskBinding },
         });
-        if (bound) expect(readSessionMeta(persistDir, "session-work")?.taskBinding).toEqual(taskBinding);
+        const persisted = readSessionMeta(persistDir, "session-work");
+        expect(persisted).not.toBeNull();
+        expect(persisted?.taskBinding).toEqual(taskBinding);
       } finally {
         // This regression exercises real resumption and scope, not a model call.
         manager.cancel("session-work");
         await manager.waitFor("session-work");
       }
+      expect(readSessionMeta(persistDir, "session-work")?.taskBinding).toEqual(taskBinding);
     });
   }
 

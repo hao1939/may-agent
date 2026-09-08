@@ -681,7 +681,9 @@ export class SubagentManager {
       conversationId: opts?.conversationId ?? existingMeta?.conversationId,
       channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
       projectId: opts?.projectId ?? existingMeta?.projectId,
-      taskBinding: opts?.taskBinding ?? existingMeta?.taskBinding,
+      // Persist the live attempt's exact scope, including an explicit absence.
+      // Retained transcript metadata must not resurrect an old fenced binding.
+      taskBinding: session.taskBinding,
       recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
       kind,
       autoClose,
