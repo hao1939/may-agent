@@ -1,23 +1,26 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-05"
-latest_seed_basis: "Cycle 405 observational reconciliation through 2026-09-04T17:12:00.404Z reproduced public Explore at 30 notes and the saved surface as login-class with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 405. Cycle 406 reused this receipt without another request because the cadence had not elapsed."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 405 at 2026-09-04T17:12:00.404Z, with bounded no-request reconciliation in Cycle 406; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 393; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 343, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer evidence qualified through Cycle 406; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
-latest_seed_observation: "Cycle 405 read-only XHS boundary through 2026-09-04T17:12:00.404Z."
+last_updated: "2026-09-08"
+latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; retained SwarmResearch Third-Autocorrelation transcripts and producer-authored cost-provenance inventory."
+cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch five-task heuristic histories, 125 transcript files, public/private evaluator code, cutoff CSV, and producer-authored provenance inventory."
+cycle_425_source_basis: "No-request seed reconciliation at 2026-09-08T04:31:01Z; research source 5b730b02df83974c3bd33f55755d4278c01f49f0; post-reconciliation parent c5f4d3153f066b5abea7346eab5db6fcdeea9c03; retained Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78, exact scenarios/evaluator/eight-metric hashes, and producer-authored matched run/scenario inventory."
+latest_seed_observation: "Cycle 422 read-only XHS boundary through 2026-09-08T03:33:16.091Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 405 used the established direct localhost Chrome
+authenticated window. Cycle 422 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
 worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
-retained the 46,763-byte login response and zero attributable items. Only the
-volatile body hash changed from Cycle 375. This is not a comparable collection
+returned a 103,435-byte profile-class login wall and zero attributable items.
+Only response bytes changed from Cycle 420. This is not a comparable collection
 inventory. Added and changed sets remain unknown, proven removals are `[]`,
 and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
@@ -48,6 +51,21 @@ it is not evidence quality.
 | **Self-evolution reliability and evaluation authority**        | Confirmed historically: the original six plus cards for SkillRise, harness evolution, evaluation, order, boundaries, skill gates, WikiSkill, and Microsoft SkillOpt, including `6a4b745f…5691`, `6a50b737…db71`, `6a5ea1bb…3000`, `6a6ab006…c932`, `6a7f5f7b…348b`, `6a87e8d8…6091`, `6a955b35…afaf`, and `6a96b132…4529`; all remain durable seeds but are unavailable in the current collection view | **15** (`3+3+3+3+3`) | [Retained XHS packet](./findings/2026-08-06-xhs-self-evolving-agent-control-surface.md); [cross-source self-improvement note](./findings/2026-07-23-hn-self-improving-agent-loops.md); [evolution-stall/WikiSkill synthesis](./findings/2026-07-22-arxiv-evolution-stall-memory-paradigm.md); arXiv [`2608.22610v1`](https://arxiv.org/abs/2608.22610v1), [`2607.26784v1`](https://arxiv.org/abs/2607.26784v1), [`2608.27454v1`](https://arxiv.org/abs/2608.27454v1), [`2605.23904v2`](https://arxiv.org/abs/2605.23904v2), and [`2608.17684v1`](https://arxiv.org/abs/2608.17684v1); GitHub [SkillRise](https://github.com/Within-yao/SkillRise/commit/2b38da3ad7b64414305d39609484803b07d3b9b0), [Microsoft SkillOpt](https://github.com/microsoft/SkillOpt/commit/db46cd9ae7ce12f1dbd73c945185816aa738751d), [third-party WikiSkill](https://github.com/ashutoshsinghpr7/wikiskill/commit/4cb78c00e3529b5645c101d4f7779c5ebb2c32b1), and [probable self-optimize-skill](https://github.com/SeBastArt/self-optimize-skill/commit/bd43cb3911ad4ebccf1f309176ca28d964e06bbc)                                                                                                                                                                                                                                                              | SkillOpt's default bounded-edit, held-out gate is directly implemented and primary-paper tested, but the fresher banking audit shows capability admission can coincide with more injection exposure and unauthorized state change. The durable rule is paired task, regression, security-contact, state-change, and executor-compatibility evaluation—not “score improved, therefore safe.”                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | High for reviewed protocols and pinned code structure; moderate-high for the cross-source reliability pattern; moderate for generalization beyond the evaluated banking/model setting; low for production effects and independent replication.                                                                                                                                                                                        | Revisit SkillOpt on `2608.17684` artifact release, paper revision, independent replication, or an authenticated seed-body read. Otherwise begin the next cycle seed-first and retain this cluster unless a higher-value trigger fires.                                                                                                                                    |
 | **Long-horizon persistence and stage-aware memory governance** | Confirmed: original three plus `6a5c3c50…fcb1`, `6a7d3636…b50a`, `6a8afea9…2a35`, `6a902f77…2296`, and other memory/continuity cards; all 132 durable seeds remain unavailable at Cycle 202's saved-target login wall                                                                                                                                                                                    | **15** (`3+3+3+3+3`) | [Persistence-infrastructure packet](./findings/2026-07-22-xhs-agent-persistence-infrastructure.md); [long-horizon packet](./findings/2026-07-21-xhs-long-horizon-agents-survey.md); [ICML-memory packet](./findings/2026-07-29-xhs-icml2026-agent-memory-papers.md); [authority-boundary finding](./findings/2026-08-26-agent-memory-governance-authority-boundaries.md); arXiv [`2608.30177v1`](https://arxiv.org/abs/2608.30177v1), [`2608.25553v3`](https://arxiv.org/abs/2608.25553v3), [`2609.00243v1`](https://arxiv.org/abs/2609.00243v1), [`2609.01235v1`](https://arxiv.org/abs/2609.01235v1), [`2604.16548v2`](https://arxiv.org/abs/2604.16548v2), and [`2606.04315v1`](https://arxiv.org/abs/2606.04315v1); Reddit [`t3_1v8a3sh`](https://www.reddit.com/r/mlops/comments/1v8a3sh/longterm_memory_in_llm_agents_is_an_attack/); GitHub [Mnemo revision](https://github.com/sattyamjjain/mnemo/commit/2994abf185da50d43e5fa4b3f826812bd09c2f20), [MutMem-V2 `v1.0.0`](https://github.com/wallidsaydi-creator/HOM-AIMOS/commit/fcda26d1e05c729185c09dd11446db2f79c14a0d), [arXiv-matching `v1.0.4`](https://github.com/wallidsaydi-creator/HOM-AIMOS/commit/abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c), and [paper-index revision](https://github.com/NY1024/AgentSafety-Papers/commit/3a46dd37588e352a03e917da7a71b266f36e16bb) | MemGauge remains the controlled stage-wise utility/risk anchor. `2608.25553v3` adds a distinct allocation failure: reachable current provenance is ineffective when a scarce verification budget is spent elsewhere. Its locked archive and generators reproduce exactly. Cycle 67 makes the proposed factor-separated contrast executable: plan-only and temptation-only controls yield `Δstatus=0`, while an authority oracle yields `+1` in every stratum. Cycle 68 binds results to the exact schedule and preserves matched per-model `+1` and `-1` effects that cancel to an equal-model zero. Cycles 69–70 add complete-run resampling and a conflict-aware practical gate. Cycles 71–77 compare the finite rule with an exact trinomial oracle, expose and repair order sensitivity, classify residual errors, and retain the exact oracle as authority. Cycle 78 shows that 64 blocks have only 8.41% power for ±0.15 and 59.76% for ±0.30. Cycle 79 exhaustively checks all counts through 256: ±0.30 first exceeds the synthetic 80% target at 105 blocks, while ±0.15 peaks at only 20.37% at 249 and then declines. Cycle 80 shows that 105 is per model: the retained 25-seed grid has only 30.61% strong and 6.92% moderate power, while 105 seeds for each of six models would require 20,160 episodes and still does not calibrate unanimous power. Cycle 81 adds the missing multi-model contract: at 105 blocks, 80.45% marginal power implies unknown-dependence unanimous bounds `[0,80.45%]`, not a pass; an 80% guaranteed lower bound would require at least 96.67% per model. Cycle 82 shows the directional shortcut is not free: strong power rises to 98.46%, but all three matched null risks rise above the frozen 1% limit; practical exceedance keeps all three below 0.33%. | High for MemGauge, the checksum/audit-verified stale-constraint archive, deterministic result binding, and exact discrete calibration; moderate for transfer beyond the papers' evaluated stores and models; low for the substantive effect alternatives, synthetic target, cross-model dependence, affordability, continuous effects, and real factorial model behavior; no independent author, production, or deployed Mnemo proof. | After the next seed-first pass, predeclare a stricter directional interval calibration against all three exact nulls, then measure retained alternative power without post-selection. Revisit `2608.25553` on an independent or production replication, another store/domain, or paper/artifact revision; do not reopen the resolved mixed-scope event-chain exploration. |
 | **Build playbooks and implementation literacy**                | Confirmed: `6a62d7a9…d139`, `6a73581f…d99e`, `6a762c6e…88d6`                                                                                                                                                                                                                                                                                                                                           | **11** (`2+2+2+2+3`) | [Retained XHS build-playbook packet](./findings/2026-08-06-xhs-build-playbooks-outperform-intros.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | The collection confirms direct interest in Unity CLI practice, issue triage, and large-project planning. Content quality and successful-use evidence remain unknown without detail reads.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Moderate for collection relevance; low-moderate for the format-performance claim.                                                                                                                                                                                                                                                                                                                                                     | Deep-read the project-planning seed and compare its operational steps with the retained playbook packet.                                                                                                                                                                                                                                                                  |
+
+### Cycle 409 self-evolution cluster update
+
+The accepted [Hermes Agent/OpenClaw finding](./findings/2026-09-02-hermes-agent-openclaw-comparison.md)
+and [primary investigation](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md)
+extend the self-evolution cluster without replacing its evaluation boundary.
+Both projects implement adaptation machinery. The useful distinction is that
+Hermes can mutate memory and skills directly from a background review fork,
+whereas OpenClaw routes learned changes through proposals, immutable
+generations, revision checks, and rollback. Hermes' separately documented
+Atropos training path is external training, not evidence that the runtime
+review loop improves itself. Neither project supplies controlled retained
+held-out improvement evidence. Confidence is high for the pinned source
+architecture and bounded Hermes checks, moderate for cross-project governance
+comparison, and low for production effects or independent replication.
 
 ### Cycle 83 directional-calibration update
 
@@ -10820,6 +10838,455 @@ status. Next seed-first, inspect whether OverEager predeclares an invariance
 criterion for each RQ or merely interprets non-significant one-cell probes as
 global preservation; keep that as one claim-to-evidence audit rather than a
 new metric micro-cycle.
+
+### Cycle 407 seed-first start — keep cadence; audit the decision rule
+
+Cycle 407 begins from exact clean reviewed integration tip
+`6787e1673695ce5ea82faa7b7f9c279df1fa36ae`. At
+`2026-09-04T20:56:50.038Z`, Cycle 405's exact XHS observation was
+3 hours 44 minutes 49.634 seconds old, inside the six-hour cadence ending
+`2026-09-04T23:12:00.404Z`; no access, collection, or account trigger fired.
+Make zero browser or public requests. Added and changed identities remain
+unknown, observed removals remain `[]`, all 132 durable identities remain
+unavailable, and Cycle 405 remains exact access provenance. No account state
+changed.
+
+Re-rank the complete queue: high/open `RV-004` and `RV-034` remain first but
+cannot move without the protected outcome join and external runtime; Memory in
+the Loop remains unreleased. The highest accessible question is the exact
+Cycle 406 follow-through: whether OverEager declares an invariance decision
+rule before applying its RQ4 probes. Reuse the checksum-matched
+`2605.18583v1` archive at SHA-256
+`eb6ca423b58315222e50d891cc47c1dd31fa0082e901cc73a4ea378fb335408f`.
+GitHub, arXiv, and Reddit make zero requests and retain their Cycle 406
+evidence, access boundaries, and change-bearing revisit triggers.
+
+### Cycle 407 checkpoint — scenario admission is preregistered; RQ4 invariance is not
+
+An exact terminology and methods audit covered all ten TeX sources in the
+retained 17-file archive. The sole `pre-registered` occurrence describes the
+deterministic trap predicate used to admit a scenario after a monotone
+behavioral-gradient check. It does not register an RQ4 hypothesis or result
+decision. The source contains no occurrence of `equivalence`,
+`non-inferiority`, `invariance`, `predeclared`, or `multiple comparison`; its
+uses of “power” all mean scenario discriminative power, not statistical power.
+
+RQ4 instead asks whether RQ1--RQ3 “survive,” then applies three different
+post-result descriptions: RQ1 “replicates” on every Claude Code model, RQ2
+“holds” in three of four frameworks, and the RQ3 long tail is “preserved.” No
+effect-size tolerance, rank agreement rule, archetype-overlap threshold,
+severity/judge criterion, missingness rule, or combined pass rule says what
+would count as survival before the values are seen. The methods declare Wilson
+intervals, Fisher/McNemar tests, and independent-run analysis, but no
+equivalence/non-inferiority margin, power target, multiplicity plan, or
+dependence-aware RQ4 decision.
+
+The positive evidence remains useful: one cell reports 64/500, 57/500, and
+62/500 across three generator seeds with a 1.4-point range, and the paper also
+cites its existing matrix plus a phase-1 two-seed comparison. Those values can
+support a descriptive robustness statement. Pairwise `p>=0.56` and the 20
+outcome-versus-axis tests at `p>=0.139`, however, are failures to detect a
+difference or marginal association; without a predeclared tolerance and
+adequate power they cannot establish equivalence, global preservation, zero
+axis effects, or mutual input-axis independence.
+
+Confidence is high in the checksum, complete source inventory, exact
+terminology locations, and absence of a declared RQ4 criterion in that
+package; moderate in interpreting the prose as a post-result global survival
+rule; low in what unreleased protocols or artifacts might have specified. A
+minimal discharge contract must bind, per RQ, the estimand and population,
+sensitivity factor and join identity, acceptable effect/rank/classification
+margin, missingness and dependence unit, interval/test and multiplicity rule,
+and all-of/exception decision before results. The paper's scenario-admission
+preregistration must remain credited separately.
+
+This closes the retained OverEager criterion audit without changing any
+earlier outcome. `RV-004` remains high/open; the landed-main findings
+`RV-041`/`RV-043` are resolved only for the completed Cycle 406 release, while
+`RV-044` remains medium/open for a future transition. Next seed-first, re-rank
+away from the now-exhausted OverEager manuscript: prefer a retained primary or
+contradictory claim with a released denominator or executable artifact over
+another narrative metric, and make the scheduled XHS observation only after
+`2026-09-04T23:12:00.404Z` or a material access trigger.
+
+### Cycle 408 seed-first start — reuse cadence; exercise the planner in isolation
+
+Cycle 408 begins from exact clean accepted integration tip
+`3d92dd6ea61d608b5eefb55bfa9415e992f23af4`. At
+`2026-09-04T21:18:59.936Z`, Cycle 405's observation through
+`17:12:00.404Z` was 4 hours 6 minutes 59.532 seconds old, inside the six-hour
+cadence ending `23:12:00.404Z`. No access or collection trigger fired. The
+bounded reconciliation therefore made zero XHS requests: added and changed
+identities remain unknown, observed removals remain `[]`, all 132 durable
+identities remain unavailable, and Cycle 405 remains the exact provenance.
+No account state changed.
+
+`RV-004` and `RV-034` remain higher-value but inaccessible at the protected
+outcome-join and external-runtime boundaries. The now-integrated RV-044 planner
+had a concrete accessible criterion: drive one fresh forward/rollback
+transition in a disposable repository before relying on it for another
+protected release. GitHub, arXiv, and Reddit made zero requests and retain
+their last evidence, access limits, and change-bearing revisit triggers.
+
+### Cycle 408 checkpoint — planner classifications drive an addition-safe rehearsal
+
+The isolated regression builds one base/candidate pair with a same-byte rename,
+an already-deleted candidate deletion, a candidate-identical dirty overlap, a
+human-divergent overlap, a clean tracked replacement, a clean candidate
+addition, and an unrelated dirty file. The planner reports seven candidate
+paths, five overlaps, one unrelated dirty path, four overlaps that become
+clean, one retained overlap, and distinct one-path rollback restore/remove
+sets.
+
+A matched naive `git reset --mixed` changes only HEAD/index and leaves four
+dirty records, not the planned two: the absent candidate addition and old
+clean tracked bytes become extra drift. Restoring the base reproduces the
+exact six-record preflight. The planner-driven path first materializes only
+its two preflight-clean paths, then performs the mixed reset. It reaches the
+candidate with exactly the human-divergent and unrelated records, preserves
+both human byte strings, restores the one base path, removes the one candidate
+addition, resets back to base, and reproduces the exact preflight status.
+
+This is high-confidence evidence for the tested disposable topology and the
+addition-safe distinction that the failed Cycle 406 rollback lacked. It does
+not authorize a `/app` transition, prove crash atomicity, cover submodules or
+all filesystem races, or replace fresh exact-boundary review. Full evidence,
+rollback, and integration dispositions are in the
+[Cycle 408 isolated rehearsal](../reports/review/scout-overlay-planner-cycle408-2026-09-05.md).
+Exact material `ff9b60a4bcafb993836d861444a4f7980900d436` passes 302 tests /
+1,512 assertions and the current structural, navigation, link, health,
+lineage, cleanliness, and protected-fingerprint checks. `RV-044` meets its
+isolated-use criterion in the producer checkpoint but remains review-pending;
+`RV-004` and `RV-034` remain open. Next, await independent review before any
+local-main movement; after the XHS cadence boundary, perform one scheduled seed
+reconciliation and re-rank the substantive queue.
+
+### Cycle 409 checkpoint — accepted adaptation evidence reaches canonical Scout
+
+Independent review accepts Cycle 408 at exact validation tip
+`cf7be1162bee462671ba246f7eed58ecdac7a27f`; reviewer cursor
+`6776a3c3132789a5a752ea68168fd5e63078571d` is integrated at stable patch ID
+`93208adc5ccb29bd49650162ca31d7b34517ba56`. `RV-044`'s isolated-use
+criterion is resolved, while fresh release guards remain mandatory.
+
+The scheduled seed pass at `2026-09-04T21:36:26.358Z–21:36:26.369Z`
+reproduces the same login-class saved boundary as Cycle 405: public Explore is
+ready with 30 notes; the 46,763-byte saved response has access fingerprint
+`3dab1b6d…af420`, zero attributable items, and empty ID fingerprint
+`e3b0c442…b855`. Only body SHA changed `378bc2f8…800ea`→
+`2298cf68…06a4399`. Additions and changes remain unknown, removals remain
+`[]`, and all 132 durable seeds remain unavailable. No representative saved
+post was supported, and no account state changed.
+
+The highest-value accessible queue item was an accepted finite result absent
+from canonical Scout. Source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5`
+maps to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef` at patch ID
+`bc781e065970f508a9b9bd73c373cd03098fc9a8`; correction
+`737179618e6ff117fad814b35b5a5132e0c3bdc7` maps to standing
+`a76092b3186e6bc0124b0ec4c7ae7d16216d0e46` at patch ID
+`930e6bb2fff7d3a80bef2fdb119ecb98bfb7b7cd`. Four final artifacts are
+retained, the index overlaps merged without textual conflict, and the
+correction preserves the distinction between external Atropos training and
+runtime self-review. GitHub/local accepted-output integration was selected;
+arXiv and Reddit made zero requests and retain their recorded evidence and
+revisit triggers.
+
+`RV-004` remains high/open because this integration supplies no protected
+query/rank-to-later-outcome join. `RV-034` remains inaccessible at the
+external-runtime boundary. Next seed-first, rank the remaining accepted finite
+outputs absent from canonical Scout before opening another source request;
+otherwise prefer a substantive contradiction or reproducibility gap with a
+released artifact. The compact integration evidence and rollback are in the
+[Cycle 409 report](../reports/review/scout-accepted-output-integration-cycle409-2026-09-05.md).
+
+### Cycle 410 checkpoint — stable routes precede any evidence compaction
+
+Cycle 410 reused Cycle 409's fresh XHS receipt without another browser request.
+Added/changed identities remain unknown, removals remain `[]`, and all 132
+durable seeds remain unavailable at the login-class saved surface. GitHub,
+arXiv, and Reddit also made zero requests because no recorded trigger fired.
+
+RV-004 and RV-034 remain higher severity but cannot move without protected
+later-outcome or external-runtime evidence. The highest-value accessible item
+was therefore RV-036. Exact Cycles 373–386 added 1,087 topic-map lines and
+1,775 detailed-ledger lines while the accepted detailed evidence lives in
+project-owned findings. A fourteen-case producer-authored regression set,
+first committed with the change and replayed against its exact parent, found
+zero exact audit identities and only ten correct accepted files at rank one.
+Material `0073f95dedda211769971ba1bf451216ae044da6` adds fourteen
+compact INDEX routes to three accepted files and makes all fourteen exact
+identities and files unique rank-one results.
+
+No historical evidence was removed. RV-036 is mitigated but remains
+medium/open because this local deterministic comparison is neither protected
+selection nor proof of human retrieval, later reuse, or lossless deletion. The [Cycle 410 retrieval report](../reports/review/scout-retrieval-routes-cycle410-2026-09-05.md)
+records the matched result and rollback. Next, build an isolated virtual
+projection that removes only the repeated Cycle 373–386 topic/ledger additions,
+then compare all navigation fixtures, links, and distinctions before considering
+any real compaction.
+
+### Cycle 411 checkpoint — retrieval survives; provenance does not
+
+Cycle 411 reused Cycle 409's current XHS receipt and made zero XHS, GitHub,
+arXiv, or Reddit requests. The bounded projection removed no working-tree
+content. In memory, it omitted only current lines whose last `git blame`
+origin is one of the fourteen commits in exact range
+`3ea02c3c767a77a1fb5fae7b176210edf6156ff6..08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80`:
+1,082 topic-map lines and 1,772 detailed-ledger lines. Eight lines introduced
+in the range but later changed remain by construction.
+
+All three navigation controls stay at 11/14, 8/8, and 14/14, and the projected
+1,546-document / 1,774-link corpus has zero broken relative links. That is not
+lossless: 61 unique headings, six exact commit/provenance references, and 67
+timestamps become absent from the retained corpus. The six refs include three
+artifact parent/tree identities and three stabilization-lifecycle identities;
+deleting first would erase distinctions that route success cannot measure.
+
+Independent current-revision replay exposed one self-contamination defect: the
+initial harness included its own new report in the retained corpus, so those
+six refs appeared present after commit. RV-047 binds the projection to exact
+source `73088d8c91` and keeps current candidate identity separate; the source-
+bound six-ref, 1,546-document, and 1,774-link result is regression-tested.
+
+The [Cycle 411 projection report](../reports/review/scout-history-projection-cycle411-2026-09-05.md)
+therefore rejects real compaction now. RV-036 remains medium/open. Before any
+deletion, a smaller project-owned provenance record must preserve each cycle's
+accepted entry, source/result/reviewer mapping, seed-access interval, exact
+reproduction identities, limiting evidence, and integration disposition; the
+same projection must then show that only explicitly non-decision operational
+timestamps disappear. Next, design that replacement schema against the
+fourteen accepted entries before changing either historical narrative.
+
+### Cycle 412 checkpoint — design the provenance replacement before deletion
+
+Cycle 412 reused Cycle 409's XHS receipt through
+`2026-09-04T21:36:26.369Z`; at `2026-09-04T22:45:39.279Z` it was inside the
+six-hour cadence. The bounded reconciliation made zero XHS or public-source
+requests: additions/changes remain unknown, removals remain `[]`, all 132
+durable identities remain login-class unavailable, and no account state
+changed.
+
+RV-004 and RV-034 remain inaccessible at their protected-outcome and external-
+runtime boundaries, so RV-036 remained the highest-value accessible item. The
+[Cycle 412 replacement design](../reports/review/scout-provenance-replacement-design-cycle412-2026-09-05.md)
+maps all fourteen accepted Cycles 373-386 entries to exact producer parent and
+result commits, one range review, two normalized seed receipts, project-owned
+evidence anchors, decision-changing limits, integration, and rollback. It
+copies no source narrative and changes no historical evidence.
+
+This is a schema audit, not losslessness proof. RV-036 remains medium/open and
+real compaction remains rejected. Next, implement the schema only in an
+isolated candidate record, reject missing/ambiguous fields, and rerun the
+source-bound loss projection before considering any deletion.
+
+### Cycle 413 checkpoint — provenance replacement becomes executable
+
+Cycle 413 began from reviewed RV-049 correction `86502d9927`. Cycle 409's XHS
+observation through `2026-09-04T21:36:26.369Z` was about 80 minutes old and
+inside the six-hour cadence, so the bounded seed reconciliation made zero XHS
+or public-source requests. Additions and changes remain unknown, removals
+remain `[]`, all 132 durable identities remain login-class unavailable, and
+no account state changed.
+
+The [Cycle 413 executable replacement](../reports/review/scout-provenance-replacement-cycle413-2026-09-05.md)
+turns Cycle 412's schema into a versioned fail-closed fixture and validator.
+Against exact Cycle 411 source `73088d8c91`, the no-replacement baseline loses
+six commit references and 67 timestamps. The corrected candidate retains all
+six refs and 48 exact producer-classified timestamp literals; their semantic
+roles are not yet bound one by one, and nineteen explicitly enumerated
+operational times remain absent. It validates one contiguous fourteen-result
+chain, the direct-child range review, two immutable receipt sections, and
+exactly one project-owned Markdown fragment per accepted entry. The source-
+bound 1,546-document / 1,774-link result is unchanged.
+
+The same comparison still leaves 61 classified structural headings absent,
+and the retained/omitted classifications have no protected retrieval or
+later-decision outcome. RV-036 remains mitigated medium/open, RV-004 remains
+high/open, and real compaction remains rejected. Next, seek a genuinely
+held-out or protected reconstruction/retrieval comparison for the replacement;
+do not delete historical prose, move local main, or claim user-value evidence.
+
+### Cycle 420 checkpoint — SwarmResearch cutoff support is partial
+
+Cycle 420 used the established direct localhost Chrome preflight and read-only
+browser path through `2026-09-06T02:05:21.407Z`. Public Explore remained ready
+with 30 notes. The saved surface changed from Cycle 409's `login` shell to a
+103,020-byte `profile`-class login wall, still with zero attributable items.
+Added/changed identities remain unknown, observed removals remain `[]`, and all
+132 durable seeds remain unavailable. No feed, search, detail, or account
+mutation ran.
+
+The queue still ranks RV-004 first, but its required protected
+query-to-selection-to-later-outcome join remains inaccessible. RV-034 remains
+behind external runtime evidence, while RV-036/RV-038 require later independent
+use or outcome evidence. The highest accessible primary gap was therefore
+whether SwarmResearch's retained reproduction bundle maps its reported `$50`
+cutoff to all fifteen paper values.
+
+The [Cycle 420 cutoff audit](../reports/review/scout-swarmresearch-cutoff-audit-cycle420-2026-09-06.md)
+finds that the authors' ten-row cutoff CSV is compatible with nine paper cells
+after released score transformations. Third-Autocorrelation is not: cutoff
+`0.9985` implies `C3=1.4578295…`, while paper `1.45649` implies
+`0.9994183…`. A later trajectory contains the compatible score, but no retained
+artifact assigns that commit a cumulative cutoff cost. All five heuristic rows
+are absent from the CSV.
+
+Confidence is high in the pinned identities, hashes, decimal-interval
+arithmetic, and 9-compatible/1-conflicting/5-missing classification. It is low
+about which unpublished selection or accounting step produced the table. The
+evidence does not prove overspending or invalidate other SwarmResearch results.
+Next seek an exact per-commit cost ledger or author-supplied fifteen-task
+table-to-commit manifest; if neither is accessible, prefer a different primary
+contradiction or released denominator over another internal score conversion.
+
+### Cycle 421 checkpoint — RV-052 has an explicit isolated retention path
+
+The bounded seed reconciliation reused Cycle 420's accepted observation and
+made zero source requests: additions/changes remain unknown, removals remain
+`[]`, and all 132 durable seeds remain unavailable. Release-blocking RV-052
+outranked another research question because its two tracked Scout overlaps and
+three status-hidden Herdr overlaps lacked an executable explicit-retention
+path.
+
+The [Cycle 421 isolated exercise](../reports/review/scout-rv052-isolated-overlay-cycle421-2026-09-07.md)
+adds exact SHA-256 declarations for every retained divergent overlap. The
+unchanged baseline still fails closed; missing declarations and byte drift also
+fail. In a disposable exact-main fixture, the 48-path candidate retained all
+five observed bytes, advanced with exactly five modified paths, and reversed
+to the original HEAD, status streams, and hashes. A newly exposed large-blob
+subprocess failure is bounded and regression-tested too.
+
+Confidence is high in the isolated planner behavior and exact five-path byte
+preservation. It is low in transfer to a later dirty-checkout state until the
+same invariants are independently reviewed and freshly recomputed. RV-052 is
+mitigated but stays high/open; local-main landing, compaction, and cleanup stay
+blocked. Next obtain independent review of this material checkpoint, then
+recompute a fresh exact candidate only if that review declares a safe release
+boundary. RV-004/RV-034 remain the highest substantive evidence gaps.
+
+### Cycle 422 checkpoint — current-boundary transition is reversible in isolation
+
+The due bounded seed pass ran once through
+`2026-09-08T03:33:16.091Z`. Public Explore remained readable at 30 notes; the
+saved surface remained a `profile`-class login wall with zero attributable
+items. Only its byte length and body hash changed. Added and changed identities
+remain unknown, removals remain `[]`, and all 132 durable seeds remain
+unavailable. No feed, search, detail, or account-mutating action ran.
+
+Release-blocking RV-052 remained the highest accessible queue item. Live main
+had externally advanced to `6237bd7e608de98bb60e27a94ea19b52bf52c838`,
+while exact canonical integration source
+`fcd91b1725c6cedb350b3a7ff398f0a91622c085` retained reviewer
+`27c72864189c3fb95fe31f5fd878826b2881b203` as its direct parent. A new clean
+merge candidate `876222a5ecc56f5ebad98bbbaa411838fa93c1c2` contains both.
+The current candidate has 32 no-rename paths. The three formerly implicated
+ignored Herdr files are absent from both trees, so the planner correctly
+rejects them as unused declarations. Exactly two divergent Scout paths remain
+and are bound to their live SHA-256 values.
+
+The [Cycle 422 live-transition report](../reports/review/scout-rv052-live-transition-cycle422-2026-09-08.md)
+records that the no-write live plan reports two retained overlaps, 30 clean
+materializations, nine rollback restores, 21 rollback removals, and 4,391
+unrelated dirty records. A separate goal-owned fixture copied only the two
+protected bytes, advanced to the exact candidate with those two paths still
+modified, and reversed to exact main, exact status bytes, and both original
+hashes. Candidate validation passes 316 tests / 1,564 assertions.
+
+Confidence is high in the current merge identity, the two applicable protected
+hashes, and isolated transition/inverse. It is low in any future live transfer
+after further canonical or dirty-checkout drift. RV-052 therefore remains
+high/open and release-blocking pending independent review plus a fresh
+immediate preflight/postflight at the actual landing boundary. No local-main
+movement, compaction, or cleanup is claimed. RV-004 and RV-034 remain the
+highest substantive evidence gaps after this release decision.
+
+### Cycle 423 checkpoint — retained usage traces stop before dollar attribution
+
+Cycle 423 began from clean exact source
+`1156e7e4c115e26c42a2f962fb51d87b8919fd86`. Cycle 422's supported XHS
+observation was about 21 minutes old, inside the six-hour cadence, so the
+bounded reconciliation made zero XHS requests. Added and changed identities
+remain unknown, removals remain `[]`, and all 132 durable seeds remain
+unavailable. A single read-only Git ref check found Mnemosyne main and v2
+unchanged, leaving RV-034 at its external-runtime boundary.
+
+RV-004 remains highest consequence but still requires a protected
+query-to-later-outcome join. The highest accessible primary-artifact gap was
+whether retained SwarmResearch Third-Autocorrelation transcripts could assign
+the later paper-compatible commit `f018f27` to the advertised `$50` boundary.
+The [Cycle 423 cost-provenance audit](../reports/review/scout-swarmresearch-cost-provenance-cycle423-2026-09-08.md)
+finds 50 transcript files and 1,940 unique message/usage pairs. Both cutoff
+commit `3180635` and later commit `f018f27` are session-linked, but the bundle
+has no monetary-cost field, historical price snapshot, or cutoff-generation
+code. Deduplicated token totals therefore cannot establish an exact dollar
+position without importing an unrecorded price and allocation rule.
+
+Confidence is high in the pinned transcript manifest, counts, token totals,
+commit/session occurrences, and absence of cost-generation evidence. It is low
+for historical pricing, cache discounts, concurrent-session allocation, and
+the exact cost of `f018f27`. This preserves Cycle 420's partial-support result
+and still does not prove overspending. Next seek an author-retained cost ledger
+or table-to-commit manifest; otherwise prefer a different released primary
+contradiction. RV-004/RV-034 remain high/open, RV-036/RV-038 medium/open, and
+RV-052 high/open and release-blocking. No local-main movement, compaction, or
+cleanup is claimed.
+
+### Cycle 424 checkpoint — heuristic trajectories do not bind paper values
+
+Cycle 424 started from clean exact source
+`81f5d21ec55cf229cd94d4a7d57244a19ddb5b30`. Cycle 422's direct XHS
+observation was about 41 minutes old, so the bounded reconciliation made zero
+XHS requests. Additions/changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable. RV-004 and RV-034 retained their
+protected-outcome and external-runtime boundaries.
+
+The highest accessible primary-artifact gap was whether Cycle 420's five
+missing heuristic cutoff rows were absent of all evidence or merely missing a
+selection binding. The [Cycle 424 heuristic provenance audit](../reports/review/scout-swarmresearch-heuristic-provenance-cycle424-2026-09-08.md)
+finds a trajectory directory for every AHC task, containing 95 scored commit
+subjects and 125 transcript files. Those histories use a 50-case public
+`lite_version=True` evaluator and raw `combined_score`. The paper's AHC values
+come from a distinct three-run `lite_version=False` private-performance
+procedure. Neither the cutoff CSV nor the transcripts retain an AHC cutoff
+commit, cost, or private-performance output.
+
+Confidence is high in the pinned histories, manifests, counts, and
+public/private evaluator distinction. It is low in the historical cutoff
+commits, private-run outputs and variance, and whether an unpublished ledger
+reconciles the paper. The aggregate result remains 9 compatible / 1 conflicting
+/ 5 unbound, now qualified as trajectory-supported rather than wholly absent.
+Next seek an author-retained five-row cutoff/private-result manifest; otherwise
+move to a different released primary contradiction. RV-004/RV-034 remain
+high/open, RV-036/RV-038 medium/open, and RV-052 high/open and release-blocking.
+
+### Cycle 425 checkpoint — aggregate memory gain is concentrated
+
+Cycle 425 began from clean exact source
+`5b730b02df83974c3bd33f55755d4278c01f49f0`, paused for reviewer-ledger
+reconciliation, and resumed without another source request at clean exact
+parent `c5f4d3153f066b5abea7346eab5db6fcdeea9c03`. Cycle 422's direct XHS
+observation was about 58 minutes old, so the bounded reconciliation made zero
+XHS requests. Additions/changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable. RV-004 and RV-034 retain their protected
+outcome and external-runtime boundaries; RV-052 remains release-blocking and
+does not authorize local-main movement.
+
+The highest accessible released-artifact question was whether Organizational
+Memory's reported 35/40 versus 28/40 GPT and 38/40 versus 32/40 Sonnet gains
+were stable across runs and scenarios. The [Cycle 425 matched inventory](../reports/review/scout-organizational-memory-run-scenario-cycle425-2026-09-08.md)
+confirms that memory beats RAG in all eight run aggregates. Across 80 matched
+cells it wins 20, loses 7, and ties 53.
+
+The advantage is not broad across the fixed task set. S01—the fixture whose
+note explicitly expects memory to pass and RAG to fail—wins all eight cells and
+contributes 8/13 of the net gain. Without S01, five run aggregates improve and
+three tie. Four scenarios favor memory in net cells, four favor RAG, and two
+tie. Confidence is high in the pinned source identities and retained-cell
+arithmetic, moderate in a consistent average advantage on this authored suite,
+and low in transfer to new policies, tasks, organizations, or memory-update
+workflows. Next seek a preregistered held-out scenario suite or independently
+authored policy tasks. RV-004/RV-034 remain high/open, RV-036/RV-038
+medium/open, and RV-052 high/open and release-blocking.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

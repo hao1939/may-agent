@@ -1,6 +1,13 @@
 <ai_context>
 summary: "HN/arXiv/GitHub Scan #452 (2026-07-08): The Co-Evolution Imperative, qualified. HASE (2607.03935) reports one system that jointly changes an 8B policy, selected harness components, and solutions. Its 8B/120B rows are imported cross-system comparisons, not harness-only or model-size controls; the direct Heilbronn control instead compares FULL policy updates with FREEZE after evaluator repair. Evaluator repair is externally oracle-gated. VERITAS (2607.02931) reports strong CORE-Bench replication, but evaluates only its plan/replicate/verify core on hand-authored benchmark claims: claim extraction, its own Replication Score, fix assessment, and the user report are bypassed. Its official CORE gain over the three-session retry baseline is two capsules, while the 97.8% headline adds four VERITAS-only passes under an author-added rule. ReplicationBench gains are one or two tasks and single-run. Organizational Memory (2607.03228) retains a real synthetic proof of concept: structured atoms score 35/40 versus RAG's 28/40 with GPT-4.1 and 38/40 versus 32/40 with Sonnet 4.5. It tests one prebuilt memory's consumption, not deployed sharing, human governance, updates, or evolution. Its public result bundle supports exact metric recomputation but omits the proprietary agent, extraction, atom, prompt, index, and retrieval implementation. How to Avoid Debate (2607.03561) proves conditional single-prover protocols for robust computations or polynomial low-degree oracles with a known circuit and shared oracle access; it removes an honest opponent only inside those formal classes and supplies no deployed harness or co-evolution evidence. Aggregate Alignment Misleads (2607.03386) shows one simulator where pooled/reference-state behavioral audits misrank a revenue-poor editor, supporting multi-resolution audit rather than harness co-evolution over time. Together the papers motivate, rather than prove, the Co-Evolution Imperative. Kokoro TTS reached 300 points; the HN sovereignty stack and GitHub counters remain event-level observations."
-triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "scan 452"]
+cycle_420_update: "SwarmResearch v1 and its pinned reproduction bundle support nine paper cells at the public $50 cutoff after released score transforms. Third-Autocorrelation conflicts with the cutoff ledger, and all five heuristic tasks lack cutoff rows. This is partial public support, not complete table replay or evidence of overspending."
+cycle_423_update: "The retained Third-Autocorrelation transcripts bind both cutoff commit 3180635 and later paper-compatible commit f018f27 to sessions and expose deduplicable token usage, but contain no monetary-cost field, historical price snapshot, or cutoff-generation code. They cannot assign f018f27 an exact cumulative dollar cost."
+cycle_423_source_basis: "SwarmResearch reproduction revision e848d8d5760065714c38fa7558f0298573db17ab; Third-Autocorrelation settings SHA-256 acc74784126df1912c69842774819bc6732aa9d633421b5f478e65265ec28dc3; 50-file transcript manifest SHA-256 1082a0f18b20532e1b66bbd55c51b2608fb422e525f171d5154246e520258f0f; 3,659 usage rows collapsing to 1,940 unique message/usage pairs; zero monetary-cost scalar paths."
+cycle_424_update: "The five heuristic paper rows are not absent of all public evidence: 95 scored commits and 125 transcript files are retained. They remain $50-unbound because the public histories use 50-case lite combined scores, while no cutoff row or retained three-run private-performance output binds the paper values to a historical commit."
+cycle_424_source_basis: "SwarmResearch reproduction revision e848d8d5760065714c38fa7558f0298573db17ab; cutoff CSV SHA-256 015c7d5c09ee9a0f80d7163037a93c3a89fe8f08a5039dab2562881260a50282; private_eval.py SHA-256 5ac56540292621b03c7c4eb87b20c3e34aaae1dbac74b4bf8bf32d92fbc7216c; five pinned history and transcript manifests in the regression fixture."
+cycle_425_update: "Organizational Memory beats RAG in aggregate in all eight retained runs, but one deliberately differentiating cost-center scenario contributes 8 of the 13 net paired wins. Without it, five runs improve and three tie; across the ten fixed scenarios, four favor memory, four favor RAG, and two tie. This supports a consistent aggregate advantage on the authored suite, not broad task generalization."
+cycle_425_source_basis: "Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78; source tree 2ca92ed4b97236f80e48ba177a6642d05e626ba4; scenarios SHA-256 29a5d26caa1b791c8e54705e2d49c771fbeb91930ea81ba22384138820b0ba51; evaluator SHA-256 49e2c08cedbc80672836cc2597dfdf1a4a43e653aa9af49a9e4ff5187cf248d9; newline-delimited eight-metric path/digest manifest SHA-256 be97df9f73649e324e5fabf8eb7e98176f75f04a1f3ff7905a14779cfd01eb0f."
+triggers: ["co-evolution", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "scientific replication agent", "doubly-efficient interactive proofs", "single-prover verification", "debate avoidance", "co-evolving harness", "harness authorship", "fixed harness failure", "organizational memory", "agentic business process", "SwarmResearch cutoff", "cost provenance", "scan 452"]
 source_basis: "arXiv RSS cs.AI 2026-07-07 (2607.03935 HASE, 2607.02931 VERITAS, 2607.03561 Doubly-Efficient Interactive Proofs, 2607.03228 Organizational Memory, 2607.02807 SwarmResearch, 2607.03386 Aggregate Alignment Misleads). HASE 2607.03935 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 40d03a9f28cbf7943b6e59ff6497c9dfd5acbc6ca1c06117b1f3decf2e845746; four bounded GitHub repository searches found no attributable release and anonymous code search returned HTTP 401. VERITAS 2607.02931 primary-reviewed 2026-09-04 from identical v1/current 94,514-byte source archives, SHA-256 ff589d3ad188893037bdcd65d2e9fd4019c470de6f8bec56a3e4c65d7c2744eb, and attributable public repository ChicagoHAI/veritas at head f7283fa70e74d62d5a0ff398134436faa7063ee3. The repository has source, prompts, and tests but no benchmark trajectories/results; no Git tags or releases; current GHCR latest/v0.1.0 resolves to sha256:47f502b30b42b0738731ab504b4e51965dce81e0af15d892eb59750a31a4187f rather than the paper's abbreviated e00fd604 experimental digest. Organizational Memory 2607.03228 primary-reviewed 2026-09-04 from its 1,144,989-byte v1 source archive, SHA-256 058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189, and attributable lukaskirchdorfer/org-memory-paper head 11617e3191bf6307eea64476fcb1269b5ca3fb78. The 286-file public tree retains 9 synthetic PDFs, 10 scenarios, 240 output records, 24 summaries, 8 metric files, and evaluate.py; all eight metric files recompute byte-for-byte, but the proprietary agent/retrieval implementation, atoms, prompts, indexes, and generation configuration are absent. How to Avoid Debate 2607.03561 primary-reviewed 2026-09-04 from exact v1 source archive SHA-256 451f5ad902349984e17e18eed92f224199a629f49e802e14e98ebb6c3be3e944; the archive has theorem source but no empirical implementation, and one exact-title GitHub repository search returned zero matches. Aggregate Alignment Misleads 2607.03386 primary-reviewed 2026-09-04 from exact v1/current source archive SHA-256 7406ea479f1fb821f5acf0ae09ba36acd5d8f7ee40c56a583307ffd666058dee; the manuscript supports a one-simulator audit disagreement, names an unavailable monorepo commit/path, and releases no raw run or result artifact. HN front page 2026-07-08 (30 stories via Firebase API). GitHub API (shepherd 1,051★, local-llm 1,187★, guard-skills 972★, T3MP3ST 3,333★, eve 3,305★, lazycodex 2,535★, harness-books 2,610★). Cross-referenced with Verification Harness (#451), Knowledge Erosion (#450), Architecture Premium (#448), Attribution Error (#440), Oversight Inversion (thesis)."
 </ai_context>
 
@@ -236,6 +243,16 @@ conflicts, access controls, or later outcomes are exercised. The paper itself
 places lifecycle governance, update propagation, scale, and realistic
 enterprise evaluation in future work.
 
+**Run/scenario follow-up**: The aggregate advantage is directionally stable:
+memory beats RAG in each of the eight retained model/run summaries. Across the
+80 matched run-scenario cells, memory wins 20, loses 7, and ties 53. That net
+advantage is concentrated rather than broad, however. Scenario S01—the one
+whose fixture note explicitly expects memory to refuse and RAG to create—wins
+8/8 and supplies 8 of the 13 net cells. Removing S01 leaves five run-level
+advantages and three ties. At scenario level, four have positive net effects,
+four negative, and two zero. This strengthens confidence in the reported
+average on the authored suite while withholding a task-general memory claim.
+
 **Connection to Memory Control Plane (#441)**: The process-atom design is a
 candidate representation for source-linked, governed memory. PLACEMEM and this
 paper remain convergent design arguments, not independent evidence that a
@@ -304,6 +321,39 @@ table. Exact regeneration still requires building task containers, satisfying
 task-specific dependencies/cache mounts, evaluating selected commits, and
 checking score transformations. This is provenance and partial reproduction
 support, not independent result replay.
+
+**$50 cutoff reanalysis**: The reproduction README says the paper reports the
+solution at the `$50` mark and points to its ten-row cutoff CSV. Applying the
+released evaluator transformations makes nine rows compatible with the paper
+at their retained decimal precision. Third-Autocorrelation is not: cutoff
+best `0.9985` implies `C3=1.4578295…`, while the paper reports `1.45649`, which
+implies `0.9994183…`. A later trajectory records `f018f27` at `0.99942` and
+`C3≈1.45649`, but the public data does not assign that commit a cutoff cost and
+the cutoff ledger does not select it. All five heuristic tasks remain absent
+from the ledger. Thus nine of fifteen paper cells have public cutoff-compatible
+support, one conflicts with the retained cutoff, and five lack cutoff rows.
+This does not prove overspending—the ledger itself or an omitted selection rule
+could be wrong—but it means the public bundle does not currently substantiate
+the complete `$50` table.
+
+**Cost-provenance follow-up**: The 50 retained Third-Autocorrelation JSONL
+transcripts cover 1,940 unique assistant message IDs and preserve input,
+cache-creation, cache-read, and output token counts. They also bind cutoff
+commit `3180635` and later compatible commit `f018f27` to sessions. They retain
+zero monetary-cost fields, no historical price snapshot, and no code that
+generates the cutoff CSV; only the reproduction README refers to that ledger.
+The token logs therefore cannot assign `f018f27` an exact cumulative dollar
+cost without importing an unrecorded price and allocation rule. This preserves
+the partial-support finding but still does not prove overspending.
+
+**Heuristic-row follow-up**: The five AHC trajectory directories omitted from
+the cutoff CSV retain 95 scored commit subjects and 125 transcript files. Their
+live-search evaluators use 50 public cases and log raw `combined_score` values;
+the paper reports a separate three-run `avg_private_performance` produced by
+`lite_version=False`. No AHC cutoff row or private-performance scalar is
+retained, so the five cells are trajectory-supported but still unbound to a
+historical `$50` commit. Rerunning the private evaluator now would be a new
+evaluation, not replay of the paper result.
 
 **Why this matters**: Multi-branch orchestration is a credible alternative to
 one-state greedy search, and the public trajectories make that mechanism much
