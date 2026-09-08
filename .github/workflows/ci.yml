@@ -73,10 +73,11 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if [[ "$EVENT_NAME" == pull_request ]]; then
-            needed=$(git diff --name-only -z --no-renames "$BASE_SHA" HEAD | bash scripts/ci-container-needed.sh)
+            # Checkout uses the PR merge ref. Its first parent is the actual
+            # base, even if main advanced after the event payload was created.
+            needed=$(git diff --name-only -z --no-renames HEAD^1 HEAD | bash scripts/ci-container-needed.sh)
           else
             needed=true
           fi
