@@ -452,6 +452,7 @@ describe("App inbox runtime", () => {
     const taskAdmissions: Array<Record<string, any>> = [];
     const registry = await loadedRegistry(root);
     let modelCalls = 0;
+    let resumed: { topicId: string; taskId: string } | undefined;
     const decision = {
       summary: "May owns the durable review.",
       response: "I’ll review it and return the result here.",
@@ -475,12 +476,31 @@ describe("App inbox runtime", () => {
         expect(catalog.find((entry: { appId: string }) => entry.appId === "may")?.inputs).toEqual([
           expect.objectContaining({ kind: "goal" }),
         ]);
-        expect(Check(options.outputSchema!, decision)).toBe(true);
-        expect(Check(options.outputSchema!, { ...decision, dependencies: [] })).toBe(false);
-        return { status: "done", structuredResult: decision };
+        expect(options.toolPolicy).toBe("app-agent-full");
+        const result = resumed
+          ? {
+              ...decision,
+              response: "I’ll include recovery in the same review.",
+              topic: { kind: "existing", id: resumed.topicId },
+              followUp: {
+                ...decision.followUp,
+                task: { appId: "may", taskId: resumed.taskId },
+                input: {
+                  kind: "goal",
+                  data: {
+                    outcome: "Review the design, including recovery",
+                    acceptance: ["Return evidence-backed suggestions covering restart"],
+                  },
+                },
+              },
+            }
+          : decision;
+        expect(Check(options.outputSchema!, result)).toBe(true);
+        expect(Check(options.outputSchema!, { ...result, dependencies: [] })).toBe(false);
+        return { status: "done", structuredResult: result };
       },
     } as unknown as SubagentManager;
-    runtime = await startAppInboxRuntime({
+    const runtimeOptions = {
       registry,
       db,
       bus,
@@ -491,7 +511,8 @@ describe("App inbox runtime", () => {
         return { accepted: true, by: "test-task", route: "direct" };
       },
       scanIntervalMs: 10_000,
-    });
+    };
+    runtime = await startAppInboxRuntime(runtimeOptions);
 
     bus.emit({
       type: "conversation.message.created",
@@ -524,6 +545,34 @@ describe("App inbox runtime", () => {
       )
       .all() as Array<{ source_kind: string; conversation_seq: number | null }>;
     expect(rows).toEqual([{ source_kind: "human", conversation_seq: expect.any(Number) }]);
+
+    const topic = readAppConversationResource(db, "may", "may:primary").topics![0];
+    resumed = { topicId: topic.id, taskId: task.attached[0] };
+    task.observations.set(resumed.taskId, { kind: "task", id: resumed.taskId, status: "running" });
+    await waitUntil(() => {
+      const row = db.prepare("SELECT status FROM app_inbox_items WHERE source_id = 'human-review'").get() as { status: string };
+      return row.status === "done";
+    });
+    runtime.close();
+    runtime = await startAppInboxRuntime(runtimeOptions);
+    expect(modelCalls).toBe(1);
+    bus.emit({
+      type: "conversation.message.created",
+      source: "may-console",
+      owner: "app:may",
+      data: {
+        appId: "may",
+        conversationId: "may:primary",
+        author: { kind: "human", id: "human-resume" },
+        text: "Continue that review and include recovery",
+      },
+    });
+    await waitUntil(() => task.attached.length === 2);
+    expect(modelCalls).toBe(2);
+    expect(task.attached).toEqual([resumed.taskId, resumed.taskId]);
+    expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
+      expect.objectContaining({ appId: "may", taskId: resumed.taskId }),
+    ]);
   });
 
   it("projects a standing Task result through its durable follow-up correlation", async () => {
