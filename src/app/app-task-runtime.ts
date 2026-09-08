@@ -100,6 +100,8 @@ import {
 import {
   acknowledgeAppTaskRecoveryAttention,
   assertAppTaskEffectFresh,
+  assertAppTaskClaimCurrent,
+  hasPendingAppTaskEvidence,
   associateAppTaskSession,
   claimObservedAppTask,
   cancelAppTask,
@@ -3190,7 +3192,7 @@ async function reconcileTask(input: {
     const fenceWorkspaceFinalization = async () => {
       if (!taskWorkspace) return null;
       try {
-        assertAppTaskEffectFresh(config, primary, primaryResult.acceptedLiveEventIds);
+        assertAppTaskClaimCurrent(config, primary);
         return null;
       } catch (error) {
         await finalizeWorkspace("failed");
@@ -3240,7 +3242,11 @@ async function reconcileTask(input: {
       } else {
         const stale = await fenceWorkspaceFinalization();
         if (stale) return stale.reconcileTaskIds;
-        const finalized = await finalizeWorkspace("accepted");
+        // Keep reusable work when a newer observation still needs judgment.
+        // Completion below records progress instead of granting acceptance.
+        const finalized = await finalizeWorkspace(
+          hasPendingAppTaskEvidence(config, primary, primaryResult.acceptedLiveEventIds) ? "waiting" : "accepted",
+        );
         if (!finalized.ok) {
           // A retained dirty/unintegrated workspace needs inspection, not an
           // identical replay of the handler's already rejected completion.
@@ -3458,6 +3464,7 @@ async function reconcileTask(input: {
       attention = persistResult(() =>
         markAppTaskAttention(config, primary, {
           summary: primaryHandlerResult.summary,
+          result: primaryHandlerResult.result,
           evidence: primaryHandlerResult.evidence,
           acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           reason: primaryHandlerResult.resultRejected
@@ -3485,11 +3492,13 @@ async function reconcileTask(input: {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: "attention",
+        disposition: attention.taskContinues ? "progress" : "attention",
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
       });
-      return attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
+      return attention.taskContinues
+        ? [intent.id]
+        : attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
     }
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,

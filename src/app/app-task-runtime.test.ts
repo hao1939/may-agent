@@ -2587,6 +2587,78 @@ describe("canonical App task runtime", () => {
     }
   });
 
+  it.each(["waiting", "converged"] as const)(
+    "retains %s output when new facts arrive during a worktree attempt",
+    async (state) => {
+      const f = fixture();
+      const bus = eventBus();
+      const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+      await git("init", "-b", "main");
+      await git("config", "user.email", "test@example.com");
+      await git("config", "user.name", "Test");
+      await git("add", ".");
+      await git("commit", "-m", "fixture baseline");
+      const taskId = "work/facts-during-attempt";
+      const condition = {
+        id: "run:42", type: "sample.run.finished", subject: "run:42",
+        expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 60_000,
+      };
+      let config: AppTaskContext;
+      let calls = 0;
+      let retainedPath = "";
+      await installAppTaskRuntimes({
+        ...options(f, bus), installControllers: false,
+        executors: {
+          worker: async (attempt) => {
+            calls++;
+            if (calls === 1) {
+              retainedPath = attempt.cwd;
+              recordAppTaskTrigger(config, taskId, {
+                type: "sample.review.changed", eventId: 101, data: { comment: "Please check cleanup" },
+              });
+            } else {
+              expect(attempt.cwd).toBe(retainedPath);
+              expect(config.resourceStore.readTask(taskId)?.status.result).toEqual({ runId: 42, head: "abc" });
+              expect(attempt.events.items.some((item) => item.eventId === 101)).toBeTrue();
+            }
+            return {
+              state: calls === 1 ? state : "waiting", summary: "Observed exact-head run 42",
+              result: { runId: 42, head: "abc" }, evidence: ["run:42/head:abc"],
+              ...(calls > 1 || state === "waiting" ? { conditions: [condition] } : {}),
+            };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "boot:facts-during-attempt", generation: 1,
+          entries: [{ appDir: f.appDir, definition: {
+            ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" },
+          } }],
+        },
+      });
+      config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+        id: taskId, parentId: "operations", outcome: "Reevaluate without repeating completed work",
+        acceptance: ["Current evidence reviewed"], mode: "achieve", agent: "sample-owner", executor: "worker",
+      } });
+      const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+      await run();
+      const tree = readTaskSnapshot(config);
+      expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42, head: "abc" });
+      expect(tree.resources?.[taskId]?.status.evidence).toEqual(["run:42/head:abc"]);
+      expect(tree.receipts?.[taskId]).toBeUndefined();
+      expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([101]);
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
+      expect(existsSync(retainedPath)).toBeTrue();
+      if (state === "waiting") expect(tree.conditions?.[condition.id]?.spec.subject).toBe("run:42");
+      await run();
+      expect(calls).toBe(2);
+      expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("waiting");
+      await run();
+      expect(calls).toBe(2); // An unchanged open wait is not another attempt.
+    },
+  );
+
   it("does not create task worktrees while startup installs and recovers work", async () => {
     const f = fixture();
     const bus = eventBus();
