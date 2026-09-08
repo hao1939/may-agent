@@ -404,3 +404,15 @@ Ordinary frontend and goal attempts need not read that procedure. Host
 Operations procedures belong to its existing tech-lead profile. There is no
 additional role router or prompt registry. Context tests prove available
 guidance, not that the model followed it.
+
+For a new direct-handoff turn, the model's response schema excludes frontend
+child-request dependencies. The installed input catalog includes May's own
+durable goal contract, but excludes its conversational input kinds to avoid
+routing a turn back into itself. Exact feedback and human cancellation retain
+their existing validation and authority rules.
+
+A retained request with its own child work still receives the compatibility
+schema and child-result prompt, even after its App adopts direct handoff.
+Another Topic's open work or a focused Task is only context; it does not select
+that compatibility path. This narrows new model attempts without deleting the
+public SDK, changing retained requests, or replacing their recovery mechanism.

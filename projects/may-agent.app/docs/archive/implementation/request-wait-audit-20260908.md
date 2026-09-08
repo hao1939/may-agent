@@ -1,9 +1,10 @@
 # Request waiting audit — September 8, 2026
 
 Decision: defer deletion of frontend child-request waiting. Leave its public
-contract, prompts, retained state interpretation, and recovery intact. This
+contract, compatibility prompt, retained state interpretation, and recovery intact. This
 is an explicit compatibility decision, not a claim that the path is unused.
-B and C continue independently.
+B continues independently; the human subsequently excluded C's Evaluation
+migration from this May-focused implementation pass.
 
 Remote main was read with `git ls-remote`: Host
 `e1a36126229826a0848ec6687bd07c5c950c75e7`, App/design
@@ -36,3 +37,10 @@ the paired App checkout: 34 passed and 7 retired-cron checks were explicitly
 skipped. A stale Gym fixture used removed importer APIs; it now bootstraps the
 same resource-backed fixture and retains its admission and emission assertions.
 These checks do not replace the missing installed-state audit.
+
+The subsequent B refinement narrows only new direct-handoff model attempts:
+their schema no longer offers child-request dependencies. An exact retained
+child list or App wait keeps the compatibility schema and prompt. A regression
+fixture creates work under the old App definition, recreates the Host with the
+new definition, and completes that same request and child without attaching
+replacement work. No public SDK or request persistence code is removed.

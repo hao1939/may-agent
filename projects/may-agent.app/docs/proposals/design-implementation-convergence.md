@@ -449,6 +449,8 @@ pilot and deployment choices are not authority for this source task.
 The human stopped its Herdr goal and worker and asked the original assistant
 to implement directly. The paused worker's isolated source checkouts were
 preserved and reviewed before continuation; there is no active delegation.
+The human then clarified that this pass must focus on May, not Evaluation:
+A's compatibility audit and B's attempt-context cleanup are in scope; C is not.
 
 A: frontend child-request waiting is explicitly deferred. The SDK contract and
 compatibility fixtures remain, and no complete installed-caller/retained-request
@@ -463,7 +465,16 @@ supervision Tasks whose old input lacks instructions. Ordinary May goals reuse
 the Host Task protocol without copying it into each input. Context documentation
 no longer says destination results wake the completed frontend request.
 
-Verification: 27 focused App and owner-workflow tests pass; May App type checking
+The Host continuation now gives a new direct-handoff turn a model-facing
+schema without frontend child dependencies. Requests with retained child work
+keep both their compatibility prompt and schema after an App definition change.
+Another Topic's work does not change this request's protocol. The frontend
+catalog now includes May's own durable goal input contract, excluding its
+conversational kinds; the former catalog excluded May even though its prompt
+allowed May-owned work. No new role router, SDK field, scheduler, or persistence
+path is introduced. The shared public schema and generic request runtime remain.
+
+Initial instruction-slice verification: 27 focused App and owner-workflow tests pass; May App type checking
 and formatting pass. Paired installation checks pass 34 tests, with 7 explicit
 retired-cron skips. The checks include real prompt assembly and preserve Gym's
 resource-backed admission/emission coverage. Model judgment and live operation
@@ -472,11 +483,24 @@ behavior. Host `bun run ci` passed 2,493 tests with 3 explicit installation-only
 skips and no failures, including real daemon/socket/browser checks. The paired
 Host commits are `6242bdd742724e0eb4c29388f159970e8cd434a6` (repair the stale Gym
 fixture) and `faff58d3d861e21380fc55a02465903f7323e850` (prompt-assembly checks),
-based on `e1a36126229826a0848ec6687bd07c5c950c75e7`. These Host changes are tests
-only: there is no runtime integration-order dependency for B. Design checks
+based on `e1a36126229826a0848ec6687bd07c5c950c75e7`. Those initial Host changes are tests
+only. Design checks
 reported no errors and three local scratch-directory warnings. All verification
 used isolated checkouts; nothing was published, deployed, or restarted.
 
-C: HTTP/Evaluation policy and feedback ownership is still pending as a separate
-coordinated change. No partial migration, live state change, or rollout is
-included in the instruction cleanup.
+The direct-handoff continuation is Host
+`0667491ae419d237358484a97f8f41426eb107d3`, paired with App instruction commit
+`be40354546` and this documentation update. The final Host revision passes
+`bun run ci`: 2,499 passed, 3 installation-only skips, no failures. Six new
+regression tests cover new and retained request contracts; one
+creates a legacy child wait and completes it through the real inbox Host after
+recreating that Host with the current May definition. Paired installation
+checks still pass 34 tests (7 retired-cron skips), and 27 focused App tests pass.
+The Host source change adds 27 lines and removes 7; the 191-line test file
+checks the preserved and narrowed contracts. This removes an unnecessary model
+choice, not the public waiting runtime. No SDK contract or storage format
+changes, model-backed behavior claim, publication, or deployment is included.
+
+C: HTTP/Evaluation policy and feedback ownership remains a separate known gap,
+excluded from this May-focused pass by the human's clarification. No Evaluation
+implementation, partial migration, live state change, or rollout is included.
