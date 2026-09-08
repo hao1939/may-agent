@@ -4666,15 +4666,18 @@ merely patch-equivalently, in the current producer line:
 
 Producer ledger `fcd91b1725c6cedb350b3a7ff398f0a91622c085` remains the
 direct-child disposition that records literal integration and rollback. Cycle
-422 result `1156e7e4c115e47fceba63cdf9f9fb79dd6b5a65`, Cycle 423 result
+422 result `1156e7e4c115e26c42a2f962fb51d87b8919fd86`, Cycle 423 result
 `81f5d21ec55cf229cd94d4a7d57244a19ddb5b30`, and Cycle 424 result
 `d607267da97b0286b1b6be56a39f1ad5ca58db84` are later producer descendants;
 this refresh does not call them independently reviewed.
 
-Exact Cycle 424 validation passes 318 tests / 1,595 assertions, 119 scoped
-links, navigation 11/14, 8/8, and 14/14, 1,553 tracked Markdown documents /
-1,800 broad links, and read-only health 26 facts / 16 wakes with truncation.
-The producer branch is clean at that observation. Reviewer pane `w1:p6G`
+Fresh validation of the exact integration-refresh source `5b730b02df83974c3bd33f55755d4278c01f49f0`
+passes 318 tests / 1,595 assertions, 119 scoped links, navigation 11/14, 8/8,
+and 14/14, 1,554 tracked Markdown documents / 1,802 broad links, and
+read-only health 26 facts / 16 wakes with truncation. The earlier 1,553 /
+1,800 totals were measured before the final Cycle 424 report and cursor links
+entered the current corpus; they are not exact-tip totals. The producer branch
+is clean at that observation. Reviewer pane `w1:p6G`
 reports lifecycle state `done`, and its branch still ends at `27c7286418`; no
 later accept-or-revise result exists.
 
@@ -4695,10 +4698,11 @@ roll back reviewer result `27c7286418` or producer research.
 
 ## Next trigger
 
-The exact pending independent-review trigger is clean producer Cycle 424 tip
-`d607267da97b0286b1b6be56a39f1ad5ca58db84`, including literal reviewer
-integration through `fcd91b1725`, Cycle 422's isolated RV-052 result, and the
-Cycle 423-424 SwarmResearch qualifications. A later trigger may be evidence
+The next independent-review trigger is the clean producer integration-ledger
+correction after source `5b730b02df83974c3bd33f55755d4278c01f49f0`, including literal reviewer
+integration through `fcd91b1725`, the corrected Cycle 422 identity, the exact
+current validation scope, Cycle 422's isolated RV-052 result, and the Cycle
+423-424 SwarmResearch qualifications. A later trigger may be evidence
 that changes RV-052, RV-004, RV-034, RV-036, or RV-038; a separately reviewed
 current release candidate; a local-main landing or cleanup claim; or a concrete
 regression. The reviewer lifecycle is currently `done`, not durably waiting,
