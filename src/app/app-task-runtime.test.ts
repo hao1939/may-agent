@@ -3893,6 +3893,7 @@ describe("canonical App task runtime", () => {
     { state: "converged", committed: false },
     { state: "converged", committed: true },
     { state: "waiting", committed: false },
+    { state: "waiting", committed: false, actions: true },
   ] as const)("parks workspace rejection without losing recovery ($state, committed=$committed)", async (scenario) => {
     const f = fixture();
     const bus = eventBus();
@@ -3916,7 +3917,13 @@ describe("canonical App task runtime", () => {
               await git(attempt.cwd, "commit", "-m", "retained change");
             }
           }
-          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
+          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"],
+            ...("actions" in scenario && calls === 1 ? {
+              result: { admittedChild: "work/proposed-child" },
+              actions: [{ kind: "create-task" as const, id: "work/proposed-child", parentId: "work/workspace-rejection",
+                outcome: "Must not be reported as admitted", acceptance: ["Current intent"], mode: "achieve" as const, outputs: [] }],
+            } : {}),
+          };
         },
       },
       appRegistrySnapshot: {
@@ -3948,6 +3955,8 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[taskId]).toBeUndefined();
+    expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+    expect(tree.resources?.["work/proposed-child"]).toBeUndefined();
     expect(Object.values(tree.attempts ?? {})).toEqual([
       expect.objectContaining({ state: "failed", failureReason: "handler-blocked",
         workspace: expect.objectContaining({ disposition: scenario.committed ? "branch-retained" : "retained-for-recovery" }) }),
