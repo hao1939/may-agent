@@ -1,4 +1,4 @@
-<ai_context>Scan #334: The Thin Stratum — Seven independent empirical findings converge: value, risk, and capability concentrate in narrow strata (one RL layer captures most gains, judgment-not-code is the binding constraint, 11/140 benchmark tasks are valid, skill dependencies hide risk, memory management yields 2-4× gains without changing task behavior). Governance, measurement, and attribution systems designed for uniform distribution fail precisely at these concentration points. ADV hits 1,227pts (new ATH). Senior SWE-Bench hits 122pts but community rejection holds. MCP skepticism emerges in comments ("deadend", "stopped using MCP"). Japan rules AI can't be inventor. Reference when analyzing why governance systems miss critical points, why benchmarks mislead, or why uniform-distribution assumptions break.</ai_context>
+<ai_context>Scan #334: The Thin Stratum — Seven empirical findings were synthesized as evidence that value, risk, and capability concentrate in narrow strata. Primary review of 2607.01136 now narrows the skill-supply-chain component: graph inspection finds transitive audit signals, but the study does not show that skill risk generally concentrates outside roots or matches npm/PyPI risk. Other cross-domain concentration claims remain separately sourced. ADV hits 1,227pts (new ATH). Senior SWE-Bench hits 122pts but community rejection holds. MCP skepticism emerges in comments ("deadend", "stopped using MCP"). Japan rules AI can't be inventor.</ai_context>
 
 # HN/arXiv/GitHub Scan #334: The Thin Stratum
 
@@ -8,7 +8,7 @@
 
 ## Theme
 
-Seven independent empirical results — from RL training dynamics to software engineering case studies to skill ecosystem audits — converge on a single structural discovery: **the critical action in any system concentrates in a thin stratum**. One transformer layer captures most RL gains. Judgment (not code) is the binding engineering constraint. 11 of 140 benchmark tasks are cross-machine valid. Skill dependencies (not skills themselves) hide security risk. Memory management (not task behavior) yields 2-4× performance gains.
+Seven heterogeneous empirical results — from RL training dynamics to software engineering case studies to skill ecosystem audits — motivated a thin-stratum hypothesis. One transformer layer captures most reported RL gains. Judgment rather than code is the reported engineering constraint. Eleven of 140 benchmark tasks are cross-machine valid. Skill dependencies can hide security-relevant signals. Memory management reports 2-4× performance gains. These different denominators do not by themselves establish one cross-domain concentration law.
 
 Governance, measurement, and attribution systems are designed for uniform distribution. They assess all layers equally, score all tasks equally, trust all skills equally, attribute value to code equally. This uniformity assumption is now empirically falsified across every domain measured.
 
@@ -22,7 +22,7 @@ Seven convergent concentration findings:
 
 3. **Benchmark Reliability Audit** (2607.01211) — Replay of 740 coding-optimization tasks. Only 39/102 GSO and 11/140 SWE-Perf reference patches are cross-machine valid. Rankings disagree on 9/28 pairwise comparisons across scoring rules. 85.3% of tasks already solved by at least one submission. The valid-signal stratum is a small minority of the benchmark.
 
-4. **Skill Supply Chains** (2607.01136) — SBOM-style analysis of 1.43M agent skills. Four structural findings: metadata is activation-ready but governance-poor; dependency graphs span skill/package/service layers with concentrated reuse; recursive skill reuse creates hidden inventory; and "inspecting a skill alone misses security-relevant signals hiding in its dependencies." Risk concentrates in the dependency stratum, not the skill stratum.
+4. **Skill Supply Chains** (2607.01136) — SBOM-style analysis of 1,434,046 GitHub-backed SkillsMP records. Four structural findings cover metadata, mixed dependency channels, recursive hidden inventory, and dependency clusters. Graph inspection finds transitive security-relevant signals, but the conditional rows do not show that ecosystem risk generally concentrates outside root skills. See the [primary qualification](./2026-09-08-agent-skill-supply-chain-scope.md).
 
 5. **AutoMem** (2607.01224) — Memory management treated as trainable cognitive skill yields 2-4× gains on long-horizon tasks from memory-only optimization, bringing 32B model competitive with Opus 4.5. Two axes: memory structure + memory proficiency. Task behavior unchanged — all gains from the memory stratum alone.
 
@@ -99,7 +99,7 @@ Benchmark Reliability Audit (2607.01211) provides the formal confirmation: bench
 
 Source: https://arxiv.org/abs/2607.01087
 
-**Skill Supply Chains** (2607.01136) — 1.43M skills analyzed via SBOM-inspired tooling. Skills themselves are relatively safe; risk concentrates in dependency chains, version opacity, and cluster structure. Malicious skills persist because no supply-chain judgment exists. The thin stratum is the dependency graph, not the skill boundary.
+**Skill Supply Chains** (2607.01136) — 1,434,046 GitHub-backed SkillsMP records are analyzed via SBOM-inspired tooling. Transitive graph review exposes signals that root-only review misses, but the paper neither labels roots generally safe nor measures a cross-ecosystem risk concentration. Publicly reported malicious-skill labels are dependency-only for 26/194 reached roots; most other rows are regex or authority audit signals. The supported advice is graph visibility, not a universal dependency-risk verdict.
 
 Source: https://arxiv.org/abs/2607.01136
 

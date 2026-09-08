@@ -1,9 +1,9 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 422: a scheduled observational pass reproduces a profile-class login wall without inferring a seed delta, and a fresh isolated release rehearsal preserves the two protected Scout overlaps applicable to current main."
+summary: "Seed-first Scout continuity through Cycle 429: a scheduled observational pass reproduces a profile-class login wall without inferring a seed delta, and the Skills Are Not Islands primary audit narrows ecosystem-risk claims to graph-visible audit signals."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-08"
-latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduces public Explore at 30 notes and supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
-source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 420 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; isolated dirty-overlay transition evidence through Cycle 422; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
+latest_seed_basis: "Cycle 429 observational reconciliation through 2026-09-08T13:41:12.146Z reproduces public Explore at 30 notes and supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in seed-ledger row 429. Only saved-response byte length and body hash changed from Cycle 422."
+source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 429 at 2026-09-08T13:41:12.146Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 429 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 429, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; isolated dirty-overlay transition evidence through Cycle 422; Skills Are Not Islands population/security-signal scope qualified in Cycle 429; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; accepted SwarmResearch reproduction e848d8d5760065714c38fa7558f0298573db17ab; Third-Autocorrelation settings SHA-256 acc74784126df1912c69842774819bc6732aa9d633421b5f478e65265ec28dc3; 50-file transcript manifest SHA-256 1082a0f18b20532e1b66bbd55c51b2608fb422e525f171d5154246e520258f0f; producer-authored cost-provenance inventory and regression."
 cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch heuristic histories and transcripts; cutoff CSV SHA-256 015c7d5c09ee9a0f80d7163037a93c3a89fe8f08a5039dab2562881260a50282; private_eval.py SHA-256 5ac56540292621b03c7c4eb87b20c3e34aaae1dbac74b4bf8bf32d92fbc7216c; producer-authored five-task inventory."
 cycle_425_source_basis: "No-request seed reconciliation at 2026-09-08T04:31:01Z; research source 5b730b02df83974c3bd33f55755d4278c01f49f0; post-reconciliation parent c5f4d3153f066b5abea7346eab5db6fcdeea9c03; retained Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78; source tree 2ca92ed4b97236f80e48ba177a6642d05e626ba4; scenarios SHA-256 29a5d26caa1b791c8e54705e2d49c771fbeb91930ea81ba22384138820b0ba51; evaluator SHA-256 49e2c08cedbc80672836cc2597dfdf1a4a43e653aa9af49a9e4ff5187cf248d9; newline-delimited eight-metric path/digest manifest SHA-256 be97df9f73649e324e5fabf8eb7e98176f75f04a1f3ff7905a14779cfd01eb0f."
@@ -23352,6 +23352,44 @@ tests / 1,632 assertions, 121 scoped links, all three navigation gates, and
 RV-052 remains high/open pending independent review and a fresh immediate live
 gate; this is not local-main movement or cleanup permission. RV-004/RV-034
 remain high/open and RV-036/RV-038 medium/open.
+
+## Cycle 429 checkpoint — graph visibility is not ecosystem risk equivalence
+
+Cycle 429 began from clean exact reviewer-integrated source
+`04e6eff4b4ab528272e0973e12b60d53988ce205`. Its bounded XHS observation
+again found 30 public Explore notes and a profile-class login wall with zero
+attributable saved items. The access fingerprint and empty identity set did
+not change; the response byte length and body hash did. Additions and changes
+therefore remain unknown, removals remain `[]`, and all 132 durable seeds are
+unavailable rather than removed.
+
+RV-004 remains the highest-consequence question, but the protected
+query-to-rank-to-selection-to-later-outcome join is absent from readable
+history. RV-034 still needs an external runtime repair. Memory in the Loop
+remains at `2607.05690v2`, its attributed `getmykhan/vxdb` main remains
+`d720fd3e67e2331144d7486e0642fe62c24ffd0f`, and no attributable experiment
+release was found. The highest accessible contradiction was therefore the
+library's overbroad reading of *Skills Are Not Islands* (`2607.01136v1`).
+
+The [primary-source audit](../../knowledge/findings/2026-09-08-agent-skill-supply-chain-scope.md)
+changes the user-facing conclusion. The paper's 1,434,046 units are
+GitHub-backed SkillsMP records from one snapshot, not proven-unique or
+ecosystem-wide skills. Its transitive percentages mostly describe conditional
+reachability of audit signals, not confirmed vulnerability prevalence,
+exploitation, or matched npm/PyPI risk. The strongest contradictory row is
+the publicly reported malicious-skill label: only 26 of 194 reached roots are
+dependency-only. Graph-aware inspection remains justified; the borrowed
+ecosystem-risk verdict does not.
+
+Confidence is high in the source identity, archive hashes, and reported table
+values; moderate in the analyzer's generated graphs; and low in runtime harm,
+private/enterprise coverage, or cross-ecosystem equivalence. Exact-title and
+tool-name GitHub searches found no attributable artifact release. The next
+decisive evidence is the frozen analyzer, snapshot, benchmark, SkillBOMs, and
+per-edge output—or an independent version-specific replay separating declared,
+installable, loaded, and executed dependencies. RV-004/RV-034 remain
+high/open, and RV-036/RV-038 medium/open. This cycle moved no local main,
+performed no cleanup or compaction, and did not revive discarded Cycle 428.
 
 ## Supervision
 

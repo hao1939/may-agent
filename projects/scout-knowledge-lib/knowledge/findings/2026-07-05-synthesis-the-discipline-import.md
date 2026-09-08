@@ -130,17 +130,22 @@ conflates transcript with ground truth)
 ### 5. Supply Chain Analysis → Agent Skill Supply Chains (2607.01136)
 
 Software supply chain security — dependency graphs, SBOMs, lockfiles — applied
-to agent skills. Analyzes 1.43M skills, finding dependency graphs spanning
+to agent skills. Analyzes 1,434,046 GitHub-backed SkillsMP records, finding dependency graphs spanning
 skill→package→service layers with concentrated reuse and hidden package inventory.
 
-- Known malicious skills **persist in supply chains** (mirror of npm malware persistence)
+- Known malicious-skill labels can remain reachable through dependencies; this
+  is not a matched npm/PyPI risk or persistence-rate comparison
 - Only 4.3% of file-level copies document origin (2607.02059)
 - 88% of copies carry CVE risk in vendored dependencies
 
 **Imported discipline:** Supply chain security (SBOM, dependency auditing)  
-**Agent-native alternative it outperforms:** Trust-the-marketplace (which assumes
-skills are independently safe)  
+**Compared baseline / limit:** SkillDepAnalyzer outperforms one LLM extractor
+and package-centric SBOM generators on the authors' labeled dependency
+benchmark; the paper does not compare deployment-security outcomes with a
+"trust the marketplace" policy.
 **Source:** 2607.01136, 2607.02059
+
+Primary scope: [graph visibility, not ecosystem risk equivalence](./2026-09-08-agent-skill-supply-chain-scope.md).
 
 ### 6. Access Control → Agent Steerability (2607.02389)
 
