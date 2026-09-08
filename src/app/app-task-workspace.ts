@@ -164,109 +164,165 @@ export async function prepareAppTaskWorkspace(input: {
     const path = resolve(join(input.workspaceRoot, leaf));
     const remote = "origin";
     const hasRemote = await remoteExists(repoDir, remote);
-    let fetchedBaseRef: string | undefined;
-    let fetchedTaskRef: string | undefined;
-    if (hasRemote && input.refreshRemote !== false) {
-      // Worker subprocesses share remote-tracking refs and FETCH_HEAD with
-      // the Host, but not its in-process lock. Fetch into this generation's
-      // private refs and disable Git's implicit remote/tag/FETCH_HEAD writes.
-      const fetchArgs = ["fetch", "--no-tags", "--no-write-fetch-head", "--refmap=", remote];
-      fetchedBaseRef = `refs/may/workspaces/${leaf}/base`;
-      await git(repoDir, [...fetchArgs, `+refs/heads/${input.baseBranch}:${fetchedBaseRef}`]);
-      const taskRef = `refs/may/workspaces/${leaf}/head`;
-      const published = await git(repoDir, ["ls-remote", "--exit-code", "--heads", remote, `refs/heads/${branch}`], true);
-      if (published.status === 0) {
-        // An existing branch must be fetched successfully. A lock, transport
-        // error, or deletion racing this probe must not reset work to the base.
-        await git(repoDir, [...fetchArgs, `+refs/heads/${branch}:${taskRef}`]);
-        fetchedTaskRef = taskRef;
-      } else if (published.status !== 2) {
-        // ls-remote reserves status 2 for a successful query with no matching ref.
-        throw new Error(`Cannot determine published Task branch ${branch}: ${published.stderr || published.stdout}`);
+    const refUpdates: Array<{ ref: string; before: string; fetched: string }> = [];
+    let fetchedRefs = false;
+    try {
+      let fetchedBaseRef: string | undefined;
+      let fetchedTaskRef: string | undefined;
+      if (hasRemote && input.refreshRemote !== false) {
+        // Probe before writing refs and fetch the advertised commits exactly.
+        // A missing Task branch is normal; a failed query or missing base is not.
+        const published = await git(repoDir, [
+          "ls-remote",
+          "--heads",
+          remote,
+          `refs/heads/${input.baseBranch}`,
+          `refs/heads/${branch}`,
+        ]);
+        const heads = new Map(
+          published.stdout.split("\n").map((line) => {
+            const [commit, ref] = line.split("\t");
+            return [ref, commit];
+          }),
+        );
+        const base = heads.get(`refs/heads/${input.baseBranch}`);
+        if (!base) throw new Error(`Remote ${remote} has no base branch ${input.baseBranch}`);
+        const taskHead = heads.get(`refs/heads/${branch}`);
+        fetchedBaseRef = `refs/may/workspaces/${leaf}/base`;
+        fetchedTaskRef = taskHead ? `refs/may/workspaces/${leaf}/head` : undefined;
+        const fetchRefs: Array<[string, string]> = [[fetchedBaseRef, base]];
+        if (fetchedTaskRef && taskHead) fetchRefs.push([fetchedTaskRef, taskHead]);
+        for (const [ref, fetched] of fetchRefs) {
+          const before = await git(repoDir, ["rev-parse", "--verify", "--quiet", ref], true);
+          if (before.status !== 0 && before.status !== 1) {
+            throw new Error(`Cannot read private workspace ref ${ref}: ${before.stderr}`);
+          }
+          refUpdates.push({ ref, before: before.stdout, fetched });
+        }
+        // Worker subprocesses share remote-tracking refs and FETCH_HEAD with
+        // the Host, but not its in-process lock. Fetch into this generation's
+        // private refs atomically, without implicit remote/tag/FETCH_HEAD writes.
+        await git(repoDir, [
+          "fetch",
+          "--atomic",
+          "--no-tags",
+          "--no-write-fetch-head",
+          "--refmap=",
+          remote,
+          ...refUpdates.map(({ ref, fetched }) => `+${fetched}:${ref}`),
+        ]);
+        fetchedRefs = true;
       }
-    }
-    const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
-    const remoteTaskRef = hasRemote && input.refreshRemote !== false
-      ? fetchedTaskRef
-      : `refs/remotes/${remote}/${branch}`;
-    const localRef = `refs/heads/${input.baseBranch}`;
-    const baseRef = fetchedBaseRef ?? (
-      (await refExists(repoDir, remoteRef))
-        ? `${remote}/${input.baseBranch}`
-        : (await refExists(repoDir, localRef))
-          ? input.baseBranch
-          : "HEAD"
-    );
-    const currentBaseCommit = (await git(repoDir, ["rev-parse", baseRef])).stdout;
+      const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
+      const remoteTaskRef =
+        hasRemote && input.refreshRemote !== false ? fetchedTaskRef : `refs/remotes/${remote}/${branch}`;
+      const localRef = `refs/heads/${input.baseBranch}`;
+      const baseRef =
+        fetchedBaseRef ??
+        ((await refExists(repoDir, remoteRef))
+          ? `${remote}/${input.baseBranch}`
+          : (await refExists(repoDir, localRef))
+            ? input.baseBranch
+            : "HEAD");
+      const currentBaseCommit = (await git(repoDir, ["rev-parse", baseRef])).stdout;
 
-    let entries = await worktreeEntries(repoDir);
-    let registered = entries.find((entry) => entry.path === path);
-    if (registered && !existsSync(path)) {
-      await git(repoDir, ["worktree", "prune"]);
-      entries = await worktreeEntries(repoDir);
-      registered = entries.find((entry) => entry.path === path);
-    }
+      let entries = await worktreeEntries(repoDir);
+      let registered = entries.find((entry) => entry.path === path);
+      if (registered && !existsSync(path)) {
+        await git(repoDir, ["worktree", "prune"]);
+        entries = await worktreeEntries(repoDir);
+        registered = entries.find((entry) => entry.path === path);
+      }
 
-    const branchRef = `refs/heads/${branch}`;
-    const branchExists = await refExists(repoDir, branchRef);
-    const remoteTaskBranchExists = remoteTaskRef !== undefined && await refExists(repoDir, remoteTaskRef);
-    const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
-    if (branchRegistration) {
-      throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);
-    }
+      const branchRef = `refs/heads/${branch}`;
+      const branchExists = await refExists(repoDir, branchRef);
+      const remoteTaskBranchExists = remoteTaskRef !== undefined && (await refExists(repoDir, remoteTaskRef));
+      const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
+      if (branchRegistration) {
+        throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);
+      }
 
-    if (registered) {
-      const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(path);
-      if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
-        throw new Error(
-          `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
+      if (registered) {
+        const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(path);
+        if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
+          throw new Error(
+            `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
+          );
+        }
+      } else {
+        if (existsSync(path)) {
+          throw new Error(`Task workspace path exists but is not a registered Git worktree: ${path}`);
+        }
+        await mkdir(dirname(path), { recursive: true });
+        if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
+        else {
+          if (remoteTaskBranchExists) {
+            // A private fetch ref cannot establish Git's ordinary upstream.
+            // Configure it before branch creation so a config-lock failure
+            // remains retryable, without updating the shared tracking ref.
+            await git(repoDir, ["config", `branch.${branch}.remote`, remote]);
+            await git(repoDir, ["config", `branch.${branch}.merge`, `refs/heads/${branch}`]);
+          }
+          await git(repoDir, [
+            "worktree",
+            "add",
+            "--no-track",
+            "-b",
+            branch,
+            path,
+            remoteTaskBranchExists ? remoteTaskRef : currentBaseCommit,
+          ]);
+        }
+      }
+
+      const headCommit = await headAt(path);
+      const baseCommit =
+        input.previous?.branch === branch && input.previous.baseCommit
+          ? input.previous.baseCommit
+          : branchExists || remoteTaskBranchExists
+            ? (await git(repoDir, ["merge-base", headCommit, currentBaseCommit])).stdout || currentBaseCommit
+            : currentBaseCommit;
+      return {
+        repoDir,
+        metadata: {
+          kind: "task-worktree",
+          path,
+          baseRef,
+          baseCommit,
+          branch,
+          headCommit,
+          disposition: "active",
+        },
+      };
+    } catch (error) {
+      // Preparation returned no metadata to finalize. Undo only our exact ref
+      // writes, restoring old recovery snapshots and leaving other writers alone.
+      const failures: unknown[] = [error];
+      for (const { ref, before, fetched } of fetchedRefs ? refUpdates : []) {
+        if (before === fetched) continue;
+        try {
+          const current = await git(repoDir, ["rev-parse", "--verify", "--quiet", ref], true);
+          if (current.status === 1) continue;
+          if (current.status !== 0) throw new Error(`Cannot read private workspace ref ${ref}: ${current.stderr}`);
+          if (current.stdout !== fetched) continue;
+          await git(
+            repoDir,
+            before
+              ? ["update-ref", "--no-deref", ref, before, fetched]
+              : ["update-ref", "--no-deref", "-d", ref, fetched],
+          );
+        } catch (cleanupError) {
+          failures.push(cleanupError);
+        }
+      }
+      if (failures.length > 1) {
+        throw new AggregateError(
+          failures,
+          `Workspace preparation and private-ref rollback failed: ${failures.map(String).join("; ")}`,
         );
       }
-    } else {
-      if (existsSync(path)) {
-        throw new Error(`Task workspace path exists but is not a registered Git worktree: ${path}`);
-      }
-      await mkdir(dirname(path), { recursive: true });
-      if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
-      else {
-        if (remoteTaskBranchExists) {
-          // A private fetch ref cannot establish Git's ordinary upstream.
-          // Configure it before branch creation so a config-lock failure
-          // remains retryable, without updating the shared tracking ref.
-          await git(repoDir, ["config", `branch.${branch}.remote`, remote]);
-          await git(repoDir, ["config", `branch.${branch}.merge`, `refs/heads/${branch}`]);
-        }
-        await git(repoDir, [
-          "worktree",
-          "add",
-          "--no-track",
-          "-b",
-          branch,
-          path,
-          remoteTaskBranchExists ? remoteTaskRef : currentBaseCommit,
-        ]);
-      }
+      throw error;
     }
-
-    const headCommit = await headAt(path);
-    const baseCommit =
-      input.previous?.branch === branch && input.previous.baseCommit
-        ? input.previous.baseCommit
-        : branchExists || remoteTaskBranchExists
-          ? (await git(repoDir, ["merge-base", headCommit, currentBaseCommit])).stdout || currentBaseCommit
-          : currentBaseCommit;
-    return {
-      repoDir,
-      metadata: {
-        kind: "task-worktree",
-        path,
-        baseRef,
-        baseCommit,
-        branch,
-        headCommit,
-        disposition: "active",
-      },
-    };
   });
 }
 

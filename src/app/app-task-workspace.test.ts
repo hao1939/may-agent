@@ -109,6 +109,73 @@ describe("project task workspace", () => {
     expect(await git(f.repo, "rev-parse", privateHead)).toBe(oldHead);
   });
 
+  for (const retained of [false, true]) {
+    for (const failure of ["probe", "fetch", "checkout"] as const) {
+      it(`rolls back failed preparation without losing recovery refs (${failure}, retained: ${retained})`, async () => {
+        const f = await fixture();
+        const remote = join(f.root, "remote.git");
+        await git(f.root, "init", "--bare", remote);
+        await git(f.repo, "remote", "add", "origin", remote);
+        await git(f.repo, "push", "-u", "origin", "dev");
+        const input = {
+          repoDir: f.repo,
+          workspaceRoot: f.worktrees,
+          taskId: "failed-prepare",
+          generation: 1,
+          baseBranch: "dev",
+        };
+        const prepared = await prepareAppTaskWorkspace(input);
+        await git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
+        await prepareAppTaskWorkspace(input); // Retain both private refs before refreshing.
+        if (!retained) expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
+        else writeFileSync(join(prepared.metadata.path, "unfinished.txt"), "keep this work\n");
+        await prepareAppTaskWorkspace({ ...input, generation: 2 });
+        const privateRefs = () =>
+          git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/");
+        const before = await privateRefs();
+
+        writeFileSync(join(f.repo, "advanced.txt"), "new base\n");
+        await git(f.repo, "add", "advanced.txt");
+        await git(f.repo, "commit", "-m", "advance dev");
+        await git(f.repo, "push", "origin", "dev");
+        if (retained) {
+          // Both refs would advance, but the unfinished checkout must stay put.
+          await git(
+            remote,
+            "update-ref",
+            `refs/heads/${prepared.metadata.branch}`,
+            await git(f.repo, "rev-parse", "HEAD"),
+          );
+        }
+        const lock = join(f.repo, `.git/${prepared.metadata.baseRef.replace(/\/base$/, "/head")}.lock`);
+        if (failure === "probe") await git(f.repo, "config", "remote.origin.uploadpack", "false");
+        else if (failure === "fetch") {
+          mkdirSync(dirname(lock), { recursive: true });
+          writeFileSync(lock, "another fetch\n");
+        } else if (retained) await git(prepared.metadata.path, "checkout", "--detach");
+        else mkdirSync(prepared.metadata.path);
+
+        await expect(prepareAppTaskWorkspace({ ...input, previous: prepared.metadata })).rejects.toThrow();
+        expect(await privateRefs()).toBe(before);
+        if (retained) {
+          expect(await git(prepared.metadata.path, "rev-parse", "HEAD")).toBe(prepared.metadata.headCommit);
+          expect(readFileSync(join(prepared.metadata.path, "unfinished.txt"), "utf8")).toBe("keep this work\n");
+        } else expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+
+        // Release only fixture-owned failures and prove the same generation retries.
+        if (failure === "probe") await git(f.repo, "config", "--unset", "remote.origin.uploadpack");
+        else if (failure === "fetch") {
+          expect(readFileSync(lock, "utf8")).toBe("another fetch\n");
+          rmSync(lock);
+        } else if (retained) await git(prepared.metadata.path, "checkout", prepared.metadata.branch);
+        else rmSync(prepared.metadata.path, { recursive: true });
+        const retry = await prepareAppTaskWorkspace({ ...input, previous: prepared.metadata });
+        expect(retry.metadata.headCommit).toBe(prepared.metadata.headCommit);
+        expect(retry.metadata.baseCommit).toBe(prepared.metadata.baseCommit);
+      });
+    }
+  }
+
   it("keeps the event loop available while Git prepares the worktree", async () => {
     const f = await fixture();
     let controlTurnObserved = false;
@@ -354,6 +421,7 @@ describe("project task workspace", () => {
     })).rejects.toThrow("cannot lock ref");
     expect(existsSync(prepared.metadata.path)).toBe(false);
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
     expect(readFileSync(privateHeadLock, "utf8")).toBe("another Host fetch\n");
     rmSync(privateHeadLock);
 
@@ -365,6 +433,7 @@ describe("project task workspace", () => {
     })).rejects.toThrow("could not lock config file");
     expect(existsSync(prepared.metadata.path)).toBe(false);
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
     rmSync(configLock);
 
     const retry = await prepareAppTaskWorkspace({
