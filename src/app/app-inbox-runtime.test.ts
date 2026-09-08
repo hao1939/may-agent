@@ -3,8 +3,11 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
+import { Check } from "typebox/value";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
+import type { SubagentManager } from "../lib/index.js";
+import type { CallOptions, SubagentDefinition } from "../lib/types.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "./app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
@@ -16,6 +19,7 @@ import {
   EventBus,
 } from "./event-bus.js";
 import { AppRegistry } from "./app-registry.js";
+import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { HostCapacity } from "./host-capacity.js";
 import {
   claimNextAppInboxItem,
@@ -415,7 +419,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("admits a May-owned durable goal without colliding with its human turn", async () => {
+  it("admits a May-owned goal through the model contract without re-entering conversation", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });
     writeFileSync(
       join(root, "may.app", "app.js"),
@@ -446,25 +450,42 @@ describe("App inbox runtime", () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const taskAdmissions: Array<Record<string, any>> = [];
+    const registry = await loadedRegistry(root);
+    let modelCalls = 0;
+    const decision = {
+      summary: "May owns the durable review.",
+      response: "I’ll review it and return the result here.",
+      topic: { kind: "new", title: "Review the design" },
+      followUp: {
+        outcome: "Review the design",
+        acceptance: ["Return evidence-backed suggestions"],
+        appId: "may",
+        input: {
+          kind: "goal",
+          data: { outcome: "Review the design", acceptance: ["Return evidence-backed suggestions"] },
+        },
+      },
+    };
+    // Stub inference only: exercise real context/schema selection and admission.
+    const manager = {
+      getAgentDefinition: () => ({ name: "may", tools: [] }),
+      callAgentDefinition: async (_definition: SubagentDefinition, prompt: string, options: CallOptions) => {
+        modelCalls += 1;
+        const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
+        expect(catalog.find((entry: { appId: string }) => entry.appId === "may")?.inputs).toEqual([
+          expect.objectContaining({ kind: "goal" }),
+        ]);
+        expect(Check(options.outputSchema!, decision)).toBe(true);
+        expect(Check(options.outputSchema!, { ...decision, dependencies: [] })).toBe(false);
+        return { status: "done", structuredResult: decision };
+      },
+    } as unknown as SubagentManager;
     runtime = await startAppInboxRuntime({
-      registry: await loadedRegistry(root),
+      registry,
       db,
       bus,
       ...task.options,
-      resolveRequest: async () => ({
-        summary: "May owns the durable review.",
-        response: "I’ll review it and return the result here.",
-        topic: { kind: "new", title: "Review the design" },
-        followUp: {
-          outcome: "Review the design",
-          acceptance: ["Return evidence-backed suggestions"],
-          appId: "may",
-          input: {
-            kind: "goal",
-            data: { outcome: "Review the design", acceptance: ["Return evidence-backed suggestions"] },
-          },
-        },
-      }),
+      resolveRequest: createAppRequestAgentResolver({ manager, registry, db }),
       admitTaskEvent: (input: any) => {
         taskAdmissions.push(input);
         return { accepted: true, by: "test-task", route: "direct" };
@@ -486,7 +507,11 @@ describe("App inbox runtime", () => {
 
     await waitUntil(() => task.attached.length === 1);
     await waitUntil(() => taskAdmissions.length === 1);
+    expect(modelCalls).toBe(1);
     expect(task.attached[0]).toStartWith("goal/appreq_");
+    expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
+      expect.objectContaining({ appId: "may", taskId: task.attached[0] }),
+    ]);
     expect(taskAdmissions).toContainEqual(
       expect.objectContaining({
         appId: "may",
