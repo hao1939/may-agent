@@ -3965,6 +3965,110 @@ describe("canonical App task runtime", () => {
     );
   });
 
+  it("schedules unexpected exact-task input without replacing outstanding waits", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const taskId = "work/open-waits";
+    const conditions = [
+      {
+        id: "ci",
+        type: "pipeline-run.state",
+        subject: "pipeline-run:42",
+        expected: "completed",
+        owner: "app:ci",
+        reviewAfterMs: 60_000,
+      },
+      {
+        id: "review",
+        type: "project.task.reconciled",
+        subject: "task:review",
+        expected: "done",
+        owner: "app:review",
+        reviewAfterMs: 120_000,
+      },
+    ];
+    const batches: string[][] = [];
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        waiting: async (attempt) => {
+          batches.push(attempt.events.items.map((item) => item.event.type));
+          if (batches.length === 2) {
+            const newer = {
+              type: "sample.update-during-attempt",
+              source: "test",
+              target: { appId: "sample", taskId },
+              data: { revision: 3 },
+            } as AgentEvent;
+            Object.defineProperty(newer, EVENT_ROW_ID, { value: 1235 });
+            expect(
+              admitLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event: newer, intent: null, targetedTaskId: taskId }),
+            ).toMatchObject({ accepted: true });
+          }
+          return { state: "waiting", summary: "External facts still outstanding", evidence: [], conditions };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:open-waits",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          outcome: "Reconcile current facts",
+          acceptance: ["Both facts verified"],
+          mode: "achieve",
+          agent: "sample-owner",
+          executor: "waiting",
+        },
+      },
+      idempotencyKey: "attach:open-waits",
+      request: {
+        id: "request-open-waits",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const waitForPass = async (count: number) => {
+      const deadline = Date.now() + 3_000;
+      while (
+        (batches.length < count || readTaskSnapshot(config).resources?.[taskId]?.status.phase !== "waiting") &&
+        Date.now() < deadline
+      )
+        await Bun.sleep(5);
+      expect(batches).toHaveLength(count);
+      expect(readTaskSnapshot(config).resources?.[taskId]?.status.phase).toBe("waiting");
+    };
+    await waitForPass(1);
+    const before = readTaskSnapshot(config).conditions;
+    const feedback = {
+      type: "sample.unexpected-update",
+      source: "test",
+      owner: "agent:sample-owner",
+      target: { appId: "sample", taskId },
+      data: { revision: 2 },
+    } as AgentEvent;
+    Object.defineProperty(feedback, EVENT_ROW_ID, { value: 1234 });
+    expect(
+      admitLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event: feedback, intent: null, targetedTaskId: taskId }),
+    ).toMatchObject({ accepted: true });
+    await waitForPass(3);
+    expect(batches[1]).toEqual(["sample.unexpected-update"]);
+    expect(batches[2]).toEqual(["sample.update-during-attempt"]);
+    expect(readTaskSnapshot(config).conditions).toEqual(before);
+    expect(readTaskSnapshot(config).resources?.[taskId]?.metadata.generation).toBe(1);
+    expect(readTaskSnapshot(config).resources?.[taskId]?.status.conditionIds).toEqual(["ci", "review"]);
+  });
+
   it("coalesces an exact-task event storm into bounded fresh reconciliations", async () => {
     const f = fixture();
     const bus = eventBus();
