@@ -93,8 +93,15 @@ links it to the Task that owns the outcome:
 request -> Task owned by the App -> accepted result
 ```
 
-A conversational frontend request may instead answer directly or publish typed
-durable intent or feedback. Runtime binds durable intent to the actual Task
+A conversational frontend request may instead answer, investigate, edit, and
+verify directly within its authorized scope. It uses the shared bounded
+executor; tool use alone does not create a Task. Conversation preserves the
+discussion and exact references, not a second work state. When work needs
+background continuation, later steering, or restart-safe coordination, May
+publishes typed durable intent or feedback. May can own the ordinary Task;
+another App is selected for existing ownership, required authority, or useful
+expertise, not merely a matching name. Runtime binds durable intent to the actual
+Task
 owned by the responsible App and records that exact Task on the Topic. May then
 reconciles one normal maintain Task on meaningful events from Topic-linked
 Tasks and may steer the same Task or update the Conversation. This supervision

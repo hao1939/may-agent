@@ -11,13 +11,13 @@ identity; prior-attempt observations remain history.
 
 ## Mental model
 
-> May handles each human turn promptly. One normal May Task supervises the
-> responsible Tasks without becoming their proxy owner.
+> Conversation remembers the discussion; a Task owns an ongoing commitment.
+> May can do work directly or own a Task. Handoff is a choice, not a requirement.
 
 ```text
 Human
   <-> May frontend
-        |- answer or clarify now
+        |- answer, clarify, or do authorized bounded work now
         `- request or steer one exact responsible Task
                               |
                               v
@@ -47,11 +47,12 @@ and “child” describe a Task's goal or relationship, never a different resour
 or lifecycle. An App owns and reconciles Tasks; an agent, workflow, Codex, or
 Claude is only a replaceable way to perform one attempt.
 
-The May App has two deliberately separate execution paths:
+Conversation and Task are separate responsibilities, not separate execution
+engines. The Host's shared bounded executor serves:
 
-- the **frontend** handles one conversational turn; and
-- one normal visible **supervision Task** maintains the ongoing goal of keeping
-  human-linked work aligned and useful.
+- the **frontend**, which handles one conversational turn and may use tools;
+- ordinary **May-owned Tasks**, which continue concrete work across attempts;
+- the existing **supervision Task**, which keeps linked work aligned and useful.
 
 The supervision Task is not a wrapper for a Conversation turn or a parent of
 delegated Tasks. Conversation, Topic links, the actual responsible Tasks, and
@@ -107,13 +108,30 @@ There is no keyword router or second intent classifier.
 
 The frontend makes one of three decisions:
 
-1. **Answer now.** Questions, suggestions, opinions, and self-contained
-   requests finish in this turn and create no Task.
+1. **Handle it now.** Answer, investigate, edit, or verify within the human's
+   authorized scope. Self-contained work finishes in this turn without a Task.
 2. **Clarify.** Ask one high-quality question only when the missing choice
    materially changes outcome, owner, risk, proof, or authority.
-3. **Continue durably.** Answer anything useful now, then publish one typed App
-   request or exact-Task feedback containing the chosen Topic, desired outcome,
+3. **Continue durably.** For background continuation, later steering, or
+   restart-safe coordination, answer anything useful now, then publish one typed
+   App request or exact-Task feedback containing the chosen Topic, desired outcome,
    constraints, acceptance, and an exact Task reference when one already fits.
+
+Tool use alone does not require a Task. Creating a Task does not require a
+handoff: May can remain its owner and executor. Another App is selected for
+existing ownership, required authority, or useful expertise or workflows, not
+merely a matching name. This is agent judgment through existing contracts, not
+a role router or intent-classification service.
+
+Direct work uses the existing bounded App execution profile, including the
+agent's declared shell and editing tools. It does not gain detached execution,
+Cron, checkpoint, or out-of-band message tools. Existing guards, timeouts,
+cancellation, and authority boundaries still apply. Read current state before
+changing it or retrying an interrupted action. A stored result prevents
+replaying accepted work; arbitrary external side effects are not transactional
+with that result. Do not claim exactly-once execution across a crash or retry
+an uncertain consequential action blindly. Recovery-sensitive ongoing work
+belongs on the Task path with explicit evidence and acceptance.
 
 Durable admission to the responsible Task completes the frontend turn. The
 human request does not remain open waiting for destination work and does not
@@ -140,6 +158,8 @@ and correlation aid, not another work state.
 | Human situation                                 | May's decision                                                                       |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
 | “Does this wait make sense?”                    | Read the focused Task and answer; no mutation.                                       |
+| “Fix this typo and check it.”                  | Use authorized tools directly; return the verified result without a handoff.         |
+| “Keep working after I close the console.”      | Admit one ordinary Task; May can own it and retain the findings.                     |
 | “It does not; fix it.”                          | Answer and publish feedback for that exact Task.                                     |
 | “Agree, do it.”                                 | Apply the preceding proposal in the same Topic.                                      |
 | “Also include pending benchmarks.”              | Refine the existing Task when its owner and goal still fit.                          |
@@ -254,8 +274,9 @@ resources remain the source of status, progress, waits, and results.
 
 ### May-owned durable work
 
-When no installed App is a better owner, May may request a normal May goal
-Task. That Task uses the same Task interface, events, recovery, and executor
+May may request a normal goal Task when it can own the outcome. It need not
+exhaust specialist Apps first or manufacture a general-purpose App. That Task
+uses the same Task interface, events, recovery, and executor
 choices as every other Task. It may run the May agent, a workflow, Codex, or
 Claude. It exists for its concrete outcome, not to shadow a Conversation or a
 delegated Task.
@@ -348,7 +369,7 @@ Conversation or Topic identity.
 1. Only human-authored Turns invoke the May frontend.
 2. One frontend turn finishes after its answer, clarification, or responsible
    Task admission is accepted.
-3. Direct Q&A creates no Task.
+3. Self-contained authorized work can finish directly without a Task or handoff.
 4. One normal visible May maintain Task owns recurring supervision across
    human-linked Topics.
 5. That Task observes and steers exact responsible Tasks but never parents,
@@ -405,14 +426,16 @@ Operations procedures belong to its existing tech-lead profile. There is no
 additional role router or prompt registry. Context tests prove available
 guidance, not that the model followed it.
 
-For a new direct-handoff turn, the model's response schema excludes frontend
+For a new direct-admission turn, the model's response schema excludes frontend
 child-request dependencies. The installed input catalog includes May's own
 durable goal contract, but excludes its conversational input kinds to avoid
 routing a turn back into itself. Exact feedback and human cancellation retain
 their existing validation and authority rules.
 
 A retained request with its own child work still receives the compatibility
-schema and child-result prompt, even after its App adopts direct handoff.
+schema, child-result prompt, and deputy tool profile, even after its App adopts
+direct admission. New turns reuse the bounded full App tool profile, not a new
+conversation-specific tool list or execution engine.
 Another Topic's open work or a focused Task is only context; it does not select
 that compatibility path. This narrows new model attempts without deleting the
 public SDK, changing retained requests, or replacing their recovery mechanism.

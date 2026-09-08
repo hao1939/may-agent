@@ -1,6 +1,6 @@
 ---
 name: system-deputy-decisions
-description: Make May deputy decisions for unfamiliar or stuck Apps, Task/Condition routing, timed-out executors, and accepted requests with missing results. Use when May must choose the responsible App, stable Task or App action, proof plan, follow-through, or authority boundary.
+description: Decide how May should handle work directly, own a Task, or involve another App. Use for ownership choices, stuck work, missing results, follow-through, and real authority boundaries; not as a mandatory handoff procedure for every conversation.
 ---
 
 # System Deputy Decisions
@@ -9,59 +9,43 @@ Use the canonical May Host system skill and accepted App/source contracts as
 the architecture authority. This skill is the compact decision method; it does
 not replace `/app/agents/may/skills/may-agent-system/SKILL.md`.
 
-## Deputy altitude
+## Conversation and work
 
-Own direction and closure, not specialist implementation. A complete decision
-names:
+Conversation remembers the discussion; a Task owns an ongoing commitment.
+May may investigate, edit, verify, and answer directly within the human's
+authorized scope. Tool use alone requires neither a Task nor another App.
+Read current state before changing it or retrying an interrupted action.
 
-1. the outcome and responsible App;
-2. the bounded action that starts now;
-3. safety and proof requirements;
-4. how May will observe and review the result; and
-5. how May will replan or escalate if progress stalls or proof is insufficient.
+Use an ordinary Task when work needs background continuation, later steering,
+or restart-safe coordination. May can own and execute it; no general-purpose
+App or proxy Task is required. Involve another App when it already owns the
+work, requires its specific authority, or brings useful expertise or a workflow.
+A matching App name is not enough. Host Operations (`may-agent`) owns Host
+deployment and runtime repair, not every unclassified request.
 
-“I will confirm later” is incomplete without the replan or escalation branch.
-Do not guess a patch, command, batch size, timeout, lesson text, or other App
-method. Do not claim safety, cause, completion, or absence of loss before
-evidence proves it.
+For an existing Task, read its evidence and steer that exact identity when its
+owner and outcome still fit. Do not duplicate its work, edit generated state,
+or bypass the owning App's controls. Advice is not mutation authority, and a
+decision-only request does not authorize implementation or delegation.
 
-Offering several guessed methods is still prescribing implementation. For
-example, reject “use smaller batches or increase the timeout.” Say “diagnose
-and repair the failure within these state and proof bounds,” then judge the
-returned evidence.
+Use the supplied result schema, not a protocol remembered from an old session:
 
-An App is an accountability boundary, not a callable agent. Route through a
-typed App dependency or declared App action, never by addressing its default
-agent. Use the installed App catalog rather than guessing: compare the desired
-outcome with each declared responsibility and accepted input contract, then
-follow that contract's required paths, field shapes, and fixed values. If one
-App clearly owns it, return one stable typed `dependency`; Runtime admits it
-and the correlated May request later reviews its exact result. When acting as
-another App's Task executor, use that Task's waiting-result contract instead.
-If ownership remains materially ambiguous after checking current
-context and safe defaults, state the likely owner and recommendation and ask
-for the smallest human decision now. If no installed App owns it, depend on
-`may-agent` to resolve the
-capability or ownership gap.
+- A new conversational turn returns a useful `response`. If continuation is
+  needed, include one `followUp` with the outcome, constraints, acceptance,
+  catalog-valid App input, and an exact Task reference when steering existing
+  work. Runtime admits and links that Task, then completes the turn.
+- Retained child-wait requests use their supplied compatibility schema. Only
+  those requests wait for their existing children before returning the final
+  reviewed result. Do not introduce that pattern into new turns.
+- A Task attempt uses its Task result contract. May's existing supervision Task
+  reviews linked work and returns useful updates; it never owns a proxy copy.
 
-A delegated May decision has no caller-facing `response`. May speaks to Hao
-after the exact dependency result wakes the correlated request and May has
-reviewed its proof.
-
-Before handing work off, make the requirement solid enough for the destination
-App to act without inheriting the conversation: state the outcome, scope,
-material constraints, acceptance proof, and true authority boundaries in
-`input.data`. Preserve a requested cadence as a requirement, but leave Task,
-workflow, executor, schedule, retry, and session mechanics to the App.
-When the owner and typed input are already clear, return the dependency
-promptly. Do not inspect another worktree, rerun its tests, or manufacture new
-readiness evidence first; supplied evidence is input for the accountable App to
-verify, not a reason for May to perform the App's work.
-
-When a Task is decision-only or forbids changes or contact, return the complete
-bounded plan without a dependency. The human response must match what actually
-happened; never claim that work was routed when the result contains no admitted
-dependency.
+For delegated work, make the input understandable without inheriting the whole
+conversation. State the intended outcome, material constraints, proof, and true
+authority boundaries. Do not prescribe another App's implementation without
+evidence. Say what actually happened: a proposed action or accepted input is not
+verified completion. Ask a human only when missing information or authority
+materially changes the outcome; absence of a specialist App alone is no blocker.
 
 Preserve these system boundaries while applying the deputy method:
 
@@ -86,9 +70,9 @@ gap."` This verifies the chosen boundary without prescribing implementation.
   result. A planned supervisor action is incomplete until the App proves
   that the intended live runtime outcome is healthy after activation.
 
-Before finishing, check that the artifact contains the responsible App and
-Task, bounded next move, terminal result, proof, May review, and the replan or
-escalation branch. Reject a correct first action that truncates this chain.
+For ongoing work, make its owner, next move, proof, and follow-through clear.
+A completed direct answer needs evidence appropriate to that answer, not a
+manufactured Task, escalation branch, or future review.
 
 ## Decision boundary
 
@@ -169,10 +153,11 @@ Contrast a repeated empty checkpoint:
   requires his decision.”
 
 Waking, retrying, or promising a later confirmation is not completion.
-Keep caller correlation and durable Task state distinct: require the App Task
-to converge or wait on an exact dependency, then require terminal domain
-evidence and the dependency-woken parent result. Neither substitutes for the
-other.
+Keep caller correlation and durable Task state distinct. A conversational turn
+may finish after admission while its linked Task continues. Require terminal
+domain evidence before reporting that Task complete; May's supervision review
+or acknowledgment cannot substitute for it. Retained child-wait requests still
+owe their correlated parent result.
 
 Before finishing an App-recovery decision, verify four meanings are explicit:
 App result, terminal domain result, May's evidence review, and May's replan

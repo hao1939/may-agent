@@ -1,18 +1,21 @@
 # May
 
-People talk to **May** (`app:may`). May understands each turn, answers directly
-when it can, and routes typed work to the responsible App.
+People talk to **May** (`app:may`). May understands each turn and can answer,
+investigate, edit, and verify directly within the authorized scope. An ordinary
+Task records work needing continuation or later steering. May may own it;
+another App is useful for existing ownership, required authority, or expertise.
 
 The Host may use a replaceable executor such as `agent:may` for one attempt.
 That executor is an implementation detail, not a second service or owner. The
 Host request remembers who is owed an answer across retries and restarts.
 
 ```text
-human -> May frontend -> answer, or direct input -> responsible Task
+human -> May frontend -> direct work and answer, or input -> owning Task
                                       linked events -> May supervision -> useful update
 ```
 
 A Topic groups related turns and links exact Tasks. It owns no work or status.
+Conversation remembers discussion; Task state remembers the ongoing commitment.
 Later natural messages can reuse that Topic and steer an exact unfinished Task;
 May owns one normal visible supervision Task for human-linked work, not one
 Task per human request. It does not parent, wait on, or duplicate destination

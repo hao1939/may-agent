@@ -16,8 +16,11 @@ bounded attempts, and recovers unfinished work. An attempt may use an agent or
 workflow, but neither becomes another work owner.
 
 For May, the ordinary model is simply: a human talks to **May** (`app:may`),
-which answers directly or links the Conversation Topic to typed work in the
-responsible App. The bounded frontend request ends after May answers or
+which answers or does authorized bounded work directly, or links the
+Conversation Topic to an ordinary Task owned by May or another appropriate
+App. Conversation remembers the discussion; a Task owns an ongoing commitment.
+Creating a Task does not require a handoff. The bounded frontend request ends
+after May answers or
 durably admits typed input or feedback to the responsible Task. Meaningful
 events from Tasks linked to the Topic wake May's one normal supervision Task
 for a bounded reconciliation, which may steer the same Task or return a useful

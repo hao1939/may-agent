@@ -181,7 +181,7 @@ export default defineApp({
   version: 1,
   agent: "may",
   description:
-    "Hao's conversational deputy: understands turns, links Topics, routes Tasks to their owning Apps, and returns results.",
+    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required.",
   inputSchema: mayInputSchema,
   requests: {
     mode: "agent",

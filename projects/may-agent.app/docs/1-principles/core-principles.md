@@ -30,8 +30,12 @@ See [events.md](../2a-design/events.md).
 
 ## 3. Requests correlate results; Tasks own App work
 
-The Host keeps one request when a caller expects a correlated result. The App
-handles that responsibility by reconciling one task. Simple work converges in
+The Host keeps one request when a caller expects a correlated result. A
+conversational request can finish with a direct answer or authorized bounded
+tool work, without a Task. Conversation remembers discussion and references;
+Tasks own commitments that need ongoing tracking or continuation.
+
+For durable work, the owning App reconciles one Task. Simple work converges in
 one bounded attempt; difficult, waiting, decomposed, or maintained work keeps
 the same task across attempts. The request remains the caller-facing identity
 and the task remains the App-facing work identity.
@@ -42,9 +46,11 @@ relationships. Neither is another work lifecycle or state authority. A
 session, workflow, event, metric, queue entry, or transport receipt is not one
 either.
 
-If the next action crosses an App or human boundary, create a typed child
-request and wait on that exact identity. Escalation is an explicit handoff, not
-a routing fallback.
+When a Task needs another App's result, create a typed child request and wait
+on that exact identity. A conversational turn instead admits or steers the
+responsible Task and finishes; it does not become a waiting parent. May can
+own an ordinary Task. Another App is useful for existing ownership, required
+authority, or expertise, not as a mandatory routing fallback.
 
 See [work-model.md](work-model.md) and
 [agent-app.md](../2a-design/agent-app.md).
@@ -64,7 +70,8 @@ See [sessions.md](../2a-design/sessions.md) and
 First decide what is owned:
 
 ```text
-caller expects a correlated result -> Host request linked to an App task
+caller expects a correlated result -> Host request
+bounded conversational work        -> direct result, no Task required
 App must make an outcome true       -> task
 changed or observed state only      -> fact
 ```
@@ -78,8 +85,9 @@ Then decide how one bounded attempt runs:
 | Stable ordering, branching, limits, or verification | Workflow                            |
 | Mechanical detection                                | Observer, guard, or metric          |
 
-Every actionable App input becomes or wakes a task. Asynchrony, importance, or
-frequency do not require a workflow or another work mechanism.
+Every durable App work input becomes or wakes a Task. Tool use in a bounded
+conversation does not require one. Asynchrony, importance, or frequency do not
+require a workflow or another work mechanism.
 
 An App becomes more powerful by adding domain policy, acceptance checks,
 learned workflows, and bounded capabilities available during reconciliation.

@@ -18,7 +18,14 @@ The May Host runs Apps. Preserve this mental model:
 
 For human interaction, preserve the more specific shape:
 
-`human -> May request -> response, or Topic -> typed App Task dependencies -> reviewed response`
+`human -> May turn -> direct work and response, or Topic -> exact owning Task`
+
+Conversation holds discussion and Task references; a Task holds the ongoing
+commitment. May can act directly in an authorized bounded turn or own an
+ordinary Task when continuation is needed. Delegate for existing ownership,
+required authority, or useful expertise, not merely a matching App name.
+Meaningful linked-Task changes wake May's existing supervision Task for useful
+updates. Neither the conversation nor that review becomes a proxy work owner.
 
 For project-directed interaction, preserve:
 
@@ -100,7 +107,7 @@ doc with evidence, or call out the mismatch.
    metrics, and recent traces as needed. Do not make raw task persistence an
    App or agent contract.
 3. Preserve the loops:
-   `human event -> May request -> answer or App Task result -> answer`, and
+   `human event -> May turn -> direct result or exact Task admission`, and
    `event -> Task -> bounded attempt -> accepted result or exact wait`.
 4. Make the smallest change that keeps the loop closed. Prefer existing
    conventions, app-local workflows, SDK helpers, bounded task projections,
@@ -193,7 +200,10 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 
 - Explicit project HTTP/UI intent may persist `project.comment.created`
   directly as its receipt and trace root. Conversational intent remains one May
-  request; May returns a typed App dependency when project work is needed.
+  request; May returns a typed `followUp` when durable work or exact Task
+  feedback is needed. It may target May's own goal input. New turns finish
+  after admission; only retained child-wait requests keep the old dependency
+  protocol.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.
@@ -352,10 +362,10 @@ Distinguish local blockers from ownership-boundary escalations.
   on an external fact returns `waiting` with an exact observable Condition.
   Runtime records the attempt and owns retry and recovery—do not emit a
   parallel task-completion event.
-- Work without task context enters through a typed App input/action or a
+- Durable work without task context enters through a typed App input/action or a
   declared event subscription that creates one correlated App request. Do not
   address an owner string or workflow event as an alternate inbox.
-- When another App must answer or act, return a typed Task dependency with the
+- When a Task needs another App's result, return a typed Task dependency with the
   exact request, evidence, source obligation, severity, and stable semantic
   correlation key. The parent waits on that exact child result.
 - Route human attention through a typed child request to the `may` App. May
@@ -377,9 +387,10 @@ Distinguish local blockers from ownership-boundary escalations.
   Reserve global `agents/` for May and explicitly justified standalone
   system-level agents.
 - Put operational settings in `agent.json`, not prose instructions.
-- For human interaction, preserve chat/job separation: chat is a persistent
-  observed REPL without `finish()`; jobs are bounded task sessions with
-  terminal cleanup.
+- May Console and Telegram turns use bounded requests with `finish()`, shared
+  execution tools, and no mandatory Task. Background work uses ordinary Tasks.
+  The separate direct-agent chat interface is a persistent observed REPL
+  without `finish()`; do not confuse its session lifecycle with Conversation.
 - Human, CLI, Telegram, web, and socket actions enter through canonical App
   admission, fact publication, typed App actions, or deterministic runtime
   controls rather than untracked side channels.

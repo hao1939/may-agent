@@ -45,6 +45,39 @@ The governing rules are:
 
 ## Recently resolved convergence gaps
 
+### Conversation can do work without becoming another Task engine
+
+The September 8 source change separates conversation from ongoing commitments,
+not the deputy from its tools. New direct-admission turns use the existing
+bounded full App execution profile. Retained child-wait requests keep their
+original schema and deputy profile. May's identity and relevant skills no
+longer require prompt delegation, suppress the immediate response, or route
+unclassified work to Host Operations.
+
+May can own an ordinary Task when continuation is needed. Conversation and
+Topic retain discussion and exact references, not copied execution state.
+No new service, tool profile, router, scheduler, or Task lifecycle was added.
+See [message-lifecycle.md](../2a-design/message-lifecycle.md).
+
+The paired source branches are `codex/may-direct-conversation-work-20260908`.
+The Host is based on main `0c7c2564`; the App changes build on the published
+focused-conversation branch `ed9cdab44e`. This is source validation, not rollout:
+
+- Host CI: 2,522 passed, 3 installation-only skips, no failures.
+- Paired installation checks: 34 passed, 7 retired-Cron skips, no failures.
+- May App contract checks: 8 passed; design integrity: no errors, 3 scratch warnings.
+- Both edited skills pass their metadata/structure validator.
+- Scripted-model regressions exercise real read/edit/write/shell tools without
+  a Task, reject an interrupted attempt's claimed success, preserve accepted
+  results across duplicate input and Host reconstruction, and steer the same
+  May-owned Task after reopening the runtime. Inference and Task execution are
+  stubbed; these tests prove the boundary, not better model judgment.
+
+No deployment, live Task repair, or model-backed comparison was performed.
+Arbitrary tool effects are not transactional with request completion; do not
+claim exactly-once execution across a crash. Keep retained child waits until
+their existing obligations and callers have been accounted for.
+
 ### May supervision proxy semantics
 
 The frontend previously emitted `app.follow-up.requested` to the standing
