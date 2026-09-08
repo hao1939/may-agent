@@ -3666,7 +3666,7 @@ function admitResolvedAppTaskEvent(input: {
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
   const dependencyUpdateWakes = appDependencyUpdateWakeTaskIds(config, event, selectedConditionTaskIds).flatMap(
     (taskId) => {
-      const wake = recordAppTaskTrigger(config, taskId, { ...event, overrideWait: true });
+      const wake = recordAppTaskTrigger(config, taskId, event);
       return wake.kind === "recorded" ? [taskId] : [];
     },
   );
@@ -3702,28 +3702,6 @@ function admitResolvedAppTaskEvent(input: {
       if (controller) enqueueAppTask(controller, config, targetedTaskId, { promote: true });
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
-        taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
-      };
-    }
-    if (triggerResult.kind === "waiting") {
-      return {
-        delivery: appTaskDelivery(
-          descriptor,
-          targetedTaskId,
-          "existing targeted task remains asleep on open Conditions",
-        ),
-        taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
-      };
-    }
-    if (readAppTaskIntent(config, targetedTaskId)) {
-      return {
-        delivery: appTaskDelivery(
-          descriptor,
-          targetedTaskId,
-          "existing targeted task remains asleep on open Conditions",
-        ),
         taskIds: [...wokenTaskIds],
         supersededSessionIds: [],
       };
