@@ -637,10 +637,10 @@ describe("App task reconciler state", () => {
       : completeAppTask(config, claim, result);
     expect(applied).toMatchObject({ status: "applied", actionsApplied: ["created work/next-child"] });
     expect(config.resourceStore.readTask("work/next-child")).not.toBeNull();
-    // Waiting settlement consumes an irrelevant clock hint; completion keeps
-    // it for the next pass. Neither discards the accepted child action.
+    // Both results retain the latest wake for the next pass without discarding
+    // an accepted child action or treating time alone as conflicting evidence.
     expect(config.resourceStore.readTrigger(claim.taskId)?.events?.map((row) => row.event.eventId)).toEqual(
-      state === "waiting" ? undefined : [101],
+      [101],
     );
   });
 
@@ -1684,7 +1684,7 @@ describe("App task reconciler state", () => {
     store.close();
   });
 
-  it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
+  it("keeps passive checks asleep but reconsiders a waiting task for fresh routed input", () => {
     const { config } = fixture();
     const monitor = intent("maintain");
 
@@ -1736,28 +1736,6 @@ describe("App task reconciler state", () => {
       trigger,
     });
 
-    const duplicateClaim = claimObservedAppTask(config, {
-      taskId: monitor.id,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-      reason: "task-controller",
-    });
-    expect(duplicateClaim).toMatchObject({ kind: "waiting", taskId: monitor.id });
-
-    const overrideTrigger = {
-      type: "project.task.tick",
-      data: {
-        project: "sample",
-        taskId: monitor.id,
-        overrideWait: true,
-      },
-    };
-    observeAppTaskIntent(config, {
-      intent: monitor,
-      appAgent: "app-owner",
-      trigger: overrideTrigger,
-    });
-
     const secondClaim = claimObservedAppTask(config, {
       taskId: monitor.id,
       appAgent: "app-owner",
@@ -1770,9 +1748,10 @@ describe("App task reconciler state", () => {
     const persistedAttempt = readTaskSnapshot(config).attempts?.[secondClaim.attemptId];
     expect(persistedAttempt).toMatchObject({
       state: "running",
-      events: [{ event: overrideTrigger }],
+      events: [{ event: trigger }],
     });
     expect(persistedAttempt?.trigger).toBeUndefined();
+    expect(readTaskSnapshot(config).resources[monitor.id].status.conditionIds).toEqual(["external-run-finished"]);
   });
 
   it("wakes a waiting task for explicit human task control", () => {
@@ -5770,45 +5749,51 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).resources?.["pipeline-monitor"]?.status.conditionIds ?? []).toEqual([]);
   });
 
-  it("consumes an unrelated trigger queued while the task installs a wait", () => {
-    const state = fixture();
-    const { config } = resourceFixture(state, "unrelated-trigger-during-wait");
-    const claim = declareAndClaimTask(config, {
-      intent: { ...intent("maintain"), id: "work/queued-pulse" },
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-
-    expect(
-      recordAppTaskTrigger(config, claim.taskId, {
-        type: "project.task.tick",
-        data: { taskId: claim.taskId, reason: "periodic-pulse" },
-      }),
-    ).toEqual({ kind: "recorded" });
-
-    deferAppTask(config, claim, {
-      disposition: "waiting",
-      summary: "waiting for pipeline completion",
-      conditions: [
-        {
-          id: "pipeline-run:42:completed",
-          type: "pipeline-run.state",
-          subject: "pipeline-run:42",
-          expected: "completed",
-        },
-      ],
-    });
-
-    expect(readAppTaskTrigger(config, claim.taskId)).toBeUndefined();
-    expect(
-      claimObservedAppTask(config, {
-        taskId: claim.taskId,
+  it.each(["project.task.tick", "sample.unexpected-update"])(
+    "preserves new routed %s input queued while the task installs a wait",
+    (type) => {
+      const state = fixture();
+      const { config } = resourceFixture(state, "unrelated-trigger-during-wait");
+      const claim = declareAndClaimTask(config, {
+        intent: { ...intent("maintain"), id: "work/queued-pulse" },
         appAgent: "app-owner",
         handler: "workflow:known-workflow",
-      }),
-    ).toMatchObject({ kind: "waiting", conditionIds: ["pipeline-run:42:completed"] });
-  });
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+
+      expect(
+        recordAppTaskTrigger(config, claim.taskId, {
+          type,
+          data: { taskId: claim.taskId, reason: "periodic-pulse" },
+        }),
+      ).toEqual({ kind: "recorded" });
+
+      deferAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting for pipeline completion",
+        conditions: [
+          {
+            id: "pipeline-run:42:completed",
+            type: "pipeline-run.state",
+            subject: "pipeline-run:42",
+            expected: "completed",
+          },
+        ],
+      });
+
+      expect(readAppTaskTrigger(config, claim.taskId)).toMatchObject({ type });
+      expect(
+        claimObservedAppTask(config, {
+          taskId: claim.taskId,
+          appAgent: "app-owner",
+          handler: "workflow:known-workflow",
+        }),
+      ).toMatchObject({ kind: "claimed", trigger: { type } });
+      expect(readTaskSnapshot(config).resources[claim.taskId].status.conditionIds).toEqual([
+        "pipeline-run:42:completed",
+      ]);
+    },
+  );
 
   it("preserves a queued trigger that satisfies the wait installed by the attempt", () => {
     const state = fixture();

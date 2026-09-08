@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { readTaskSnapshot } from "./app-task-store.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   claimObservedAppTask,
   deferAppTask,
@@ -91,6 +93,81 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
+  it("reconciles unexpected input across restart while retaining independent waits and deadlines", () => {
+    const config = fixture();
+    const conditions = [
+      {
+        id: "pipeline",
+        type: "pipeline-run.state",
+        subject: "pipeline-run:42",
+        expected: "completed",
+        owner: "app:ci",
+        reviewAfterMs: 60_000,
+      },
+      {
+        id: "decision",
+        type: "project.task.reconciled",
+        subject: "task:decision",
+        expected: "done",
+        owner: "app:review",
+        reviewAfterMs: 120_000,
+      },
+    ];
+    const wait = { disposition: "waiting" as const, summary: "Still waiting for both facts", conditions };
+    deferAppTask(config, claim(config), wait);
+    const before = readTaskSnapshot(config).conditions;
+    const due = config.resourceStore.nextDueAt();
+    const update = { type: "sample.unexpected-update", eventId: 401, data: { revision: 2 } };
+    expect(recordAppTaskTrigger(config, "human-request", update)).toEqual({ kind: "recorded" });
+    // Redelivery while pending is one input, not another obligation.
+    expect(recordAppTaskTrigger(config, "human-request", update)).toEqual({ kind: "recorded" });
+    config.resourceStore.close();
+    config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+    try {
+      expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
+      const first = claim(config);
+      expect(first.events.map(({ event }) => event.eventId)).toEqual([401]);
+      expect(readTaskSnapshot(config).conditions).toEqual(before);
+
+      const newer = { ...update, eventId: 402, data: { revision: 3 } };
+      recordAppTaskTrigger(config, "human-request", newer);
+      expect(
+        claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
+      ).toBe("busy");
+      deferAppTask(config, first, wait);
+      expect(readTaskSnapshot(config).conditions).toEqual(before);
+      expect(config.resourceStore.nextDueAt()).toBe(due);
+      const second = claim(config);
+      expect(second.events.map(({ event }) => event.eventId)).toEqual([402]);
+      deferAppTask(config, second, wait);
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+
+      // Observation-only broadcasts are not exact Task input and match neither wait.
+      expect(
+        trackAppTaskConditionEventForTasks(config, { type: "sample.unrelated-broadcast" }, ["human-request"]),
+      ).toEqual([]);
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      const pipeline = { type: "pipeline-run.state", eventId: 403, pipelineRunId: "42", state: "completed" };
+      expect(trackAppTaskConditionEventForTasks(config, pipeline, ["human-request"])).toMatchObject([
+        { conditionId: "pipeline" },
+      ]);
+      const third = claim(config);
+      expect(third.events.map(({ event }) => event.eventId)).toEqual([403]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
+      deferAppTask(config, third, { ...wait, conditions: [conditions[1]] });
+      expect(readTaskSnapshot(config).conditions?.decision).toEqual(before?.decision);
+      const decision = { type: "project.task.reconciled", eventId: 404, taskId: "decision", state: "converged" };
+      expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toMatchObject([
+        { conditionId: "decision" },
+      ]);
+      expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toEqual([]);
+      expect(claim(config).events.map(({ event }) => event.eventId)).toEqual([404]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual([]);
+    } finally {
+      config.resourceStore.close();
+    }
+  });
+
   it("does not acknowledge a newer wake admitted after the waiting snapshot was read", () => {
     const config = fixture();
     const store = config.resourceStore;
@@ -115,7 +192,6 @@ describe("App task Condition review checkpoint", () => {
       // Deterministically interleave a second writer between read and acknowledgment.
       recordAppTaskTrigger(config, "human-request", {
         type: "review.updated",
-        overrideWait: true,
         data: { revision: 2 },
       });
       return snapshot;
