@@ -34,7 +34,7 @@ describe("session ID prefix", () => {
     });
 
     const sessionId = manager.run("default-agent", "do something");
-    expect(sessionId).toMatch(/^s_\d+_\d+$/);
+    expect(sessionId).toMatch(/^s_\d+_[0-9a-f-]{36}$/);
   });
 
   it("uses custom prefix when sessionIdPrefix is set", () => {
@@ -51,7 +51,7 @@ describe("session ID prefix", () => {
     });
 
     const sessionId = manager.run("custom-agent", "do something");
-    expect(sessionId).toMatch(/^custom_\d+_\d+$/);
+    expect(sessionId).toMatch(/^custom_\d+_[0-9a-f-]{36}$/);
   });
 
   it("different agents can have different prefixes", () => {
@@ -80,7 +80,7 @@ describe("session ID prefix", () => {
     const coderId = manager.run("coder", "write code");
     const reviewerId = manager.run("reviewer", "review code");
 
-    expect(coderId).toMatch(/^coder_\d+_\d+$/);
-    expect(reviewerId).toMatch(/^rev_\d+_\d+$/);
+    expect(coderId).toMatch(/^coder_\d+_[0-9a-f-]{36}$/);
+    expect(reviewerId).toMatch(/^rev_\d+_[0-9a-f-]{36}$/);
   });
 });
