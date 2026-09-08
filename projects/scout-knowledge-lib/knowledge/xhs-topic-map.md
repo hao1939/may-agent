@@ -5,6 +5,7 @@ last_updated: "2026-09-08"
 latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03:33:16.091Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 422. Only saved-response byte length and body hash changed from Cycle 420."
 source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; retained SwarmResearch Third-Autocorrelation transcripts and producer-authored cost-provenance inventory."
+cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch five-task heuristic histories, 125 transcript files, public/private evaluator code, cutoff CSV, and producer-authored provenance inventory."
 latest_seed_observation: "Cycle 422 read-only XHS boundary through 2026-09-08T03:33:16.091Z."
 </ai_context>
 
@@ -11228,6 +11229,34 @@ or table-to-commit manifest; otherwise prefer a different released primary
 contradiction. RV-004/RV-034 remain high/open, RV-036/RV-038 medium/open, and
 RV-052 high/open and release-blocking. No local-main movement, compaction, or
 cleanup is claimed.
+
+### Cycle 424 checkpoint — heuristic trajectories do not bind paper values
+
+Cycle 424 started from clean exact source
+`81f5d21ec55cf229cd94d4a7d57244a19ddb5b30`. Cycle 422's direct XHS
+observation was about 41 minutes old, so the bounded reconciliation made zero
+XHS requests. Additions/changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable. RV-004 and RV-034 retained their
+protected-outcome and external-runtime boundaries.
+
+The highest accessible primary-artifact gap was whether Cycle 420's five
+missing heuristic cutoff rows were absent of all evidence or merely missing a
+selection binding. The [Cycle 424 heuristic provenance audit](../reports/review/scout-swarmresearch-heuristic-provenance-cycle424-2026-09-08.md)
+finds a trajectory directory for every AHC task, containing 95 scored commit
+subjects and 125 transcript files. Those histories use a 50-case public
+`lite_version=True` evaluator and raw `combined_score`. The paper's AHC values
+come from a distinct three-run `lite_version=False` private-performance
+procedure. Neither the cutoff CSV nor the transcripts retain an AHC cutoff
+commit, cost, or private-performance output.
+
+Confidence is high in the pinned histories, manifests, counts, and
+public/private evaluator distinction. It is low in the historical cutoff
+commits, private-run outputs and variance, and whether an unpublished ledger
+reconciles the paper. The aggregate result remains 9 compatible / 1 conflicting
+/ 5 unbound, now qualified as trajectory-supported rather than wholly absent.
+Next seek an author-retained five-row cutoff/private-result manifest; otherwise
+move to a different released primary contradiction. RV-004/RV-034 remain
+high/open, RV-036/RV-038 medium/open, and RV-052 high/open and release-blocking.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

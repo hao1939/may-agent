@@ -43,6 +43,34 @@ type Fixture = {
     cutoff_commit_session_links: Record<string, string>;
     decision: string;
   };
+  heuristic_provenance: {
+    analysis_kind: string;
+    private_eval_sha256: string;
+    public_evaluator: {
+      lite_version: boolean;
+      case_count: number;
+      logged_value: string;
+    };
+    paper_evaluator: {
+      lite_version: boolean;
+      repeat_count: number;
+      reported_value: string;
+      commit_binding: string;
+    };
+    cutoff_rows: number;
+    transcript_files: number;
+    private_performance_scalar_count: number;
+    rows: Array<{
+      id: string;
+      paper_value: number;
+      log_sha256: string;
+      log_lines: number;
+      scored_commits: number;
+      transcript_files: number;
+      transcript_manifest_sha256: string;
+    }>;
+    decision: string;
+  };
   cutoff_rows: CutoffRow[];
   missing_cutoff_rows: string[];
 };
@@ -164,4 +192,109 @@ test("Third-Autocorrelation token traces do not reconstruct dollar cost", () => 
     f018f27: "present",
   });
   expect(cost.decision).toContain("cannot assign");
+});
+
+test("heuristic trajectories do not bind private paper values to $50 commits", () => {
+  const provenance = fixture.heuristic_provenance;
+  expect(provenance.analysis_kind).toBe("producer-authored post-hoc inventory");
+  expect(provenance.private_eval_sha256).toBe(
+    "5ac56540292621b03c7c4eb87b20c3e34aaae1dbac74b4bf8bf32d92fbc7216c",
+  );
+  expect(provenance.public_evaluator).toEqual({
+    lite_version: true,
+    case_count: 50,
+    logged_value: "combined_score",
+  });
+  expect(provenance.paper_evaluator).toEqual({
+    lite_version: false,
+    repeat_count: 3,
+    reported_value: "avg_private_performance",
+    commit_binding: "absent",
+  });
+  expect(provenance.cutoff_rows).toBe(0);
+  expect(provenance.transcript_files).toBe(125);
+  expect(provenance.private_performance_scalar_count).toBe(0);
+  expect(
+    provenance.rows.map(
+      ({ id, paper_value, log_lines, scored_commits, transcript_files }) => ({
+        id,
+        paper_value,
+        log_lines,
+        scored_commits,
+        transcript_files,
+      }),
+    ),
+  ).toEqual([
+    {
+      id: "ahc008",
+      paper_value: 1304,
+      log_lines: 52,
+      scored_commits: 24,
+      transcript_files: 26,
+    },
+    {
+      id: "ahc015",
+      paper_value: 2543,
+      log_lines: 50,
+      scored_commits: 20,
+      transcript_files: 26,
+    },
+    {
+      id: "ahc016",
+      paper_value: 2138,
+      log_lines: 26,
+      scored_commits: 15,
+      transcript_files: 21,
+    },
+    {
+      id: "ahc025",
+      paper_value: 1470,
+      log_lines: 36,
+      scored_commits: 14,
+      transcript_files: 26,
+    },
+    {
+      id: "ahc026",
+      paper_value: 1992,
+      log_lines: 43,
+      scored_commits: 22,
+      transcript_files: 26,
+    },
+  ]);
+  expect(
+    Object.fromEntries(
+      provenance.rows.map((row) => [
+        row.id,
+        [row.log_sha256, row.transcript_manifest_sha256],
+      ]),
+    ),
+  ).toEqual({
+    ahc008: [
+      "531ed3d0afc618f519d87eee71621ed88e8de888a3f34e9f9cff3feb6f8bc438",
+      "128dd6971dea306b5b10d6da6551b90501f98d63231c89267c8df01e9d01fffa",
+    ],
+    ahc015: [
+      "8fbfd561497abe9645c0d2d105834ec4ce5f4a23ace86618c1902faee525d205",
+      "5636e3498efb0561bfa3b9c4bc27c750ebedb4e171573af4326c470a957b8a3b",
+    ],
+    ahc016: [
+      "1dcc14fb475b85d76337010ac09d0aa20d2e240b22a75c7dea6a60a27e30da62",
+      "dbe3d6e6e61ed0fa9dc090fb71a15a604f4699118c0d82a5aff4968a582c2cda",
+    ],
+    ahc025: [
+      "c632a125c351c6fd86a8459da11a1ebadc9a7be5e9e2e534f22b765c8c57f7d6",
+      "bdb7fa67ceeb2280602c6d8cb6d58b969f45b379ab8ac1d66b8b13da213890ca",
+    ],
+    ahc026: [
+      "64a92418d851b0e856be57f9ecf45a76512e3171dbc46bb3102c778128178148",
+      "17625e530de31a70df25518cac0f0d89a0d18a0d5609dcdc5c831b42718daaf8",
+    ],
+  });
+  expect(
+    provenance.rows.reduce((total, row) => total + row.scored_commits, 0),
+  ).toBe(95);
+  expect(
+    provenance.rows.reduce((total, row) => total + row.transcript_files, 0),
+  ).toBe(provenance.transcript_files);
+  expect(provenance.decision).toContain("do not bind");
 });

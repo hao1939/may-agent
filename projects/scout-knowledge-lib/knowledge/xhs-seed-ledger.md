@@ -32,6 +32,12 @@ request ran. Additions/changes remain unknown, removals remain `[]`, and all
 the latest direct observation; this no-request reconciliation does not infer
 unchanged membership from unavailable evidence, and no account state changed.
 
+Cycle 424 cadence decision at `2026-09-08T04:13:48.485Z`: the same direct
+observation was about 41 minutes old and remained inside the six-hour cadence,
+so no XHS request ran. Additions/changes remain unknown, removals remain `[]`,
+and all 132 durable seeds remain unavailable rather than removed. This is a
+no-request decision, not a new direct observation or collection-equality claim.
+
 ## Compact post-Cycle-76 reconciliations
 
 Rows 206–214 remain an explicit exactness gap. Read-only inspection of their
