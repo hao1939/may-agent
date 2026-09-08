@@ -32,8 +32,6 @@ const result = await Bun.build({
   compile: { outfile },
   define: {
     __MAY_AGENT_BUILD_COMMIT__: JSON.stringify(sourceCommit()),
-    __MAY_AGENT_PACKAGE_NAME__: JSON.stringify(packageIdentity.name),
-    __MAY_AGENT_PACKAGE_VERSION__: JSON.stringify(packageIdentity.version),
   },
 });
 
