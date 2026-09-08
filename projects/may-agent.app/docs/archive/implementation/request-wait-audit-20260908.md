@@ -31,4 +31,8 @@ and preserve request/results and Topic links. Do not reinterpret old requests,
 delete rows, or introduce a migration framework to force this cleanup.
 
 This slice changes documentation only: zero production lines added or deleted.
-Portable compatibility tests will be recorded with the final Host candidate.
+The subsequent direct implementation ran the existing installation tests with
+the paired App checkout: 34 passed and 7 retired-cron checks were explicitly
+skipped. A stale Gym fixture used removed importer APIs; it now bootstraps the
+same resource-backed fixture and retains its admission and emission assertions.
+These checks do not replace the missing installed-state audit.

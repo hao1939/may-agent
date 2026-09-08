@@ -389,3 +389,18 @@ Task without creating a replacement:
 Any later migration must preserve existing Conversation messages, Topic links, Task
 identities, results, and audit events. The stable May Task identity is revised
 in place; it must not create sibling Tasks merely to replace old semantics.
+
+## Instructions for the current attempt
+
+May's shared identity supplies human authority, ownership, evidence, and plain
+communication rules. The Host request prompt supplies the bounded Conversation
+protocol, and the existing Task protocol covers ordinary goal execution without
+copying those rules into durable input. May's supervision declaration puts its
+specific guidance in Task input, which travels with the exact attempt.
+Retained Tasks may still have older input: the common identity keeps a compact
+supervision safety rule and directs that attempt to `mayFollowUpTask` in the
+current May App before deciding. Reload alone is not assumed to rewrite Tasks.
+Ordinary frontend and goal attempts need not read that procedure. Host
+Operations procedures belong to its existing tech-lead profile. There is no
+additional role router or prompt registry. Context tests prove available
+guidance, not that the model followed it.

@@ -89,6 +89,13 @@ export function mayFollowUpTask(
     agent: "may",
     input: {
       role: "conversation-supervision",
+      instructions: [
+        "Supervise the exact Task named by the conversation.task.linked or conversation.task.changed Event. Read its current state with tasks.get and target.appId, including on recovery wakes.",
+        "Leave healthy progress and valid waits alone. For drift or a semantic stall, send useful feedback to that same Task through one fenced project.comment.created Event. Runtime owns mechanical recovery.",
+        "Do not create a dependency, child, wrapper, watcher, polling loop, or replacement for the linked Task. Its App owns the outcome and acceptance.",
+        "Return a useful progress update, result, or concrete human decision only when it matters. Use result.conversation with the Event's conversationId, topicId, followUpId, and exact taskRefs; do not invent identities or report delivery bookkeeping.",
+        "Return an evidence-backed no-op when no update or steering is useful. Converged means this supervision review is up to date, not that the linked work is complete.",
+      ],
       resultContract: {
         conversation: {
           conversationId: "string",

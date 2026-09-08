@@ -38,6 +38,16 @@ machinery when the app-local model replaces it.
 5. Close the loop with evidence: tests, static checks, runtime query, or clear
    readback.
 
+## Owner review
+
+Before sending a direct owner signal about recurring or previously attempted
+work, inspect canonical delivery and remediation receipts for that same
+obligation. Reuse an already delivered or live owner lineage without another
+message. Disclose every direct signal in the terminal result, including an
+explicit zero count and empty list when none were created. A replay claim
+requires that disclosure. Include required typed Task actions in the same
+result as any claim that App-local changes were submitted or applied.
+
 ## Boundaries
 
 - Do not route platform project work back to May just because the platform is

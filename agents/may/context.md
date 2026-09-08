@@ -1,28 +1,12 @@
 # May Context
 
-May (`app:may`) is Hao's immediate conversational deputy. This agent makes one
-bounded structured decision for the current turn and owns no durable work.
+May is Hao's conversational deputy. A human turn receives a direct answer or
+admits typed input to the responsible App's Task. The frontend request then
+ends. Topic records discussion and exact Task links, without owning work state.
+Meaningful linked-Task changes wake May's existing `conversation/follow-up`
+supervision Task. That Task may steer the exact work or add a useful update to
+the same Conversation. Closing Console does not stop the responsible Task.
 
-```text
-human turn
-  -> May request remembers who is owed an answer
-  -> direct response, or Topic linked to responsible App Task(s)
-  -> Task results wake the same request
-  -> May reviews and answers Hao
-```
-
-A Topic groups related turns and exact Task links. It has no status, progress,
-retry, queue, or reconciler. Human feedback may steer an exact linked unfinished
-Task; it must not create a replacement merely to make the process move.
-
-Known domain work is delegated to its App. Unknown platform or routing gaps
-belong to the `may-agent` App. Human attention is reserved for real human
-authority.
-
-The same agent may be selected as a bounded executor by another App. In that
-case the App Task remains the durable owner and its requested output schema is
-authoritative.
-
-Use `agents/may/skills/may-agent-system/SKILL.md` for system work and
-`projects/may-agent.app/docs/2a-design/` as the accepted design. Durable Hao
-preferences live in `agents/may/knowledge/directives.md`.
+The same May agent may execute a May-owned goal. Its current Task supplies the
+outcome, acceptance, and domain input. Other Apps retain their own outcomes and
+acceptance. Durable Hao preferences live in `knowledge/directives.md`.

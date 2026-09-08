@@ -1,7 +1,15 @@
-# Approved September 8 scope
+# Approved September 8 May simplification scope
 
-Canonical authority: goal g_44335c62-fb8a-415d-a53d-eb9909a6b832. The human approved implementation of this section; the source proposal’s earlier approval disclaimer is superseded for this finite source task. Earlier pilot sections are outside this scope.
+Snapshot of the human-approved September 8 current-review section in
+`projects/may-agent.app/docs/proposals/authority-boundary-simplification.md`.
+Earlier pilot sections are outside this implementation scope. Relative links
+in the copied section below use that original document's directory.
 
+The human subsequently stopped supervised goal
+`g_44335c62-fb8a-415d-a53d-eb9909a6b832` and its worker, and asked the original
+assistant to implement directly. The saved goal is audit history, not an active
+execution authority. This snapshot preserves the approved source scope; no
+deployment, PR publication, or model-backed live experiment is authorized.
 
 ### Proposed decision
 

@@ -2,7 +2,7 @@
 
 **Status:** Active convergence tracker
 
-**Last reviewed:** 2026-09-07 (source review; not a deployment audit)
+**Last reviewed:** 2026-09-08 (source review; not a deployment audit)
 
 **Scope:** Keep the complete May Host, Apps, executors, Conversation adapters,
 and documentation aligned with the accepted event-driven Task model.
@@ -418,17 +418,42 @@ Convergence is complete when:
 - a fresh code-and-document audit finds no second work, delivery, routing, or
   persistence authority.
 
-
 ## September 8 focused May simplification
 
 The human approved the focused May scope preserved in
-[implementation evidence](../../../../evidence/approved-scope.md). Earlier
+[implementation evidence](../archive/implementation/focused-may-scope-20260908.md). Earlier
 pilot and deployment choices are not authority for this source task.
+The human stopped its Herdr goal and worker and asked the original assistant
+to implement directly. The paused worker's isolated source checkouts were
+preserved and reviewed before continuation; there is no active delegation.
 
 A: frontend child-request waiting is explicitly deferred. The SDK contract and
 compatibility fixtures remain, and no complete installed-caller/retained-request
-audit is available. See the [consumer audit and drain decision](../../../../evidence/request-wait-audit.md). Ordinary request/result correlation and Task dependencies remain required.
+audit is available. See the [consumer audit and drain decision](../archive/implementation/request-wait-audit-20260908.md).
+Ordinary request/result correlation and Task dependencies remain required.
 
-B and C are independent implementation slices; their verification and remaining
-limits will be recorded here when tested. No model-behavior or rollout claim is
-implied by this source audit.
+B: the source candidate narrows May's shared identity from 146 to 47 lines,
+keeps supervision instructions with its App-supplied Task input, and puts Host
+Operations review procedure in the existing tech-lead profile. The common
+identity preserves authority rules and an explicit fallback for retained
+supervision Tasks whose old input lacks instructions. Ordinary May goals reuse
+the Host Task protocol without copying it into each input. Context documentation
+no longer says destination results wake the completed frontend request.
+
+Verification: 27 focused App and owner-workflow tests pass; May App type checking
+and formatting pass. Paired installation checks pass 34 tests, with 7 explicit
+retired-cron skips. The checks include real prompt assembly and preserve Gym's
+resource-backed admission/emission coverage. Model judgment and live operation
+have not been tested; shorter instructions alone are not proof of better
+behavior. Host `bun run ci` passed 2,493 tests with 3 explicit installation-only
+skips and no failures, including real daemon/socket/browser checks. The paired
+Host commits are `6242bdd742724e0eb4c29388f159970e8cd434a6` (repair the stale Gym
+fixture) and `faff58d3d861e21380fc55a02465903f7323e850` (prompt-assembly checks),
+based on `e1a36126229826a0848ec6687bd07c5c950c75e7`. These Host changes are tests
+only: there is no runtime integration-order dependency for B. Design checks
+reported no errors and three local scratch-directory warnings. All verification
+used isolated checkouts; nothing was published, deployed, or restarted.
+
+C: HTTP/Evaluation policy and feedback ownership is still pending as a separate
+coordinated change. No partial migration, live state change, or rollout is
+included in the instruction cleanup.
