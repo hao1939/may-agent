@@ -104,6 +104,8 @@ export function sendSocketCommand(
     }, timeoutMs);
 
     let buffer = "";
+    // A socket chunk can end inside a UTF-8 character. Decode at stream scope.
+    client.setEncoding("utf8");
 
     client.on("connect", () => {
       try {
@@ -118,7 +120,7 @@ export function sendSocketCommand(
 
     client.on("data", (data) => {
       if (!sent) return;
-      buffer += data.toString();
+      buffer += data;
       const lines = buffer.split("\n");
       for (let i = 0; i < lines.length - 1; i++) {
         const trimmed = lines[i].trim();
@@ -231,11 +233,12 @@ export function waitForSocketEvent(
 
     let subscribed = false;
     let buffer = "";
+    client.setEncoding("utf8");
     client.on("connect", () => {
       client.write(JSON.stringify({ type: "subscribe", sessions }) + "\n");
     });
     client.on("data", (data) => {
-      buffer += data.toString();
+      buffer += data;
       const lines = buffer.split("\n");
       buffer = lines.pop()!;
       for (const line of lines) {

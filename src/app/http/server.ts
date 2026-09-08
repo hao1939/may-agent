@@ -3696,10 +3696,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return;
     }
     const unix = connectSocketEndpoint(socketPath);
+    unix.setEncoding("utf8");
     wsToUnix.set(ws, unix);
     let buffer = "";
-    unix.on("data", (chunk: Buffer) => {
-      buffer += chunk.toString();
+    unix.on("data", (chunk: string) => {
+      buffer += chunk;
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
       for (const line of lines) {
