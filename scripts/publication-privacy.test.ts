@@ -49,4 +49,19 @@ describe("publication privacy", () => {
     expect(read(".gitleaks.toml")).toContain('condition = "AND"');
     expect(read(".gitleaks.toml")).toContain('regexTarget = "secret"');
   });
+
+  for (const file of [".github/workflows/ci.yml", ".github/workflows/release-image.yml"]) {
+    it(`keeps raw webhook metadata out of Docker publications in ${file}`, () => {
+      const workflow = read(file);
+      expect(workflow.match(/uses: docker\/build-push-action@/g)).toHaveLength(1);
+      const action = workflow.indexOf("uses: docker/build-push-action@");
+      const start = workflow.lastIndexOf("\n      -", action);
+      const end = workflow.indexOf("\n      -", action);
+      const step = workflow.slice(start, end === -1 ? undefined : end);
+      expect(step).toContain("BUILDX_METADATA_PROVENANCE: disabled");
+      expect(step).toContain('DOCKER_BUILD_SUMMARY: "false"');
+      expect(step).toContain('DOCKER_BUILD_RECORD_UPLOAD: "false"');
+      expect(step).toContain("provenance: false");
+    });
+  }
 });
