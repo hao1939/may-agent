@@ -8,10 +8,9 @@ import { closeDb, getDb } from "../../src/lib/requests.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
 import { createAppTaskEmitter } from "../../src/app/app-task-emitter.js";
-import { renewAppTaskAttemptLease, type AppTaskClaim } from "../../src/app/app-task-reconciler.js";
+import { appTaskContext, renewAppTaskAttemptLease, type AppTaskClaim } from "../../src/app/app-task-reconciler.js";
 import { EventBus } from "../../src/app/event-bus.js";
-import type { TaskStateConfig, TaskTree } from "../../src/app/app-task-store.js";
-import { projectRuntimePaths } from "../../src/app/app-task-runtime-state.js";
+import type { TaskTree } from "../../src/app/app-task-store.js";
 
 const gymUrl = (path: string) => pathToFileURL(join(APP_ROOT, "projects/gym.app", path)).href;
 const { taskForGymInput } = await import(gymUrl("app.ts"));
@@ -102,8 +101,8 @@ function supportedGymAdmissionHarness() {
   };
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "gym");
-  store.importPausedSnapshot(tree, "gym-scope-golden-revision", [intent.id]);
-  store.activate("gym-scope-golden-revision");
+  store.bootstrapSnapshot(tree, "gym-scope-golden-revision", [intent.id]);
+  store.setProjectLifecycle("active");
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
@@ -156,17 +155,13 @@ describe("installed Gym admission contract", () => {
     const appDir = join(root, "projects", "gym-scope-fence-test.app");
     const projectDir = join(root, "projects", "gym");
     mkdirSync(appDir, { recursive: true });
-    const paths = projectRuntimePaths(appDir, join(root, "projects"));
-    const config: TaskStateConfig = {
+    const config = appTaskContext({
       appDir,
-      stateAppDir: paths.stateAppDir,
       projectDir,
-      statePath: paths.taskStatePath,
-      journalPath: paths.journalPath,
-      worker: "gym",
+      agent: "gym",
       maxConcurrent: 2,
       resourceStore: store,
-    };
+    });
     expect(renewAppTaskAttemptLease(config, claim)).toBe(true);
 
     const emitter = createAppTaskEmitter({ bus, appId: "gym", claim });
