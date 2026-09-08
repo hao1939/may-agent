@@ -1,8 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const ENTRYPOINT = resolve(import.meta.dir, "may.ts");
 const PACKAGE_IDENTITY = JSON.parse(readFileSync(resolve(import.meta.dir, "../../package.json"), "utf8")) as {
@@ -57,14 +60,24 @@ describe("may CLI help", () => {
     }
   });
 
-  it("embeds package identity in the compiled binary", () => {
+  it.each(["release", "standalone"])("embeds package identity in the %s binary", async (mode) => {
     const root = mkdtempSync(join(tmpdir(), "may-version-bundle-"));
     const binary = join(root, "may-agent");
     const buildCommit = "a".repeat(40);
     try {
-      const build = spawnSync(
+      await execFileAsync(
         process.execPath,
-        [resolve(import.meta.dir, "../../scripts/build-runtime-binary.ts"), "--outfile", binary],
+        mode === "release"
+          ? [resolve(import.meta.dir, "../../scripts/build-runtime-binary.ts"), "--outfile", binary]
+          : [
+              "build",
+              "--compile",
+              "src/app/binary-entry.ts",
+              "--outfile",
+              binary,
+              "--define",
+              `__MAY_AGENT_BUILD_COMMIT__=${JSON.stringify(buildCommit)}`,
+            ],
         {
           cwd: resolve(import.meta.dir, "../.."),
           env: { ...process.env, MAY_AGENT_BUILD_COMMIT: buildCommit },
@@ -72,28 +85,24 @@ describe("may CLI help", () => {
           timeout: 30_000,
         },
       );
-      expect(build.error).toBeUndefined();
-      expect(build.status).toBe(0);
-
-      const result = spawnSync(binary, ["--version"], {
+      // A standalone binary must not read a manifest from its launch directory.
+      writeFileSync(join(root, "package.json"), JSON.stringify({ name: "unrelated-app", version: "99.0.0" }));
+      const result = await execFileAsync(binary, ["--version"], {
         cwd: root,
         env: { ...process.env, STATE_DIR: join(root, "state") },
         encoding: "utf8",
         timeout: 10_000,
       });
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
       expect(result.stdout).toBe(`${PACKAGE_IDENTITY.name} v${PACKAGE_IDENTITY.version} (aaaaaaaa)\n`);
 
-      const help = spawnSync(binary, ["--help"], {
+      const help = await execFileAsync(binary, ["--help"], {
         cwd: root,
         env: { ...process.env, STATE_DIR: join(root, "state") },
         encoding: "utf8",
         timeout: 10_000,
       });
-      expect(help.error).toBeUndefined();
-      expect(help.status).toBe(0);
       expect(help.stdout).toContain("Usage: may-agent [options]");
+      expect(existsSync(join(root, "state"))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

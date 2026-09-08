@@ -7,6 +7,7 @@
 import "./sdk-resolver-plugin.js";
 
 import { execSync } from "node:child_process";
+import packageIdentity from "../../package.json" with { type: "json" };
 import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
 import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
@@ -20,15 +21,10 @@ import { parseTaskAttemptProcessRequest, runTaskAttemptWorker, runTaskRecoveryWo
 import { runTaskAdmissionWorker } from "./task-admission-process.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
-declare const __MAY_AGENT_PACKAGE_NAME__: string | undefined;
-declare const __MAY_AGENT_PACKAGE_VERSION__: string | undefined;
 
-// Compiled artifacts receive these values from build-runtime-binary.ts. Keep
-// literal fallbacks so the source entrypoint and even an ad-hoc standalone
-// compile remain self-contained; may-help.test.ts checks them against the
-// package manifest.
-const PACKAGE_NAME = typeof __MAY_AGENT_PACKAGE_NAME__ === "string" ? __MAY_AGENT_PACKAGE_NAME__ : "may-agent";
-const PACKAGE_VERSION = typeof __MAY_AGENT_PACKAGE_VERSION__ === "string" ? __MAY_AGENT_PACKAGE_VERSION__ : "0.1.0";
+// The manifest owns package identity. Bun embeds this static import in compiled
+// binaries, so source runs and standalone builds follow release version bumps.
+const { name: PACKAGE_NAME, version: PACKAGE_VERSION } = packageIdentity;
 
 // Keep informational CLI modes and their syntax validation ahead of runtime-root
 // resolution, identity creation, and app startup. Runtime startup performs stale
