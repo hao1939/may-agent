@@ -4652,20 +4652,59 @@ wait is retired. Ranked work remains `RV-004` first but inaccessible at the
 missing retained-outcome join, then `RV-034` at the external runtime boundary
 and the unreleased Memory in the Loop result.
 
+## Producer integration refresh through Cycle 424
+
+Read-only reconciliation at `2026-09-08T12:26:06+08:00` finds exact reviewer
+result `27c72864189c3fb95fe31f5fd878826b2881b203` still retained on
+`codex/g-8c5b597e-cycle421-review`. Its literal parent is accepted source
+`6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a`, and its stable patch ID is
+`ae0e08de47fbb538c0c918d751622e0667cb3b99`. It is contained exactly, not
+merely patch-equivalently, in the current producer line:
+
+`6af4d3da01` → `27c7286418` → `fcd91b1725` → `1156e7e4c1` →
+`81f5d21ec5` → `d607267da9`.
+
+Producer ledger `fcd91b1725c6cedb350b3a7ff398f0a91622c085` remains the
+direct-child disposition that records literal integration and rollback. Cycle
+422 result `1156e7e4c115e47fceba63cdf9f9fb79dd6b5a65`, Cycle 423 result
+`81f5d21ec55cf229cd94d4a7d57244a19ddb5b30`, and Cycle 424 result
+`d607267da97b0286b1b6be56a39f1ad5ca58db84` are later producer descendants;
+this refresh does not call them independently reviewed.
+
+Exact Cycle 424 validation passes 318 tests / 1,595 assertions, 119 scoped
+links, navigation 11/14, 8/8, and 14/14, 1,553 tracked Markdown documents /
+1,800 broad links, and read-only health 26 facts / 16 wakes with truncation.
+The producer branch is clean at that observation. Reviewer pane `w1:p6G`
+reports lifecycle state `done`, and its branch still ends at `27c7286418`; no
+later accept-or-revise result exists.
+
+The fresh live preservation gate keeps `/app` at
+`6237bd7e608de98bb60e27a94ea19b52bf52c838` with a clean index and exact
+status fingerprints 76 / `7f5d6f5252cd84bf48a9d531cfe4567fe20b50a1a75073d2d6f92d2805f2ca6d`,
+4,393 / `71cd339bb834cb47f35813e639e81e961a4c7e1637f01e1da4ac9b0bf4d38549`,
+and Scout-only 23 /
+`b9d6fb9c05a1b4c68e6348237512084d212d17c4fd7821b9838f374eca7a12c5`.
+The retained package and INDEX bytes remain
+`d15c253f6fd4fd5dd7516e8b184bcbfd14d6b999ade0a2ff11d55d77b82b2ded`
+and `487a560c2b60d69f6bae27b55c0a15b352ae1a60e8b7f25599940e2e9decf2f2`.
+RV-052 therefore remains high/open and release-blocking: this proof preserves
+the live checkout but does not make the older candidate current for Cycle 424
+or authorize local-main landing, cleanup, or compaction. Roll back only this
+producer refresh with one ordinary revert of its standing commit; it does not
+roll back reviewer result `27c7286418` or producer research.
+
 ## Next trigger
 
-Wait directly on producer pane `w1:p6C` and peer goal
-`g_c1b31972-1674-47cb-96d8-c797d768010d` for independent review of the exact
-Cycle 422 producer checkpoint carrying the literal `27c7286418` integration,
-fresh `6237bd7e60` → `876222a5ec` RV-052 candidate, and isolated exact
-transition/rollback; a later immediate live admission/postflight gate if that
-candidate is accepted; the next genuinely material checkpoint beyond the
-reviewed Cycle 422 result; evidence that individually binds the 48 timestamp roles or supplies protected
-retrieval/later-decision value for RV-036; evidence changing RV-004 or RV-034;
-a canonical/local-main landing or cleanup claim; or a concrete regression in
-the reviewed claims. If no material trigger arrives, the next periodic audit
-is no earlier than `2026-09-09T05:38:13+08:00`. Do not poll unchanged state.
-This standing reviewer goal remains active.
+The exact pending independent-review trigger is clean producer Cycle 424 tip
+`d607267da97b0286b1b6be56a39f1ad5ca58db84`, including literal reviewer
+integration through `fcd91b1725`, Cycle 422's isolated RV-052 result, and the
+Cycle 423-424 SwarmResearch qualifications. A later trigger may be evidence
+that changes RV-052, RV-004, RV-034, RV-036, or RV-038; a separately reviewed
+current release candidate; a local-main landing or cleanup claim; or a concrete
+regression. The reviewer lifecycle is currently `done`, not durably waiting,
+so this ledger does not claim an active wait or an acceptance that does not
+exist. Do not poll unchanged state or start another research batch before this
+reconciliation checkpoint is validated and reported.
 
 ## Supervision
 
