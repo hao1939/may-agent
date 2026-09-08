@@ -1,5 +1,6 @@
 {
   "name": "may-agent",
+  "private": true,
   "version": "0.1.0",
   "description": "May Host: bounded agent and workflow execution, durable tasks, and runtime control surfaces",
   "type": "module",

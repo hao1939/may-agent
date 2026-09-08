@@ -45,10 +45,10 @@ describe("agentWorkflowDirForApp", () => {
   it("handles owner/project id format", () => {
     const root = tempRoot();
     try {
-      const expected = join(root, "aks-rp-e2e.app", "agents", "aks-explorer", "workflows");
+      const expected = join(root, "alpha-project.app", "agents", "aks-explorer", "workflows");
       mkdirSync(expected, { recursive: true });
 
-      expect(agentWorkflowDirForApp(root, "aks-rp-e2e", "aks-explorer")).toBe(expected);
+      expect(agentWorkflowDirForApp(root, "alpha-project", "aks-explorer")).toBe(expected);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -57,12 +57,12 @@ describe("agentWorkflowDirForApp", () => {
   it("resolves a conventional directory by agent.json identity", () => {
     const root = tempRoot();
     try {
-      const agentDir = join(root, "aks-rp-e2e.app", "agents", "owner");
+      const agentDir = join(root, "alpha-project.app", "agents", "owner");
       const expected = join(agentDir, "workflows");
       mkdirSync(expected, { recursive: true });
       writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "aks-explorer" }));
 
-      expect(agentWorkflowDirForApp(root, "aks-rp-e2e", "aks-explorer")).toBe(expected);
+      expect(agentWorkflowDirForApp(root, "alpha-project", "aks-explorer")).toBe(expected);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -35,14 +35,14 @@ describe("project-local agent discovery", () => {
   it("discovers canonical App-local agents under sibling .app projects", () => {
     const root = tempRoot();
     try {
-      const domainProject = join(root, "aks-rp-e2e");
-      const appProject = join(root, "aks-rp-e2e.app");
+      const domainProject = join(root, "alpha-project");
+      const appProject = join(root, "alpha-project.app");
       const agentDir = join(appProject, "agents", "aks-explorer");
       mkdirSync(domainProject, { recursive: true });
       mkdirSync(agentDir, { recursive: true });
       writeFileSync(join(domainProject, "README.md"), "# AKS RP E2E\n");
       writeFileSync(join(appProject, "app.ts"), "export default {};\n");
-      writeFileSync(join(appProject, "project.md"), "# aks-rp-e2e app\n");
+      writeFileSync(join(appProject, "project.md"), "# alpha-project app\n");
       writeFileSync(
         join(agentDir, "agent.json"),
         JSON.stringify({
@@ -54,9 +54,9 @@ describe("project-local agent discovery", () => {
 
       const agents = listProjectAgentDirectories(root);
       expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);
-      expect(agents[0]?.projectId).toBe("aks-rp-e2e");
+      expect(agents[0]?.projectId).toBe("alpha-project");
       expect(agentProjectRoot(agents[0], "fallback")).toBe(domainProject);
-      expect(agentRelativeDir(agents[0])).toBe("projects/aks-rp-e2e.app/agents/aks-explorer");
+      expect(agentRelativeDir(agents[0])).toBe("projects/alpha-project.app/agents/aks-explorer");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

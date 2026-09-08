@@ -450,7 +450,7 @@ describe("App Task agent prompt context", () => {
           kind: Type.Literal("specialized-operation"),
           data: Type.Object({
             outcome: Type.String(),
-            context: Type.Object({ callerApp: Type.Literal("aks-rp-e2e"), callerTask: Type.String() }),
+            context: Type.Object({ callerApp: Type.Literal("alpha-project"), callerTask: Type.String() }),
           }),
         }),
       ]),
@@ -495,7 +495,7 @@ describe("App Task agent prompt context", () => {
           "context.callerTask": "string",
           outcome: "string",
         },
-        fixedData: { "context.callerApp": "aks-rp-e2e" },
+        fixedData: { "context.callerApp": "alpha-project" },
       },
     ]);
   });

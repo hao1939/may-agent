@@ -646,7 +646,7 @@ describe("workflow tool: run", () => {
       manager,
       workflowDir,
       agentName: "aks-explorer",
-      projectId: "aks-rp-e2e",
+      projectId: "alpha-project",
       taskBinding: {
         taskId: "vm-pipeline-rest-plan",
         generation: 1,
@@ -673,14 +673,14 @@ describe("workflow tool: run", () => {
       action: "run",
       name: "task-blocked",
       task: [
-        "app: /app/projects/aks-rp-e2e.app",
-        "project: /app/projects/aks-rp-e2e",
+        "app: /app/projects/alpha-project.app",
+        "project: /app/projects/alpha-project",
         "",
         "## Trigger Event",
         "```json",
         JSON.stringify({
           type: "project.task.reconcile.started",
-          project: "aks-rp-e2e",
+          project: "alpha-project",
           data: {
             taskId: "vm-pipeline-rest-plan",
             attemptId: "a_vm_pipeline_rest_plan_1",
@@ -700,7 +700,7 @@ describe("workflow tool: run", () => {
       expect.objectContaining({
         type: "workflow.blocked",
         data: expect.objectContaining({
-          projectId: "aks-rp-e2e",
+          projectId: "alpha-project",
           reason: "worker preflight failed",
           context: { detail: "missing token" },
         }),

@@ -177,7 +177,7 @@ describe("Cron event triggers", () => {
         type: "project.owner.requested",
         source: "agent:aks-explorer",
         owner: "agent:aks-explorer",
-        data: { project: "aks-rp-e2e" },
+        data: { project: "alpha-project" },
       } as any);
       await nextTick();
       expect(handler).not.toHaveBeenCalled();

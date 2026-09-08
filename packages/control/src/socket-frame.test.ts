@@ -18,7 +18,7 @@ describe("socket frame normalization", () => {
   it("keeps explicit App admission on the control plane", () => {
     const frame = {
       type: "app.input.admit",
-      appId: "aks-rp-e2e",
+      appId: "alpha-project",
       input: { kind: "message", data: { message: "review" } },
       source: { kind: "human", id: "web-ui:1" },
       idempotencyKey: "web-ui:1",

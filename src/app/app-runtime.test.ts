@@ -83,11 +83,11 @@ describe("app runtime startup order", () => {
 
 describe("App input control admission", () => {
   const command = {
-    appId: "aks-rp-e2e",
+    appId: "alpha-project",
     targetTaskId: "normalization/current",
     input: { kind: "message", data: { message: "review" } },
     source: { kind: "human", id: "web-ui:project-comment-17" },
-    conversationId: "web-ui:project:aks-rp-e2e",
+    conversationId: "web-ui:project:alpha-project",
     channel: "web-ui",
     idempotencyKey: "project-comment-17",
   };
@@ -112,7 +112,7 @@ describe("App input control admission", () => {
       {
         event: {
           type: "app.input.requested",
-          target: { appId: "aks-rp-e2e" },
+          target: { appId: "alpha-project" },
           idempotencyKey: "project-comment-17",
           data: {
             targetTaskId: "normalization/current",
@@ -133,7 +133,7 @@ describe("App input control admission", () => {
     const admit = createAppInputAdmission({
       events: {
         publish: (() => {
-          throw new Error("App aks-rp-e2e does not accept this input");
+          throw new Error("App alpha-project does not accept this input");
         }) as never,
       },
     });

@@ -26,7 +26,6 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - /app:/app
-      - /app/sources/aks-rp:/app/sources/aks-rp:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
@@ -35,6 +34,3 @@ services:
       # make progress across several independent task controllers.
       - MAY_HOST_MAX_CONCURRENT=${MAY_HOST_MAX_CONCURRENT:-8}
       - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
-      - GIT_CONFIG_COUNT=1
-      - GIT_CONFIG_KEY_0=safe.directory
-      - GIT_CONFIG_VALUE_0=/app/sources/aks-rp

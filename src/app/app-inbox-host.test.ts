@@ -1246,7 +1246,7 @@ describe("App inbox host", () => {
     const reads: string[] = [];
     const host = new AppInboxHost({
       db,
-      apps: [constantTaskApp("evaluation"), constantTaskApp("aks-rp-e2e")],
+      apps: [constantTaskApp("evaluation"), constantTaskApp("alpha-project")],
       attachTask: async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
       }),
@@ -1262,10 +1262,10 @@ describe("App inbox host", () => {
     });
     admit(host, "evaluation-1", "evaluation");
     admit(host, "evaluation-2", "evaluation");
-    admit(host, "aks-1", "aks-rp-e2e");
+    admit(host, "aks-1", "alpha-project");
     await host.reconcileOnce("evaluation");
     await host.reconcileOnce("evaluation");
-    await host.reconcileOnce("aks-rp-e2e");
+    await host.reconcileOnce("alpha-project");
 
     expect(await host.recoverTaskDependencies()).toEqual({
       linked: 0,
@@ -1273,7 +1273,7 @@ describe("App inbox host", () => {
       wokenAppIds: ["evaluation"],
       errors: [],
     });
-    expect(reads).toEqual(["aks-rp-e2e/runtime/owner-review", "evaluation/runtime/owner-review"]);
+    expect(reads).toEqual(["alpha-project/runtime/owner-review", "evaluation/runtime/owner-review"]);
     expect(host.get("evaluation-1")?.availableAt).toBeDefined();
     expect(host.get("evaluation-2")?.availableAt).toBeDefined();
     expect(host.get("aks-1")?.availableAt).toBeUndefined();

@@ -335,14 +335,14 @@ describe("control socket protocol", () => {
     const core = createCore({
       admitAppInput: (input) => {
         expect(input).toEqual({
-          appId: "aks-rp-e2e",
+          appId: "alpha-project",
           targetTaskId: "normalization/current",
           input: {
             kind: "message",
             data: { message: "Review the current normalization gap." },
           },
           source: { kind: "human", id: "web-ui:project-comment-17" },
-          conversationId: "web-ui:project:aks-rp-e2e",
+          conversationId: "web-ui:project:alpha-project",
           channel: "web-ui",
           idempotencyKey: "project-comment-17",
         });
@@ -353,21 +353,21 @@ describe("control socket protocol", () => {
     await expect(
       sendSocketCommand(core.endpoint, {
         type: "app.input.admit",
-        appId: "aks-rp-e2e",
+        appId: "alpha-project",
         targetTaskId: "normalization/current",
         input: {
           kind: "message",
           data: { message: "Review the current normalization gap." },
         },
         source: { kind: "human", id: "web-ui:project-comment-17" },
-        conversationId: "web-ui:project:aks-rp-e2e",
+        conversationId: "web-ui:project:alpha-project",
         channel: "web-ui",
         idempotencyKey: "project-comment-17",
       }),
     ).resolves.toMatchObject({
       type: "ok",
       command: "app.input.admit",
-      appId: "aks-rp-e2e",
+      appId: "alpha-project",
       eventId: 72,
       eventType: "app.input.requested",
     });
@@ -634,13 +634,13 @@ describe("control socket protocol", () => {
   it("resolves an installed App Task without emitting an event", async () => {
     const observation = {
       snapshot: { id: "boot-1:3", generation: 3 },
-      appId: "aks-rp-e2e",
+      appId: "alpha-project",
       intent: { id: "master-validation-compact", input: { fields: ["one", "two"] } },
     };
     const core = createCore({
       resolveAppTask: (appId, event) => {
         expect({ appId, event }).toEqual({
-          appId: "aks-rp-e2e",
+          appId: "alpha-project",
           event: {
             type: "project.task.tick",
             action: "master-validation-compact",
@@ -654,7 +654,7 @@ describe("control socket protocol", () => {
     await expect(
       sendSocketCommand(core.endpoint, {
         type: "app.task.resolve",
-        appId: "aks-rp-e2e",
+        appId: "alpha-project",
         event: {
           type: "project.task.tick",
           action: "master-validation-compact",

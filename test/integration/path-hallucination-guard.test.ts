@@ -38,7 +38,7 @@ describe("path-hallucination-guard", () => {
 
   describe("non-bash tools — should pass through", () => {
     test("read() is not intercepted", async () => {
-      const result = await guard(readCtx("/home/hao/file.ts"));
+      const result = await guard(readCtx("/home/example-user/file.ts"));
       expect(result).toBeUndefined();
     });
 
@@ -91,12 +91,12 @@ describe("path-hallucination-guard", () => {
   });
 
   describe("hallucinated /home/ paths — should signal", () => {
-    test("cd /home/hao/may-agent", async () => {
-      const result = await guard(bashCtx("cd /home/hao/may-agent && git status"));
+    test("cd /home/example-user/may-agent", async () => {
+      const result = await guard(bashCtx("cd /home/example-user/may-agent && git status"));
       expect(result).toBeDefined();
       expect(result!.block).toBe(false);
       expect(result!.reason).toContain("PATH_HALLUCINATION");
-      expect(result!.reason).toContain("/home/hao/may-agent");
+      expect(result!.reason).toContain("/home/example-user/may-agent");
     });
 
     test("cat /home/user/file.ts", async () => {
@@ -120,11 +120,11 @@ describe("path-hallucination-guard", () => {
   });
 
   describe("hallucinated /Users/ paths — should signal", () => {
-    test("cd /Users/hao/c0", async () => {
-      const result = await guard(bashCtx("cd /Users/hao/c0 && ls"));
+    test("cd /Users/example-user/c0", async () => {
+      const result = await guard(bashCtx("cd /Users/example-user/c0 && ls"));
       expect(result).toBeDefined();
       expect(result!.block).toBe(false);
-      expect(result!.reason).toContain("/Users/hao/c0");
+      expect(result!.reason).toContain("/Users/example-user/c0");
     });
 
     test("cat /Users/dev/project/file.ts", async () => {
@@ -247,7 +247,7 @@ describe("path-hallucination-guard", () => {
 
   describe("error message quality", () => {
     test("mentions /app as the correct path", async () => {
-      const result = await guard(bashCtx("cd /home/hao/project"));
+      const result = await guard(bashCtx("cd /home/example-user/project"));
       expect(result).toBeDefined();
       expect(result!.reason).toContain("/app");
       expect(result!.reason).toContain("project root is /app");
@@ -284,7 +284,7 @@ describe("path-hallucination-guard", () => {
     test("multi-line command with hallucinated path", async () => {
       const cmd = `cd /app
 ls -la
-cd /home/hao/project
+cd /home/example-user/project
 git status`;
       const result = await guard(bashCtx(cmd));
       expect(result).toBeDefined();

@@ -3,6 +3,17 @@ dist/
 .state/
 .claude/
 .env
+.env.*
+!.env.example
+!.env.*.example
+.codex/
+.pi/
+.ssh/
+.azure/
+.aws/
+.git-credentials
+.netrc
+container/compose.local.yml
 bundle/
 workspace/
 results/

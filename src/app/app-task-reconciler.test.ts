@@ -6631,9 +6631,9 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     const approvalId =
-      "aks-rp-e2e:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+      "alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
     const waitId =
-      "wait:aks-rp-e2e:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+      "wait:alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
     const pathId = "ops/request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730";
 
     deferAppTask(config, claim, {
@@ -6643,7 +6643,7 @@ describe("App task reconciler state", () => {
         {
           id: waitId,
           type: "project.approval.submitted",
-          subject: "project:aks-rp-e2e",
+          subject: "project:alpha-project",
           expected: {
             approvalKind: "approval-packet-dispatch",
             approvalId,
@@ -6660,12 +6660,12 @@ describe("App task reconciler state", () => {
     expect(
       trackAppTaskConditionEvent(config, {
         type: "project.approval.submitted",
-        project: "aks-rp-e2e",
+        project: "alpha-project",
         approvalKind: "approval-packet-dispatch",
         approvalId:
-          "aks-rp-e2e:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
+          "alpha-project:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
         waitId:
-          "wait:aks-rp-e2e:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
+          "wait:alpha-project:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
         pathId: "node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730",
         decision: "approve",
       }),
@@ -6686,9 +6686,9 @@ describe("App task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     const approvalId =
-      "aks-rp-e2e:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+      "alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
     const waitId =
-      "wait:aks-rp-e2e:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+      "wait:alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
     const pathId = "ops/request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730";
 
     deferAppTask(config, claim, {
@@ -6698,7 +6698,7 @@ describe("App task reconciler state", () => {
         {
           id: waitId,
           type: "project.approval.submitted",
-          subject: "project:aks-rp-e2e",
+          subject: "project:alpha-project",
           expected: {
             approvalKind: "approval-packet-dispatch",
             approvalId,
@@ -6715,7 +6715,7 @@ describe("App task reconciler state", () => {
     expect(
       trackAppTaskConditionEvent(config, {
         type: "project.approval.submitted",
-        project: "aks-rp-e2e",
+        project: "alpha-project",
         approvalKind: "approval-packet-dispatch",
         approvalId,
         waitId,
@@ -6794,7 +6794,7 @@ describe("App task reconciler state", () => {
         {
           id: "owner-decision",
           type: "project.owner-decision.recorded",
-          subject: "project:aks-rp-e2e",
+          subject: "project:alpha-project",
           expected: {
             taskId: "pipeline-monitor",
             sourceBranch: "codex/source",
@@ -6807,7 +6807,7 @@ describe("App task reconciler state", () => {
     expect(
       trackAppTaskConditionEvent(config, {
         type: "project.owner-decision.recorded",
-        project: "aks-rp-e2e",
+        project: "alpha-project",
         taskId: "pipeline-monitor",
         sourceBranch: "codex/source",
         decision: "approve-fresh-current-lineage-app-routing-successor",

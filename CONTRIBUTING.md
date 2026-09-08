@@ -105,3 +105,25 @@ owner decision; never change visibility or billing to bypass that boundary.
 Deployment remains separate: use the existing Host Operations App task and
 documented deployment procedure. Never use the local production Compose file
 as a CI sandbox.
+
+## Publication privacy
+
+Publish portable source and synthetic examples, not installation details.
+Keep personal home paths, login names, server addresses, private repository
+URLs, local agent configuration, transcripts and operational data out of
+commits, PR descriptions, screenshots, logs and uploaded artifacts. Use
+example users/projects and reserved example domains/IP addresses in fixtures.
+
+Keep local credentials in ignored environment/configuration files. Add private
+mounts and installation-specific Git settings in the ignored
+`container/compose.local.yml`, supplied explicitly with Compose's `-f` option
+alongside `container/compose.yml`. Never copy that override into an image.
+The image already supplies Node and the supported coding CLIs.
+
+Use a GitHub noreply commit address if your personal email should stay private.
+CI scans the checked-out files for secrets before installing dependencies;
+exceptions must match a specific synthetic fixture, never an entire test tree.
+An ignore rule does not unpublish an already tracked file. If sensitive data
+was published, stop copying it into reports and coordinate cleanup of Git
+history, PR text and retained artifacts. After a privacy history rewrite,
+reclone; do not merge or push the old history back into the cleaned repository.

@@ -96,7 +96,7 @@ describe("HTTP event ingress acknowledgement recovery", () => {
 
     const result = await sendDaemonFrameWithRetry(
       "/tmp/may.sock",
-      { type: "aks.finite-holder-migration.requested", data: { project: "aks-rp-e2e" } },
+      { type: "aks.finite-holder-migration.requested", data: { project: "alpha-project" } },
       send,
       (idempotencyKey) => {
         keys.push(idempotencyKey);
@@ -112,8 +112,8 @@ describe("HTTP event ingress acknowledgement recovery", () => {
 
 describe("HTTP project comment App ingress", () => {
   const command = buildAppAdmissionCommand({
-    projectPath: "projects/aks-rp-e2e.app",
-    projectId: "aks-rp-e2e",
+    projectPath: "projects/alpha-project.app",
+    projectId: "alpha-project",
     comment: "Review the current normalization gap.",
     idempotencyKey: "project-comment-17",
   });
@@ -121,20 +121,20 @@ describe("HTTP project comment App ingress", () => {
   it("addresses Web UI project comments through explicit App admission", () => {
     expect(command).toEqual({
       type: "app.input.admit",
-      appId: "aks-rp-e2e",
+      appId: "alpha-project",
       input: {
         kind: "message",
         data: {
           message: "Review the current normalization gap.",
           context: {
             intent: "project-comment",
-            projectId: "aks-rp-e2e",
-            projectPath: "projects/aks-rp-e2e.app",
+            projectId: "alpha-project",
+            projectPath: "projects/alpha-project.app",
           },
         },
       },
       source: { kind: "human", id: "web-ui:project-comment-17" },
-      conversationId: "web-ui:project:aks-rp-e2e",
+      conversationId: "web-ui:project:alpha-project",
       channel: "web-ui",
       idempotencyKey: "project-comment-17",
     });

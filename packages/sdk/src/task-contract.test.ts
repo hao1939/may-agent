@@ -250,7 +250,7 @@ describe("project task handler contract", () => {
           {
             kind: "create-task",
             id: "work/follow-up",
-            parentId: "aks-rp-e2e",
+            parentId: "alpha-project",
             outcome: "Finish the bounded follow-up.",
             acceptance: ["The follow-up has exact evidence."],
           },
@@ -258,7 +258,7 @@ describe("project task handler contract", () => {
       },
       {
         ...workflowOptions,
-        rootParentAliases: ["aks-rp-e2e"],
+        rootParentAliases: ["alpha-project"],
       },
     );
 

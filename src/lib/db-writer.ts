@@ -50,7 +50,7 @@ const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 export const EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS = 30_000;
 // Task assignment pairs use a longer TTL because project tasks legitimately
 // take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
-// batches (e.g. 150 aks-rp-e2e tasks) to orphan simultaneously and breach
+// batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
 // the event.pair-orphan-count threshold.
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {

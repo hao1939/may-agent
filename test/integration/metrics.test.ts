@@ -245,10 +245,10 @@ describe("MetricService", () => {
     const { db, service, emitted } = harness();
 
     service.define({
-      id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      id: "alpha-project.process.blocked.overdue-unworked-count",
       name: "Canonical overdue blocked waits",
       owner: "app-ops",
-      project: "aks-rp-e2e",
+      project: "alpha-project",
       type: "gauge",
       target: 0,
       threshold: 0,
@@ -258,10 +258,10 @@ describe("MetricService", () => {
       config: { alert: { mode: "consecutive_failures", count: 1 } },
     });
     service.define({
-      id: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      id: "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
       name: "Compatibility alias overdue blocked waits",
       owner: "app-ops",
-      project: "aks-rp-e2e",
+      project: "alpha-project",
       type: "gauge",
       target: 0,
       threshold: 0,
@@ -276,28 +276,28 @@ describe("MetricService", () => {
       },
     });
 
-    service.record("aks-rp-e2e.process.blocked.overdue-unworked-count", 2, {
+    service.record("alpha-project.process.blocked.overdue-unworked-count", 2, {
       measuredAt: 1_000,
       sampleSize: 2,
       note: '{"offenderTaskIds":["wait-1","wait-2"]}',
     });
     service.record(
-      "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
       2,
       {
         measuredAt: 1_000,
         sampleSize: 2,
-        note: '{"offenderTaskIds":["wait-1","wait-2"],"compatibilityAliasFor":"aks-rp-e2e.process.blocked.overdue-unworked-count"}',
+        note: '{"offenderTaskIds":["wait-1","wait-2"],"compatibilityAliasFor":"alpha-project.process.blocked.overdue-unworked-count"}',
       },
     );
 
     expect(service.evaluate()).toMatchObject([
       {
-        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        metricId: "alpha-project.process.blocked.overdue-unworked-count",
         status: "breached",
       },
       {
-        metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+        metricId: "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
         status: "ok",
       },
     ]);
@@ -307,45 +307,45 @@ describe("MetricService", () => {
           "SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id IN (?, ?) ORDER BY metric_id",
         )
         .all(
-          "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
-          "aks-rp-e2e.process.blocked.overdue-unworked-count",
+          "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
+          "alpha-project.process.blocked.overdue-unworked-count",
         ),
     ).toEqual([
       {
-        metric_id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        metric_id: "alpha-project.process.blocked.overdue-unworked-count",
         resolved_at: null,
       },
     ]);
     expect(emitted.filter((event) => event.type === "metric.breach")).toMatchObject([
       {
         data: {
-          metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+          metricId: "alpha-project.process.blocked.overdue-unworked-count",
         },
       },
     ]);
 
-    service.record("aks-rp-e2e.process.blocked.overdue-unworked-count", 0, {
+    service.record("alpha-project.process.blocked.overdue-unworked-count", 0, {
       measuredAt: 2_000,
       sampleSize: 0,
       note: '{"offenderTaskIds":[]}',
     });
     service.record(
-      "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
       0,
       {
         measuredAt: 2_000,
         sampleSize: 0,
-        note: '{"offenderTaskIds":[],"compatibilityAliasFor":"aks-rp-e2e.process.blocked.overdue-unworked-count"}',
+        note: '{"offenderTaskIds":[],"compatibilityAliasFor":"alpha-project.process.blocked.overdue-unworked-count"}',
       },
     );
 
     expect(service.evaluate()).toMatchObject([
       {
-        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        metricId: "alpha-project.process.blocked.overdue-unworked-count",
         status: "recovered",
       },
       {
-        metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+        metricId: "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
         status: "ok",
       },
     ]);
@@ -355,19 +355,19 @@ describe("MetricService", () => {
           "SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id IN (?, ?) ORDER BY metric_id",
         )
         .all(
-          "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
-          "aks-rp-e2e.process.blocked.overdue-unworked-count",
+          "alpha-project.process.blocked.overdue-nonhuman-unworked-count",
+          "alpha-project.process.blocked.overdue-unworked-count",
         ),
     ).toEqual([
       {
-        metric_id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        metric_id: "alpha-project.process.blocked.overdue-unworked-count",
         resolved_at: 10_000,
       },
     ]);
     expect(emitted.filter((event) => event.type === "metric.recovered")).toMatchObject([
       {
         data: {
-          metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+          metricId: "alpha-project.process.blocked.overdue-unworked-count",
         },
       },
     ]);

@@ -276,11 +276,11 @@ describe("agent loader boundaries", () => {
     try {
       const agentsRoot = join(root, "agents");
       const projectsRoot = join(root, "projects");
-      const projectDir = join(projectsRoot, "aks-rp-e2e");
+      const projectDir = join(projectsRoot, "alpha-project");
       const projectAgentDir = join(projectDir, "agents", "aks-explorer");
       mkdirSync(agentsRoot, { recursive: true });
       mkdirSync(projectAgentDir, { recursive: true });
-      writeFileSync(join(projectDir, "project.md"), "---\nid: aks-rp-e2e\n---\n");
+      writeFileSync(join(projectDir, "project.md"), "---\nid: alpha-project\n---\n");
       writeFileSync(join(projectAgentDir, "agent.json"), JSON.stringify({ name: "aks-explorer" }));
 
       expect(listConfiguredAgentNames(agentsRoot, projectsRoot)).toEqual(["aks-explorer"]);
@@ -296,12 +296,12 @@ describe("agent loader boundaries", () => {
       const agentsRoot = join(root, "agents");
       const sharedRoot = join(root, "shared");
       const projectsRoot = join(root, "projects");
-      const projectDir = join(projectsRoot, "aks-rp-e2e");
+      const projectDir = join(projectsRoot, "alpha-project");
       const projectAgentDir = join(projectDir, "agents", "aks-explorer");
       mkdirSync(agentsRoot, { recursive: true });
       mkdirSync(sharedRoot, { recursive: true });
       mkdirSync(join(projectAgentDir, "workspace"), { recursive: true });
-      writeFileSync(join(projectDir, "project.md"), "---\nid: aks-rp-e2e\nowner: aks-explorer\n---\n");
+      writeFileSync(join(projectDir, "project.md"), "---\nid: alpha-project\nowner: aks-explorer\n---\n");
       writeFileSync(
         join(projectAgentDir, "agent.json"),
         JSON.stringify({
@@ -581,7 +581,7 @@ describe("agent loader boundaries", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-project-handlers-"));
     try {
       const globalAgentsRoot = join(root, "agents");
-      const projectAgentDir = join(root, "projects", "aks-rp-e2e", "agents", "aks-explorer");
+      const projectAgentDir = join(root, "projects", "alpha-project", "agents", "aks-explorer");
       const handlersDir = join(projectAgentDir, "handlers");
       mkdirSync(handlersDir, { recursive: true });
       const cronPath = join(projectAgentDir, "cron.json");
@@ -603,7 +603,7 @@ describe("agent loader boundaries", () => {
         sharedRoot: join(root, "shared"),
         projectsRoot: join(root, "projects"),
         persistDir: join(root, ".state"),
-        projectRoot: join(root, "projects", "aks-rp-e2e"),
+        projectRoot: join(root, "projects", "alpha-project"),
         manager: { callAgent: async () => ({}) } as any,
         bus: { emit: () => undefined } as any,
         agentCrons: new Map([["aks-explorer", cron as any]]),

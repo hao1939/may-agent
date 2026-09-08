@@ -68,9 +68,9 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
       "/terminal",
       "/terminal/",
       "/projects",
-      "/projects/aks-rp-e2e.app",
-      "/projects/aks-rp-e2e.app/tasks",
-      "/projects/aks-rp-e2e.app/functions",
+      "/projects/alpha-project.app",
+      "/projects/alpha-project.app/tasks",
+      "/projects/alpha-project.app/functions",
     ]) {
       const res = get(path);
       expect(res.status).toBe(200);
@@ -79,9 +79,9 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   });
 
   test("does NOT hijack project-owned domain UI routes", async () => {
-    expect(get("/projects/aks-rp-e2e.app/ui/").status).toBe(404);
-    expect(get("/projects/aks-rp-e2e.app/kanban/").status).toBe(404);
-    expect(get("/projects/aks-rp-e2e.app/ui/index.html").status).toBe(404);
+    expect(get("/projects/alpha-project.app/ui/").status).toBe(404);
+    expect(get("/projects/alpha-project.app/kanban/").status).toBe(404);
+    expect(get("/projects/alpha-project.app/ui/index.html").status).toBe(404);
   });
 
   test("serves top-level /styles.css from platform/ui (F8)", async () => {

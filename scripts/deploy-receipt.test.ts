@@ -78,9 +78,9 @@ describe("restart-aware deploy receipts", () => {
   it("rejects a task owned by another App even when that task exists", () => {
     const f = fixture();
     try {
-      const dbPath = taskDatabase(f.projectDir, "aks-rp-e2e", ["ops/deploy-may-runtime"]);
-      expect(() => validateDeployTaskTarget(dbPath, "aks-rp-e2e", "ops/deploy-may-runtime")).toThrow(
-        "May runtime deployment belongs to may-agent, not aks-rp-e2e",
+      const dbPath = taskDatabase(f.projectDir, "alpha-project", ["ops/deploy-may-runtime"]);
+      expect(() => validateDeployTaskTarget(dbPath, "alpha-project", "ops/deploy-may-runtime")).toThrow(
+        "May runtime deployment belongs to may-agent, not alpha-project",
       );
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });

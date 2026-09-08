@@ -703,12 +703,12 @@ describe("App inbox store", () => {
     };
     waitForTask("evaluation-1", "evaluation");
     waitForTask("evaluation-2", "evaluation");
-    waitForTask("aks-1", "aks-rp-e2e");
+    waitForTask("aks-1", "alpha-project");
 
     const first = listAppInboxTaskDependencyKeys(db, { limit: 1 });
     expect(first).toEqual({
-      items: [{ appId: "aks-rp-e2e", taskId: "runtime/owner-review" }],
-      nextCursor: { appId: "aks-rp-e2e", taskId: "runtime/owner-review" },
+      items: [{ appId: "alpha-project", taskId: "runtime/owner-review" }],
+      nextCursor: { appId: "alpha-project", taskId: "runtime/owner-review" },
     });
     expect(listAppInboxTaskDependencyKeys(db, { after: first.nextCursor, limit: 1 })).toEqual({
       items: [{ appId: "evaluation", taskId: "runtime/owner-review" }],

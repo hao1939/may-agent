@@ -75,7 +75,7 @@ describe("DbWriter", () => {
         trigger: "runtime",
         firedAt: Date.now(),
         workflowRunId: "wr_project",
-        projectId: "may/aks-rp-e2e",
+        projectId: "may/alpha-project",
       },
     } as any);
     writer.handler({
@@ -98,7 +98,7 @@ describe("DbWriter", () => {
       .get("s_project") as any;
     expect(row).toMatchObject({
       sessionId: "s_project",
-      projectId: "may/aks-rp-e2e",
+      projectId: "may/alpha-project",
       workflowRunId: "wr_project",
     });
   });

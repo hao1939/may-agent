@@ -67,7 +67,7 @@ describe("telegram client", () => {
       await client.sendMessage("chat-1", "📋 Approval packet dispatch", undefined, {
         eventType: "message.created",
         agent: "aks-explorer",
-        projectId: "projects/aks-rp-e2e.app",
+        projectId: "projects/alpha-project.app",
         data: JSON.stringify({
           approvalId: "approval-123",
           waitId: "wait-123",
@@ -92,7 +92,7 @@ describe("telegram client", () => {
       expect(row).toMatchObject({
         event_type: "message.created",
         agent: "aks-explorer",
-        project_id: "projects/aks-rp-e2e.app",
+        project_id: "projects/alpha-project.app",
       });
       expect(JSON.parse(String(row?.data))).toMatchObject({
         approvalId: "approval-123",

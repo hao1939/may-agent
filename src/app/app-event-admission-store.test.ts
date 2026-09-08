@@ -51,7 +51,7 @@ describe("App event admission store", () => {
           conditionTaskIds: ["wait/review"],
         },
         {
-          appId: "aks-rp-e2e",
+          appId: "alpha-project",
           kind: "task",
           routeId: "work/f-1",
           intent: {
@@ -72,7 +72,7 @@ describe("App event admission store", () => {
       status: "pending",
       commands: [
         {
-          appId: "aks-rp-e2e",
+          appId: "alpha-project",
           kind: "task",
           routeId: "work/f-1",
           status: "pending",

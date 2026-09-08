@@ -6,8 +6,8 @@ describe("event envelope helpers", () => {
     expect(normalizeEventOwner(undefined)).toBe("agent:may");
     expect(normalizeEventOwner("may")).toBe("agent:may");
     expect(normalizeEventOwner("agent:dev")).toBe("agent:dev");
-    expect(normalizeEventOwner("project:aks-rp-e2e")).toBe("project:aks-rp-e2e");
-    expect(normalizeEventOwner("task:aks-rp-e2e/loop")).toBe("task:aks-rp-e2e/loop");
+    expect(normalizeEventOwner("project:alpha-project")).toBe("project:alpha-project");
+    expect(normalizeEventOwner("task:alpha-project/loop")).toBe("task:alpha-project/loop");
     expect(normalizeEventOwner("human")).toBe("human:operator");
     expect(normalizeEventOwner("human:reviewer")).toBe("human:reviewer");
   });
@@ -62,14 +62,14 @@ describe("event envelope helpers", () => {
       buildCanonicalEventEnvelope("project.task.reconciled", {
         source: "agent:worker",
         owner: "aks-explorer",
-        target: { project: "aks-rp-e2e", taskId: "task-a" },
+        target: { project: "alpha-project", taskId: "task-a" },
         disposition: "converged",
       }),
     ).toEqual({
       type: "project.task.reconciled",
       source: "agent:worker",
       owner: "agent:aks-explorer",
-      target: { project: "aks-rp-e2e", taskId: "task-a" },
+      target: { project: "alpha-project", taskId: "task-a" },
       data: {
         disposition: "converged",
       },
@@ -80,15 +80,15 @@ describe("event envelope helpers", () => {
     expect(
       buildCanonicalEventEnvelope("project.task.tick", {
         source: "agent:worker",
-        target: { project: "aks-rp-e2e", taskId: "loop-a" },
+        target: { project: "alpha-project", taskId: "loop-a" },
         action: "spec-loop",
         reason: "child-task-completed",
       }),
     ).toEqual({
       type: "project.task.tick",
       source: "agent:worker",
-      owner: "project:aks-rp-e2e",
-      target: { project: "aks-rp-e2e", taskId: "loop-a" },
+      owner: "project:alpha-project",
+      target: { project: "alpha-project", taskId: "loop-a" },
       action: "spec-loop",
       data: {
         reason: "child-task-completed",
@@ -102,7 +102,7 @@ describe("event envelope helpers", () => {
         "project.task.reconciled",
         {
           source: "agent:worker",
-          target: { project: "aks-rp-e2e", taskId: "task-a" },
+          target: { project: "alpha-project", taskId: "task-a" },
           disposition: "converged",
         },
         { owner: "aks-explorer" },
@@ -110,8 +110,8 @@ describe("event envelope helpers", () => {
     ).toEqual({
       type: "project.task.reconciled",
       source: "agent:worker",
-      owner: "project:aks-rp-e2e",
-      target: { project: "aks-rp-e2e", taskId: "task-a" },
+      owner: "project:alpha-project",
+      target: { project: "alpha-project", taskId: "task-a" },
       data: {
         disposition: "converged",
       },
@@ -123,14 +123,14 @@ describe("event envelope helpers", () => {
       buildCanonicalEventEnvelope("message.created", {
         source: "agent:dev",
         owner: "human",
-        target: { project: "aks-rp-e2e", human: true },
+        target: { project: "alpha-project", human: true },
         content: "approve",
       }),
     ).toEqual({
       type: "message.created",
       source: "agent:dev",
       owner: "human:operator",
-      target: { project: "aks-rp-e2e", human: true },
+      target: { project: "alpha-project", human: true },
       data: {
         content: "approve",
       },
@@ -141,14 +141,14 @@ describe("event envelope helpers", () => {
     expect(
       buildCanonicalEventEnvelope("message.created", {
         source: "agent:dev",
-        target: { project: "aks-rp-e2e", human: true },
+        target: { project: "alpha-project", human: true },
         content: "approve",
       }),
     ).toEqual({
       type: "message.created",
       source: "agent:dev",
       owner: "human:operator",
-      target: { project: "aks-rp-e2e", human: true },
+      target: { project: "alpha-project", human: true },
       data: {
         content: "approve",
       },

@@ -33,9 +33,6 @@ if ! grep -q "StrictHostKeyChecking accept-new" "${HOME}/.ssh/config" 2>/dev/nul
 fi
 export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i ${HOME}/.ssh/id_rsa"
 
-# Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
-for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
-
 # Keep plain Claude launches unrestricted inside the container sandbox.
 source /usr/local/bin/setup-claude-config.sh
 

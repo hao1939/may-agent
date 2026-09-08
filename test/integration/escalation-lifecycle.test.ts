@@ -165,7 +165,7 @@ describe("escalation lifecycle", () => {
         sessionId,
         agent: "dev",
         task: "Task Worker Mode\n\nHistorical blocked task.",
-        projectId: "aks-rp-e2e",
+        projectId: "alpha-project",
       },
     } as never);
     bus.emit({
@@ -242,7 +242,7 @@ describe("escalation lifecycle", () => {
         sessionId,
         agent: "dev",
         task: "Task Worker Mode\n\nStale non-approval task.",
-        projectId: "aks-rp-e2e",
+        projectId: "alpha-project",
       },
     } as never);
     bus.emit({
@@ -302,7 +302,7 @@ describe("escalation lifecycle", () => {
         sessionId,
         agent: "dev",
         task: "Task Worker Mode\n\nSuperseded stale task.",
-        projectId: "aks-rp-e2e",
+        projectId: "alpha-project",
       },
     } as never);
     bus.emit({
