@@ -2852,7 +2852,16 @@ async function reconcileTask(input: {
   const persistResult = <T>(operation: () => T): T => {
     const startedAt = performance.now();
     try {
-      return operation();
+      try {
+        return operation();
+      } catch (error) {
+        if (!(error instanceof ResourceTaskMutationStaleError)) throw error;
+        // The failed transaction applied nothing. Re-read current resources
+        // and recheck every claim/action fence once, without rerunning the
+        // handler or replaying provider effects. Semantic staleness is not
+        // transaction contention and must still return to reconciliation.
+        return operation();
+      }
     } finally {
       timing.resultPersistenceMs += Math.max(0, performance.now() - startedAt);
     }
@@ -3015,12 +3024,12 @@ async function reconcileTask(input: {
       try {
         const finalized = await finalizeAppTaskWorkspace(taskWorkspace, outcome);
         workspaceFinalized = true;
-        recordAppTaskAttemptWorkspace(config, primary, finalized.metadata);
+        persistResult(() => recordAppTaskAttemptWorkspace(config, primary, finalized.metadata));
         return finalized;
       } catch (error) {
         workspaceFinalized = true;
         taskWorkspace.metadata.disposition = "retained-for-recovery";
-        recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
+        persistResult(() => recordAppTaskAttemptWorkspace(config, primary, taskWorkspace!.metadata));
         return {
           ok: false as const,
           metadata: taskWorkspace.metadata,
