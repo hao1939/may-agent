@@ -11310,6 +11310,23 @@ until independent review accepts the exact candidate and an immediate live
 gate still matches. RV-004/RV-034 remain high/open and RV-036/RV-038
 medium/open. No local-main movement, compaction, or cleanup occurred.
 
+### RV-052 guarded release postflight — exact transition preserves the overlay
+
+Independent reviewer `28c797a0218d863405b5a60a6d622db325af23aa`
+accepts canonical `8b20b38fbe3510028130a1108dedaad3883c88fc` and exact
+candidate `584395df7c2c25f5737eb4a392dc8c75d2852b53` for one guarded
+transition. The immediate live plan retained the same two SHA-bound Scout
+overlaps and emitted the same 36 materializations with a nine-restore /
+27-remove inverse. Five new unrelated expanded records changed the live total
+to 5,679 without intersecting a candidate path.
+
+The [live postflight](../reports/review/scout-rv052-live-postflight-2026-09-08.md)
+reached exact candidate HEAD with a clean index. The complete default,
+expanded, and Scout-only status streams were byte-identical before and after,
+and both protected hashes were unchanged. This is exact-boundary preservation,
+not general landing safety or behavior evidence. RV-052 stays high/open until
+independent postflight review; compaction and cleanup remain blocked.
+
 ## Cycle 283 seed-first start — integrated-review continuity
 
 Cycle 283 began from clean reviewed tip `23b4532c653b0a9928464b9638058709c4f0058a`.

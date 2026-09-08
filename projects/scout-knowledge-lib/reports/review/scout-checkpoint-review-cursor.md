@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent review accepts the material range through exact canonical tip 8b20b38fbe and exact local-main candidate 584395df7c for one guarded producer-owned transition. Reviewer result 27c7286418 is integrated literally; Hermes/OpenClaw finite-goal outputs remain patch-equivalent to canonical d1a443c640 and a76092b318. RV-052 remains high/open until an actual transition and exact postflight prove preservation; compaction and cleanup remain blocked."
+summary: "Independent review accepts exact canonical 8b20b38fbe and candidate 584395df7c; reviewer result 28c797a021 is integrated literally. The guarded producer transition reached the candidate with the clean index, complete status streams, Scout fingerprint, and two protected hashes preserved. RV-052 remains high/open pending independent postflight review; compaction and cleanup remain blocked."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051", "RV-052"]
 last_updated: "2026-09-08"
-source_basis: "Independent exact-range review 6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a..8b20b38fbe3510028130a1108dedaad3883c88fc, including literal reviewer 27c72864189c3fb95fe31f5fd878826b2881b203 and direct-child ledger fcd91b1725c6cedb350b3a7ff398f0a91622c085; Cycles 422-425 materials 1156e7e4c1, 81f5d21ec5, d607267da9, and ed7de4d929; and release-preparation record 8b20b38fbe. Exact candidate 584395df7c2c25f5737eb4a392dc8c75d2852b53 has ordered parents live main 6237bd7e608de98bb60e27a94ea19b52bf52c838 and canonical ed7de4d92950c1daa8b5829531079928ff592cc5, tree aee432c4fe174159ec389f151cf652607d9d646f. Independent full gates pass 321 tests / 1,632 assertions on both canonical and candidate; scoped links are 123 and 121, broad audits are 1,556/1,806 and 1,555/1,804, navigation is 11/14 + 8/8 + 14/14, and health is 26 facts / 16 wakes with truncation. Fresh read-only /app remains at 6237bd7e60 with clean index, unchanged 23-path Scout fingerprint and five protected hashes. The current no-write plan succeeds at 5,674 total records with 38 candidate paths, two retained overlaps, 36 clean materializations, nine restores, and 27 removals. No landing has occurred."
+source_basis: "Independent exact-range review 6af4d3da01d3a35b3d432db610edbd5f2ddd6e9a..8b20b38fbe3510028130a1108dedaad3883c88fc and direct-child reviewer result 28c797a0218d863405b5a60a6d622db325af23aa at stable patch ID 450b330c70683cafbd7124d06d7e303e78f595f7. Exact candidate 584395df7c2c25f5737eb4a392dc8c75d2852b53 has ordered parents protected base 6237bd7e608de98bb60e27a94ea19b52bf52c838 and canonical ed7de4d92950c1daa8b5829531079928ff592cc5, tree aee432c4fe174159ec389f151cf652607d9d646f. The immediate live plan at 5,679 records reproduces 38 candidate paths, two SHA-bound retained overlaps, 36 clean materializations, nine restores, and 27 removals. The guarded transition reaches exact candidate HEAD with a clean index, identical 77 / 5,679 / 23 status streams, all 36 materialized bytes equal to candidate, and both protected hashes unchanged. Independent pre-transition full gates pass 321 tests / 1,632 assertions on canonical and candidate; the final producer postflight tree passes 321 / 1,632, 124 scoped links, navigation 11/14 + 8/8 + 14/14, 1,557 documents / 1,808 broad links, and health 26/16 with truncation. RV-052 remains high/open pending independent postflight review; no compaction or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -3936,7 +3936,7 @@ compaction, and cleanup remain unapproved.
 | `RV-049` | Medium | Cycle 412 design `0ac800129e6d2432b0bebc5e52966f22b7efa9c8`; six accepted-evidence fragments | Six section fragments did not match their target headings, while the file-only link gate discarded fragments. The defect could make a future compact record appear green with unreachable evidence. | **Resolved exactly on standing.** Reviewer correction `86502d99271207d872057c4874326296d57255b4` is the direct parent of Cycle 413 result `a70923f523`; all 14 corrected fragments resolve uniquely. Exact range `86502d9927..114812e8a0` contains only the stale reviewer cursor, which is neither contained nor claimed equivalent and is superseded by this cursor. |
 | `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; subsequent exact reviewer acceptance `8f5b1a4666` and producer ledger `d3a8a06186` retain that disposition. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
 | `RV-051` | Low | Review-cursor `source_basis` through exact canonical tip `6458b20511455313b5eec86913670d52482e1573` | The phrase “commit-time health 27 facts / 16 wakes” did not identify its clock. Direct replay returns 27 / 16 at reviewed candidate `cf08a2798d`'s `2026-09-05T21:31:46Z` commit time but 26 / 16 at later ledger and acceptance clocks because a calendar boundary elapsed. The ambiguity weakened exact replay but changed no health logic or checkpoint decision. | **Resolved exactly at `6458b20511`.** The candidate and successor clocks are distinguished explicitly; current exact-tip replay returns 26 / 16 with `truncated:true`. |
-| `RV-052` | High | Cycle 420-426 release preparation and live boundary `6237bd7e60` → exact candidate `584395df7c` | The original five-overlap hazard is now reduced to two explicit divergent Scout paths; all five previously protected bytes remain unchanged. Candidate `584395df7c` has ordered parents live main and canonical `ed7de4d929`, contains reviewer `27c7286418` plus Hermes/OpenClaw canonical commits, and matches canonical on all 38 candidate paths. It intentionally predates the five-path release-record delta at `8b20b38fbe`, so no full-current-tip containment is claimed. Fresh `/app` observation keeps HEAD and index stable and the Scout surface at 23 records / `b9d6fb9c…a12c`, while unrelated activity changes producer-era default/expanded counts 76/4,393 to 77/5,674. The current no-write plan still succeeds: two SHA-bound retained overlaps, 36 clean materializations, 5,672 unrelated records, nine restores, and 27 removals. Both exact candidate and canonical independently pass 321 tests / 1,632 assertions. | **Accept the exact candidate for one guarded producer-owned transition; keep high/open until postflight.** Immediately before movement, rerun the same fail-closed plan and require exact base, candidate, clean index, and retained hashes; after movement, prove exact candidate HEAD, clean index, preserved Scout fingerprint/bytes, and the emitted inverse. Any mismatch requires stop and regeneration. No landing is yet claimed, and compaction or cleanup remains blocked. |
+| `RV-052` | High | Cycle 420-426 release preparation and exact guarded postflight `6237bd7e60` → `584395df7c` | Candidate `584395df7c` has ordered parents protected base and canonical `ed7de4d929`, contains reviewer `27c7286418` plus Hermes/OpenClaw canonical commits, and intentionally predates documentation-only `8b20b38fbe` / `28c797a021`. The immediate plan at 5,679 expanded records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 materializations, nine inverse restores, and 27 inverse removals. The actual transition reached exact candidate HEAD with a clean index; complete 77 / 5,679 / 23 status streams, all unrelated status records, and both protected hashes were unchanged. | **Producer postflight passes; keep high/open pending independent review.** Accept literal integration of reviewer `28c797a021` and retain the exact postflight record. Do not generalize it to a later boundary. Any immediate rollback must use the emitted 9/27 inverse and reproduce the exact preflight fingerprints. Compaction and cleanup remain blocked. |
 
 ## Reviewer source/result and integration status
 
@@ -4780,15 +4780,42 @@ the standing owner records this review disposition or truthfully rejects or
 supersedes it. Release work remains fail-closed at the actual postflight, and
 compaction or cleanup remains unapproved.
 
+## Producer integration and guarded-transition postflight
+
+Producer fast-forwarded exact reviewer result
+`28c797a0218d863405b5a60a6d622db325af23aa` from reviewed source
+`8b20b38fbe3510028130a1108dedaad3883c88fc`. Direct parentage and stable
+patch ID `450b330c70683cafbd7124d06d7e303e78f595f7` reproduce; no
+patch-equivalent substitute or conflict resolution was used.
+
+At `2026-09-08T12:23:52Z`, the immediate fail-closed plan against protected
+base `6237bd7e608de98bb60e27a94ea19b52bf52c838` and accepted candidate
+`584395df7c2c25f5737eb4a392dc8c75d2852b53` found 5,679 expanded records.
+Five new unrelated records since review did not intersect the candidate. The
+plan retained exactly the two expected Scout hashes, materialized 36 clean
+paths, and emitted the reviewed nine-restore / 27-remove inverse.
+
+The guarded transition reached exact candidate HEAD on
+`chore/may-agent-hygiene` with a clean index. Default 77 /
+`141a84e8…0572`, expanded 5,679 / `88d2b60b…0355`, and Scout-only 23 /
+`b9d6fb9c…a12c` status streams are byte-identical before and after. All 36
+materialized paths match the candidate; protected package hash
+`d15c253f…b2ded` and INDEX hash `487a560c…cf2f2` are unchanged. The
+[exact postflight record](./scout-rv052-live-postflight-2026-09-08.md) retains
+the full identities, scope, limits, and rollback.
+
+Disposition: integrate reviewer `28c797a021` literally and retain the actual
+transition as producer evidence. RV-052 remains high/open until this
+postflight and its canonical ledger checkpoint receive independent review.
+No compaction, cleanup, or further protected-checkout movement is approved.
+
 ## Next trigger
 
-The next exact trigger is producer integration, evidence-backed rejection, or
-supersession of this reviewer result; an actual guarded transition/postflight
-for candidate `584395df7c`; a new material canonical checkpoint; or evidence
-changing RV-052, RV-004, RV-034, RV-036, or RV-038. If none occurs, the first
-eligible periodic boundary is `2026-09-09T12:14:36Z`. Do not poll unchanged
-state, infer a landing from this acceptance, begin compaction or cleanup, or
-start another routine source batch before the disposition is durable.
+The next exact trigger is independent review of the actual guarded postflight
+and its canonical ledger checkpoint, or evidence changing RV-052, RV-004,
+RV-034, RV-036, or RV-038. Do not move the protected checkout again, poll an
+unchanged reviewer, begin compaction or cleanup, or start another routine
+source batch before this release checkpoint is independently dispositioned.
 
 ## Supervision
 
