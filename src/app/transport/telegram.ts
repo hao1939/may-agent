@@ -402,9 +402,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const surfaces = new Map<string, { chatId: string; topicId?: number }>();
   const surfaceMessageHandlers = new Map<string, Promise<void>>();
   const shownTodoActions = new Map<string, Map<string, string>>();
-  const todoReads = new Set<string>();
-  const dirtyTodos = new Set<string>();
-  const scheduledTodos = new Set<string>();
   const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
   const nextTopicPageBySurface = new Map<string, string>();
   const lastRenderedMayMessageBySurface = new Map<string, string>();
@@ -412,9 +409,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     string,
     { chatId: string; topicId?: number; conversationId: string; command: string }
   >();
-  const watchReads = new Set<string>();
-  const dirtyWatches = new Set<string>();
-  const scheduledWatches = new Set<string>();
   const shownWatchRevisions = new Map<string, string>();
   const stopWatching = (surface: string): boolean => {
     shownWatchRevisions.delete(surface);
@@ -444,15 +438,58 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   } catch {
     // The Conversation may not be available until App runtime startup finishes.
   }
-  let conversationSyncRunning = false;
-  let conversationSyncDirty = false;
-  let conversationSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Presentation only: one read in flight per key, with at most one follow-up
+  // for updates observed during I/O. Errors do not schedule retries; new events do.
+  function createRefreshQueue(label: string, refresh: (key: string) => Promise<void>, delayMs = 0) {
+    const pending = new Map<string, { timer: ReturnType<typeof setTimeout> | null; dirty: boolean }>();
+    function queue(key: string): void {
+      if (!running) return;
+      const existing = pending.get(key);
+      if (existing) {
+        if (existing.timer === null) {
+          existing.dirty = true;
+          return;
+        }
+        if (delayMs === 0) return;
+        // Conversation wakes drain over several EventBus turns. Preserve its
+        // short debounce window, rather than rereading each partial burst.
+        clearTimeout(existing.timer);
+      }
+      const state = { timer: null as ReturnType<typeof setTimeout> | null, dirty: false };
+      pending.set(key, state);
+      state.timer = setTimeout(async () => {
+        state.timer = null;
+        try {
+          if (running) await refresh(key);
+        } catch (error) {
+          bus.emit({
+            type: "info",
+            message: `[telegram] ${label} failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        } finally {
+          pending.delete(key);
+          if (state.dirty) queue(key);
+        }
+      }, delayMs);
+    }
+    return {
+      queue,
+      close() {
+        for (const state of pending.values()) {
+          if (state.timer !== null) clearTimeout(state.timer);
+        }
+        pending.clear();
+      },
+    };
+  }
 
   async function syncConversation(): Promise<void> {
     const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
     }).messages;
     for (const message of messages) {
+      if (!running) return;
       if (renderedConversationMessages.has(message.id)) continue;
       if (message.metadata?.channel === "telegram" && message.author.kind !== "agent") {
         rememberRenderedConversationMessage(message.id);
@@ -474,7 +511,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           text: message.text.slice(0, 500),
         }),
       });
-      if (!delivered) return;
+      if (!delivered || !running) return;
       if (message.author.kind === "agent") {
         lastRenderedMayMessageBySurface.set(
           surfaceKey(targetChatId, threadId && /^[1-9]\d*$/.test(threadId) ? Number(threadId) : undefined),
@@ -485,84 +522,29 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
-  function queueConversationSync(): void {
-    if (!running) return;
-    if (conversationSyncRunning) {
-      conversationSyncDirty = true;
-      return;
-    }
-    if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
-    // EventBus listeners drain a bounded FIFO asynchronously. Defer the read
-    // by one turn so a burst of wake-only events collapses before touching the
-    // Conversation resource. An update observed during I/O still requests one
-    // dirty retry below.
-    conversationSyncTimer = setTimeout(() => {
-      conversationSyncTimer = null;
-      if (!running) return;
-      if (conversationSyncRunning) {
-        conversationSyncDirty = true;
-        return;
-      }
-      conversationSyncRunning = true;
-      void syncConversation()
-        .catch((error) => {
-          bus.emit({
-            type: "info",
-            message: `[telegram] Conversation sync failed: ${error instanceof Error ? error.message : String(error)}`,
-          });
-        })
-        .finally(() => {
-          conversationSyncRunning = false;
-          if (conversationSyncDirty) {
-            conversationSyncDirty = false;
-            queueConversationSync();
-          }
-        });
-    }, 5);
-  }
-
   async function refreshWatch(surface: string): Promise<void> {
     const watched = watchedTasks.get(surface);
     if (!watched) return;
-    if (watchReads.has(surface)) {
-      dirtyWatches.add(surface);
-      return;
-    }
-    watchReads.add(surface);
-    try {
-      const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
-      if (!task) {
-        stopWatching(surface);
-        await sendMessage(watched.chatId, `Task ${watched.ref} is no longer available; watch ended.`, undefined, {
-          messageThreadId: watched.topicId,
-        });
-        return;
-      }
-      const revision = taskPresentationRevision(task);
-      if (shownWatchRevisions.get(surface) === revision) return;
-      const delivered = await sendMessage(watched.chatId, renderTelegramTask(task), undefined, {
-        eventType: "task.watch",
-        agent: opts.interfaceAgent,
+    const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+    if (!task) {
+      stopWatching(surface);
+      await sendMessage(watched.chatId, `Task ${watched.ref} is no longer available; watch ended.`, undefined, {
         messageThreadId: watched.topicId,
       });
-      if (!delivered) return;
-      shownWatchRevisions.set(surface, revision);
-      if (task.terminal) {
-        stopWatching(surface);
-      }
-    } finally {
-      watchReads.delete(surface);
-      if (dirtyWatches.delete(surface) && watchedTasks.has(surface)) void refreshWatch(surface);
+      return;
     }
-  }
-
-  function queueWatchRefresh(surface: string): void {
-    if (!running || scheduledWatches.has(surface)) return;
-    scheduledWatches.add(surface);
-    setTimeout(() => {
-      scheduledWatches.delete(surface);
-      if (running && watchedTasks.has(surface)) void refreshWatch(surface);
-    }, 0);
+    const revision = taskPresentationRevision(task);
+    if (shownWatchRevisions.get(surface) === revision) return;
+    const delivered = await sendMessage(watched.chatId, renderTelegramTask(task), undefined, {
+      eventType: "task.watch",
+      agent: opts.interfaceAgent,
+      messageThreadId: watched.topicId,
+    });
+    // A send already in flight cannot be recalled. Its late result must not
+    // change a newer selection, including a new watch of the same Task.
+    if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
+    shownWatchRevisions.set(surface, revision);
+    if (task.terminal) stopWatching(surface);
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
@@ -571,69 +553,50 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
     if (!coordinates) return;
-    if (todoReads.has(surface)) {
-      dirtyTodos.add(surface);
+    const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
+    const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
+    const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
+    const next = new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)]));
+    const watched = watchedTasks.get(surface);
+    const changed = page.items.filter(
+      (task) =>
+        prior.get(todoTaskKey(task)) !== todoActionSignature(task) &&
+        !(watched?.appId === task.appId && watched.taskId === task.taskId),
+    );
+    if (changed.length === 0) {
+      shownTodoActions.set(surface, next);
       return;
     }
-    todoReads.add(surface);
-    try {
-      const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
-      const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
-      const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-      const next = new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)]));
-      const watched = watchedTasks.get(surface);
-      const changed = page.items.filter(
-        (task) =>
-          prior.get(todoTaskKey(task)) !== todoActionSignature(task) &&
-          !(watched?.appId === task.appId && watched.taskId === task.taskId),
-      );
-      if (changed.length === 0) {
-        shownTodoActions.set(surface, next);
-        return;
-      }
-      const first = changed[0]!;
-      const text =
-        page.total === 1 && changed.length === 1
-          ? `Action needed · ${first.appId} · ${first.ref}\n${humanActionText(first)}\n\nUse /watch ${first.ref} to respond.`
-          : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Use /todo.`;
-      const messageId = await sendMessage(coordinates.chatId, text, undefined, {
-        eventType: "task.human-action",
-        agent: opts.interfaceAgent,
-        messageThreadId: coordinates.topicId,
-      });
-      if (!messageId) return;
-      shownTodoActions.set(surface, next);
-      recordConversationMessage({
-        conversationId: sharedConversationId,
-        text,
-        command: "/todo notification",
-        messageId,
-        chatId: coordinates.chatId,
-        topicId: coordinates.topicId,
-        taskRefs: page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
-        idempotencyKey: `todo-notification:telegram:${surface}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
-      });
-    } finally {
-      todoReads.delete(surface);
-      if (dirtyTodos.delete(surface)) queueTodoRefresh(surface);
-    }
+    const first = changed[0]!;
+    const text =
+      page.total === 1 && changed.length === 1
+        ? `Action needed · ${first.appId} · ${first.ref}\n${humanActionText(first)}\n\nUse /watch ${first.ref} to respond.`
+        : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Use /todo.`;
+    const messageId = await sendMessage(coordinates.chatId, text, undefined, {
+      eventType: "task.human-action",
+      agent: opts.interfaceAgent,
+      messageThreadId: coordinates.topicId,
+    });
+    if (!messageId || !running) return;
+    if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
+    // Record what was actually shown, even if the user selected another App
+    // during the send; only the current App's notification cache is protected.
+    recordConversationMessage({
+      conversationId: sharedConversationId,
+      text,
+      command: "/todo notification",
+      messageId,
+      chatId: coordinates.chatId,
+      topicId: coordinates.topicId,
+      taskRefs: page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
+      idempotencyKey: `todo-notification:telegram:${surface}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
+    });
   }
 
-  function queueTodoRefresh(surface: string): void {
-    if (!running || scheduledTodos.has(surface)) return;
-    scheduledTodos.add(surface);
-    setTimeout(() => {
-      scheduledTodos.delete(surface);
-      if (running) {
-        void refreshTodos(surface).catch((error) => {
-          bus.emit({
-            type: "info",
-            message: `[telegram] Todo refresh failed: ${error instanceof Error ? error.message : String(error)}`,
-          });
-        });
-      }
-    }, 0);
-  }
+  // Allow the EventBus's asynchronous FIFO to drain before reading Conversation.
+  const conversationRefresh = createRefreshQueue("Conversation sync", syncConversation, 5);
+  const watchRefresh = createRefreshQueue("Watch refresh", refreshWatch);
+  const todoRefresh = createRefreshQueue("Todo refresh", refreshTodos);
 
   const unsubscribeConversation = bus.listen(
     (event: any) => {
@@ -661,18 +624,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return;
       }
       if (event.type === "conversation.updated") {
-        if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) queueConversationSync();
+        if (data.appId === opts.interfaceAgent && data.conversationId === sharedConversationId) {
+          conversationRefresh.queue(sharedConversationId);
+        }
         return;
       }
       const wake = taskUpdateIdentity(event);
       if (!wake) return;
       for (const [surface, watched] of watchedTasks) {
-        if (watched.appId === wake.appId && watched.taskId === wake.taskId) queueWatchRefresh(surface);
+        if (watched.appId === wake.appId && watched.taskId === wake.taskId) watchRefresh.queue(surface);
       }
       if (isTaskDerivedViewWake(event)) {
         for (const surface of surfaces.keys()) {
           const selected = selectedApps.get(surface) ?? opts.interfaceAgent;
-          if (selected === wake.appId) queueTodoRefresh(surface);
+          if (selected === wake.appId) todoRefresh.queue(surface);
         }
       }
     },
@@ -926,7 +891,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             ? `App ${rest[0]} was not found.`
             : `${rest[0] ? `Selected App: ${selected}\n` : ""}${renderTelegramApps(apps, selected)}`,
         );
-        if (selectedChanged) queueTodoRefresh(surface);
+        if (selectedChanged) todoRefresh.queue(surface);
       }
       return true;
     }
@@ -1256,7 +1221,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       for (const chatId of allowedChatIds) {
         const surface = surfaceKey(chatId);
         surfaces.set(surface, { chatId });
-        queueTodoRefresh(surface);
+        todoRefresh.queue(surface);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1303,7 +1268,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
-      if (conversationSyncTimer) clearTimeout(conversationSyncTimer);
+      conversationRefresh.close();
+      watchRefresh.close();
+      todoRefresh.close();
       unsubscribeConversation();
     },
   };
