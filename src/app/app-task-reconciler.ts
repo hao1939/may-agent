@@ -309,12 +309,8 @@ function hasUnacceptedLiveTaskEvents(tree: TaskTree, taskId: string, eventIds: r
   return hasUnacceptedLiveEvents(tree.taskTriggers?.[taskId], eventIds);
 }
 
-/** Reject an externally visible effect when newer Task evidence is still unaccepted. */
-export function assertAppTaskEffectFresh(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  acceptedLiveEventIds?: readonly number[],
-): void {
+/** A new observation does not supersede the executing attempt or its output. */
+export function assertAppTaskClaimCurrent(config: AppTaskContext, claim: AppTaskClaim): void {
   const resource = config.resourceStore.readTask(claim.taskId);
   const attempt = config.resourceStore.readAttempt(claim.attemptId);
   const match = matchingClaimAttempt(resource, attempt, claim);
@@ -326,12 +322,28 @@ export function assertAppTaskEffectFresh(
       currentPhase: resource?.status.phase,
     });
   }
-  if (hasUnacceptedLiveEvents(config.resourceStore.readTrigger(claim.taskId) ?? undefined, acceptedLiveEventIds)) {
+}
+
+export function hasPendingAppTaskEvidence(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  acceptedLiveEventIds?: readonly number[],
+): boolean {
+  return hasUnacceptedLiveEvents(config.resourceStore.readTrigger(claim.taskId) ?? undefined, acceptedLiveEventIds);
+}
+
+/** Reject an externally visible effect when newer Task evidence is still unaccepted. */
+export function assertAppTaskEffectFresh(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  acceptedLiveEventIds?: readonly number[],
+): void {
+  assertAppTaskClaimCurrent(config, claim);
+  if (hasPendingAppTaskEvidence(config, claim, acceptedLiveEventIds)) {
     throw new AppTaskActionStaleError({
       taskId: claim.taskId,
       expectedGeneration: claim.generation,
-      currentGeneration: match.resource.metadata.generation,
-      currentPhase: match.resource.status.phase,
+      currentGeneration: claim.generation,
       reason: "newer Task evidence is pending",
     });
   }
@@ -3885,6 +3897,41 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
   };
 }
 
+// Retain the bounded output, not its proposed effects or terminal judgment.
+// The next attempt receives this result alongside the still-pending input.
+// Existing waits remain attached: newer input does not undo those facts.
+function recordPendingAppTaskResult(
+  config: AppTaskContext,
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  input: {
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence?: string[];
+    acceptedLiveEventIds?: number[];
+    reason?: string;
+  },
+): void {
+  const resource = tree.resources![claim.taskId]!;
+  const attempt = tree.attempts![claim.attemptId]!;
+  const mutationScope = beginResourceMutationScope(tree, claim, []);
+  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  finishAttempt(tree, resource, input.reason ? "failed" : "completed", input.summary, new Date().toISOString());
+  if (input.reason) attempt.failureReason = input.reason;
+  touchResource(resource, {
+    phase: "pending",
+    observedGeneration: claim.generation,
+    observedAttemptId: claim.attemptId,
+    currentAttemptId: undefined,
+    summary: input.summary,
+    ...(input.response !== undefined ? { response: input.response } : {}),
+    ...(input.result ? { result: structuredClone(input.result) } : {}),
+    evidence: [...(input.evidence ?? [])],
+  });
+  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+}
+
 export function completeAppTask(
   config: AppTaskContext,
   claim: AppTaskClaim,
@@ -3918,14 +3965,23 @@ export function completeAppTask(
     };
   }
   const { resource } = match;
-  if (actions.length > 0 && hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
-    throw new AppTaskActionStaleError({
-      taskId: claim.taskId,
-      expectedGeneration: claim.generation,
-      currentGeneration: resource.metadata.generation,
-      currentPhase: resource.status.phase,
-      reason: "newer Task evidence is pending",
-    });
+  if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
+    // Result and Task actions are one contract. A result may report those
+    // actions as done, so never expose it as accepted while dropping them.
+    if (actions.length > 0) {
+      throw new AppTaskActionStaleError({
+        taskId: claim.taskId,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource.metadata.generation,
+        currentPhase: resource.status.phase,
+        reason: "newer Task evidence is pending",
+      });
+    }
+    recordPendingAppTaskResult(config, tree, claim, input);
+    return {
+      status: "applied", actionsApplied: [], dependentTaskIds: [claim.taskId],
+      supersededSessionIds: [], taskContinues: true,
+    };
   }
   validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
   const selfUpdates = actions.filter(
@@ -4202,23 +4258,19 @@ export function markAppTaskAttention(
   input: {
     summary: string;
     reason: string;
+    result?: Record<string, unknown>;
     evidence?: string[];
     acceptedLiveEventIds?: number[];
     wakeParent?: boolean;
   },
-): { status: "applied" | "stale"; parentTaskId?: string } {
+): { status: "applied" | "stale"; parentTaskId?: string; taskContinues?: true } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
   if (!match) return { status: "stale" };
   const { resource, attempt } = match;
   if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
-    throw new AppTaskActionStaleError({
-      taskId: claim.taskId,
-      expectedGeneration: claim.generation,
-      currentGeneration: resource.metadata.generation,
-      currentPhase: resource.status.phase,
-      reason: "newer Task evidence is pending",
-    });
+    recordPendingAppTaskResult(config, tree, claim, input);
+    return { status: "applied", taskContinues: true };
   }
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   const mutationScope = beginResourceMutationScope(tree, claim, []);
@@ -4233,6 +4285,7 @@ export function markAppTaskAttention(
     currentAttemptId: undefined,
     summary: input.summary,
     evidence: [...(input.evidence ?? [])],
+    ...(input.result ? { result: structuredClone(input.result) } : {}),
     conditionIds: [],
   });
   const parentTaskId =

@@ -564,9 +564,9 @@ describe("App task reconciler state", () => {
     ]);
   });
 
-  it("does not apply task actions across newer unaccepted evidence", () => {
-    const state = fixture();
-    const { config } = resourceFixture(state, "unaccepted-live-events");
+  it.each(["waiting", "converged"] as const)("keeps %s result and actions atomic across unaccepted input", (state) => {
+    const fixtureState = fixture();
+    const { config } = resourceFixture(fixtureState, "unaccepted-live-events");
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -589,14 +589,18 @@ describe("App task reconciler state", () => {
       outputs: [],
     };
 
-    expect(() =>
-      completeAppTask(config, claim, {
-        summary: "Act on the older snapshot",
-        evidence: ["snapshot:old"],
-        actions: [action],
-      }),
+    const output = {
+      summary: "Act on the older snapshot", evidence: ["snapshot:old"],
+      result: { inventory: [action.id] }, actions: [action],
+    };
+    expect(() => state === "waiting"
+      ? deferAppTask(config, claim, { ...output, disposition: "waiting" })
+      : completeAppTask(config, claim, output)
     ).toThrow("newer Task evidence is pending");
     expect(readTaskSnapshot(config).resources?.[action.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.result).toBeUndefined();
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]?.state).toBe("running");
+    expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
 
     expect(
       completeAppTask(config, claim, {
@@ -606,6 +610,40 @@ describe("App task reconciler state", () => {
         acceptedLiveEventIds: [101],
       }),
     ).toMatchObject({ status: "applied", actionsApplied: [`created ${action.id}`] });
+  });
+
+  it.each(["converged", "attention"] as const)("preserves open waits and %s findings for reevaluation", (state) => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"), appAgent: "app-owner", handler: "workflow:worker",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    const condition = { id: "run:42", type: "sample.run.done", subject: "run:42", expected: "done" };
+    deferAppTask(config, first, { disposition: "waiting", summary: "Run 42 is live", conditions: [condition] });
+    recordAppTaskTrigger(config, first.taskId, { type: "sample.review.changed", eventId: 100 });
+    const claim = claimObservedAppTask(config, {
+      taskId: first.taskId, appAgent: "app-owner", handler: "workflow:worker", reason: "event",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected resumed claim");
+    recordAppTaskTrigger(config, claim.taskId, { type: "sample.corrected", eventId: 101 });
+    recordAppTaskTrigger(config, claim.taskId, { type: "sample.follow-up", eventId: 102 });
+    const output = { summary: "Cleanup failed at head abc", result: { runId: 42, cleanup: "failed" },
+      evidence: ["artifact:42"], acceptedLiveEventIds: [101] };
+    expect(state === "attention"
+      ? markAppTaskAttention(config, claim, { ...output, reason: "handler-blocked" })
+      : completeAppTask(config, claim, output)
+    ).toMatchObject({ status: "applied", taskContinues: true });
+    const tree = readTaskSnapshot(config);
+    expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
+      phase: "pending", result: output.result, evidence: output.evidence, conditionIds: [condition.id],
+    });
+    expect(tree.attempts?.[claim.attemptId]?.state).toBe(state === "attention" ? "failed" : "completed");
+    expect(tree.conditions?.[condition.id]?.spec.subject).toBe("run:42");
+    expect(tree.taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual([102]);
+    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
+    expect(listRunnableAppTaskIds(config, "app-owner")).toContain(claim.taskId);
+    expect(completeAppTask(config, claim, { summary: "Late overwrite", result: { runId: 0 } }).status).toBe("stale");
+    expect(config.resourceStore.readTask(claim.taskId)?.status.result).toEqual(output.result);
   });
 
   it.each(["waiting", "converged"] as const)("admits %s parent actions across a newer clock wake", (state) => {
