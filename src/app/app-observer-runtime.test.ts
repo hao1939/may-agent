@@ -8,6 +8,54 @@ function entry(definition: AppDefinition) {
 }
 
 describe("canonical App observers", () => {
+  it("survives failed fact and error publication, then recollects the next observation", async () => {
+    let locked = true,
+      currentTime = 1,
+      observations = 0;
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(() => {
+      if (locked) throw new Error("database is locked");
+    });
+    const events: string[] = [];
+    bus.subscribe((event) => events.push(event.type));
+    const runtime = createAppObserverRuntime({
+      bus,
+      now: () => currentTime,
+      context: () => ({ read: {} as never, log: {} as never, workspace: { appRoot: "/app", projectRoot: "/project" } }),
+    });
+    runtime.replace([
+      entry({
+        id: "evaluation",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: { type: "object" },
+        observers: [
+          {
+            id: "provider",
+            intervalMs: 100,
+            async run() {
+              observations++;
+              return [{ type: "sample.observed", data: { observations } }];
+            },
+          },
+        ],
+      }),
+    ]);
+    try {
+      runtime.scanNow();
+      await Bun.sleep(5);
+      expect(events).toHaveLength(0);
+      locked = false;
+      currentTime = 101;
+      runtime.scanNow();
+      await Bun.sleep(5);
+      expect(events).toEqual(["sample.observed"]);
+      expect(observations).toBe(2);
+    } finally {
+      runtime.close();
+    }
+  });
+
   it("publishes successful facts once per slot and reports bounded failures", async () => {
     let currentTime = 1;
     let shouldFail = false;
