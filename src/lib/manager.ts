@@ -388,6 +388,7 @@ export class SubagentManager {
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
+      taskBinding?: TaskBinding;
     },
   ): void {
     const resume = this.buildResumeMessages(sessionId);
@@ -467,6 +468,8 @@ export class SubagentManager {
         outputSchema: opts.outputSchema ?? meta.outputSchema,
         toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
         executionRoot: opts.executionRoot ?? meta.executionRoot,
+        // Transcript metadata is evidence, not authority for a new attempt.
+        taskBinding: opts.taskBinding,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -1169,6 +1172,7 @@ export class SubagentManager {
       source?: string;
       timeoutMs?: number;
       suppressBenignRaceEvent?: boolean;
+      taskBinding?: TaskBinding;
       trace?: EventTrace;
       requireFinish?: boolean;
       operationAllowance?: number;
@@ -1220,6 +1224,7 @@ export class SubagentManager {
     this.executeResume(sessionId, meta, {
       source: opts?.source ?? "resume",
       injectUserMessage: message,
+      taskBinding: opts?.taskBinding,
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
       trace: opts?.trace,

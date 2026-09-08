@@ -275,6 +275,41 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(events.some((event) => event.type === "session.resume_failed")).toBe(false);
   });
 
+  for (const bound of [true, false]) {
+    it(`cold resume uses only the caller's current Task binding (bound: ${bound})`, async () => {
+      const staleBinding = { appId: "sample", taskId: "work/one", generation: 2, attemptId: "attempt-old" };
+      const taskBinding = bound ? { ...staleBinding, generation: 3, attemptId: "attempt-current" } : undefined;
+      writeRegistryState(persistDir, {
+        "session-work": {
+          agent: "worker", task: "previous pass", status: "interrupted", kind: "call",
+          startedAt: Date.now() - 10000, source: "workflow:reconcile", projectId: "sample",
+          taskBinding: staleBinding,
+        },
+      });
+      setupSession(persistDir, "session-work", [userMessage("previous pass")]);
+      const bus = new EventBus();
+      const events: AgentEvent[] = [];
+      bus.subscribe((event) => events.push(event));
+      const manager = new SubagentManager({ persistDir, bus });
+      registerAgent(manager, "worker");
+
+      try {
+        expect(manager.resumeSession("session-work", "continue", {
+          source: "workflow:reconcile", taskBinding,
+        })).toBe("session-work");
+        expect(manager.activeSessions.get("session-work")?.taskBinding).toEqual(taskBinding);
+        expect(events.find((event) => event.type === "session.start")).toMatchObject({
+          data: { sessionId: "session-work", taskBinding },
+        });
+        if (bound) expect(readSessionMeta(persistDir, "session-work")?.taskBinding).toEqual(taskBinding);
+      } finally {
+        // This regression exercises real resumption and scope, not a model call.
+        manager.cancel("session-work");
+        await manager.waitFor("session-work");
+      }
+    });
+  }
+
   it("uses the injected user message as the visible task when cold-resuming a session", async () => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];
