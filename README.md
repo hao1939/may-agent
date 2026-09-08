@@ -56,6 +56,9 @@ directory for one-off investigation and delete it when the investigation ends.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for reproducible CI, test boundaries,
 review rules, and the separate deployment procedure.
 
+See [RELEASING.md](RELEASING.md) for the Release Please and GHCR image release
+procedure. Releases do not deploy production installations.
+
 ```bash
 bun install --frozen-lockfile
 bun run ci
