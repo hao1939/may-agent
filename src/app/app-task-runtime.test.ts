@@ -2587,6 +2587,149 @@ describe("canonical App task runtime", () => {
     }
   });
 
+  it.each(["waiting", "converged"] as const)(
+    "retains %s output when new facts arrive during a worktree attempt",
+    async (state) => {
+      const f = fixture();
+      const bus = eventBus();
+      const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+      await git("init", "-b", "main");
+      await git("config", "user.email", "test@example.com");
+      await git("config", "user.name", "Test");
+      await git("add", ".");
+      await git("commit", "-m", "fixture baseline");
+      const taskId = "work/facts-during-attempt";
+      const condition = {
+        id: "run:42", type: "sample.run.finished", subject: "run:42",
+        expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 60_000,
+      };
+      let config: AppTaskContext;
+      let calls = 0;
+      let retainedPath = "";
+      await installAppTaskRuntimes({
+        ...options(f, bus), installControllers: false,
+        executors: {
+          worker: async (attempt) => {
+            calls++;
+            if (calls === 1) {
+              retainedPath = attempt.cwd;
+              recordAppTaskTrigger(config, taskId, {
+                type: "sample.review.changed", eventId: 101, data: { comment: "Please check cleanup" },
+              });
+            } else {
+              expect(attempt.cwd).toBe(retainedPath);
+              expect(config.resourceStore.readTask(taskId)?.status.result).toEqual({ runId: 42, head: "abc" });
+              expect(attempt.events.items.some((item) => item.eventId === 101)).toBeTrue();
+            }
+            return {
+              state: calls === 1 ? state : "waiting", summary: "Observed exact-head run 42",
+              result: { runId: 42, head: "abc" }, evidence: ["run:42/head:abc"],
+              ...(calls > 1 || state === "waiting" ? { conditions: [condition] } : {}),
+            };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "boot:facts-during-attempt", generation: 1,
+          entries: [{ appDir: f.appDir, definition: {
+            ...definition(), workspace: { kind: "git", localPath: ".", branch: "main" },
+          } }],
+        },
+      });
+      config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+        id: taskId, parentId: "operations", outcome: "Reevaluate without repeating completed work",
+        acceptance: ["Current evidence reviewed"], mode: "achieve", agent: "sample-owner", executor: "worker",
+      } });
+      const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+      await run();
+      const tree = readTaskSnapshot(config);
+      expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42, head: "abc" });
+      expect(tree.resources?.[taskId]?.status.evidence).toEqual(["run:42/head:abc"]);
+      expect(tree.receipts?.[taskId]).toBeUndefined();
+      expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([101]);
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
+      expect(existsSync(retainedPath)).toBeTrue();
+      if (state === "waiting") expect(tree.conditions?.[condition.id]?.spec.subject).toBe("run:42");
+      await run();
+      expect(calls).toBe(2);
+      expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("waiting");
+      await run();
+      expect(calls).toBe(2); // An unchanged open wait is not another attempt.
+    },
+  );
+
+  it.each(["fact", "intent", "action", "persistent"] as const)("rechecks persistence after a concurrent %s without repeating execution", async (change) => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: {
+        worker: async () => {
+          calls++;
+          return { state: "waiting", summary: "Recorded run 42", result: { runId: 42 },
+            ...(change === "action" ? { actions: [{ kind: "create-task" as const, id: "work/persistence-child",
+              parentId: taskId, outcome: "Follow current intent", acceptance: ["Reviewed"], mode: "achieve" as const,
+              outputs: [] }] } : {}),
+            evidence: ["run:42"], conditions: [{ id: "run:42", type: "sample.run.done", subject: "run:42",
+              expected: "done", owner: "app:sample", reviewAfterMs: 60_000 }] };
+        },
+      },
+      appRegistrySnapshot: { id: "boot:persistence-contention", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/persistence-contention";
+    const taskIntent = { id: taskId, parentId: "operations", outcome: "Retain completed work",
+      acceptance: ["Current outcome"], mode: "achieve" as const, agent: "sample-owner", executor: "worker" };
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: taskIntent });
+    const store = AppTaskResourceStore.prototype;
+    const commit = store.commit;
+    let injected = false;
+    let saveAttempts = 0;
+    store.commit = function (mutation) {
+      if (mutation.tasks?.some((write) => write.resource.metadata.id === taskId && write.resource.status.result?.runId === 42)) {
+        saveAttempts++;
+        if (change === "persistent") { injected = true; return false; }
+      }
+      if (!injected && saveAttempts === 1) {
+        injected = true;
+        if (change === "fact" || change === "action") recordAppTaskTrigger(config, taskId, { type: "sample.changed", eventId: 101 });
+        else observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...taskIntent, outcome: "Replacement intent" } });
+      }
+      return commit.call(this, mutation);
+    };
+    try {
+      await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    } finally {
+      store.commit = commit;
+    }
+    expect(injected).toBeTrue();
+    expect(calls).toBe(1);
+    const tree = readTaskSnapshot(config);
+    expect(tree.receipts?.[taskId]).toBeUndefined();
+    if (change === "fact") {
+      expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42 });
+      expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
+      expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
+      expect(saveAttempts).toBe(2);
+    } else if (change === "intent") {
+      expect(tree.resources?.[taskId]?.metadata.generation).toBe(2);
+      expect(tree.resources?.[taskId]?.spec.outcome).toBe("Replacement intent");
+      expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+    } else {
+      expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+      expect(tree.resources?.["work/persistence-child"]).toBeUndefined();
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
+      expect(saveAttempts).toBe(change === "persistent" ? 2 : 1);
+      if (change === "action")
+        expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toContain(101);
+    }
+  });
+
   it("does not create task worktrees while startup installs and recovers work", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -3750,6 +3893,7 @@ describe("canonical App task runtime", () => {
     { state: "converged", committed: false },
     { state: "converged", committed: true },
     { state: "waiting", committed: false },
+    { state: "waiting", committed: false, actions: true },
   ] as const)("parks workspace rejection without losing recovery ($state, committed=$committed)", async (scenario) => {
     const f = fixture();
     const bus = eventBus();
@@ -3773,7 +3917,13 @@ describe("canonical App task runtime", () => {
               await git(attempt.cwd, "commit", "-m", "retained change");
             }
           }
-          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"] };
+          return { state: calls === 1 ? scenario.state : "converged", summary: "Claimed handler outcome", evidence: ["provider:evidence"],
+            ...("actions" in scenario && calls === 1 ? {
+              result: { admittedChild: "work/proposed-child" },
+              actions: [{ kind: "create-task" as const, id: "work/proposed-child", parentId: "work/workspace-rejection",
+                outcome: "Must not be reported as admitted", acceptance: ["Current intent"], mode: "achieve" as const, outputs: [] }],
+            } : {}),
+          };
         },
       },
       appRegistrySnapshot: {
@@ -3805,6 +3955,8 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[taskId]).toBeUndefined();
+    expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+    expect(tree.resources?.["work/proposed-child"]).toBeUndefined();
     expect(Object.values(tree.attempts ?? {})).toEqual([
       expect.objectContaining({ state: "failed", failureReason: "handler-blocked",
         workspace: expect.objectContaining({ disposition: scenario.committed ? "branch-retained" : "retained-for-recovery" }) }),
