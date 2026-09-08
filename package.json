@@ -1,10 +1,12 @@
 {
   "name": "may-agent",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "May Host: bounded agent and workflow execution, durable tasks, and runtime control surfaces",
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "check": "tsc --noEmit",
     "check:event-graph": "bun scripts/event-graph-check.ts",
