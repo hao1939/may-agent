@@ -93,6 +93,16 @@ async function refExists(repoDir: string, ref: string): Promise<boolean> {
   return (await git(repoDir, ["show-ref", "--verify", "--quiet", ref], true)).status === 0;
 }
 
+async function removeWorkspaceRefs(repoDir: string, metadata: AppTaskWorkspace): Promise<void> {
+  const leaf = /^task\/([^/]+)$/.exec(metadata.branch)?.[1];
+  if (!leaf) return;
+  // These refs follow the workspace, not the attempt. Delete only this
+  // removed generation's refs; waiting/failed/unintegrated work keeps them.
+  for (const name of ["base", "head"]) {
+    await git(repoDir, ["update-ref", "--no-deref", "-d", `refs/may/workspaces/${leaf}/${name}`]);
+  }
+}
+
 async function remoteExists(repoDir: string, remote: string): Promise<boolean> {
   return (await git(repoDir, ["remote", "get-url", remote], true)).status === 0;
 }
@@ -210,9 +220,17 @@ export async function prepareAppTaskWorkspace(input: {
       await mkdir(dirname(path), { recursive: true });
       if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
       else {
+        if (remoteTaskBranchExists) {
+          // A private fetch ref cannot establish Git's ordinary upstream.
+          // Configure it before branch creation so a config-lock failure
+          // remains retryable, without updating the shared tracking ref.
+          await git(repoDir, ["config", `branch.${branch}.remote`, remote]);
+          await git(repoDir, ["config", `branch.${branch}.merge`, `refs/heads/${branch}`]);
+        }
         await git(repoDir, [
           "worktree",
           "add",
+          "--no-track",
           "-b",
           branch,
           path,
@@ -253,12 +271,14 @@ export async function finalizeAppTaskWorkspace(
     if (!existsSync(metadata.path)) {
       const branchRef = `refs/heads/${metadata.branch}`;
       if (!(await refExists(repoDir, branchRef))) {
+        await removeWorkspaceRefs(repoDir, metadata);
         metadata.disposition = "removed";
         return { ok: true, metadata };
       }
       metadata.headCommit = (await git(repoDir, ["rev-parse", branchRef])).stdout;
       if (await isIntegrated(repoDir, metadata)) {
         await git(repoDir, ["branch", "-D", metadata.branch]);
+        await removeWorkspaceRefs(repoDir, metadata);
         metadata.disposition = "removed";
         return { ok: true, metadata };
       }
@@ -293,6 +313,7 @@ export async function finalizeAppTaskWorkspace(
     await git(repoDir, ["worktree", "remove", metadata.path]);
     if (integrated && (await refExists(repoDir, `refs/heads/${metadata.branch}`))) {
       await git(repoDir, ["branch", "-D", metadata.branch]);
+      await removeWorkspaceRefs(repoDir, metadata);
       metadata.disposition = "removed";
     } else {
       metadata.disposition = "branch-retained";
