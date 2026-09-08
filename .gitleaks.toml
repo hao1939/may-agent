@@ -1,0 +1,19 @@
+[extend]
+useDefault = true
+
+# Exact synthetic redaction fixtures only. Real credentials in these files
+# still fail the scan. Include the former test path when auditing history.
+[[allowlists]]
+description = "Constructed persistence-redaction test values"
+condition = "AND"
+paths = ['''(?:^|/)(?:src/lib/persistence-redaction\.test\.ts|test/unit/transcript-redaction\.test\.ts|\.gitleaks\.toml)$''']
+regexTarget = "secret"
+regexes = [
+  "^abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890$",
+  "^abcdefghij1234567890abcdefghij1234567890abcdef$",
+  "^eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9\\.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQuYXp1cmUuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvYWJjIiwiZXhwIjoxNjE2NjIxNjg0fQ\\.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c$",
+  "^eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9\\.eyJhdWQiOiJhIiwiZXhwIjoxfQ\\.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV$",
+  "^eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\\.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSm9obiJ9\\.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV$",
+  "^eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9\\.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQuYXp1cmUuY29tIn0\\.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c$",
+  "^ghp_x1y2z3A4B5C6D7E8F9G0H1I2J3K4L5M6N7O8$",
+]

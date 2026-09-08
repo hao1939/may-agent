@@ -15,6 +15,16 @@ bundle/
 .codex/
 .agents/
 .env
+.env.*
+!.env.example
+!.env.*.example
+.pi/
+.ssh/
+.azure/
+.aws/
+.git-credentials
+.netrc
+container/compose.local.yml
 
 # Large or host-specific data not copied by the Dockerfile
 pi-deps/
