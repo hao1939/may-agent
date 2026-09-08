@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent review accepts exact canonical postflight af52f0c4e4 and the guarded transition to candidate 584395df7c. Reviewer acceptance e0820ef451 and disposition refresh f44bb57fce are now integrated literally in order after the human-directed reset; discarded research child 5fbc3554b7 remains excluded. The live checkout still has the clean index, exact default and Scout fingerprints, all five protected hashes, two intended overlaps, and 36 candidate-identical materializations. RV-052 is resolved only for this exact landed boundary; every future landing needs fresh guards, while compaction and cleanup remain blocked."
+summary: "Independent review accepts exact Cycle 427 integration ledger fb519252f4. Reviewer acceptance e0820ef451 and disposition refresh f44bb57fce are integrated literally in order after the human-directed reset; discarded research child 5fbc3554b7 remains excluded. The live checkout still has the clean index, exact default and Scout fingerprints, all five protected hashes, two intended overlaps, and 36 candidate-identical materializations. RV-052 is resolved only for this exact landed boundary; every future landing needs fresh guards, while compaction and cleanup remain blocked."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Organizational Memory", "SwarmResearch", "TAG-block", "aiAuthZ", "Balkanization", "ShellSieve", "OverEager", "Hermes Agent", "OpenClaw", "consent ablation", "generator seed", "sensitivity rank", "scenario-set scale", "randomized authorization tiers", "offline rejudging", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "provenance replacement", "receipt binding", "CXI", "fixed-policy admission", "ATP", "principal binding", "RV-004", "RV-031", "RV-034", "RV-036", "RV-037", "RV-038", "RV-039", "RV-040", "RV-041", "RV-042", "RV-043", "RV-044", "RV-045", "RV-046", "RV-047", "RV-048", "RV-049", "RV-050", "RV-051", "RV-052"]
 last_updated: "2026-09-08"
-source_basis: "Independent exact-range review 8b20b38fbe3510028130a1108dedaad3883c88fc..af52f0c4e4c23364029bbd40450b71f890681842. Direct-child reviewer result 28c797a0218d863405b5a60a6d622db325af23aa has stable patch ID 450b330c70683cafbd7124d06d7e303e78f595f7 and is the sole parent of producer postflight af52f0c4e4. Exact candidate 584395df7c2c25f5737eb4a392dc8c75d2852b53 has ordered parents protected base 6237bd7e608de98bb60e27a94ea19b52bf52c838 and canonical ed7de4d92950c1daa8b5829531079928ff592cc5, tree aee432c4fe174159ec389f151cf652607d9d646f. The immediate live plan at 5,679 records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 clean materializations, nine restores, and 27 removals. The transition reached exact candidate HEAD with a clean index and byte-identical 77 / 5,679 / 23 status streams; the bounded 2026-09-08T21:19:17+08:00 refresh still finds exact HEAD, clean index, default 77 / 141a84e8, Scout 23 / b9d6fb9c, all five protected hashes, exactly the two intended dirty candidate paths, zero unexpected candidate-path dirt, and zero clean-materialization mismatch. Expanded status is now 5,698 / 81dfcdcd after 19 additive non-Scout records, so producer-observed intermediate growth is preserved as time-scoped evidence rather than called a stable fingerprint. Canonical reflog proves e0820ef451 was fast-forwarded at 20:46:55, discarded research child 5fbc3554b7 was committed at 21:00:47, and the branch was reset to af52f0c4e4 at 21:01:11. Canonical now integrates exact ordered range af52f0c4e4..f44bb57fce: reviewer acceptance e0820ef451 at stable patch ID 5f75a5736485053eba538a170b908a3c0b9d6664, then reviewer disposition f44bb57fce at stable patch ID 3cc082636fa50900a9bde851723e9a8e560202f7; 5fbc3554b7 remains excluded from ancestry. Producer current-tip validation passes 321 tests / 1,632 assertions, 124 scoped links, navigation 11/14 + 8/8 + 14/14, and git diff --check; independent review supplies the unchanged 1,557-document / 1,808-link and health 26/16 evidence for the reviewed tree. RV-052 is resolved for this exact boundary only; no further local-main movement, compaction, or cleanup is approved."
+source_basis: "Independent exact-range review 8b20b38fbe3510028130a1108dedaad3883c88fc..af52f0c4e4c23364029bbd40450b71f890681842 and exact integration-ledger review f44bb57fce73616e7cff13b64674b5b166e5b8bc..fb519252f4e27e2b90789097ab95d5ea60e99f6c. Direct-child reviewer result 28c797a0218d863405b5a60a6d622db325af23aa has stable patch ID 450b330c70683cafbd7124d06d7e303e78f595f7 and is the sole parent of producer postflight af52f0c4e4. Exact candidate 584395df7c2c25f5737eb4a392dc8c75d2852b53 has ordered parents protected base 6237bd7e608de98bb60e27a94ea19b52bf52c838 and canonical ed7de4d92950c1daa8b5829531079928ff592cc5, tree aee432c4fe174159ec389f151cf652607d9d646f. The immediate live plan at 5,679 records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 clean materializations, nine restores, and 27 removals. The transition reached exact candidate HEAD with a clean index and byte-identical 77 / 5,679 / 23 status streams; the bounded 2026-09-08T21:31:46+08:00 refresh still finds exact HEAD, clean index, default 77 / 141a84e8, Scout 23 / b9d6fb9c, all five protected hashes, exactly the two intended dirty candidate paths, zero unexpected candidate-path dirt, and zero clean-materialization mismatch. Expanded status is now 5,701 / 8f154bff after 22 additive non-Scout records, so intermediate growth remains time-scoped evidence rather than a stable fingerprint. Canonical reflog proves e0820ef451 was fast-forwarded at 20:46:55, discarded research child 5fbc3554b7 was committed at 21:00:47, and the branch was reset to af52f0c4e4 at 21:01:11. Canonical now integrates exact ordered range af52f0c4e4..f44bb57fce: reviewer acceptance e0820ef451 at stable patch ID 5f75a5736485053eba538a170b908a3c0b9d6664, then reviewer disposition f44bb57fce at stable patch ID 3cc082636fa50900a9bde851723e9a8e560202f7; 5fbc3554b7 remains excluded from ancestry. Independent exact-tip validation at fb519252f4 passes 321 tests / 1,632 assertions, 124 scoped links, navigation 11/14 + 8/8 + 14/14, 1,557 documents / 1,808 broad links, health 26/16 with truncation, and git diff --check. RV-052 is resolved for this exact boundary only; no further local-main movement, compaction, or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Independent exact-range review 8b20b38fbe3510028130a1108dedaad388
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `f44bb57fce73616e7cff13b64674b5b166e5b8bc` (integrated Cycle 427 reviewer disposition)
+  `fb519252f4e27e2b90789097ab95d5ea60e99f6c` (independently accepted Cycle 427 integration ledger)
 - Last material standing commit reviewed:
   `af52f0c4e4c23364029bbd40450b71f890681842` (Cycle 427 release postflight and integration ledger)
 - Last producer research material reviewed:
   `ed7de4d92950c1daa8b5829531079928ff592cc5` (Cycle 425 Organizational Memory run/scenario evidence)
 - Last integrated reviewer result:
   `f44bb57fce73616e7cff13b64674b5b166e5b8bc` (literally integrated after reviewer acceptance `e0820ef451`)
-- Current review date: `2026-09-08T21:27:37+08:00`
+- Current review date: `2026-09-08T21:31:46+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -276,16 +276,20 @@ source_basis: "Independent exact-range review 8b20b38fbe3510028130a1108dedaad388
   `c5f4d3153f066b5abea7346eab5db6fcdeea9c03` (Cycle 424 scope correction),
   `ed7de4d92950c1daa8b5829531079928ff592cc5` (Cycle 425 Organizational Memory qualification),
   `8b20b38fbe3510028130a1108dedaad3883c88fc` (Cycle 426 release-preparation record),
-  `28c797a0218d863405b5a60a6d622db325af23aa` (exact Cycle 426 reviewer acceptance), and
-  `af52f0c4e4c23364029bbd40450b71f890681842` (Cycle 427 guarded-transition postflight).
+  `28c797a0218d863405b5a60a6d622db325af23aa` (exact Cycle 426 reviewer acceptance),
+  `af52f0c4e4c23364029bbd40450b71f890681842` (Cycle 427 guarded-transition postflight),
+  `e0820ef4516856aa74deea865a0bfc3402b9360b` (Cycle 427 reviewer acceptance),
+  `f44bb57fce73616e7cff13b64674b5b166e5b8bc` (Cycle 427 reviewer disposition refresh), and
+  `fb519252f4e27e2b90789097ab95d5ea60e99f6c` (Cycle 427 literal-integration ledger).
 - Newly reviewed exact standing span:
-  `8b20b38fbe3510028130a1108dedaad3883c88fc..af52f0c4e4c23364029bbd40450b71f890681842`
-  (literal reviewer integration followed by the exact guarded local-main
-  transition postflight; no research, compaction, deletion, or cleanup).
-- Review date: `2026-09-08T20:38:46+08:00`
+  `f44bb57fce73616e7cff13b64674b5b166e5b8bc..fb519252f4e27e2b90789097ab95d5ea60e99f6c`
+  (one truthful literal-integration ledger; no research, local-main movement,
+  compaction, deletion, or cleanup).
+- Review date: `2026-09-08T21:31:46+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
 - Overall disposition: **accept exact canonical tip
-  `af52f0c4e4c23364029bbd40450b71f890681842` and the completed guarded
+  `fb519252f4e27e2b90789097ab95d5ea60e99f6c`, its truthful Cycle 427
+  integration ledger, and the completed guarded
   transition to exact candidate `584395df7c2c25f5737eb4a392dc8c75d2852b53`;
   resolve RV-052 for this exact landed boundary only, require fresh guards for
   every later landing, and reject compaction or cleanup.** The prior completed local-main landing
@@ -3935,9 +3939,22 @@ compaction, and cleanup remain unapproved.
 | `RV-049` | Medium | Cycle 412 design `0ac800129e6d2432b0bebc5e52966f22b7efa9c8`; six accepted-evidence fragments | Six section fragments did not match their target headings, while the file-only link gate discarded fragments. The defect could make a future compact record appear green with unreachable evidence. | **Resolved exactly on standing.** Reviewer correction `86502d99271207d872057c4874326296d57255b4` is the direct parent of Cycle 413 result `a70923f523`; all 14 corrected fragments resolve uniquely. Exact range `86502d9927..114812e8a0` contains only the stale reviewer cursor, which is neither contained nor claimed equivalent and is superseded by this cursor. |
 | `RV-050` | High | Cycle 413 fixture/validator at producer `a70923f523a51b9c15d2e324a3c4d10d38599380` | The shape gate accepted a repeated producer pair and an arbitrary UTC receipt substitution; runtime independently checked each declared pair but did not bind receipts to source sections or require the fourteen entries to be one chain. A coherently altered compact record could therefore pass before destructive compaction while changing its provenance. | **Resolved exactly on standing.** Direct child `cf00aec105ba802f7fd784a17c1275a09dcf3a2d` pins fixture bytes, binds two receipt sections to immutable commits and digests, requires unique result/evidence identities and one contiguous chain ending at the review source, adds negative controls, and narrows flat timestamp semantics; subsequent exact reviewer acceptance `8f5b1a4666` and producer ledger `d3a8a06186` retain that disposition. Independent exact-tip replay passes. Real compaction remains rejected under RV-036. |
 | `RV-051` | Low | Review-cursor `source_basis` through exact canonical tip `6458b20511455313b5eec86913670d52482e1573` | The phrase “commit-time health 27 facts / 16 wakes” did not identify its clock. Direct replay returns 27 / 16 at reviewed candidate `cf08a2798d`'s `2026-09-05T21:31:46Z` commit time but 26 / 16 at later ledger and acceptance clocks because a calendar boundary elapsed. The ambiguity weakened exact replay but changed no health logic or checkpoint decision. | **Resolved exactly at `6458b20511`.** The candidate and successor clocks are distinguished explicitly; current exact-tip replay returns 26 / 16 with `truncated:true`. |
-| `RV-052` | High | Cycle 420-427 release preparation, reviewer acceptance, and exact guarded postflight `6237bd7e60` → `584395df7c` | Candidate `584395df7c` has ordered parents protected base and canonical `ed7de4d929`, contains reviewer `27c7286418` plus the patch-equivalent Hermes/OpenClaw canonical commits, and intentionally predates documentation-only `8b20b38fbe` / `28c797a021`. The immediate plan at 5,679 expanded records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 materializations, nine inverse restores, and 27 inverse removals. The actual transition reached exact candidate HEAD with a clean index and byte-identical 77 / 5,679 / 23 status streams. Independent postflight at `af52f0c4e4` and the bounded disposition refresh confirm exact HEAD, clean index, unchanged default and Scout fingerprints, all five protected hashes, exactly two intended dirty candidate paths, and zero clean-materialization mismatches. Expanded status subsequently rose to 5,698, but all 19 additions are outside the Scout and candidate-path preservation surfaces. | **Resolved for this exact landing; accept.** Reviewer `28c797a021` is integrated literally and producer `af52f0c4e4` truthfully records the transition. Do not generalize this proof: every later landing needs fresh candidate, overlay, fingerprint, byte, rollback, and current-tip validation gates. If immediate rollback is still applicable, use the emitted 9/27 inverse and reproduce the exact preflight fingerprints. Compaction and cleanup remain blocked under separate findings. |
+| `RV-052` | High | Cycle 420-427 release preparation, reviewer acceptance, and exact guarded postflight `6237bd7e60` → `584395df7c` | Candidate `584395df7c` has ordered parents protected base and canonical `ed7de4d929`, contains reviewer `27c7286418` plus the patch-equivalent Hermes/OpenClaw canonical commits, and intentionally predates documentation-only `8b20b38fbe` / `28c797a021`. The immediate plan at 5,679 expanded records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 materializations, nine inverse restores, and 27 inverse removals. The actual transition reached exact candidate HEAD with a clean index and byte-identical 77 / 5,679 / 23 status streams. Independent postflight and integration-ledger review confirm exact HEAD, clean index, unchanged default and Scout fingerprints, all five protected hashes, exactly two intended dirty candidate paths, and zero clean-materialization mismatches. Expanded status subsequently rose to 5,701, but all 22 additions are outside the Scout and candidate-path preservation surfaces. | **Resolved for this exact landing; accept.** Reviewer `28c797a021` is integrated literally and producer `af52f0c4e4` truthfully records the transition; ledger `fb519252f4` truthfully records later reviewer integration. Do not generalize this proof: every later landing needs fresh candidate, overlay, fingerprint, byte, rollback, and current-tip validation gates. If immediate rollback is still applicable, use the emitted 9/27 inverse and reproduce the exact preflight fingerprints. Compaction and cleanup remain blocked under separate findings. |
 
 ## Reviewer source/result and integration status
+
+- Producer integration ledger
+  `fb519252f4e27e2b90789097ab95d5ea60e99f6c` is **independently accepted
+  at its exact revision**. It is the direct child of reviewer disposition
+  `f44bb57fce73616e7cff13b64674b5b166e5b8bc`, contains prior reviewer
+  acceptance `e0820ef4516856aa74deea865a0bfc3402b9360b` literally, and excludes
+  stopped research child `5fbc3554b7a32b97f66681a90653d909c328df7a`
+  from ancestry. The ledger changes only this cursor, reports producer
+  validation separately from independent evidence, and preserves all landing,
+  compaction, and cleanup limits. Roll back this ledger first with one ordinary
+  revert, then revert `f44bb57fce` and `e0820ef451` in reverse order only if
+  removing the accepted review disposition too; do not reset or revive the
+  stopped research child.
 
 - Reviewer range `af52f0c4e4c23364029bbd40450b71f890681842..f44bb57fce73616e7cff13b64674b5b166e5b8bc`
   is **literally integrated in dependency order**: acceptance
@@ -4906,11 +4923,35 @@ movement, compaction, cleanup, branch deletion, worktree deletion, or import
 of discarded `5fbc3554b7`. RV-004/RV-034 remain high/open and RV-036/RV-038
 remain medium/open.
 
+## Independent Cycle 427 integration-ledger review — accept
+
+Independent review covers exact source
+`f44bb57fce73616e7cff13b64674b5b166e5b8bc` and direct-child result
+`fb519252f4e27e2b90789097ab95d5ea60e99f6c`. The successor changes only this
+cursor by +36/-31. It correctly turns the earlier pending state into literal
+ordered integration, reproduces reviewer patch IDs
+`5f75a5736485053eba538a170b908a3c0b9d6664` and
+`3cc082636fa50900a9bde851723e9a8e560202f7`, and keeps stopped research
+`5fbc3554b7a32b97f66681a90653d909c328df7a` outside canonical ancestry.
+
+| Rubric dimension | Disposition |
+| --- | --- |
+| Scope, provenance, claim separation, contradictions, and uncertainty | **Accept.** The ledger distinguishes producer validation from prior independent broad-link and health evidence, makes no research or behavior claim, and does not turn the transient reflog event or discarded child into canonical evidence. |
+| Novelty, decision value, duplication, contamination, usability, and cost | **Accept narrowly.** One ledger commit closes the concrete integration discrepancy and removes the stale wait. It changes no knowledge claim, source body, benchmark, protected evaluator, or dirty-checkout byte. RV-004/RV-034 remain high/open and RV-036/RV-038 medium/open. |
+| Batch coherence, containment, rollback, and cleanup | **Accept.** The exact chain is `af52f0c4e4` → `e0820ef451` → `f44bb57fce` → `fb519252f4`; the excluded `5fbc3554b7` is not an ancestor. Roll back the ledger first, then reviewer commits only if their accepted disposition is intentionally removed. No history rewrite, protected movement, compaction, branch deletion, or worktree deletion is approved. |
+| Current-tip validation and preservation | **Accept exact `fb519252f4`.** Reviewer-owned validation passes syntax, TypeScript, formatting, Cycle 422 projection, 124 scoped links, navigation 11/14 + 8/8 + 14/14, and 321 tests / 1,632 assertions. The Scout-library audit passes 1,557 tracked Markdown documents / 1,808 links; read-only health reports 26 facts / 16 wakes with `truncated:true`; `git diff --check` passes. Read-only `/app` remains exact `584395df7c` with clean index, default 77 / `141a84e8…0572`, Scout 23 / `b9d6fb9c…a12c`, all five hashes exact, and the same 36/2/0 candidate-path result. Expanded 5,701 / `8f154bff…eafe` is disclosed as 22 unrelated records above transition. |
+
+Disposition: **accept exact canonical integration ledger
+`fb519252f4e27e2b90789097ab95d5ea60e99f6c`.** The prior mutual wait is
+closed and normal producer research may resume. This acceptance does not
+approve another local-main transition, compaction, cleanup, or the discarded
+Cycle 428 batch.
+
 ## Next trigger
 
 The next exact trigger is one coherent material producer checkpoint, evidence
 changing RV-004, RV-034, RV-036, or RV-038, or the first eligible periodic
-boundary `2026-09-09T21:19:17+08:00`. Do not revive the excluded research
+boundary `2026-09-09T21:31:46+08:00`. Do not revive the excluded research
 child, begin compaction or cleanup, or perform another protected-checkout
 transition without a fresh exact-boundary gate.
 
