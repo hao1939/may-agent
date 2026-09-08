@@ -3,7 +3,8 @@
  *
  * Validates the full metric lifecycle: define → record healthy → record
  * breaching → metric.breach event → metric_alerts row → record recovery →
- * metric.recovered (best-effort; some implementations emit on next snapshot).
+ * metric.recovered and the same alert resolved. Each phase enters through the
+ * real daemon's event interface; E1 separately proves recurring timer delivery.
  *
  * Spans:
  *   - sdk.metrics.define / sdk.metrics.record
@@ -19,12 +20,9 @@
  * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import {
-  openSandboxDb,
-  pollUntil,
-  queryEvents,
-} from "./lib/live-daemon.js";
+import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
+import { emitDaemonEvent } from "../../packages/control/src/client.js";
 
 describe("E4: metric breach to alert", () => {
   let sb: Sandbox;
@@ -39,8 +37,7 @@ describe("E4: metric breach to alert", () => {
           {
             name: "e2e-metric-canary",
             handler: "e2e-metric-canary",
-            intervalMs: 10000,
-            offsetMs: 1, // Keep real timed phases, without random startup jitter.
+            on: ["e2e.metric.sample"],
             agent: "may",
             enabled: true,
           },
@@ -48,6 +45,13 @@ describe("E4: metric breach to alert", () => {
       },
     });
     await sb.daemonReady;
+    // The socket opens before handler loading and event subscriptions finish.
+    // This existing activation message is emitted after subscriptions attach.
+    await pollUntil(() => sb.getLogs().includes("[cron:may] Starting 1 job(s)"), {
+      timeoutMs: 10_000,
+      intervalMs: 50,
+      description: "metric handler event subscription ready",
+    });
   }, 60_000);
 
   afterAll(async () => {
@@ -59,14 +63,24 @@ describe("E4: metric breach to alert", () => {
     async () => {
       const db = openSandboxDb(sb.dbPath);
       try {
-        // Wait for at least 2 fires: baseline + breach. Each fire is 10s apart.
-        await pollUntil(
-          () => {
-            const phases = queryEvents(db, { types: ["e2e.metric.phase"], since: t0, limit: 5 });
-            return phases.length >= 2 ? phases : null;
-          },
-          { timeoutMs: 40_000, intervalMs: 500, description: "≥2 metric-canary phases" },
+        const sample = async (phase: string, value: number) => {
+          // Use the existing operator fact ingress, as `may --emit` does.
+          const receipt = await emitDaemonEvent(sb.socketPath, "e2e.metric.sample", {}, { timeoutMs: 5_000 });
+          expect(receipt.type).toBe("ok");
+          await pollUntil(
+            () =>
+              queryEvents(db, { types: ["e2e.metric.phase"], since: t0 }).some(
+                (event) => JSON.parse(event.data ?? "{}").phase === phase,
+              ),
+            { timeoutMs: 10_000, intervalMs: 50, description: `metric ${phase}` },
+          );
+          expect(db.prepare("SELECT current FROM metrics WHERE id = ?").get("e2e.canary")).toEqual({ current: value });
+        };
+        await sample("baseline", 1.0);
+        expect(db.prepare("SELECT COUNT(*) AS count FROM metric_alerts WHERE metric_id = ?").get("e2e.canary")).toEqual(
+          { count: 0 },
         );
+        await sample("breach", 0.3);
 
         // Metric row exists.
         const metric = db
@@ -97,15 +111,9 @@ describe("E4: metric breach to alert", () => {
           .prepare("SELECT id, metric_id, message, resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 5")
           .all("e2e.canary") as { id: number; metric_id: string; message: string | null; resolved_at: number | null }[];
         expect(alerts.length).toBeGreaterThanOrEqual(1);
+        expect(alerts[0].resolved_at).toBeNull();
 
-        // ── Wait for recovery (3rd fire) ───────────────────────────────
-        await pollUntil(
-          () => {
-            const phases = queryEvents(db, { types: ["e2e.metric.phase"], since: t0, limit: 10 });
-            return phases.length >= 3 ? phases : null;
-          },
-          { timeoutMs: 25_000, intervalMs: 500, description: "recovery phase" },
-        );
+        await sample("recover", 0.95);
 
         // Latest snapshot is recovery value.
         const recovered = db
@@ -124,13 +132,13 @@ describe("E4: metric breach to alert", () => {
         expect(recoveredEvents.length).toBeGreaterThanOrEqual(1);
 
         const resolvedAlerts = db
-          .prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 5")
-          .all("e2e.canary") as { resolved_at: number | null }[];
-        expect(resolvedAlerts.some((alert) => alert.resolved_at !== null)).toBe(true);
+          .prepare("SELECT id, resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 5")
+          .all("e2e.canary") as { id: number; resolved_at: number | null }[];
+        expect(resolvedAlerts).toEqual([{ id: alerts[0].id, resolved_at: expect.any(Number) }]);
       } finally {
         db.close();
       }
     },
-    90_000,
+    60_000,
   );
 });
