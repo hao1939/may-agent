@@ -85,17 +85,25 @@ export function createAppObserverRuntime(options: {
       }
     } catch (error) {
       if (closed || states.get(key) !== state) return;
-      options.bus.emit({
-        type: "app.observer.failed",
-        source: "app-host",
-        owner: `app:${state.appId}`,
-        target: { project: state.appId },
-        data: {
-          appId: state.appId,
-          observerId: state.observer.id,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      } as never);
+      try {
+        options.bus.emit({
+          type: "app.observer.failed",
+          source: "app-host",
+          owner: `app:${state.appId}`,
+          target: { project: state.appId },
+          data: {
+            appId: state.appId,
+            observerId: state.observer.id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        } as never);
+      } catch (reportError) {
+        // Publication may be the failed operation. Do not recursively report
+        // through unavailable persistence or leave an unhandled rejection.
+        console.error(
+          `[app-observer:${state.appId}/${state.observer.id}] failed: ${String(error)}; failure publication: ${String(reportError)}`,
+        );
+      }
     } finally {
       if (states.get(key) === state) {
         state.lastSlot = slot;
