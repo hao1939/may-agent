@@ -1853,4 +1853,50 @@ describe("App inbox runtime", () => {
 
     expect(observed).toEqual([{ type: "sample.observed", recordOnly: true }]);
   });
+
+  it("contains schedule persistence failure and publishes only the latest slot after recovery", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      readFileSync(appPath, "utf8").replace(
+        "subscriptions: [{",
+        `schedules: [
+      { id: "contended", intervalMs: 1000, event: { type: "sample.contended", data: {} } },
+      { id: "healthy", intervalMs: 1000, event: { type: "sample.healthy", data: {} } }
+    ], subscriptions: [{`,
+      ),
+    );
+    let currentTime = 1_000,
+      locked = true,
+      nextId = 1;
+    const bus = new EventBus();
+    const observed: Array<{ type: string; key: string }> = [];
+    bus.setPersistenceSubscriber((event) => {
+      if (event.type === "sample.contended" && locked) throw new Error("database is locked");
+      Object.defineProperty(event, EVENT_ROW_ID, { value: nextId++, configurable: true });
+    });
+    bus.subscribe((event) => {
+      if (event.type.startsWith("sample."))
+        observed.push({ type: event.type, key: (event.data as any).idempotencyKey });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...capabilities(bus).options,
+      now: () => currentTime,
+      scanIntervalMs: 10_000,
+    });
+    currentTime = 2_000;
+    expect(() => runtime!.scanNow()).not.toThrow();
+    expect(observed.map((event) => event.type)).toEqual(["sample.healthy"]);
+    locked = false;
+    currentTime = 5_000;
+    runtime.scanNow();
+    runtime.scanNow();
+    expect(observed.filter((event) => event.type === "sample.contended")).toEqual([
+      { type: "sample.contended", key: "schedule:evaluation:contended:5" },
+    ]);
+    expect(observed.filter((event) => event.type === "sample.healthy")).toHaveLength(2);
+  });
 });

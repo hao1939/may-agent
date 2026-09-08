@@ -3,17 +3,16 @@
  */
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 // ── ID Generation ──────────────────────────────────────────────────────
 
-let nextId = 0;
 /**
- * Generate a unique session ID.
- * Format: `{prefix}_{timestamp}_{counter}` — e.g. `s_1700000000000_0`.
+ * Session paths are shared across isolated workers and process restarts.
+ * A timestamp plus process-local counter is not a globally unique identity.
  */
 export function generateId(prefix = "s"): string {
-  return `${prefix}_${Date.now()}_${nextId++}`;
+  return `${prefix}_${Date.now()}_${randomUUID()}`;
 }
 
 // ── Formatting Helpers ─────────────────────────────────────────────────
