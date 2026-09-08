@@ -40,7 +40,7 @@ describe("project-local agent discovery", () => {
       const agentDir = join(appProject, "agents", "aks-explorer");
       mkdirSync(domainProject, { recursive: true });
       mkdirSync(agentDir, { recursive: true });
-      writeFileSync(join(domainProject, "README.md"), "# AKS RP E2E\n");
+      writeFileSync(join(domainProject, "README.md"), "# Alpha Project\n");
       writeFileSync(join(appProject, "app.ts"), "export default {};\n");
       writeFileSync(join(appProject, "project.md"), "# alpha-project app\n");
       writeFileSync(

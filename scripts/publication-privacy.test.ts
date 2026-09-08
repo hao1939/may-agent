@@ -1,15 +1,21 @@
 import { describe, expect, it } from "bun:test";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = (file: string) => readFileSync(new URL(file, new URL("../", import.meta.url)), "utf8");
 const ignored = (file: string) =>
-  spawnSync("git", ["check-ignore", "--no-index", "--quiet", file], { cwd: root }).status;
+  new Promise<number>((resolve, reject) => {
+    execFile("git", ["check-ignore", "--no-index", "--quiet", file], { cwd: root, timeout: 2000 }, (error) => {
+      if (!error) resolve(0);
+      else if (!error.killed && error.code === 1) resolve(1);
+      else reject(error);
+    });
+  });
 
 describe("publication privacy", () => {
-  it("ignores local credentials and overrides, but allows sanitized examples", () => {
+  it("ignores local credentials and overrides, but allows sanitized examples", async () => {
     for (const file of [
       ".env",
       ".env.local",
@@ -23,8 +29,8 @@ describe("publication privacy", () => {
       ".netrc",
       "container/compose.local.yml",
     ])
-      expect(ignored(file)).toBe(0);
-    for (const file of [".env.example", ".env.production.example"]) expect(ignored(file)).toBe(1);
+      expect(await ignored(file)).toBe(0);
+    for (const file of [".env.example", ".env.production.example"]) expect(await ignored(file)).toBe(1);
   });
 
   it("uses image-provided CLIs and keeps private source mounts out of the example", () => {
