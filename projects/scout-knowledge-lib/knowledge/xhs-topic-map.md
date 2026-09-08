@@ -6,6 +6,7 @@ latest_seed_basis: "Cycle 422 observational reconciliation through 2026-09-08T03
 source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 422 at 2026-09-08T03:33:16.091Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 420; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 420, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; retained SwarmResearch Third-Autocorrelation transcripts and producer-authored cost-provenance inventory."
 cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch five-task heuristic histories, 125 transcript files, public/private evaluator code, cutoff CSV, and producer-authored provenance inventory."
+cycle_425_source_basis: "No-request seed reconciliation at 2026-09-08T04:31:01Z; research source 5b730b02df83974c3bd33f55755d4278c01f49f0; post-reconciliation parent c5f4d3153f066b5abea7346eab5db6fcdeea9c03; retained Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78, exact scenarios/evaluator/eight-metric hashes, and producer-authored matched run/scenario inventory."
 latest_seed_observation: "Cycle 422 read-only XHS boundary through 2026-09-08T03:33:16.091Z."
 </ai_context>
 
@@ -11257,6 +11258,35 @@ reconciles the paper. The aggregate result remains 9 compatible / 1 conflicting
 Next seek an author-retained five-row cutoff/private-result manifest; otherwise
 move to a different released primary contradiction. RV-004/RV-034 remain
 high/open, RV-036/RV-038 medium/open, and RV-052 high/open and release-blocking.
+
+### Cycle 425 checkpoint — aggregate memory gain is concentrated
+
+Cycle 425 began from clean exact source
+`5b730b02df83974c3bd33f55755d4278c01f49f0`, paused for reviewer-ledger
+reconciliation, and resumed without another source request at clean exact
+parent `c5f4d3153f066b5abea7346eab5db6fcdeea9c03`. Cycle 422's direct XHS
+observation was about 58 minutes old, so the bounded reconciliation made zero
+XHS requests. Additions/changes remain unknown, removals remain `[]`, and all
+132 durable seeds remain unavailable. RV-004 and RV-034 retain their protected
+outcome and external-runtime boundaries; RV-052 remains release-blocking and
+does not authorize local-main movement.
+
+The highest accessible released-artifact question was whether Organizational
+Memory's reported 35/40 versus 28/40 GPT and 38/40 versus 32/40 Sonnet gains
+were stable across runs and scenarios. The [Cycle 425 matched inventory](../reports/review/scout-organizational-memory-run-scenario-cycle425-2026-09-08.md)
+confirms that memory beats RAG in all eight run aggregates. Across 80 matched
+cells it wins 20, loses 7, and ties 53.
+
+The advantage is not broad across the fixed task set. S01—the fixture whose
+note explicitly expects memory to pass and RAG to fail—wins all eight cells and
+contributes 8/13 of the net gain. Without S01, five run aggregates improve and
+three tie. Four scenarios favor memory in net cells, four favor RAG, and two
+tie. Confidence is high in the pinned source identities and retained-cell
+arithmetic, moderate in a consistent average advantage on this authored suite,
+and low in transfer to new policies, tasks, organizations, or memory-update
+workflows. Next seek a preregistered held-out scenario suite or independently
+authored policy tasks. RV-004/RV-034 remain high/open, RV-036/RV-038
+medium/open, and RV-052 high/open and release-blocking.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
