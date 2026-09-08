@@ -417,3 +417,18 @@ Convergence is complete when:
 - active Tier-2 documents state remaining gaps honestly; and
 - a fresh code-and-document audit finds no second work, delivery, routing, or
   persistence authority.
+
+
+## September 8 focused May simplification
+
+The human approved the focused May scope preserved in
+[implementation evidence](../../../../evidence/approved-scope.md). Earlier
+pilot and deployment choices are not authority for this source task.
+
+A: frontend child-request waiting is explicitly deferred. The SDK contract and
+compatibility fixtures remain, and no complete installed-caller/retained-request
+audit is available. See the [consumer audit and drain decision](../../../../evidence/request-wait-audit.md). Ordinary request/result correlation and Task dependencies remain required.
+
+B and C are independent implementation slices; their verification and remaining
+limits will be recorded here when tested. No model-behavior or rollout claim is
+implied by this source audit.
