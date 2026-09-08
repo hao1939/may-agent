@@ -3473,7 +3473,9 @@ async function reconcileTask(input: {
       attention = persistResult(() =>
         markAppTaskAttention(config, primary, {
           summary: primaryHandlerResult.summary,
-          result: primaryHandlerResult.result,
+          // A failed workspace/action admission must not report its proposed
+          // Task mutations as accepted through the diagnostic path either.
+          result: primaryHandlerResult.actions.length ? undefined : primaryHandlerResult.result,
           evidence: primaryHandlerResult.evidence,
           acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           reason: primaryHandlerResult.resultRejected
