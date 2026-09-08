@@ -2659,6 +2659,77 @@ describe("canonical App task runtime", () => {
     },
   );
 
+  it.each(["fact", "intent", "action", "persistent"] as const)("rechecks persistence after a concurrent %s without repeating execution", async (change) => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installAppTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: {
+        worker: async () => {
+          calls++;
+          return { state: "waiting", summary: "Recorded run 42", result: { runId: 42 },
+            ...(change === "action" ? { actions: [{ kind: "create-task" as const, id: "work/persistence-child",
+              parentId: taskId, outcome: "Follow current intent", acceptance: ["Reviewed"], mode: "achieve" as const,
+              outputs: [] }] } : {}),
+            evidence: ["run:42"], conditions: [{ id: "run:42", type: "sample.run.done", subject: "run:42",
+              expected: "done", owner: "app:sample", reviewAfterMs: 60_000 }] };
+        },
+      },
+      appRegistrySnapshot: { id: "boot:persistence-contention", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/persistence-contention";
+    const taskIntent = { id: taskId, parentId: "operations", outcome: "Retain completed work",
+      acceptance: ["Current outcome"], mode: "achieve" as const, agent: "sample-owner", executor: "worker" };
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: taskIntent });
+    const store = AppTaskResourceStore.prototype;
+    const commit = store.commit;
+    let injected = false;
+    let saveAttempts = 0;
+    store.commit = function (mutation) {
+      if (mutation.tasks?.some((write) => write.resource.metadata.id === taskId && write.resource.status.result?.runId === 42)) {
+        saveAttempts++;
+        if (change === "persistent") { injected = true; return false; }
+      }
+      if (!injected && saveAttempts === 1) {
+        injected = true;
+        if (change === "fact" || change === "action") recordAppTaskTrigger(config, taskId, { type: "sample.changed", eventId: 101 });
+        else observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...taskIntent, outcome: "Replacement intent" } });
+      }
+      return commit.call(this, mutation);
+    };
+    try {
+      await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    } finally {
+      store.commit = commit;
+    }
+    expect(injected).toBeTrue();
+    expect(calls).toBe(1);
+    const tree = readTaskSnapshot(config);
+    expect(tree.receipts?.[taskId]).toBeUndefined();
+    if (change === "fact") {
+      expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42 });
+      expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
+      expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
+      expect(saveAttempts).toBe(2);
+    } else if (change === "intent") {
+      expect(tree.resources?.[taskId]?.metadata.generation).toBe(2);
+      expect(tree.resources?.[taskId]?.spec.outcome).toBe("Replacement intent");
+      expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+    } else {
+      expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
+      expect(tree.resources?.["work/persistence-child"]).toBeUndefined();
+      expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
+      expect(saveAttempts).toBe(change === "persistent" ? 2 : 1);
+      if (change === "action")
+        expect(tree.taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toContain(101);
+    }
+  });
+
   it("does not create task worktrees while startup installs and recovers work", async () => {
     const f = fixture();
     const bus = eventBus();
