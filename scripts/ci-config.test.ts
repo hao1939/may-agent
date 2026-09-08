@@ -34,6 +34,7 @@ describe("portable CI contract", () => {
     const packageJson = JSON.parse(read("package.json"));
 
     expect(config.packages).toHaveProperty(["."]);
+    expect(config["bootstrap-sha"]).toBe("dc8de24b2d5f6e328f77d2322e35ef139d6f5f0d");
     expect(manifest["."]).toBe(packageJson.version);
   });
 });
