@@ -6,8 +6,9 @@ Releases are versioned from the root `package.json` using Release Please.
 Conventional Commits merged to `main` produce a release PR. Merging that PR
 updates the changelog, creates a `vX.Y.Z` tag, and publishes a GitHub Release.
 
-The `vX.Y.Z` tag starts the image workflow, which builds the pinned Linux
-container and publishes:
+When Release Please creates the `vX.Y.Z` tag and GitHub Release, it directly
+calls the image workflow. Direct pushes of matching version tags also start
+that workflow. It builds the pinned Linux container and publishes:
 
 - `ghcr.io/hao1939/may-agent:vX.Y.Z`
 - `ghcr.io/hao1939/may-agent:latest`

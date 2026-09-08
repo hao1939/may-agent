@@ -37,4 +37,16 @@ describe("portable CI contract", () => {
     expect(config["bootstrap-sha"]).toBe("dc8de24b2d5f6e328f77d2322e35ef139d6f5f0d");
     expect(manifest["."]).toBe(packageJson.version);
   });
+
+  it("publishes the image when Release Please creates a release", () => {
+    const release = read(".github/workflows/release-please.yml");
+    const image = read(".github/workflows/release-image.yml");
+
+    expect(release).toContain("release_created: ${{ steps.release.outputs.release_created }}");
+    expect(release).toContain("if: ${{ needs.release-please.outputs.release_created == 'true' }}");
+    expect(release).toContain("uses: ./.github/workflows/release-image.yml");
+    expect(release).toContain("tag: ${{ needs.release-please.outputs.tag_name }}");
+    expect(image).toContain("workflow_call:");
+    expect(image).toContain("INPUT_TAG: ${{ inputs.tag }}");
+  });
 });
