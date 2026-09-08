@@ -18,7 +18,6 @@ let connected = false;
 let closing = false;
 let reconnectTimer = null;
 let reconnectDelayMs = 250;
-let buffer = "";
 let raw = false;
 let debug = false;
 let selectedApp = "may";
@@ -1400,6 +1399,9 @@ function connectSocket() {
   if (socket && !socket.destroyed) return;
 
   socket = net.createConnection(socketPath);
+  socket.setEncoding("utf8");
+  // Partial frames belong to this connection, never to a later reconnect.
+  let buffer = "";
 
   socket.on("connect", () => {
     connected = true;
@@ -1435,7 +1437,7 @@ function connectSocket() {
   });
 
   socket.on("data", (chunk) => {
-    buffer += chunk.toString();
+    buffer += chunk;
     const lines = buffer.split("\n");
     buffer = lines.pop() || "";
     for (const line of lines) {
