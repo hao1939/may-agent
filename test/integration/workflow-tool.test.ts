@@ -827,8 +827,9 @@ describe("workflow tool: agent name validation", () => {
 });
 
 describe("workflow tool: agents.call session reuse", () => {
+  type ResumeOptions = Parameters<SubagentManager["resumeSession"]>[2];
   function mockManager(mockOpts: { resumeMissing?: boolean; archived?: Record<string, string> } = {}) {
-    const calls: Array<{ method: string; sessionId?: string; agent?: string; task?: string; source?: string }> = [];
+    const calls: Array<{ method: string; sessionId?: string; agent?: string; task?: string; options?: ResumeOptions }> = [];
     const results = new Map<
       string,
       Promise<{
@@ -874,8 +875,8 @@ describe("workflow tool: agents.call session reuse", () => {
           calls.push({ method: "hasActiveSession", sessionId });
           return false;
         },
-        resumeSession: (sessionId: string, task: string, opts?: { source?: string }) => {
-          calls.push({ method: "resumeSession", sessionId, task, source: opts?.source });
+        resumeSession: (sessionId: string, task: string, opts?: ResumeOptions) => {
+          calls.push({ method: "resumeSession", sessionId, task, options: opts });
           if (mockOpts.resumeMissing) throw new Error(`Session "${sessionId}" not found`);
           results.set(sessionId, completed(sessionId, `resumed: ${task}`));
           return sessionId;
@@ -905,7 +906,7 @@ describe("workflow tool: agents.call session reuse", () => {
     };
   }
 
-  it("resumes the supplied session instead of creating a new one", async () => {
+  it("resumes the supplied session with the workflow's current Task binding", async () => {
     writeWorkflow(
       "session-reuse.ts",
       `
@@ -919,7 +920,8 @@ describe("workflow tool: agents.call session reuse", () => {
     );
 
     const { manager, calls } = mockManager();
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const taskBinding = { appId: "sample", taskId: "work/one", generation: 3, attemptId: "attempt-current" };
+    const tool = createWorkflowTool({ manager, workflowDir, taskBinding });
 
     const result = await tool.execute("tc1", { action: "run", name: "session-reuse", task: "test" });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
@@ -928,7 +930,10 @@ describe("workflow tool: agents.call session reuse", () => {
     if (parsed.type === "done") {
       expect(parsed.summary).toBe("s_existing:resumed: continue task");
     }
-    expect(calls.some((call) => call.method === "resumeSession" && call.sessionId === "s_existing")).toBe(true);
+    expect(calls.find((call) => call.method === "resumeSession")).toMatchObject({
+      sessionId: "s_existing",
+      options: { taskBinding, source: "workflow:session-reuse", requireFinish: true },
+    });
     expect(calls.some((call) => call.method === "run")).toBe(false);
   });
 

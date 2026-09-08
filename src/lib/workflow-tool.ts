@@ -1245,6 +1245,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             } catch {
               manager.resumeSession(sid, effectiveTask, {
                 source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
+                taskBinding: opts.taskBinding,
                 timeoutMs: stepOpts?.timeoutMs,
                 operationAllowance: stepOpts?.operationAllowance,
                 suppressBenignRaceEvent: true,
