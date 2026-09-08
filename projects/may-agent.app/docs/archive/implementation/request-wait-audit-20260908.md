@@ -21,7 +21,7 @@ hardlinks; no worktree administrative changes touch the starting repositories.
 | Gym | `projects/gym.app/app.ts` has no conversational `requests` attachment. `taskForGymInput` and `gymOwnerReviewIntent` retain source/request and execution-request identity; the workflow trigger helper still routes durable work. These are ordinary Task admission/result consumers, not evidence for removing generic request handling. |
 | Host fixtures | `app-inbox-host.test.ts` contains real child-request fan-out, waiting, exact continuation, cross-App targeting, completion, and in-flight replay tests. `app-inbox-runtime.test.ts` also exercises Apps with `requests` and no direct-follow-up declaration. Keep these compatibility scenarios. E2E agent fixtures are minimal bounded agents, not an installed consumer census. |
 | Helpers | `stableChildRequestId` and `appRequestChildrenWaitId` are specific to frontend children, but `AppInboxHost.#requestDependencyObservation`, parent completion wakes, `createAppInboxItem`, `waitAppInboxClaim`, inbox reads, and request-to-Task result correlation serve broader request behavior. Task dependency admission remains under the Task runtime/reconciler and SDK `TaskAppDependency`. Do not remove shared request machinery with a frontend caller. |
-| Retained requests | No affected installation or complete installed-consumer/state snapshot is designated by this source-only contract. No live state was queried or mutated. The unavailable audit is the installed App/SDK caller inventory and nonterminal `app_inbox` requests with frontend child waits (`waiting_on_kind=app`, `waiting_on_id=children:<requestId>` or exact child IDs), including their children, Topics, results, and restart behavior. |
+| Retained requests | The initial source audit did not query installed state. The later read-only local audit below finds an unfinished May parent with a frontend child wait in `app_inbox_items`. This is a demonstrated compatibility obligation, not permission to drain it or a complete installed App/SDK census. |
 
 A later removal needs a human-designated affected installation and a read-only
 consistent state/caller audit. If there are no external callers and no retained
@@ -44,3 +44,35 @@ child list or App wait keeps the compatibility schema and prompt. A regression
 fixture creates work under the old App definition, recreates the Host with the
 new definition, and completes that same request and child without attaching
 replacement work. No public SDK or request persistence code is removed.
+
+## Read-only local continuation audit
+
+On September 8 at 08:10:55 UTC, the direct assistant inspected the local WSL
+installation on `LOCAL-PVB3M8VB5`. Docker inspection confirmed that the existing
+`may-agent` container binds host `/app` to container `/app`. Its health status
+was `unhealthy`; that status alone does not explain request behavior.
+The database `/app/.state/may.db` was opened read-only, with SQLite `query_only`
+enabled and queries inside a read transaction. No transcript, request input,
+credential, or model call was needed.
+
+The May-only census found 251 completed requests and 3 handling requests.
+Exactly one nonterminal May parent had a child-request wait:
+
+- Parent: `app_bba99978-1f4e-4a03-a29a-5147c207e4f2`.
+- Topic: `topic_aa31fe3700d2d163f8323686`.
+- Wait: `app` / `children:app_bba99978-1f4e-4a03-a29a-5147c207e4f2`.
+- Two children were `done`, each with a stored result; the parent had no result.
+- The parent had no `available_at`, `review_at`, lease owner, or lease expiry.
+
+This parent is not eligible through the current ready/expired indexes. Current
+source completes children and wakes their parent in one transaction, but the
+inspection does not establish which old build or decision created this retained
+state. Passing the isolated child-completion/restart fixture does not prove
+automatic repair of this historical record. Do not create a duplicate Task or
+discard the caller's unanswered request to make the audit look complete.
+
+Disposition: keep the compatibility runtime. A later authorized recovery must
+preserve the exact parent, children, Topic, and accepted results, and verify the
+parent's final result. This positive finding is sufficient to reject deletion
+now; it is not a full caller census or proof about another installation.
+No live rows, container state, or deployment were changed.

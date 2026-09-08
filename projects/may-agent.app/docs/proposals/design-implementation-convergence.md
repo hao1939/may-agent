@@ -452,9 +452,11 @@ preserved and reviewed before continuation; there is no active delegation.
 The human then clarified that this pass must focus on May, not Evaluation:
 A's compatibility audit and B's attempt-context cleanup are in scope; C is not.
 
-A: frontend child-request waiting is explicitly deferred. The SDK contract and
-compatibility fixtures remain, and no complete installed-caller/retained-request
-audit is available. See the [consumer audit and drain decision](../archive/implementation/request-wait-audit-20260908.md).
+A: deletion of frontend child-request waiting is explicitly deferred. The SDK
+contract and compatibility fixtures remain. A subsequent read-only local audit
+found one unanswered May parent still waiting on two completed child requests;
+there is no complete installed-caller census or live recovery proof. See the
+[consumer audit and drain decision](../archive/implementation/request-wait-audit-20260908.md).
 Ordinary request/result correlation and Task dependencies remain required.
 
 B: the source candidate narrows May's shared identity from 146 to 47 lines,
@@ -515,8 +517,8 @@ role router, queue, or extra work lifecycle is introduced.
 
 | Item | Status and remaining work |
 | --- | --- |
-| A: source caller audit | Complete for the inspected sources; the public waiting path stays supported. |
-| A: delete the waiting path | Deferred until a designated affected installation and SDK callers are audited, and retained obligations are drained or migrated. |
+| A: caller audit | Source audit complete; read-only local evidence confirms one unfinished parent with a child wait. The public waiting path stays supported. |
+| A: delete the waiting path | Deferred. Preserve and recover the observed obligation, complete the affected SDK/installation inventory, and verify drain or migration before removal. |
 | B: focused instructions and direct-handoff context | Implemented and verified as a source candidate; review both repositories together. |
 | Better model behavior | Not established. Run the approved conversation cases against baseline and candidate only with separate model/credential authority. |
 | Merge and rollout | Not performed. CI and publication do not authorize either. |
