@@ -572,7 +572,7 @@ export class Cron {
     this.load();
     const newNames = new Set(this.entries.map((e) => e.name));
     for (const name of oldEntries.keys()) {
-      if (!newNames.has(name)) this.stopEntryScheduling(name);
+      if (!newNames.has(name)) this.stopEntryScheduling(name, true);
     }
 
     let changedCount = 0;
