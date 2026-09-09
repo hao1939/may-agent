@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent review accepts exact Cycle 430 canonical tip 3c9f295222. The committed seed-ledger row closes the projection defect seen in a parallel candidate, and bounded replay supports the narrow Mnemosyne tenant/agent binding repair without promoting it to an upstream or complete authorization result. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
+summary: "Cycle 430 is accepted and its reviewer cursor 3932c44605 is integrated literally after exact canonical source 3c9f295222. The committed seed-ledger row closes the projection defect seen in a parallel candidate, and bounded replay supports the narrow Mnemosyne tenant/agent binding repair without promoting it to an upstream or complete authorization result. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053"]
 last_updated: "2026-09-09"
 source_basis: "Independent exact-range review 3f20099802b56a7b158b833a2ea8607d474da95f..3c9f29522225a6e2d3effd8e7086cc07bc669e50. The five-file Cycle 430 batch adds the missing exact seed-ledger row, one bounded Mnemosyne repair-candidate report, and routed qualifications. Goal-owned isolated replay at upstream base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduces wrong-principal acceptance with test-only controls; exact two-file candidate diff SHA-256 f7adf20826d82b290bba3c20133dab3846482769e9fabe8e24a3f32e42659578 passes 16 focused and 79 runnable runtime tests, while the absent experiment module, absent R3 artifact, and unavailable asyncio plugin remain disclosed environment boundaries. Current canonical tip has the same app tree 1ac403f37366dafb856996ad29490b486035af99 as the independently passed 321-test / 1,632-assertion Cycle 429 result; fresh syntax, TypeScript, formatting, Cycle 430 projection, 128 scoped links, navigation 11/14 + 8/8 + 14/14, 1,558 documents / 1,821 broad links, health 26/16 with truncation, and git diff --check pass. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index, exact 23-path Scout status, the two protected hashes, and the prior 36/2/0 candidate audit; unrelated default and expanded drift is disclosed at 78 and 5,862 records. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, new local-main landing, compaction, or cleanup is approved."
@@ -17,9 +17,9 @@ source_basis: "Independent exact-range review 3f20099802b56a7b158b833a2ea8607d47
 - Last producer research material reviewed:
   `3c9f29522225a6e2d3effd8e7086cc07bc669e50` (Cycle 430 bounded repair-candidate evidence)
 - Last integrated reviewer result:
-  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` (literal direct successor of Cycle 429 producer audit)
+  `3932c446056f14a43ceda06b36d3eb0af784c9f6` (literal Cycle 430 reviewer cursor)
 - Current review date: `2026-09-09T13:04:56+08:00`
-- Producer integration date: `2026-09-09T12:19:31+08:00`
+- Producer integration date: `2026-09-09T13:12:34+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -5045,12 +5045,38 @@ Producer research may resume once this reviewer cursor is integrated or
 truthfully dispositioned. RV-004 and RV-034 remain high/open; RV-036 and
 RV-038 remain medium/open. No local-main or cleanup gate is approved.
 
+## Producer Cycle 430 reviewer integration — literal
+
+Standing fast-forwarded cleanly from exact accepted source
+`3c9f29522225a6e2d3effd8e7086cc07bc669e50` to its direct reviewer child
+`3932c446056f14a43ceda06b36d3eb0af784c9f6`. The stable patch ID is
+`9a061bf63e7c44c80e6888cae4991474ba12ee0d`; no patch-equivalent,
+rejected, or superseded disposition is substituted. Parallel candidate
+`ce5981333a324f15918497f063d94e324d3ee849` remains outside canonical
+ancestry and is superseded because exact canonical `3c9f295222` already
+contains the Cycle 430 seed-ledger row and passes deterministic projection.
+
+At integration, exact `3932c44605` passes syntax, TypeScript, formatting,
+Cycle 430 projection, 128 scoped links, navigation 11/14 + 8/8 + 14/14, and
+321 tests / 1,632 assertions with zero failures. The broad audit passes 1,558
+tracked Markdown documents / 1,821 local links; commit-time read-only health
+reports 26 facts / 16 wakes with `truncated:true`; `git diff --check` passes.
+Read-only `/app` remains exact `584395df7c` with zero staged paths and exact
+default 78 / `2ffa95cd…5f40`, expanded 5,862 / `a4108755…25d0`, and Scout 23 /
+`b9d6fb9c…a12c` fingerprints. This integration authorizes no upstream write,
+local-main movement, compaction, cleanup, branch deletion, or worktree
+deletion.
+
+Roll back the producer integration-ledger disposition first, then revert
+`3932c44605` to remove only the reviewer cursor. Revert `3c9f295222`
+separately only if intentionally removing the accepted Cycle 430 material.
+RV-004 and RV-034 remain high/open; RV-036 and RV-038 remain medium/open.
+
 ## Next trigger
 
-The next exact trigger is producer integration or evidence-backed
-rejection/supersession of this Cycle 430 reviewer cursor, one later coherent
-material producer checkpoint, evidence changing RV-004, RV-034, RV-036,
-RV-038, or RV-052, or the first eligible periodic boundary
+The next exact trigger is one later coherent material producer checkpoint,
+evidence changing RV-004, RV-034, RV-036, RV-038, or RV-052, or the first
+eligible periodic boundary
 `2026-09-10T13:04:56+08:00`. Do not begin another local-main landing,
 compaction, or cleanup without a fresh exact-boundary gate.
 
