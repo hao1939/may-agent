@@ -20,6 +20,8 @@ import type { SubagentDefinition } from "../lib/types.js";
 import type { EventEnvelope } from "../lib/handler-context.js";
 import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../lib/workflow-tool.js";
+import { createTaskHandlerAvailability } from "./adapters/executors/handler-availability.js";
+import { recoverUnavailableTaskHandlers } from "./core/tasks/handler-recovery.js";
 import { getDb, readSessionLastActivityAt, updateSessionDb } from "../lib/requests.js";
 import {
   appendSessionMessage,
@@ -114,7 +116,6 @@ import {
   completeAppTask,
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
-  listHandlerUnavailableAppTasks,
   markAppTaskAttention,
   pendingAppTaskRecoveryAttention,
   isAppTaskActionStaleError,
@@ -128,7 +129,6 @@ import {
   readPendingAppTaskTrigger,
   recordAppTaskTrigger,
   releaseHandlerExecutionFailedAppTask,
-  releaseHandlerUnavailableAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
@@ -4315,36 +4315,35 @@ async function requeueAvailableAppTaskHandlers(
   descriptors: AppTaskRuntimeDescriptor[],
   controllers: Map<string, AppTaskController>,
 ): Promise<void> {
-  const availability = new Map<string, boolean>();
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
-    if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
+    if (!descriptor.app.tasks || descriptor.reconciliationPaused) continue;
     const config = appTaskConfig(descriptor);
-    const attentionTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
-    for (const candidate of listHandlerUnavailableAppTasks(config, descriptor.agent, attentionTaskIds)) {
-      const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.agent);
-      const key = `${paths.workflowDir}\0${candidate.workflow}`;
-      let available = availability.get(key);
-      if (available === undefined) {
-        available = (await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow)).available;
-        availability.set(key, available);
-      }
-      if (!available) continue;
-      if (!releaseHandlerUnavailableAppTask(config, candidate.taskId)) continue;
-      enqueueAppTask(controller, config, candidate.taskId);
-      opts.bus.emit({
-        type: "project.task.handler.recovered",
-        source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${candidate.agent}`,
-        target: { appId: descriptor.id },
-        data: {
-          project: descriptor.id,
-          taskId: candidate.taskId,
-          handler: `workflow:${candidate.workflow}`,
-          reason: "workflow-binding-resolved-after-app-reload",
-        },
-      } as unknown as AgentEvent);
-    }
+    await recoverUnavailableTaskHandlers({
+      config,
+      isAvailable: createTaskHandlerAvailability({
+        executors: opts.executors,
+        workflowDir: (agent) => appWorkflowRuntimePaths(opts, descriptor, agent).workflowDir,
+      }),
+      isCurrent: () => appRouterOptionsByBus.get(opts.bus) === opts,
+      onRecovered: (candidate) => {
+        // Isolated recovery repairs readiness without installing controllers;
+        // the parent discovers the pending Task through its normal recovery pass.
+        if (controller) enqueueAppTask(controller, config, candidate.taskId);
+        opts.bus.emit({
+          type: "project.task.handler.recovered",
+          source: `app-task:${descriptor.id}:task-recovery`,
+          owner: `agent:${candidate.agent}`,
+          target: { appId: descriptor.id },
+          data: {
+            project: descriptor.id,
+            taskId: candidate.taskId,
+            handler: candidate.handler,
+            reason: "handler-binding-available",
+          },
+        } as unknown as AgentEvent);
+      },
+    });
   }
 }
 

@@ -2248,11 +2248,10 @@ export function appTaskQueueEntries(config: AppTaskContext, taskIds: Iterable<st
   });
 }
 
-export type AppTaskHandlerRepairCandidate = {
-  taskId: string;
-  agent: string;
-  workflow: string;
-};
+export type AppTaskHandlerRepairCandidate = Pick<
+  AppTaskClaim,
+  "taskId" | "generation" | "resourceVersion" | "attemptId" | "agent" | "handler"
+>;
 
 export type AppTaskExecutionRepairCandidate = {
   taskId: string;
@@ -2262,7 +2261,7 @@ export type AppTaskExecutionRepairCandidate = {
   sessionId?: string;
 };
 
-/** Bindings to retry once their owning app reload proves the workflow now resolves. */
+/** Exact unavailable attempts to recheck against the installed backend bindings. */
 export function listHandlerUnavailableAppTasks(
   config: AppTaskContext,
   appAgent: string,
@@ -2272,31 +2271,51 @@ export function listHandlerUnavailableAppTasks(
   if (candidates.length === 0) return [];
   const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
   return Object.values(tree.resources ?? {})
-    .filter((resource) => {
-      if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return false;
+    .flatMap((resource): AppTaskHandlerRepairCandidate[] => {
+      if (resource.status.phase !== "attention") return [];
       const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-      return attempt?.handler.startsWith("workflow:") && attempt.failureReason === "HandlerUnavailable";
-    })
-    .map((resource) => {
-      const intent = resourceIntent(resource);
-      return {
-        taskId: resource.metadata.id,
-        agent: resolvedAgent(tree, intent, appAgent),
-        workflow: intent.workflow!.trim(),
-      };
+      if (attempt?.failureReason !== "HandlerUnavailable") return [];
+      return [
+        {
+          taskId: resource.metadata.id,
+          generation: resource.metadata.generation,
+          resourceVersion: resource.metadata.resourceVersion,
+          attemptId: attempt.metadata.id,
+          agent: resolvedAgent(tree, resourceIntent(resource), appAgent),
+          handler: attempt.handler,
+        },
+      ];
     })
     .sort((left, right) => left.taskId.localeCompare(right.taskId));
 }
 
-/** Release attention only after the host has proved the named workflow resolves again. */
-export function releaseHandlerUnavailableAppTask(config: AppTaskContext, taskId: string): boolean {
+/** A slow availability check cannot release a different generation or attempt. */
+export function releaseHandlerUnavailableAppTask(
+  config: AppTaskContext,
+  candidate: AppTaskHandlerRepairCandidate,
+): boolean {
+  const { taskId } = candidate;
+  if (config.resourceStore.projectLifecycle() === "paused") return false;
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
-  if (!resource || resource.status.phase !== "attention") return false;
+  if (
+    !resource ||
+    resource.status.phase !== "attention" ||
+    resource.metadata.generation !== candidate.generation ||
+    resource.metadata.resourceVersion !== candidate.resourceVersion ||
+    config.resourceStore.readCancellation(taskId)?.generation === candidate.generation ||
+    resolvedAgent(tree, resourceIntent(resource), config.agent) !== candidate.agent
+  )
+    return false;
   const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
-  if (!attempt?.handler.startsWith("workflow:") || attempt.failureReason !== "HandlerUnavailable") return false;
+  if (
+    attempt?.metadata.id !== candidate.attemptId ||
+    attempt.handler !== candidate.handler ||
+    attempt.failureReason !== "HandlerUnavailable"
+  )
+    return false;
   const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
-  const summary = `Workflow binding ${attempt.handler} resolved after app reload; retrying current task generation`;
+  const summary = `Handler binding ${attempt.handler} is available again; retrying current task generation`;
   touchResource(resource, {
     phase: "pending",
     observedGeneration: Math.max(0, resource.metadata.generation - 1),

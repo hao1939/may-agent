@@ -171,6 +171,45 @@ function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> 
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async restoredHandler() {
+    const f = fixture("owner");
+    const path = join(f.appDir, "agents", "owner", "workflows", "probe.ts");
+    rmSync(path);
+    await run(f);
+    const task = f.store.readTask("work/one")!;
+    assert.equal(task.status.phase, "attention");
+    const attempts = f.store.readTaskContext({ taskIds: ["work/one"] }).attempts;
+    assert.equal(Object.values(attempts ?? {})[0]?.failureReason, "HandlerUnavailable");
+
+    writeFileSync(
+      path,
+      `export const name = "probe";
+export const description = "Repaired worker binding";
+export async function execute(ctx) {
+  return ctx.done("verified", { state: "converged", summary: "repaired workflow ran", evidence: [] });
+}`,
+    );
+    const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
+    releases.activate(releases.stage());
+    await run(f, true);
+    assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
+    assert.equal(f.store.readTask("work/one")?.metadata.generation, task.metadata.generation);
+    assert(f.store.listRecoveryCandidates().items.some(({ taskId }) => taskId === "work/one"));
+    assert.equal(f.store.readReceipt("work/one"), null);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, attempts);
+    await run(f, true);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, attempts);
+    assert.equal(
+      f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
+        ?.count,
+      1,
+    );
+
+    await run(f);
+    assert.equal(f.store.readReceipt("work/one")?.summary, "repaired workflow ran");
+    assert.equal(f.store.readReceipt("work/one")?.metadata.generation, task.metadata.generation);
+  },
+
   async parentLoss() {
     const f = fixture("owner", true);
     f.bus.subscribe((event) => {

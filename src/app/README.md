@@ -69,6 +69,36 @@ Conversation handling uses `app-request-agent.ts`; Task attachment uses the
 supplied Task capability. Dependency waiting is durable state, so it releases
 the request handler's execution slot.
 
+## Unavailable Task handlers
+
+`core/tasks/handler-recovery.ts` runs one bounded pass over retained
+`HandlerUnavailable` attempts. It asks an availability function about the exact
+binding; only core may release attention and requeue that same Task. The
+generation, resource version, attempt, cancellation and pause checks remain in
+`app-task-reconciler.ts`.
+
+`adapters/executors/handler-availability.ts` looks up registered executors and
+inspects conventional workflow modules without executing them. Its lookup cache
+lasts one pass. It does not own Task state or retries.
+
+`app-task-runtime.ts` still contains transitional composition: it supplies the
+selected executor map and workflow paths, fences checks against the installed
+definition, and queues recovered IDs through the existing controller. Neither
+an old reload nor a slow check may release a newer Task attempt. Missing
+bindings remain visible without repeated execution; restoring a binding is
+rechecked through ordinary startup/reload recovery.
+
+The isolated recovery process has no controllers. It still repairs durable
+readiness and emits the existing recovery observation; the parent's recovery
+pass finds the pending Task and owns execution. Repair must not require a local
+controller or start an attempt in the recovery process.
+
+This separates recovery availability, not the entire execution system. Managed
+agent preparation, workflow execution, and backend-specific session recovery
+remain in the mixed runtime until their own boundary is extracted. Keep the
+SDK's `TaskExecutor(attempt)` contract; no public lifecycle hooks, extra timer,
+or replacement queue are needed for this recovery pass.
+
 ## State and process boundaries
 
 `app-inbox-store.ts` owns durable requests and their claims; the word inbox is

@@ -1051,7 +1051,10 @@ describe("App task reconciler state", () => {
 
     expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
     expect(listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id])).toEqual([
-      { taskId: "work/unavailable", agent: "branch-owner", workflow: "missing-workflow" },
+      expect.objectContaining({
+        taskId: "work/unavailable", agent: "branch-owner", handler: "workflow:missing-workflow",
+        generation: unavailableClaim.generation, attemptId: unavailableClaim.attemptId,
+      }),
     ]);
 
     observeAppTaskIntent(config, {
@@ -1073,7 +1076,9 @@ describe("App task reconciler state", () => {
       "work/pending",
     ]);
 
-    expect(releaseHandlerUnavailableAppTask(config, "work/unavailable")).toBe(true);
+    const [candidate] = listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id]);
+    expect(candidate).toBeDefined();
+    expect(releaseHandlerUnavailableAppTask(config, candidate!)).toBe(true);
     expect(
       config.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]?.status
         .phase,
