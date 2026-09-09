@@ -54,6 +54,31 @@ Public App contracts live in `packages/sdk`; client contracts in
 component interface. Add subdirectories as real boundaries are separated, not
 as empty placeholders.
 
+## Shared timing
+
+`core/scheduling/timer.ts` owns timer replacement, cancellation, and shutdown.
+It dispatches private callbacks and contains synchronous failures; it does not
+accept work, publish events, or decide whether a slot succeeded. Asynchronous
+callbacks retain their own rejection handling. Sharing these mechanics does
+not require one physical timer or a scheduler registry.
+
+`adapters/producers/app-schedules.ts` interprets App schedule declarations:
+input slots publish ordinary `app.input.requested` events; fact slots publish
+record-only events. It retains the existing latest/none catch-up and successful
+publication checks. Reload keeps unchanged slots and restores the exact previous
+activation records if publication is rejected. It never runs a model.
+
+`app-inbox-runtime.ts` composes independent schedule, observer, and request
+recovery cadence after startup readiness. A failed request read cannot prevent
+schedule/observer dispatch. `app-task-recovery.ts` uses the same timer mechanics
+for its indexed nearest-due and bounded safety passes. Each owner closes its
+registrations; disabling App schedules does not stop observers or recovery.
+
+See [Scheduling and Observation](../../../may-agent.app/docs/2a-design/cron.md)
+and [Shared timing, intentional events](../../../may-agent.app/docs/proposals/task-runtime-organization.md#shared-timing-intentional-events).
+The remaining legacy Cron execution/configuration path is a separate pending
+slice of the proposal, not removed by this shared-timing extraction.
+
 ## App discovery and registration
 
 `adapters/discovery/app-definitions.ts` supplies a deferred file source. It scans

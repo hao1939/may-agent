@@ -1,6 +1,7 @@
 import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
 import type { LoadedAppDefinition } from "./core/apps/registry.js";
 import type { EventBus } from "./event-bus.js";
+import { OwnedTimer } from "./core/scheduling/timer.js";
 
 type ObserverState = {
   appId: string;
@@ -12,6 +13,7 @@ type ObserverState = {
 };
 
 export type AppObserverRuntime = {
+  start(intervalMs: number): void;
   replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
   close(): void;
@@ -40,6 +42,9 @@ export function createAppObserverRuntime(options: {
 }): AppObserverRuntime {
   const now = options.now ?? Date.now;
   let closed = false;
+  let started = false;
+  const cadence = new OwnedTimer("app-observers");
+  const initial = new OwnedTimer("app-observers:initial");
   let states = new Map<string, ObserverState>();
 
   const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
@@ -112,7 +117,13 @@ export function createAppObserverRuntime(options: {
     }
   };
 
-  return {
+  const runtime: AppObserverRuntime = {
+    start(intervalMs) {
+      if (closed || started) return;
+      started = true;
+      cadence.every(intervalMs, () => runtime.scanNow());
+      initial.after(0, () => runtime.scanNow());
+    },
     replace,
     scanNow() {
       if (closed) return;
@@ -126,7 +137,10 @@ export function createAppObserverRuntime(options: {
     },
     close() {
       closed = true;
+      cadence.close();
+      initial.close();
       states.clear();
     },
   };
+  return runtime;
 }
