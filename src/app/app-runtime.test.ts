@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 
 describe("app runtime startup", () => {
@@ -10,7 +11,7 @@ describe("app runtime startup", () => {
     async (mode) => {
       const { stdout } = await promisify(execFile)(
         process.execPath,
-        [new URL("../../test/fixtures/runtime-startup.ts", import.meta.url).pathname, mode],
+        [fileURLToPath(new URL("../../test/fixtures/runtime-startup.ts", import.meta.url)), mode],
         { timeout: 15_000 },
       );
       expect(stdout).toContain("startup-contract-ok");
