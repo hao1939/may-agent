@@ -20,20 +20,30 @@ The agent ecosystem is reliving the npm/PyPI dependency crisis — but in a medi
 
 First formal treatment of agent skills as dependency-bearing artifacts. Introduces Agent Skill Supply Chains (ASSCs) and builds SkillDepAnalyzer to capture natural-language dependency evidence.
 
-**Scale**: Analyzed over 1.43 million skills. Found four structural patterns:
+**Scale, qualified**: Analyzed 1,434,046 GitHub-backed SkillsMP records from
+one snapshot. Found four structural patterns:
 
 | Pattern | Finding | Governance Implication |
 |---------|---------|----------------------|
 | Metadata quality | Activation-ready but governance-poor | Skills can be loaded but not audited |
-| Dependency spanning | Graphs span skill → package → service layers | A skill's risk surface extends far beyond its own code |
+| Dependency spanning | Graphs span skill → package → service layers | Root-only review omits transitive inventory and audit signals |
 | Recursive reuse | Skill chains create hidden package inventory | Transitive dependencies invisible to the consuming agent |
-| Workflow clustering | Dependencies cluster around related workflows | Failure propagates along workflow boundaries |
+| Workflow clustering | Dependencies cluster around related workflows | Shared inventory is a useful governance unit; failure propagation is unmeasured |
 
-**Security finding**: "Inspecting a skill alone misses security-relevant signals hiding in its dependencies." The paper identifies and reports known malicious skills persisting in active supply chains.
+**Security finding, qualified**: "Inspecting a skill alone misses
+security-relevant signals hiding in its dependencies." Most rows measure
+conditional audit-signal reachability rather than confirmed vulnerability or
+execution; 26/194 roots reached by publicly reported malicious-skill labels
+are dependency-only. See the
+[primary scope audit](./2026-09-08-agent-skill-supply-chain-scope.md).
 
 **Recommendations**: Typed dependency manifests, first-class dependency-cluster management, risk-warning audit commands, lockfile-like records.
 
-**Connection to prior scans**: Our Scan #311 (Apprenticeship Economy) predicted "skill-layer supply-chain incident within 6 months." This paper demonstrates the structural conditions for exactly that incident. The `cp SKILL.md .` installation model we identified — zero dependency management, composition by concatenation — is precisely what creates the opacity this paper measures.
+**Connection to prior scans**: Our Scan #311 (Apprenticeship Economy)
+predicted a "skill-layer supply-chain incident within 6 months." This paper
+documents graph opacity but does not validate that prediction, measure runtime
+harm, or compare incident rates with npm/PyPI. The `cp SKILL.md .` installation
+model remains a design concern rather than an observed outcome of this study.
 
 Source: https://arxiv.org/abs/2607.01136
 
@@ -195,7 +205,9 @@ Every dependency type follows the same three-phase pattern:
 
 ## Predictions
 
-1. **First agent skill supply-chain incident** within 3 months. The paper found malicious skills already persisting in active supply chains. An incident with measurable impact (data exfiltration, credential theft via skill) is structurally inevitable.
+1. **First agent skill supply-chain incident** within 3 months. This remains a
+   speculative prediction: the paper finds graph-reachable labels and audit
+   signals, not measured impact or inevitability.
 
 2. **`skills.json` or equivalent manifest format** reaches ≥500★ on GitHub within 6 months. The ecosystem is at the npm `package.json` moment — too many dependencies to manage by hand.
 

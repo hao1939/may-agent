@@ -33,14 +33,19 @@ Source: https://arxiv.org/abs/2606.31272
 
 **Skills Are Not Islands** (arXiv 2607.01136, Jul 1)
 
-SkillDepAnalyzer captures natural-language dependency evidence across 1.43 million skills. Four structural patterns emerge:
+SkillDepAnalyzer captures natural-language dependency evidence across 1,434,046 GitHub-backed SkillsMP records. Four structural patterns emerge:
 
 1. **Activation-ready, governance-poor**: Skill metadata is designed for invocation, not for auditing.
 2. **Cross-layer dependency graphs**: Dependencies span skill → package → service layers with concentrated reuse.
 3. **Recursive expansion**: Skill reuse creates hidden package inventory — dependencies of dependencies that no manifest captures.
 4. **Workflow clusters**: Skills cluster around related workflows, creating shared dependency fate.
 
-Known malicious skills persist in ASSCs (Agent Skill Supply Chains) because no manifest connects them to their downstream dependents. The paper recommends typed dependency manifests and lockfile-like records — the same remediation the npm ecosystem needed in 2016–2019.
+Publicly reported malicious-skill labels remain reachable in generated ASSCs;
+26 of 194 reached roots expose those labels only through dependencies. This is
+an audit-visibility result, not evidence that the edge executes or that skill
+risk matches npm/PyPI. The paper recommends typed manifests and lockfile-like
+records, but does not evaluate their security outcomes. See the
+[primary qualification](./2026-09-08-agent-skill-supply-chain-scope.md).
 
 Source: https://arxiv.org/abs/2607.01136
 
@@ -92,7 +97,7 @@ What we observe in agent skills (all arriving within 48 hours):
 | Actual Order | Paper | Maturity Signal |
 |---|---|---|
 | 1. **Identity** | Per-Component Fingerprint (2606.31272) | 0.974 AUC, 120-byte portable fingerprint |
-| 2. **Dependency** | Skills Are Not Islands (2607.01136) | 1.43M skills analyzed, 4 structural patterns |
+| 2. **Dependency** | Skills Are Not Islands (2607.01136) | 1,434,046 GitHub-backed records, 4 structural patterns |
 | 3. **Threat model** | Lifecycle Survey (2606.31639) | 8-stage comprehensive taxonomy |
 | 4. **Scanning** | AI-Infra-Guard + SafeClawArena | 5 vendors but stuck at install-time |
 | 5. **Lifecycle** | EDDOps (2607.00345) | Proof-of-concept only, 30 invocations |
@@ -107,7 +112,11 @@ If we can fingerprint skill families at 0.974 AUC but can't prevent malicious sk
 
 ### 2. Dependency Graphs Without Lifecycle Governance Create Blast Radius Maps
 
-Skills Are Not Islands mapped dependency clusters. Without lifecycle governance (EDDOps is proof-of-concept), these maps show which skills will fail together but can't prevent cascading failure. This is the same structural problem as having SBOMs without Dependabot — you know what's vulnerable but can't auto-remediate.
+Skills Are Not Islands mapped dependency clusters. Without lifecycle
+governance (EDDOps is proof-of-concept), these maps show shared inventory and
+audit-signal reachability but neither prove which skills fail together nor
+prevent cascading failure. The SBOM/Dependabot comparison is a design analogy,
+not a measured equivalence or remediation result.
 
 ### 3. The Compilation Gradient Predicts the Resolution
 
