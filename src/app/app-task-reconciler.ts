@@ -12,6 +12,7 @@ import {
 import {
   appTaskReadinessById,
   commitTaskMutation,
+  ResourceTaskMutationStaleError,
   type AppTaskContext,
   type AppTaskReadiness,
   type TaskTree,
@@ -2206,9 +2207,17 @@ export function releaseHandlerUnavailableAppTask(
     summary,
     conditionIds: [],
   });
-  commitTaskMutation(config, tree, {
-    resourceMutation: finishResourceMutationScope(mutationScope, tree),
-  });
+  try {
+    commitTaskMutation(config, tree, {
+      resourceMutation: {
+        ...finishResourceMutationScope(mutationScope, tree),
+        requireActiveProject: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof ResourceTaskMutationStaleError) return false;
+    throw error;
+  }
   return true;
 }
 

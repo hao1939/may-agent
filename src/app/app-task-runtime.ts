@@ -3137,7 +3137,15 @@ async function requeueAvailableAppTaskHandlers(
         // Missing verification must not become agent-only completion on reload.
         if (candidate.handler.startsWith("agent:") || candidate.handler.startsWith("owner:")) {
           const workflow = config.resourceStore.readTask(candidate.taskId)?.spec.workflow;
-          if (workflow) return available({ agent: candidate.agent, handler: `workflow:${workflow}` });
+          if (workflow) {
+            const inspected = await opts.workflows?.inspect({
+              source: opts,
+              appDir: descriptor.appDir,
+              agent: candidate.agent,
+              workflow,
+            });
+            return Boolean(inspected?.available && inspected.verifier);
+          }
         }
         return true;
       },

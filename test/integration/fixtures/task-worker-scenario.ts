@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
@@ -32,7 +32,7 @@ async function cleanup() {
   }
 }
 
-function fixture(agent: string, wait = false) {
+function fixture(agent: string, wait = false, workflow = true) {
   const root = mkdtempSync(join(tmpdir(), "may-task-worker-"));
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -99,7 +99,7 @@ function fixture(agent: string, wait = false) {
             mode: "achieve",
             outcome: "Probe the worker boundary",
             acceptance: ["Fixture evidence"],
-            workflow: "probe",
+            ...(workflow ? { workflow: "probe" } : {}),
             input: { wait },
           },
           status: { phase: "pending", observedGeneration: 0, updatedAt: new Date().toISOString() },
@@ -172,6 +172,38 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async restoredAgent() {
+    const f = fixture("specialist", false, false);
+    const agentDir = join(f.appDir, "agents", "specialist");
+    const savedDir = join(f.root, "saved-specialist");
+    renameSync(agentDir, savedDir);
+    await run(f);
+    const task = f.store.readTask("work/one")!;
+    assert.equal(task.status.phase, "attention");
+    const before = f.store.readTaskContext({ taskIds: ["work/one"] });
+    const attempt = Object.values(before.attempts ?? {})[0];
+    assert.equal(attempt?.handler, "agent:specialist");
+    assert.equal(attempt?.failureReason, "HandlerUnavailable");
+    await run(f, true);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }), before);
+
+    renameSync(savedDir, agentDir);
+    const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
+    releases.activate(releases.stage());
+    await run(f, true);
+    assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
+    assert.equal(f.store.readTask("work/one")?.metadata.generation, task.metadata.generation);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, before.attempts);
+    assert.equal(f.store.readReceipt("work/one"), null);
+    await run(f, true);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, before.attempts);
+    assert.equal(
+      f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
+        ?.count,
+      1,
+    );
+  },
+
   async recoverySourceRace() {
     const f = fixture("owner");
     const path = join(f.appDir, "agents", "owner", "workflows", "probe.ts");

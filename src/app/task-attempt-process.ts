@@ -453,30 +453,34 @@ async function runTaskWorker(input: {
   const registry = new AppRegistry(discoverAppDefinitions(activeSource.projectsRoot, input.roots.projectsRoot));
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
-  const agentNames = registry
-    .snapshot()
-    .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
-    .flatMap(({ appDir, definition }) => {
-      const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
-      const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
-        /^agent:/,
-        "",
-      );
-      if (!input.task) return [agent];
-      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
-      if (!resourceStore) return [agent];
-      const selected = readAppTaskAgent(
-        appTaskContext({
-          appDir,
-          projectDir: appDir,
-          agent,
-          maxConcurrent: 1,
-          resourceStore,
-        }),
-        input.task.taskId,
-      );
-      return selected && selected !== agent ? [agent, selected] : [agent];
-    });
+  const task = input.task;
+  // Attempts load only their selected agents. Recovery needs the whole active
+  // catalog: retained Tasks can select or inherit a non-default agent.
+  const agentNames = task
+    ? registry
+        .snapshot()
+        .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
+        .flatMap(({ appDir, definition }) => {
+          const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
+          const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
+            /^agent:/,
+            "",
+          );
+          const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
+          if (!resourceStore) return [agent];
+          const selected = readAppTaskAgent(
+            appTaskContext({
+              appDir,
+              projectDir: appDir,
+              agent,
+              maxConcurrent: 1,
+              resourceStore,
+            }),
+            task.taskId,
+          );
+          return selected && selected !== agent ? [agent, selected] : [agent];
+        })
+    : undefined;
   const hostCapacity = new HostCapacity(1);
   try {
     await prepareDaemonAgents({
