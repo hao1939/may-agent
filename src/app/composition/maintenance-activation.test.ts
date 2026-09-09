@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { activateAgentMaintenance } from "./maintenance-activation.js";
 import { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import { EventBus } from "../event-bus.js";
+import { EventBus } from "../core/events/bus.js";
 import { closeDb } from "../../lib/requests.js";
 
 describe("HostMaintenance generation activation", () => {

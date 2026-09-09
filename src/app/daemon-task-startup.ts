@@ -1,4 +1,4 @@
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 
 /** Start an optional bounded startup task. Human interfaces admit their own App requests. */

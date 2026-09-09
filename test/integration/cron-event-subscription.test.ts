@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
-import { EventBus, type SystemEvent } from "../../src/app/event-bus.js";
+import { EventBus, type SystemEvent } from "../../src/app/core/events/bus.js";
 
 describe("HostMaintenance event subscriptions", () => {
   const tempDirs: string[] = [];

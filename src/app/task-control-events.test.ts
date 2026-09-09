@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { EVENT_DELIVERY_RESULT, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentEvent } from "./event-bus.js";
+import { EVENT_DELIVERY_RESULT, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentEvent } from "./core/events/bus.js";
 import {
   attachTaskControlEventRoute,
   taskCancelRequestedEvent,

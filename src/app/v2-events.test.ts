@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import type { AgentEvent } from "./event-bus.js";
+import type { AgentEvent } from "./core/events/bus.js";
 
 describe("v2 SystemEvent variants", () => {
   it("supports session.start and session.end (dot form)", () => {

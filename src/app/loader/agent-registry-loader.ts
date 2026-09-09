@@ -4,7 +4,7 @@ import type { ModelWithApiKey } from "../../lib/types.js";
 import type { SubagentDefinition } from "../../lib/types.js";
 import type { SubagentManager } from "../../lib/index.js";
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
 import {
   agentProjectRoot,

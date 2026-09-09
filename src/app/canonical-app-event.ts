@@ -1,5 +1,5 @@
 import type { AppEvent, AppEventTarget } from "@may-agent/sdk";
-import { eventData, type AgentEvent } from "./event-bus.js";
+import { eventData, type AgentEvent } from "./core/events/bus.js";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};

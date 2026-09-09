@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { HostMaintenance } from "./runtime.ts";
-import { EventBus } from "../../event-bus.ts";
+import { EventBus } from "../../core/events/bus.ts";
 
 function tempRoot(): string {
   return mkdtempSync(join(tmpdir(), "may-cron-"));

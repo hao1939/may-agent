@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HostMaintenance } from "./runtime.js";
-import { EventBus } from "../../event-bus.js";
+import { EventBus } from "../../core/events/bus.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { closeDb } from "../../../lib/requests.js";
 import { importRuntimeModule } from "../../../lib/runtime-import.js";

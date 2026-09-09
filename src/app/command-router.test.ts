@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { attachCommandRouter } from "./command-router.js";
-import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 
 function fixture(
   reload: () => { ok: boolean; summary: string } | Promise<{ ok: boolean; summary: string }> = () => ({

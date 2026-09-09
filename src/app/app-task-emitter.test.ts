@@ -7,7 +7,7 @@ import { DbWriter } from "../lib/db-writer.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
-import { EventBus } from "./event-bus.js";
+import { EventBus } from "./core/events/bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 

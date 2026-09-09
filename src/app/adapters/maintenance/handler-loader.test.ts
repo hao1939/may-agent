@@ -3,11 +3,11 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MaintenanceEntry } from "./contracts.js";
-import type { EventEnvelope } from "../../event-bus.js";
+import type { EventEnvelope } from "../../core/events/bus.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { closeDb } from "../../../lib/requests.js";
 import type { HostMaintenance } from "./runtime.js";
-import { EventBus } from "../../event-bus.js";
+import { EventBus } from "../../core/events/bus.js";
 import { loadMaintenanceHandlers } from "./handler-loader.js";
 
 type Handler = (event?: EventEnvelope) => Promise<void>;

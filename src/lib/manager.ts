@@ -68,7 +68,7 @@ import {
   updateWorkflowRun,
   getDb,
 } from "./requests.js";
-import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/event-bus.js";
+import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";
 import type { ToolPolicy } from "./session-policy.js";

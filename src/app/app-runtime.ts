@@ -29,8 +29,8 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus } from "./event-bus.js";
-import { createEventInterface, type EventInterface } from "./event-interface.js";
+import { EventBus } from "./core/events/bus.js";
+import { createEventInterface, type EventInterface } from "./core/events/interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";

@@ -5,7 +5,7 @@ import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
 import { admitStandaloneCanonicalAppTaskEvent, standaloneAppTaskAdmissionDescriptors } from "./app-task-runtime.js";
-import { EVENT_ROW_ID, type AgentEvent } from "./event-bus.js";
+import { EVENT_ROW_ID, type AgentEvent } from "./core/events/bus.js";
 import { isBundled } from "./bundle-mode.js";
 
 export type TaskAdmissionProcessResult = {

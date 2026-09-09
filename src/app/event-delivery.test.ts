@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import {
   addSessionTranscriptToEventGraph,

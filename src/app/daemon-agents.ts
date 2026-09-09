@@ -2,7 +2,7 @@ import { join, resolve } from "node:path";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
 import { buildTools } from "./loader/toolset-loader.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";

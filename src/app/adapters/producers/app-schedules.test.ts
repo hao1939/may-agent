@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "bun:test";
 import { defineApp, Type, type AppSchedule } from "@may-agent/sdk";
-import { EVENT_RECORD_ONLY, EventBus, type AgentEvent } from "../../event-bus.js";
+import { EVENT_RECORD_ONLY, EventBus, type AgentEvent } from "../../core/events/bus.js";
 import { createAppScheduleProducer } from "./app-schedules.js";
 
 const producers: ReturnType<typeof createAppScheduleProducer>[] = [];

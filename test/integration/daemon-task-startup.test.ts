@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import { startInitialTask } from "../../src/app/daemon-task-startup.js";
 
 describe("daemon startup task", () => {

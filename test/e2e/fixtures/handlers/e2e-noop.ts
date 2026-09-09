@@ -6,7 +6,7 @@
  */
 import type { MaintenanceEntry } from "../../../../src/app/adapters/maintenance/contracts.js";
 import type { HandlerContext, HandlerModule } from "../../../../src/app/adapters/maintenance/context.js";
-import type { EventEnvelope } from "../../../../src/app/event-bus.js";
+import type { EventEnvelope } from "../../../../src/app/core/events/bus.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: MaintenanceEntry) => {
   return async (event?: EventEnvelope) => {

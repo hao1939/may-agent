@@ -1,15 +1,16 @@
 /**
  * EventBus — the single integration point for the may-agent system.
  *
- * Everything flows through here: commands (to core), observations (from core),
- * management (reload/restart), and system events (notifications).
+ * Independent integrations use commands and observations here. Private recovery,
+ * claims, result admission and cancellation keep ordinary calls/transactions;
+ * a timer or internal step does not need its own event.
  *
  * System logging (log.ts) is a separate, independent channel — never routed
  * through the bus — to avoid circular dependencies.
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import { log } from "../lib/log.js";
+import { log } from "../../../lib/log.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
 
@@ -326,7 +327,6 @@ export type SystemEvent =
         [key: string]: unknown;
       };
     }
-  | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
   | {
       type: "heartbeat.skipped";
       source?: string;

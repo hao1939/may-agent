@@ -1,5 +1,5 @@
 import type { EventInput } from "@may-agent/control/events";
-import { eventData, type AgentEvent, type EventBus, type SubscriberResult } from "./event-bus.js";
+import { eventData, type AgentEvent, type EventBus, type SubscriberResult } from "./core/events/bus.js";
 
 type ExactTask = {
   appId: string;

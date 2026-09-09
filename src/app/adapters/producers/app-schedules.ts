@@ -1,5 +1,5 @@
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
-import { EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../../event-bus.js";
+import { EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
 
 /** Schedule slots publish normal events. They do not own requests or Tasks. */

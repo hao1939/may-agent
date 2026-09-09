@@ -5,7 +5,7 @@
  * Workflow execution adapts this into the narrow SDK context; it is never spread into App code.
  */
 
-import type { EventBus } from "../app/event-bus.js";
+import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";

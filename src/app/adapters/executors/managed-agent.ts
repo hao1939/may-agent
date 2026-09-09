@@ -7,7 +7,7 @@ import type { SubagentDefinition } from "../../../lib/types.js";
 import { projectAppTaskChildPromptContext } from "../../app-task-context.js";
 import { APP_TASK_RECOVERY_OWNER } from "../../app-task-reconciler.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent } from "../../event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskAgentRunner, TaskAgentInput } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";

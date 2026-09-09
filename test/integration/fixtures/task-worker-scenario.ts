@@ -8,7 +8,7 @@ import { AppTaskResourceStore } from "../../../src/app/app-task-resource-store.j
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
 import { appTaskContext, cancelAppTask } from "../../../src/app/app-task-reconciler.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { EventBus } from "../../../src/app/event-bus.js";
+import { EventBus } from "../../../src/app/core/events/bus.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,

@@ -5,7 +5,7 @@
  */
 
 import type { AgentSDK, RunOpts, WorkflowResult } from "./sdk.js";
-import type { EventBus } from "../app/event-bus.js";
+import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";

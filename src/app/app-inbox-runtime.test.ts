@@ -17,7 +17,7 @@ import {
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   EventBus,
-} from "./event-bus.js";
+} from "./core/events/bus.js";
 import { AppRegistry, type AppDefinitionSource } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";

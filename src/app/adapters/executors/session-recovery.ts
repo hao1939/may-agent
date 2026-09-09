@@ -18,7 +18,7 @@ import { readLatestCheckpoint, type CheckpointEntry } from "../../../lib/tools/c
 import { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
 import { STATE_CHANGING_TOOLS } from "../../../lib/manager-utils.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
-import type { AgentEvent, EventBus } from "../../event-bus.js";
+import type { AgentEvent, EventBus } from "../../core/events/bus.js";
 import { appTaskSessionBinding } from "../../core/tasks/session-binding.js";
 import type { TaskSessionRecovery } from "../../core/tasks/execution.js";
 

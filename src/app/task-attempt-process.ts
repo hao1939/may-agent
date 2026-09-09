@@ -17,7 +17,7 @@ import {
 import { attachEventPersistence } from "./daemon-events.js";
 import { prepareDaemonAgents } from "./daemon-agents.js";
 import { readTaskOutcomes } from "./adapters/reporting/task-outcomes.js";
-import { EventBus, EVENT_ROW_ID, type AgentEvent } from "./event-bus.js";
+import { EventBus, EVENT_ROW_ID, type AgentEvent } from "./core/events/bus.js";
 import { HostCapacity } from "./host-capacity.js";
 import { isBundled } from "./bundle-mode.js";
 import type { ModelRegistry } from "./model-registry.js";

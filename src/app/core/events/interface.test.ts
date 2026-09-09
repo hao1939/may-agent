@@ -2,12 +2,13 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DbWriter } from "../lib/db-writer.js";
-import { closeDb, getDb } from "../lib/requests.js";
-import { createAppInboxItem } from "./app-inbox-store.js";
-import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./event-bus.js";
-import { createEventInterface } from "./event-interface.js";
-import { createAppEventAdmissionPlan, recordAppEventAdmissionCommandFailure } from "./app-event-admission-store.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { createAppInboxItem, claimAppInboxItem, completeAppInboxClaim } from "../../app-inbox-store.js";
+import { createRuntimeAppRead } from "../reads/app-read.js";
+import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./bus.js";
+import { createEventInterface } from "./interface.js";
+import { createAppEventAdmissionPlan, recordAppEventAdmissionCommandFailure } from "../../app-event-admission-store.js";
 
 const roots: string[] = [];
 
@@ -38,10 +39,130 @@ function fixture() {
 }
 
 describe("simple event interface", () => {
+  it("reports an async subscriber failure without changing a committed result or blocking another report", async () => {
+    const { db, events } = fixture();
+    createAppInboxItem(db, {
+      id: "request/report",
+      appId: "sample",
+      source: { kind: "system", id: "fixture" },
+      input: { kind: "message", data: {} },
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "request/report", "fixture", 1000, 100)!;
+    completeAppInboxClaim(db, claim, { summary: "Accepted work", evidence: ["fixture"] }, 200);
+    const read = createRuntimeAppRead({ getDb: () => db });
+    const failure = Promise.withResolvers<void>();
+    const report = Promise.withResolvers<unknown>();
+    const stops = [
+      events.subscribe({ types: ["fixture.changed"] }, async () => {
+        await Promise.resolve();
+        throw new Error("fixture observer failed");
+      }),
+      events.subscribe({ types: ["fixture.changed"] }, async () => {
+        report.resolve(await read.appResult("request/report"));
+      }),
+      events.subscribe({ types: ["subscriber.failed"] }, () => {
+        failure.resolve();
+      }),
+    ];
+    try {
+      const receipt = events.publish(
+        { type: "fixture.changed", data: {} },
+        { source: "fixture", allowUnregisteredFact: true },
+      );
+      await failure.promise;
+      await expect(report.promise).resolves.toMatchObject({ summary: "Accepted work" });
+      expect(events.get(receipt.eventId)?.delivery.state).toBe("recorded");
+      await expect(read.appResult("request/report")).resolves.toMatchObject({ summary: "Accepted work" });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'subscriber.failed'").get()).toEqual({
+        count: 1,
+      });
+    } finally {
+      for (const stop of stops) stop();
+    }
+  });
+
+  it("keeps operator diagnostics readable by ID and stream without granting public publication", async () => {
+    const { bus, events } = fixture();
+    const seen = Promise.withResolvers<void>();
+    const observed: Array<{ id?: number; type: string; data: Record<string, unknown> }> = [];
+    const stop = events.subscribe(
+      { types: ["project.task.reconciled", "project.task.reconcile.profiled"] },
+      (event) => {
+        observed.push(event);
+        if (observed.length === 2) seen.resolve();
+      },
+    );
+    try {
+      expect(() => events.publish({ type: "project.task.reconciled", data: {} }, { source: "http" })).toThrow(
+        "not admitted",
+      );
+      for (const type of ["project.task.reconciled", "project.task.reconcile.profiled"]) {
+        bus.emit({
+          type,
+          source: "app-task:sample",
+          owner: "project:sample",
+          data: { project: "sample", taskId: "work/main", disposition: "stale", summary: "Not an accepted result" },
+        } as never);
+      }
+      await seen.promise;
+      for (const event of observed) {
+        const view = events.get(event.id!);
+        expect(view?.event.type).toBe(event.type);
+        expect(view?.event.data).toMatchObject(event.data);
+        expect(view?.delivery.state).toBe("recorded");
+        expect(view?.links).toEqual([]);
+      }
+    } finally {
+      stop();
+    }
+  });
+  it("keeps an async observer ordered without delaying admission or independent observers", async () => {
+    const { db, events } = fixture();
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const independent = Promise.withResolvers<void>();
+    const drained = Promise.withResolvers<void>();
+    const observed: number[] = [];
+    const stopSlow = events.subscribe({ types: ["fixture.changed"] }, async (event) => {
+      observed.push(Number(event.data.index));
+      if (event.data.index === 1) {
+        entered.resolve();
+        await release.promise;
+      } else drained.resolve();
+    });
+    const stopFast = events.subscribe({ types: ["fixture.changed"] }, (event) => {
+      if (event.data.index === 2) independent.resolve();
+    });
+    try {
+      for (const index of [1, 2]) {
+        expect(
+          events.publish(
+            { type: "fixture.changed", data: { index } },
+            { source: "fixture", allowUnregisteredFact: true },
+          ).delivery,
+        ).toBe("recorded");
+      }
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 2 });
+      await Promise.all([entered.promise, independent.promise]);
+      expect(observed).toEqual([1]);
+      release.resolve();
+      await drained.promise;
+      expect(observed).toEqual([1, 2]);
+    } finally {
+      release.resolve();
+      stopSlow();
+      stopFast();
+    }
+  });
   it("exposes the recorded failure on a pending Task admission link", () => {
     const { db, events } = fixture();
     const receipt = events.publish(
-      { type: "project.owner.requested", target: { appId: "sample", taskId: "review/one" }, data: { reason: "review" } },
+      {
+        type: "project.owner.requested",
+        target: { appId: "sample", taskId: "review/one" },
+        data: { reason: "review" },
+      },
       { source: "control-socket" },
     );
     createAppEventAdmissionPlan(db, {
@@ -235,7 +356,6 @@ describe("simple event interface", () => {
         target: { appId: "sample", sessionId: "s_known" },
         data: { source: "session.jsonl", instructions: "Review this session" },
       },
-      { type: "heartbeat.trigger", data: { agent: "may", requestedBy: "human" } },
       { type: "metric.threshold_changed", data: { metricId: "health", from: null, to: 2 } },
       { type: "metric.alert_resolved", data: { metricId: "health", alertId: 7, reason: "reviewed" } },
     ];

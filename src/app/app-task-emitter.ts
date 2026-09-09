@@ -5,7 +5,7 @@ import {
   type AgentEvent,
   type EventBus,
   type EventTaskEmissionFence,
-} from "./event-bus.js";
+} from "./core/events/bus.js";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 
 export type AppTaskEmission = {

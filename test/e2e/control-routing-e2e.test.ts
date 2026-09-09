@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sendSocketCommand, type SocketEndpoint } from "../../packages/control/src/client.js";
 import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../../packages/control/src/server.js";
-import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 

@@ -9,7 +9,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { eventData, type AgentEvent } from "../app/event-bus.js";
+import { eventData, type AgentEvent } from "../app/core/events/bus.js";
 import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest } from "./session-digest.js";

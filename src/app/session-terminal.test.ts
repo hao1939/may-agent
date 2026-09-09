@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachDaemonEventSubscribers, attachEventPersistence } from "./daemon-events.js";
-import { EventBus } from "./event-bus.js";
+import { EventBus } from "./core/events/bus.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb } from "../lib/requests.js";
 
