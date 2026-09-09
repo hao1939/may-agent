@@ -3,7 +3,7 @@ summary: "Independent review accepts exact Cycle 434 tip 882c162c76 for its narr
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053", "RV-054"]
 last_updated: "2026-09-09"
 source_basis: "Independent Cycle 434 review of exact direct-child range 62d38199ffcd2047e60300a628f48ac84bc43e9e..882c162c7650d5a5967f2b9a98d1f35f7ae2f66d. Prior Cycle 433 reviewer result 62d38199ff is literally integrated as the source. Reviewer-owned fixtures at retained Mnemosyne base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduce Cycle 433 digest f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445 and Cycle 434 digest f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af. Under the same Cycle 434 tests, the Cycle 433 implementation fails all three new state assertions and the Cycle 434 candidate passes all three. Candidate validation passes 24 focused, 94 runnable runtime with one declared artifact deselection, and 7 repository tests. Current canonical validation passes 321 tests / 1,632 assertions, Cycle 433 projection, 136 scoped links, navigation 11/14 + 8/8 + 14/14, historical 1,562 documents / 1,829 broad links, complete project 1,563 / 1,831, health 26/16 with truncation, and git diff --check. Read-only /app remains exact a8657eb669 with clean index, exact 127 / 5,914 / 23 status counts and fingerprints, and all five protected hashes. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, local-main landing, compaction, cleanup, deployment, schema migration, crash recovery, or user-outcome improvement is approved."
-producer_integration_basis: "Literal fast-forward of exact direct-child reviewer result d6429bc20d4a5224c91a3b021f3a0098cedd2613 onto reviewed producer 0cac37d14ff168163223e219694f9856bddbe048; stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985; producer disposition recorded at 2026-09-09T17:07:04+08:00."
+producer_integration_basis: "Literal fast-forward of exact direct-child reviewer result 3e632f2a255ba47864c9d6ae180601bf4e38ff32 onto reviewed Cycle 434 producer 882c162c7650d5a5967f2b9a98d1f35f7ae2f66d; stable patch ID 97c1c1fad98ffa36e247b0604f92fc9dd8d21a58; no patch-equivalent, rejected, or superseded disposition substituted."
 independent_integration_review_basis: "Independent review of exact ordered range 0cac37d14ff168163223e219694f9856bddbe048..e7843527541eaf6f4db5499ffae5209f00a3e321. Literal ancestry and stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985 reproduce; direct retained-candidate comparison reproduces 15 implementation plus 115 test lines and digests 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0 to b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817. Reviewer-owned current-tip validation passes 321 tests / 1,632 assertions, 132 scoped links, both broad-link scopes at 1,560/1,825 and 1,561/1,827, navigation, health 26/16 truncated, and diff cleanliness. Read-only /app remains at a8657eb669 with clean index, exact 23-path Scout fingerprint and five protected hashes; unrelated aggregate status growth is not attributed to Cycle 432."
 cycle_433_review_basis: "Accept exact canonical tip ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7 only for the documented local SQLite exclusion invariant. The claim is not crash recovery, end-to-end idempotency, compensation, cross-host or cross-database safety, upstream adoption, deployment, or user-outcome evidence. The uncommitted external experiment rolls back by discarding its exact four-file diff; the canonical documentation rolls back by reverting ecbfbc931f."
 cycle_434_review_basis: "Accept exact canonical tip 882c162c7650d5a5967f2b9a98d1f35f7ae2f66d only for the documented local claim-state classification invariant. The report's 47-line implementation increment is the reproduced net change: 48 insertions and one deletion, plus 81 test insertions. The claim is not an existing-database migration, kernel outcome proof, crash recovery, end-to-end idempotency, retry safety, upstream adoption, deployment, or user-outcome evidence. The external experiment rolls back by discarding exact digest f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af; canonical documentation rolls back by reverting 882c162c76."
@@ -5348,6 +5348,26 @@ and then resume research. This does not approve schema migration, crash
 recovery, end-to-end idempotency, upstream adoption, deployment, local-main
 landing, compaction, cleanup, branch/worktree deletion, or a productivity
 claim.
+
+## Producer Cycle 434 reviewer integration — literal
+
+Standing fast-forwarded cleanly from exact accepted producer
+`882c162c7650d5a5967f2b9a98d1f35f7ae2f66d` to its direct reviewer child
+`3e632f2a255ba47864c9d6ae180601bf4e38ff32`. The stable patch ID is
+`97c1c1fad98ffa36e247b0604f92fc9dd8d21a58`; the reviewer result is a literal
+canonical ancestor, not a patch-equivalent, rejected, or superseded result.
+The integration retains the reviewer-owned matched-control evidence, exact
+candidate digests, narrow claim-state verdict, and explicit migration and
+recovery limits.
+
+The external four-file candidate remains uncommitted and rolls back by
+discarding exact digest
+`f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af`.
+To remove only the reviewer result, first revert any dependent ledger record,
+then ordinarily revert `3e632f2a25`, retaining producer `882c162c76`. This
+integration moves no local-main ref or protected byte and authorizes no schema
+migration, crash recovery, end-to-end idempotency, upstream adoption,
+deployment, compaction, cleanup, branch deletion, or worktree deletion.
 
 ## Next trigger
 
