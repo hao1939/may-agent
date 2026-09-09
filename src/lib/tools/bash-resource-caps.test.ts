@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { readdirSync, statSync, unlinkSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import {
   BASH_CAPTURE_TAIL_BYTES,
   createBashTool,
@@ -20,18 +20,28 @@ describe("P113 Bash Resource Caps", () => {
     await expect(tool.execute("id", { command: "sleep 30" })).rejects.toThrow(/timed out/);
   });
 
-  it("agent-specified timeout overrides the default", async () => {
-    // Default is 1s, but agent says 2s — the command finishes in <1s so it succeeds
-    const tool = createBashTool("/tmp", { defaultTimeout: 1 });
-    const result = await tool.execute("id", { command: "echo fast", timeout: 2 });
-    expect(result.content[0].text).toContain("fast");
-  });
-
-  it("defaultTimeout=0 disables the default timeout", async () => {
-    // With 0, no default timeout — a quick command should work fine
-    const tool = createBashTool("/tmp", { defaultTimeout: 0 });
-    const result = await tool.execute("id", { command: "echo no-timeout" });
-    expect(result.content[0].text).toContain("no-timeout");
+  it.each([
+    [undefined, undefined, 120],
+    [1, undefined, 1],
+    [1, 2, 2],
+    [0, undefined, undefined],
+    [0, 2, 2],
+    [1, 0, 0],
+  ])("passes default %s / explicit %s as timeout %s to execution", async (defaultTimeout, timeout, expected) => {
+    // A fast echo cannot prove timeout selection: inspect the execution boundary.
+    const timeouts: Array<number | undefined> = [];
+    const tool = createBashTool("/tmp", {
+      defaultTimeout,
+      operations: {
+        async exec(_command, _cwd, options) {
+          timeouts.push(options.timeout);
+          options.onData(Buffer.from("ok"));
+          return { exitCode: 0 };
+        },
+      },
+    });
+    expect((await tool.execute("policy", { command: "unused", timeout })).content[0].text).toBe("ok");
+    expect(timeouts).toEqual([expected]);
   });
 
   it("normal commands complete within default timeout", async () => {
@@ -136,26 +146,69 @@ describe("P113 Bash Resource Caps", () => {
     unlinkSync(execution.fullOutputPath!);
   });
 
-  it("preserves the complete capture when a large-output command times out", async () => {
+  it("retains real large output when aborted after capture is observed", async () => {
     const outputBytes = 2 * 1024 * 1024;
-    const tool = createBashTool("/tmp", { defaultTimeout: 0.3 });
-    let error: Error | undefined;
-
+    const controller = new AbortController();
+    const local = createLocalBashOperations();
+    const tool = createBashTool("/tmp", {
+      defaultTimeout: 10, // Failure bound, not an assumption about how fast output arrives.
+      operations: {
+        ...local,
+        exec(command, cwd, options) {
+          return local.exec(command, cwd, {
+            ...options,
+            onProgress(bytes) {
+              if (bytes === outputBytes) controller.abort();
+            },
+          });
+        },
+      },
+    });
+    let fullOutputPath: string | undefined;
     try {
-      await tool.execute("large-timeout", {
-        command: `bun -e 'process.stdout.write("x".repeat(${outputBytes})); setTimeout(() => {}, 10_000)'`,
-      });
-    } catch (caught) {
-      error = caught as Error;
+      const error = await tool
+        .execute(
+          "large-abort",
+          {
+            command: `bun -e 'process.stdout.write("x".repeat(${outputBytes})); setTimeout(() => {}, 10_000)'`,
+          },
+          controller.signal,
+        )
+        .then(
+          () => {
+            throw new Error("expected interrupted command");
+          },
+          (caught: Error) => caught,
+        );
+      fullOutputPath = error.message.match(/Full output: ([^\]]+)/)?.[1];
+      expect(error.message).toContain("Command aborted");
+      expect(controller.signal.aborted).toBe(true);
+      expect(fullOutputPath).toBeString();
+      expect(readFileSync(fullOutputPath!)).toEqual(Buffer.alloc(outputBytes, "x"));
+      expect(Buffer.byteLength(error.message)).toBeLessThan(BASH_CAPTURE_TAIL_BYTES * 2);
+    } finally {
+      controller.abort();
+      if (fullOutputPath) unlinkSync(fullOutputPath);
     }
+  });
 
-    expect(error?.message).toContain("Command timed out after 0.3 seconds");
-    const fullOutputPath = error?.message.match(/Full output: ([^\]]+)/)?.[1];
-    expect(fullOutputPath).toBeString();
-    expect(statSync(fullOutputPath!).size).toBe(outputBytes);
-    expect(Buffer.byteLength(error?.message ?? "")).toBeLessThan(BASH_CAPTURE_TAIL_BYTES * 2);
-
-    unlinkSync(fullOutputPath!);
+  it("includes retained capture evidence when execution reports a timeout", async () => {
+    const tool = createBashTool("/tmp", {
+      defaultTimeout: 0.3,
+      operations: {
+        retainsFullOutput: true,
+        async exec(_command, _cwd, options) {
+          options.onData(Buffer.from("last output"));
+          throw Object.assign(new Error(`timeout:${options.timeout}`), {
+            fullOutputPath: "/tmp/example-bash-capture.log",
+            totalOutputBytes: 2 * 1024 * 1024,
+          });
+        },
+      },
+    });
+    await expect(tool.execute("timeout-evidence", { command: "unused" })).rejects.toThrow(
+      /last output[\s\S]*Full output: \/tmp\/example-bash-capture.log[\s\S]*Command timed out after 0.3 seconds/,
+    );
   });
 
   it("tool description mentions the default timeout", () => {

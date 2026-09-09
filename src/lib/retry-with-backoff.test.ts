@@ -1,15 +1,7 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, spyOn } from "bun:test";
 import { retryWithBackoff } from "./retry-with-backoff.js";
 
 describe("retryWithBackoff()", () => {
-  it("returns immediately on success", async () => {
-    const result = await retryWithBackoff(async () => 42, {
-      baseDelayMs: 1,
-      jitter: false,
-    });
-    expect(result).toBe(42);
-  });
-
   it("retries on failure and eventually succeeds", async () => {
     let calls = 0;
     const result = await retryWithBackoff(
@@ -89,26 +81,24 @@ describe("retryWithBackoff()", () => {
         },
       },
     );
-    expect(retries).toHaveLength(2);
-    expect(retries[0]!.attempt).toBe(1);
-    expect(retries[0]!.delayMs).toBe(10); // 10 * 2^0 = 10
-    expect(retries[1]!.attempt).toBe(2);
-    expect(retries[1]!.delayMs).toBe(20); // 10 * 2^1 = 20
+    expect(retries).toEqual([
+      { attempt: 1, delayMs: 10 },
+      { attempt: 2, delayMs: 20 },
+    ]);
   });
 
   it("caps delay at maxDelayMs", async () => {
     const delays: number[] = [];
-    let _calls = 0;
     await expect(
       retryWithBackoff(
         async () => {
-          _calls++;
           throw new Error("fail");
         },
         {
           maxRetries: 5,
-          baseDelayMs: 100,
-          maxDelayMs: 200,
+          // Milliseconds are enough to exercise the same exponential cap.
+          baseDelayMs: 2,
+          maxDelayMs: 4,
           multiplier: 10,
           jitter: false,
           onRetry: (_err, _attempt, delayMs) => {
@@ -117,35 +107,30 @@ describe("retryWithBackoff()", () => {
         },
       ),
     ).rejects.toThrow();
-    // All delays after the first should be capped at 200
-    for (const d of delays) {
-      expect(d).toBeLessThanOrEqual(200);
-    }
+    expect(delays).toEqual([2, 4, 4, 4, 4]);
   });
 
-  it("applies jitter when enabled (delays vary)", async () => {
+  it("adds the configured jitter to each exponentially increasing delay", async () => {
     const delays: number[] = [];
-    let _calls = 0;
-    // Run multiple times to check jitter introduces variance
-    await expect(
-      retryWithBackoff(
-        async () => {
-          _calls++;
-          throw new Error("fail");
-        },
-        {
-          maxRetries: 4,
-          baseDelayMs: 1,
-          jitter: true,
-          onRetry: (_err, _attempt, delayMs) => {
-            delays.push(delayMs);
+    const random = spyOn(Math, "random").mockReturnValue(0.5);
+    try {
+      await expect(
+        retryWithBackoff(
+          async () => {
+            throw new Error("fail");
           },
-        },
-      ),
-    ).rejects.toThrow();
-    // With jitter, delays should be >= base (jitter adds, never subtracts)
-    for (const d of delays) {
-      expect(d).toBeGreaterThanOrEqual(1);
+          {
+            maxRetries: 3,
+            baseDelayMs: 2,
+            jitter: true,
+            onRetry: (_err, _attempt, delayMs) => delays.push(delayMs),
+          },
+        ),
+      ).rejects.toThrow("fail");
+      expect(delays).toEqual([2.5, 5, 10]);
+      expect(random).toHaveBeenCalledTimes(3);
+    } finally {
+      random.mockRestore();
     }
   });
 
@@ -173,11 +158,10 @@ describe("retryWithBackoff()", () => {
         baseDelayMs: 5000, // long delay — will be aborted
         jitter: false,
         signal: controller.signal,
+        // sleep() installs its listener synchronously after onRetry returns.
+        onRetry: () => queueMicrotask(() => controller.abort(new Error("aborted-during-sleep"))),
       },
     );
-
-    // Abort shortly after the first failure triggers backoff
-    setTimeout(() => controller.abort(new Error("aborted-during-sleep")), 50);
 
     await expect(promise).rejects.toThrow("aborted-during-sleep");
     expect(calls).toBe(1); // only ran once before abort during sleep

@@ -61,6 +61,10 @@ ingress. Remove examples that only exercise test-local SQL or algorithms, not
 regressions that invoke production behavior. Do not skip slow coverage or add
 automatic retries to make the suite look faster or greener.
 
+Do not race a short timeout against child startup or a fixed output volume.
+Test timeout selection at the execution boundary, real timer cancellation in a
+process test, and retained output after observing that the output was written.
+
 ## GitHub checks
 
 Every PR and push to `main` reports two independent Linux checks:
