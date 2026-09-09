@@ -4136,6 +4136,191 @@ describe("canonical App task runtime", () => {
     );
   });
 
+  it("stops controller retries durably while recovery and unrelated work remain available", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        broken: async () => {
+          calls += 1;
+          throw new Error("fixture execution failed");
+        },
+        healthy: async () => ({
+          state: "converged",
+          summary: "Verified independent work",
+          evidence: ["test:verified"],
+        }),
+      },
+      appRegistrySnapshot: {
+        id: "boot:controller-retry",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const attach = (executor: string) =>
+      attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        idempotencyKey: `attach:${executor}`,
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: `work/${executor}`,
+            parentId: "operations",
+            outcome: `Complete ${executor}`,
+            acceptance: ["Verified result"],
+            mode: "achieve",
+            executor,
+          },
+        },
+        request: {
+          id: `request-${executor}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: {} },
+        },
+      });
+    await attach("broken");
+    const deadline = Date.now() + 4_000;
+    while (config.resourceStore.readTask("work/broken")?.status.phase !== "attention" && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+    expect(calls).toBe(4);
+    expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
+      phase: "attention",
+      executionFailures: 4,
+    });
+    for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
+    await attach("healthy");
+    const healthyDeadline = Date.now() + 1_000;
+    while (!readTaskSnapshot(config).receipts?.["work/healthy"] && Date.now() < healthyDeadline) await Bun.sleep(5);
+    expect(readTaskSnapshot(config).receipts?.["work/healthy"]?.summary).toBe("Verified independent work");
+    expect(calls).toBe(4);
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
+  });
+
+  it("bounds failed executions across independent wakes and a fresh process", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        broken: async () => {
+          calls += 1;
+          throw new Error("fixture execution failed");
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:durable-retry",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/bounded-retry";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Finish despite transient failures",
+        acceptance: ["The result is verified"],
+        mode: "achieve",
+        executor: "broken",
+      },
+      trigger: { type: "sample.work", eventId: 100, data: { itemId: "bounded-retry" } },
+    });
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    // Each call is an independent wake, not a controller's own retry timer.
+    for (let index = 0; index < 8; index += 1) await run().catch(() => {});
+    expect(calls).toBe(4);
+    const stopped = config.resourceStore.readTask(taskId)!;
+    expect(stopped.status.phase).toBe("attention");
+    expect(stopped.status.summary).toContain("Explicitly retry");
+    expect(readTaskSnapshot(config).taskTriggers?.[taskId]?.events).toEqual([
+      expect.objectContaining({ event: expect.objectContaining({ eventId: 100 }) }),
+    ]);
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(4);
+
+    // A new diagnostic/event ID is not authorization for more failed execution.
+    recordAppTaskTrigger(config, taskId, { type: "sample.diagnostic", eventId: 101, data: {} });
+    expect(
+      config.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    await run();
+    expect(calls).toBe(4);
+    const stoppedVersion = config.resourceStore.readTask(taskId)!.metadata.resourceVersion;
+    await run();
+    expect(
+      config.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    expect(config.resourceStore.readTask(taskId)!.metadata.resourceVersion).toBe(stoppedVersion);
+
+    await closeInstalledAppTaskRuntimes(bus);
+    closeDb(join(f.root, "state"));
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        "--eval",
+        `
+      import { getDb, closeDb } from ${JSON.stringify(new URL("../lib/requests.ts", import.meta.url).pathname)};
+      import { AppTaskResourceStore } from ${JSON.stringify(new URL("./app-task-resource-store.ts", import.meta.url).pathname)};
+      import { appTaskContext, claimObservedAppTask } from ${JSON.stringify(new URL("./app-task-reconciler.ts", import.meta.url).pathname)};
+      const persistDir = ${JSON.stringify(join(f.root, "state"))};
+      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+      const config = appTaskContext({ appDir: ${JSON.stringify(f.appDir)}, projectDir: ${JSON.stringify(f.appDir)}, agent: "sample-owner", maxConcurrent: 1, resourceStore });
+      const result = claimObservedAppTask(config, { taskId: ${JSON.stringify(taskId)}, appAgent: "sample-owner", handler: "auto", reason: "attempt-recovery" });
+      console.log(JSON.stringify({ kind: result.kind, attempts: Object.keys(resourceStore.readSnapshot().attempts).length }));
+      closeDb(persistDir);
+    `,
+      ],
+      { timeout: 10_000 },
+    );
+    expect(JSON.parse(stdout)).toEqual({ kind: "attention", attempts: 4 });
+
+    const restarted = loadedTaskConfig(f);
+    expect(
+      restarted.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    const resource = restarted.resourceStore.readTask(taskId)!;
+    retryFailedAppTask(restarted, {
+      appId: "sample",
+      taskId,
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+    });
+    expect(
+      restarted.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    const retry = claimObservedAppTask(restarted, { taskId, appAgent: "sample-owner", handler: "auto" });
+    expect(retry.kind).toBe("claimed");
+    if (retry.kind !== "claimed") throw new Error("expected authorized retry");
+    expect(retry.generation).toBe(1);
+    expect(retry.events.map((entry) => entry.event.eventId)).toEqual([100, 101]);
+    expect(completeAppTask(restarted, retry, { summary: "Repair verified", evidence: ["test:verified"] }).status).toBe(
+      "applied",
+    );
+  });
+
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4200,7 +4385,7 @@ describe("canonical App task runtime", () => {
     });
     expect(Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "work/resume-codex-goal")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ state: "interrupted" }),
+        expect.objectContaining({ state: "failed", failureReason: "HandlerExecutionFailed" }),
         expect.objectContaining({ state: "completed" }),
       ]),
     );

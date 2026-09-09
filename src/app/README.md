@@ -258,6 +258,16 @@ rejected promise. Failure reporting is best-effort: throwing/rejecting reporters
 fall back to process diagnostics, and a pending reporter does not hold capacity.
 No new event family or diagnostic service is required.
 
+`app-task-reconciler.ts` owns the durable execution-retry allowance at the shared
+claim boundary. The existing Task status stores one consecutive-failure count:
+initial execution plus three retries, then attention with retained input and
+an existing parent/dependency notification. Timer retries, recovery scans and
+new processes all obey that same count. Successful progress/waits, a changed
+execution generation, or explicit retry/unblock clear it; ordinary wakes and
+stale-result fencing do not. Long-running successful work has no attempt cap.
+Execution failures are recorded as failed attempts, distinct from stale results
+and unavailable handlers. No SDK retry settings, new table or retry service.
+
 | Contract / implementation | Responsibility |
 | --- | --- |
 | SDK `TaskExecutor(attempt)` | One bounded custom executor call and proposed result; unchanged public contract |

@@ -1,5 +1,8 @@
 import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
 
+/** Initial execution plus three retries; successful progress is not capped. */
+export const MAX_TASK_EXECUTION_FAILURES = 4;
+
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
   observedAt: string;
@@ -51,6 +54,8 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     /** Exact attempt that produced the accepted summary/result observation. */
     observedAttemptId?: string;
+    /** Consecutive execution failures in this generation, cleared by progress or explicit retry. */
+    executionFailures?: number;
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;
@@ -59,6 +64,10 @@ export type AppTaskResource = {
     updatedAt: string;
   };
 };
+
+export function isTaskExecutionExhausted(resource: AppTaskResource): boolean {
+  return (resource.status.executionFailures ?? 0) >= MAX_TASK_EXECUTION_FAILURES;
+}
 
 export type AppTaskAttemptLease = {
   id: string;
