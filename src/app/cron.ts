@@ -26,7 +26,7 @@ import type { EventEnvelope } from "../lib/handler-context.js";
 // ── Types ─────────────────────────────────────────────────────────────
 
 /** A JS function that replaces the LLM for a specific cron job. */
-type CronHandler = (event?: EventEnvelope, signal?: AbortSignal) => Promise<void>;
+export type CronHandler = (event?: EventEnvelope, signal?: AbortSignal) => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
 type CronJobCallback = (entry: CronEntry) => void;
@@ -207,7 +207,7 @@ export class Cron {
   /** Event-trigger queue per entry. Preserves event-driven work when an entry is at concurrency capacity. */
   private queuedEventTriggers = new Map<string, EventEnvelope[]>();
   /** Dynamic handler resolver — called when reload() finds an entry with `handler` but no registered handler. */
-  private handlerResolver?: (entryName: string, entry: CronEntry) => Promise<boolean>;
+  private handlerResolver?: (entry: CronEntry) => Promise<CronHandler | undefined>;
 
   /** Default minimum ms between reactive triggers for same entry.
    *  Per-entry cooldown = 75% of the entry's intervalMs (min 60s). */
@@ -252,8 +252,30 @@ export class Cron {
   }
 
   /** Set a resolver for dynamically loading handlers when new entries appear post-startup. */
-  setHandlerResolver(resolver: (entryName: string, entry: CronEntry) => Promise<boolean>): void {
+  setHandlerResolver(resolver: (entry: CronEntry) => Promise<CronHandler | undefined>): void {
     this.handlerResolver = resolver;
+  }
+
+  /** Loading prepares a handler; only the current entry may install it. */
+  private async resolveHandler(entry: CronEntry): Promise<void> {
+    const resolver = this.handlerResolver;
+    if (!resolver) return;
+    try {
+      const handler = await resolver(entry);
+      if (this.handlerResolver !== resolver || !this.entries.includes(entry) || entry.enabled === false) return;
+      if (!handler) {
+        this.onError?.(`[handler] Failed to resolve handler for "${entry.name}" — retry on next reload`);
+        return;
+      }
+      this.registerHandler(entry.name, handler);
+      this.onError?.(`[handler] Resolved handler for "${entry.name}" on reload`);
+      if (this.started) this.startEntry(entry);
+    } catch (error) {
+      if (this.handlerResolver !== resolver || !this.entries.includes(entry)) return;
+      this.onError?.(
+        `[handler] Error resolving handler for "${entry.name}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   onFire(cb: CronJobCallback): void {
@@ -341,20 +363,7 @@ export class Cron {
       // adding the entry, so they must start directly instead of resolving a
       // fake handler file such as "__app_schedule__".
       if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
-        const entrySnapshot = { ...entry };
-        this.handlerResolver(entry.name, entrySnapshot)
-          .then((resolved) => {
-            if (resolved) {
-              this.startEntry(entrySnapshot);
-            } else {
-              this.onError?.(
-                `Synthetic entry "${entry.name}" handler "${handlerDisplay(entry.handler)}" could not be resolved`,
-              );
-            }
-          })
-          .catch(() => {
-            this.onError?.(`Synthetic entry "${entry.name}" handler resolution failed`);
-          });
+        void this.resolveHandler(entry);
       } else {
         this.startEntry(entry);
       }
@@ -562,6 +571,8 @@ export class Cron {
   /** Retire this scheduler generation, including its EventBus attachment. */
   close(): void {
     this.stop();
+    this.handlerResolver = undefined;
+    this.queuedEventTriggers.clear();
     this._unsubscribeBus?.();
     this._unsubscribeBus = undefined;
     this._busSubscribed = false;
@@ -572,7 +583,10 @@ export class Cron {
     this.load();
     const newNames = new Set(this.entries.map((e) => e.name));
     for (const name of oldEntries.keys()) {
-      if (!newNames.has(name)) this.stopEntryScheduling(name, true);
+      if (!newNames.has(name)) {
+        this.stopEntryScheduling(name, true);
+        this.handlers.delete(name);
+      }
     }
 
     let changedCount = 0;
@@ -592,12 +606,15 @@ export class Cron {
         JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
 
       if (entry.enabled === false) {
-        this.stopEntryScheduling(entry.name);
+        this.stopEntryScheduling(entry.name, true);
         continue;
       }
       if (configChanged) {
         changedCount++;
         this.stopEntryScheduling(entry.name);
+        // File-backed handlers capture configuration. Synthetic handlers are
+        // supplied directly by their owner and must not be replaced by imports.
+        if (this.handlerResolver && !this.syntheticEntries.has(entry.name)) this.handlers.delete(entry.name);
         this.onError?.(
           `Reloaded "${entry.name}": intervalMs=${entry.intervalMs ?? "event-only"}${old ? ` (was ${old.intervalMs ?? "event-only"})` : " (new)"}`,
         );
@@ -606,21 +623,7 @@ export class Cron {
       // Handler availability is independent of timers. This also retries a
       // repaired handler with unchanged configuration on an explicit reload.
       if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
-        this.handlerResolver(entry.name, { ...entry })
-          .then((resolved) => {
-            if (!resolved) {
-              this.onError?.(`[handler] Failed to resolve handler for "${entry.name}" — retry on next reload`);
-              return;
-            }
-            this.onError?.(`[handler] Resolved handler for "${entry.name}" on reload`);
-            // A late resolution cannot restart a stopped or replaced timer.
-            if (this.started && this.entries.includes(entry)) this.startEntry(entry);
-          })
-          .catch((error) => {
-            this.onError?.(
-              `[handler] Error resolving handler for "${entry.name}": ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
+        void this.resolveHandler(entry);
       } else if (configChanged && this.started) {
         this.startEntry(entry);
       }
@@ -731,12 +734,13 @@ export class Cron {
     // This prevents tight error→drain→error loops when handlers fail instantly
     // (e.g. provider errors, concurrency blocks) which otherwise cascade into
     // event pileups and blocked-run bursts.
+    let delayMs = 0;
     if (opts?.afterError) {
       const errorCount = (this.consecutiveErrors.get(entryName) ?? 0) + 1;
       this.consecutiveErrors.set(entryName, errorCount);
 
       // Exponential backoff: 5s, 10s, 20s, 40s, capped at 60s
-      const backoffMs = Math.min(5_000 * Math.pow(2, errorCount - 1), 60_000);
+      delayMs = Math.min(5_000 * Math.pow(2, errorCount - 1), 60_000);
 
       // If too many consecutive errors, drop the queue to prevent unbounded accumulation
       if (errorCount >= 5) {
@@ -746,22 +750,19 @@ export class Cron {
         this.onError?.(`Cron "${entryName}" queue dropped (${dropped} events) after ${errorCount} consecutive errors`);
         return;
       }
-
-      setTimeout(() => {
-        this.triggerNow(entryName, { force: true, triggerEvent: queue.shift()! });
-        if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
-      }, backoffMs).unref();
-      return;
+    } else {
+      this.consecutiveErrors.delete(entryName);
     }
 
-    // Success path: reset error count.
-    this.consecutiveErrors.delete(entryName);
-    const event = queue.shift()!;
-    if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
-
     setTimeout(() => {
+      // Removing/disabling an entry or retiring its generation discards the
+      // queue, including deliveries already scheduled for a later turn.
+      if (this.queuedEventTriggers.get(entryName) !== queue) return;
+      const event = queue.shift();
+      if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
+      if (!event) return;
       this.triggerNow(entryName, { force: true, triggerEvent: event });
-    }, 0).unref();
+    }, delayMs).unref();
   }
 
   /** Resolve the effective execution mode for an entry. */

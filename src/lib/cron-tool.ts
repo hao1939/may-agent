@@ -107,7 +107,7 @@ const CronParams: TSchema = Type.Object({
     [Type.Literal("list"), Type.Literal("add"), Type.Literal("remove"), Type.Literal("update"), Type.Literal("status")],
     {
       description:
-        "'list': show all scheduled jobs with intervals and status. 'add': create a new job. 'remove': delete a job. 'update': change interval, message, or enabled state. 'status': show detailed runtime state (last fire time, next fire, error counts).",
+        "'list': show configured jobs and timer status. 'add': create a new job. 'remove': delete a job. 'update': change interval, message, or enabled state. 'status': summarize configured jobs and intervals (not live run state).",
     },
   ),
   name: Type.Optional(
@@ -149,11 +149,12 @@ export interface CronToolOptions {
   agentName?: string;
   /** Called after any write to cron.json so the cron runner can reload. */
   onConfigChange: () => void;
-  /** Whether cron is active (jobs actually fire). */
+  /** Whether optional interval timers are enabled; independent of event/manual triggers. */
   cronEnabled?: boolean;
 }
 
 export function createCronTool(opts: CronToolOptions): AgentTool {
+  const timerStatus = `Timers: ${opts.cronEnabled ? "ENABLED" : "DISABLED (enable with --cron)"}. Event/manual triggers are independent of this setting.`;
   function readEntries(): CronEntry[] {
     if (!existsSync(opts.configPath)) return [];
     try {
@@ -179,31 +180,27 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
       "By default, new jobs use a workflow-backed handler that runs you with the configured task. " +
       "Jobs are persisted in your cron.json config file.\n\n" +
       "Actions:\n" +
-      "- list: show all your cron jobs and whether cron is currently active\n" +
+      "- list: show all your cron jobs and whether timers are enabled\n" +
       "- add: create a new job (name, intervalMs, message)\n" +
       "- remove: delete a job by name\n" +
       "- update: modify an existing job's interval or message\n" +
-      "- status: brief summary (job count, enabled/disabled, next to fire)\n\n" +
-      "When cron is active (--cron flag), each job runs its configured executor " +
-      "at the configured interval. When disabled, you can still manage " +
-      "jobs but they won't fire.",
+      "- status: configuration summary (job count and shortest enabled interval), not live run state\n\n" +
+      "The --cron flag enables optional interval timers. Event/manual triggers are independent " +
+      "of this setting. Disabling an individual job stops all its triggers.",
     parameters: CronParams,
     execute: async (_toolCallId: string, _input: unknown) => {
       const input = _input as CronInput;
       switch (input.action) {
         case "list": {
           const entries = readEntries();
-          const status = opts.cronEnabled
-            ? "Status: ACTIVE"
-            : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
-          if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
+          if (entries.length === 0) return textResult(`no cron jobs configured\n${timerStatus}`);
           const lines = entries.map((e) => {
-            const prefix = e.enabled ? "" : "[DISABLED] ";
+            const prefix = e.enabled === false ? "[DISABLED] " : "";
             const desc = e.description ? ` — ${e.description.slice(0, 50)}` : "";
             const cadence = e.intervalMs ? `every ${(e.intervalMs / 1000).toFixed(0)}s` : "event-only";
             return `- ${prefix}${e.name}: ${cadence} → "${(e.handler ? handlerLabel(e.handler) : e.message ?? "").slice(0, 100)}"${desc}`;
           });
-          lines.push("", status);
+          lines.push("", timerStatus);
           return textResult(lines.join("\n"));
         }
 
@@ -276,26 +273,18 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
 
         case "status": {
           const entries = readEntries();
-          const status = opts.cronEnabled
-            ? "Status: ACTIVE"
-            : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
           if (entries.length === 0) {
-            return textResult(`No cron jobs configured.\n${status}`);
+            return textResult(`No cron jobs configured.\n${timerStatus}`);
           }
-          const enabledEntries = entries.filter((e) => e.enabled);
-          let nextToFire: string;
-          if (enabledEntries.length === 0) {
-            nextToFire = "Next to fire: none (all jobs disabled)";
-          } else {
-            const timedEntries = enabledEntries.filter((e) => e.intervalMs);
-            if (timedEntries.length === 0) {
-              nextToFire = "Next to fire: none (event-only jobs wait for events)";
-            } else {
-              const shortest = timedEntries.reduce((a, b) => ((a.intervalMs ?? Infinity) <= (b.intervalMs ?? Infinity) ? a : b));
-              nextToFire = `Next to fire: "${shortest.name}" (every ${((shortest.intervalMs ?? 0) / 1000).toFixed(0)}s)`;
-            }
-          }
-          return textResult(`${entries.length} job(s) configured\n` + `${nextToFire}\n\n` + status);
+          const timedEntries = entries.filter((e) => e.enabled !== false && e.intervalMs);
+          const shortest = timedEntries.reduce<CronEntry | undefined>(
+            (a, b) => (a && (a.intervalMs ?? Infinity) <= (b.intervalMs ?? Infinity) ? a : b),
+            undefined,
+          );
+          const cadence = shortest
+            ? `Shortest configured interval: "${shortest.name}" (every ${((shortest.intervalMs ?? 0) / 1000).toFixed(0)}s)`
+            : "No enabled interval jobs configured.";
+          return textResult(`${entries.length} job(s) configured\n${cadence}\n\n${timerStatus}`);
         }
 
         default:

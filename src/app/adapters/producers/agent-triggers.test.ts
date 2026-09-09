@@ -17,14 +17,14 @@ describe("Cron generation activation", () => {
     let resolutions = 0;
     let fires = 0;
     let resolved!: () => void;
-    cron.setHandlerResolver(async (name) => {
+    cron.setHandlerResolver(async () => {
       resolutions++;
-      if (available)
-        cron.registerHandler(name, async () => {
-          fires++;
-        });
       resolved();
-      return available;
+      return available
+        ? async () => {
+            fires++;
+          }
+        : undefined;
     });
     const reload = async () => {
       const resolution = new Promise<void>((resolve) => {

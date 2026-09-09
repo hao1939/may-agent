@@ -15,6 +15,11 @@ import * as interfaces from "../../src/app/interface-startup.js";
 import * as background from "../../src/app/composition/background-startup.js";
 import { Cron } from "../../src/app/cron.js";
 import { getAgentCrons } from "../../src/app/agent-loader.js";
+import {
+  attachLoadedAppTask,
+  closeInstalledAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+} from "../../src/app/app-task-runtime.js";
 
 const actualDaemon = { ...daemon };
 const actualInbox = { ...inbox };
@@ -26,6 +31,8 @@ const mode = process.argv[2];
 const tty = mode === "tty";
 const schedulesEnabled = mode === "headless";
 const startupJob = mode === "startup-job";
+const activationFailure = mode === "activation-failure";
+const agentNames = activationFailure ? ["may", "aux"] : ["may"];
 const order: string[] = [];
 let runtime: inbox.AppInboxRuntime | undefined;
 let registry: Parameters<typeof inbox.startAppInboxRuntime>[0]["registry"] | undefined;
@@ -33,16 +40,30 @@ let socket: interfaces.InterfaceRuntime | undefined;
 let lifecycle: ReturnType<typeof daemon.createDaemonLifecycle> | undefined;
 let stopTasks: (() => void) | undefined;
 let sharedCapacity: Parameters<typeof daemon.prepareDaemonAgents>[0]["hostCapacity"];
+let preparedOptions: Parameters<typeof daemon.prepareDaemonAgents>[0];
+let failActivation = false;
+const partiallyAttached: Cron[] = [];
+let attemptFinished = Promise.withResolvers<void>();
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
 
 const subscribeToBus = Cron.prototype.subscribeToBus;
+const closeCron = Cron.prototype.close;
+const closedCrons = new Set<Cron>();
+const retirement = spyOn(Cron.prototype, "close").mockImplementation(function () {
+  closedCrons.add(this);
+  closeCron.call(this);
+});
 const subscription = spyOn(Cron.prototype, "subscribeToBus").mockImplementation(function (bus) {
   assert.ok(order.includes("ingress"), "producers must not activate during definition loading");
   assert.ok(this.hasHandler("startup-probe"), "handlers must be prepared before their routes attach");
   order.push("triggers");
-  return subscribeToBus.call(this, bus);
+  subscribeToBus.call(this, bus);
+  if (failActivation) {
+    partiallyAttached.push(this);
+    if (partiallyAttached.length === 2) throw new Error("fixture producer activation failed");
+  }
 });
 
 mock.module("../../src/app/daemon.js", () => ({
@@ -51,7 +72,22 @@ mock.module("../../src/app/daemon.js", () => ({
     assert.equal(options.taskRuntimeMode, "controllers");
     assert.equal(options.cronEnabled, schedulesEnabled);
     sharedCapacity = options.hostCapacity;
-    return actualDaemon.prepareDaemonAgents(options);
+    preparedOptions = options;
+    return actualDaemon.prepareDaemonAgents(
+      activationFailure
+        ? {
+            ...options,
+            // Real Task controller, workflow and persistence. Process transport is
+            // covered separately; execute the bounded attempt locally in this fixture.
+            executeTaskAttempt: async (input) => {
+              const result = await reconcileLoadedAppTaskOnce({ ...input, bus: options.bus });
+              attemptFinished.resolve();
+              return result;
+            },
+            executeTaskRecovery: undefined,
+          }
+        : options,
+    );
   },
   createDaemonLifecycle: (options: Parameters<typeof daemon.createDaemonLifecycle>[0]) => {
     stopTasks = options.beforeShutdown;
@@ -133,41 +169,66 @@ mock.module("../../src/app/interface-startup.js", () => ({
     return socket;
   },
 }));
-// Background recovery has its own pending/rejected-recovery probe. Here observe the
-// ordering of the caller without starting recurring timers or Task workers.
+// Startup-only modes observe ordering. The rollback mode also opens real Task
+// controllers and executes a bounded workflow, without spawning model workers.
 mock.module("../../src/app/composition/background-startup.js", () => ({
   ...actualBackground,
-  startBackgroundRuntime: () => {
+  startBackgroundRuntime: (options: background.BackgroundRuntimeOptions) => {
     order.push("background");
+    if (activationFailure) actualBackground.startBackgroundRuntime(options);
   },
 }));
 
 try {
   for (const dir of ["agents/may/handlers", "shared", "projects/fixture.app"])
     mkdirSync(join(root, dir), { recursive: true });
-  writeFileSync(
-    join(root, "agents/may/agent.json"),
-    JSON.stringify({
-      name: "may",
-      description: "Startup fixture",
-      domain: "test",
-      model: "fixture",
-      tools: ["cron"],
-    }),
-  );
-  writeFileSync(join(root, "agents/may/AGENTS.md"), "Fixture agent; no task is started.\n");
-  writeFileSync(
-    join(root, "agents/may/cron.json"),
-    JSON.stringify([{ name: "startup-probe", handler: "startup-probe", on: ["fixture.changed"] }]),
-  );
-  writeFileSync(
-    join(root, "agents/may/handlers/startup-probe.ts"),
-    "export function create() { return async () => {}; }\n",
-  );
+  for (const agent of agentNames) {
+    mkdirSync(join(root, "agents", agent, "handlers"), { recursive: true });
+    writeFileSync(
+      join(root, "agents", agent, "agent.json"),
+      JSON.stringify({
+        name: agent,
+        description: "Startup fixture",
+        domain: "test",
+        model: "fixture",
+        tools: ["cron"],
+      }),
+    );
+    writeFileSync(join(root, "agents", agent, "AGENTS.md"), "Fixture agent.\n");
+    writeFileSync(
+      join(root, "agents", agent, "cron.json"),
+      JSON.stringify([{ name: "startup-probe", handler: "startup-probe", on: ["fixture.changed"] }]),
+    );
+    writeFileSync(
+      join(root, "agents", agent, "handlers/startup-probe.ts"),
+      `export function create(ctx) { return async () => ctx.sdk.emit("fixture.handler-ran", { agent: ${JSON.stringify(agent)} }); }\n`,
+    );
+  }
+  if (activationFailure) {
+    mkdirSync(join(root, "projects/fixture.app/tasks"));
+    writeFileSync(
+      join(root, "projects/fixture.app/tasks/seed.json"),
+      JSON.stringify({
+        root_task_id: "fixture",
+        groups: { fixture: { id: "fixture", parent_id: null, agent: "may", children: [] } },
+      }),
+    );
+    mkdirSync(join(root, "agents/may/workflows"));
+    writeFileSync(
+      join(root, "agents/may/workflows/reload-probe.ts"),
+      `
+export const name = "reload-probe";
+export const description = "Complete fixture work without a model.";
+export async function execute(ctx) {
+  return ctx.done("fixture result", { state: "converged", summary: "Task processing remains active", evidence: ["fixture"] });
+}`,
+    );
+  }
   const appPath = join(root, "projects/fixture.app/app.js");
   const appSource = (description: string) => `export default {
     id: "fixture", version: 1, agent: "may", description: ${JSON.stringify(description)},
     inputSchema: { type: "object" }
+    ${activationFailure ? ', workspace: { kind: "local", localPath: "." }, tasks: {}' : ""}
   };`;
   writeFileSync(appPath, appSource("before"));
   const { runAppRuntime } = await import("../../src/app/app-runtime.js");
@@ -203,7 +264,7 @@ try {
           "routes",
           "telegram",
           "ingress",
-          "triggers",
+          ...agentNames.map(() => "triggers"),
           "recovered-work",
           "background",
           ...(startupJob ? ["startup-job"] : []),
@@ -216,19 +277,100 @@ try {
   writeFileSync(appPath, appSource("after"));
   assert.equal(registry!.entries()[0]?.definition.description, "before");
   assert.equal((await lifecycle!.handleReload()).ok, true);
-  assert.equal(subscription.mock.calls.length, 2, "one activation at startup and one for the committed reload");
+  assert.equal(
+    subscription.mock.calls.length,
+    agentNames.length * 2,
+    "one activation at startup and one for the committed reload",
+  );
   assert.equal(registry!.entries()[0]?.definition.description, "after");
   assert.ok(runtime!.host.hasApp("fixture"));
   const accepted = registry!.snapshot();
   writeFileSync(appPath, "export default { invalid: true };");
   assert.equal((await lifecycle!.handleReload()).ok, false);
-  assert.equal(subscription.mock.calls.length, 2, "rejected definitions must not activate");
+  assert.equal(subscription.mock.calls.length, agentNames.length * 2, "rejected definitions must not activate");
   assert.equal(registry!.snapshot(), accepted);
   assert.ok(runtime!.host.hasApp("fixture"));
+  if (activationFailure) {
+    const { bus, manager } = preparedOptions!;
+    const runTask = async (taskId: string) => {
+      attemptFinished = Promise.withResolvers<void>();
+      const profiled = Promise.withResolvers<void>();
+      const detach = bus.subscribe((event) => {
+        if (event.type === "project.task.reconcile.profiled" && (event.data as { taskId?: string }).taskId === taskId) {
+          profiled.resolve();
+        }
+      });
+      const task = attachLoadedAppTask({
+        bus,
+        appDir: join(root, "projects/fixture.app"),
+        appId: "fixture",
+        idempotencyKey: taskId,
+        request: { id: taskId, source: { kind: "human", id: "fixture" }, input: { kind: "probe", data: {} } },
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "fixture",
+            mode: "achieve",
+            workflow: "reload-probe",
+            outcome: "Verify reload preserves Task processing",
+            acceptance: ["Fixture result accepted"],
+          },
+        },
+      });
+      await Promise.all([attemptFinished.promise, profiled.promise]);
+      detach();
+      assert.equal(await task.isComplete(), true);
+      return task;
+    };
+    const previousTask = await runTask("work/before");
+    const previousCrons = new Map(getAgentCrons());
+    const previousDefinitions = agentNames.map((name) => manager.getAgentDefinition(name));
+    writeFileSync(appPath, appSource("must roll back"));
+    failActivation = true;
+    const failed = await lifecycle!.handleReload();
+    failActivation = false;
+    assert.equal(failed.ok, false);
+    assert.equal(partiallyAttached.length, 2, "failure occurs after new producers actually attach");
+    assert.equal(registry!.snapshot(), accepted);
+    assert.equal(registry!.entries()[0]?.definition.description, "after");
+    assert.deepEqual(
+      agentNames.map((name) => manager.getAgentDefinition(name)),
+      previousDefinitions,
+    );
+    for (const [name, cron] of previousCrons) {
+      assert.equal(getAgentCrons().get(name), cron);
+      assert.equal(closedCrons.has(cron), false, "rollback must not retire the previous generation");
+    }
+    for (const cron of partiallyAttached) assert.ok(closedCrons.has(cron), "partial replacements must be retired");
+    const seen: string[] = [];
+    let completed = 0;
+    let settled = Promise.withResolvers<void>();
+    const detach = bus.subscribe((event) => {
+      if (event.type === "fixture.handler-ran") seen.push(String((event.data as { agent: string }).agent));
+      if (event.type === "handler.completed" && (event.data as { handler?: string }).handler === "startup-probe") {
+        if (++completed >= agentNames.length) settled.resolve();
+      }
+    });
+    for (let i = 0; i < 2; i++) {
+      completed = 0;
+      settled = Promise.withResolvers<void>();
+      bus.emit({ type: "fixture.changed", source: "fixture", owner: "agent:may", data: {} });
+      await settled.promise;
+      await Bun.sleep(0);
+    }
+    detach();
+    assert.deepEqual(seen.sort(), [...agentNames, ...agentNames].sort());
+    assert.equal(seen.length, 4, "only the two old producers handle each event, exactly once");
+    assert.equal(await previousTask.isComplete(), true, "accepted work survives rollback");
+    await runTask("work/after");
+  }
   console.log("startup-contract-ok");
 } finally {
   subscription.mockRestore();
   for (const cron of getAgentCrons().values()) cron.close();
+  retirement.mockRestore();
+  if (preparedOptions!) await closeInstalledAppTaskRuntimes(preparedOptions.bus);
   stopTasks?.();
   runtime?.close();
   socket?.socketUI.close();
