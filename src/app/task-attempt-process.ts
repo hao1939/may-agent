@@ -16,6 +16,7 @@ import {
 } from "./app-task-runtime.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { prepareDaemonAgents } from "./daemon-agents.js";
+import { readTaskOutcomes } from "./adapters/reporting/task-outcomes.js";
 import { EventBus, EVENT_ROW_ID, type AgentEvent } from "./event-bus.js";
 import { HostCapacity } from "./host-capacity.js";
 import { isBundled } from "./bundle-mode.js";
@@ -479,6 +480,7 @@ async function runTaskWorker(input: {
   const hostCapacity = new HostCapacity(1);
   try {
     await prepareDaemonAgents({
+      readOutcomes: readTaskOutcomes,
       agentsRoot: activeSource.agentsRoot,
       sharedRoot: input.roots.sharedRoot,
       definitionSharedRoot: activeSource.sharedRoot,

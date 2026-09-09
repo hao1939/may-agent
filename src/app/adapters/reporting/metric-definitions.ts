@@ -1,6 +1,6 @@
 import type { AppDefinition, MetricDefinition } from "@may-agent/sdk";
-import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
-import type { MetricService } from "../lib/metrics.js";
+import { withSqliteBusyRetry } from "../../../lib/db/busy-retry.js";
+import type { MetricService } from "../../../lib/metrics.js";
 
 export type AppMetricDefinitionEntry = {
   definition: AppDefinition;

@@ -14,6 +14,8 @@ import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
 import { createModelRegistry } from "./model-registry.js";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
+import { createAppReporting } from "./composition/reporting.js";
+import { getDb } from "../lib/requests.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
@@ -181,6 +183,7 @@ const PROCESS_START_TIME = Date.now();
 const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
 await runAppRuntime({
+  reporting: createAppReporting(() => getDb(PERSIST_DIR)),
   appArgs,
   models,
   projectRoot: PROJECT_ROOT,

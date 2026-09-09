@@ -1,6 +1,28 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { TaskOutcomePage, TaskOutcomeProjection, TaskOutcomeView, TaskView } from "@may-agent/sdk/app";
+import type { TaskOutcomeReader } from "../../core/reads/reporting.js";
+
+export const readTaskOutcomes: TaskOutcomeReader = ({ appDir, tasks, projection = {} }) => {
+  const manifest = readTaskOutcomeManifest(appDir);
+  const exactTaskId = projection.taskId?.trim();
+  if (exactTaskId) {
+    const group = manifest?.groups.find(({ taskIds }) => taskIds.includes(exactTaskId));
+    const items = (group?.taskIds ?? [exactTaskId]).flatMap((taskId) => {
+      const task = tasks.get(taskId);
+      return task ? [task] : [];
+    });
+    return projectTaskOutcomes(items, manifest, projection);
+  }
+  const items: TaskView[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = tasks.list({ limit: 100, ...(cursor ? { cursor } : {}) });
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return projectTaskOutcomes(items, manifest, projection);
+};
 
 const ACTIVE_STATUSES = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention"]);
 
@@ -56,7 +78,9 @@ export function projectTaskOutcomes(
   projection: TaskOutcomeProjection = {},
 ): TaskOutcomePage {
   const includeDone = projection.includeDone === true;
-  const source = tasks.filter((task) => includeDone || ACTIVE_STATUSES.has(task.status)).sort((a, b) => a.id.localeCompare(b.id));
+  const source = tasks
+    .filter((task) => includeDone || ACTIVE_STATUSES.has(task.status))
+    .sort((a, b) => a.id.localeCompare(b.id));
   const byId = new Map(source.map((task) => [task.id, task]));
   const assigned = new Set<string>();
   const outcomes: TaskOutcomeView[] = [];

@@ -238,6 +238,30 @@ timer, queue, persisted lifecycle, or live installation operation was added.
 
 ## State and process boundaries
 
+### Basic reads and optional reports
+
+`core/reads/app-read.ts` exposes canonical Task list/get, request results and
+execution results. It neither constructs metrics nor reads outcome manifests.
+Absent metric/outcome callbacks throw an explicit unavailable error; a missing
+record from an installed capability can still return null.
+
+`adapters/reporting/` owns metric-definition installation, metric views and
+outcome grouping. The outcome reader receives only App directory plus canonical
+list/get callbacks, never a private Task store. `composition/reporting.ts`
+selects shipped reports; the CLI supplies them to runtime and private workers
+select their outcome reader. No service is created just to prepare a read
+context. Workflow/maintenance metric services are created on first use.
+
+Metric-definition refresh observes a committed App generation outside its
+publication transaction. Failure is reported to process diagnostics and cannot
+reject that generation or rewrite accepted work. Interfaces are selected at
+composition; a fixture runs real Task attempts with every human transport and
+reporting omitted. Another fixture fails reporting through reload and verifies
+old accepted results and new execution remain intact.
+
+These boundaries implement Step 5 of the sibling core proposal; they do not
+add a reporting registry, lifecycle, queue, or alternative state authority.
+
 `app-inbox-store.ts` owns durable requests and their claims; the word inbox is
 the implementation name for those requests. `conversations/store.ts` reads
 that evidence and owns Topic links. Both use the same Host database.

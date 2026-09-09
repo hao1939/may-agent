@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskView } from "@may-agent/sdk/app";
-import { projectTaskOutcomes, readTaskOutcomeManifest, type TaskOutcomeManifest } from "./task-outcome-projection.js";
+import { projectTaskOutcomes, readTaskOutcomeManifest, type TaskOutcomeManifest } from "./task-outcomes.js";
 
 function task(id: string, status: TaskView["status"] = "waiting"): TaskView {
   return { id, status, generation: 1, outcome: `Legacy outcome ${id}`, evidence: [`task:${id}`] };
@@ -25,7 +25,9 @@ describe("Task outcome shadow projection", () => {
 
     expect(page.sourceCount).toBe(48);
     expect(page.outcomeCount).toBe(15);
-    expect(page.outcomes.flatMap((outcome) => outcome.memberTaskIds).sort()).toEqual(source.map((item) => item.id).sort());
+    expect(page.outcomes.flatMap((outcome) => outcome.memberTaskIds).sort()).toEqual(
+      source.map((item) => item.id).sort(),
+    );
     expect(page.outcomes.flatMap((outcome) => outcome.members)).toEqual(expect.arrayContaining(before));
     expect(source).toEqual(before);
   });

@@ -9,7 +9,8 @@ import {
   runWorkflowDirect,
   WorkflowHandlerUnavailable,
 } from "../../../lib/workflow-tool.js";
-import { createRuntimeAppRead } from "../../app-read.js";
+import { createRuntimeAppRead } from "../../core/reads/app-read.js";
+import { readMetricView } from "../reporting/metric-read.js";
 import { projectAppTaskChildPromptContext } from "../../app-task-context.js";
 import { APP_TASK_RECOVERY_OWNER } from "../../app-task-reconciler.js";
 import { childEventTrace, type AgentEvent, type EventBus } from "../../event-bus.js";
@@ -161,7 +162,7 @@ async function executeTaskCapability(
       runtimeCtx,
       read: createRuntimeAppRead({
         getDb: runtimeCtx.getDb,
-        metrics: runtimeCtx.metrics,
+        readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
         taskRead: input.taskRead,
       }),
       agentName,

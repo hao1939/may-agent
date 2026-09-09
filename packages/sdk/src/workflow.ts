@@ -151,10 +151,12 @@ export type AppRead = {
   tasks: {
     list(options?: TaskListOptions): Promise<TaskPage>;
     /** Opt-in shadow view. Omission keeps every existing list/get behavior unchanged. */
+    /** Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
     get(taskId: string): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;
+  /** Null means no matching metric; an absent reporting capability rejects. */
   metric(metricId: string): Promise<MetricView | null>;
 };
 
