@@ -1,14 +1,15 @@
 <ai_context>
-summary: "Seed-first Scout continuity through Cycle 430 observation and Cycle 431 no-request reuse: RV-004 remains bounded by missing joined outcomes, and an isolated Mnemosyne candidate rejects six stable proposal-scope substitutions before side effects."
+summary: "Seed-first Scout continuity through Cycle 430 observation and Cycle 432 no-request reuse: RV-004 remains bounded by missing joined outcomes, and an isolated Mnemosyne candidate rejects sequential admission replay before an external kernel call."
 triggers: ["Scout source lane checkpoint", "GitHub arXiv Reddit exploration", "MemGauge deep dive", "budgeted verification", "stale constraints", "verification freeze manifest", "MutMem-V2", "portable memory verification", "active memory retrieval", "Mnemo caller identity", "Mnemo organization scope", "Mnemo checkpoint organization", "Mnemo checkpoint replay", "Mnemo checkpoint chronology", "Mnemo event organization", "Mnemo reflection organization", "Mnemo REST trajectory audit", "Mnemo gRPC trajectory audit", "Mnemo PostgreSQL migration", "Mnemo branch merge", "Mnemo general forget", "Mnemo provenance forget", "Mnemo provenance read", "Mnemo resource list", "Mnemo resource read", "Mnemo integrity verify", "Mnemo trajectory audit", "Mnemo Streamable HTTP", "SkillRise", "SkillOpt", "WikiSkill", "self-optimize-skill", "agent self-evolution", "XHS seed-first cycle 51"]
 last_updated: "2026-09-09"
-latest_seed_basis: "Cycle 430 observational reconciliation through 2026-09-09T04:30:11.936Z reproduced public Explore at 30 notes and supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in the seed ledger. Cycle 431 reused that roughly 50-minute-old receipt without a browser or public-source request."
+latest_seed_basis: "Cycle 430 observational reconciliation through 2026-09-09T04:30:11.936Z reproduced public Explore at 30 notes and supported saved status as a profile-class login wall with zero attributable items; exact access evidence is in the seed ledger. Cycles 431-432 reused that still-cadence-current receipt without a browser or public-source request."
 source_basis: "Goal-owned implementation and tests; direct bounded XHS collection reconciliation through 2026-09-01T17:48:11.364Z; unavailable/public-only browser observations through Cycle 430 at 2026-09-09T04:30:11.936Z, with bounded no-request reconciliation in Cycles 406-408, 421, and 431; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus primary-artifact reads through Cycle 431 and accepted Hermes Agent/OpenClaw integration in Cycle 409; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary reads through Cycle 429, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; checksum-verified SwarmResearch cutoff evidence through Cycle 420; isolated dirty-overlay transition evidence through Cycle 422; Skills Are Not Islands population/security-signal scope qualified in Cycle 429; query-only retained-event and isolated Mnemosyne owner/scope-binding repair-candidate evidence through Cycle 431; retained bounded GitHub, Hugging Face, arXiv, Reddit, artifact, and local executable evidence detailed below; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations; accepted Hermes/OpenClaw source `3c07cc260b8cdbe7de45ba7720e871bd15b592e5..737179618e6ff117fad814b35b5a5132e0c3bdc7` mapped to standing `d1a443c6408014aaf83cea0664ac9b336e8b44ef..a76092b3186e6bc0124b0ec4c7ae7d16216d0e46`; read-only ref provenance for the two-commit unaccepted range ending at d041c41b544667d3c2ea6a62299dd212c1c7fc19."
 cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; accepted SwarmResearch reproduction e848d8d5760065714c38fa7558f0298573db17ab; Third-Autocorrelation settings SHA-256 acc74784126df1912c69842774819bc6732aa9d633421b5f478e65265ec28dc3; 50-file transcript manifest SHA-256 1082a0f18b20532e1b66bbd55c51b2608fb422e525f171d5154246e520258f0f; producer-authored cost-provenance inventory and regression."
 cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch heuristic histories and transcripts; cutoff CSV SHA-256 015c7d5c09ee9a0f80d7163037a93c3a89fe8f08a5039dab2562881260a50282; private_eval.py SHA-256 5ac56540292621b03c7c4eb87b20c3e34aaae1dbac74b4bf8bf32d92fbc7216c; producer-authored five-task inventory."
 cycle_425_source_basis: "No-request seed reconciliation at 2026-09-08T04:31:01Z; research source 5b730b02df83974c3bd33f55755d4278c01f49f0; post-reconciliation parent c5f4d3153f066b5abea7346eab5db6fcdeea9c03; retained Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78; source tree 2ca92ed4b97236f80e48ba177a6642d05e626ba4; scenarios SHA-256 29a5d26caa1b791c8e54705e2d49c771fbeb91930ea81ba22384138820b0ba51; evaluator SHA-256 49e2c08cedbc80672836cc2597dfdf1a4a43e653aa9af49a9e4ff5187cf248d9; newline-delimited eight-metric path/digest manifest SHA-256 be97df9f73649e324e5fabf8eb7e98176f75f04a1f3ff7905a14779cfd01eb0f."
 cycle_430_source_basis: "Read-only XHS observation through 2026-09-09T04:30:11.936Z; query-only retained-event check in /app/.state/may.db; unchanged eyuchang/Mnemosyne main ba43036035bb33dfb955d53da54635aac2ab83a0 and v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; isolated two-file repair candidate at SHA-256 f7adf20826d82b290bba3c20133dab3846482769e9fabe8e24a3f32e42659578; 16 focused and 79 runnable runtime tests."
 cycle_431_source_basis: "No-request seed reconciliation at 2026-09-09T05:20:02.158Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; owner-only baseline and six-field scope-bound candidate; complete two-file diff SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0; 8 focused and 87 runnable runtime tests after repair."
+cycle_432_source_basis: "No-request seed reconciliation at 2026-09-09T05:50:42.853Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 431 candidate baseline and sequential-replay guard candidate; complete two-file diff SHA-256 b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817; baseline 3 failed/17 deselected, candidate 20 focused and 90 runnable runtime tests with one artifact deselection."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -23455,6 +23456,34 @@ upstream and does not decide delegation, service identities, agent-binding,
 durable denial events, status/replay, or typed error semantics. RV-034 and
 RV-004 remain high/open. No upstream write, account mutation, local-main move,
 compaction, cleanup, or protected-checkout write occurred.
+
+## Cycle 432 checkpoint — sequential replay fails before the kernel
+
+Cycle 432 began from independently accepted clean tip
+`dc4ed03ef68ff469e7ab7ec5f18eae93e48d2a02`. Cycle 430's exact XHS receipt
+was still inside the six-hour cadence, so this pass made no browser or public
+source request. Added/changed identities remain unknown, removals remain `[]`,
+and all 132 durable seeds remain unavailable rather than removed.
+
+RV-004 remains first by consequence but still lacks the protected joined
+outcome evidence it requires. RV-034 was the highest accessible gap. Three
+matched controls against the accepted Cycle 431 candidate showed that repeated
+acceptance after acceptance or rejection, and reuse of a decision ID on a
+different submitted proposal, reached the external kernel before SQLite
+rejected duplicate state.
+
+The [Cycle 432 candidate](./mnemosyne-sequential-admission-replay-candidate-cycle432-2026-09-09.md)
+adds a pre-kernel proposal-status and decision-ID gate. The prior candidate
+fails the three controls with post-kernel `sqlite3.IntegrityError`; the revised
+candidate passes them, all 20 focused tests, and 90 runnable runtime tests with
+one known artifact-only test deselected.
+
+The proof is sequential only. It does not make check-and-commit atomic, prove
+concurrent idempotency, add `agent_binding_id`, define delegation or durable
+denial events, replace `ValueError` with a public typed error, or establish
+upstream review, deployment, or behavior improvement. RV-004 and RV-034 remain
+high/open. No upstream write, local-main move, compaction, cleanup, account
+mutation, or protected-checkout write occurred.
 
 ## Supervision
 
