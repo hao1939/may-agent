@@ -29,7 +29,7 @@ package visibility should be reviewed before the first publication.
 ## Manual release
 
 1. Merge the Release Please PR after CI and review pass.
-2. Wait for the tag-triggered image workflow to finish.
+2. Wait for the `Publish release image` job in the Release Please run to finish.
 3. For a retry, use **Actions → Release image → Run workflow** and provide an
    existing `vX.Y.Z` tag. This republishes the immutable version tag and moves
    `latest` to that release.
