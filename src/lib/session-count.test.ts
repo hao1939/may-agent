@@ -19,7 +19,7 @@ afterEach(async () => {
     const sessions = manager.status().filter((s) => manager.hasActiveSession(s.sessionId));
     for (const session of sessions) manager.cancel(session.sessionId);
     try {
-      await Promise.all(sessions.map((s) => manager.waitFor(s.sessionId)));
+      await Promise.allSettled(sessions.map((s) => manager.waitFor(s.sessionId)));
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
