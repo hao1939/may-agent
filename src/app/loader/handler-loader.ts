@@ -12,7 +12,7 @@ import type { CronEntry, WorkflowBackedHandler } from "../../lib/cron-tool.js";
 import { buildSessionHelpers } from "../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../lib/sdk-impl.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { Cron } from "../cron.js";
+import { Cron, type CronHandler } from "../cron.js";
 import type { EventBus } from "../event-bus.js";
 
 export interface AgentHandlerLoaderOptions {
@@ -75,18 +75,13 @@ export async function loadHandlersForAgentCrons(
     };
     const workflowCtx: WorkflowHandlerContext = { ...ctx, sdk: fullSdk };
 
-    // Startup and late resolution share validation, registration and diagnostics.
-    async function registerHandlers(entries: readonly CronEntry[]) {
-      const result = { registered: [] as string[], errors: [] as string[] };
+    // Startup and late resolution share preparation and diagnostics, not publication.
+    async function prepareHandlers(entries: readonly CronEntry[]) {
+      const result = { handlers: new Map<CronEntry, CronHandler>(), errors: [] as string[] };
       for (const entry of entries) {
         const workflow = workflowHandler(entry);
         if (!workflow) continue;
-        cron.registerHandler(entry.name, createWorkflowBackedHandler(workflowCtx, entry, workflow));
-        result.registered.push(`${agentName}:${entry.name}`);
-        bus.emit({
-          type: "info",
-          message: `[handler] Registered ${agentName}:${entry.name} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
-        });
+        result.handlers.set(entry, createWorkflowBackedHandler(workflowCtx, entry, workflow));
       }
 
       const byFile = new Map<string, CronEntry[]>();
@@ -133,12 +128,7 @@ export async function loadHandlersForAgentCrons(
           }
 
           for (const entry of fileEntries) {
-            cron.registerHandler(entry.name, createReloadableHandler(modulePath, ctx, entry));
-            result.registered.push(`${agentName}:${entry.name}`);
-            bus.emit({
-              type: "info",
-              message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (reloadable)`,
-            });
+            result.handlers.set(entry, createReloadableHandler(modulePath, ctx, entry));
           }
         } catch (err) {
           const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
@@ -157,12 +147,20 @@ export async function loadHandlersForAgentCrons(
       return result;
     }
 
-    const initial = await registerHandlers(handlersNeeded);
-    registered.push(...initial.registered);
+    const initial = await prepareHandlers(handlersNeeded);
+    for (const [entry, handler] of initial.handlers) {
+      cron.registerHandler(entry.name, handler);
+      registered.push(`${agentName}:${entry.name}`);
+      const workflow = workflowHandler(entry);
+      const target = workflow
+        ? `workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`
+        : `${entry.handler}.ts (reloadable)`;
+      bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${target}` });
+    }
     errors.push(...initial.errors);
-    cron.setHandlerResolver(async (entryName, entry) => {
-      const result = await registerHandlers([{ ...entry, name: entryName }]);
-      return result.registered.length > 0;
+    cron.setHandlerResolver(async (entry) => {
+      const result = await prepareHandlers([entry]);
+      return result.handlers.get(entry);
     });
   }
 

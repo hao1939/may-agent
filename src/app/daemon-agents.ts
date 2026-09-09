@@ -9,7 +9,13 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
+import {
+  generateAutoHeartbeats,
+  getAgentCrons,
+  loadAgents,
+  getAgentSessionId,
+  prepareAgentTriggers,
+} from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 import type { HostCapacity } from "./host-capacity.js";
@@ -53,7 +59,7 @@ export async function prepareDaemonAgents(opts: {
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
   /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
-  taskRuntimeMode?: "controllers" | "manual" | "none";
+  taskRuntimeMode: "controllers" | "manual" | "none";
   executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
   executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
   taskAppIds?: readonly string[];
@@ -169,7 +175,7 @@ export async function prepareDaemonAgents(opts: {
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
   let startAppTaskControllers = () => {};
-  const taskRuntimeMode = opts.taskRuntimeMode ?? (opts.cronEnabled ? "controllers" : "none");
+  const taskRuntimeMode = opts.taskRuntimeMode;
   if (taskRuntimeMode !== "none") {
     let started = false;
     let openStartGate = () => {};
@@ -233,8 +239,7 @@ export async function prepareDaemonAgents(opts: {
     }
   }
 
-  // Cron subscribe + start is handled by cron-startup.ts in one centralized
-  // loop after all crons (agent-level and app-level) are created and loaded.
+  // Producer activation is separate from Task recovery and controller startup.
 
   let failures = 0;
   const heartbeatFiles = autoHeartbeats
@@ -264,6 +269,8 @@ export async function prepareDaemonAgents(opts: {
       message: `[startup-check] ⚠️ ${failures} heartbeat workflow(s) failed to load! Heartbeats will NOT fire for those agents.`,
     });
   }
+
+  if (taskRuntimeMode === "controllers") await prepareAgentTriggers(loaderOpts);
 
   return { loaderOpts, appTaskOptions, startAppTaskControllers };
 }

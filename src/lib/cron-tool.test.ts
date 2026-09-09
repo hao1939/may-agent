@@ -221,6 +221,8 @@ describe("cron tool", () => {
     writeFileSync(ctx.configPath, JSON.stringify([{ name: "pre", intervalMs: 30000, message: "preloaded" }]));
     const out = await exec(ctx.tool, { action: "list" });
     expect(out).toContain("pre: every 30s");
+    expect(out).not.toContain("[DISABLED] pre");
+    expect(await exec(ctx.tool, { action: "status" })).toContain('Shortest configured interval: "pre"');
   });
 
   it("list shows cron disabled when cronEnabled is false", async () => {
@@ -233,7 +235,7 @@ describe("cron tool", () => {
     const enabledCtx = makeToolCtx(true);
     await exec(enabledCtx.tool, { action: "add", name: "a", intervalMs: 60000, message: "m" });
     const out = await exec(enabledCtx.tool, { action: "list" });
-    expect(out).toContain("ACTIVE");
+    expect(out).toContain("Timers: ENABLED");
     expect(out).not.toContain("DISABLED");
     enabledCtx.cleanup();
   });
@@ -241,18 +243,18 @@ describe("cron tool", () => {
   it("status shows 0 jobs when empty", async () => {
     const out = await exec(ctx.tool, { action: "status" });
     expect(out).toContain("No cron jobs configured.");
-    expect(out).toContain("Status: DISABLED");
+    expect(out).toContain("Timers: DISABLED");
   });
 
   it("status shows enabled when cronEnabled is true", async () => {
     const enabledCtx = makeToolCtx(true);
     const out = await exec(enabledCtx.tool, { action: "status" });
-    expect(out).toContain("Status: ACTIVE");
+    expect(out).toContain("Timers: ENABLED");
     expect(out).not.toContain("DISABLED");
     enabledCtx.cleanup();
   });
 
-  it("status shows job count and next-to-fire job", async () => {
+  it("status shows configured cadence without claiming a next run time", async () => {
     await exec(ctx.tool, { action: "add", name: "slow", intervalMs: 120000, message: "slow msg" });
     await exec(ctx.tool, { action: "add", name: "fast", intervalMs: 30000, message: "fast msg" });
     await exec(ctx.tool, { action: "add", name: "medium", intervalMs: 60000, message: "med msg" });
@@ -260,6 +262,8 @@ describe("cron tool", () => {
     expect(out).toContain("3 job(s) configured");
     expect(out).toContain('"fast"');
     expect(out).toContain("30s");
+    expect(out).toContain("Shortest configured interval:");
+    expect(out).not.toContain("Next to fire");
   });
 
   it("status reports first-defined job on intervalMs tie", async () => {
@@ -276,6 +280,7 @@ describe("cron tool", () => {
     expect(out).toContain("DISABLED");
     expect(out).toContain("1 job(s)");
     expect(out).toContain('"job1"');
+    expect(out).toContain("Event/manual triggers are independent");
   });
 
   it("add creates entry with enabled=true by default", async () => {
@@ -301,7 +306,7 @@ describe("cron tool", () => {
     expect(out).toContain("[DISABLED] dead-job");
   });
 
-  it("status skips disabled jobs for next-to-fire", async () => {
+  it("status skips disabled jobs for configured cadence", async () => {
     await exec(ctx.tool, { action: "add", name: "fast", intervalMs: 10000, message: "m" });
     await exec(ctx.tool, { action: "add", name: "slow", intervalMs: 120000, message: "m" });
     await exec(ctx.tool, { action: "update", name: "fast", enabled: false });

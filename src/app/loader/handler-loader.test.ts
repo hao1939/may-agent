@@ -11,7 +11,7 @@ import { EventBus } from "../event-bus.js";
 import { loadHandlersForAgentCrons } from "./handler-loader.js";
 
 type Handler = (event?: EventEnvelope) => Promise<void>;
-type Resolver = (name: string, entry: CronEntry) => Promise<boolean>;
+type Resolver = (entry: CronEntry) => Promise<Handler | undefined>;
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -52,7 +52,14 @@ function setup(entries: CronEntry[]) {
       bus,
       agentCrons: new Map([["owner", cron]]),
     });
-  return { root, handlersDir, handlers, events, load, resolve: (entry: CronEntry) => resolver(entry.name, entry) };
+  const resolve = async (entry: CronEntry) => {
+    const before = new Map(handlers);
+    const handler = await resolver(entry);
+    expect(handlers).toEqual(before); // Preparation must not publish a stale handler.
+    if (handler) handlers.set(entry.name, handler);
+    return Boolean(handler);
+  };
+  return { root, handlersDir, handlers, events, load, resolve };
 }
 
 const handlerSource = `

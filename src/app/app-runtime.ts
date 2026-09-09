@@ -18,7 +18,7 @@ import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { readAppConversationResource } from "./conversations/store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
-import { startCronRuntime } from "./cron-startup.js";
+import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
@@ -41,7 +41,8 @@ import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./task-admission-process.js";
-import { prepareAgentGeneration } from "./agent-loader.js";
+import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
 import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
@@ -147,6 +148,7 @@ export async function runAppRuntime(opts: {
     envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
+  const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
 
   const bus = new EventBus();
   const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
@@ -218,6 +220,7 @@ export async function runAppRuntime(opts: {
     manager,
     bus,
     cronEnabled: CRON_ENABLED,
+    taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
@@ -269,6 +272,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     hostCapacity,
     maxConcurrentRequests: configuredHostConcurrency,
+    schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
     controlTask: async ({ control }) => {
@@ -364,6 +368,16 @@ export async function runAppRuntime(opts: {
         projectsRoot: candidate.projectsRoot,
         definitionSharedRoot: candidate.sharedRoot,
       });
+    },
+    publishAgents: (options, generation) => {
+      const publication = publishPreparedAgentGeneration(options, generation);
+      try {
+        if (backgroundEnabled) activateAgentCrons(generation.crons, bus, CRON_ENABLED);
+        return publication;
+      } catch (error) {
+        publication.rollback();
+        throw error;
+      }
     },
     reloadApps: async ({ publishAgents }) => {
       const source = stagedReloadSource;
@@ -500,6 +514,19 @@ export async function runAppRuntime(opts: {
     manager,
   });
 
+  if (backgroundEnabled) {
+    // Handlers are prepared before ingress; activate only after its routes and
+    // Conversation adapters are ready. A startup job must not gate core work.
+    activateAgentCrons(getAgentCrons(), bus, CRON_ENABLED);
+    await appInboxRuntime.start();
+    startBackgroundRuntime({
+      manager,
+      bus,
+      persistDir: loaderOpts.persistDir,
+      onTaskRecoverySettled: startAppTaskControllers,
+    });
+  }
+
   taskSessionId = await startInitialTask({
     bus,
     manager,
@@ -526,18 +553,6 @@ export async function runAppRuntime(opts: {
     status: "running",
     sessionId: taskSessionId,
   });
-
-  await appInboxRuntime.start();
-  if (CRON_ENABLED) {
-    await startCronRuntime({
-      manager,
-      bus,
-      loaderOpts,
-      // App work begins after recovery succeeds or yields to bounded retry;
-      // neither path is allowed to hold the already-open interfaces.
-      onTaskRecoverySettled: startAppTaskControllers,
-    });
-  }
 
   if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({ type: "info", message: "[task] Task completed. Exiting." });

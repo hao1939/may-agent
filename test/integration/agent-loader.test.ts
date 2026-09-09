@@ -503,7 +503,7 @@ describe("agent loader boundaries", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-empty-resolver-"));
     try {
       const handlers = new Map<string, unknown>();
-      let resolver: ((entryName: string, entry: any) => Promise<boolean>) | undefined;
+      let resolver: ((entry: any) => Promise<unknown>) | undefined;
       const cron = {
         getEntries: () => [],
         registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
@@ -525,13 +525,13 @@ describe("agent loader boundaries", () => {
       });
 
       expect(resolver).toBeDefined();
-      const resolved = await resolver!("heartbeat-alpha", {
+      const resolved = await resolver!({
         name: "heartbeat-alpha",
         enabled: true,
         handler: { workflow: "alpha-heartbeat", agent: "alpha", task: "[heartbeat]" },
       });
-      expect(resolved).toBe(true);
-      expect(handlers.has("heartbeat-alpha")).toBe(true);
+      expect(typeof resolved).toBe("function");
+      expect(handlers.has("heartbeat-alpha")).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

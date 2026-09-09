@@ -15,6 +15,54 @@ function tick(): Promise<void> {
 }
 
 describe("Cron event dispatch", () => {
+  it.each([
+    ["disable", false],
+    ["remove", false],
+    ["disable", true],
+    ["remove", true],
+  ] as const)("discards queued events on %s before reuse (delivery scheduled=%s)", async (action, scheduled) => {
+    const root = tempRoot();
+    const configPath = join(root, "cron.json");
+    const entry = { name: "review", handler: "review", on: ["fixture.changed"], enabled: true };
+    writeFileSync(configPath, JSON.stringify([entry]));
+    const finished = Promise.withResolvers<void>();
+    const cron = new Cron(configPath, {} as any, () => "fixture", undefined, root, undefined, (event) => {
+      if (event.type === "handler.completed") finished.resolve();
+    });
+    const release = Promise.withResolvers<void>();
+    const fresh = Promise.withResolvers<void>();
+    const seen: unknown[] = [];
+    const handler = async (event?: { data?: unknown }) => {
+      seen.push(event?.data);
+      if (seen.length === 1) await release.promise;
+      else fresh.resolve();
+    };
+    try {
+      cron.load();
+      cron.registerHandler("review", handler);
+      cron.dispatchEvent("fixture.changed", { value: "running" });
+      cron.dispatchEvent("fixture.changed", { value: "stale" });
+      if (scheduled) {
+        release.resolve();
+        await finished.promise; // The old queue now has a deferred delivery callback.
+      }
+      writeFileSync(configPath, JSON.stringify(action === "remove" ? [] : [{ ...entry, enabled: false }]));
+      cron.reload();
+      writeFileSync(configPath, JSON.stringify([entry]));
+      cron.reload();
+      cron.registerHandler("review", handler);
+      cron.dispatchEvent("fixture.changed", { value: "fresh" });
+      release.resolve();
+      await fresh.promise;
+      await tick();
+      expect(seen).toEqual([{ value: "running" }, { value: "fresh" }]);
+    } finally {
+      release.resolve();
+      cron.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps config activation explicit instead of polling cron.json", () => {
     const root = tempRoot();
     const configPath = join(root, "cron.json");
