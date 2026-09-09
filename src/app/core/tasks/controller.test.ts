@@ -1,6 +1,6 @@
-import { describe, expect, it } from "bun:test";
-import { AppTaskController } from "././app-task-controller.js";
-import { HostCapacity } from "./host-capacity.js";
+import { describe, expect, it, spyOn } from "bun:test";
+import { AppTaskController } from "./controller.js";
+import { HostCapacity } from "../../host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const started = Date.now();
@@ -479,12 +479,71 @@ describe("AppTaskController", () => {
         runs++;
         if (runs < 3) throw new Error("temporary");
       },
-      onError: (_taskId, _error, willRetry) => errors.push(willRetry),
+      onError: (_taskId, _error, willRetry) => {
+        errors.push(willRetry);
+      },
     });
     controller.enqueue("a");
     await waitUntil(() => runs === 3);
     expect(errors).toEqual([true, true]);
     controller.close();
+  });
+
+  it.each([
+    { execution: "throw", reporter: "absent" },
+    { execution: "reject", reporter: "throw" },
+    { execution: "throw", reporter: "throw" },
+    { execution: "reject", reporter: "reject" },
+    { execution: "throw", reporter: "reject" },
+    { execution: "reject", reporter: "pending" },
+  ])("contains $execution execution and $reporter reporting failures", async ({ execution, reporter }) => {
+    const capacity = new HostCapacity(1);
+    const starts: string[] = [];
+    const failure = new Error("execution failed");
+    const reportError = new Error("reporting failed");
+    const reports: unknown[] = [];
+    const fallback = spyOn(console, "error").mockImplementation(() => {});
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      maxRetries: 1,
+      retryDelayMs: () => 0,
+      reconcile(taskId) {
+        starts.push(taskId);
+        if (taskId === "bad" && starts.filter((id) => id === "bad").length === 1) {
+          if (execution === "throw") throw failure;
+          return Promise.reject(failure);
+        }
+        return Promise.resolve();
+      },
+      onError:
+        reporter === "absent"
+          ? undefined
+          : (_taskId, error) => {
+              reports.push(error);
+              if (reporter === "throw") throw reportError;
+              if (reporter === "reject") return Promise.reject(reportError);
+              return new Promise<void>(() => {});
+            },
+    });
+    try {
+      controller.enqueue("bad");
+      controller.enqueue("good");
+      await waitUntil(() => starts.length === 3 && capacity.snapshot().running === 0);
+      expect(starts.filter((id) => id === "bad")).toHaveLength(2);
+      expect(starts.filter((id) => id === "good")).toHaveLength(1);
+      expect(controller.snapshot()).toEqual({ pending: [], running: [], dirty: [] });
+      expect(reports).toEqual(reporter === "absent" ? [] : [failure]);
+      if (reporter === "throw" || reporter === "reject") {
+        expect(fallback).toHaveBeenCalledWith(expect.stringContaining("Task bad"), { error: failure, reportError });
+      } else {
+        expect(fallback).not.toHaveBeenCalled();
+      }
+    } finally {
+      controller.close();
+      fallback.mockRestore();
+    }
+    await controller.whenDrained();
   });
 
   it("cancels stale capacity waits when controllers close", async () => {

@@ -82,10 +82,11 @@ async function executeTaskCapability(
   definitions: ReadonlyMap<string, SubagentDefinition> | undefined,
 ): Promise<TaskCapabilityRun> {
   const opts = input.source;
-  const { descriptor, capability, intent, claim, event } = input;
-  const reconciliationEvents = input.attempt.events;
+  const { descriptor, capability, attempt, event } = input;
+  const taskDetail = attempt.task;
+  const reconciliationEvents = attempt.events;
   const runtime = requireWorkflowRuntimeOptions(opts);
-  const agentName = capability.agent ?? claim.agent;
+  const agentName = capability.agent ?? attempt.role.agent;
   const trace = childEventTrace(event);
   const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
   const task = [
@@ -98,19 +99,19 @@ async function executeTaskCapability(
     JSON.stringify(
       {
         appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        resourceVersion: claim.resourceVersion,
-        agent: claim.agent,
-        handler: claim.handler,
-        mode: claim.mode,
-        outcome: intent.outcome,
-        acceptance: intent.acceptance,
-        input: intent.input ?? {},
+        taskId: taskDetail.id,
+        generation: taskDetail.generation,
+        resourceVersion: attempt.resourceVersion,
+        agent: attempt.role.agent,
+        handler: input.handler,
+        mode: taskDetail.mode ?? "achieve",
+        outcome: taskDetail.outcome,
+        acceptance: taskDetail.acceptance,
+        input: taskDetail.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
-        waits: input.attempt.waits,
+        waits: attempt.waits,
         paths: input.executionPaths,
-        declaredOutputs: input.declaredOutputPaths,
+        declaredOutputs: attempt.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
       },
       null,
@@ -125,16 +126,16 @@ async function executeTaskCapability(
   bus.emit({
     type: "handler.workflow_dispatched",
     source: `agent:${agentName}`,
-    owner: `agent:${claim.agent}`,
+    owner: `agent:${attempt.role.agent}`,
     target: { appId: descriptor.id },
     data: {
-      handler: claim.handler,
+      handler: input.handler,
       workflow: capability.workflow,
       source: agentName,
       projectId: descriptor.id,
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
-      taskId: claim.taskId,
-      taskGeneration: claim.generation,
+      taskId: taskDetail.id,
+      taskGeneration: taskDetail.generation,
       workflowRunId: null,
       status: "started",
     },
@@ -173,26 +174,26 @@ async function executeTaskCapability(
       projectId: descriptor.id,
       taskBinding: {
         appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        attemptId: claim.attemptId,
+        taskId: taskDetail.id,
+        generation: taskDetail.generation,
+        attemptId: attempt.attemptId,
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
       taskEmitter: input.taskEvents,
       trace,
       executionPaths: input.executionPaths,
-      workflowInput: intent.input ?? {},
+      workflowInput: taskDetail.input ?? {},
       reconciliation: {
         appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        resourceVersion: claim.resourceVersion,
-        agent: claim.agent,
-        owner: claim.agent,
-        mode: claim.mode,
-        outcome: intent.outcome,
-        acceptance: intent.acceptance,
-        input: intent.input ?? {},
+        taskId: taskDetail.id,
+        generation: taskDetail.generation,
+        resourceVersion: attempt.resourceVersion,
+        agent: attempt.role.agent,
+        owner: attempt.role.agent,
+        mode: taskDetail.mode ?? "achieve",
+        outcome: taskDetail.outcome,
+        acceptance: taskDetail.acceptance,
+        input: taskDetail.input ?? {},
         children: {
           live: input.childContext.live.map(({ phase, ...child }) => ({
             ...child,
@@ -213,7 +214,7 @@ async function executeTaskCapability(
         events: reconciliationEvents,
       },
       executionTimeoutMs: input.executionTimeoutMs,
-      signal: input.attempt.signal,
+      signal: attempt.signal,
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
@@ -246,15 +247,15 @@ async function executeTaskCapability(
     bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
-      owner: `agent:${claim.agent}`,
+      owner: `agent:${attempt.role.agent}`,
       target: { appId: descriptor.id },
       data: {
-        handler: claim.handler,
+        handler: input.handler,
         workflow: capability.workflow,
         source: agentName,
         projectId: descriptor.id,
-        taskId: claim.taskId,
-        taskGeneration: claim.generation,
+        taskId: taskDetail.id,
+        taskGeneration: taskDetail.generation,
         workflowRunId: runId,
         status: done ? "done" : "blocked",
         disposition: handlerResult.state,
@@ -281,15 +282,15 @@ async function executeTaskCapability(
     bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
-      owner: `agent:${claim.agent}`,
+      owner: `agent:${attempt.role.agent}`,
       target: { appId: descriptor.id },
       data: {
-        handler: claim.handler,
+        handler: input.handler,
         workflow: capability.workflow,
         source: agentName,
         projectId: descriptor.id,
-        taskId: claim.taskId,
-        taskGeneration: claim.generation,
+        taskId: taskDetail.id,
+        taskGeneration: taskDetail.generation,
         workflowRunId: null,
         status: "blocked",
         reason: summary,

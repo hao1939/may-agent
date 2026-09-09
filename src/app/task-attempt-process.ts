@@ -5,7 +5,7 @@ import { closeAllDbs, getDb } from "../lib/requests.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
-import type { AppTaskDispatch } from "./app-task-controller.js";
+import type { AppTaskDispatch } from "./core/tasks/controller.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext, readAppTaskAgent } from "./app-task-reconciler.js";
 import {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { AppTaskQueue } from "./app-task-queue.js";
+import { AppTaskQueue } from "./queue.js";
 
 describe("AppTaskQueue", () => {
   it("deduplicates pending task wakes", () => {

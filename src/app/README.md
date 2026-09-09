@@ -15,8 +15,8 @@ The governing design lives in the sibling App tree, not this navigation guide:
   keeps stable mechanics in the Host and policy in the App.
 - [Core proposal — Step 2](../../../may-agent.app/docs/proposals/task-runtime-organization.md#step-2-separate-app-source-discovery-from-core-registration)
   applies these accepted rules to discovery and registration. The following
-  guide maps the complete candidate separation; PR/source status remains in
-  the proposal, separate from deployment.
+  guide maps this checkout's source; merge and deployment status remain
+  separate facts recorded in the proposal and release evidence.
 
 These links require the sibling `may-agent.app` design tree. A standalone Host
 checkout does not contain it; request the cited sections when reviewing a
@@ -24,12 +24,12 @@ behavior change rather than treating this guide as replacement design.
 
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
-| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/` registration, `events/` admission/observation, `reads/` canonical reads, `tasks/` executor/recovery contracts, `scheduling/` owned timing |
-| `adapters/` | Concrete capability implementations | `discovery/`, `executors/`, `producers/`, `maintenance/`, `reporting/` |
+| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/` registration, `events/` admission/observation, `reads/` canonical reads, `tasks/` controller, queue and execution/recovery contracts, `scheduling/` owned timing |
+| `adapters/` | Concrete capability implementations | `discovery/`, `executors/`, `workspaces/`, `producers/`, `maintenance/`, `reporting/` |
 | `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts`, `task-execution.ts`, `maintenance.ts`, `maintenance-activation.ts`, `reporting.ts` |
 
 `app-runtime.ts` remains the main composition root. Transaction-critical Task
-stores/controllers and request admission retain their existing flat files;
+stores/reconciliation and request admission retain their existing flat files;
 the navigation below identifies their ownership. Transports remain in
 `transport/`, HTTP in `http/`. The proposal separates demonstrated responsibilities,
 not every file or an entire runtime-instance rewrite.
@@ -37,6 +37,9 @@ not every file or an entire runtime-instance rewrite.
 Core depends on contracts and foundational utilities, not concrete adapters.
 Composition may import both sides. Adapters receive the narrow capabilities
 they need; they do not become another Task state or recovery authority.
+ESLint rejects imports from `core/` (and the still-flat Task runtime) into
+`adapters/` or `composition/`. Boundary tests may wire both sides. Keep new
+contracts next to their core owner; do not expose Host internals through the SDK.
 
 Loading prepares definitions and handlers without activating producers.
 `app-runtime.ts` activates the prepared generation after ingress opens and each
@@ -49,6 +52,25 @@ To extend a supported capability:
 2. Add a focused implementation and colocated tests in its capability family.
 3. Register it explicitly in composition, including activation and cleanup.
 4. Test behavior when it fails or is absent; leave core correctness rules alone.
+
+### Extension starting points
+
+Paths are relative to this directory unless a package is named. Start with one
+existing implementation; register it with an ordinary import, not a manifest.
+
+| Capability | Contract | Example and wiring | Boundary proof |
+| --- | --- | --- | --- |
+| App discovery | `core/apps/registry.ts`: `AppDefinitionSource` | `adapters/discovery/app-definitions.ts`; `app-runtime.ts` | `core/apps/registry.test.ts`: failed reload retains the accepted generation |
+| Named executor | SDK `TaskExecutor` / `TaskAttempt` | `codex-goal-executor.ts`; executor map in `daemon-agents.ts` | `app-task-runtime.test.ts`: missing executor stays visible, other work runs |
+| Built-in agent/workflow/session backend | `core/tasks/execution.ts` | `adapters/executors/`; `composition/task-execution.ts` | `app-task-runtime.test.ts`: removal, restoration and exact attempt fencing |
+| Task worktree | `core/tasks/workspace.ts` | `adapters/workspaces/git.ts`; `composition/task-execution.ts` | `adapters/workspaces/git.test.ts` plus workspace admission tests in `app-task-runtime.test.ts` |
+| App schedule | SDK schedule declarations; `core/scheduling/timer.ts` mechanics | `adapters/producers/app-schedules.ts`; `app-inbox-runtime.ts` | `adapters/producers/app-schedules.test.ts`: publication failure and reload |
+| Optional reports | `core/reads/reporting.ts` | `adapters/reporting/`; `composition/reporting.ts` | `composition/reporting.test.ts`: unavailable/failing reports do not reject App publication |
+
+For deterministic Host maintenance, follow the existing
+[maintenance guide](adapters/maintenance/README.md), including activation and
+shutdown. These families have different contracts; they do not need a universal
+adapter interface.
 
 App-owned policy, observers, and schedules stay in the owning App declaration.
 Public App contracts live in `packages/sdk`; client contracts in
@@ -230,17 +252,29 @@ cancellation signal, owns deadlines and workspace lineage, validates results,
 and commits accepted state. It does not construct a model manager, load a
 workflow, inspect transcripts, or repair a managed-agent session.
 
+`core/tasks/controller.ts` and `queue.ts` own bounded dispatch and coalesced
+wakes. A synchronous execution throw follows the same bounded retry path as a
+rejected promise. Failure reporting is best-effort: throwing/rejecting reporters
+fall back to process diagnostics, and a pending reporter does not hold capacity.
+No new event family or diagnostic service is required.
+
 | Contract / implementation | Responsibility |
 | --- | --- |
 | SDK `TaskExecutor(attempt)` | One bounded custom executor call and proposed result; unchanged public contract |
 | `core/tasks/execution.ts` | Private agent, workflow and session operations needed by existing Host backends |
+| `core/tasks/workspace.ts` | Preparation/finalization contract and workspace evidence; no Git commands |
 | `adapters/executors/managed-agent.ts` | Agent preparation, role/prompt construction and managed execution |
 | `adapters/executors/workflow.ts` | Workflow inspection, workspace requirements, bounded execution and verifier lookup |
 | `adapters/executors/session-recovery.ts` | Session liveness, results, checkpoint context and safe process cleanup; never Task settlement |
 | `adapters/executors/agent-workspace.ts` | Existing managed-agent canonical-workspace guard and deployment evidence |
+| `adapters/workspaces/git.ts` | Git refs, worktree preparation, integration checks and cleanup |
 | `composition/task-execution.ts` | Select the shipped backends; used by daemon and isolated-worker preparation |
 
 These are ordinary private operations, not an SDK lifecycle or plugin system.
+Built-in runners receive identity, desired work and declared outputs through
+`TaskAttempt`, not a second complete claim or intent. Their additional inputs
+are Host-only prompt, workflow and session capabilities; the public SDK is unchanged.
+
 Composition may supply an executor map with no managed-agent or workflow
 runner. App declarations and accepted Tasks remain installed when an agent is
 unavailable. Work requiring it records exact unavailability; unrelated native
@@ -258,9 +292,17 @@ stopped. Drain managed sessions before omitting it, or restore that capability
 to recover them. Core refuses replacement ownership without that proof.
 Basic reads and work without retained managed sessions remain available.
 
+Composition supplies Git workspace operations through `workspaces`. Omitting
+them leaves local executors and shared-workspace workflows usable; a worktree
+requirement fails visibly before execution, with no fallback to the shared
+checkout. Restore the backend and retry the same Task through existing control.
+Core still decides when to prepare/finalize, records lineage against the exact
+attempt, and rejects stale or unaccepted results. The adapter returns evidence;
+it never settles a Task.
+
 `executeAttempt` remains the separate process-dispatch boundary; it is not a
 backend's execution function. Stores, claims, result admission, cancellation,
-Conditions and workspace finalization remain under the Task engine. No extra
+Conditions and workspace finalization ordering remain under the Task engine. No extra
 timer, queue, persisted lifecycle, or live installation operation was added.
 
 ## State and process boundaries

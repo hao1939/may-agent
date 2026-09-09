@@ -8,7 +8,7 @@ import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-r
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
-import { AppTaskQueue } from "./app-task-queue.ts";
+import { AppTaskQueue } from "./core/tasks/queue.js";
 import {
   associateAppTaskSession,
   assertAppTaskEffectFresh,

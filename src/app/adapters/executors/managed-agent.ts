@@ -128,8 +128,9 @@ async function executeTaskAgent(
   manager: SubagentManager,
   definitions: ReadonlyMap<string, SubagentDefinition> | undefined,
 ): Promise<TaskCapabilityRun> {
-  const { descriptor, intent, claim, event } = input;
-  const reconciliationEvents = input.attempt.events;
+  const { descriptor, attempt, event } = input;
+  const task = attempt.task;
+  const reconciliationEvents = attempt.events;
   const trace = childEventTrace(event);
   const dependencyCatalog = input.dependencies;
   const prompt = [
@@ -140,18 +141,18 @@ async function executeTaskAgent(
     JSON.stringify(
       {
         appId: descriptor.id,
-        taskId: claim.taskId,
-        generation: claim.generation,
-        resourceVersion: claim.resourceVersion,
-        agent: claim.agent,
-        mode: claim.mode,
-        outcome: intent.outcome,
-        acceptance: intent.acceptance,
-        input: intent.input ?? {},
+        taskId: task.id,
+        generation: task.generation,
+        resourceVersion: attempt.resourceVersion,
+        agent: attempt.role.agent,
+        mode: task.mode ?? "achieve",
+        outcome: task.outcome,
+        acceptance: task.acceptance,
+        input: task.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
-        waits: input.attempt.waits,
+        waits: attempt.waits,
         paths: input.executionPaths,
-        declaredOutputs: input.declaredOutputPaths,
+        declaredOutputs: attempt.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
       },
       null,
@@ -168,9 +169,8 @@ async function executeTaskAgent(
           "```",
         ]
       : []),
-    ...(hasDeployReceiptWake(reconciliationEvents) ||
-    readDeployReceiptForTask(input.executionPaths.projectDir, claim.taskId)
-      ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, claim.taskId)]
+    ...(hasDeployReceiptWake(reconciliationEvents) || readDeployReceiptForTask(input.executionPaths.projectDir, task.id)
+      ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, task.id)]
       : []),
     ...(reconciliationEvents.items.length
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
@@ -191,17 +191,17 @@ async function executeTaskAgent(
   const dispatchAgent = async () =>
     typeof manager.run === "function" && typeof manager.waitFor === "function" && typeof manager.progress === "function"
       ? await (async () => {
-          input.attempt.signal.throwIfAborted();
-          const definition = definitions?.get(claim.agent);
+          attempt.signal.throwIfAborted();
+          const definition = definitions?.get(attempt.role.agent);
           const runOptions = {
             source: agentOptions.source,
             kind: "call" as const,
             projectId: agentOptions.projectId,
             taskBinding: {
               appId: descriptor.id,
-              taskId: claim.taskId,
-              generation: claim.generation,
-              attemptId: claim.attemptId,
+              taskId: task.id,
+              generation: task.generation,
+              attemptId: attempt.attemptId,
             },
             recoveryOwner: agentOptions.recoveryOwner,
             trace: agentOptions.trace,
@@ -213,7 +213,7 @@ async function executeTaskAgent(
           };
           const sessionId = definition
             ? manager.runDefinition(definition, prompt, runOptions)
-            : manager.run(claim.agent, prompt, runOptions);
+            : manager.run(attempt.role.agent, prompt, runOptions);
           input.sessionStarted(sessionId);
           const cancelSession = () => {
             try {
@@ -222,9 +222,9 @@ async function executeTaskAgent(
               // The session may finish between Task cancellation and abort.
             }
           };
-          input.attempt.signal.addEventListener("abort", cancelSession, { once: true });
-          if (input.attempt.signal.aborted) cancelSession();
-          const unsubscribe = input.attempt.onEvent((incoming) => {
+          attempt.signal.addEventListener("abort", cancelSession, { once: true });
+          if (attempt.signal.aborted) cancelSession();
+          const unsubscribe = attempt.onEvent((incoming) => {
             try {
               const event = incoming as AgentEvent;
               manager.send(sessionId, liveTaskEventMessage(event), { trace: childEventTrace(event) });
@@ -241,10 +241,10 @@ async function executeTaskAgent(
             };
           } finally {
             unsubscribe();
-            input.attempt.signal.removeEventListener("abort", cancelSession);
+            attempt.signal.removeEventListener("abort", cancelSession);
           }
         })()
-      : await manager.callAgent(claim.agent, prompt, agentOptions);
+      : await manager.callAgent(attempt.role.agent, prompt, agentOptions);
   const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredAgentResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchAgent>>;

@@ -53,6 +53,8 @@ export default [
                 "bun:sqlite",
                 "**/event-bus",
                 "**/event-bus.*",
+                "**/core/events/**",
+                "**/core/tasks/**",
                 "**/requests",
                 "**/requests.*",
                 "**/persistence",
@@ -82,6 +84,24 @@ export default [
             {
               group: ["**/app-task-runtime", "**/app-task-runtime.*"],
               message: "Use the App Task capability, not runtime internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ["src/app/core/**/*.ts", "src/app/app-task-runtime.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/adapters/**", "**/composition/**"],
+              message: "Core depends on contracts; select concrete adapters in composition.",
             },
           ],
         },

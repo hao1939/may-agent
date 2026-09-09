@@ -1,8 +1,8 @@
-import type { AppDefinition, AppRead, TaskAttempt, TaskIntent, TaskVerifier } from "@may-agent/sdk";
+import type { AppDefinition, AppRead, TaskAttempt, TaskVerifier } from "@may-agent/sdk";
 import type { EventEnvelope } from "../events/bus.js";
 import type { AppTaskEvents } from "../../app-task-emitter.js";
 import type { AppTaskExecutionPaths } from "../../app-task-output-paths.js";
-import type { AppTaskChildContext, AppTaskClaim, readAppTaskLiveSnapshot } from "../../app-task-reconciler.js";
+import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "../../app-task-reconciler.js";
 import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { TaskCapabilityRun } from "./result.js";
 import type { AppTaskAttempt } from "../../app-task-state.js";
@@ -10,21 +10,21 @@ import type { AppTaskAttempt } from "../../app-task-state.js";
 /** Read-only App declaration, never its mutable Task store. */
 export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };
 
-export type TaskAgentInput = {
+/** Attempt owns identity, desired work and outputs; the rest is Host-only execution context. */
+type TaskExecutionInput = {
   descriptor: TaskExecutionApp;
   attempt: TaskAttempt;
-  intent: TaskIntent;
-  claim: AppTaskClaim;
   defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
   observer?: AppTaskExecutionObserver;
-
-  dependencies: ReturnType<typeof appDependencyCatalog>;
   executionTimeoutMs: number;
+};
+
+export type TaskAgentInput = TaskExecutionInput & {
+  dependencies: ReturnType<typeof appDependencyCatalog>;
   sessionStarted(sessionId: string): void;
 };
 
@@ -65,24 +65,14 @@ export type TaskWorkflowInspection = {
   verifier?: { name: string; sourcePath: string; verify: TaskVerifier };
 };
 
-export type TaskWorkflowInput = {
+export type TaskWorkflowInput = TaskExecutionInput & {
   source: TaskDefinitionSource;
-  descriptor: TaskExecutionApp;
-  attempt: TaskAttempt;
-  executionTimeoutMs: number;
   taskEvents: AppTaskEvents;
   capability: WorkflowCapability;
-  intent: TaskIntent;
-  claim: AppTaskClaim;
-  defaultParentId: string;
-  executionPaths: AppTaskExecutionPaths;
-  declaredOutputPaths: string[];
-  childContext: AppTaskChildContext;
-  taskSnapshot: ReturnType<typeof readAppTaskLiveSnapshot>;
+  /** Actual selected handler, including workflow-to-agent recovery decisions. */
+  handler: string;
+  taskSnapshot: AppTaskLiveSnapshot;
   taskRead: AppRead["tasks"];
-  event?: EventEnvelope;
-  fallbackReason?: string;
-  observer?: AppTaskExecutionObserver;
 };
 
 /** Host-private workflow capability. It proposes results; core owns admission. */

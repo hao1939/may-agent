@@ -45,12 +45,12 @@ import { canonicalAppEvent } from "./canonical-app-event.js";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./core/apps/registry.js";
-import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
+import { AppTaskController, type AppTaskDispatch } from "./core/tasks/controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
 import { HostCapacity } from "./host-capacity.js";
-import type { AppTaskQueueOptions } from "./app-task-queue.js";
+import type { AppTaskQueueOptions } from "./core/tasks/queue.js";
 import {
   matchingAppTaskConditionTaskIds,
   matchesAppTaskCondition,
@@ -110,7 +110,7 @@ import {
   type AppTaskClaim,
   type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
-import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace, type PreparedTaskWorkspace } from "./app-task-workspace.js";
+import type { TaskWorkspaces, PreparedTaskWorkspace } from "./core/tasks/workspace.js";
 
 type ProjectReadModel = {
   id: string;
@@ -215,6 +215,8 @@ export interface AppTaskRuntimeOptions {
   executors?: Readonly<Record<string, TaskExecutor>>;
   /** Optional workflow implementation, selected by composition. */
   workflows?: TaskWorkflowRunner;
+  /** Optional worktree implementation; required only by worktree-backed attempts. */
+  workspaces?: TaskWorkspaces;
   /** Optional projection; canonical Task reads remain available without it. */
   readOutcomes?: TaskOutcomeReader;
   appRegistry?: AppRegistry;
@@ -486,9 +488,11 @@ export function consumePersistedTerminalAgentResult(input: {
 }
 
 async function runTaskCapability(
-  input: Omit<TaskWorkflowInput, "source" | "taskRead" | "attempt" | "taskEvents" | "executionTimeoutMs"> & {
+  input: Omit<TaskWorkflowInput, "source" | "taskRead" | "attempt" | "taskEvents" | "executionTimeoutMs" | "handler"> & {
     opts: AppTaskRuntimeOptions;
     descriptor: AppTaskRuntimeDescriptor;
+    claim: AppTaskClaim;
+    declaredOutputPaths: string[];
   },
 ): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
@@ -511,10 +515,11 @@ async function runTaskCapability(
           runId: null,
           unavailable: true,
         };
-      const { opts, descriptor, ...execution } = input;
+      const { opts, descriptor, claim, declaredOutputPaths: _outputs, ...execution } = input;
       const config = { taskStateConfig: appTaskConfig(input.descriptor) };
       return opts.workflows!.execute({
         ...execution,
+        handler: claim.handler,
         source: {
           projectRoot: opts.projectRoot,
           projectsRoot: opts.projectsRoot,
@@ -1029,6 +1034,8 @@ async function runTaskAgent(
   input: Omit<TaskAgentInput, "attempt" | "sessionStarted" | "dependencies" | "executionTimeoutMs"> & {
     opts: AppTaskRuntimeOptions;
     descriptor: AppTaskRuntimeDescriptor;
+    claim: AppTaskClaim;
+    declaredOutputPaths: string[];
   },
 ): Promise<TaskCapabilityRun> {
   return runTaskExecutorAttempt({
@@ -1040,7 +1047,7 @@ async function runTaskAgent(
     childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
     execute: async (attempt) => {
-      const { opts, descriptor, ...execution } = input;
+      const { opts, descriptor, claim: _claim, declaredOutputPaths: _outputs, ...execution } = input;
       if (!opts.agents?.available(input.claim.agent))
         return {
           handlerResult: {
@@ -1477,7 +1484,7 @@ async function reconcileTask(input: {
     const finalizeWorkspace = async (outcome: "accepted" | "waiting" | "failed") => {
       if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
       try {
-        const finalized = await finalizeAppTaskWorkspace(taskWorkspace, outcome);
+        const finalized = await opts.workspaces!.finalize(taskWorkspace, outcome);
         workspaceFinalized = true;
         persistResult(() => recordAppTaskAttemptWorkspace(config, primary, finalized.metadata));
         return finalized;
@@ -1515,6 +1522,7 @@ async function reconcileTask(input: {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
         }
+        if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
         const previous = Object.values(
           config.resourceStore.readTaskContext({ taskIds: [primary.taskId] }).attempts ?? {},
         )
@@ -1525,7 +1533,7 @@ async function reconcileTask(input: {
               attempt.workspace?.kind === "task-worktree",
           )
           .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
-        taskWorkspace = await prepareAppTaskWorkspace({
+        taskWorkspace = await opts.workspaces.prepare({
           repoDir: descriptor.projectDir,
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: primary.taskId,
@@ -1562,7 +1570,6 @@ async function reconcileTask(input: {
           agent: primary.agent,
           task: `Reconcile task through workflow ${workflowKey}`,
         },
-        intent,
         claim: primary,
         defaultParentId,
         executionPaths,
@@ -1634,7 +1641,6 @@ async function reconcileTask(input: {
         primaryResult = await runTaskAgent({
           opts,
           descriptor,
-          intent,
           claim: primary,
           defaultParentId,
           executionPaths,
