@@ -1,0 +1,109 @@
+import type { AppDefinition, AppRead, TaskAttempt, TaskIntent, TaskVerifier } from "@may-agent/sdk";
+import type { EventEnvelope } from "../../../lib/handler-context.js";
+import type { AppTaskEvents } from "../../app-task-emitter.js";
+import type { AppTaskExecutionPaths } from "../../app-task-output-paths.js";
+import type { AppTaskChildContext, AppTaskClaim, readAppTaskLiveSnapshot } from "../../app-task-reconciler.js";
+import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
+import type { TaskCapabilityRun } from "./result.js";
+import type { AppTaskAttempt } from "../../app-task-state.js";
+
+/** Read-only App declaration, never its mutable Task store. */
+export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };
+
+export type TaskAgentInput = {
+  descriptor: TaskExecutionApp;
+  attempt: TaskAttempt;
+  intent: TaskIntent;
+  claim: AppTaskClaim;
+  defaultParentId: string;
+  executionPaths: AppTaskExecutionPaths;
+  declaredOutputPaths: string[];
+  childContext: AppTaskChildContext;
+  event?: EventEnvelope;
+  fallbackReason?: string;
+  observer?: AppTaskExecutionObserver;
+
+  dependencies: ReturnType<typeof appDependencyCatalog>;
+  executionTimeoutMs: number;
+  sessionStarted(sessionId: string): void;
+};
+
+/** Agent-specific preparation and execution; no claim or result authority. */
+export type TaskAgentRunner = {
+  prepare(input: { source: TaskDefinitionSource; appDir: string; agent: string }): Promise<boolean>;
+  available(agent: string): boolean;
+  role(agent: string): TaskAttempt["role"];
+  execute(input: TaskAgentInput): Promise<TaskCapabilityRun>;
+  /** Pin agent definitions at the synchronous App publication boundary. */
+  snapshot(): TaskAgentRunner;
+};
+
+export type AppTaskExecutionObserver = {
+  providerStarted(promptBytes: number): void;
+  providerFinished(): void;
+};
+
+export type WorkflowCapability = {
+  workflow: string;
+  agent?: string;
+  task: string;
+};
+
+/** Immutable definition roots selected by composition, not the mutable checkout. */
+export type TaskDefinitionSource = {
+  projectsRoot: string;
+  projectRoot: string;
+  persistDir?: string;
+  agentsRoot?: string;
+  sharedRoot?: string;
+};
+
+export type TaskWorkflowInspection = {
+  available: boolean;
+  error: string | null;
+  workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
+  verifier?: { name: string; sourcePath: string; verify: TaskVerifier };
+};
+
+export type TaskWorkflowInput = {
+  source: TaskDefinitionSource;
+  descriptor: TaskExecutionApp;
+  attempt: TaskAttempt;
+  executionTimeoutMs: number;
+  taskEvents: AppTaskEvents;
+  capability: WorkflowCapability;
+  intent: TaskIntent;
+  claim: AppTaskClaim;
+  defaultParentId: string;
+  executionPaths: AppTaskExecutionPaths;
+  declaredOutputPaths: string[];
+  childContext: AppTaskChildContext;
+  taskSnapshot: ReturnType<typeof readAppTaskLiveSnapshot>;
+  taskRead: AppRead["tasks"];
+  event?: EventEnvelope;
+  fallbackReason?: string;
+  observer?: AppTaskExecutionObserver;
+};
+
+/** Host-private workflow capability. It proposes results; core owns admission. */
+export type TaskWorkflowRunner = {
+  inspect(input: {
+    source: TaskDefinitionSource;
+    appDir: string;
+    agent: string;
+    workflow: string;
+  }): Promise<TaskWorkflowInspection>;
+  execute(input: TaskWorkflowInput): Promise<TaskCapabilityRun>;
+  /** Built-ins pin their nested agent definitions at publication, when needed. */
+  snapshot?(): TaskWorkflowRunner;
+};
+
+export type TaskSessionRecovery = {
+  handoff(attempt: AppTaskAttempt | undefined): AppTaskClaim["handoff"];
+  read(sessionId: string): { status: string; taskBinding?: unknown; workflowRunId?: string } | null;
+  isLive(sessionId: string): boolean;
+  lastActivityAt(sessionId: string): number | null;
+  result(sessionId: string): unknown;
+  interrupt(sessionId: string, reason: string, taskId?: string): void;
+  workflowInterrupted(workflowRunId: string | null): boolean;
+};

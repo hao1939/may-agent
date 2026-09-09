@@ -5,9 +5,9 @@ The Host contains both stable mechanics and replaceable implementations.
 
 The governing design lives in the sibling App tree, not this navigation guide:
 
-- [Core Principles §1, Apps own meaning; the Host owns mechanics](../../../may-agent.app/docs/1-principles/core-principles.md#1-apps-own-meaning-the-host-owns-mechanics)
+- [Core Principles — Apps own meaning; the Host owns mechanics](../../../may-agent.app/docs/1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics)
   assigns validation, persistence, scheduling, and recovery to the Host.
-- [Core Principles §9, explicit declarations with useful conventions](../../../may-agent.app/docs/1-principles/core-principles.md#9-prefer-explicit-declarations-with-useful-conventions)
+- [Core Principles — Convention over configuration](../../../may-agent.app/docs/1-principles/core-principles.md#convention-over-configuration)
   requires “one `app.ts`, one `defineApp`, and one atomic App generation.”
 - [System Boundary — Host](../../../may-agent.app/docs/2a-design/system-boundary.md#host)
   says “Reload either publishes a complete replacement or keeps the previous
@@ -139,12 +139,12 @@ row. Repeated startup/reload passes therefore reach later Tasks even when older
 bindings stay missing or a recovery process exits. This is a recovery hint,
 not a Task revision, new retry queue, or new timer.
 
-`adapters/executors/handler-availability.ts` looks up registered executors and
-inspects conventional workflow modules without executing them. Its lookup cache
-lasts one pass. It does not own Task state or retries.
+`core/tasks/handler-availability.ts` checks the supplied agent, executor and
+workflow bindings without executing them. Workflow inspection comes from the
+selected runner; its lookup cache lasts one pass. An agent handoff still needs
+its originating workflow's verification capability before it can recover.
 
-`app-task-runtime.ts` still contains transitional composition: it supplies the
-selected executor map and workflow paths, fences checks against the installed
+`app-task-runtime.ts` supplies the selected bindings, fences checks against the installed
 definition, and queues recovered IDs through the existing controller. Neither
 an old reload nor a slow check may release a newer Task attempt. Missing
 bindings remain visible without repeated execution; restoring a binding is
@@ -170,11 +170,45 @@ Task owner. These exact references require the sibling design tree, not this
 standalone Host checkout. The [core proposal's Step 3](../../../may-agent.app/docs/proposals/task-runtime-organization.md#step-3-finish-the-taskexecutor-boundary)
 describes the incremental extraction, not an additional lifecycle authority.
 
-This separates recovery availability, not the entire execution system. Managed
-agent preparation, workflow execution, and backend-specific session recovery
-remain in the mixed runtime until their own boundary is extracted. Keep the
-SDK's `TaskExecutor(attempt)` contract; no public lifecycle hooks, extra timer,
-or replacement queue are needed for this recovery pass.
+## Task execution backends
+
+Core claims work, constructs the fenced Task interface, maintains its lease and
+cancellation signal, owns deadlines and workspace lineage, validates results,
+and commits accepted state. It does not construct a model manager, load a
+workflow, inspect transcripts, or repair a managed-agent session.
+
+| Contract / implementation | Responsibility |
+| --- | --- |
+| SDK `TaskExecutor(attempt)` | One bounded custom executor call and proposed result; unchanged public contract |
+| `core/tasks/execution.ts` | Private agent, workflow and session operations needed by existing Host backends |
+| `adapters/executors/managed-agent.ts` | Agent preparation, role/prompt construction and managed execution |
+| `adapters/executors/workflow.ts` | Workflow inspection, workspace requirements, bounded execution and verifier lookup |
+| `adapters/executors/session-recovery.ts` | Session liveness, results, checkpoint context and safe process cleanup; never Task settlement |
+| `adapters/executors/agent-workspace.ts` | Existing managed-agent canonical-workspace guard and deployment evidence |
+| `composition/task-execution.ts` | Select the shipped backends; used by daemon and isolated-worker preparation |
+
+These are ordinary private operations, not an SDK lifecycle or plugin system.
+Composition may supply an executor map with no managed-agent or workflow
+runner. App declarations and accepted Tasks remain installed when an agent is
+unavailable. Work requiring it records exact unavailability; unrelated native
+executors remain usable. Restoring a binding uses the same recovery pass.
+
+At publication, the shipped runners snapshot their agent definitions. Active
+attempts keep those definitions; new attempts use the replacement. Source roots
+are the release chosen by composition, not an inferred checkout. Session
+recovery uses the configured persistence directory, never a guessed `.state`
+folder beside an App. Its optional checkpoint context is evidence for a new
+attempt, not a requirement to resume a workflow stack.
+
+Removing a session-recovery implementation cannot prove a retained session has
+stopped. Drain managed sessions before omitting it, or restore that capability
+to recover them. Core refuses replacement ownership without that proof.
+Basic reads and work without retained managed sessions remain available.
+
+`executeAttempt` remains the separate process-dispatch boundary; it is not a
+backend's execution function. Stores, claims, result admission, cancellation,
+Conditions and workspace finalization remain under the Task engine. No extra
+timer, queue, persisted lifecycle, or live installation operation was added.
 
 ## State and process boundaries
 

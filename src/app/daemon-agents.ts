@@ -17,6 +17,7 @@ import {
   prepareAgentTriggers,
 } from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
+import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type { HostCapacity } from "./host-capacity.js";
 import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
@@ -210,9 +211,14 @@ export async function prepareDaemonAgents(opts: {
       persistDir: opts.persistDir,
       agentsRoot: opts.agentsRoot,
       sharedRoot: opts.definitionSharedRoot,
-      manager: opts.manager,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
+      ...createTaskExecutionBackends({
+        manager: opts.manager,
+        bus: opts.bus,
+        persistDir: opts.persistDir,
+        registerLocalAgent,
+      }),
       ...(opts.executeTaskAttempt ? { executeAttempt: opts.executeTaskAttempt } : {}),
       ...(opts.executeTaskRecovery ? { executeRecovery: opts.executeTaskRecovery } : {}),
       ...(opts.taskAppIds ? { taskAppIds: opts.taskAppIds } : {}),
@@ -222,7 +228,6 @@ export async function prepareDaemonAgents(opts: {
         "codex-goal": codexGoalExecutor,
         ...(retainTrialExecutorAlias ? { "codex-goal-poc": codexGoalExecutor } : {}),
       },
-      registerLocalAgent,
       appRegistry: opts.appRegistry,
       ...(taskRuntimeMode === "controllers" ? { startAfter } : {}),
     };

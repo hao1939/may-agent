@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { appTaskSessionBinding } from "./app-task-runtime.js";
+import { appTaskSessionBinding } from "./session-binding.js";
 
 describe("App Task session binding", () => {
   it("accepts only an explicit typed binding", () => {
