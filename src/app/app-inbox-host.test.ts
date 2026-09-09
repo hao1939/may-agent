@@ -1,3 +1,4 @@
+import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -133,10 +134,10 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [app()],
-      attachTask: async ({ appId, attachment, idempotencyKey }) => {
+      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
         attachments.push({ appId, attachment, idempotencyKey });
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
     });
     admit(host, "one");
 
@@ -144,7 +145,7 @@ describe("App inbox host", () => {
     expect(attachments).toEqual([
       {
         appId: "evaluation",
-        idempotencyKey: "task:one:desired:probe/one",
+        idempotencyKey: "task:one",
         attachment: desiredTask("one"),
       },
     ]);
@@ -168,10 +169,10 @@ describe("App inbox host", () => {
         response: "Hello!",
         topic: { kind: "none" },
       }),
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
         return { taskId: "unexpected" };
-      },
+      }),
     });
     host.admit({
       id: "turn-hello",
@@ -367,10 +368,10 @@ describe("App inbox host", () => {
           topic: { kind: "none" },
         };
       },
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
         return { taskId: "unexpected" };
-      },
+      }),
     });
     host.admit({
       id: "turn-ask-about-task",
@@ -478,11 +479,11 @@ describe("App inbox host", () => {
           ],
         };
       },
-      attachTask: async ({ appId, attachment, request }) => {
+      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, request }) => {
         attachments.push({ appId, attachment });
         attachedRequests.push(request);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       readDependency: async ({ dependency }) => ({
         ...dependency,
         status: workerDone ? "done" : "running",
@@ -663,10 +664,10 @@ describe("App inbox host", () => {
           },
         ],
       }),
-      attachTask: async ({ appId, attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ appId, attachment }) => {
         attachments.push({ appId, attachment });
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       onRequestMessage: (_item, text) => messages.push(text),
     });
     host.admit({
@@ -716,9 +717,9 @@ describe("App inbox host", () => {
           ],
         };
       },
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       readDependency: async ({ dependency }) => ({
         ...dependency,
         status: completedTasks.has(dependency.id) ? "done" : "running",
@@ -791,10 +792,10 @@ describe("App inbox host", () => {
           dependencies: [dependency],
         };
       },
-      attachTask: async ({ appId, attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ appId, attachment }) => {
         attachments.push({ appId, attachment });
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       readDependency: async ({ dependency }) => ({ ...dependency, status: "running" }),
     });
     for (const [id, sequence, value] of [
@@ -891,10 +892,10 @@ describe("App inbox host", () => {
           ],
         };
       },
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       readDependency: async ({ dependency }) => ({ ...dependency, status: "running" }),
     });
     host.admit({
@@ -945,10 +946,10 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [app()],
-      attachTask: async ({ attachment, request }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment, request }) => {
         attachments.push({ attachment, request });
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
     });
     host.admit({
       id: "feedback",
@@ -984,10 +985,10 @@ describe("App inbox host", () => {
         ...dependency,
         status: dependency.id === "probe/attention" ? "attention" : "done",
       }),
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       onRequestCompleted: (item, result) => completed.push({ id: item.id, result }),
     });
     for (const [id, taskId] of [
@@ -1028,9 +1029,9 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [app()],
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       readDependency: async ({ dependency }) =>
         dependency.kind === "task" && done
           ? {
@@ -1144,11 +1145,11 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [mayApp],
-      attachTask: async ({ appId, attachment, idempotencyKey }) => {
+      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
         const attachedTaskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
         attachments.push({ appId, taskId: attachedTaskId, idempotencyKey });
         return { taskId: attachedTaskId };
-      },
+      }),
       readDependency: async ({ dependency }) => {
         if (!dependencyReady) return { kind: dependency.kind, id: dependency.id, status: "running" };
         const authoritativeReadback = JSON.parse(readFileSync(fixtureUrl, "utf8")) as typeof capture;
@@ -1170,7 +1171,7 @@ describe("App inbox host", () => {
       {
         appId: capture.request.appId,
         taskId,
-        idempotencyKey: capture.existingTaskAdmission.idempotencyKey,
+        idempotencyKey: `task:${requestId}`,
       },
     ]);
     expect(host.get(requestId)).toMatchObject({
@@ -1208,18 +1209,18 @@ describe("App inbox host", () => {
     });
   });
 
-  it("closes completion-before-link races without creating a second Task", async () => {
+  it("accepts the attachment operation's ready request without creating a second Task", async () => {
     let attachments = 0;
     const host = new AppInboxHost({
       db,
       apps: [app()],
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments += 1;
         return {
           taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-          isComplete: async () => true,
+          ready: true,
         };
-      },
+      }),
       readDependency: async ({ dependency }) => ({
         kind: dependency.kind,
         id: dependency.id,
@@ -1247,9 +1248,9 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [constantTaskApp("evaluation"), constantTaskApp("alpha-project")],
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       readDependency: async ({ appId, dependency }) => {
         reads.push(`${appId}/${dependency.id}`);
         return {
@@ -1284,9 +1285,9 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [app()],
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       readDependency: async ({ dependency }) => {
         reads += 1;
         return { ...dependency, status: "running" };
@@ -1323,9 +1324,9 @@ describe("App inbox host", () => {
     const legacyHost = new AppInboxHost({
       db,
       apps: [legacy],
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
     });
     admit(legacyHost, "addressed-review", "may-agent");
@@ -1339,10 +1340,10 @@ describe("App inbox host", () => {
     const repairedHost = new AppInboxHost({
       db,
       apps: [app("may-agent")],
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      },
+      }),
       readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
     });
 
@@ -1371,10 +1372,10 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       apps: [app("may")],
-      attachTask: async (input) => {
+      attachTask: fakeTaskAttacher(db, async (input) => {
         request = input.request;
         return { taskId: input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id };
-      },
+      }),
     });
     host.admit({
       id: "turn-1",
@@ -1422,10 +1423,10 @@ describe("App inbox host", () => {
         status: "waiting",
         summary: `${appId} is waiting for verified evidence`,
       }),
-      attachTask: async (input) => {
+      attachTask: fakeTaskAttacher(db, async (input) => {
         request = input.request;
         return { taskId: input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id };
-      },
+      }),
     });
     host.admit({
       id: "turn-focused",
@@ -1748,9 +1749,9 @@ describe("App inbox host", () => {
           },
         }),
       ],
-      attachTask: async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      }),
+      })),
       retryAfterMs: 10_000,
     });
     admit(host, "bad");

@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../db.js";
+import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
 
 /** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
 export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
@@ -134,6 +135,7 @@ CREATE TABLE IF NOT EXISTS app_task_admissions (
 
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
+  db.exec(APP_INBOX_SCHEMA);
   const needsConditionRouteBackfill = !db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
     .get();

@@ -5,8 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { Type, defineApp, type AppDefinition, type AppRequest, type TaskExecutor } from "@may-agent/sdk";
-import { openDatabase } from "../lib/db.js";
-import { applyDbSchema } from "../lib/db/schema.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./core/events/bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
@@ -1067,13 +1065,16 @@ describe("canonical App task runtime", () => {
       appRegistrySnapshot: registry.snapshot(),
     });
 
-    let nextEventId = 1;
+    const db = getDb(persistDir);
     const dependencyEvents: Array<Record<string, unknown>> = [];
     const dependencyUpdateEvents: Array<Record<string, unknown>> = [];
     const dependencyRequests: Array<Record<string, unknown>> = [];
     const conditionPreviews: string[][] = [];
     bus.setPersistenceSubscriber((event) => {
-      Object.defineProperty(event, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
+      const row = db
+        .prepare("INSERT INTO events(event_type, data, timestamp) VALUES (?, ?, ?)")
+        .run(event.type, JSON.stringify(event.data), Date.now());
+      Object.defineProperty(event, EVENT_ROW_ID, { value: Number(row.lastInsertRowid), configurable: true });
     });
     bus.subscribe((event) => {
       if (event.type === "app.input.requested") {
@@ -1086,8 +1087,6 @@ describe("canonical App task runtime", () => {
         dependencyUpdateEvents.push(event as unknown as Record<string, unknown>);
       }
     });
-    const db = openDatabase(":memory:");
-    applyDbSchema(db);
     let attachedDependencyTaskId: string | undefined;
     let attachedDependencyTaskCount = 0;
     const inbox = await startAppInboxRuntime({
@@ -1409,7 +1408,7 @@ describe("canonical App task runtime", () => {
       });
     } finally {
       inbox.close();
-      db.close();
+      // The runtime and inbox share the Host connection; fixture cleanup owns it.
     }
   });
 

@@ -1,3 +1,4 @@
+import { fakeTaskAttacher } from "../fixtures/task-attachment.js";
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -90,11 +91,11 @@ async function runControl(control: GoldenControl): Promise<{
       apps: definitions,
       workerId: `golden:${control.id}`,
       retryAfterMs: 0,
-      attachTask: async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         if (control.id === "failed-wake") throw new Error("golden failed wake");
         const taskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
         return { taskId };
-      },
+      }),
       readDependency: async ({ dependency }) => dependencies.get(dependency.id) ?? null,
     });
     const persisted = eventRow(db, control);
