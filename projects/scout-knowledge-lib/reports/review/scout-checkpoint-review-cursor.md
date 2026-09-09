@@ -5239,6 +5239,27 @@ errors, durable denial auditing, upstream adoption, deployment, and behavior
 effects remain unproved. RV-004/RV-034 stay high/open; RV-036/RV-038 stay
 medium/open.
 
+Exact producer validation at integration-ledger parent `b2cb07436f` passes the
+full 321-test / 1,632-assertion gate, syntax, TypeScript, formatting, truthful
+Cycle 430 projection, 132 scoped links, navigation 11/14 + 8/8 + 14/14,
+historical 1,560-document / 1,825-link and all-project 1,561 / 1,827 broad
+audits, health 26 facts / 16 wakes with `truncated:true`, and
+`git diff --check`. This validation record changes only this cursor; the
+executable app subtree remains exact
+`1ac403f37366dafb856996ad29490b486035af99`, so the full gate applies to its
+resulting tip.
+
+Fresh read-only `/app` preservation records human-authored HEAD
+`a8657eb6695fe38297a0930ebd130643c902f765`, a clean index, default 122 /
+`2ceb846797ddfa364e9a216a62246ec5c7628e95b1025bd62192ce9da53d349d`,
+expanded 5,908 /
+`ae7e8dd2839f62eb12336775703fba5148533dd4e9616aa5621d95b5fd12c7eb`,
+and exact Scout-only 23 /
+`b9d6fb9c05a1b4c68e6348237512084d212d17c4fd7821b9838f374eca7a12c5`
+status fingerprints. The increased aggregate counts supersede the review-time
+79 / 5,863 observation only as a later unrelated snapshot; all five protected
+path hashes remain exact. No `/app` byte or ref was changed by this check.
+
 Rollback of the reviewer correction is one ordinary revert of `d6429bc20d`
 after reverting this dependent ledger. Removing all Cycle 432 documentation
 then reverts `0cac37d14f`; removing the external experiment discards its
