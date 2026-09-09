@@ -1,10 +1,10 @@
 <ai_context>
-summary: "Independent review accepts exact Cycle 434 tip 882c162c76 for its narrow classification of local SQLite admission claims. Prior reviewer result 62d38199ff is the literal source, matched reviewer-owned controls reproduce three Cycle 433 state failures and three Cycle 434 passes, full current-tip validation and protected-checkout checks pass, and the external candidate remains uncommitted evidence only. Existing-database migration, crash recovery, end-to-end idempotency, deployment, RV-004, and RV-034 remain open; no local-main movement, compaction, or cleanup is approved."
+summary: "Independent review accepts exact Cycle 434 integration tip 654bc33b59. Reviewer result 3e632f2a25 is literally integrated from producer 882c162c76 at stable patch ID 97c1c1fa, the one-file ledger is truthful, the Scout executable subtree is unchanged from the independently validated result, and protected checkout evidence remains exact. RV-004/RV-034 remain high/open; no migration, recovery, landing, compaction, or cleanup is approved."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053", "RV-054"]
 last_updated: "2026-09-09"
 source_basis: "Independent Cycle 434 review of exact direct-child range 62d38199ffcd2047e60300a628f48ac84bc43e9e..882c162c7650d5a5967f2b9a98d1f35f7ae2f66d. Prior Cycle 433 reviewer result 62d38199ff is literally integrated as the source. Reviewer-owned fixtures at retained Mnemosyne base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduce Cycle 433 digest f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445 and Cycle 434 digest f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af. Under the same Cycle 434 tests, the Cycle 433 implementation fails all three new state assertions and the Cycle 434 candidate passes all three. Candidate validation passes 24 focused, 94 runnable runtime with one declared artifact deselection, and 7 repository tests. Current canonical validation passes 321 tests / 1,632 assertions, Cycle 433 projection, 136 scoped links, navigation 11/14 + 8/8 + 14/14, historical 1,562 documents / 1,829 broad links, complete project 1,563 / 1,831, health 26/16 with truncation, and git diff --check. Read-only /app remains exact a8657eb669 with clean index, exact 127 / 5,914 / 23 status counts and fingerprints, and all five protected hashes. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, local-main landing, compaction, cleanup, deployment, schema migration, crash recovery, or user-outcome improvement is approved."
 producer_integration_basis: "Literal fast-forward of exact direct-child reviewer result 3e632f2a255ba47864c9d6ae180601bf4e38ff32 onto reviewed Cycle 434 producer 882c162c7650d5a5967f2b9a98d1f35f7ae2f66d; stable patch ID 97c1c1fad98ffa36e247b0604f92fc9dd8d21a58; no patch-equivalent, rejected, or superseded disposition substituted."
-independent_integration_review_basis: "Independent review of exact ordered range 0cac37d14ff168163223e219694f9856bddbe048..e7843527541eaf6f4db5499ffae5209f00a3e321. Literal ancestry and stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985 reproduce; direct retained-candidate comparison reproduces 15 implementation plus 115 test lines and digests 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0 to b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817. Reviewer-owned current-tip validation passes 321 tests / 1,632 assertions, 132 scoped links, both broad-link scopes at 1,560/1,825 and 1,561/1,827, navigation, health 26/16 truncated, and diff cleanliness. Read-only /app remains at a8657eb669 with clean index, exact 23-path Scout fingerprint and five protected hashes; unrelated aggregate status growth is not attributed to Cycle 432."
+independent_integration_review_basis: "Independent review of exact direct-child ledger range 3e632f2a255ba47864c9d6ae180601bf4e38ff32..654bc33b5902bef79008fab6b97109a5d87abdfe. Reviewer result 3e632f2a25 is the literal parent of the ledger and remains stable patch ID 97c1c1fad98ffa36e247b0604f92fc9dd8d21a58 against accepted producer 882c162c7650d5a5967f2b9a98d1f35f7ae2f66d. The successor changes only the durable cursor, truthfully records literal integration and rollback ordering, and preserves all material limits. Its Scout executable subtree is exact 1ac403f37366dafb856996ad29490b486035af99, byte-identical to the independently validated reviewer result. Current-tip scoped and broad links, projection, navigation, health, diff cleanliness, canonical cleanliness, and read-only /app preservation reproduce; the producer's full current-tip gate passes 321 tests / 1,632 assertions."
 cycle_433_review_basis: "Accept exact canonical tip ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7 only for the documented local SQLite exclusion invariant. The claim is not crash recovery, end-to-end idempotency, compensation, cross-host or cross-database safety, upstream adoption, deployment, or user-outcome evidence. The uncommitted external experiment rolls back by discarding its exact four-file diff; the canonical documentation rolls back by reverting ecbfbc931f."
 cycle_434_review_basis: "Accept exact canonical tip 882c162c7650d5a5967f2b9a98d1f35f7ae2f66d only for the documented local claim-state classification invariant. The report's 47-line implementation increment is the reproduced net change: 48 insertions and one deletion, plus 81 test insertions. The claim is not an existing-database migration, kernel outcome proof, crash recovery, end-to-end idempotency, retry safety, upstream adoption, deployment, or user-outcome evidence. The external experiment rolls back by discarding exact digest f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af; canonical documentation rolls back by reverting 882c162c76."
 </ai_context>
@@ -15,15 +15,15 @@ cycle_434_review_basis: "Accept exact canonical tip 882c162c7650d5a5967f2b9a98d1
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `882c162c7650d5a5967f2b9a98d1f35f7ae2f66d` (accepted Cycle 434 material checkpoint)
+  `654bc33b5902bef79008fab6b97109a5d87abdfe` (accepted Cycle 434 integration ledger)
 - Last material standing commit reviewed:
   `882c162c7650d5a5967f2b9a98d1f35f7ae2f66d` (Cycle 434 in-doubt claim-state evidence)
 - Last producer research material reviewed:
   `882c162c7650d5a5967f2b9a98d1f35f7ae2f66d` (Cycle 434 local SQLite claim-state evidence)
 - Last integrated reviewer result:
-  `62d38199ffcd2047e60300a628f48ac84bc43e9e` (literal Cycle 433 reviewer acceptance)
-- Current review date: `2026-09-09T21:28:06+08:00`
-- Producer integration date: `2026-09-09T20:53:10+08:00`
+  `3e632f2a255ba47864c9d6ae180601bf4e38ff32` (literal Cycle 434 reviewer acceptance)
+- Current review date: `2026-09-09T21:40:50+08:00`
+- Producer integration date: `2026-09-09T21:37:04+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -5369,13 +5369,45 @@ integration moves no local-main ref or protected byte and authorizes no schema
 migration, crash recovery, end-to-end idempotency, upstream adoption,
 deployment, compaction, cleanup, branch deletion, or worktree deletion.
 
+## Independent Cycle 434 integration-ledger review — accept
+
+Independent review covers exact direct-child range
+`3e632f2a255ba47864c9d6ae180601bf4e38ff32..654bc33b5902bef79008fab6b97109a5d87abdfe`.
+The successor changes only this cursor by 21 insertions and one deletion. It
+truthfully records literal integration of `3e632f2a25` from exact producer
+`882c162c76`, stable patch ID
+`97c1c1fad98ffa36e247b0604f92fc9dd8d21a58`, retained external digest
+`f34072d9…c2af`, and dependency-ordered rollback. It neither substitutes patch
+equivalence nor promotes the experiment into upstream, deployed, recovery,
+idempotency, or outcome evidence.
+
+The exact ledger tip retains Scout executable subtree
+`1ac403f37366dafb856996ad29490b486035af99`, byte-identical to independently
+validated reviewer result `3e632f2a25`. Producer current-tip validation passes
+321 tests / 1,632 assertions. Independent current-tip checks pass Cycle 433
+projection, 136 scoped links, navigation 11/14 + 8/8 + 14/14, historical
+1,562-document / 1,829-link and complete 1,563 / 1,831 broad audits, health 26
+facts / 16 wakes with `truncated:true`, and `git diff --check`. Read-only `/app`
+remains exact `a8657eb669` with a clean index, exact 127 / 5,914 / 23 status
+fingerprints, and all five protected hashes.
+
+Disposition: **accept exact canonical integration tip
+`654bc33b5902bef79008fab6b97109a5d87abdfe`.** RV-004/RV-034 remain
+high/open and RV-036/RV-038 medium/open. No duplicate producer ledger is needed
+after this cursor is integrated. Roll back this independent disposition with
+one ordinary revert while retaining `654bc33b59`; revert the producer ledger,
+reviewer result, and material checkpoint separately in reverse dependency order
+only if intentionally removing them. No local-main movement, compaction,
+cleanup, branch/worktree deletion, upstream write, or deployment is approved.
+
 ## Next trigger
 
-Cycle 434 is independently accepted. The next exact trigger is producer
-reconciliation of this reviewer result, one later coherent material producer
-checkpoint beyond `882c162c7650d5a5967f2b9a98d1f35f7ae2f66d`, evidence changing
-RV-004, RV-034, RV-036, RV-038, or RV-052, or the first eligible periodic boundary
-`2026-09-10T21:28:06+08:00`. Do not begin another local-main landing,
+Cycle 434 integration is independently accepted. After direct integration of
+this cursor without another wrapper ledger, the next exact trigger is one later
+coherent material producer checkpoint beyond
+`654bc33b5902bef79008fab6b97109a5d87abdfe`, evidence changing RV-004,
+RV-034, RV-036, RV-038, or RV-052, or the first eligible periodic boundary
+`2026-09-10T21:40:50+08:00`. Do not begin another local-main landing,
 compaction, or cleanup without a fresh exact-boundary gate.
 
 ## Supervision
