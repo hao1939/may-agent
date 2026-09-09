@@ -21,14 +21,8 @@ import {
 import { AppRegistry } from "./app-registry.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { HostCapacity } from "./host-capacity.js";
-import {
-  claimNextAppInboxItem,
-  createConversationTopic,
-  createAppInboxItem,
-  readAppConversationResource,
-  readConversationTopic,
-  waitAppInboxClaim,
-} from "./app-inbox-store.js";
+import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
+import { createConversationTopic, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(projectsRoot);

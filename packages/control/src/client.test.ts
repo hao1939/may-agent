@@ -14,6 +14,19 @@ import {
   SocketCommandError,
   type SocketEndpoint,
 } from "./client.js";
+import type { EventView } from "./events.js";
+
+const recordedEventView: EventView = {
+  event: {
+    id: 73,
+    type: "project.owner.requested",
+    target: { appId: "sample" },
+    data: { reason: "review" },
+    timestamp: 100,
+  },
+  delivery: { state: "recorded" },
+  links: [],
+};
 
 function okEndpoint(): SocketEndpoint {
   return () => {
@@ -106,7 +119,7 @@ function simpleEventEndpoint(): SocketEndpoint {
             : {
                 type: "ok",
                 command: "event.get",
-                event: { event: { id: 73, type: "project.owner.requested" } },
+                event: recordedEventView,
               };
         queueMicrotask(() => stream.emit("data", Buffer.from(`${JSON.stringify(response)}\n`)));
         callback();
@@ -164,9 +177,9 @@ describe("simple event client", () => {
       eventType: "project.owner.requested",
       delivery: "recorded",
     });
-    await expect(getEvent(simpleEventEndpoint(), 73)).resolves.toEqual({
-      event: { id: 73, type: "project.owner.requested" },
-    });
+    const view = await getEvent(simpleEventEndpoint(), 73);
+    expect(view).toEqual(recordedEventView);
+    expect(view.event.data.reason).toBe("review");
   });
 });
 

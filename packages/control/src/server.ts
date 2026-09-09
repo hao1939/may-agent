@@ -2,7 +2,8 @@ import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
-import { normalizeSocketFrame, type EventInput, type EventReceipt } from "./protocol.js";
+import { normalizeSocketFrame } from "./protocol.js";
+import type { EventInput, EventReceipt, EventView } from "./events.js";
 import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
@@ -22,7 +23,7 @@ export interface AttachControlSocketOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: (event: EventInput) => EventReceipt;
-  getEvent?: (eventId: number) => unknown;
+  getEvent?: (eventId: number) => EventView | undefined;
   describeProjectActions?: (projectId: string) => unknown[];
   admitAppInput?: (input: {
     appId: string;

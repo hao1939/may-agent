@@ -2,7 +2,8 @@ import { connect, Socket, type NetConnectOpts } from "node:net";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
-import { isSocketCommandType, type EventInput, type EventReceipt } from "./protocol.js";
+import { isSocketCommandType } from "./protocol.js";
+import type { EventInput, EventReceipt, EventView } from "./events.js";
 import { buildCanonicalEventEnvelope } from "./event-envelope.js";
 
 export interface SocketResponse {
@@ -192,13 +193,13 @@ export async function publishEvent(
   };
 }
 
-export async function getEvent<T = unknown>(
+export async function getEvent(
   endpoint: SocketEndpoint,
   eventId: number,
   opts?: { timeoutMs?: number },
-): Promise<T> {
+): Promise<EventView> {
   const response = await sendSocketCommand(endpoint, { type: "event.get", eventId }, opts);
-  return response.event as T;
+  return response.event as EventView;
 }
 
 export interface SocketEvent {

@@ -46,6 +46,7 @@
     "@earendil-works/pi-agent-core": "0.81.1",
     "@earendil-works/pi-ai": "0.81.1",
     "@may-agent/sdk": "workspace:*",
+    "@may-agent/control": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "diff": "^9.0.0",
     "typebox": "1.1.38"
