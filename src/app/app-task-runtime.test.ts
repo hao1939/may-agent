@@ -12,11 +12,11 @@ import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
   appTaskAgentProtocol,
-  appTaskDependencyCatalog,
   applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
   beginCanonicalAgentResidueGuard,
@@ -33,9 +33,6 @@ import {
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
-  projectAppTaskChildPromptContext,
-  projectAppTaskWaitPromptContext,
-  projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
@@ -378,163 +375,6 @@ describe("App Task agent prompt context", () => {
     );
   });
 
-  it("shows only installed accountable Apps and their accepted input contracts", () => {
-    const f = fixture();
-    const bus = eventBus();
-    const target = defineApp({
-      id: "evaluation",
-      version: 1,
-      agent: "evaluator",
-      description: "Owns evidence-based evaluation outcomes.",
-      inputSchema: Type.Union([
-        Type.Object({ kind: Type.Literal("owner-review"), data: Type.Record(Type.String(), Type.Unknown()) }),
-        Type.Object({ kind: Type.Literal("deep-eval"), data: Type.Record(Type.String(), Type.Unknown()) }),
-      ]),
-      task: () => ({
-        kind: "desired" as const,
-        intent: {
-          id: "review",
-          parentId: "evaluation",
-          outcome: "Review evidence",
-          acceptance: ["Evidence is reviewed"],
-          mode: "achieve" as const,
-        },
-      }),
-      tasks: {},
-    });
-    const source = { ...definition(), id: "may" };
-    const catalog = appTaskDependencyCatalog(
-      {
-        ...options(f, bus),
-        appRegistrySnapshot: {
-          id: "catalog:1",
-          generation: 1,
-          entries: [
-            { appDir: f.appDir, definition: source },
-            { appDir: join(f.projectsRoot, "evaluation.app"), definition: target },
-          ],
-        },
-      },
-      "may",
-    );
-
-    expect(catalog).toEqual([
-      {
-        appId: "evaluation",
-        description: "Owns evidence-based evaluation outcomes.",
-        inputs: [
-          { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
-          { kind: "owner-review", requiredData: [], dataTypes: {}, fixedData: {} },
-        ],
-      },
-    ]);
-  });
-
-  it("summarizes required paths, field shapes, and fixed data without copying the full schema", () => {
-    const f = fixture();
-    const bus = eventBus();
-    const target = defineApp({
-      id: "operations",
-      version: 1,
-      agent: "operator",
-      inputSchema: Type.Union([
-        Type.Object({
-          kind: Type.Literal("general-operation"),
-          data: Type.Object({
-            outcome: Type.String(),
-            evidence: Type.Array(Type.String()),
-            constraints: Type.Optional(Type.Array(Type.String())),
-          }),
-        }),
-        Type.Object({
-          kind: Type.Literal("specialized-operation"),
-          data: Type.Object({
-            outcome: Type.String(),
-            context: Type.Object({ callerApp: Type.Literal("alpha-project"), callerTask: Type.String() }),
-          }),
-        }),
-      ]),
-      task: () => ({
-        kind: "desired" as const,
-        intent: {
-          id: "operation",
-          parentId: "operations",
-          outcome: "Perform the operation",
-          acceptance: ["Done"],
-          mode: "achieve" as const,
-        },
-      }),
-      tasks: {},
-    });
-
-    expect(
-      appTaskDependencyCatalog(
-        {
-          ...options(f, bus),
-          appRegistrySnapshot: {
-            id: "catalog:shapes",
-            generation: 1,
-            entries: [{ appDir: join(f.projectsRoot, "operations.app"), definition: target }],
-          },
-        },
-        "may",
-      )[0]?.inputs,
-    ).toEqual([
-      {
-        kind: "general-operation",
-        requiredData: ["evidence", "outcome"],
-        dataTypes: { constraints: "string[]", evidence: "string[]", outcome: "string" },
-        fixedData: {},
-      },
-      {
-        kind: "specialized-operation",
-        requiredData: ["context", "context.callerApp", "context.callerTask", "outcome"],
-        dataTypes: {
-          context: "object",
-          "context.callerApp": "string",
-          "context.callerTask": "string",
-          outcome: "string",
-        },
-        fixedData: { "context.callerApp": "alpha-project" },
-      },
-    ]);
-  });
-
-  it("does not advertise an input resolver without an active Task policy", () => {
-    const f = fixture();
-    const bus = eventBus();
-    const target = defineApp({
-      id: "incomplete",
-      version: 1,
-      agent: "incomplete-owner",
-      inputSchema: Type.Object({ kind: Type.Literal("review"), data: Type.Record(Type.String(), Type.Unknown()) }),
-      task: () => ({
-        kind: "desired" as const,
-        intent: {
-          id: "review",
-          parentId: "incomplete",
-          outcome: "Review evidence",
-          acceptance: ["Reviewed"],
-          mode: "achieve" as const,
-        },
-      }),
-    });
-
-    expect(
-      appTaskDependencyCatalog(
-        {
-          ...options(f, bus),
-          appRegistrySnapshot: {
-            id: "catalog:incomplete",
-            generation: 1,
-            entries: [{ appDir: join(f.projectsRoot, "incomplete.app"), definition: target }],
-          },
-        },
-        "may",
-      ),
-    ).toEqual([]);
-  });
-
   it("lets an App reject Conditions it cannot meaningfully observe", () => {
     const normalized = normalizeTaskHandlerResult(
       {
@@ -564,73 +404,8 @@ describe("App Task agent prompt context", () => {
     });
   });
 
-  it("keeps parent prompts bounded while preserving child identity and state", () => {
-    const hiddenDetail = "exact-child-detail-" + "x".repeat(8_000);
-    const context: Parameters<typeof projectAppTaskChildPromptContext>[0] = {
-      live: Array.from({ length: 16 }, (_, index) => ({
-        taskId: `live-${index}`,
-        parentId: "parent",
-        generation: 1,
-        phase: "waiting",
-        outcome: `Resolve child ${index} ${"o".repeat(800)}`,
-        agent: "sample-owner",
-        input: { hiddenDetail },
-        conditions: [
-          {
-            id: `condition-${index}`,
-            type: "external.state",
-            subject: `child:${index}`,
-            expected: { hiddenDetail },
-          },
-        ],
-        readiness: {
-          state: "condition-blocked",
-          reason: `Waiting for child ${index} ${"r".repeat(800)}`,
-          relatedTaskIds: [`condition-${index}`],
-        },
-        hasLiveChildren: false,
-        summary: `Still waiting ${"s".repeat(800)}`,
-        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
-      })),
-      completed: Array.from({ length: 8 }, (_, index) => ({
-        taskId: `done-${index}`,
-        parentId: "parent",
-        generation: 1,
-        outcome: `Complete child ${index} ${"o".repeat(800)}`,
-        agent: "sample-owner",
-        input: { hiddenDetail },
-        conditions: [],
-        hasLiveChildren: false,
-        summary: `Completed ${"s".repeat(800)}`,
-        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
-        completedAt: "2026-08-20T00:00:00.000Z",
-      })),
-    };
-
-    const projected = projectAppTaskChildPromptContext(context);
-    const encoded = JSON.stringify(projected);
-
-    expect(encoded.length).toBeLessThan(40_000);
-    expect(encoded).not.toContain("exact-child-detail");
-    expect(encoded).not.toContain("external.state");
-    expect(projected.live[0]).toMatchObject({
-      taskId: "live-0",
-      generation: 1,
-      phase: "waiting",
-      agent: "sample-owner",
-    });
-    expect(projected.live[0]).not.toHaveProperty("owner");
-    expect(projected.completed[0]).toMatchObject({
-      taskId: "done-0",
-      generation: 1,
-      agent: "sample-owner",
-    });
-    expect(projected.completed[0]).not.toHaveProperty("owner");
-  });
-
   it("shows the executor the exact accepted wait before it judges feedback", () => {
     const f = fixture();
-    const bus = eventBus();
     const persistDir = join(f.root, "state");
     const config = loadedTaskConfig(f, persistDir);
     const taskIntent = {
@@ -684,21 +459,7 @@ describe("App Task agent prompt context", () => {
     ).toMatchObject({ status: "applied" });
     const resourceStore = config.resourceStore;
 
-    expect(
-      projectAppTaskWaitPromptContext(
-        { ...options(f, bus), persistDir },
-        {
-          id: "sample",
-          appDir: f.appDir,
-          projectDir: f.appDir,
-          agent: "sample-owner",
-          app: definition(),
-          reconciliationPaused: false,
-          resourceStore,
-        },
-        taskIntent.id,
-      ),
-    ).toMatchObject({
+    expect(readAppTaskWaitPromptContext(resourceStore, getDb(persistDir), taskIntent.id)).toMatchObject({
       open: [
         {
           conditionId: "app-request:existing-proof",
@@ -1660,7 +1421,7 @@ describe("canonical App task runtime", () => {
       observedGeneration: 1,
       conditionIds: [`app-request:${requestId}`],
     });
-    expect(projectAppTaskWaitPromptContext({ ...options(f, bus), persistDir }, descriptor, intent.id)).toMatchObject({
+    expect(readAppTaskWaitPromptContext(resourceStore, getDb(persistDir), intent.id)).toMatchObject({
       open: [
         {
           conditionId: `app-request:${requestId}`,

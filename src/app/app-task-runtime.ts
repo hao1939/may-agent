@@ -76,6 +76,12 @@ import {
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "./app-inbox-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
+import { appDependencyCatalog } from "./app-dependency-catalog.js";
+import {
+  projectAppTaskChildPromptContext,
+  projectAppTaskReconciliationEvents,
+  readAppTaskWaitPromptContext,
+} from "./app-task-context.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
@@ -1058,32 +1064,6 @@ async function runTaskCapability(
   });
 }
 
-/** Project the exact persisted attempt batch onto the public workflow contract. */
-export function projectAppTaskReconciliationEvents(claim: AppTaskClaim): {
-  items: Array<{
-    eventId?: number;
-    observedAt: string;
-    event: ReturnType<typeof canonicalAppEvent>;
-  }>;
-  throughEventId?: number;
-  truncated: boolean;
-} {
-  const items = claim.events.map((entry) => {
-    const eventId = Number(entry.event.eventId);
-    return {
-      ...(Number.isSafeInteger(eventId) && eventId > 0 ? { eventId } : {}),
-      observedAt: entry.observedAt,
-      event: canonicalAppEvent(entry.event as AgentEvent),
-    };
-  });
-  const eventIds = items.flatMap((item) => (item.eventId === undefined ? [] : [item.eventId]));
-  return {
-    items,
-    ...(eventIds.length === items.length && eventIds.length > 0 ? { throughEventId: Math.max(...eventIds) } : {}),
-    truncated: claim.eventsTruncated,
-  };
-}
-
 type RuntimeTaskAttempt = {
   attempt: TaskAttempt;
   events: AppTaskEvents;
@@ -1165,7 +1145,9 @@ function runtimeTaskAttempt(input: {
           status: "done" as const,
         })),
       },
-      waits: structuredClone(projectAppTaskWaitPromptContext(opts, descriptor, claim.taskId)),
+      waits: structuredClone(
+        readAppTaskWaitPromptContext(descriptor.resourceStore, opts.persistDir ? getDb(opts.persistDir) : null, claim.taskId),
+      ),
       events: projectAppTaskReconciliationEvents(claim),
       resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
       async publish(localKey, event) {
@@ -1440,64 +1422,6 @@ function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string)
     }
     return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
   });
-}
-
-/** Current accepted waits supplied to every executor before it judges feedback. */
-export function projectAppTaskWaitPromptContext(
-  opts: AppTaskRuntimeOptions,
-  descriptor: AppTaskRuntimeDescriptor,
-  taskId: string,
-): {
-  open: Array<{
-    conditionId: string;
-    type: string;
-    subject: string;
-    state: string;
-    dependency?: {
-      requestId: string;
-      appId: string;
-      status: string;
-      targetTaskId?: string;
-      resolvedTaskId?: string;
-    };
-  }>;
-  note: string;
-} {
-  const tree = descriptor.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const resource = tree.resources?.[taskId];
-  const db = opts.persistDir ? getDb(opts.persistDir) : null;
-  const open = (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
-    const condition = tree.conditions?.[conditionId];
-    if (!condition || condition.status.state === "true") return [];
-    const requestId =
-      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
-        ? condition.spec.subject.slice(3)
-        : "";
-    const item = requestId && db ? getAppInboxItem(db, requestId) : null;
-    return [
-      {
-        conditionId,
-        type: condition.spec.type,
-        subject: condition.spec.subject,
-        state: condition.status.state,
-        ...(item
-          ? {
-              dependency: {
-                requestId,
-                appId: item.appId,
-                status: item.status,
-                ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
-                ...(item.waitingOn?.kind === "task" ? { resolvedTaskId: item.waitingOn.id } : {}),
-              },
-            }
-          : {}),
-      },
-    ];
-  });
-  return {
-    open,
-    note: "These are accepted waits on this Task and remain part of its current state. Reconcile new events against the Task goal and these waits. Preserve a still-valid wait by requestId; create or replace work only when the goal requires it, never merely because the wait was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.",
-  };
 }
 
 export function mergeTaskConditions(
@@ -2085,177 +2009,6 @@ function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnap
   return opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
 }
 
-function schemaStringLiterals(value: unknown): string[] {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const node = value as Record<string, unknown>;
-  const values = new Set<string>();
-  if (typeof node.const === "string" && node.const.trim()) values.add(node.const.trim());
-  if (Array.isArray(node.enum)) {
-    for (const entry of node.enum) {
-      if (typeof entry === "string" && entry.trim()) values.add(entry.trim());
-    }
-  }
-  for (const key of ["anyOf", "oneOf", "allOf"] as const) {
-    if (!Array.isArray(node[key])) continue;
-    for (const entry of node[key]) {
-      for (const literal of schemaStringLiterals(entry)) values.add(literal);
-    }
-  }
-  return [...values];
-}
-
-type AppInputContract = {
-  kind: string;
-  requiredData: string[];
-  dataTypes: Record<string, string>;
-  fixedData: Record<string, string | number | boolean | null>;
-};
-
-function schemaRequiredPaths(value: unknown, prefix = "", depth = 0): string[] {
-  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return [];
-  const node = value as Record<string, unknown>;
-  const combined = ["allOf"].flatMap((key) => {
-    const entries = node[key];
-    return Array.isArray(entries) ? entries.flatMap((entry) => schemaRequiredPaths(entry, prefix, depth)) : [];
-  });
-  const properties =
-    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
-      ? (node.properties as Record<string, unknown>)
-      : {};
-  const required = new Set(
-    Array.isArray(node.required) ? node.required.filter((key): key is string => typeof key === "string") : [],
-  );
-  for (const key of required) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    combined.push(path, ...schemaRequiredPaths(properties[key], path, depth + 1));
-  }
-  return [...new Set(combined)].sort().slice(0, 16);
-}
-
-function schemaFixedValues(value: unknown, prefix = "", depth = 0): Record<string, string | number | boolean | null> {
-  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return {};
-  const node = value as Record<string, unknown>;
-  const fixed: Record<string, string | number | boolean | null> = {};
-  if (
-    prefix &&
-    (typeof node.const === "string" ||
-      typeof node.const === "number" ||
-      typeof node.const === "boolean" ||
-      node.const === null)
-  ) {
-    fixed[prefix] = node.const as string | number | boolean | null;
-  }
-  for (const key of ["allOf"] as const) {
-    if (!Array.isArray(node[key])) continue;
-    for (const entry of node[key]) Object.assign(fixed, schemaFixedValues(entry, prefix, depth));
-  }
-  const properties =
-    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
-      ? (node.properties as Record<string, unknown>)
-      : {};
-  for (const [key, property] of Object.entries(properties)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    Object.assign(fixed, schemaFixedValues(property, path, depth + 1));
-  }
-  return Object.fromEntries(
-    Object.entries(fixed)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .slice(0, 12),
-  );
-}
-
-function schemaValueType(value: unknown, depth = 0): string {
-  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return "unknown";
-  const node = value as Record<string, unknown>;
-  if (node.type === "array") {
-    const itemType = schemaValueType(node.items, depth + 1);
-    return itemType.includes("|") ? `(${itemType})[]` : `${itemType}[]`;
-  }
-  if (typeof node.type === "string") return node.type;
-  if (Array.isArray(node.type)) {
-    const types = node.type.filter((entry): entry is string => typeof entry === "string");
-    if (types.length) return [...new Set(types)].sort().join("|");
-  }
-  const variants = ["anyOf", "oneOf"].flatMap((key) => {
-    const entries = node[key];
-    return Array.isArray(entries) ? entries.map((entry) => schemaValueType(entry, depth + 1)) : [];
-  });
-  const concrete = [...new Set(variants.filter((entry) => entry !== "unknown"))].sort();
-  if (concrete.length) return concrete.join("|");
-  if (node.properties || node.additionalProperties || node.allOf) return "object";
-  if (node.const === null) return "null";
-  if (["string", "number", "boolean"].includes(typeof node.const)) return typeof node.const;
-  return "unknown";
-}
-
-function schemaDataTypes(value: unknown, prefix = "", depth = 0): Record<string, string> {
-  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 3) return {};
-  const node = value as Record<string, unknown>;
-  const types: Record<string, string> = {};
-  if (Array.isArray(node.allOf)) {
-    for (const entry of node.allOf) Object.assign(types, schemaDataTypes(entry, prefix, depth));
-  }
-  const properties =
-    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
-      ? (node.properties as Record<string, unknown>)
-      : {};
-  for (const [key, property] of Object.entries(properties)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    types[path] = schemaValueType(property, depth + 1);
-    Object.assign(types, schemaDataTypes(property, path, depth + 1));
-  }
-  return Object.fromEntries(
-    Object.entries(types)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .slice(0, 24),
-  );
-}
-
-function appInputContracts(schema: unknown): AppInputContract[] {
-  if (!schema || typeof schema !== "object" || Array.isArray(schema)) return [];
-  const node = schema as Record<string, unknown>;
-  const properties =
-    node.properties && typeof node.properties === "object" && !Array.isArray(node.properties)
-      ? (node.properties as Record<string, unknown>)
-      : {};
-  const kinds = schemaStringLiterals(properties.kind);
-  const own = kinds.map((kind) => ({
-    kind,
-    requiredData: schemaRequiredPaths(properties.data),
-    dataTypes: schemaDataTypes(properties.data),
-    fixedData: schemaFixedValues(properties.data),
-  }));
-  const nested = ["anyOf", "oneOf"].flatMap((key) => {
-    const entries = node[key];
-    return Array.isArray(entries) ? entries.flatMap(appInputContracts) : [];
-  });
-  const byKind = new Map<string, AppInputContract>();
-  for (const contract of [...own, ...nested]) byKind.set(contract.kind, contract);
-  return [...byKind.values()].sort((left, right) => left.kind.localeCompare(right.kind));
-}
-
-/** Compact live ownership surface supplied to bounded executors. */
-export function appTaskDependencyCatalog(
-  opts: AppTaskRuntimeOptions,
-  sourceAppId: string,
-): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
-  return appDependencyCatalog(configuredRegistryEntries(opts), sourceAppId);
-}
-
-export function appDependencyCatalog(
-  entries: AppRegistrySnapshot["entries"],
-  sourceAppId: string,
-): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
-  return entries
-    .filter(({ definition }) => definition.id !== sourceAppId && definition.task && definition.tasks)
-    .map(({ definition }) => ({
-      appId: definition.id,
-      description: definition.description?.trim() || "No description declared.",
-      inputs: appInputContracts(definition.inputSchema),
-    }))
-    .sort((left, right) => left.appId.localeCompare(right.appId));
-}
-
 function assertInstalledAppDependency(
   opts: AppTaskRuntimeOptions,
   sourceAppId: string,
@@ -2334,7 +2087,7 @@ async function executeTaskAgent(input: {
   const { opts, descriptor, intent, claim, event } = input;
   const reconciliationEvents = input.attempt.events;
   const trace = childEventTrace(event);
-  const dependencyCatalog = appTaskDependencyCatalog(opts, descriptor.id);
+  const dependencyCatalog = appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id);
   const prompt = [
     appTaskAgentProtocol(descriptor.id),
     "",
@@ -2605,72 +2358,6 @@ async function runRegisteredTaskExecutor(input: {
       }
     },
   });
-}
-
-const MAX_PROMPT_CHILD_TEXT = 256;
-const MAX_PROMPT_CHILD_EVIDENCE = 2;
-
-function boundedPromptChildText(value: string): string {
-  return value.length <= MAX_PROMPT_CHILD_TEXT ? value : `${value.slice(0, MAX_PROMPT_CHILD_TEXT - 3)}...`;
-}
-
-/**
- * Keep agent/workflow prompts decision-ready without copying each child Task's
- * full input and Condition definitions into every parent attempt. Exact child
- * resources remain available through the scoped Task read API.
- */
-export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
-  const evidence = (items: string[]) =>
-    items.slice(0, MAX_PROMPT_CHILD_EVIDENCE).map((item) => boundedPromptChildText(item));
-  return {
-    live: context.live.map((child) => ({
-      taskId: child.taskId,
-      generation: child.generation,
-      phase: child.phase,
-      outcome: boundedPromptChildText(child.outcome),
-      ...(child.agent ? { agent: child.agent } : {}),
-      ...(child.workflow ? { workflow: child.workflow } : {}),
-      ...(child.executor ? { executor: child.executor } : {}),
-      ...(child.priority ? { priority: child.priority } : {}),
-      ...(child.category ? { category: child.category } : {}),
-      ...(child.dependsOn?.length ? { dependsOn: child.dependsOn } : {}),
-      ...(child.readiness
-        ? {
-            readiness: {
-              ...child.readiness,
-              reason: boundedPromptChildText(child.readiness.reason),
-            },
-          }
-        : {}),
-      ...(child.latestAttempt
-        ? {
-            latestAttempt: {
-              ...child.latestAttempt,
-              ...(child.latestAttempt.failureReason
-                ? { failureReason: boundedPromptChildText(child.latestAttempt.failureReason) }
-                : {}),
-            },
-          }
-        : {}),
-      hasLiveChildren: child.hasLiveChildren,
-      ...(child.updatedAt ? { updatedAt: child.updatedAt } : {}),
-      ...(child.summary ? { summary: boundedPromptChildText(child.summary) } : {}),
-      evidence: evidence(child.evidence),
-    })),
-    completed: context.completed.map((child) => ({
-      taskId: child.taskId,
-      generation: child.generation,
-      outcome: boundedPromptChildText(child.outcome),
-      agent: child.agent,
-      ...(child.workflow ? { workflow: child.workflow } : {}),
-      ...(child.executor ? { executor: child.executor } : {}),
-      ...(child.priority ? { priority: child.priority } : {}),
-      summary: boundedPromptChildText(child.summary),
-      evidence: evidence(child.evidence),
-      completedAt: child.completedAt,
-    })),
-    note: "This is a bounded status summary. Use tasks.get for a child's exact input or Conditions.",
-  };
 }
 
 function emitTaskReconciliationEvent(
