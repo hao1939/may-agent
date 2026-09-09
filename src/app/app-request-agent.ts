@@ -10,7 +10,7 @@ import type { SubagentManager } from "../lib/index.js";
 import type { SqliteDb } from "../lib/db.js";
 import type { AppRegistry } from "./app-registry.js";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
-import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./app-inbox-store.js";
+import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
 import type { AppRequestResolver } from "./app-inbox-host.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;

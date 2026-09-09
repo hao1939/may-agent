@@ -1,32 +1,5 @@
 import { isRecord } from "./event-envelope.js";
 
-export type EventTarget = {
-  appId?: string;
-  taskId?: string;
-  sessionId?: string;
-};
-
-export type EventInput = {
-  type: string;
-  target?: EventTarget;
-  data: Record<string, unknown>;
-  idempotencyKey?: string;
-};
-
-export type EventLink = {
-  kind: "request" | "task" | "session" | "delivery" | "operation";
-  id: string;
-  state?: string;
-  summary?: string;
-};
-
-export type EventReceipt = {
-  eventId: number;
-  eventType: string;
-  delivery: "recorded" | "accepted";
-  links?: EventLink[];
-};
-
 export const SOCKET_CONTROL_TYPES = new Set([
   "subscribe",
   "status",

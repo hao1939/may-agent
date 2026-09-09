@@ -18,11 +18,11 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sdk";
-import type { EventInput, EventReceipt } from "../event-interface.js";
+import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { type EventBus } from "../event-bus.js";
 import { getDb } from "../../lib/requests.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
-import { readAppConversationResource } from "../app-inbox-store.js";
+import { readAppConversationResource } from "../conversations/store.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,

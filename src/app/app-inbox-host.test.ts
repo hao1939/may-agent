@@ -11,12 +11,12 @@ import {
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
+import { listAppInboxChildren } from "./app-inbox-store.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
-  listAppInboxChildren,
   readAppConversationResource,
-} from "./app-inbox-store.js";
+} from "./conversations/store.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
