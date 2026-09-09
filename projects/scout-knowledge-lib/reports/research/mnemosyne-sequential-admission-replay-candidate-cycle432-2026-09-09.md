@@ -52,8 +52,8 @@ the highest-value accessible gap.
 - Complete candidate relative to retained base: 382 added lines; binary diff
   SHA-256
   `b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817`.
-- Increment beyond the Cycle 431 candidate: 17 implementation lines and 113
-  test lines.
+- Direct comparison with exact Cycle 431 candidate digest `4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0`
+  adds 15 implementation lines and 115 test lines.
 
 With the production file held at the Cycle 431 candidate, the three new tests
 fail and 17 unrelated focused tests are deselected. Every failure is a
