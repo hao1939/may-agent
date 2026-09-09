@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cycle 429 reviewer correction a8f353880e is integrated literally after producer audit 57c3f1563f. Four older high-traffic paths now match the primary audit's narrower graph-visibility conclusion, resolving RV-053 on standing. Prior RV-052 landing evidence remains preserved; no new landing, compaction, or cleanup is approved."
+summary: "Independent review accepts exact Cycle 429 integration ledger cd3945c2e0. Reviewer correction a8f353880e is integrated literally after producer audit 57c3f1563f, resolving RV-053 on standing. Prior RV-052 landing evidence remains preserved; no new landing, compaction, or cleanup is approved."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "supply-chain provenance", "Skills Are Not Islands", "2607.01136", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053"]
 last_updated: "2026-09-09"
-source_basis: "Independent exact-range review 04e6eff4b4ab528272e0973e12b60d53988ce205..57c3f1563f3183dcea27745bc6e384858b70f317 and literal direct-successor integration 57c3f1563f3183dcea27745bc6e384858b70f317..a8f353880ebb84f9d37a7e83a7e73913c9f07ddb at stable patch ID e1648f3c8a127ea7979d9a358c95e2009329a158. Independent arXiv API and v1 source-archive replay reproduce paper identity, archive SHA-256 67cc2e28cebfb275af3ea38c38376cf8833f74f1ae5fd791d69e9f90407d7d57, population 1,434,046/1,640,440, two 0.95 F1 results, conditional 26/194 malicious-label reachability, and the reported structural values. The reviewer-corrected result passes 321 tests / 1,632 assertions, 126 scoped links, navigation 11/14 + 8/8 + 14/14, 1,557 documents / 1,818 broad links, health 26/16 with truncation, and git diff --check. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index, exact 23-path Scout status, all five protected hashes, and the prior 36/2/0 candidate audit; unrelated default and expanded status are time-scoped external drift. RV-053 is resolved on standing by literal integration; RV-004/RV-034 remain high/open and RV-036/RV-038 medium/open. No new local-main landing, compaction, or cleanup is approved."
+source_basis: "Independent exact-range review 04e6eff4b4ab528272e0973e12b60d53988ce205..57c3f1563f3183dcea27745bc6e384858b70f317; literal reviewer integration 57c3f1563f3183dcea27745bc6e384858b70f317..a8f353880ebb84f9d37a7e83a7e73913c9f07ddb at stable patch ID e1648f3c8a127ea7979d9a358c95e2009329a158; and independent cursor-only ledger review a8f353880ebb84f9d37a7e83a7e73913c9f07ddb..cd3945c2e04637d22878884f455f3c1b43d3fdcf. Independent arXiv API and v1 archive replay reproduce paper identity, archive SHA-256 67cc2e28cebfb275af3ea38c38376cf8833f74f1ae5fd791d69e9f90407d7d57, population 1,434,046/1,640,440, two 0.95 F1 results, and conditional 26/194 malicious-label reachability. Exact ledger tip retains the executable tree that passed 321 tests / 1,632 assertions; fresh Cycle 429 projection, 126 scoped links, navigation 11/14 + 8/8 + 14/14, 1,557 documents / 1,818 broad links, health 26/16 with truncation, and git diff --check pass. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index, exact 23-path Scout status, all five protected hashes, and the prior 36/2/0 candidate audit; unrelated default drift is disclosed at 78 records. RV-053 is resolved on standing; RV-004/RV-034 remain high/open and RV-036/RV-038 medium/open. No new local-main landing, compaction, or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Independent exact-range review 04e6eff4b4ab528272e0973e12b60d5398
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` (Cycle 429 RV-053 correction integrated literally)
+  `cd3945c2e04637d22878884f455f3c1b43d3fdcf` (independently accepted Cycle 429 integration ledger)
 - Last material standing commit reviewed:
   `57c3f1563f3183dcea27745bc6e384858b70f317` (Cycle 429 skill supply-chain scope audit)
 - Last producer research material reviewed:
   `57c3f1563f3183dcea27745bc6e384858b70f317` (Cycle 429 primary-paper qualification)
 - Last integrated reviewer result:
   `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` (literal direct successor of Cycle 429 producer audit)
-- Current review date: `2026-09-09T12:10:28+08:00`
+- Current review date: `2026-09-09T12:22:44+08:00`
 - Producer integration date: `2026-09-09T12:19:31+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -283,17 +283,18 @@ source_basis: "Independent exact-range review 04e6eff4b4ab528272e0973e12b60d5398
   `f44bb57fce73616e7cff13b64674b5b166e5b8bc` (Cycle 427 reviewer disposition refresh),
   `fb519252f4e27e2b90789097ab95d5ea60e99f6c` (Cycle 427 literal-integration ledger),
   `04e6eff4b4ab528272e0973e12b60d53988ce205` (integrated Cycle 427 review cursor),
-  `57c3f1563f3183dcea27745bc6e384858b70f317` (Cycle 429 scope audit), and
-  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` (literal RV-053 correction).
+  `57c3f1563f3183dcea27745bc6e384858b70f317` (Cycle 429 scope audit),
+  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` (literal RV-053 correction), and
+  `cd3945c2e04637d22878884f455f3c1b43d3fdcf` (Cycle 429 integration ledger).
 - Newly reviewed exact standing span:
-  `57c3f1563f3183dcea27745bc6e384858b70f317..a8f353880ebb84f9d37a7e83a7e73913c9f07ddb`
-  (one direct-child reviewer correction, integrated literally at stable patch
-  ID `e1648f3c8a127ea7979d9a358c95e2009329a158`).
-- Review date: `2026-09-09T12:10:28+08:00`
+  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb..cd3945c2e04637d22878884f455f3c1b43d3fdcf`
+  (one truthful cursor-only integration ledger; no research, behavior,
+  local-main movement, compaction, deletion, or cleanup).
+- Review date: `2026-09-09T12:22:44+08:00`
 - Stabilization disposition refresh: `2026-09-04T18:14:35+08:00`
-- Overall disposition: **accept exact reviewer-corrected canonical content at
-  `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb`; RV-053 is resolved by literal
-  integration while preserving the completed guarded
+- Overall disposition: **accept exact canonical integration ledger
+  `cd3945c2e04637d22878884f455f3c1b43d3fdcf`; RV-053 remains resolved by
+  literal integration while preserving the completed guarded
   transition to exact candidate `584395df7c2c25f5737eb4a392dc8c75d2852b53`;
   resolve RV-052 for this exact landed boundary only, require fresh guards for
   every later landing, and reject compaction or cleanup.** The prior completed local-main landing
@@ -4990,11 +4991,36 @@ one ordinary revert of `a8f353880e`, retaining `57c3f1563f`. This integration
 moves no local main, imports no protected checkout bytes, and authorizes no
 landing, compaction, cleanup, branch deletion, or worktree deletion.
 
+## Independent Cycle 429 integration-ledger review — accept
+
+Independent review covers exact direct-child range
+`a8f353880ebb84f9d37a7e83a7e73913c9f07ddb..cd3945c2e04637d22878884f455f3c1b43d3fdcf`.
+The successor changes only this cursor by +32/-17. It truthfully records
+literal integration of `a8f353880e`, its stable patch ID, the four qualified
+retrieval paths, RV-053 resolution, and the unchanged release limits. It does
+not promote repository checks into behavior or productivity evidence.
+
+The exact ledger tip retains app subtree
+`1ac403f37366dafb856996ad29490b486035af99`, byte-identical to the
+321-test / 1,632-assertion reviewer result. Fresh checks pass Cycle 429
+projection, 126 scoped links, navigation 11/14 + 8/8 + 14/14, 1,557 tracked
+Markdown documents / 1,818 broad links, health 26/16 with `truncated:true`,
+and `git diff --check`. Read-only `/app` remains exact `584395df7c`, with a
+clean index, exact 23-record Scout fingerprint, all five protected hashes,
+and unchanged 36/2/0 candidate-path disposition. Default status remains 78
+records; that unrelated drift is not called checkout equality.
+
+Disposition: **accept exact canonical ledger
+`cd3945c2e04637d22878884f455f3c1b43d3fdcf`.** Roll it back first with one
+ordinary revert if its disposition must be removed; revert `a8f353880e` only
+if intentionally reopening RV-053. No local-main landing, compaction, cleanup,
+branch deletion, or worktree deletion is approved.
+
 ## Next trigger
 
 The next exact trigger is one later coherent material producer checkpoint,
 evidence changing RV-004, RV-034, RV-036, RV-038, or RV-052, or the first eligible periodic boundary
-`2026-09-10T12:10:28+08:00`. Do not begin another local-main landing,
+`2026-09-10T12:22:44+08:00`. Do not begin another local-main landing,
 compaction, or cleanup without a fresh exact-boundary gate.
 
 ## Supervision
