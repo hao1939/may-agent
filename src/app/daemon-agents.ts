@@ -9,7 +9,13 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
+import {
+  generateAutoHeartbeats,
+  getAgentCrons,
+  loadAgents,
+  getAgentSessionId,
+  prepareAgentTriggers,
+} from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import type { AppRegistry } from "./app-registry.js";
 import type { HostCapacity } from "./host-capacity.js";
@@ -75,7 +81,6 @@ export async function prepareDaemonAgents(opts: {
     manager: opts.manager,
     bus: opts.bus,
     cronEnabled: opts.cronEnabled,
-    activateTriggers: opts.taskRuntimeMode === "controllers",
     ...(opts.agentNames ? { agentNames: opts.agentNames } : {}),
   };
 
@@ -264,6 +269,8 @@ export async function prepareDaemonAgents(opts: {
       message: `[startup-check] ⚠️ ${failures} heartbeat workflow(s) failed to load! Heartbeats will NOT fire for those agents.`,
     });
   }
+
+  if (taskRuntimeMode === "controllers") await prepareAgentTriggers(loaderOpts);
 
   return { loaderOpts, appTaskOptions, startAppTaskControllers };
 }

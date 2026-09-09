@@ -41,7 +41,8 @@ import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./task-admission-process.js";
-import { prepareAgentGeneration, startAgentTriggers } from "./agent-loader.js";
+import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
 import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
@@ -368,6 +369,16 @@ export async function runAppRuntime(opts: {
         definitionSharedRoot: candidate.sharedRoot,
       });
     },
+    publishAgents: (options, generation) => {
+      const publication = publishPreparedAgentGeneration(options, generation);
+      try {
+        if (backgroundEnabled) activateAgentCrons(generation.crons, bus, CRON_ENABLED);
+        return publication;
+      } catch (error) {
+        publication.rollback();
+        throw error;
+      }
+    },
     reloadApps: async ({ publishAgents }) => {
       const source = stagedReloadSource;
       if (!source) throw new Error("Runtime generation has no staged definition source");
@@ -503,6 +514,19 @@ export async function runAppRuntime(opts: {
     manager,
   });
 
+  if (backgroundEnabled) {
+    // Handlers are prepared before ingress; activate only after its routes and
+    // Conversation adapters are ready. A startup job must not gate core work.
+    activateAgentCrons(getAgentCrons(), bus, CRON_ENABLED);
+    await appInboxRuntime.start();
+    startBackgroundRuntime({
+      manager,
+      bus,
+      persistDir: loaderOpts.persistDir,
+      onTaskRecoverySettled: startAppTaskControllers,
+    });
+  }
+
   taskSessionId = await startInitialTask({
     bus,
     manager,
@@ -529,20 +553,6 @@ export async function runAppRuntime(opts: {
     status: "running",
     sessionId: taskSessionId,
   });
-
-  await appInboxRuntime.start();
-  if (backgroundEnabled) {
-    startBackgroundRuntime({
-      manager,
-      bus,
-      projectsRoot: loaderOpts.projectsRoot,
-      persistDir: loaderOpts.persistDir,
-      // App work begins after recovery succeeds or yields to bounded retry;
-      // neither path is allowed to hold the already-open interfaces.
-      onTaskRecoverySettled: startAppTaskControllers,
-    });
-    await startAgentTriggers(loaderOpts);
-  }
 
   if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({ type: "info", message: "[task] Task completed. Exiting." });

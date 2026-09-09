@@ -11,9 +11,7 @@ function currentProjectLifecycle(projectId: string, persistDir?: string): "activ
 }
 
 export function shouldResumeStartupSession(
-  _sessionId: string,
   session: PersistedSession,
-  _projectsRoot = "/app/projects",
   persistDir?: string,
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.recoveryOwner === LEGACY_APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {

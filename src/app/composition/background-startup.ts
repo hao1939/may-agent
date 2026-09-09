@@ -8,7 +8,6 @@ import { shouldResumeStartupSession } from "../core/tasks/startup-recovery.js";
 export interface BackgroundRuntimeOptions {
   manager: SubagentManager;
   bus: EventBus;
-  projectsRoot: string;
   persistDir: string;
   /** Open controllers after startup repair succeeds or yields to bounded retry. */
   onTaskRecoverySettled: () => void;
@@ -45,8 +44,7 @@ export function startBackgroundRuntime(options: BackgroundRuntimeOptions): void 
     .finally(() => options.onTaskRecoverySettled?.());
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
-    shouldResume: (sessionId, session) =>
-      shouldResumeStartupSession(sessionId, session, options.projectsRoot, options.persistDir),
+    shouldResume: (_sessionId, session) => shouldResumeStartupSession(session, options.persistDir),
   });
   const orphansCleaned: typeof interrupted = [];
   const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });

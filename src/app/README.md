@@ -18,6 +18,11 @@ Core depends on contracts and foundational utilities, not concrete adapters.
 Composition may import both sides. Adapters receive the narrow capabilities
 they need; they do not become another Task state or recovery authority.
 
+Loading prepares definitions and handlers without activating producers.
+`app-runtime.ts` activates the prepared generation after ingress opens and each
+replacement during reload. Process role selects background ownership; `--cron`
+selects optional timers. There is no separate loader activation setting.
+
 To extend a supported capability:
 
 1. Read its existing SDK/control or Host-private contract.

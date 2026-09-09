@@ -32,7 +32,6 @@ import {
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
 import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
-import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export {
@@ -72,7 +71,7 @@ export function getAgentCrons(): Map<string, Cron> {
   return agentCrons;
 }
 
-function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGeneration): AgentGenerationPublication {
+function publishResources(generation: PreparedAgentGeneration): AgentGenerationPublication {
   const previousCrons = new Map(agentCrons);
   const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));
 
@@ -87,7 +86,6 @@ function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGen
       if (existing) existing.push(...cleanups);
       else agentCleanups.set(name, [...cleanups]);
     }
-    if (opts.activateTriggers) activateAgentCrons(generation.crons, opts.bus, opts.cronEnabled);
   } catch (error) {
     discardAgentGeneration(generation);
     agentCrons.clear();
@@ -119,10 +117,10 @@ function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGen
   };
 }
 
-function registryRuntime(opts: AgentLoaderOptions) {
+function registryRuntime() {
   return {
     getAgentSessionId,
-    publishResources: (generation: PreparedAgentGeneration) => publishResources(opts, generation),
+    publishResources,
   };
 }
 
@@ -146,12 +144,12 @@ export function runAgentCleanup(agentName: string): void {
  * take effect on next session. Active sessions keep their old config.
  */
 export async function loadAgents(opts: AgentLoaderOptions) {
-  return loadAgentsFromRegistry(opts, registryRuntime(opts));
+  return loadAgentsFromRegistry(opts, registryRuntime());
 }
 
 /** Prepare every definition and side-effect container without publication. */
 export async function prepareAgentGeneration(opts: AgentLoaderOptions): Promise<PreparedAgentGeneration> {
-  const generation = await prepareAgentsFromRegistry(opts, registryRuntime(opts));
+  const generation = await prepareAgentsFromRegistry(opts, registryRuntime());
   const handlers = await loadHandlersForAgentCrons({ ...opts, agentCrons: generation.crons });
   if (handlers.errors.length === 0) return generation;
   discardAgentGeneration(generation);
@@ -163,7 +161,7 @@ export function publishPreparedAgentGeneration(
   opts: AgentLoaderOptions,
   generation: PreparedAgentGeneration,
 ): AgentGenerationPublication {
-  return publishAgentGenerationFromRegistry(opts, registryRuntime(opts), generation);
+  return publishAgentGenerationFromRegistry(opts, registryRuntime(), generation);
 }
 
 /**
@@ -174,35 +172,13 @@ export function publishPreparedAgentGeneration(
 export async function reloadAgents(
   opts: AgentLoaderOptions,
 ): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
-  return reloadAgentsFromRegistry(opts, registryRuntime(opts));
+  return reloadAgentsFromRegistry(opts, registryRuntime());
 }
 
-/**
- * Auto-discover and register handlers for trigger entries.
- *
- * For each agent with a scheduler, scans its cron.json for entries with a
- * `handler` field. String handlers name a file in the handlers/ directory
- * beside that cron.json. Object handlers are workflow-backed and are
- * registered directly.
- *
- * Call this after loadAgents() completes.
- */
-export async function loadAgentHandlers(
-  opts: AgentLoaderOptions & {
-    /** Function to get an agent's active session ID (for followUp). */
-    getSessionId: (agentName: string) => string | null;
-  },
-): Promise<{ registered: string[]; errors: string[] }> {
-  return loadHandlersForAgentCrons({ ...opts, agentCrons });
-}
-
-/** Attach optional legacy producers; Task startup is owned by composition. */
-export async function startAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
+/** Prepare legacy handlers without attaching routes or starting timers. */
+export async function prepareAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
   const { bus } = loaderOpts;
-  const handlerResult = await loadAgentHandlers({
-    ...loaderOpts,
-    getSessionId: (agentName: string) => getAgentSessionId(agentName) ?? null,
-  });
+  const handlerResult = await loadHandlersForAgentCrons({ ...loaderOpts, agentCrons });
   if (handlerResult.registered.length > 0) {
     bus.emit({
       type: "info",
@@ -219,6 +195,4 @@ export async function startAgentTriggers(loaderOpts: AgentLoaderOptions): Promis
       log("warn", `[handlers] Failed to load handler "${handlerName}": ${err}`);
     }
   }
-
-  activateAgentCrons(getAgentCrons(), bus, loaderOpts.cronEnabled);
 }

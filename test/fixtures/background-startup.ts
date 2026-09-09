@@ -33,7 +33,6 @@ await startBackgroundRuntime({
       return { resumed: [], interrupted: [] };
     },
   } as unknown as BackgroundRuntimeOptions["manager"],
-  projectsRoot: "/fixture/projects",
   persistDir: "/fixture/state",
   bus,
   onTaskRecoverySettled: () => {

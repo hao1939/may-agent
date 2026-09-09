@@ -570,110 +570,63 @@ export class Cron {
   reload(): void {
     const oldEntries = new Map(this.entries.map((e) => [e.name, e]));
     this.load();
-    if (this.started) {
-      // Smart reload: only restart entries whose config actually changed.
-      // This prevents the "timer reset" bug where reload() resets all
-      // timers and long-interval entries fire early (P-cron-overtrigger).
-      const newNames = new Set(this.entries.map((e) => e.name));
-
-      // Stop entries that were removed or disabled
-      for (const [name, _old] of oldEntries) {
-        if (!newNames.has(name)) {
-          const timer = this.timers.get(name);
-          if (timer) clearInterval(timer);
-          this.timers.delete(name);
-          const pending = this.pendingStartTimers.get(name);
-          if (pending) clearTimeout(pending);
-          this.pendingStartTimers.delete(name);
-        }
-      }
-
-      let changedCount = 0;
-      for (const entry of this.entries) {
-        const old = oldEntries.get(entry.name);
-        const configChanged =
-          !old ||
-          old.intervalMs !== entry.intervalMs ||
-          old.maxConcurrentTriggers !== entry.maxConcurrentTriggers ||
-          old.maxQueueDepth !== entry.maxQueueDepth ||
-          old.message !== entry.message ||
-          old.category !== entry.category ||
-          old.agent !== entry.agent ||
-          JSON.stringify(old.handler ?? null) !== JSON.stringify(entry.handler ?? null) ||
-          JSON.stringify(old.on ?? []) !== JSON.stringify(entry.on ?? []) ||
-          (old.enabled === false) !== (entry.enabled === false) ||
-          JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
-
-        if (entry.enabled === false) {
-          // Newly disabled — stop timer
-          const timer = this.timers.get(entry.name);
-          if (timer) clearInterval(timer);
-          this.timers.delete(entry.name);
-          const pending = this.pendingStartTimers.get(entry.name);
-          if (pending) clearTimeout(pending);
-          this.pendingStartTimers.delete(entry.name);
-          continue;
-        }
-
-        if (configChanged) {
-          changedCount++;
-          // Config changed — restart this entry's timer
-          const timer = this.timers.get(entry.name);
-          if (timer) clearInterval(timer);
-          this.timers.delete(entry.name);
-          const pending = this.pendingStartTimers.get(entry.name);
-          if (pending) clearTimeout(pending);
-          this.pendingStartTimers.delete(entry.name);
-
-          // If entry has a handler field but no registered handler, try dynamic resolution
-          if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
-            const entrySnapshot = { ...entry };
-            this.handlerResolver(entry.name, entrySnapshot)
-              .then((resolved) => {
-                if (resolved) {
-                  this.onError?.(`[handler] Dynamically resolved handler for "${entrySnapshot.name}" on reload`);
-                } else {
-                  this.onError?.(
-                    `⚠️ [handler] Failed to resolve handler for "${entrySnapshot.name}" — entry will be skipped until next reload`,
-                  );
-                }
-                this.startEntry(entrySnapshot);
-              })
-              .catch((err) => {
-                const errMsg = err instanceof Error ? err.message : String(err);
-                this.onError?.(
-                  `⚠️ [handler] Error resolving handler for "${entrySnapshot.name}": ${errMsg} — entry will be skipped`,
-                );
-                // Still try to start — resolveMode() will skip if handler is missing
-                this.startEntry(entrySnapshot);
-              });
-          } else {
-            this.startEntry(entry);
-          }
-
-          this.onError?.(
-            `Reloaded "${entry.name}": intervalMs=${entry.intervalMs ?? "event-only"}${old ? ` (was ${old.intervalMs ?? "event-only"})` : " (new)"}`,
-          );
-        }
-        // Unchanged entries keep their existing timer — no reset
-        // But try to register unregistered handlers (e.g., handler file was fixed after startup)
-        if (!configChanged && entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
-          const entrySnapshot = { ...entry };
-          this.handlerResolver(entry.name, entrySnapshot)
-            .then((resolved) => {
-              if (resolved) {
-                this.onError?.(`[handler] Late-registered handler for "${entrySnapshot.name}" on reload`);
-              }
-            })
-            .catch(() => {
-              /* silent — will retry on next reload */
-            });
-        }
-      }
-      if (changedCount === 0) {
-        this.onError?.(`Config reload: no entries changed`);
-      }
+    const newNames = new Set(this.entries.map((e) => e.name));
+    for (const name of oldEntries.keys()) {
+      if (!newNames.has(name)) this.stopEntryScheduling(name);
     }
+
+    let changedCount = 0;
+    for (const entry of this.entries) {
+      const old = oldEntries.get(entry.name);
+      const configChanged =
+        !old ||
+        old.intervalMs !== entry.intervalMs ||
+        old.maxConcurrentTriggers !== entry.maxConcurrentTriggers ||
+        old.maxQueueDepth !== entry.maxQueueDepth ||
+        old.message !== entry.message ||
+        old.category !== entry.category ||
+        old.agent !== entry.agent ||
+        JSON.stringify(old.handler ?? null) !== JSON.stringify(entry.handler ?? null) ||
+        JSON.stringify(old.on ?? []) !== JSON.stringify(entry.on ?? []) ||
+        (old.enabled === false) !== (entry.enabled === false) ||
+        JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
+
+      if (entry.enabled === false) {
+        this.stopEntryScheduling(entry.name);
+        continue;
+      }
+      if (configChanged) {
+        changedCount++;
+        this.stopEntryScheduling(entry.name);
+        this.onError?.(
+          `Reloaded "${entry.name}": intervalMs=${entry.intervalMs ?? "event-only"}${old ? ` (was ${old.intervalMs ?? "event-only"})` : " (new)"}`,
+        );
+      }
+
+      // Handler availability is independent of timers. This also retries a
+      // repaired handler with unchanged configuration on an explicit reload.
+      if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
+        this.handlerResolver(entry.name, { ...entry })
+          .then((resolved) => {
+            if (!resolved) {
+              this.onError?.(`[handler] Failed to resolve handler for "${entry.name}" — retry on next reload`);
+              return;
+            }
+            this.onError?.(`[handler] Resolved handler for "${entry.name}" on reload`);
+            // A late resolution cannot restart a stopped or replaced timer.
+            if (this.started && this.entries.includes(entry)) this.startEntry(entry);
+          })
+          .catch((error) => {
+            this.onError?.(
+              `[handler] Error resolving handler for "${entry.name}": ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+      } else if (configChanged && this.started) {
+        this.startEntry(entry);
+      }
+      // Unchanged, already registered handlers keep their existing timer.
+    }
+    if (changedCount === 0) this.onError?.("Config reload: no entries changed");
   }
 
   getEntries(): CronEntry[] {

@@ -26,30 +26,28 @@ describe("Task startup session recovery", () => {
   it("never resumes task-bound execution outside bounded Task recovery", () => {
     const appDir = "/fixture/sample.app";
     const persisted = session(appDir, "app-task-owner");
-    expect(shouldResumeStartupSession("task-session", persisted)).toEqual({
+    expect(shouldResumeStartupSession(persisted)).toEqual({
       resume: false,
       reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
     });
   });
 
-  it("leaves the exact stale parent and completing child sessions to App task recovery", () => {
+  it("leaves a typed workflow attempt to Task recovery regardless of its prompt", () => {
     const appDir = "/fixture/sample.app";
-    for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
-      const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
-      persisted.task +=
-        '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
-      expect(shouldResumeStartupSession(sessionId, persisted)).toEqual({
-        resume: false,
-        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
-      });
-    }
+    const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
+    persisted.task +=
+      '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
+    expect(shouldResumeStartupSession(persisted)).toEqual({
+      resume: false,
+      reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
+    });
   });
 
   it("keeps task-owned workflow workers out of generic resume even when their prompt omits the task block", () => {
     const appDir = "/fixture/sample.app";
     const persisted = session(appDir, "workflow:domain-task-execution", "app-task-reconciler");
     persisted.task = 'Execute the bounded reconciliation task below.\n\n{"appId":"sample","taskId":"work"}';
-    expect(shouldResumeStartupSession("task-worker-session", persisted)).toEqual({
+    expect(shouldResumeStartupSession(persisted)).toEqual({
       resume: false,
       reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
     });
@@ -70,7 +68,7 @@ describe("Task startup session recovery", () => {
       outputSchema,
     };
 
-    expect(shouldResumeStartupSession("owner-review-session", persisted)).toEqual({ resume: true });
+    expect(shouldResumeStartupSession(persisted)).toEqual({ resume: true });
     expect({ requireFinish: persisted.requireFinish, outputSchema: persisted.outputSchema }).toEqual({
       requireFinish: true,
       outputSchema,
@@ -78,11 +76,11 @@ describe("Task startup session recovery", () => {
   });
 
   it("lets the App inbox fence and replace an interrupted legacy agent attempt", () => {
-    expect(shouldResumeStartupSession("app-agent-session", session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
+    expect(shouldResumeStartupSession(session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
       resume: false,
       reason: "Legacy App inbox agent sessions are replaced by Task reconciliation",
     });
-    expect(shouldResumeStartupSession("human-app-owner", session("/tmp/may.app", "telegram", "app-inbox"))).toEqual({
+    expect(shouldResumeStartupSession(session("/tmp/may.app", "telegram", "app-inbox"))).toEqual({
       resume: false,
       reason: "Legacy App inbox agent sessions are replaced by Task reconciliation",
     });
@@ -97,12 +95,12 @@ describe("Task startup session recovery", () => {
       store.bootstrapSnapshot({ project: "sample", project_lifecycle: "paused", groups: {}, resources: {} }, "test");
 
       for (const source of ["workflow:project-planner", "workflow:focus-plan"]) {
-        expect(shouldResumeStartupSession("session-1", session(appDir, source), projectsRoot, persistDir)).toEqual({
+        expect(shouldResumeStartupSession(session(appDir, source), persistDir)).toEqual({
           resume: false,
           reason: expect.stringContaining("Project sample is paused"),
         });
       }
-      expect(shouldResumeStartupSession("session-1", session(appDir, "app-task-owner"))).toEqual({
+      expect(shouldResumeStartupSession(session(appDir, "app-task-owner"))).toEqual({
         resume: false,
         reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
       });
@@ -114,7 +112,7 @@ describe("Task startup session recovery", () => {
 
   it("leaves non-project sessions unaffected", () => {
     expect(
-      shouldResumeStartupSession("session-1", {
+      shouldResumeStartupSession({
         agent: "may",
         task: "background runtime work",
         status: "running",
@@ -128,7 +126,7 @@ describe("Task startup session recovery", () => {
   it("does not create task state while checking an app without a task attachment", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-owner-only-app-"));
     try {
-      expect(shouldResumeStartupSession("session-1", session(appDir, "app-owner"))).toEqual({ resume: true });
+      expect(shouldResumeStartupSession(session(appDir, "app-owner"))).toEqual({ resume: true });
       expect(existsSync(join(appDir, ".state", "tasks"))).toBe(false);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
