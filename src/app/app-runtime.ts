@@ -339,10 +339,7 @@ export async function runAppRuntime(opts: {
 
   let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
-  let stagedReloadSource: {
-    candidate: DefinitionSourceRelease;
-    previous: DefinitionSourceRelease | null;
-  } | null = null;
+  const preparedSources = new WeakMap<Awaited<ReturnType<typeof prepareAgentGeneration>>, DefinitionSourceRelease>();
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
     bus,
@@ -362,13 +359,14 @@ export async function runAppRuntime(opts: {
     },
     prepareAgents: async () => {
       const candidate = appSources.stage();
-      stagedReloadSource = { candidate, previous: appSources.current() };
-      return prepareAgentGeneration({
+      const generation = await prepareAgentGeneration({
         ...loaderOpts,
         agentsRoot: candidate.agentsRoot,
         projectsRoot: candidate.projectsRoot,
         definitionSharedRoot: candidate.sharedRoot,
       });
+      preparedSources.set(generation, candidate);
+      return generation;
     },
     publishAgents: (options, generation) => {
       const publication = publishPreparedAgentGeneration(options, generation);
@@ -380,14 +378,17 @@ export async function runAppRuntime(opts: {
         throw error;
       }
     },
-    reloadApps: async ({ publishAgents }) => {
-      const source = stagedReloadSource;
-      if (!source) throw new Error("Runtime generation has no staged definition source");
-      const { candidate, previous } = source;
+    reloadApps: async ({ agents, publishAgents }) => {
+      const candidate = preparedSources.get(agents);
+      if (!candidate) throw new Error("Runtime generation has no staged definition source");
+      preparedSources.delete(agents);
       let taskApps = 0;
-      try {
-        const appIds = await appInboxRuntime!.reload(
-          async ({ snapshot, commit }) => {
+      const appIds = await appInboxRuntime!.reload(
+        async ({ snapshot, commit }) => {
+          // Capture and restore while holding the registry transaction. A queued
+          // reload must restore its committed predecessor, not its staging source.
+          const previous = appSources.current();
+          try {
             const result = await appTasks.publishGeneration({
               snapshot,
               definitionSource: {
@@ -402,24 +403,23 @@ export async function runAppRuntime(opts: {
                   commit();
                   syncAppMetricDefinitions(snapshot.entries, appMetrics);
                 } catch (error) {
+                  // Restore before Task rollback yields to other worker dispatch.
                   if (previous) appSources.activate(previous);
                   throw error;
                 }
               },
             });
             taskApps = result.apps;
-          },
-          discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
-        );
-        return { appIds, taskApps };
-      } catch (error) {
-        if (previous && appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
-          appSources.activate(previous);
-        }
-        throw error;
-      } finally {
-        stagedReloadSource = null;
-      }
+          } catch (error) {
+            if (previous && appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
+              appSources.activate(previous);
+            }
+            throw error;
+          }
+        },
+        discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
+      );
+      return { appIds, taskApps };
     },
   });
   installProcessHandlers();

@@ -674,7 +674,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
+  let scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
 
   const refreshScheduleActivations = (): void => {
     const activeKeys = new Set<string>();
@@ -1685,8 +1685,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           throw new Error("Canonical App observers require an observer context factory");
         }
         let committed = false;
+        let previousScheduleActivations = scheduleActivations;
         const commit = () => {
           if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
+          previousScheduleActivations = scheduleActivations;
+          // Replacements get new activation records; unchanged schedules retain
+          // their delivered slots, including any scan during async preparation.
+          scheduleActivations = new Map(scheduleActivations);
           committed = true;
           const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
           host.replaceApps(entries.map((entry) => entry.definition));
@@ -1709,7 +1714,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
             replaceRouteIndexes(previousLoaded);
             observerRuntime.replace(previousLoaded);
-            refreshScheduleActivations();
+            scheduleActivations = previousScheduleActivations;
           }
           throw error;
         }

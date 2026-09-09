@@ -3,7 +3,12 @@ import type { AppEvent, TaskIntent } from "@may-agent/sdk";
 import { normalizeAppAgent, type HostAppDefinition } from "../../app-agent-selection.js";
 import { assertValidAppDefinition } from "./definition-validation.js";
 
-/** Discovery supplies declarations, not validated registrations or live resources. */
+/**
+ * Discovery supplies declarations, not validated registrations or live resources.
+ * Sources must not mutate returned declarations (including nested data or policy
+ * functions). Return fresh declarations for replacements; unchanged ones may be
+ * reused. The registry freezes its envelope, not the executable object graph.
+ */
 export type AppDefinitionSource = () => Promise<readonly { appDir: string; definition: unknown }[]>;
 
 export type LoadedAppDefinition = {
@@ -35,7 +40,8 @@ function immutableEntries(entries: Awaited<ReturnType<AppDefinitionSource>>): re
  *
  * A reload is published only after every consumer prepares and applies the
  * prospective snapshot. The callback may be asynchronous, but publication is
- * still fenced by the immutable generation passed to it.
+ * still fenced by the generation passed to it. Declaration immutability is a
+ * source contract, not a deep-clone or sandbox guarantee.
  */
 export class AppRegistry {
   private readonly bootId = randomUUID();

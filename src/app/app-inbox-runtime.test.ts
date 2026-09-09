@@ -1436,7 +1436,7 @@ describe("App inbox runtime", () => {
     expect(admitted).toEqual(["route.old", "route.new"]);
   });
 
-  it("rolls back queued reloads to the last committed routes and schedules", async () => {
+  it.each(["changed", "removed"])("restores a %s schedule across a due slot", async (scheduleChange) => {
     const source =
       (name: string): AppDefinitionSource =>
       async () => [
@@ -1451,7 +1451,10 @@ describe("App inbox runtime", () => {
               subscriptions: [`route.${name}`],
               resolve: () => ({ id: "routing/task", outcome: name, acceptance: ["done"] }),
             },
-            schedules: [{ id: "tick", intervalMs: 1000, event: { type: `tick.${name}`, data: {} } }],
+            schedules:
+              name === "rejected" && scheduleChange === "removed"
+                ? []
+                : [{ id: "tick", intervalMs: 1000, event: { type: `tick.${name}`, data: {} } }],
           },
         },
       ];
@@ -1485,6 +1488,7 @@ describe("App inbox runtime", () => {
     }, source("accepted"));
     await started.promise;
     const second = runtime.reload(async ({ commit }) => {
+      currentTime = 2_000;
       commit();
       throw new Error("publication failed");
     }, source("rejected"));
@@ -1508,7 +1512,6 @@ describe("App inbox runtime", () => {
     }
     await waitUntil(() => admitted.length > 0);
     expect(admitted).toEqual(["route.accepted"]);
-    currentTime = 2_000;
     runtime.scanNow();
     runtime.scanNow();
     expect(ticks).toEqual(["tick.accepted"]);

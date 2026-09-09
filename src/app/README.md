@@ -3,6 +3,24 @@
 The Host contains both stable mechanics and replaceable implementations.
 "External" means outside the core, not necessarily another package or process.
 
+The governing design lives in the sibling App tree, not this navigation guide:
+
+- [Core Principles §1, Apps own meaning; the Host owns mechanics](../../../may-agent.app/docs/1-principles/core-principles.md#1-apps-own-meaning-the-host-owns-mechanics)
+  assigns validation, persistence, scheduling, and recovery to the Host.
+- [Core Principles §9, explicit declarations with useful conventions](../../../may-agent.app/docs/1-principles/core-principles.md#9-prefer-explicit-declarations-with-useful-conventions)
+  requires “one `app.ts`, one `defineApp`, and one atomic App generation.”
+- [System Boundary — Host](../../../may-agent.app/docs/2a-design/system-boundary.md#host)
+  says “Reload either publishes a complete replacement or keeps the previous
+  definition active.” [Extension rule](../../../may-agent.app/docs/2a-design/system-boundary.md#extension-rule)
+  keeps stable mechanics in the Host and policy in the App.
+- [Core proposal — Step 2](../../../may-agent.app/docs/proposals/task-runtime-organization.md#step-2-separate-app-source-discovery-from-core-registration)
+  applies these accepted rules to discovery and registration. The rest of that
+  proposal remains incremental work, not implemented behavior.
+
+These links require the sibling `may-agent.app` design tree. A standalone Host
+checkout does not contain it; request the cited sections when reviewing a
+behavior change rather than treating this guide as replacement design.
+
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
 | `core/` | Identity, authority, and recovery rules shared by every capability | `apps/registry.ts` validates and publishes generations; `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
@@ -55,7 +73,16 @@ the existing consumer preparation/publication callback. Discovery and publicatio
 share one serialized transaction. A replacement source becomes the default only
 after publication succeeds; a rejected replacement retains the current generation.
 Consumer rollback captures that generation inside the transaction, not before
-waiting for the queue.
+waiting for the queue. Composition ties each staged source to its prepared agent
+generation and restores the prior source before releasing that transaction.
+Schedule rollback restores activation records, including due-slot history,
+rather than restarting the old schedule at rollback time.
+
+Sources must not mutate declarations they have returned, including nested
+schemas, schedules, and policy function bindings. Return fresh declarations for
+replacements; unchanged declarations may be reused. The registry freezes its
+snapshot envelope and normalized top-level definitions, not the executable
+object graph. It does not deep-clone closures or sandbox source code.
 
 `app-runtime.ts` wires the file source at startup and reload. The private Task
 worker entrypoints wire the same source for their selected release. To supply

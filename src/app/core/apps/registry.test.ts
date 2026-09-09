@@ -82,6 +82,38 @@ describe("App registry", () => {
     expect(first.snapshot().id).not.toBe(second.snapshot().id);
   });
 
+  it("retains policy and nested data when a fresh replacement is rejected", async () => {
+    const declaration = (name: string) => ({
+      ...entry(),
+      definition: {
+        ...entry().definition,
+        inputSchema: { type: "object", properties: { value: { type: "string", const: name } } },
+        tasks: { resolve: () => ({ id: "sample/task", outcome: name, acceptance: [name] }) },
+      },
+    });
+    const accepted = declaration("accepted");
+    const replacement = declaration("replacement");
+    const registry = new AppRegistry(async () => [accepted]);
+    await registry.reload();
+    const snapshot = registry.snapshot();
+    // Sources own declaration immutability. Do not edit accepted declarations
+    // in place; a replacement has independent data and function bindings.
+    await expect(
+      registry.reload(
+        (next) => {
+          expect(next.entries[0]?.definition.inputSchema).toEqual(replacement.definition.inputSchema);
+          throw new Error("consumer rejected replacement");
+        },
+        async () => [replacement],
+      ),
+    ).rejects.toThrow("consumer rejected replacement");
+    expect(registry.snapshot()).toBe(snapshot);
+    expect(registry.entries()[0]?.definition.inputSchema).toEqual(accepted.definition.inputSchema);
+    expect(registry.resolveInstalledTask("sample", { type: "tick", data: {} }).intent?.outcome).toBe("accepted");
+    await registry.reload();
+    expect(registry.resolveInstalledTask("sample", { type: "tick", data: {} }).intent?.outcome).toBe("accepted");
+  });
+
   it("resolves installed Task intent through the same validated definition", async () => {
     const registry = new AppRegistry(async () => [
       {
