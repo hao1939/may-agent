@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import {
   claimAppInboxItem,
   completeAppInboxClaim,

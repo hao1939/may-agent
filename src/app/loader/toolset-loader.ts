@@ -7,7 +7,6 @@ import {
   createReadTool,
   createWorkflowTool,
   createBackgroundExecTool,
-  createCronTool,
   createScrapeTool,
   createSystemStatusTool,
   createQueryDbTool,
@@ -17,13 +16,13 @@ import {
 } from "../../lib/index.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import type { EventBus } from "../event-bus.js";
-import { Cron } from "../cron.js";
+import type { EventBus } from "../core/events/bus.js";
+import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
+import { createMaintenanceTool } from "../adapters/maintenance/tool.js";
 import type { AgentConfig } from "./agent-config.js";
 import { listConfiguredAgentNames } from "./agent-discovery.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
-import { mayConversationNoticeEvent } from "../app-input-event.js";
 
 export interface ToolsetLoaderOptions {
   agentsRoot: string;
@@ -35,8 +34,7 @@ export interface ToolsetLoaderOptions {
   bus: EventBus;
   cronEnabled: boolean;
   getAgentSessionId: (agentName: string) => string | undefined;
-  getAgentCrons: () => Map<string, Cron>;
-  setAgentCron: (agentName: string, cron: Cron) => void;
+  getAgentMaintenance: () => Map<string, HostMaintenance>;
   addCleanup: (agentName: string, fn: () => void) => void;
   agentDir?: string;
   /**
@@ -53,14 +51,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = opts.agentDir ?? resolve(opts.agentsRoot, config.name);
   const tools: AgentTool[] = [];
-
-  const triggerHeartbeat = (agentName: string): boolean => {
-    for (const cron of opts.getAgentCrons().values()) {
-      if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
-      if (cron.triggerNow("heartbeat") && agentName === "may") return true;
-    }
-    return false;
-  };
 
   for (const preset of config.tools) {
     switch (preset) {
@@ -86,7 +76,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
             agentsRoot: opts.agentsRoot,
-            triggerHeartbeat,
             bus: opts.bus,
           }),
         );
@@ -113,7 +102,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
               const sid = opts.getAgentSessionId(config.name);
               return sid ? manager.activeSessions.get(sid)?.trace : undefined;
             },
-            triggerHeartbeat,
           }),
         );
         break;
@@ -173,44 +161,19 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
       }
 
-      case "cron": {
-        const cronPath = resolve(agentDir, "cron.json");
-        let cron = opts.getAgentCrons().get(config.name);
-        if (!cron) {
-          cron = new Cron(
-            cronPath,
-            manager,
-            () => {
-              const sid = opts.getAgentSessionId(config.name);
-              if (!sid) throw new Error(`No active ${config.name} session`);
-              return sid;
-            },
-            (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
-            opts.projectRoot,
-            (msg) => {
-              bus.emit(
-                mayConversationNoticeEvent({
-                  source: `cron:${config.name}`,
-                  authorId: `cron:${config.name}`,
-                  text: msg,
-                }),
-              );
-            },
-            (event) => bus.emit(event),
-          );
-          cron.load();
-          opts.setAgentCron(config.name, cron);
-        }
+      case "cron":
         tools.push(
-          createCronTool({
-            configPath: cronPath,
-            agentName: config.name,
-            onConfigChange: () => cron!.reload(),
+          createMaintenanceTool({
+            configPath: resolve(agentDir, "cron.json"),
             cronEnabled: opts.cronEnabled,
+            onConfigChange: () => {
+              const maintenance = opts.getAgentMaintenance().get(config.name);
+              if (!maintenance) throw new Error("Host maintenance is not configured for " + config.name);
+              maintenance.reload();
+            },
           }),
         );
         break;
-      }
 
       case "scrape":
         tools.push(createScrapeTool());

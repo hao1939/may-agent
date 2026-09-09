@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
-import { Cron } from "../../src/app/cron.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
+import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 
 function tempCronConfig(entries: unknown[]): { root: string; configPath: string; cleanup: () => void } {
   const root = mkdtempSync(join(tmpdir(), "may-cron-test-"));
@@ -20,7 +20,7 @@ function nextTick(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }
 
-describe("Cron event triggers", () => {
+describe("HostMaintenance event triggers", () => {
   it("rejects detached agent-message entries without handlers", () => {
     const { root, configPath, cleanup } = tempCronConfig([
       {
@@ -33,10 +33,9 @@ describe("Cron event triggers", () => {
     ]);
     try {
       const errors: string[] = [];
-      const cron = new Cron(configPath, {} as any, () => "", (msg) => errors.push(msg), root);
+      const cron = new HostMaintenance({ configPath: configPath, onError: (msg) => errors.push(msg), projectRoot: root });
 
-      expect(cron.load()).toEqual([]);
-      expect(errors).toContain('Cron entry "detached" needs handler');
+      expect(() => cron.load()).toThrow("requires a named handler");
     } finally {
       cleanup();
     }
@@ -54,7 +53,7 @@ describe("Cron event triggers", () => {
     try {
       const bus = new EventBus();
       const handler = vi.fn(async (_event?: unknown) => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
+      const cron = new HostMaintenance({ configPath: configPath, projectRoot: root, emitEvent: (event) => bus.emit(event as any) });
       cron.load();
       cron.registerHandler("sample-maintenance", handler);
       cron.subscribeToBus(bus);
@@ -91,7 +90,7 @@ describe("Cron event triggers", () => {
     try {
       const bus = new EventBus();
       const handler = vi.fn(async (_event?: unknown) => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
+      const cron = new HostMaintenance({ configPath: configPath, projectRoot: root, emitEvent: (event) => bus.emit(event as any) });
       cron.load();
       cron.registerHandler("session-recovery", handler);
       cron.subscribeToBus(bus);
@@ -133,7 +132,7 @@ describe("Cron event triggers", () => {
     try {
       const bus = new EventBus();
       const handler = vi.fn(async (_event?: unknown) => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
+      const cron = new HostMaintenance({ configPath: configPath, projectRoot: root, emitEvent: (event) => bus.emit(event as any) });
       cron.load();
       cron.registerHandler("legacy-config-agent", handler);
 
@@ -147,108 +146,6 @@ describe("Cron event triggers", () => {
         owner: "agent:may",
         data: { entry: "legacy-config-agent" },
       });
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("does not fire workflow handler when event project mismatches handler projectId", async () => {
-    const { root, configPath, cleanup } = tempCronConfig([]);
-    try {
-      const bus = new EventBus();
-      const handler = vi.fn(async () => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
-      cron.load();
-      cron.registerHandler("may-agent-project-planner", handler);
-      cron.addSyntheticEntry({
-        name: "may-agent-project-planner",
-        enabled: true,
-        on: ["project.owner.requested"],
-        handler: {
-          workflow: "verify-wrap",
-          agent: "may",
-          projectId: "may-agent",
-          task: "plan",
-        },
-      });
-      cron.subscribeToBus(bus);
-
-      bus.emit({
-        type: "project.owner.requested",
-        source: "agent:aks-explorer",
-        owner: "agent:aks-explorer",
-        data: { project: "alpha-project" },
-      } as any);
-      await nextTick();
-      expect(handler).not.toHaveBeenCalled();
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("fires workflow handler when event project matches handler projectId", async () => {
-    const { root, configPath, cleanup } = tempCronConfig([]);
-    try {
-      const bus = new EventBus();
-      const handler = vi.fn(async () => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
-      cron.load();
-      cron.registerHandler("may-agent-project-planner", handler);
-      cron.addSyntheticEntry({
-        name: "may-agent-project-planner",
-        enabled: true,
-        on: ["project.owner.requested"],
-        handler: {
-          workflow: "verify-wrap",
-          agent: "may",
-          projectId: "may-agent",
-          task: "plan",
-        },
-      });
-      cron.subscribeToBus(bus);
-
-      bus.emit({
-        type: "project.owner.requested",
-        source: "agent:may",
-        owner: "agent:may",
-        data: { project: "may-agent" },
-      } as any);
-      await nextTick();
-      expect(handler).toHaveBeenCalledTimes(1);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("fires handler when event has no project field (non-project-scoped events)", async () => {
-    const { root, configPath, cleanup } = tempCronConfig([]);
-    try {
-      const bus = new EventBus();
-      const handler = vi.fn(async () => {});
-      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
-      cron.load();
-      cron.registerHandler("metric-watcher", handler);
-      cron.addSyntheticEntry({
-        name: "metric-watcher",
-        enabled: true,
-        on: ["metric.breach"],
-        handler: {
-          workflow: "verify-wrap",
-          agent: "may",
-          projectId: "may-agent",
-          task: "handle metrics",
-        },
-      });
-      cron.subscribeToBus(bus);
-
-      bus.emit({
-        type: "metric.breach",
-        source: "metrics",
-        owner: "agent:may",
-        data: { metricId: "handler.success-rate" },
-      } as any);
-      await nextTick();
-      expect(handler).toHaveBeenCalledTimes(1);
     } finally {
       cleanup();
     }

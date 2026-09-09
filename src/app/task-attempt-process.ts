@@ -16,7 +16,8 @@ import {
 } from "./app-task-runtime.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { prepareDaemonAgents } from "./daemon-agents.js";
-import { EventBus, EVENT_ROW_ID, type AgentEvent } from "./event-bus.js";
+import { readTaskOutcomes } from "./adapters/reporting/task-outcomes.js";
+import { EventBus, EVENT_ROW_ID, type AgentEvent } from "./core/events/bus.js";
 import { HostCapacity } from "./host-capacity.js";
 import { isBundled } from "./bundle-mode.js";
 import type { ModelRegistry } from "./model-registry.js";
@@ -401,8 +402,8 @@ export async function runTaskRecoveryWorker(input: {
 }): Promise<void> {
   return runTaskWorker({
     ...input,
-    run: async (bus) => {
-      await recoverInstalledAppTasks(bus);
+    run: async (bus, isDefinitionCurrent) => {
+      await recoverInstalledAppTasks(bus, isDefinitionCurrent);
       return [];
     },
   });
@@ -414,7 +415,7 @@ async function runTaskWorker(input: {
   appIds?: readonly string[];
   task?: TaskAttemptProcessRequest;
   definitionSource?: TaskAttemptProcessRequest["definitionSource"];
-  run(bus: EventBus): Promise<string[]>;
+  run(bus: EventBus, isDefinitionCurrent: () => boolean): Promise<string[]>;
 }): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
     throw new Error("Task worker mode is private to the parent runtime");
@@ -452,33 +453,38 @@ async function runTaskWorker(input: {
   const registry = new AppRegistry(discoverAppDefinitions(activeSource.projectsRoot, input.roots.projectsRoot));
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
-  const agentNames = registry
-    .snapshot()
-    .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
-    .flatMap(({ appDir, definition }) => {
-      const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
-      const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
-        /^agent:/,
-        "",
-      );
-      if (!input.task) return [agent];
-      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
-      if (!resourceStore) return [agent];
-      const selected = readAppTaskAgent(
-        appTaskContext({
-          appDir,
-          projectDir: appDir,
-          agent,
-          maxConcurrent: 1,
-          resourceStore,
-        }),
-        input.task.taskId,
-      );
-      return selected && selected !== agent ? [agent, selected] : [agent];
-    });
+  const task = input.task;
+  // Attempts load only their selected agents. Recovery needs the whole active
+  // catalog: retained Tasks can select or inherit a non-default agent.
+  const agentNames = task
+    ? registry
+        .snapshot()
+        .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
+        .flatMap(({ appDir, definition }) => {
+          const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
+          const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
+            /^agent:/,
+            "",
+          );
+          const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
+          if (!resourceStore) return [agent];
+          const selected = readAppTaskAgent(
+            appTaskContext({
+              appDir,
+              projectDir: appDir,
+              agent,
+              maxConcurrent: 1,
+              resourceStore,
+            }),
+            task.taskId,
+          );
+          return selected && selected !== agent ? [agent, selected] : [agent];
+        })
+    : undefined;
   const hostCapacity = new HostCapacity(1);
   try {
     await prepareDaemonAgents({
+      readOutcomes: readTaskOutcomes,
       agentsRoot: activeSource.agentsRoot,
       sharedRoot: input.roots.sharedRoot,
       definitionSharedRoot: activeSource.sharedRoot,
@@ -496,7 +502,13 @@ async function runTaskWorker(input: {
       syncTaskReadModels: false,
       agentNames,
     });
-    const dependentTaskIds = await input.run(bus);
+    // Immutable release paths carry the selected source identity. A recovery
+    // child cannot observe a parent reload through its own in-memory registry.
+    // Attempt workers deliberately ignore this fence and finish pinned work.
+    const dependentTaskIds = await input.run(
+      bus,
+      () => appSources.current()?.projectsRoot === activeSource.projectsRoot,
+    );
     await writeWorkerFrame({ kind: "result", dependentTaskIds });
   } catch (error) {
     await writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });

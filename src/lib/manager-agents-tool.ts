@@ -11,7 +11,7 @@ import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
 import { readIdentity } from "./instance-identity.js";
-import type { EventTrace } from "../app/event-bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -55,8 +55,6 @@ export interface CreateAgentsToolOptions {
   callDeny?: { agents: string[]; hint: string };
   /** Root directory of agent definitions (for message action). */
   agentsRoot?: string;
-  /** Trigger an agent's heartbeat cron (for message action). */
-  triggerHeartbeat?: (agentName: string) => boolean;
   /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
   bus?: { emit(event: Record<string, unknown>): void };
 }

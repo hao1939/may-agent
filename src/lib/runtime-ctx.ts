@@ -5,7 +5,7 @@
  * Workflow execution adapts this into the narrow SDK context; it is never spread into App code.
  */
 
-import type { EventBus } from "../app/event-bus.js";
+import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
@@ -69,6 +69,8 @@ function runtimeEventEnvelope(
 }
 
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
+  let metrics: MetricService | undefined;
+  let query: QueryAPI | undefined;
   return {
     emit: (event) => opts.bus.emit(runtimeEventEnvelope(event, opts.agentName) as any),
     dispatchEvent: (eventType, data) =>
@@ -79,9 +81,11 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
         }) as any,
       ),
     getDb: () => getDb(opts.persistDir),
-    query: createQueryService({
-      getDb: () => getDb(opts.persistDir),
-    }),
+    get query() {
+      return (query ??= createQueryService({
+        getDb: () => getDb(opts.persistDir),
+      }));
+    },
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
       opts.bus.emit(
@@ -92,26 +96,28 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
         }),
       );
     },
-    metrics: createMetricService({
-      getDb: () => getDb(opts.persistDir),
-      emit: (type, data, envelope) =>
-        opts.bus.emit(
-          buildCanonicalEventEnvelope(
-            type,
-            {
-              source: envelope?.source ?? `agent:${opts.agentName}`,
-              owner: envelope?.owner,
-              target: envelope?.target,
-              urgency: envelope?.urgency,
-              ttl_ms: envelope?.ttl_ms,
-              data: data ?? {},
-            },
-            { owner: opts.agentName },
-          ) as any,
-        ),
-      measuredBy: `agent:${opts.agentName}`,
-      log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
-    }),
+    get metrics() {
+      return (metrics ??= createMetricService({
+        getDb: () => getDb(opts.persistDir),
+        emit: (type, data, envelope) =>
+          opts.bus.emit(
+            buildCanonicalEventEnvelope(
+              type,
+              {
+                source: envelope?.source ?? `agent:${opts.agentName}`,
+                owner: envelope?.owner,
+                target: envelope?.target,
+                urgency: envelope?.urgency,
+                ttl_ms: envelope?.ttl_ms,
+                data: data ?? {},
+              },
+              { owner: opts.agentName },
+            ) as any,
+          ),
+        measuredBy: `agent:${opts.agentName}`,
+        log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
+      }));
+    },
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,

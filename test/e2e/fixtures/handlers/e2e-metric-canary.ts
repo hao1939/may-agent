@@ -9,10 +9,11 @@
  *   2: record 0.95 (recover)
  *   3+: noop
  */
-import type { CronEntry } from "../../../../src/lib/cron-tool.js";
-import type { HandlerContext, HandlerModule, EventEnvelope } from "../../../../src/lib/handler-context.js";
+import type { MaintenanceEntry } from "../../../../src/app/adapters/maintenance/contracts.js";
+import type { HandlerContext, HandlerModule } from "../../../../src/app/adapters/maintenance/context.js";
+import type { EventEnvelope } from "../../../../src/app/core/events/bus.js";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: MaintenanceEntry) => {
   const metricId = "e2e.canary";
 
   return async (_event?: EventEnvelope) => {

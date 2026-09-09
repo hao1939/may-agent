@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EventBus } from "../../app/event-bus.js";
+import { EventBus } from "../../app/core/events/bus.js";
 import { DbWriter } from "../db-writer.js";
 import { getDb } from "./connection.js";
 

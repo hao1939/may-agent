@@ -6,7 +6,7 @@ import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {
@@ -195,6 +195,8 @@ function intent(mode: "achieve" | "maintain" = "achieve") {
   } as const;
 }
 
+import { buildRecoveredSessionHandoff } from "./adapters/executors/session-recovery.js";
+
 function declareAndClaimTask(
   config: AppTaskContext,
   input: {
@@ -204,6 +206,7 @@ function declareAndClaimTask(
     reason?: string;
     trigger?: Record<string, unknown>;
     isAgentRunnable?: (agent: string) => boolean;
+    recoverSessionHandoff?: Parameters<typeof claimObservedAppTask>[1]["recoverSessionHandoff"];
   },
 ) {
   const observed = observeAppTaskIntent(config, {
@@ -218,6 +221,7 @@ function declareAndClaimTask(
     handler: input.handler,
     reason: input.reason,
     isAgentRunnable: input.isAgentRunnable,
+    recoverSessionHandoff: input.recoverSessionHandoff,
   });
 }
 
@@ -259,6 +263,7 @@ function reclaimInterruptedSession(
     appAgent: "app-owner",
     handler: "workflow:known-workflow",
     reason: `attempt-recovery:${claim.taskId}`,
+    recoverSessionHandoff: (attempt) => buildRecoveredSessionHandoff(join(root, ".state"), attempt),
   });
   if (reclaimed.kind !== "claimed") throw new Error("expected reclaimed claim");
   return { reclaimed, sessionPath };
@@ -1051,7 +1056,10 @@ describe("App task reconciler state", () => {
 
     expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
     expect(listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id])).toEqual([
-      { taskId: "work/unavailable", agent: "branch-owner", workflow: "missing-workflow" },
+      expect.objectContaining({
+        taskId: "work/unavailable", agent: "branch-owner", handler: "workflow:missing-workflow",
+        generation: unavailableClaim.generation, attemptId: unavailableClaim.attemptId,
+      }),
     ]);
 
     observeAppTaskIntent(config, {
@@ -1073,7 +1081,9 @@ describe("App task reconciler state", () => {
       "work/pending",
     ]);
 
-    expect(releaseHandlerUnavailableAppTask(config, "work/unavailable")).toBe(true);
+    const [candidate] = listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id]);
+    expect(candidate).toBeDefined();
+    expect(releaseHandlerUnavailableAppTask(config, candidate!)).toBe(true);
     expect(
       config.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]?.status
         .phase,
@@ -3794,7 +3804,7 @@ describe("App task reconciler state", () => {
     if (oldClaim.kind !== "claimed") throw new Error("expected old claim");
     expect(recordAppTaskAttemptSession(config, oldClaim, "r_1_f85fb905-old-session")).toBe(true);
 
-    const checkpointDir = join(root, ".state", "checkpoints");
+    const checkpointDir = join(root, "configured-state", "checkpoints");
     mkdirSync(checkpointDir, { recursive: true });
     writeFileSync(
       join(checkpointDir, "r_1_f85fb905-old-session.jsonl"),
@@ -3821,6 +3831,7 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "restart-event:5446564",
+      recoverSessionHandoff: (attempt) => buildRecoveredSessionHandoff(join(root, "configured-state"), attempt),
     });
     if (replacement.kind !== "claimed") throw new Error("expected replacement claim");
     expect(replacement.generation).toBe(oldClaim.generation);

@@ -14,25 +14,19 @@ function setup(
   overrides: Partial<{
     allowedTargets: string[] | (() => string[]);
     persistDir: string;
-    triggerResult: boolean;
     callerSessionId: string;
   }> = {},
 ) {
   const events: CapturedEvent[] = [];
-  const triggers: string[] = [];
   const tool = createMessageTool({
     agentName: "arc",
     agentsRoot: "/tmp/agents",
     persistDir: overrides.persistDir ?? "/tmp/.state",
     emit: (e) => events.push(e),
-    triggerHeartbeat: (a) => {
-      triggers.push(a);
-      return overrides.triggerResult ?? true;
-    },
     allowedTargets: overrides.allowedTargets,
     getCallerSessionId: () => overrides.callerSessionId,
   });
-  return { tool, events, triggers };
+  return { tool, events };
 }
 
 async function call(tool: ReturnType<typeof createMessageTool>, params: Record<string, unknown>) {
@@ -42,6 +36,19 @@ async function call(tool: ReturnType<typeof createMessageTool>, params: Record<s
 }
 
 describe("message tool", () => {
+  it("does not claim a message was recorded when publication is absent or fails", async () => {
+    for (const emit of [
+      undefined,
+      () => {
+        throw new Error("storage unavailable");
+      },
+    ]) {
+      const tool = createMessageTool({ agentName: "arc", agentsRoot: "/tmp/agents", persistDir: "/tmp/.state", emit });
+      const result = await call(tool, { to: "human", content: "status" });
+      expect(result.error).toContain("Message was not recorded");
+      expect(result).not.toHaveProperty("delivery");
+    }
+  });
   it("rejects missing 'to' or 'content'", async () => {
     const { tool } = setup();
     expect((await call(tool, { content: "hi" })).error).toMatch(/required/);
@@ -70,18 +77,17 @@ describe("message tool", () => {
     );
   });
 
-  it("default priority is P2; P0 triggers immediate heartbeat", async () => {
-    const { tool, events, triggers } = setup();
+  it("default priority is P2; even P0 records a fact without promising execution", async () => {
+    const { tool, events } = setup();
 
     const r1 = await call(tool, { to: "dev", content: "low priority" });
     expect(r1.priority).toBe("P2");
-    expect(r1.triggered).toBe(false);
-    expect(triggers).toEqual([]);
+    expect(r1.delivery).toContain("recorded");
 
     const r2 = await call(tool, { to: "dev", content: "urgent", priority: "P0" });
     expect(r2.priority).toBe("P0");
-    expect(r2.triggered).toBe(true);
-    expect(triggers).toEqual(["dev"]);
+    expect(r2).not.toHaveProperty("triggered");
+    expect(r2.delivery).toContain("depends on declared App routes");
 
     // P0 message.created event carries priority in the canonical data payload.
     const p0Event = events.find(
@@ -91,14 +97,13 @@ describe("message tool", () => {
   });
 
   it("respects allowedTargets allowlist and reports invalid targets to may", async () => {
-    const { tool, events, triggers } = setup({ allowedTargets: ["dev", "scout"] });
+    const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
 
     const allowed = await call(tool, { to: "dev", content: "hi" });
     expect(allowed.error).toBeUndefined();
 
     const denied = await call(tool, { to: "qa", content: "hi" });
     expect(denied.error).toMatch(/Unknown message target/);
-    expect(triggers).toEqual([]);
     expect(events.some((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.to === "qa")).toBe(
       false,
     );

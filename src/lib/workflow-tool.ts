@@ -64,7 +64,7 @@ import { createUnavailableMetricService } from "./metrics.js";
 import type { AppTaskEvents } from "../app/app-task-emitter.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { EventTrace } from "../app/event-bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 import type {
   AppRead,
   AgentCallOptions,
@@ -72,7 +72,8 @@ import type {
   TaskReconciliationContext,
   WorkflowContext as AppWorkflowContext,
 } from "@may-agent/sdk/app";
-import { createRuntimeAppRead } from "../app/app-read.js";
+import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
+import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
 import { cliCallEvidence } from "./tools/run-cli-agent.js";
 
@@ -1401,13 +1402,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     };
 
     // Runtime services stay private. Authored workflows get only SDK capabilities.
-    const metricService =
+    const metricService = () =>
       opts.runtimeCtx?.metrics ?? createUnavailableMetricService("No runtimeCtx - metrics unavailable");
     const appRead =
       opts.read ??
       createRuntimeAppRead({
         getDb: opts.runtimeCtx?.getDb ?? (() => { throw new Error("No runtimeCtx - read unavailable"); }),
-        metrics: metricService,
+        readMetric: async (id) => readMetricView(metricService(), id),
       });
     const workflowLog = (message: string) => opts.runtimeCtx?.log(message);
     const taskEventUnsubscribers = new Set<() => void>();
@@ -1426,19 +1427,19 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       metrics: {
         define: (definition) => {
           assertExecutionActive();
-          metricService.define(definition);
+          metricService().define(definition);
         },
         defineMany: (definitions) => {
           assertExecutionActive();
-          metricService.defineMany(definitions);
+          metricService().defineMany(definitions);
         },
         record: (id, value, options) => {
           assertExecutionActive();
-          metricService.record(id, value, typeof options === "string" ? { note: options } : options);
+          metricService().record(id, value, typeof options === "string" ? { note: options } : options);
         },
         evaluate: (id) => {
           assertExecutionActive();
-          return metricService.evaluate(id);
+          return metricService().evaluate(id);
         },
       },
       ...(opts.executionPaths

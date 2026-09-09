@@ -323,7 +323,7 @@ async function loadLiveness() {
                       : (s.source || 'session');
           html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
         }
-        html += `</div><div class="heartbeat-last" title="Last heartbeat (agency tick)">${formatAgo(agent.lastHeartbeat)} <button title="Heartbeat now" onclick="verbHeartbeatNow('${esc(agent.name)}', event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;margin-left:4px">♥</button></div></div>`;
+        html += `</div><div class="heartbeat-last" title="Last historical heartbeat">${formatAgo(agent.lastHeartbeat)}</div></div>`;
       }
     }
     html += `</div>`;

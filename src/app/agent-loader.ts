@@ -18,7 +18,7 @@
  * Domain files, skills, lessons, and knowledge indexes are read on demand.
  */
 
-import type { Cron } from "./cron.js";
+import type { HostMaintenance } from "./adapters/maintenance/runtime.js";
 import { log } from "../lib/log.js";
 import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
@@ -31,7 +31,7 @@ import {
   type AgentLoaderOptions,
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
-import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
+import { loadMaintenanceHandlers } from "./adapters/maintenance/handler-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export {
@@ -41,8 +41,7 @@ export {
   listRuntimeAgentDirectories,
 } from "./loader/agent-discovery.js";
 export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
-export { generateAutoHeartbeats } from "./loader/heartbeat-loader.js";
-export { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
+export { loadMaintenanceHandlers } from "./adapters/maintenance/handler-loader.js";
 export type { AgentLoaderOptions, LoadResult } from "./loader/agent-registry-loader.js";
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
@@ -63,21 +62,21 @@ export function setAgentSessionId(name: string, sid: string): void {
 /** Per-agent cleanup functions. Called when agent sessions end. */
 const agentCleanups = new Map<string, Array<() => void>>();
 
-/** Per-agent trigger scheduler instances. Created for agents with the legacy "cron" tool preset. */
-const agentCrons = new Map<string, Cron>();
+/** Prepared Host-maintenance instances, independent of agent tool presets. */
+const agentMaintenance = new Map<string, HostMaintenance>();
 
 /** Get all trigger scheduler instances (for starting/stopping from may.ts). */
-export function getAgentCrons(): Map<string, Cron> {
-  return agentCrons;
+export function getAgentMaintenance(): Map<string, HostMaintenance> {
+  return agentMaintenance;
 }
 
 function publishResources(generation: PreparedAgentGeneration): AgentGenerationPublication {
-  const previousCrons = new Map(agentCrons);
+  const previousCrons = new Map(agentMaintenance);
   const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));
 
   try {
-    agentCrons.clear();
-    for (const [name, cron] of generation.crons) agentCrons.set(name, cron);
+    agentMaintenance.clear();
+    for (const [name, cron] of generation.maintenance) agentMaintenance.set(name, cron);
     // Keep cleanup callbacks for already-running sessions and add the callbacks
     // captured by the new definitions. They are retired naturally when the
     // corresponding session ends.
@@ -88,8 +87,8 @@ function publishResources(generation: PreparedAgentGeneration): AgentGenerationP
     }
   } catch (error) {
     discardAgentGeneration(generation);
-    agentCrons.clear();
-    for (const [name, cron] of previousCrons) agentCrons.set(name, cron);
+    agentMaintenance.clear();
+    for (const [name, cron] of previousCrons) agentMaintenance.set(name, cron);
     agentCleanups.clear();
     for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
     throw error;
@@ -101,15 +100,15 @@ function publishResources(generation: PreparedAgentGeneration): AgentGenerationP
       if (settled) return;
       settled = true;
       discardAgentGeneration(generation);
-      agentCrons.clear();
-      for (const [name, cron] of previousCrons) agentCrons.set(name, cron);
+      agentMaintenance.clear();
+      for (const [name, cron] of previousCrons) agentMaintenance.set(name, cron);
       agentCleanups.clear();
       for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
     },
     finalize() {
       if (settled) return;
       settled = true;
-      const retained = new Set(generation.crons.values());
+      const retained = new Set(generation.maintenance.values());
       for (const cron of previousCrons.values()) {
         if (!retained.has(cron)) cron.close();
       }
@@ -150,7 +149,7 @@ export async function loadAgents(opts: AgentLoaderOptions) {
 /** Prepare every definition and side-effect container without publication. */
 export async function prepareAgentGeneration(opts: AgentLoaderOptions): Promise<PreparedAgentGeneration> {
   const generation = await prepareAgentsFromRegistry(opts, registryRuntime());
-  const handlers = await loadHandlersForAgentCrons({ ...opts, agentCrons: generation.crons });
+  const handlers = await loadMaintenanceHandlers({ ...opts, agentMaintenance: generation.maintenance });
   if (handlers.errors.length === 0) return generation;
   discardAgentGeneration(generation);
   throw new Error(`Agent handler preparation failed:\n${handlers.errors.map((error) => `  ${error}`).join("\n")}`);
@@ -178,7 +177,7 @@ export async function reloadAgents(
 /** Prepare legacy handlers without attaching routes or starting timers. */
 export async function prepareAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
   const { bus } = loaderOpts;
-  const handlerResult = await loadHandlersForAgentCrons({ ...loaderOpts, agentCrons });
+  const handlerResult = await loadMaintenanceHandlers({ ...loaderOpts, agentMaintenance });
   if (handlerResult.registered.length > 0) {
     bus.emit({
       type: "info",

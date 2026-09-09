@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { runWorkflowDirect } from "../../lib/workflow-tool.js";

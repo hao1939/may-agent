@@ -70,15 +70,6 @@ console.log("─".repeat(60));
   }
 }
 
-// 3. POST /api/agents/:name/heartbeat-now (just verify accepted; we don't want
-//    to actually trigger a heartbeat in a test loop, but the socket may not be
-//    bound during smoke either, so 200 OR 503 is acceptable).
-{
-  const { status, body } = await http("POST", "/api/agents/may/heartbeat-now", { actor: "smoke-test" });
-  if (status === 200 || status === 503) ok(`POST heartbeat-now (status=${status}, ${status === 503 ? "socket not bound, OK" : "queued"})`);
-  else bad("POST heartbeat-now unexpected status", { status, body });
-}
-
 // 4. POST /api/sessions/:id/message validation.
 {
   const { status } = await http("POST", "/api/sessions/no-such/message", {});

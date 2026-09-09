@@ -28,7 +28,9 @@ export type EventReceipt = {
   links?: EventLink[];
 };
 
-/** An observed event. Ephemeral notifications may have no durable id or time. */
+/** Transport shape, not a stability guarantee for every diagnostic payload.
+ * Task/Conversation notifications mean reread that resource, not completion.
+ * Ephemeral notifications may have no durable id or time. */
 export type PublicEvent = {
   id?: number;
   type: string;
@@ -39,7 +41,8 @@ export type PublicEvent = {
   timestamp?: number;
 };
 
-/** Current admission and linked outcomes read from a persisted event. */
+/** Diagnostic event plus its admission/correlation evidence. Linked route state
+ * is not Task completion; read the exact Task/request for authoritative results. */
 export type EventView = {
   event: PublicEvent & { id: number; timestamp: number };
   delivery: {

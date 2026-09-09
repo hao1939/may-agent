@@ -1,7 +1,7 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { CliCallEvidence } from "@may-agent/sdk";
-import type { EventTrace } from "../../app/event-bus.js";
+import type { EventTrace } from "../../app/core/events/bus.js";
 import { runCliAgent, type CliAgentOptions } from "../cli-agent.js";
 
 const paramsSchema = Type.Object({

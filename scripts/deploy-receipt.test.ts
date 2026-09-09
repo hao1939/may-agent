@@ -7,7 +7,7 @@ import {
   deployReceiptPrompt,
   hasDeployReceiptWake,
   readDeployReceiptForTask,
-} from "../src/app/app-task-runtime";
+} from "../src/app/adapters/executors/agent-workspace.js";
 import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 
 function fixture() {

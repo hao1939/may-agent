@@ -1,7 +1,7 @@
 import type { SubagentManager } from "../lib/index.js";
 import type { AppArgs } from "./app-args.js";
 import { formatDurationMs } from "./daemon.js";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { runOneshotMode } from "./modes/oneshot.js";
 import { runWorkflowMode } from "./modes/run-workflow.js";

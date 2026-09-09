@@ -6,14 +6,13 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
-import { createMetricService } from "../lib/metrics.js";
-import { syncAppMetricDefinitions } from "./app-metric-definitions.js";
+import type { AppReporting } from "./composition/reporting.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
-import { createRuntimeAppRead } from "./app-read.js";
+import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { readAppConversationResource } from "./conversations/store.js";
@@ -30,8 +29,8 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus } from "./event-bus.js";
-import { createEventInterface, type EventInterface } from "./event-interface.js";
+import { EventBus } from "./core/events/bus.js";
+import { createEventInterface, type EventInterface } from "./core/events/interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
@@ -42,8 +41,8 @@ import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./task-admission-process.js";
-import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
-import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
+import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
 import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
@@ -125,6 +124,7 @@ export async function runAppRuntime(opts: {
   instanceLabel: string;
   processStartTime: number;
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
+  reporting?: AppReporting;
 }): Promise<void> {
   assertLegacyCliTasksSettled(opts.persistDir);
   const startupStartedAt = performance.now();
@@ -223,6 +223,7 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
     taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
+    readOutcomes: opts.reporting?.readOutcomes,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
     executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
@@ -263,8 +264,18 @@ export async function runAppRuntime(opts: {
       manager.getSessionSummary(sessionId).status !== "unknown" ||
       Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
   });
-  const appMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
-  syncAppMetricDefinitions(appRegistry.snapshot().entries, appMetrics);
+  // Reporting observes the committed generation; it cannot reject publication.
+  const refreshReporting = () => {
+    if (!opts.reporting) return;
+    setImmediate(() => {
+      try {
+        opts.reporting!.syncDefinitions(appRegistry.snapshot().entries);
+      } catch (error) {
+        console.error(`[reporting] Metric definitions unavailable: ${String(error)}`);
+      }
+    });
+  };
+  refreshReporting();
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
@@ -309,7 +320,7 @@ export async function runAppRuntime(opts: {
       return {
         read: createRuntimeAppRead({
           getDb: () => getDb(opts.persistDir),
-          metrics: appMetrics,
+          readMetric: opts.reporting?.readMetric,
           taskRead: {
             list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
             outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
@@ -371,7 +382,7 @@ export async function runAppRuntime(opts: {
     publishAgents: (options, generation) => {
       const publication = publishPreparedAgentGeneration(options, generation);
       try {
-        if (backgroundEnabled) activateAgentCrons(generation.crons, bus, CRON_ENABLED);
+        if (backgroundEnabled) activateAgentMaintenance(generation.maintenance, bus, CRON_ENABLED);
         return publication;
       } catch (error) {
         publication.rollback();
@@ -401,7 +412,6 @@ export async function runAppRuntime(opts: {
                 try {
                   publishAgents();
                   commit();
-                  syncAppMetricDefinitions(snapshot.entries, appMetrics);
                 } catch (error) {
                   // Restore before Task rollback yields to other worker dispatch.
                   if (previous) appSources.activate(previous);
@@ -419,6 +429,7 @@ export async function runAppRuntime(opts: {
         },
         discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
       );
+      refreshReporting();
       return { appIds, taskApps };
     },
   });
@@ -521,7 +532,7 @@ export async function runAppRuntime(opts: {
   if (backgroundEnabled) {
     // Handlers are prepared before ingress; activate only after its routes and
     // Conversation adapters are ready. A startup job must not gate core work.
-    activateAgentCrons(getAgentCrons(), bus, CRON_ENABLED);
+    activateAgentMaintenance(getAgentMaintenance(), bus, CRON_ENABLED);
     await appInboxRuntime.start();
     startBackgroundRuntime({
       manager,

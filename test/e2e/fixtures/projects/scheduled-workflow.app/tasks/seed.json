@@ -1,0 +1,11 @@
+{
+  "root_task_id": "scheduled-workflow",
+  "groups": {
+    "scheduled-workflow": {
+      "id": "scheduled-workflow",
+      "parent_id": null,
+      "agent": "may",
+      "children": []
+    }
+  }
+}

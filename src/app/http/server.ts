@@ -37,7 +37,7 @@ import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../app-inbox-store.js";
-import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../event-interface.js";
+import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -3058,6 +3058,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function handleEventView(eventIdText: string): Response {
+    // Trusted operator diagnostic view, intentionally broader than POST ingress.
+    // Consumers needing Task results must reread the exact canonical resource.
     const eventId = Number(eventIdText);
     if (!Number.isSafeInteger(eventId) || eventId <= 0) return json({ error: "event id must be positive" }, 400);
     const view = getEventView(_db(), eventId);
@@ -3610,23 +3612,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
   }
 
-  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {
-    if (!agentName) return json({ error: "agent required" }, 400);
-    // Resolve actor from request body if provided, default to "human" (UI).
-    let actor = "human";
-    try {
-      const body = (await req.json()) as { actor?: string };
-      if (body.actor) actor = String(body.actor);
-    } catch {
-      /* body optional */
-    }
-    const result = await sendDaemonFrame(
-      buildPublishFrame("heartbeat.trigger", { agent: agentName, requestedBy: actor }),
-    );
-    if (!result.ok) return json({ error: result.error }, 503);
-    return json({ ok: true, agent: agentName, triggeredAt: Date.now() });
-  }
-
   async function handleMetricThreshold(req: Request, metricId: string): Promise<Response> {
     if (!metricId) return json({ error: "metricId required" }, 400);
     let body: { threshold?: number };
@@ -3838,8 +3823,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (sessionEvalCommentMatch) return handleSessionEvalComment(req, sessionEvalCommentMatch[1]);
         const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
-        const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
-        if (heartbeatNowMatch) return handleAgentHeartbeatNow(req, heartbeatNowMatch[1]);
         const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
         if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1], url);
         const thresholdMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/threshold$/);

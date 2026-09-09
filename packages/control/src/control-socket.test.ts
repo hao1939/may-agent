@@ -11,7 +11,7 @@ import {
   type ControlEvent,
   type ControlSocket,
 } from "./server.js";
-import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/event-bus.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { taskUpdateIdentity } from "./task-wake.js";
@@ -939,7 +939,7 @@ describe("control socket protocol", () => {
     core.getBroadcast()?.({
       type: "project.task.reconciled",
       target: { appId: "evaluation" },
-      data: { project: "evaluation", taskId: "review/docs", summary: "not part of the wake" },
+      data: { project: "evaluation", taskId: "review/docs", disposition: "stale", state: "converged", summary: "not part of the wake" },
     });
 
     await expect(nextFrame(stream)).resolves.toEqual({

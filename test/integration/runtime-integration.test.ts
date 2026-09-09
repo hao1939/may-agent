@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Cron } from "../../src/app/cron.js";
-import { EventBus } from "../../src/app/event-bus.js";
+import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { buildAgentSDK, type SDKDeps } from "../../src/lib/sdk-impl.js";
@@ -58,15 +58,7 @@ describe("runtime integration", () => {
     const handled: unknown[] = [];
     bus.setPersistenceSubscriber(writer.handler);
 
-    const cron = new Cron(
-      configPath,
-      {} as never,
-      () => "",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as never),
-    );
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: root, emitEvent: (event) => bus.emit(event as never) });
     cron.load();
     cron.registerHandler("escalation-reactor", async (event) => {
       handled.push(event);

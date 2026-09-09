@@ -2,11 +2,11 @@ import { describe, expect, it } from "bun:test";
 import {
   appTaskAgentProtocol,
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  hasDeployReceiptWake,
   hasSuppliedDependencyObservation,
-  mergeTaskConditions,
-  normalizeTaskHandlerResult,
-} from "./app-task-runtime.js";
+} from "./adapters/executors/managed-agent.js";
+import { hasDeployReceiptWake } from "./adapters/executors/agent-workspace.js";
+import { mergeTaskConditions } from "./app-task-runtime.js";
+import { normalizeTaskHandlerResult } from "./core/tasks/result.js";
 
 // Pure projection and protocol rules need neither a repository nor a database.
 describe("App Task agent prompt context", () => {

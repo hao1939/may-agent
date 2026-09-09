@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { EventBus } from "./event-bus.js";
+import { EventBus } from "./core/events/bus.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { closeDb } from "../lib/requests.js";
 

@@ -10,6 +10,11 @@ export const name = "e2e-noop-workflow";
 export const description = "Fixture workflow that completes immediately.";
 
 export async function execute(ctx: WorkflowContext<string>): Promise<ExecutionResult> {
-  await ctx.events.emit({ type: "e2e.workflow_ran", data: { task: ctx.input } });
-  return ctx.done(`e2e-noop-workflow completed with task: ${ctx.input}`);
+  if (!ctx.reconciliation) throw new Error("Fixture requires a Task attempt");
+  await ctx.events.emit({ localKey: "workflow-ran", type: "e2e.workflow_ran", data: { task: ctx.input } });
+  return ctx.done("e2e-noop-workflow completed", {
+    state: "converged",
+    summary: "Scheduled workflow verified",
+    evidence: ["e2e.workflow_ran"],
+  });
 }

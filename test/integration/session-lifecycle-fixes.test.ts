@@ -23,7 +23,7 @@ import {
   ensureSessionDir,
   appendSessionMessage,
 } from "../../src/lib/persistence.js";
-import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
+import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";

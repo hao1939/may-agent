@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 
 export async function runInteractiveLoop(opts: {

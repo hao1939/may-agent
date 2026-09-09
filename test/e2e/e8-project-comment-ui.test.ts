@@ -223,6 +223,12 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       expect(statusOf(projAfter)).toBe("active");
 
       // Shipped chat.js, in the same real browser: no copied renderer or DOM.
+      // The page is interactive before its async Markdown dependency arrives.
+      // Wait for that exact prerequisite, not all background network traffic.
+      await page.waitForFunction(
+        () => typeof (window as typeof window & { marked?: { parse?: unknown } }).marked?.parse === "function",
+        { timeout: 10_000 },
+      );
       const rendered = await page.evaluate(() => {
         const ui = window as typeof window & {
           renderAssistantMsg: (el: HTMLElement, text: string) => void;

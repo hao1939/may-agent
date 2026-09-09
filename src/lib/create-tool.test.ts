@@ -190,7 +190,6 @@ describe("createAgentsTool()", () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "may",
-        triggerHeartbeat: () => true,
       });
       const r1 = parseResult(
         await tool.execute("tc1", { action: "message", agent: "researcher", message: "review the API docs" }),

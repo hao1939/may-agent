@@ -31,7 +31,7 @@ import {
 import { drainBashProcessGroup, processGroupContainsLiveMember } from "./tools/bash.js";
 import { cliCallEvidence, createRunCliAgentTool } from "./tools/run-cli-agent.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../app/event-bus.js";
+import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../app/core/events/bus.js";
 import { attachEventPersistence } from "../app/daemon-events.js";
 import { closeAllDbs } from "./requests.js";
 

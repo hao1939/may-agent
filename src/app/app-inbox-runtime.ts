@@ -1,3 +1,5 @@
+import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js";
+import { OwnedTimer } from "./core/scheduling/timer.js";
 import { createHash } from "node:crypto";
 import {
   matchesEventSelector,
@@ -12,14 +14,7 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
-import {
-  EVENT_RECORD_ONLY,
-  EVENT_ROW_ID,
-  eventData,
-  type AgentEvent,
-  type DeliveryResult,
-  type EventBus,
-} from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
   AppInboxHost,
   type AppInboxReconcileResult,
@@ -40,7 +35,12 @@ import {
   readAppConversationResource,
   readConversationTopic,
 } from "./conversations/store.js";
-import type { AppDefinitionSource, AppRegistry, AppRegistrySnapshot, LoadedAppDefinition } from "./core/apps/registry.js";
+import type {
+  AppDefinitionSource,
+  AppRegistry,
+  AppRegistrySnapshot,
+  LoadedAppDefinition,
+} from "./core/apps/registry.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -674,37 +674,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  let scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
-
-  const refreshScheduleActivations = (): void => {
-    const activeKeys = new Set<string>();
-    for (const { definition } of loaded) {
-      for (const schedule of definition.schedules ?? []) {
-        const key = `${definition.id}/${schedule.id}`;
-        activeKeys.add(key);
-        const fingerprint = JSON.stringify({
-          intervalMs: schedule.intervalMs,
-          ...(schedule.input
-            ? { input: schedule.input, catchUp: schedule.catchUp ?? "latest" }
-            : { event: schedule.event }),
-          enabled: schedule.enabled !== false,
-        });
-        if (scheduleActivations.get(key)?.fingerprint !== fingerprint) {
-          const activatedAt = now();
-          scheduleActivations.set(key, {
-            fingerprint,
-            activatedAt,
-            ...(!schedule.input ? { lastSlot: Math.floor(activatedAt / schedule.intervalMs) } : {}),
-          });
-        }
-      }
-    }
-    for (const key of scheduleActivations.keys()) {
-      if (!activeKeys.has(key)) scheduleActivations.delete(key);
-    }
-  };
-  refreshScheduleActivations();
-
+  const scheduleProducer = createAppScheduleProducer({
+    bus: options.bus,
+    now,
+    enabled: options.schedulesEnabled !== false,
+  });
+  scheduleProducer.replace(loaded);
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
     if (outcome.errors.length === 0) return;
     options.bus.emit({
@@ -814,77 +789,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     return current;
   };
 
-  const publishScheduledEvent = (event: AgentEvent, identity: string): boolean => {
-    try {
-      options.bus.emit(event);
-      return true;
-    } catch (error) {
-      // Persistence can fail before the fact exists. Keep lastSlot unchanged;
-      // the next ordinary scan publishes the latest slot, not a replay queue.
-      // Reporting through the same unavailable database could throw again.
-      console.error(
-        `[app-schedule:${identity}] publication failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return false;
-    }
+  const recoverNow = () => {
+    if (closed || !started) return;
+    const currentTime = now();
+    for (const appId of host.readyAppIds()) schedule(appId);
+    if (currentTime >= nextDependencyRecoveryAt) void recoverTaskDependencies();
+    recoverAdmissionPlans();
   };
 
   const scanNow = () => {
     if (closed || !started) return;
-    const currentTime = now();
-    for (const { definition } of options.schedulesEnabled === false ? [] : loaded) {
-      for (const configuredSchedule of definition.schedules ?? []) {
-        if (configuredSchedule.enabled === false) continue;
-        const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);
-        if (!activation) continue;
-        const slot = Math.floor(currentTime / configuredSchedule.intervalMs);
-        if (!configuredSchedule.input) {
-          if (activation.lastSlot === undefined || slot <= activation.lastSlot) continue;
-          const event = configuredSchedule.event;
-          const scheduledFact = {
-            ...event,
-            source: event.source ?? `app:${definition.id}:schedule:${configuredSchedule.id}`,
-            owner: event.owner ?? `app:${definition.id}`,
-            data: {
-              ...record(event.data),
-              idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
-            },
-          } as AgentEvent;
-          // Event schedules publish facts; they do not create a reliable
-          // command channel or make a passive observer the delivery owner.
-          Object.defineProperty(scheduledFact, EVENT_RECORD_ONLY, { value: true, configurable: true });
-          if (publishScheduledEvent(scheduledFact, `${definition.id}/${configuredSchedule.id}`)) {
-            activation.lastSlot = slot;
-          }
-          continue;
-        }
-        if (activation.lastSlot !== undefined && slot <= activation.lastSlot) continue;
-        const slotStartedAt = slot * configuredSchedule.intervalMs;
-        if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) {
-          activation.lastSlot = slot;
-          continue;
-        }
-        const published = publishScheduledEvent(
-          {
-            type: "app.input.requested",
-            source: `app:${definition.id}:schedule:${configuredSchedule.id}`,
-            owner: `app:${definition.id}`,
-            data: {
-              appId: definition.id,
-              input: configuredSchedule.input,
-              source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
-              idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
-            },
-          },
-          `${definition.id}/${configuredSchedule.id}`,
-        );
-        if (published) activation.lastSlot = slot;
-      }
-    }
-    for (const appId of host.readyAppIds()) schedule(appId);
+    scheduleProducer.scanNow();
     observerRuntime.scanNow();
-    if (currentTime >= nextDependencyRecoveryAt) void recoverTaskDependencies();
-    recoverAdmissionPlans();
+    recoverNow();
   };
 
   const admissionRouteLabel = (command: AppEventAdmissionCommand): string =>
@@ -1639,17 +1556,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     { label: "app-inbox-route" },
   );
   // Events schedule normal work immediately. This interval is recovery
-  // insurance for lost in-memory wakes, due schedules, and observer slots; it
+  // insurance for lost in-memory request wakes; producer cadence is separate. It
   // must not turn the App inbox into an ordinary five-second polling loop.
   const scanIntervalMs = options.scanIntervalMs ?? 60_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
     unsubscribe();
     throw new Error("App inbox scanIntervalMs must be positive");
   }
-  let timer: ReturnType<typeof setInterval> | null = null;
+  const timer = new OwnedTimer("app-runtime:recovery");
+  const initialRecovery = new OwnedTimer("app-runtime:initial-recovery");
   const scanFromTimer = () => {
     try {
-      scanNow();
+      recoverNow();
     } catch (error) {
       // A failed storage read/recovery scan must not escape a timer callback
       // and terminate unrelated work. Durable state is recollected next scan.
@@ -1666,9 +1584,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // that opens the human interface or activates this message handler.
       void recoverTaskDependencies();
       recoverAdmissionPlans(true);
-      timer = setInterval(scanFromTimer, scanIntervalMs);
-      timer.unref?.();
-      setTimeout(scanFromTimer, 0);
+      timer.every(scanIntervalMs, scanFromTimer);
+      initialRecovery.after(0, scanFromTimer);
+      scheduleProducer.start(scanIntervalMs);
+      observerRuntime.start(scanIntervalMs);
       armPump();
       startPromise = Promise.resolve();
       return startPromise;
@@ -1685,13 +1604,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           throw new Error("Canonical App observers require an observer context factory");
         }
         let committed = false;
-        let previousScheduleActivations = scheduleActivations;
+        let restoreSchedules = () => {};
         const commit = () => {
           if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
-          previousScheduleActivations = scheduleActivations;
-          // Replacements get new activation records; unchanged schedules retain
-          // their delivered slots, including any scan during async preparation.
-          scheduleActivations = new Map(scheduleActivations);
           committed = true;
           const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
           host.replaceApps(entries.map((entry) => entry.definition));
@@ -1700,7 +1615,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           appDirById = new Map(entries.map((entry) => [entry.definition.id, entry.appDir]));
           replaceRouteIndexes(entries);
           observerRuntime.replace(entries);
-          refreshScheduleActivations();
+          restoreSchedules = scheduleProducer.replace(entries);
         };
         try {
           if (prepare) await prepare({ snapshot, commit });
@@ -1714,7 +1629,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
             replaceRouteIndexes(previousLoaded);
             observerRuntime.replace(previousLoaded);
-            scheduleActivations = previousScheduleActivations;
+            restoreSchedules();
           }
           throw error;
         }
@@ -1730,8 +1645,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     close() {
       if (closed) return;
       closed = true;
-      if (timer) clearInterval(timer);
-      timer = null;
+      timer.close();
+      initialRecovery.close();
       if (pumpHandle) clearTimeout(pumpHandle);
       pumpHandle = null;
       if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
@@ -1745,6 +1660,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       conversationUpdateHandle = null;
       pendingConversationUpdates.clear();
       observerRuntime.close();
+      scheduleProducer.close();
       unsubscribe();
       pending.length = 0;
       queued.clear();

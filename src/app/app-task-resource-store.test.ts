@@ -6,7 +6,7 @@ import { openDatabase } from "../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import {
   cacheTaskSnapshots,
@@ -405,6 +405,31 @@ describe("AppTaskResourceStore", () => {
     expect([...first.items, ...second.items].map((entry) => entry.taskId)).toEqual(["human", "active", "normal"]);
     expect(second.nextCursor).toBeNull();
     store.close();
+  });
+
+  it("shares bounded handler-recovery pages without changing canonical Task state", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-handler-recovery-cursor-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    const first = AppTaskResourceStore.openStandalone(path, "example");
+    const second = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      const tree = fixture();
+      tree.resources = Object.fromEntries(["one", "two", "three"].map((id) => [id, resource(id, "attention")]));
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      first.bootstrapSnapshot(tree, "fixture");
+      const revision = first.revision();
+      const before = first.readTaskContext({ taskIds: ["one", "two", "three"] });
+      expect(first.takeHandlerRecoveryTaskIds(2)).toEqual(["one", "three"]);
+      expect(second.takeHandlerRecoveryTaskIds(2)).toEqual(["two"]);
+      expect(first.takeHandlerRecoveryTaskIds(2)).toEqual(["one", "three"]);
+      expect(first.revision()).toBe(revision);
+      expect(first.readTaskContext({ taskIds: ["one", "two", "three"] })).toEqual(before);
+    } finally {
+      first.close();
+      second.close();
+    }
   });
 
   it("reads a bounded task context without pulling unrelated App history", () => {

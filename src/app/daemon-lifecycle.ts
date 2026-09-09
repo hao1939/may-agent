@@ -1,10 +1,10 @@
 import { execFile } from "node:child_process";
 import type { InstanceIdentity } from "../lib/instance-identity.js";
 export { createIdentityWriter, type InstanceIdentity } from "../lib/instance-identity.js";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import type { AgentGenerationPublication, PreparedAgentGeneration } from "./loader/agent-registry-loader.js";
 import { discardAgentGeneration } from "./loader/agent-registry-loader.js";
 import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
@@ -75,7 +75,7 @@ export function createDaemonLifecycle(opts: {
     opts.bus.emit({ type: "info", message: "Shutting down..." });
     opts.beforeShutdown?.();
 
-    for (const cron of getAgentCrons().values()) {
+    for (const cron of getAgentMaintenance().values()) {
       cron.stop();
     }
 

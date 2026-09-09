@@ -7,8 +7,8 @@
  *
  * Semantics:
  *   - async, persisted, receiver-owned, never blocking RPC.
- *   - default: queue for the receiver's next heartbeat (no immediate session).
- *   - priority P0 + receiver opt-in: trigger heartbeat immediately.
+ *   - records one fact; declared App routes decide whether work is needed.
+ *   - priority is evidence for the receiver, not direct session dispatch.
  *   - sender never blocks waiting for a reply. Reply, if any, is a new message event.
  *
  * Back-compat:
@@ -23,7 +23,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { EventTrace } from "../../app/event-bus.js";
+import type { EventTrace } from "../../app/core/events/bus.js";
 
 export interface MessageToolOptions {
   /** Name of the calling agent. */
@@ -38,8 +38,6 @@ export interface MessageToolOptions {
   getCallerSessionId?: () => string | undefined;
   /** Resolve the active caller turn trace. */
   getCallerTrace?: () => EventTrace | undefined;
-  /** Optional: function to trigger a target agent's heartbeat. */
-  triggerHeartbeat?: (agent: string) => boolean;
   /** Optional: list of agents this tool is allowed to send to.
    *  Can be a static array or a lazy function (re-evaluated on each call)
    *  so that targets discovered after tool creation are visible. */
@@ -49,7 +47,7 @@ export interface MessageToolOptions {
 const messageParams = Type.Object({
   to: Type.String({
     description:
-      "Receiver agent name, or 'human'. Do not use tool names like 'functions.message' or 'functions.finish'. The message is queued for the receiver's next heartbeat.",
+      "Receiver agent name, or 'human'. Do not use tool names like 'functions.message' or 'functions.finish'. Declared App routes handle the recorded message.",
   }),
   content: Type.String({
     description:
@@ -70,7 +68,7 @@ const messageParams = Type.Object({
   priority: Type.Optional(
     Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")], {
       description:
-        "Priority. P0 = urgent, may trigger immediate run. P1 = important. P2/P3 = informational. Default: P2.",
+        "Priority. P0 = urgent. P1 = important. P2/P3 = informational. Default: P2. Priority does not directly start a session.",
     }),
   ),
   context_files: Type.Optional(
@@ -144,7 +142,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
     name: "message",
     label: "Message",
     description:
-      "Send an async message to another agent. The message is persisted and injected into the receiver's next heartbeat. Sender never waits for a reply; replies are new messages. Use intent='implementation-request' + artifact for work handoffs. Use priority='P0' for urgent breaches.",
+      "Record an async message for another agent. Declared App routes decide how to handle it; recording alone does not prove work was accepted. Sender never waits for a reply; replies are new messages. Use priority='P0' for urgent breaches. Durable work requires a Task/request route.",
     parameters: messageParams,
     execute: async (_toolCallId: string, _params: unknown): Promise<AgentToolResult<undefined>> => {
       const params = _params as MessageParams;
@@ -217,7 +215,8 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
 
       // ── Emit canonical v2 event ────────────────────────────────────
       try {
-        opts.emit?.({
+        if (!opts.emit) throw new Error("Message publication is unavailable");
+        opts.emit({
           type: "message.created",
           source: `agent:${caller}`,
           owner: ownerForTarget(params.to),
@@ -233,21 +232,16 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
           },
           ...(callerTrace ? { trace: callerTrace } : {}),
         });
-      } catch {
-        /* best-effort */
+      } catch (error) {
+        return textResult(JSON.stringify({ error: `Message was not recorded: ${String(error)}` }));
       }
-
-      // P0 messages trigger receiver immediately. Lower priorities wait
-      // for the receiver's next scheduled heartbeat.
-      const triggered = priority === "P0" ? (opts.triggerHeartbeat?.(params.to) ?? false) : false;
 
       return textResult(
         JSON.stringify({
           to: params.to,
           intent: params.intent ?? null,
           priority,
-          triggered,
-          delivery: triggered ? "immediate (P0)" : "queued for next heartbeat",
+          delivery: "recorded; handling depends on declared App routes",
         }),
       );
     },

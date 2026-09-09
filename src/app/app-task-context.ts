@@ -8,7 +8,7 @@ import type { AppTaskChildContext, AppTaskClaim } from "./app-task-reconciler.js
 import type { AppTaskCondition } from "./app-task-state.js";
 import type { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
-import type { AgentEvent } from "./event-bus.js";
+import type { AgentEvent } from "./core/events/bus.js";
 
 /** Project the exact persisted attempt batch onto the public workflow contract. */
 export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "events" | "eventsTruncated">): {

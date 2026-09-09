@@ -8,7 +8,7 @@
  * in the events table.
  *
  * Validates documented behavior of:
- *   - user-guide.md § Cron
+ *   - user-guide.md § HostMaintenance
  *   - handler-authoring.md § Lifecycle Events
  *
  * Runs by default; does not require LLM access.

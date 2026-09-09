@@ -1,4 +1,4 @@
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import type { AppArgs } from "../app-args.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import { log } from "../../lib/log.js";
