@@ -258,6 +258,23 @@ rejected promise. Failure reporting is best-effort: throwing/rejecting reporters
 fall back to process diagnostics, and a pending reporter does not hold capacity.
 No new event family or diagnostic service is required.
 
+`app-task-runtime.ts` coordinates the same Task lifecycle across ordinary
+dispatch and startup. `consumePersistedTerminalAgentResult` reuses normal
+transactional admission; `settlePersistedTerminalAgentResult` handles its shared
+post-commit effects. `taskCompletionDisposition` distinguishes Task completion
+from accepted progress or self-revision. Both paths publish dependency changes
+through the same function. Recovered waits replay persisted Condition facts,
+and admitted actions retire their exact superseded sessions. Startup retains
+its distinct live-session/lease checks and queue gate; it does not run an App
+attempt or invent another completion policy.
+
+The [whole-lifecycle proposal](../../../may-agent.app/docs/proposals/task-controller-pattern.md)
+connects existing App input mapping, bounded attempts, exact waits and checked
+results. Its retry-across-restart and owner-decision proof are separate remaining
+work, not guarantees supplied by these settlement helpers. The lifecycle cases
+in `app-task-runtime.test.ts` cover continued input, revised acceptance,
+recovered waits/actions and required workflow verification.
+
 | Contract / implementation | Responsibility |
 | --- | --- |
 | SDK `TaskExecutor(attempt)` | One bounded custom executor call and proposed result; unchanged public contract |
