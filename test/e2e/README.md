@@ -34,7 +34,7 @@ It tests the metric lifecycle without waiting for repeated scheduler intervals.
 | `e4-metric-lifecycle` | Operator event triggers real handler phases: definition, healthy baseline without an alert, breach with an open alert, then recovery resolving that same alert. |
 | `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
 | `e6-host-maintenance` | Host file handlers cannot launch agents, workflows, or escalations; no worker session starts. |
-| `e7-escalation-roundtrip` | Escalation persistence and resume-attempt/failure handling for a synthetic session, plus the `needs_human` short-circuit. Not successful model execution. |
+| `e7-escalation-roundtrip` | One escalation moves from `needs_human` to terminal resolution; the FIFO listener produces exactly one resume attempt and failure for a synthetic session. Not successful model execution. |
 | `e8-project-comment-ui` | Real browser loads the served UI, opens a project, submits a comment, and observes stored changes. |
 | `e9-session-auto-resume` | Explicit steering resumes a stored interrupted session under the same identity. Not autonomous retry/backoff or successful model execution. |
 | `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |

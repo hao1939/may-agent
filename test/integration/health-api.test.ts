@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, spyOn } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../../src/lib/manager.js";
+import { SubagentManager, type SessionInfo } from "../../src/lib/manager.js";
 import { writeSessionMeta, type PersistedSession } from "../../src/lib/persistence.js";
-import { insertWorkflowRun, upsertSession } from "../../src/lib/requests.js";
+import { closeDb, insertWorkflowRun, upsertSession } from "../../src/lib/requests.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -48,19 +48,20 @@ function writeAuditSession(persistDir: string, sessionId: string, meta: Persiste
   upsertSession(persistDir, { sessionId, ...meta });
 }
 
+let persistDir: string;
+let manager: SubagentManager;
+
+beforeEach(() => {
+  persistDir = mkdtempSync(join(tmpdir(), "health-api-"));
+  manager = new SubagentManager({ persistDir });
+});
+
+afterEach(() => {
+  closeDb(persistDir);
+  rmSync(persistDir, { recursive: true, force: true });
+});
+
 describe("health()", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "health-api-"));
-    manager = new SubagentManager({ persistDir });
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
-  });
-
   it("returns correct structure with registered agents", () => {
     registerTestAgents(manager);
     const report = manager.health();
@@ -90,25 +91,40 @@ describe("health()", () => {
     await manager.waitFor(sid);
   });
 
-  it("counts running and idle sessions correctly", async () => {
-    registerTestAgents(manager);
-    const sid = manager.run("coder", "write code");
-
-    const report = manager.health();
-    // Session might be running or already done (fake model has no API key)
-    expect(report.sessionCounts.total).toBeGreaterThanOrEqual(0);
-
-    await manager.waitFor(sid);
+  it("counts each running and idle session from the current status snapshot", () => {
+    const sessions: SessionInfo[] = (["running", "running", "idle"] as const).map((status, index) => ({
+      sessionId: `session-${index}`,
+      agent: "coder",
+      task: "inspect health",
+      status,
+      startedAt: 1,
+      runtime: "1s",
+      outputDir: join(persistDir, `session-${index}`),
+    }));
+    const status = spyOn(manager, "status").mockReturnValue(sessions);
+    try {
+      expect(manager.health()).toMatchObject({
+        activeSessions: sessions,
+        sessionCounts: { running: 2, idle: 1, total: 3 },
+      });
+      status.mockReturnValue([]);
+      expect(manager.health().sessionCounts).toEqual({ running: 0, idle: 0, total: 0 });
+    } finally {
+      status.mockRestore();
+    }
   });
 
-  it("uptime increases over time", async () => {
-    const report1 = manager.health();
-    await new Promise((r) => setTimeout(r, 50));
-    const report2 = manager.health();
-
-    // Both should have uptime strings; the second should be at least as long
-    expect(report1.uptime).toBeDefined();
-    expect(report2.uptime).toBeDefined();
+  it("reports elapsed uptime without waiting for wall-clock time", () => {
+    const start = Date.now();
+    const clock = spyOn(Date, "now").mockReturnValue(start);
+    try {
+      const timed = new SubagentManager({ persistDir });
+      expect(timed.health().uptime).toBe("0s");
+      clock.mockReturnValue(start + 61_000);
+      expect(timed.health().uptime).toBe("1m1s");
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("returns empty state for fresh manager", () => {
@@ -121,17 +137,8 @@ describe("health()", () => {
 });
 
 describe("auditHealth()", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-
   beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "health-audit-"));
-    manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
   });
 
   it("returns correct session counts from the indexed session table", async () => {
@@ -257,25 +264,16 @@ describe("auditHealth()", () => {
 });
 
 describe("reconcileHealth()", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-
   beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "health-reconcile-"));
-    manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
   });
 
   it("returns healthy: true when everything matches", async () => {
     const report = await manager.reconcileHealth();
     expect(report.healthy).toBe(true);
     expect(report.discrepancies).toEqual([]);
-    expect(report.health).toBeDefined();
-    expect(report.audit).toBeDefined();
+    expect(report.health.registeredAgents.count).toBe(2);
+    expect(report.audit.totalPersistedSessions).toBe(0);
   });
 
   it("detects stale sessions (in filesystem but not in memory)", async () => {
@@ -291,36 +289,5 @@ describe("reconcileHealth()", () => {
     expect(report.discrepancies.length).toBeGreaterThan(0);
     expect(report.discrepancies.some((d) => d.includes("s_orphan_0"))).toBe(true);
     expect(report.discrepancies.some((d) => d.includes("Stale session"))).toBe(true);
-  });
-
-  it("includes both health and audit sub-reports", async () => {
-    const report = await manager.reconcileHealth();
-    expect(report.health.registeredAgents.count).toBe(2);
-    expect(report.audit.totalPersistedSessions).toBe(0);
-  });
-});
-
-describe("health via reconcileHealth()", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "health-tool-"));
-    manager = new SubagentManager({ persistDir });
-    registerTestAgents(manager);
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
-  });
-
-  it("returns reconcile report", async () => {
-    const parsed = await manager.reconcileHealth();
-
-    expect(parsed.health).toBeDefined();
-    expect(parsed.audit).toBeDefined();
-    expect(parsed.discrepancies).toBeDefined();
-    expect(typeof parsed.healthy).toBe("boolean");
-    expect(parsed.health.registeredAgents.count).toBe(2);
   });
 });
