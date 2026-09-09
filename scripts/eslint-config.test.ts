@@ -21,13 +21,17 @@ it("enforces bounded imports with and without extensions, but allows neutral hel
       const rel = filePath === "src/app/app-runtime.ts" ? "./app-task-runtime" : "../app-task-runtime";
       forbidden.push(...["", ".js", ".ts"].map((ext) => `${rel}${ext}`));
     }
+    const allowed = filePath.startsWith("src/lib/")
+      ? "./manager-utils.js"
+      : filePath === "src/app/app-runtime.ts"
+        ? "./app-task-capability.js"
+        : "../../../packages/control/src/server.js";
     // Multiline imports caught incorrectly by the old line-text tests, and
     // extensionless imports that previously bypassed the new lint rule.
     const source =
       forbidden
         .map((path, index) => `import {\n  value${index}\n} from ${JSON.stringify(path)};\nvoid value${index};`)
-        .join("\n") +
-      '\nimport { extractLastAssistantText } from "./manager-utils.js";\nvoid extractLastAssistantText;\n';
+        .join("\n") + `\nimport * as helper from ${JSON.stringify(allowed)};\nvoid helper;\n`;
     const [result] = await eslint.lintText(source, { filePath });
     const violations = result.messages.filter((message) => message.ruleId === "no-restricted-imports");
     expect(violations.map((message) => message.line)).toEqual(forbidden.map((_, index) => index * 4 + 1));
