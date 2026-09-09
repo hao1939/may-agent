@@ -6,7 +6,7 @@ import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
-import { listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
 import { AppTaskQueue } from "./app-task-queue.ts";
 import {

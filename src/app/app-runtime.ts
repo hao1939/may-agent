@@ -6,14 +6,13 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
-import { createMetricService } from "../lib/metrics.js";
-import { syncAppMetricDefinitions } from "./app-metric-definitions.js";
+import type { AppReporting } from "./composition/reporting.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
-import { createRuntimeAppRead } from "./app-read.js";
+import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { readAppConversationResource } from "./conversations/store.js";
@@ -125,6 +124,7 @@ export async function runAppRuntime(opts: {
   instanceLabel: string;
   processStartTime: number;
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
+  reporting?: AppReporting;
 }): Promise<void> {
   assertLegacyCliTasksSettled(opts.persistDir);
   const startupStartedAt = performance.now();
@@ -223,6 +223,7 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
     taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
+    readOutcomes: opts.reporting?.readOutcomes,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
     executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
@@ -263,8 +264,18 @@ export async function runAppRuntime(opts: {
       manager.getSessionSummary(sessionId).status !== "unknown" ||
       Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
   });
-  const appMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
-  syncAppMetricDefinitions(appRegistry.snapshot().entries, appMetrics);
+  // Reporting observes the committed generation; it cannot reject publication.
+  const refreshReporting = () => {
+    if (!opts.reporting) return;
+    setImmediate(() => {
+      try {
+        opts.reporting!.syncDefinitions(appRegistry.snapshot().entries);
+      } catch (error) {
+        console.error(`[reporting] Metric definitions unavailable: ${String(error)}`);
+      }
+    });
+  };
+  refreshReporting();
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
@@ -309,7 +320,7 @@ export async function runAppRuntime(opts: {
       return {
         read: createRuntimeAppRead({
           getDb: () => getDb(opts.persistDir),
-          metrics: appMetrics,
+          readMetric: opts.reporting?.readMetric,
           taskRead: {
             list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
             outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
@@ -401,7 +412,6 @@ export async function runAppRuntime(opts: {
                 try {
                   publishAgents();
                   commit();
-                  syncAppMetricDefinitions(snapshot.entries, appMetrics);
                 } catch (error) {
                   // Restore before Task rollback yields to other worker dispatch.
                   if (previous) appSources.activate(previous);
@@ -419,6 +429,7 @@ export async function runAppRuntime(opts: {
         },
         discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
       );
+      refreshReporting();
       return { appIds, taskApps };
     },
   });

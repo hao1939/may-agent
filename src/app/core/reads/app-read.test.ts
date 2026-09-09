@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDatabase, type SqliteDb } from "../lib/db.js";
-import { applyDbSchema } from "../lib/db/schema.js";
-import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "./app-inbox-store.js";
-import { createRuntimeAppRead } from "./app-read.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { observeAppTaskIntent, appTaskContext } from "./app-task-reconciler.js";
+import { openDatabase, type SqliteDb } from "../../../lib/db.js";
+import { applyDbSchema } from "../../../lib/db/schema.js";
+import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "../../app-inbox-store.js";
+import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
+import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { observeAppTaskIntent, appTaskContext } from "../../app-task-reconciler.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;
@@ -66,9 +67,6 @@ describe("App read projections", () => {
     completeAppInboxClaim(db, claim!, { summary: "probe complete", response: "ok", evidence: ["canary"] }, 200);
     const read = createRuntimeAppRead({
       getDb: () => db,
-      metrics: {
-        get: () => null,
-      } as any,
     });
 
     await expect(read.appResult("app_read_result")).resolves.toEqual({
@@ -77,6 +75,8 @@ describe("App read projections", () => {
       evidence: ["canary"],
     });
     await expect(read.appResult("missing")).resolves.toBeNull();
+    await expect(read.metric("missing")).rejects.toThrow("Metric reporting is unavailable");
+    await expect(read.tasks.outcomes()).rejects.toThrow("Task outcome reporting is unavailable");
   });
 
   it("uses the loaded Task reader without consulting a JSON execution path", async () => {
@@ -98,7 +98,6 @@ describe("App read projections", () => {
     };
     const read = createRuntimeAppRead({
       getDb: () => db,
-      metrics: { get: () => null } as any,
       taskRead,
     });
 
@@ -125,7 +124,6 @@ describe("App read projections", () => {
     }
     const read = createRuntimeAppRead({
       getDb: () => db,
-      metrics: { get: () => null } as any,
       taskStateConfig: config,
     });
 
@@ -161,7 +159,6 @@ describe("App read projections", () => {
     });
     const read = createRuntimeAppRead({
       getDb: () => db,
-      metrics: { get: () => null } as any,
       taskStateConfig: config,
     });
 
@@ -173,6 +170,20 @@ describe("App read projections", () => {
       intent: { id: "second", parentId: "review", outcome: "Second", acceptance: ["Done"], mode: "achieve" },
     });
     await expect(read.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
+    const failedReporting = createRuntimeAppRead({
+      getDb: () => db,
+      taskStateConfig: config,
+      readMetric: async () => {
+        throw new Error("report failed");
+      },
+      readOutcomes: async () => {
+        throw new Error("report failed");
+      },
+    });
+    await expect(failedReporting.metric("health")).rejects.toThrow("report failed");
+    await expect(failedReporting.tasks.outcomes()).rejects.toThrow("report failed");
+    await expect(failedReporting.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
+    expect((await failedReporting.tasks.list()).items).toHaveLength(2);
   });
 
   it("reads only the outcome containing an exact Task", async () => {
@@ -193,8 +204,16 @@ describe("App read projections", () => {
     );
     const read = createRuntimeAppRead({
       getDb: () => db,
-      metrics: { get: () => null } as any,
       taskStateConfig: config,
+      readOutcomes: async (projection) =>
+        readTaskOutcomes({
+          appDir: config.appDir,
+          projection,
+          tasks: {
+            get: (id) => readRuntimeTaskView({ taskStateConfig: config }, id),
+            list: (options) => listRuntimeTaskViews({ taskStateConfig: config }, options),
+          },
+        }),
     });
 
     await expect(read.tasks.outcomes({ taskId: "review/a" })).resolves.toMatchObject({

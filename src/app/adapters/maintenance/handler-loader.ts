@@ -56,8 +56,12 @@ export async function loadMaintenanceHandlers(
     const sdk: HandlerSDK = {
       emit: fullSdk.emit,
       getDb: fullSdk.getDb,
-      query: fullSdk.query,
-      metrics: fullSdk.metrics,
+      get query() {
+        return fullSdk.query;
+      },
+      get metrics() {
+        return fullSdk.metrics;
+      },
       log: fullSdk.log,
       message: fullSdk.message,
       paths: fullSdk.paths,

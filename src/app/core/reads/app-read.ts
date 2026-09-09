@@ -1,24 +1,14 @@
-import type {
-  AppRead,
-  ExecutionView,
-  MetricView,
-  TaskDetail,
-  TaskListOptions,
-  TaskOutcomePage,
-  TaskOutcomeProjection,
-  TaskPage,
-  TaskView,
-} from "@may-agent/sdk/app";
-import type { AppTaskContext, TaskTree } from "./app-task-store.js";
-import { getExecutionResultFromDb } from "../lib/execution-result.js";
-import type { MetricService } from "../lib/metrics.js";
-import type { SqliteDb } from "../lib/db.js";
-import { getAppInboxItem } from "./app-inbox-store.js";
-import { projectTaskOutcomes, readTaskOutcomeManifest } from "./task-outcome-projection.js";
+import type { AppRead, ExecutionView, TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
+import type { AppTaskContext, TaskTree } from "../../app-task-store.js";
+import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
+import type { SqliteDb } from "../../../lib/db.js";
+import { getAppInboxItem } from "../../app-inbox-store.js";
 
 export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;
-  metrics: MetricService;
+  /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
+  readMetric?: AppRead["metric"];
+  readOutcomes?: AppRead["tasks"]["outcomes"];
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
   taskStateConfig?: AppTaskContext;
@@ -150,31 +140,6 @@ export function listRuntimeTaskViews(
   };
 }
 
-export function listRuntimeTaskOutcomeViews(
-  opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
-  projection: TaskOutcomeProjection = {},
-): TaskOutcomePage {
-  if (!opts.taskStateConfig) return projectTaskOutcomes([], null, projection);
-  const manifest = readTaskOutcomeManifest(opts.taskStateConfig.appDir);
-  const exactTaskId = projection.taskId?.trim();
-  if (exactTaskId) {
-    const group = manifest?.groups.find(({ taskIds }) => taskIds.includes(exactTaskId));
-    const items = (group?.taskIds ?? [exactTaskId]).flatMap((taskId) => {
-      const task = readRuntimeTaskView(opts, taskId);
-      return task ? [task] : [];
-    });
-    return projectTaskOutcomes(items, manifest, projection);
-  }
-  const items: TaskView[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = listRuntimeTaskViews(opts, { limit: 100, ...(cursor ? { cursor } : {}) });
-    items.push(...page.items);
-    cursor = page.nextCursor;
-  } while (cursor);
-  return projectTaskOutcomes(items, manifest, projection);
-}
-
 export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
   const result = getExecutionResultFromDb(opts.getDb(), id);
   if (!result) return null;
@@ -184,19 +149,6 @@ export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getD
     kind: result.kind === "session" ? "agent" : "workflow",
     status,
     summary: result.summary,
-  };
-}
-
-function metricView(metrics: MetricService, id: string): MetricView | null {
-  const metric = metrics.get(id);
-  if (!metric) return null;
-  return {
-    id: metric.id,
-    value: metric.current,
-    status: metric.status,
-    target: metric.target,
-    threshold: metric.threshold,
-    unit: metric.unit,
   };
 }
 
@@ -212,7 +164,8 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
         return listRuntimeTaskViews(opts, options);
       },
       async outcomes(options) {
-        return listRuntimeTaskOutcomeViews(opts, options);
+        if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
+        return opts.readOutcomes(options);
       },
       get: getTask,
     },
@@ -220,7 +173,8 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
       return readRuntimeExecutionView(opts, executionId);
     },
     async metric(metricId) {
-      return metricView(opts.metrics, metricId);
+      if (!opts.readMetric) throw new Error("Metric reporting is unavailable");
+      return opts.readMetric(metricId);
     },
   };
 }
