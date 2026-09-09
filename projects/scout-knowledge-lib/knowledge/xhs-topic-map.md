@@ -1,27 +1,28 @@
 <ai_context>
 summary: "Living seed-first, multi-source topic map for Scout, including source-lane continuity, value scores, confidence, contradictions, access boundaries, and next explorations."
 triggers: ["XHS topic map", "multi-source research loop", "GitHub arXiv Reddit continuity", "topic clusters", "XHS deep dive", "seed-first research"]
-last_updated: "2026-09-08"
-latest_seed_basis: "Cycle 429 observational reconciliation through 2026-09-08T13:41:12.146Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 429. Only saved-response byte length and body hash changed from Cycle 422."
-source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 429 at 2026-09-08T13:41:12.146Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 429; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 429, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; Skills Are Not Islands population/security-signal scope qualified in Cycle 429; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
+last_updated: "2026-09-09"
+latest_seed_basis: "Cycle 430 observational reconciliation through 2026-09-09T04:30:11.936Z reproduced public Explore at 30 notes and the saved surface as a profile-class login wall with zero attributable items: additions/changes remain unknown, removals [], and all 132 durable identities unavailable; exact access evidence is in seed-ledger row 430. The semantic access fingerprint remained stable and only the saved-response body hash changed from Cycle 429."
+source_basis: "Direct bounded XHS collection reconciliations through 2026-09-01T17:48:11.364Z; public-only and saved-profile-unavailable browser observations through Cycle 430 at 2026-09-09T04:30:11.936Z, with bounded no-request reconciliation in Cycles 406-408 and 421; exact GitHub head freshness through 2026-09-02T15:11:24.235Z plus attributable and primary-artifact reads through Cycle 430; exact arXiv version freshness through 2026-09-02T14:33:20.288Z, primary source reads through Cycle 429, retained AGL-1 primary evidence resolved in Cycle 371, CONTRA primary evidence resolved in Cycle 372, HexStrike-AI primary evidence resolved in Cycle 373, SkillOpt-Lite primary evidence resolved in Cycle 374, Anchored Self-Play primary evidence resolved in Cycle 375, single-prover verification qualified in Cycle 379, DSCC composition evidence qualified in Cycle 380, agentic-code-review sampling and predictor evidence qualified in Cycle 381, RLSR selection/deployment evidence qualified in Cycle 382, aTTT competence/cost evidence qualified in Cycle 383, aggregate policy-repair audit evidence qualified in Cycle 384, HASE cross-system/oracle evidence qualified in Cycle 385, VERITAS evaluation/artifact evidence qualified in Cycle 386, and checksum-verified OverEager denominator/product/human-label/zero-touch/audit-coverage/offline-rejudging/provenance-binding/behavioral-gradient/feasibility/paired-input/generator-seed/axis-independence/interaction/rank/scale/RQ4-transfer/invariance-criterion evidence qualified through Cycle 407; isolated overlay-planner transition evidence through Cycles 408, 421, and 422; accepted Hermes Agent/OpenClaw evidence integrated in Cycle 409; checksum-verified SwarmResearch cutoff evidence through Cycle 420; Skills Are Not Islands population/security-signal scope qualified in Cycle 429; query-only retained-event and isolated Mnemosyne principal-binding repair-candidate evidence in Cycle 430; checksum-verified local Experiment C usage evidence; retained topic-led GitHub, arXiv, Reddit, Hugging Face, artifact, and local executable evidence enumerated in the lane continuity and cycle log; accepted self-evolution provenance through df80a1daa26e353bd33fcf2e9d24860917b695de and its standing-line patch-equivalent reconciliations."
 cycle_423_source_basis: "No-request seed reconciliation at 2026-09-08T03:53:56.661Z; one read-only Mnemosyne ref check; retained SwarmResearch Third-Autocorrelation transcripts and producer-authored cost-provenance inventory."
 cycle_424_source_basis: "No-request seed reconciliation at 2026-09-08T04:13:48.485Z; retained SwarmResearch five-task heuristic histories, 125 transcript files, public/private evaluator code, cutoff CSV, and producer-authored provenance inventory."
 cycle_425_source_basis: "No-request seed reconciliation at 2026-09-08T04:31:01Z; research source 5b730b02df83974c3bd33f55755d4278c01f49f0; post-reconciliation parent c5f4d3153f066b5abea7346eab5db6fcdeea9c03; retained Organizational Memory revision 11617e3191bf6307eea64476fcb1269b5ca3fb78, exact scenarios/evaluator/eight-metric hashes, and producer-authored matched run/scenario inventory."
 cycle_429_source_basis: "Read-only XHS observation through 2026-09-08T13:41:12.146Z; unchanged Memory in the Loop 2607.05690v2 and getmykhan/vxdb main d720fd3e67e2331144d7486e0642fe62c24ffd0f release boundary; arXiv:2607.01136v1 319,960-byte source archive SHA-256 67cc2e28cebfb275af3ea38c38376cf8833f74f1ae5fd791d69e9f90407d7d57 and main.tex SHA-256 bab8b6d0527789181de3cf5b4920594c65157555dc7bc7029808b451ef452c14; bounded GitHub repository searches."
-latest_seed_observation: "Cycle 429 read-only XHS boundary through 2026-09-08T13:41:12.146Z."
+cycle_430_source_basis: "Read-only XHS observation through 2026-09-09T04:30:11.936Z; query-only /app/.state/may.db retained-event check; unchanged eyuchang/Mnemosyne main ba43036035bb33dfb955d53da54635aac2ab83a0 and v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; goal-owned isolated two-file repair candidate at diff SHA-256 f7adf20826d82b290bba3c20133dab3846482769e9fabe8e24a3f32e42659578."
+latest_seed_observation: "Cycle 430 read-only XHS boundary through 2026-09-09T04:30:11.936Z."
 </ai_context>
 
 # Xiaohongshu Living Topic Map
 
 This map starts from the [human-collection seed ledger](./xhs-seed-ledger.md).
 The last comparable direct seed surface is Cycle 20's incomplete 130-card
-authenticated window. Cycle 429 used the established direct localhost Chrome
+authenticated window. Cycle 430 used the established direct localhost Chrome
 DevTools endpoint from root-owned Chrome's network namespace through the
 effective-UID-0 connector launched by worker UID 1000 (`hao`) after the
 worker's own localhost 9222 refused. Public Explore
 remained readable with 30 notes, while supported `saved-status`
 returned a 103,334-byte profile-class login wall and zero attributable items.
-Only response bytes changed from Cycle 422. This is not a comparable collection
+Only the body hash changed from Cycle 429. This is not a comparable collection
 inventory. Added and changed sets remain unknown, proven removals are `[]`,
 and all 132 durable seed
 IDs remain unavailable rather than removed. No representative saved post was
@@ -11366,6 +11367,45 @@ Next seek those frozen artifacts or an independent version-specific graph
 replay that separates declared, installable, loaded, and executed dependencies.
 RV-004/RV-034 remain high/open and RV-036/RV-038 medium/open. No local-main
 movement, compaction, cleanup, or discarded Cycle 428 revival occurred.
+
+### Cycle 430 checkpoint — bind the stored owner before admission
+
+Cycle 430 began from independently accepted clean exact source
+`3f20099802b56a7b158b833a2ea8607d474da95f`. The overdue bounded XHS pass
+reproduced public Explore at 30 notes and the saved surface as a 103,334-byte
+profile-class login wall with zero attributable items. Its semantic access
+fingerprint remained `74a9cdb7…5cc2e44`; only the body hash changed. Additions
+and changes remain unknown, removals remain `[]`, and all 132 durable seeds
+remain unavailable rather than removed.
+
+The complete queue still ranks RV-004 first. A query-only retained-event check
+found 1,654 events ending at `2026-08-31T15:23:50.805+08:00`, zero exact
+`project.knowledge.maintained` events, and only the same two payload mentions.
+No event crosses the prior evidence boundary or supplies the missing protected
+query → ranked result → selected artifact → later outcome join. The smaller
+store cannot prove that no later outcome occurred, so RV-004 remains high/open
+and more unjoined telemetry remains lower value.
+
+RV-034 was the highest accessible gap. Mnemosyne upstream main remained
+`ba43036035bb33dfb955d53da54635aac2ab83a0`; audited v2 tag
+`7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4` also remained unchanged. In a
+goal-owned detached clone, a [two-file repair candidate](../reports/research/mnemosyne-principal-binding-candidate-cycle430-2026-09-09.md)
+now loads the stored proposal and requires both tenant and agent equality
+before either acceptance or rejection. Test-only baseline evidence reproduced
+the wrong-agent failure; the repaired candidate passes 16 focused tests and 79
+runnable runtime tests. Wrong agent or tenant now fails before kernel, decision,
+status, or trace writes.
+
+This materially advances RV-034 but does not resolve it. The exact diff is not
+upstream; delegation, denial auditing, exception semantics, and the remaining
+caller-supplied envelope bindings are unresolved. Full upstream collection is
+also bounded by one absent experiment module, while one runtime conformance
+test expects absent R3 artifacts. Confidence is high in the local two-field
+invariant, moderate in its suitability for the upstream API, and low in
+deployment effect or completeness. Next preserve RV-004 for prospective joined
+outcome evidence, independently review this candidate, then audit remaining
+bindings or prepare an authorized upstream handoff. No local-main move,
+compaction, cleanup, account mutation, or protected-checkout write occurred.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 
