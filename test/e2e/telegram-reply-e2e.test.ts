@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
 import {
@@ -9,7 +9,7 @@ import {
   createAppInboxItem,
 } from "../../src/app/app-inbox-store.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
-import { AppRegistry } from "../../src/app/app-registry.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";
 import { getDb } from "../../src/lib/requests.js";
 
@@ -73,7 +73,7 @@ describe("telegram reply e2e", () => {
     oldChatId = process.env.TELEGRAM_CHAT_ID;
     process.env.TELEGRAM_BOT_TOKEN = "test-token";
     process.env.TELEGRAM_CHAT_ID = "12345";
-    humanTasks = new HumanTaskService(getDb(persistDir), new AppRegistry(join(persistDir, "apps")));
+    humanTasks = new HumanTaskService(getDb(persistDir), new AppRegistry(async () => []));
   });
 
   afterEach(() => {

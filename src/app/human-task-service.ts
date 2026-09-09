@@ -1,4 +1,4 @@
-import type { AppRegistry } from "./app-registry.js";
+import type { AppRegistry } from "./core/apps/registry.js";
 import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
 import type { TaskCompletionReceipt } from "./app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";

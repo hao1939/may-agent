@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { listAppDefinitionFiles, loadAppDefinitions } from "../src/app/loader/app-loader.js";
+import { listAppDefinitionFiles, discoverAppDefinitions } from "../src/app/adapters/discovery/app-definitions.js";
+import { AppRegistry } from "../src/app/core/apps/registry.js";
 
 function requiredPath(name: string): string {
   const value = process.env[name]?.trim();
@@ -43,10 +44,13 @@ const previousSdkRoot = process.env.MAY_AGENT_SDK_ROOT;
 process.env.MAY_AGENT_SDK_ROOT = sdkRoot;
 
 try {
-  const loaded = await loadAppDefinitions(appsRoot, {
-    forceBundle: true,
-    cacheDir: join(cacheRoot, "cache"),
-  });
+  const registry = new AppRegistry(
+    discoverAppDefinitions(appsRoot, appsRoot, {
+      forceBundle: true,
+      cacheDir: join(cacheRoot, "cache"),
+    }),
+  );
+  const loaded = await registry.reload();
   if (loaded.length !== appFiles.length) {
     throw new Error(`Loaded ${loaded.length} Apps from ${appFiles.length} definitions`);
   }

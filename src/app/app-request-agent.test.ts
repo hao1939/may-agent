@@ -14,7 +14,7 @@ import { createEditTool } from "../lib/tools/edit.js";
 import { createWriteTool } from "../lib/tools/write.js";
 import { createBashTool } from "../lib/tools/bash.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
-import type { AppRegistry } from "./app-registry.js";
+import type { AppRegistry } from "./core/apps/registry.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { listAppInboxChildren } from "./app-inbox-store.js";
