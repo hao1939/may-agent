@@ -12,6 +12,7 @@ import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./app-registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
+import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
@@ -26,8 +27,6 @@ import {
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
-  projectAppTaskWaitPromptContext,
-  projectAppTaskReconciliationEvents,
   readLoadedAppTaskView,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
@@ -305,7 +304,6 @@ describe("canonical direct-agent residue cleanup", () => {
 describe("App Task persisted prompt context", () => {
   it("shows the executor the exact accepted wait before it judges feedback", () => {
     const f = fixture();
-    const bus = eventBus();
     const persistDir = join(f.root, "state");
     const config = loadedTaskConfig(f, persistDir);
     const taskIntent = {
@@ -359,21 +357,7 @@ describe("App Task persisted prompt context", () => {
     ).toMatchObject({ status: "applied" });
     const resourceStore = config.resourceStore;
 
-    expect(
-      projectAppTaskWaitPromptContext(
-        { ...options(f, bus), persistDir },
-        {
-          id: "sample",
-          appDir: f.appDir,
-          projectDir: f.appDir,
-          agent: "sample-owner",
-          app: definition(),
-          reconciliationPaused: false,
-          resourceStore,
-        },
-        taskIntent.id,
-      ),
-    ).toMatchObject({
+    expect(readAppTaskWaitPromptContext(resourceStore, getDb(persistDir), taskIntent.id)).toMatchObject({
       open: [
         {
           conditionId: "app-request:existing-proof",
@@ -1335,7 +1319,7 @@ describe("canonical App task runtime", () => {
       observedGeneration: 1,
       conditionIds: [`app-request:${requestId}`],
     });
-    expect(projectAppTaskWaitPromptContext({ ...options(f, bus), persistDir }, descriptor, intent.id)).toMatchObject({
+    expect(readAppTaskWaitPromptContext(resourceStore, getDb(persistDir), intent.id)).toMatchObject({
       open: [
         {
           conditionId: `app-request:${requestId}`,

@@ -9,7 +9,7 @@ import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../lib/index.js";
 import type { SqliteDb } from "../lib/db.js";
 import type { AppRegistry } from "./app-registry.js";
-import { appDependencyCatalog } from "./app-task-runtime.js";
+import { appDependencyCatalog } from "./app-dependency-catalog.js";
 import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
 import type { AppRequestResolver } from "./app-inbox-host.js";
 

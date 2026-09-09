@@ -46,6 +46,16 @@ locates message projections and Topic links.
 library. Project apps should use `@may-agent/sdk`; local control clients should
 use `@may-agent/control`.
 
+For execution-context changes, start with
+[`app-dependency-catalog.ts`](src/app/app-dependency-catalog.ts) for the installed
+App input summaries shared by conversation and Task execution, and
+[`app-task-context.ts`](src/app/app-task-context.ts) for Task event, child, and
+accepted-wait context. The latter separates explicit scoped reads from pure
+formatting. Neither looks up runtime registries or schedules work. Attempt
+orchestration remains in [`app-task-runtime.ts`](src/app/app-task-runtime.ts),
+with lifecycle checks and transactional writes in
+[`app-task-reconciler.ts`](src/app/app-task-reconciler.ts).
+
 ## State
 
 Runtime state belongs under `STATE_DIR` (normally `/app/.state`), never in this
