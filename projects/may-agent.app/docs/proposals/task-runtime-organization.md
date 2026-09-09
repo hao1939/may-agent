@@ -1,7 +1,7 @@
 # Task runtime organization
 
 **Design status:** Incremental direction accepted; later stages remain provisional.
-**Implementation status:** Stage 1 implemented in Host commit `1b5b0111` on
+**Implementation status:** Stage 1 implemented in Host commit `d565a5be` on
 `refactor/task-context`; local CI and hosted Quality/Container checks passed.
 Ready for review, not merged or deployed. Runtime ownership, execution, and
 lifecycle are unchanged.
@@ -266,10 +266,12 @@ if later ownership and directory changes are deferred.
 
 Stage 1 validation on Node 24.20.0 and Bun 1.3.14: `bun run ci` passed with
 **2,451 passed, 3 expected installed-agent checks skipped, 0 failed** after
-integrating the test cleanup from Host `167bab06`. This
+integrating the test cleanup and App admission refactor through Host
+`8a34854f`. A final fetch and comparison against `origin/main` showed no missing
+main-branch commits and only the intended nine-file context refactor. This
 includes type, SDK, App-boundary, and lint checks plus portable unit,
 integration, process, and browser tests. It is not a live deployment claim.
-Hosted Quality and Container checks also passed on `1b5b0111`, including the
+Hosted Quality and Container checks also passed on `d565a5be`, including the
 built-image smoke test.
 
 The source comparison found 116 original function bodies unchanged across the
