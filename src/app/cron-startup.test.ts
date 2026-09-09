@@ -28,9 +28,11 @@ describe("cron startup recovery", () => {
   it.each(["resolve", "reject"])(
     "keeps startup available while Task recovery is pending (%s)",
     async (mode) => {
+      const { fileURLToPath } = await import("node:url");
+      const fixture = fileURLToPath(new URL("../../test/fixtures/cron-startup.ts", import.meta.url));
       const { stdout } = await promisify(execFile)(
         process.execPath,
-        [new URL("../../test/fixtures/cron-startup.ts", import.meta.url).pathname, mode],
+        [fixture, mode],
         { timeout: 5_000 },
       );
       expect(stdout).toContain("cron-startup-contract-ok");
