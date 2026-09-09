@@ -5,8 +5,8 @@ The Host contains both stable mechanics and replaceable implementations.
 
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
-| `core/` | Identity, authority, and recovery rules shared by every capability | `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
-| `adapters/` | Concrete capability implementations | `producers/agent-triggers.ts` attaches legacy event handlers and optional timers |
+| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/registry.ts` validates and publishes generations; `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
+| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `producers/agent-triggers.ts` attaches legacy event handlers and optional timers |
 | `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts` starts recovery independently of optional schedules |
 
 This layout is being applied incrementally. `app-runtime.ts` remains the main
@@ -36,13 +36,42 @@ Public App contracts live in `packages/sdk`; client contracts in
 component interface. Add subdirectories as real boundaries are separated, not
 as empty placeholders.
 
+## App discovery and registration
+
+`adapters/discovery/app-definitions.ts` supplies a deferred file source. It scans
+`projects/<name>.app/app.ts` (or `app.js`), refreshes imported code when invoked,
+and preserves canonical App directories when loading a source release.
+
+`core/apps/registry.ts` accepts that source as a typed function:
+
+```ts
+const registry = new AppRegistry(discoverAppDefinitions(sourceRoot, canonicalRoot));
+await registry.reload();
+```
+
+Discovery returns declarations, not live registrations. The registry validates
+every definition and duplicate identity, normalizes agent selection, and calls
+the existing consumer preparation/publication callback. Discovery and publication
+share one serialized transaction. A replacement source becomes the default only
+after publication succeeds; a rejected replacement retains the current generation.
+Consumer rollback captures that generation inside the transaction, not before
+waiting for the queue.
+
+`app-runtime.ts` wires the file source at startup and reload. The private Task
+worker entrypoints wire the same source for their selected release. To supply
+another source, provide an `AppDefinitionSource` function in composition; no core
+registration change, plugin manifest, or additional configuration is required.
+Sources remain trusted Host code, not a sandbox for untrusted executable Apps.
+Task removal checks and route/observer/schedule publication retain their existing
+owners; the registry does not take over their lifecycle.
+
 ## Reading order
 
 | Question                                         | Entry point                                                                    |
 | ------------------------------------------------ | ------------------------------------------------------------------------------ |
 | Which source files are active?                   | `app-source-release.ts`: `DefinitionSourceReleaseStore`                        |
-| How is an App discovered and validated?          | `loader/app-loader.ts`: `loadAppDefinitions()`; `app-definition-validation.ts` |
-| How does reload publish a generation?            | `app-registry.ts`: `reload()`; `app-runtime.ts` coordinates consumers          |
+| How is an App discovered and validated?          | `adapters/discovery/app-definitions.ts`; `core/apps/definition-validation.ts` |
+| How does reload publish a generation?            | `core/apps/registry.ts`: `reload()`; `app-runtime.ts` coordinates consumers    |
 | What may an external caller publish or read?     | `packages/control/src/events.ts` and `client.ts` in the repository root        |
 | How does the Host admit an event?                | `event-interface.ts`: `createEventInterface()`                                 |
 | How are declared routes selected and remembered? | `app-inbox-runtime.ts`; `app-event-admission-store.ts`                         |

@@ -40,7 +40,7 @@ import {
   readAppConversationResource,
   readConversationTopic,
 } from "./conversations/store.js";
-import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import type { AppDefinitionSource, AppRegistry, AppRegistrySnapshot, LoadedAppDefinition } from "./core/apps/registry.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -55,7 +55,6 @@ import {
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { HostCapacity } from "./host-capacity.js";
-import type { LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -69,7 +68,7 @@ export type AppInboxRuntime = {
   start(): Promise<void>;
   close(): void;
   scanNow(): void;
-  reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
+  reload(prepare?: AppRegistryReloadPreparation, discover?: AppDefinitionSource): Promise<string[]>;
 };
 
 // The Event turn persists a small admission plan. Canonical Task mutation runs
@@ -1675,10 +1674,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       return startPromise;
     },
     scanNow,
-    async reload(prepare, projectsRoot) {
-      const previousLoaded = loaded;
-      const previousSnapshot = registrySnapshot;
+    async reload(prepare, discover) {
       await options.registry.reload(async (snapshot) => {
+        const previousLoaded = loaded;
+        const previousSnapshot = registrySnapshot;
         if (
           snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
           !options.observerContext
@@ -1714,7 +1713,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           }
           throw error;
         }
-      }, projectsRoot);
+      }, discover);
       taskAdmissionWorker?.close();
       taskAdmissionWorker = options.createTaskAdmissionWorker?.();
       // App definitions may have made a previously unavailable frozen route

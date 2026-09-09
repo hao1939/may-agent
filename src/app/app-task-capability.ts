@@ -9,7 +9,7 @@ import type {
 } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
-import type { AppRegistrySnapshot } from "./app-registry.js";
+import type { AppRegistrySnapshot } from "./core/apps/registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   attachLoadedAppTask,

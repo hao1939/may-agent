@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
-import { validateAppDefinition } from "./app-definition-validation.js";
+import { validateAppDefinition } from "./definition-validation.js";
 
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
 

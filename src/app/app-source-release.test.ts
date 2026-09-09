@@ -3,8 +3,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadAppDefinitions } from "./loader/app-loader.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
+import { AppRegistry } from "./core/apps/registry.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
+
+function loadAppDefinitions(projectsRoot: string, canonicalProjectsRoot = projectsRoot) {
+  return new AppRegistry(discoverAppDefinitions(projectsRoot, canonicalProjectsRoot)).reload();
+}
 
 describe("App source releases", () => {
   const roots: string[] = [];
@@ -63,7 +68,7 @@ describe("App source releases", () => {
     expect(first.sourceCommit).toMatch(/^[0-9a-f]{40}$/);
     expect(readFileSync(join(first.agentsRoot, "worker", "agent.json"), "utf8")).toContain('"worker"');
     expect(readFileSync(join(first.sharedRoot, "common-sense.md"), "utf8")).toBe("shared guidance v1\n");
-    expect((await loadAppDefinitions(first.projectsRoot, {}, canonicalProjectsRoot))[0]).toMatchObject({
+    expect((await loadAppDefinitions(first.projectsRoot, canonicalProjectsRoot))[0]).toMatchObject({
       appDir: join(canonicalProjectsRoot, "sample.app"),
       definition: { id: "sample-v1" },
     });

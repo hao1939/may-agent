@@ -10,7 +10,8 @@ import { createMetricService } from "../lib/metrics.js";
 import { syncAppMetricDefinitions } from "./app-metric-definitions.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import { AppRegistry } from "./app-registry.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
@@ -191,7 +192,7 @@ export async function runAppRuntime(opts: {
   let appInboxRuntime: AppInboxRuntime | null = null;
   const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
   const activeAppSource = appSources.ensureCurrent();
-  const appRegistry = new AppRegistry(activeAppSource.projectsRoot, opts.projectsRoot);
+  const appRegistry = new AppRegistry(discoverAppDefinitions(activeAppSource.projectsRoot, opts.projectsRoot));
   await appRegistry.reload();
   markStartupPhase("apps");
   bus.emit({
@@ -385,28 +386,31 @@ export async function runAppRuntime(opts: {
       const { candidate, previous } = source;
       let taskApps = 0;
       try {
-        const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
-          const result = await appTasks.publishGeneration({
-            snapshot,
-            definitionSource: {
-              projectsRoot: candidate.projectsRoot,
-              agentsRoot: candidate.agentsRoot,
-              sharedRoot: candidate.sharedRoot,
-            },
-            publish: () => {
-              appSources.activate(candidate);
-              try {
-                publishAgents();
-                commit();
-                syncAppMetricDefinitions(snapshot.entries, appMetrics);
-              } catch (error) {
-                if (previous) appSources.activate(previous);
-                throw error;
-              }
-            },
-          });
-          taskApps = result.apps;
-        }, candidate.projectsRoot);
+        const appIds = await appInboxRuntime!.reload(
+          async ({ snapshot, commit }) => {
+            const result = await appTasks.publishGeneration({
+              snapshot,
+              definitionSource: {
+                projectsRoot: candidate.projectsRoot,
+                agentsRoot: candidate.agentsRoot,
+                sharedRoot: candidate.sharedRoot,
+              },
+              publish: () => {
+                appSources.activate(candidate);
+                try {
+                  publishAgents();
+                  commit();
+                  syncAppMetricDefinitions(snapshot.entries, appMetrics);
+                } catch (error) {
+                  if (previous) appSources.activate(previous);
+                  throw error;
+                }
+              },
+            });
+            taskApps = result.apps;
+          },
+          discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
+        );
         return { appIds, taskApps };
       } catch (error) {
         if (previous && appSources.current()?.id === candidate.id && previous.id !== candidate.id) {

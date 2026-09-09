@@ -17,7 +17,7 @@ import {
   prepareAgentTriggers,
 } from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
-import type { AppRegistry } from "./app-registry.js";
+import type { AppRegistry } from "./core/apps/registry.js";
 import type { HostCapacity } from "./host-capacity.js";
 import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
 import { getDb } from "../lib/requests.js";

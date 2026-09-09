@@ -1,5 +1,5 @@
 import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
-import type { LoadedAppDefinition } from "./loader/app-loader.js";
+import type { LoadedAppDefinition } from "./core/apps/registry.js";
 import type { EventBus } from "./event-bus.js";
 
 type ObserverState = {

@@ -2,7 +2,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
-import { AppRegistry } from "./app-registry.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import type { AppTaskDispatch } from "./app-task-controller.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -448,7 +449,7 @@ async function runTaskWorker(input: {
   });
   const appSources = new DefinitionSourceReleaseStore(input.roots.projectRoot, input.roots.persistDir);
   const activeSource = input.definitionSource ?? appSources.ensureCurrent();
-  const registry = new AppRegistry(activeSource.projectsRoot, input.roots.projectsRoot);
+  const registry = new AppRegistry(discoverAppDefinitions(activeSource.projectsRoot, input.roots.projectsRoot));
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
   const agentNames = registry
