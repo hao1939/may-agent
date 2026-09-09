@@ -4566,6 +4566,238 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  describe("terminal completion recovery", () => {
+    function setup() {
+      const f = fixture();
+      const bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const config = loadedTaskConfig(f, persistDir);
+      const payload = { verdict: "approved", operationId: "fixture-operation" };
+      const terminalResult = {
+        state: "converged" as const,
+        summary: "Decision ready",
+        response: "The result is ready",
+        result: payload,
+        evidence: ["fixture:decision"],
+        actions: [],
+      };
+      let agentCalls = 0;
+      const agents: TaskAgentRunner = {
+        available: () => true,
+        prepare: async () => true,
+        snapshot: () => agents,
+        role: (agent) => ({ agent, instructions: "Fixture" }),
+        async execute() {
+          agentCalls++;
+          return { handlerResult: structuredClone(terminalResult), runId: null };
+        },
+      };
+      const base = {
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir,
+        bus,
+        hostCapacity: new HostCapacity(2),
+        installControllers: false,
+        agents,
+        sessions: createTaskSessionRecovery({
+          persistDir,
+          bus,
+          manager: { hasActiveSession: () => false } as never,
+        }),
+        appRegistrySnapshot: {
+          id: "terminal-recovery:1",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      };
+      const observe = (id: string, workflow?: string) =>
+        observeAppTaskIntent(config, {
+          appAgent: "sample-owner",
+          intent: {
+            id,
+            parentId: "operations",
+            outcome: "Produce a checked decision",
+            acceptance: ["Decision is checked and retained"],
+            mode: "achieve",
+            input: { operationId: payload.operationId },
+            ...(workflow ? { workflow } : {}),
+          },
+        });
+      const run = (taskId: string) =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      const saveTerminalSession = (taskId: string) => {
+        const claim = claimObservedAppTask(config, {
+          taskId,
+          appAgent: "sample-owner",
+          handler: "auto",
+          reason: "test",
+        });
+        if (claim.kind !== "claimed") throw new Error("expected agent claim");
+        expect(claim.handler).toBe("agent:sample-owner");
+        const sessionId = `session-${taskId}`;
+        expect(recordAppTaskAttemptSession(config, claim, sessionId)).toBe(true);
+        writeSessionMeta(persistDir, sessionId, {
+          agent: "sample-owner",
+          task: "Produce a checked decision",
+          status: "done",
+          startedAt: Date.now(),
+          endedAt: Date.now(),
+        });
+        writeFileSync(
+          join(persistDir, "sessions", sessionId, "result.json"),
+          JSON.stringify({
+            status: "done",
+            finishParams: { status: "success", result: terminalResult },
+          }),
+        );
+        return claim;
+      };
+      return { base, config, payload, observe, run, saveTerminalSession, agentCalls: () => agentCalls };
+    }
+
+    it.each(["startup", "busy"] as const)("preserves the complete direct-agent result through %s", async (route) => {
+      const f = setup();
+      await installCoreTaskRuntimes(f.base);
+      f.observe("normal");
+      await f.run("normal");
+      f.observe("recovered");
+      const claim = f.saveTerminalSession("recovered");
+      if (route === "startup") {
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        await recoverInstalledAppTasks(f.base.bus);
+      } else {
+        await f.run(claim.taskId);
+      }
+      for (const taskId of ["normal", "recovered"]) {
+        expect(f.config.resourceStore.readReceipt(taskId)).toMatchObject({
+          result: f.payload,
+          response: "The result is ready",
+          acceptanceBasis: { method: "agent-judgment" },
+        });
+      }
+      // Reading a settled Task must not execute or consume its session again.
+      await recoverInstalledAppTasks(f.base.bus);
+      await f.run(claim.taskId);
+      expect(f.agentCalls()).toBe(1);
+      expect(f.config.resourceStore.readReceipt(claim.taskId)?.metadata.generation).toBe(claim.generation);
+    });
+
+    for (const route of ["startup", "busy"] as const) {
+      it.each(["accept", "reject", "missing"] as const)(
+        `retries a terminal workflow handoff through ${route} with a %s verifier`,
+        async (verification) => {
+          const f = setup();
+          let workflowCalls = 0;
+          let verificationCalls = 0;
+          let externalCreates = 0;
+          const operations = new Set<string>();
+          const workflows: TaskWorkflowRunner = {
+            async inspect() {
+              return {
+                available: true,
+                error: null,
+                workspace: "shared",
+                ...(verification === "missing"
+                  ? {}
+                  : {
+                      verifier: {
+                        name: "required-proof",
+                        sourcePath: "fixture",
+                        async verify() {
+                          verificationCalls++;
+                          return {
+                            accepted: verification === "accept",
+                            summary: "Fixture postcondition",
+                            evidence: ["fixture:verified"],
+                          };
+                        },
+                      },
+                    }),
+              };
+            },
+            async execute(input) {
+              workflowCalls++;
+              // The App checks its provider's operation identity before a write.
+              // Runtime recovery must preserve that input, not invent a new key.
+              const operationId = String(input.intent.input?.operationId);
+              expect(operationId).toBe(f.payload.operationId);
+              if (!operations.has(operationId)) {
+                operations.add(operationId);
+                externalCreates++;
+              }
+              return {
+                handlerResult: { state: "needs-agent", summary: "Check external operation", evidence: [], actions: [] },
+                runId: "fixture-workflow",
+              };
+            },
+          };
+          await installCoreTaskRuntimes({ ...f.base, workflows });
+          f.observe("handoff", "must-verify");
+          await f.run("handoff");
+          const claim = f.saveTerminalSession("handoff");
+          expect(claim.handoff?.reason).toBe("needs-agent");
+          expect(externalCreates).toBe(1);
+
+          if (route === "startup") {
+            mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+              attempt.runtimeId = "previous-runtime";
+              attempt.lease!.runtimeId = "previous-runtime";
+            });
+            await recoverInstalledAppTasks(f.base.bus);
+          } else {
+            // A fresh lease may still belong to a live workflow caller.
+            await f.run(claim.taskId);
+            expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
+            expect(f.config.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
+            mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+              attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+            });
+            expect(await f.run(claim.taskId)).toContain(claim.taskId);
+          }
+          expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
+          expect(f.config.resourceStore.readTask(claim.taskId)?.status.phase).toBe("pending");
+          expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+          // Exercise the replacement workflow and its sequential agent handoff.
+          await f.run(claim.taskId);
+          await f.run(claim.taskId);
+          expect(workflowCalls).toBe(2);
+          expect(externalCreates).toBe(1);
+          expect(f.agentCalls()).toBe(1);
+          expect(verificationCalls).toBe(verification === "missing" ? 0 : 1);
+          if (verification === "accept") {
+            expect(f.config.resourceStore.readReceipt(claim.taskId)).toMatchObject({
+              metadata: { generation: claim.generation },
+              result: f.payload,
+              acceptanceBasis: { method: "deterministic", verifier: "required-proof" },
+            });
+          } else {
+            expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
+            expect(f.config.resourceStore.readTask(claim.taskId)?.metadata.generation).toBe(claim.generation);
+            expect(f.config.resourceStore.readTask(claim.taskId)?.status).toMatchObject({
+              phase: "attention",
+              summary:
+                verification === "missing"
+                  ? "Agent convergence was rejected because workflow must-verify handed off without a verifier"
+                  : "Fixture postcondition",
+            });
+          }
+          await f.run(claim.taskId);
+          expect(workflowCalls).toBe(2);
+          expect(f.agentCalls()).toBe(1);
+        },
+      );
+    }
+  });
+
   it("rejects an invalid persisted terminal result without crashing recovery", () => {
     const f = fixture();
     const persistDir = join(f.root, ".state");
