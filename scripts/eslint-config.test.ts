@@ -10,11 +10,17 @@ it("enforces bounded imports with and without extensions, but allows neutral hel
     "src/app/app-runtime.ts",
     "src/app/transport/socket.ts",
   ]) {
-    const modules = filePath.startsWith("src/lib/")
-      ? ["event-bus", "requests", "persistence", "app-task-runtime", "metrics", "cron", "manager"]
-      : ["app-task-runtime"];
-    const forbidden = modules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `../app/${name}${ext}`));
-    if (filePath.startsWith("src/lib/")) forbidden.push("bun:sqlite");
+    const forbidden: string[] = [];
+    if (filePath.startsWith("src/lib/")) {
+      const libModules = ["requests", "persistence", "metrics", "manager"];
+      const appModules = ["event-bus", "app-task-runtime", "cron"];
+      forbidden.push(...libModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `./${name}${ext}`)));
+      forbidden.push(...appModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `../app/${name}${ext}`)));
+      forbidden.push("bun:sqlite");
+    } else {
+      const rel = filePath === "src/app/app-runtime.ts" ? "./app-task-runtime" : "../app-task-runtime";
+      forbidden.push(...["", ".js", ".ts"].map((ext) => `${rel}${ext}`));
+    }
     // Multiline imports caught incorrectly by the old line-text tests, and
     // extensionless imports that previously bypassed the new lint rule.
     const source =
