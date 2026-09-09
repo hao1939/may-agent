@@ -11,6 +11,7 @@ cycle_430_source_basis: "Read-only XHS observation through 2026-09-09T04:30:11.9
 cycle_431_source_basis: "No-request seed reconciliation at 2026-09-09T05:20:02.158Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; owner-only baseline and six-field scope-bound candidate; complete two-file diff SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0; 8 focused and 87 runnable runtime tests after repair."
 cycle_432_source_basis: "No-request seed reconciliation at 2026-09-09T05:50:42.853Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 431 candidate baseline and sequential-replay guard candidate; complete two-file diff SHA-256 b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817; baseline 3 failed/17 deselected, candidate 20 focused and 90 runnable runtime tests with one artifact deselection."
 cycle_433_source_basis: "Read-only XHS reconciliation through 2026-09-09T12:20:54.892Z; exact accepted canonical source d7f3458043b9585b924b4771659767dc248382d6; goal-owned Mnemosyne fixture at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 432 baseline diff b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817; durable-claim candidate diff f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445; matched concurrent control; 22 focused, 92 runnable runtime, and 7 repository tests."
+cycle_434_source_basis: "No-request seed reconciliation at 2026-09-09T13:01:24Z; exact accepted canonical source 62d38199ffcd2047e60300a628f48ac84bc43e9e; goal-owned Mnemosyne fixture at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 433 baseline diff f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445; claim-state candidate diff f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af; three baseline state assertions failed, while 24 focused, 94 runnable runtime, and 7 repository tests passed after repair."
 </ai_context>
 
 # Seed-First Memory Exploration Across GitHub, arXiv, and Reddit
@@ -23517,6 +23518,35 @@ lease, kernel outcome lookup, retry identity, or compensation procedure. The
 candidate remains uncommitted and external; upstream acceptance, deployment,
 delegation, `agent_binding_id`, typed errors, durable denial audit, and user
 outcomes remain unproved. RV-004 and RV-034 stay high/open.
+
+## Cycle 434 checkpoint — retained claims become classifiable
+
+Cycle 434 began from independently accepted clean Cycle 433 cursor
+`62d38199ffcd2047e60300a628f48ac84bc43e9e`. Cycle 433's direct XHS
+observation was about 40 minutes old, so this bounded seed pass made no browser
+or public-source request. Added/changed identities remain unknown, observed
+removals remain `[]`, and all 132 durable seeds remain unavailable rather than
+removed.
+
+RV-004 remains highest by consequence but inaccessible without its protected
+selection-to-later-outcome join. The next accessible RV-034 question was what
+the durable claim says after control crosses the external-kernel boundary. On
+the exact Cycle 433 candidate, three new state assertions fail because a claim
+contains only proposal, decision, and creation time.
+
+The [Cycle 434 candidate](./mnemosyne-admission-claim-state-candidate-cycle434-2026-09-09.md)
+adds an explicit three-state record. A normal kernel result and a pre-kernel
+rejection both resolve their claim; a synthetic kernel exception leaves a
+durable `kernel_started` record visible after reopening the database, and the
+same request cannot call the kernel again. The cumulative candidate passes 24
+focused tests, 94 runnable runtime tests with one artifact-only deselection,
+and 7 repository tests.
+
+This only distinguishes a locally unresolved external-call boundary. It does
+not determine whether the kernel committed before an exception or crash, and
+it supplies no retry, lease, lookup, compensation, migration, operator API,
+upstream acceptance, deployment, or outcome evidence. The candidate remains
+uncommitted and external. RV-004 and RV-034 stay high/open.
 
 ## Supervision
 

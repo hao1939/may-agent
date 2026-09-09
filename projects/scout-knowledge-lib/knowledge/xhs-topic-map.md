@@ -12,6 +12,7 @@ cycle_430_source_basis: "Read-only XHS observation through 2026-09-09T04:30:11.9
 cycle_431_source_basis: "No-request seed reconciliation at 2026-09-09T05:20:02.158Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; owner-only baseline and six-field scope-bound candidate; complete two-file diff SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0; 8 focused and 87 runnable runtime tests after repair."
 cycle_432_source_basis: "No-request seed reconciliation at 2026-09-09T05:50:42.853Z; retained Cycle 430 XHS observation; goal-owned Mnemosyne clone at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 431 candidate baseline and sequential-replay guard candidate; complete two-file diff SHA-256 b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817; baseline 3 failed/17 deselected, candidate 20 focused and 90 runnable runtime tests with one artifact deselection."
 cycle_433_source_basis: "Read-only XHS observation through 2026-09-09T12:20:54.892Z; goal-owned Mnemosyne fixture at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; exact Cycle 432 baseline diff b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817; four-file durable-claim candidate diff f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445; matched concurrent control; 22 focused, 92 runnable runtime, and 7 repository tests."
+cycle_434_source_basis: "No-request seed reconciliation at 2026-09-09T13:01:24Z; exact accepted canonical source 62d38199ffcd2047e60300a628f48ac84bc43e9e; goal-owned Mnemosyne fixture at retained base ba43036035bb33dfb955d53da54635aac2ab83a0; Cycle 433 baseline diff f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445; claim-state candidate diff f34072d932080c6605bb595dd419b4369b20aee9fc1048754cd35f39d8fcc2af; three baseline state assertions failed, while 24 focused, 94 runnable runtime, and 7 repository tests passed after repair."
 latest_seed_observation: "Cycle 433 read-only XHS boundary through 2026-09-09T12:20:54.892Z."
 </ai_context>
 
@@ -11503,6 +11504,37 @@ host behavior, kernel outcome lookup, retry identity, compensation,
 delegation, `agent_binding_id`, typed errors, denial auditing, upstream review,
 deployment, and user outcomes remain unresolved. RV-034 and RV-004 therefore
 remain high/open.
+
+### Cycle 434 checkpoint — expose an in-doubt claim without replay
+
+Cycle 434 began from independently accepted clean Cycle 433 cursor
+`62d38199ffcd2047e60300a628f48ac84bc43e9e`. The direct XHS observation was
+about 40 minutes old, inside the six-hour cadence, so the bounded seed pass
+made no browser or public-source request. Added/changed identities remain
+unknown, removals remain `[]`, and all 132 durable seeds remain unavailable
+rather than removed.
+
+RV-004 still lacks its protected query → rank → selection → later-outcome
+join. RV-034 therefore remained the highest accessible gap. The Cycle 433
+claim blocks concurrent replay but does not say whether a retained claim is
+still before the kernel, has crossed the external boundary, or has reached a
+decision. Three new assertions fail on that exact candidate because the claim
+has no state fields.
+
+The [Cycle 434 isolated candidate](../reports/research/mnemosyne-admission-claim-state-candidate-cycle434-2026-09-09.md)
+adds `claimed`, `kernel_started`, and `resolved` states. It durably marks
+`kernel_started` before the external call, resolves the same claim with the
+decision transaction, and leaves an explicit `kernel_started` claim after a
+synthetic kernel exception. Reopening the SQLite repository sees that state;
+a replay is rejected before a second kernel call. The cumulative four-file
+diff is `f34072d9…c2af`; 24 focused tests, 94 runnable runtime tests with one
+artifact-only deselection, and 7 repository tests pass.
+
+This is fail-closed observability, not crash recovery or end-to-end
+idempotency. No hard process-kill, kernel outcome lookup, lease, retry owner,
+compensation, migration, cross-host/database, API status surface, upstream
+review, deployment, or user outcome is proved. RV-034 and RV-004 remain
+high/open.
 
 ## Cycle 283 seed-first start — integrated-review continuity
 

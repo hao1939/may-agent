@@ -24,6 +24,14 @@ useful evidence, but do not prove collection membership.
 | Representative availability          | Public `/explore` remains `ready=true` with 30 notes and no login wall. The saved-profile request resolved to a `profile`-class login wall with zero attributable items, so no representative saved-post read was supported or attempted. This is public availability evidence, not collection-membership or semantic evidence.                                                                                                                                                                                                                                                                                                                                                        |
 | Removal policy                       | A bounded-window absence or direct `/404` is recorded as unavailable; removal requires stronger collection-membership evidence than repeated partial materialization alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
+Cycle 434 cadence decision at `2026-09-09T13:01:24Z`: Cycle 433's direct
+observation through `12:20:54.892Z` was about 40 minutes old and remained
+inside the six-hour cadence, so no XHS browser, feed, search, detail, or
+saved-surface request ran. Added and changed identities remain unknown,
+observed removals remain `[]`, and all 132 durable seeds remain unavailable
+rather than removed. This is a no-request decision, not a new direct
+observation or collection-equality claim.
+
 Cycle 433 direct reconciliation at `2026-09-09T12:20:53.983Z–12:20:54.892Z`
 ran after the six-hour cadence elapsed. Exactly one public `status` and one
 non-navigating `saved-status` ran through the established read-only namespace
