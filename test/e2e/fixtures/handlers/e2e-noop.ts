@@ -4,10 +4,11 @@
  * Used by e1-handler-loop-liveness to validate that the cron + handler-loader +
  * event-persistence pipeline runs end-to-end against a real daemon.
  */
-import type { CronEntry } from "../../../../src/lib/cron-tool.js";
-import type { HandlerContext, HandlerModule, EventEnvelope } from "../../../../src/lib/handler-context.js";
+import type { MaintenanceEntry } from "../../../../src/app/adapters/maintenance/contracts.js";
+import type { HandlerContext, HandlerModule } from "../../../../src/app/adapters/maintenance/context.js";
+import type { EventEnvelope } from "../../../../src/app/event-bus.js";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: MaintenanceEntry) => {
   return async (event?: EventEnvelope) => {
     ctx.sdk.emit(
       "e2e.tick",

@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { Check } from "typebox/value";
-import type { EventEnvelope } from "../lib/handler-context.js";
+import type { EventEnvelope } from "./event-bus.js";
 import { createTaskHandlerAvailability } from "./core/tasks/handler-availability.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./core/tasks/result.js";
 import type {
@@ -37,7 +37,8 @@ import {
 } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
-import { listRuntimeTaskOutcomeViews, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
+import type { TaskOutcomeReader } from "./core/reads/reporting.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "./app-inbox-store.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
@@ -214,6 +215,8 @@ export interface AppTaskRuntimeOptions {
   executors?: Readonly<Record<string, TaskExecutor>>;
   /** Optional workflow implementation, selected by composition. */
   workflows?: TaskWorkflowRunner;
+  /** Optional projection; canonical Task reads remain available without it. */
+  readOutcomes?: TaskOutcomeReader;
   appRegistry?: AppRegistry;
   /** Prospective canonical generation used during one coordinated reload. */
   appRegistrySnapshot?: AppRegistrySnapshot;
@@ -526,7 +529,17 @@ async function runTaskCapability(
         executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
         taskRead: {
           list: async (options) => listRuntimeTaskViews(config, options),
-          outcomes: async (options) => listRuntimeTaskOutcomeViews(config, options),
+          outcomes: async (projection) => {
+            if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
+            return opts.readOutcomes({
+              appDir: descriptor.appDir,
+              projection,
+              tasks: {
+                list: (options) => listRuntimeTaskViews(config, options),
+                get: (id) => readRuntimeTaskView(config, id),
+              },
+            });
+          },
           get: async (id) => readRuntimeTaskView(config, id),
         },
       });
@@ -2844,12 +2857,17 @@ export function listLoadedAppTaskOutcomeViews(input: {
     (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
   );
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-  return listRuntimeTaskOutcomeViews(
-    {
-      taskStateConfig: appTaskConfig(descriptor),
+  const report = appRouterOptionsByBus.get(input.bus)?.readOutcomes;
+  if (!report) throw new Error("Task outcome reporting is unavailable");
+  const config = { taskStateConfig: appTaskConfig(descriptor) };
+  return report({
+    appDir: descriptor.appDir,
+    projection: input.projection,
+    tasks: {
+      list: (options) => listRuntimeTaskViews(config, options),
+      get: (id) => readRuntimeTaskView(config, id),
     },
-    input.projection,
-  );
+  });
 }
 
 export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskDetail | null {

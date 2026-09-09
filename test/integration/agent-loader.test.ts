@@ -1,10 +1,9 @@
 import { describe, it, expect } from "bun:test";
 import {
-  generateAutoHeartbeats,
   listConfiguredAgentNames,
   listProjectAgentDirectories,
   loadAgentConfig,
-  loadHandlersForAgentCrons,
+  loadMaintenanceHandlers,
   loadAgents,
   validateAgentConfig,
   type AgentConfig,
@@ -339,7 +338,7 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it('warns when cron.json exists but agent.json tools[] omits "cron" (F2)', async () => {
+  it('prepares maintenance when cron.json exists even without the cron tool', async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ignored-"));
     try {
       const agentsRoot = join(root, "agents");
@@ -384,9 +383,9 @@ describe("agent loader boundaries", () => {
           e.message.includes("silenced") &&
           e.message.includes("IGNORED"),
       );
-      expect(warning).toBeDefined();
-      expect(warning.message).toContain("cron.json");
-      expect(warning.message).toContain('Add "cron" to tools');
+      expect(warning).toBeUndefined();
+      const { getAgentMaintenance } = await import("../../src/app/agent-loader.js");
+      expect(getAgentMaintenance().get("silenced")?.getEntries()).toEqual([{ name: "forgotten", handler: "x", intervalMs: 60000 }]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -436,30 +435,7 @@ describe("agent loader boundaries", () => {
     }
   });
 
-  it("generates conventional heartbeat entries only when no explicit heartbeat exists", () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-heartbeat-"));
-    try {
-      const agentsRoot = join(root, "agents");
-      const alphaDir = join(agentsRoot, "alpha");
-      const betaDir = join(agentsRoot, "beta");
-      mkdirSync(join(alphaDir, "workflows"), { recursive: true });
-      mkdirSync(join(betaDir, "workflows"), { recursive: true });
-      writeFileSync(join(alphaDir, "agent.json"), JSON.stringify({ name: "alpha" }));
-      writeFileSync(join(alphaDir, "workflows", "alpha-heartbeat.ts"), "export default {};");
-      writeFileSync(join(betaDir, "agent.json"), JSON.stringify({ name: "beta" }));
-      writeFileSync(join(betaDir, "workflows", "beta-heartbeat.ts"), "export default {};");
-      writeFileSync(join(betaDir, "cron.json"), JSON.stringify([{ name: "heartbeat-beta" }]));
-
-      const entries = generateAutoHeartbeats(agentsRoot);
-
-      expect(entries.map((entry) => entry.name)).toEqual(["heartbeat-alpha"]);
-      expect(entries[0].handler).toMatchObject({ workflow: "alpha-heartbeat", agent: "alpha" });
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("registers workflow-backed handler entries without handler files", async () => {
+  it("rejects workflow-backed maintenance entries instead of running a second work path", async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-workflow-handler-"));
     try {
       const handlers = new Map<string, unknown>();
@@ -480,7 +456,7 @@ describe("agent loader boundaries", () => {
         triggerNow: () => false,
       };
 
-      const result = await loadHandlersForAgentCrons({
+      await expect(loadMaintenanceHandlers({
         agentsRoot: join(root, "agents"),
         sharedRoot: join(root, "shared"),
         projectsRoot: join(root, "projects"),
@@ -488,12 +464,9 @@ describe("agent loader boundaries", () => {
         projectRoot: root,
         manager: {} as any,
         bus: { emit: () => undefined } as any,
-        agentCrons: new Map([["alpha", cron as any]]),
-      });
-
-      expect(result.errors).toEqual([]);
-      expect(result.registered).toEqual(["alpha:heartbeat-alpha"]);
-      expect(handlers.has("heartbeat-alpha")).toBe(true);
+        agentMaintenance: new Map([["alpha", cron as any]]),
+      })).rejects.toThrow("requires a named handler");
+      expect(handlers.size).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -513,7 +486,7 @@ describe("agent loader boundaries", () => {
         triggerNow: () => false,
       };
 
-      await loadHandlersForAgentCrons({
+      await loadMaintenanceHandlers({
         agentsRoot: join(root, "agents"),
         sharedRoot: join(root, "shared"),
         projectsRoot: join(root, "projects"),
@@ -521,16 +494,15 @@ describe("agent loader boundaries", () => {
         projectRoot: root,
         manager: {} as any,
         bus: { emit: () => undefined } as any,
-        agentCrons: new Map([["alpha", cron as any]]),
+        agentMaintenance: new Map([["alpha", cron as any]]),
       });
 
       expect(resolver).toBeDefined();
-      const resolved = await resolver!({
+      await expect(resolver!({
         name: "heartbeat-alpha",
         enabled: true,
         handler: { workflow: "alpha-heartbeat", agent: "alpha", task: "[heartbeat]" },
-      });
-      expect(typeof resolved).toBe("function");
+      })).rejects.toThrow("requires a named handler");
       expect(handlers.has("heartbeat-alpha")).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -554,13 +526,13 @@ describe("agent loader boundaries", () => {
         triggerNow: () => false,
       };
 
-      const result = await loadHandlersForAgentCrons({
+      const result = await loadMaintenanceHandlers({
         agentsRoot: join(root, "agents"),
         persistDir: join(root, ".state"),
         projectRoot: root,
         manager: { callAgent: async () => ({}) } as any,
         bus: { emit: () => undefined } as any,
-        agentCrons: new Map([["alpha", cron as any]]),
+        agentMaintenance: new Map([["alpha", cron as any]]),
       });
 
       expect(result.errors).toEqual([]);
@@ -598,7 +570,7 @@ describe("agent loader boundaries", () => {
         triggerNow: () => false,
       };
 
-      const result = await loadHandlersForAgentCrons({
+      const result = await loadMaintenanceHandlers({
         agentsRoot: globalAgentsRoot,
         sharedRoot: join(root, "shared"),
         projectsRoot: join(root, "projects"),
@@ -606,7 +578,7 @@ describe("agent loader boundaries", () => {
         projectRoot: join(root, "projects", "alpha-project"),
         manager: { callAgent: async () => ({}) } as any,
         bus: { emit: () => undefined } as any,
-        agentCrons: new Map([["aks-explorer", cron as any]]),
+        agentMaintenance: new Map([["aks-explorer", cron as any]]),
       });
 
       expect(result.errors).toEqual([]);

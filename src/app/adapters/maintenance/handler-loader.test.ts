@@ -2,16 +2,16 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CronEntry } from "../../lib/cron-tool.js";
-import type { EventEnvelope } from "../../lib/handler-context.js";
-import { SubagentManager } from "../../lib/manager.js";
-import { closeDb } from "../../lib/requests.js";
-import type { Cron } from "../cron.js";
-import { EventBus } from "../event-bus.js";
-import { loadHandlersForAgentCrons } from "./handler-loader.js";
+import type { MaintenanceEntry } from "./contracts.js";
+import type { EventEnvelope } from "../../event-bus.js";
+import { SubagentManager } from "../../../lib/manager.js";
+import { closeDb } from "../../../lib/requests.js";
+import type { HostMaintenance } from "./runtime.js";
+import { EventBus } from "../../event-bus.js";
+import { loadMaintenanceHandlers } from "./handler-loader.js";
 
 type Handler = (event?: EventEnvelope) => Promise<void>;
-type Resolver = (entry: CronEntry) => Promise<Handler | undefined>;
+type Resolver = (entry: MaintenanceEntry) => Promise<Handler | undefined>;
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -20,7 +20,7 @@ afterEach(() => {
   }
 });
 
-function setup(entries: CronEntry[]) {
+function setup(entries: MaintenanceEntry[]) {
   const root = mkdtempSync(join(tmpdir(), "handler-registration-"));
   roots.push(root);
   const agentDir = join(root, "projects", "sample.app", "agents", "owner");
@@ -40,9 +40,9 @@ function setup(entries: CronEntry[]) {
       resolver = next;
     },
     triggerNow: () => false,
-  } as unknown as Cron;
+  } as unknown as HostMaintenance;
   const load = () =>
-    loadHandlersForAgentCrons({
+    loadMaintenanceHandlers({
       agentsRoot: join(root, "agents"),
       sharedRoot: join(root, "shared"),
       projectsRoot: join(root, "projects"),
@@ -50,9 +50,9 @@ function setup(entries: CronEntry[]) {
       projectRoot: root,
       manager: new SubagentManager({ persistDir: root }),
       bus,
-      agentCrons: new Map([["owner", cron]]),
+      agentMaintenance: new Map([["owner", cron]]),
     });
-  const resolve = async (entry: CronEntry) => {
+  const resolve = async (entry: MaintenanceEntry) => {
     const before = new Map(handlers);
     const handler = await resolver(entry);
     expect(handlers).toEqual(before); // Preparation must not publish a stale handler.
@@ -73,38 +73,19 @@ export function create(ctx, entry) {
 
 describe("shared handler registration", () => {
   for (const mode of ["startup", "dynamic"] as const) {
-    it(`executes a standalone workflow handler registered at ${mode}`, async () => {
-      const entry: CronEntry = {
+    it(`rejects standalone workflow work at ${mode}`, async () => {
+      const entry = {
         name: "standalone-heartbeat",
         enabled: true,
-        category: "heartbeat",
-        handler: { workflow: "heartbeat", agent: "owner", projectId: "sample", task: "Bounded observation" },
-      };
+        handler: { workflow: "heartbeat", agent: "owner", task: "Observe" },
+      } as unknown as MaintenanceEntry;
       const fixture = setup(mode === "startup" ? [entry] : []);
-      const workflowDir = join(fixture.handlersDir, "..", "workflows");
-      mkdirSync(workflowDir);
-      writeFileSync(
-        join(workflowDir, "heartbeat.ts"),
-        `
-export const name = "heartbeat";
-export const description = "Standalone registration fixture";
-export async function execute(ctx) { return ctx.done("Observed"); }
-`,
-      );
-      expect((await fixture.load()).errors).toEqual([]);
-      if (mode === "dynamic") expect(await fixture.resolve(entry)).toBe(true);
-      await fixture.handlers.get(entry.name)!();
-      expect(fixture.events).toContainEqual(
-        expect.objectContaining({
-          type: "handler.workflow_dispatched",
-          data: expect.objectContaining({
-            handler: entry.name,
-            workflow: "heartbeat",
-            status: "done",
-            workflowRunId: expect.any(String),
-          }),
-        }),
-      );
+      if (mode === "startup") await expect(fixture.load()).rejects.toThrow("requires a named handler");
+      else {
+        await fixture.load();
+        await expect(fixture.resolve(entry)).rejects.toThrow("requires a named handler");
+      }
+      expect(fixture.handlers.size).toBe(0);
     });
 
     it(`preserves per-entry configuration, events and restricted capabilities at ${mode}`, async () => {
@@ -185,7 +166,9 @@ export async function execute(ctx) { return ctx.done("Observed"); }
     await fixture.handlers.get("late")!();
     expect(initial).toEqual(initialReport);
     expect(fixture.events.some((event) => event.type === "fixture.handler-ran")).toBe(true);
-    expect(await fixture.resolve({ name: "no-handler", enabled: true })).toBe(false);
+    await expect(fixture.resolve({ name: "no-handler", enabled: true } as MaintenanceEntry)).rejects.toThrow(
+      "requires a named handler",
+    );
     expect(await fixture.resolve({ name: "empty-handler", enabled: true, handler: "" })).toBe(false);
   });
 });

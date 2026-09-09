@@ -2,15 +2,15 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Cron } from "../cron.js";
-import { EventBus } from "../event-bus.js";
-import { SubagentManager } from "../../lib/manager.js";
-import { closeDb } from "../../lib/requests.js";
-import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { loadHandlersForAgentCrons } from "./handler-loader.js";
+import { HostMaintenance } from "./runtime.js";
+import { EventBus } from "../../event-bus.js";
+import { SubagentManager } from "../../../lib/manager.js";
+import { closeDb } from "../../../lib/requests.js";
+import { importRuntimeModule } from "../../../lib/runtime-import.js";
+import { loadMaintenanceHandlers } from "./handler-loader.js";
 
 // Real imports deliberately finish in reverse order. The gate only controls
-// module preparation; Cron and the loader own publication and dispatch.
+// module preparation; HostMaintenance and the loader own publication and dispatch.
 async function setup(timers: boolean) {
   const root = mkdtempSync(join(tmpdir(), "handler-reload-"));
   const agentDir = join(root, "agents", "owner");
@@ -23,15 +23,13 @@ async function setup(timers: boolean) {
   bus.subscribe((event) => {
     if (event.type === "fixture.handler-ran") reports.push(event.data);
   });
-  const cron = new Cron(
-    configPath,
-    manager,
-    () => "fixture",
-    (message) => {
+  const cron = new HostMaintenance({
+    configPath: configPath,
+    onError: (message) => {
       if (message.startsWith("[handler] Resolved handler")) installed.resolve();
     },
-    root,
-  );
+    projectRoot: root,
+  });
   const gates = new Map<
     string,
     { started: ReturnType<typeof Promise.withResolvers<void>>; release: ReturnType<typeof Promise.withResolvers<void>> }
@@ -77,18 +75,18 @@ export function create(ctx, entry) {
       finish: async () => {
         gate.release.resolve();
         await importRuntimeModule(path);
-        await Bun.sleep(0); // Drain the loader/Cron continuations after import completion.
+        await Bun.sleep(0); // Drain the loader/HostMaintenance continuations after import completion.
       },
     };
   };
   cron.load();
-  await loadHandlersForAgentCrons({
+  await loadMaintenanceHandlers({
     agentsRoot: join(root, "agents"),
     persistDir: root,
     projectRoot: root,
     manager,
     bus,
-    agentCrons: new Map([["owner", cron]]),
+    agentMaintenance: new Map([["owner", cron]]),
   });
   cron.subscribeToBus(bus);
   if (timers) cron.start();
@@ -98,7 +96,7 @@ export function create(ctx, entry) {
     module,
     configPath,
     fire: async () => {
-      expect(cron.dispatchEvent("fixture.changed")).toBe(1);
+      bus.emit({ type: "fixture.changed", source: "fixture", owner: "host:maintenance", data: {} });
       await Bun.sleep(0);
       return reports;
     },

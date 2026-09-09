@@ -5,42 +5,15 @@
  * operations. A few handler-specific helpers remain on ctx directly.
  */
 
-import type { CronEntry } from "./cron-tool.js";
-import type { PersistedSession } from "./persistence.js";
-import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
-import type { ErrorClass } from "./classify-error.js";
-import type { AgentSDK } from "./sdk.js";
+import type { MaintenanceEntry } from "./contracts.js";
+import type { PersistedSession } from "../../../lib/persistence.js";
+import type { DigestRow, DigestInput, DigestAction } from "../../../lib/session-digest.js";
+import type { ErrorClass } from "../../../lib/classify-error.js";
+import type { AgentSDK } from "../../../lib/sdk.js";
+import type { EventEnvelope } from "../../event-bus.js";
 
 /** Host maintenance files can observe/repair mechanics, but cannot launch App work. */
-export type HandlerSDK = Pick<
-  AgentSDK,
-  "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths"
->;
-
-/** Canonical event envelope delivered to handlers. */
-export interface EventEnvelope {
-  type: string;
-  source: string;
-  owner: string;
-  timestamp?: number;
-  action?: string;
-  urgency?: "low" | "normal" | "high" | "immediate";
-  ttl_ms?: number;
-  visibility?: "default" | "detail";
-  trace?: {
-    traceId: string;
-    parentEventId?: number;
-    links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }>;
-  };
-  target?: {
-    project?: string;
-    taskId?: string;
-    owner?: string;
-    sessionId?: string;
-    human?: boolean;
-  };
-  data: Record<string, unknown>;
-}
+export type HandlerSDK = Pick<AgentSDK, "emit" | "getDb" | "query" | "metrics" | "log" | "message" | "paths">;
 
 /**
  * HandlerContext — flat interface for handler code.
@@ -77,14 +50,12 @@ export interface HandlerContext {
   readSessionMessages(sessionId: string): unknown[];
 }
 
-/** Retained standalone-agent adapter. Canonical Apps do not use this path. */
-export type WorkflowHandlerContext = Omit<HandlerContext, "sdk"> & {
-  sdk: AgentSDK;
-};
-
 /**
  * The shape a handler module must export.
  */
 export interface HandlerModule {
-  create: (ctx: HandlerContext, entry: CronEntry) => (event?: EventEnvelope) => Promise<void>;
+  create: (
+    ctx: HandlerContext,
+    entry: MaintenanceEntry,
+  ) => (event?: EventEnvelope, signal?: AbortSignal) => Promise<void>;
 }

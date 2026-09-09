@@ -92,6 +92,8 @@ function messageOwner(target: string): string {
 // ── Build AgentSDK ────────────────────────────────────────────────────
 
 export function buildAgentSDK(deps: SDKDeps): AgentSDK {
+  let metrics: AgentSDK["metrics"] | undefined;
+  let query: AgentSDK["query"] | undefined;
   return {
     async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
       const { runWorkflowDirect } = await import("./workflow-tool.js");
@@ -163,30 +165,34 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       return getDb(deps.persistDir);
     },
 
-    query: createQueryService({
-      getDb: () => getDb(deps.persistDir),
-    }),
+    get query() {
+      return (query ??= createQueryService({
+        getDb: () => getDb(deps.persistDir),
+      }));
+    },
 
-    metrics: createMetricService({
-      getDb: () => getDb(deps.persistDir),
-      emit: (type, data, envelope) =>
-        deps.bus.emit(
-          buildCanonicalEventEnvelope(
-            type,
-            {
-              source: envelope?.source ?? `agent:${deps.agentName}`,
-              owner: envelope?.owner,
-              target: envelope?.target,
-              urgency: envelope?.urgency,
-              ttl_ms: envelope?.ttl_ms,
-              data: data ?? {},
-            },
-            { owner: deps.agentName },
-          ) as any,
-        ),
-      measuredBy: `agent:${deps.agentName}`,
-      log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
-    }),
+    get metrics() {
+      return (metrics ??= createMetricService({
+        getDb: () => getDb(deps.persistDir),
+        emit: (type, data, envelope) =>
+          deps.bus.emit(
+            buildCanonicalEventEnvelope(
+              type,
+              {
+                source: envelope?.source ?? `agent:${deps.agentName}`,
+                owner: envelope?.owner,
+                target: envelope?.target,
+                urgency: envelope?.urgency,
+                ttl_ms: envelope?.ttl_ms,
+                data: data ?? {},
+              },
+              { owner: deps.agentName },
+            ) as any,
+          ),
+        measuredBy: `agent:${deps.agentName}`,
+        log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
+      }));
+    },
 
     log(level: "info" | "warn" | "error", msg: string): void {
       globalLog(level, `[${deps.agentName}] ${msg}`);

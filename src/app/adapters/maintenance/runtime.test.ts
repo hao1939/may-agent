@@ -1,10 +1,11 @@
+import { configureMaintenance } from "../../../../test/fixtures/maintenance.js";
 import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { Cron } from "./cron.ts";
-import { EventBus } from "./event-bus.ts";
+import { HostMaintenance } from "./runtime.ts";
+import { EventBus } from "../../event-bus.ts";
 
 function tempRoot(): string {
   return mkdtempSync(join(tmpdir(), "may-cron-"));
@@ -14,7 +15,7 @@ function tick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-describe("Cron event dispatch", () => {
+describe("HostMaintenance event dispatch", () => {
   it.each([
     ["disable", false],
     ["remove", false],
@@ -24,10 +25,17 @@ describe("Cron event dispatch", () => {
     const root = tempRoot();
     const configPath = join(root, "cron.json");
     const entry = { name: "review", handler: "review", on: ["fixture.changed"], enabled: true };
+    const bus = new EventBus();
+    const publish = (value: string) =>
+      bus.emit({ type: "fixture.changed", source: "fixture", owner: "host:maintenance", data: { value } });
     writeFileSync(configPath, JSON.stringify([entry]));
     const finished = Promise.withResolvers<void>();
-    const cron = new Cron(configPath, {} as any, () => "fixture", undefined, root, undefined, (event) => {
-      if (event.type === "handler.completed") finished.resolve();
+    const cron = new HostMaintenance({
+      configPath: configPath,
+      projectRoot: root,
+      emitEvent: (event) => {
+        if (event.type === "handler.completed") finished.resolve();
+      },
     });
     const release = Promise.withResolvers<void>();
     const fresh = Promise.withResolvers<void>();
@@ -40,8 +48,9 @@ describe("Cron event dispatch", () => {
     try {
       cron.load();
       cron.registerHandler("review", handler);
-      cron.dispatchEvent("fixture.changed", { value: "running" });
-      cron.dispatchEvent("fixture.changed", { value: "stale" });
+      cron.subscribeToBus(bus);
+      publish("running");
+      publish("stale");
       if (scheduled) {
         release.resolve();
         await finished.promise; // The old queue now has a deferred delivery callback.
@@ -51,7 +60,7 @@ describe("Cron event dispatch", () => {
       writeFileSync(configPath, JSON.stringify([entry]));
       cron.reload();
       cron.registerHandler("review", handler);
-      cron.dispatchEvent("fixture.changed", { value: "fresh" });
+      publish("fresh");
       release.resolve();
       await fresh.promise;
       await tick();
@@ -66,11 +75,8 @@ describe("Cron event dispatch", () => {
   it("keeps config activation explicit instead of polling cron.json", () => {
     const root = tempRoot();
     const configPath = join(root, "cron.json");
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "maintenance", intervalMs: 60_000, handler: "maintenance" }]),
-    );
-    const cron = new Cron(configPath, {} as any, () => "s1", undefined, root);
+    writeFileSync(configPath, JSON.stringify([{ name: "maintenance", intervalMs: 60_000, handler: "maintenance" }]));
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: root });
     try {
       cron.start();
       const runtime = cron as unknown as Record<string, unknown>;
@@ -83,25 +89,20 @@ describe("Cron event dispatch", () => {
     }
   });
 
-  it("uses typed heartbeat category instead of entry-name inference", async () => {
+  it("correlates the started and completed maintenance evidence", async () => {
     const root = tempRoot();
     const bus = new EventBus();
     const observed: any[] = [];
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as any),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      emitEvent: (event) => bus.emit(event as any),
+    });
     try {
       bus.subscribe((event) => observed.push(event));
       cron.registerHandler("agent-pulse", async () => {});
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "agent-pulse",
-        category: "heartbeat",
         agent: "dev",
         enabled: true,
         handler: "agent-pulse",
@@ -109,7 +110,7 @@ describe("Cron event dispatch", () => {
 
       expect(cron.triggerNow("agent-pulse", { force: true })).toBe(true);
       await tick();
-      expect(observed).toContainEqual(expect.objectContaining({ type: "heartbeat", agent: "dev", entry: "agent-pulse" }));
+      expect(observed.some((event) => event.type === "heartbeat")).toBeFalse();
       const started = observed.find((event) => event.type === "handler.started");
       const completed = observed.find((event) => event.type === "handler.completed");
       expect(started?.data.handlerRunId).toMatch(/^handler:agent-pulse:/);
@@ -123,15 +124,11 @@ describe("Cron event dispatch", () => {
   it("keeps timed-out handlers in flight until they actually stop", async () => {
     const root = tempRoot();
     const failures: any[] = [];
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => failures.push(event),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      emitEvent: (event) => failures.push(event),
+    });
     let release!: () => void;
     let receivedSignal: AbortSignal | undefined;
     let calls = 0;
@@ -139,9 +136,11 @@ describe("Cron event dispatch", () => {
       cron.registerHandler("slow-handler", async (_event, signal) => {
         calls += 1;
         receivedSignal = signal;
-        await new Promise<void>((resolve) => { release = resolve; });
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
       });
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "slow-handler",
         enabled: true,
         handler: "slow-handler",
@@ -171,23 +170,21 @@ describe("Cron event dispatch", () => {
     const originalNow = Date.now;
     let now = 1_700_000_000_000;
     Date.now = () => now;
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => failures.push(event),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      emitEvent: (event) => failures.push(event),
+    });
     let release!: () => void;
     let calls = 0;
     try {
       cron.registerHandler("slow-handler", async () => {
         calls += 1;
-        await new Promise<void>((resolve) => { release = resolve; });
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
       });
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "slow-handler",
         enabled: true,
         handler: "slow-handler",
@@ -216,20 +213,17 @@ describe("Cron event dispatch", () => {
     const root = tempRoot();
     const notifications: string[] = [];
     const failures: any[] = [];
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      (message) => notifications.push(message),
-      (event) => failures.push(event),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      notify: (message) => notifications.push(message),
+      emitEvent: (event) => failures.push(event),
+    });
     try {
       cron.registerHandler("flaky-handler", async () => {
         throw new Error("database is locked");
       });
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "flaky-handler",
         enabled: true,
         handler: "flaky-handler",
@@ -250,20 +244,17 @@ describe("Cron event dispatch", () => {
   it("resets transient failure suppression after a successful run", async () => {
     const root = tempRoot();
     const notifications: string[] = [];
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      (message) => notifications.push(message),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      notify: (message) => notifications.push(message),
+    });
     let fail = true;
     try {
       cron.registerHandler("recovering-handler", async () => {
         if (fail) throw new Error("SQLITE_BUSY");
       });
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "recovering-handler",
         enabled: true,
         handler: "recovering-handler",
@@ -289,184 +280,29 @@ describe("Cron event dispatch", () => {
     }
   });
 
-  it("does not fire project-scoped workflow handlers for untargeted project events", async () => {
+  it("repairs event subscriptions when reinstalling an unchanged maintenance declaration", async () => {
     const root = tempRoot();
     const bus = new EventBus();
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as any),
-    );
-    try {
-      let fires = 0;
-      cron.registerHandler("sample-planner", async () => {
-        fires += 1;
-      });
-      cron.addSyntheticEntry({
-        name: "sample-planner",
-        enabled: true,
-        on: ["project.owner.requested"],
-        handler: {
-          workflow: "planner",
-          agent: "owner",
-          projectId: "sample",
-          task: "plan",
-        },
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.owner.requested",
-        source: "test",
-        owner: "agent:owner",
-        data: { reason: "missing-project-target" },
-      } as any);
-      await tick();
-
-      expect(fires).toBe(0);
-    } finally {
-      cron.stop();
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not fire project-scoped workflow handlers for another projectId shape", async () => {
-    const root = tempRoot();
-    const bus = new EventBus();
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as any),
-    );
-    try {
-      const fired: string[] = [];
-      cron.registerHandler("sample-worker", async () => {
-        fired.push("sample-worker");
-      });
-      cron.addSyntheticEntry({
-        name: "sample-worker",
-        enabled: true,
-        on: ["project.work"],
-        handler: {
-          workflow: "worker",
-          agent: "owner",
-          projectId: "sample",
-          task: "work",
-        },
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "agent:owner",
-        data: { projectId: "other" },
-      } as any);
-      await tick();
-      expect(fired).toEqual([]);
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "agent:owner",
-        data: { project_id: "sample" },
-      } as any);
-      await tick();
-      expect(fired).toEqual(["sample-worker"]);
-    } finally {
-      cron.stop();
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("accepts nested project payloads when filtering project-scoped handlers", async () => {
-    const root = tempRoot();
-    const bus = new EventBus();
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as any),
-    );
-    try {
-      let fires = 0;
-      cron.registerHandler("sample-worker", async () => {
-        fires += 1;
-      });
-      cron.addSyntheticEntry({
-        name: "sample-worker",
-        enabled: true,
-        on: ["project.work"],
-        handler: {
-          workflow: "worker",
-          agent: "owner",
-          projectId: "sample",
-          task: "work",
-        },
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "agent:owner",
-        data: { params: { project: "sample" } },
-      } as any);
-      await tick();
-
-      expect(fires).toBe(1);
-    } finally {
-      cron.stop();
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("repairs event subscriptions when reinstalling an unchanged synthetic entry", async () => {
-    const root = tempRoot();
-    const bus = new EventBus();
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-      undefined,
-      (event) => bus.emit(event as any),
-    );
+    const cron = new HostMaintenance({
+      configPath: join(root, "missing-cron.json"),
+      projectRoot: root,
+      emitEvent: (event) => bus.emit(event as any),
+    });
     try {
       let fires = 0;
       const entry = {
         name: "sample-planner",
         enabled: true,
         on: ["project.owner.requested"],
-        handler: {
-          workflow: "planner",
-          agent: "owner",
-          projectId: "sample",
-          task: "plan",
-        },
+        handler: "review",
       };
 
       cron.registerHandler("sample-planner", async () => {
         fires += 1;
       });
-      cron.addSyntheticEntry(entry);
+      configureMaintenance(cron, entry);
       (cron as unknown as { eventSubscriptions: Map<string, Set<string>> }).eventSubscriptions.clear();
-      cron.addSyntheticEntry(entry);
+      configureMaintenance(cron, entry);
       cron.subscribeToBus(bus);
       cron.start();
 
@@ -485,18 +321,12 @@ describe("Cron event dispatch", () => {
     }
   });
 
-  it("stops an enabled synthetic entry when an app reload disables it", () => {
+  it("stops an enabled maintenance declaration when an configuration reload disables it", () => {
     const root = tempRoot();
-    const cron = new Cron(
-      join(root, "missing-cron.json"),
-      {} as any,
-      () => "s1",
-      undefined,
-      root,
-    );
+    const cron = new HostMaintenance({ configPath: join(root, "missing-cron.json"), projectRoot: root });
     try {
       cron.registerHandler("sample-schedule", async () => {});
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "sample-schedule",
         enabled: true,
         intervalMs: 60_000,
@@ -511,7 +341,7 @@ describe("Cron event dispatch", () => {
       expect(runtime.pendingStartTimers.has("sample-schedule")).toBe(true);
       runtime.queuedEventTriggers.set("sample-schedule", [{ type: "project.tick" }]);
 
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "sample-schedule",
         enabled: false,
         intervalMs: 60_000,
@@ -524,7 +354,7 @@ describe("Cron event dispatch", () => {
 
       // Reinstalling the same disabled descriptor is also a repair boundary.
       runtime.queuedEventTriggers.set("sample-schedule", [{ type: "project.tick" }]);
-      cron.addSyntheticEntry({
+      configureMaintenance(cron, {
         name: "sample-schedule",
         enabled: false,
         intervalMs: 60_000,

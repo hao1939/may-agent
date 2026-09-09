@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
 import type { SubagentDefinition } from "../../lib/types.js";
 import type { SubagentManager } from "../../lib/index.js";
-import type { Cron } from "../cron.js";
+import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
 import type { EventBus } from "../event-bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
 import {
@@ -14,6 +14,7 @@ import {
 } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
 import { buildAgentDefinition } from "./agent-definition.js";
+import { prepareMaintenance } from "../composition/maintenance.js";
 
 export interface AgentLoaderOptions {
   agentsRoot: string;
@@ -38,7 +39,7 @@ export interface LoadResult {
 
 export interface PreparedAgentGeneration extends LoadResult {
   definitions: readonly SubagentDefinition[];
-  crons: ReadonlyMap<string, Cron>;
+  maintenance: ReadonlyMap<string, HostMaintenance>;
   cleanups: ReadonlyMap<string, readonly (() => void)[]>;
   warnings: readonly string[];
 }
@@ -51,10 +52,10 @@ export interface AgentGenerationPublication {
 const discardedGenerations = new WeakSet<object>();
 
 /** Release resources belonging to a generation that was never committed. */
-export function discardAgentGeneration(generation: Pick<PreparedAgentGeneration, "crons" | "cleanups">): void {
+export function discardAgentGeneration(generation: Pick<PreparedAgentGeneration, "maintenance" | "cleanups">): void {
   if (discardedGenerations.has(generation)) return;
   discardedGenerations.add(generation);
-  for (const cron of generation.crons.values()) cron.close();
+  for (const cron of generation.maintenance.values()) cron.close();
   for (const cleanups of generation.cleanups.values()) {
     for (const cleanup of cleanups) cleanup();
   }
@@ -89,13 +90,13 @@ function reportInvalidGeneration(bus: EventBus, errors: readonly ValidationError
 
 function preparedResourceRuntime(runtime: AgentRegistryRuntime): {
   runtime: AgentRegistryRuntime;
-  crons: Map<string, Cron>;
+  maintenance: Map<string, HostMaintenance>;
   cleanups: Map<string, Array<() => void>>;
 } {
-  const crons = new Map<string, Cron>();
+  const maintenance = new Map<string, HostMaintenance>();
   const cleanups = new Map<string, Array<() => void>>();
   return {
-    crons,
+    maintenance,
     cleanups,
     runtime: {
       getAgentSessionId: runtime.getAgentSessionId,
@@ -118,7 +119,7 @@ function readCandidate(agentDir: string, fallbackName: string, errors: Validatio
 
 /**
  * Discover and build one complete agent generation without changing manager,
- * Cron, cleanup, or App state. Any validation or skill diagnostic rejects the
+ * HostMaintenance, cleanup, or App state. Any validation or skill diagnostic rejects the
  * whole generation.
  */
 export async function prepareAgents(
@@ -166,12 +167,14 @@ export async function prepareAgents(
   const staged = preparedResourceRuntime(runtime);
   const definitions: SubagentDefinition[] = [];
   for (const { config, source } of selected.values()) {
-    if (existsSync(resolve(source.dir, "cron.json")) && !(config.tools ?? []).includes("cron")) {
-      warnings.push(
-        `${config.name}: cron.json found at ${agentRelativeDir(source)}/cron.json but "cron" is not in agent.json tools[]; entries will be IGNORED. Add "cron" to tools to enable.`,
-      );
-    }
     try {
+      const configPath = resolve(source.dir, "cron.json");
+      if (existsSync(configPath)) {
+        staged.maintenance.set(
+          config.name,
+          prepareMaintenance({ configPath, persistDir: opts.persistDir, agentName: config.name, bus: opts.bus }),
+        );
+      }
       const effectiveProjectRoot = agentProjectRoot(source, projectRoot);
       const definition = await buildAgentDefinition({
         config,
@@ -184,8 +187,7 @@ export async function prepareAgents(
           globalAgentsRoot: agentsRoot,
           agentDir: source.dir,
           getAgentSessionId: staged.runtime.getAgentSessionId,
-          getAgentCrons: () => staged.crons,
-          setAgentCron: (agentName, cron) => staged.crons.set(agentName, cron),
+          getAgentMaintenance: () => staged.maintenance,
           addCleanup: (agentName, cleanup) => {
             const existing = staged.cleanups.get(agentName);
             if (existing) existing.push(cleanup);
@@ -218,7 +220,7 @@ export async function prepareAgents(
   const names = definitions.map((definition) => definition.name);
   return {
     definitions: Object.freeze(definitions),
-    crons: staged.crons,
+    maintenance: staged.maintenance,
     cleanups: staged.cleanups,
     warnings: Object.freeze(warnings),
     added: names.filter((name) => !manager.hasAgent(name)),

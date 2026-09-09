@@ -24,7 +24,7 @@ behavior change rather than treating this guide as replacement design.
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
 | `core/` | Identity, authority, and recovery rules shared by every capability | `apps/registry.ts` validates and publishes generations; `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
-| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `producers/agent-triggers.ts` attaches legacy event handlers and optional timers |
+| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `maintenance/` contains named Host duties and their configuration |
 | `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts` starts recovery independently of optional schedules |
 
 This layout is being applied incrementally. `app-runtime.ts` remains the main
@@ -76,8 +76,9 @@ registrations; disabling App schedules does not stop observers or recovery.
 
 See [Scheduling and Observation](../../../may-agent.app/docs/2a-design/cron.md)
 and [Shared timing, intentional events](../../../may-agent.app/docs/proposals/task-runtime-organization.md#shared-timing-intentional-events).
-The remaining legacy Cron execution/configuration path is a separate pending
-slice of the proposal, not removed by this shared-timing extraction.
+Host maintenance uses those same timer mechanics. See the private
+[maintenance guide](adapters/maintenance/README.md) for preparation, activation,
+failure behavior, and the retired standalone-work boundary.
 
 ## App discovery and registration
 
@@ -236,6 +237,30 @@ Conditions and workspace finalization remain under the Task engine. No extra
 timer, queue, persisted lifecycle, or live installation operation was added.
 
 ## State and process boundaries
+
+### Basic reads and optional reports
+
+`core/reads/app-read.ts` exposes canonical Task list/get, request results and
+execution results. It neither constructs metrics nor reads outcome manifests.
+Absent metric/outcome callbacks throw an explicit unavailable error; a missing
+record from an installed capability can still return null.
+
+`adapters/reporting/` owns metric-definition installation, metric views and
+outcome grouping. The outcome reader receives only App directory plus canonical
+list/get callbacks, never a private Task store. `composition/reporting.ts`
+selects shipped reports; the CLI supplies them to runtime and private workers
+select their outcome reader. No service is created just to prepare a read
+context. Workflow/maintenance metric services are created on first use.
+
+Metric-definition refresh observes a committed App generation outside its
+publication transaction. Failure is reported to process diagnostics and cannot
+reject that generation or rewrite accepted work. Interfaces are selected at
+composition; a fixture runs real Task attempts with every human transport and
+reporting omitted. Another fixture fails reporting through reload and verifies
+old accepted results and new execution remain intact.
+
+These boundaries implement Step 5 of the sibling core proposal; they do not
+add a reporting registry, lifecycle, queue, or alternative state authority.
 
 `app-inbox-store.ts` owns durable requests and their claims; the word inbox is
 the implementation name for those requests. `conversations/store.ts` reads

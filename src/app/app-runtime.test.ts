@@ -12,6 +12,8 @@ describe("app runtime startup", () => {
     "no-schedules",
     "startup-job",
     "activation-failure",
+    "reporting-failure",
+    "no-interfaces",
     "overlapping-reloads",
     "overlapping-preparation",
   ])(

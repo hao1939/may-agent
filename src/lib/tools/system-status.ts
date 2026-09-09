@@ -452,7 +452,7 @@ function formatMarkdown(
   lines.push("");
 
   // ── Job Health ──────────────────────────────────────────────────
-  lines.push(`## ⏱️ Cron/Jobs (Last ${jobs.length})`);
+  lines.push(`## ⏱️ HostMaintenance/Jobs (Last ${jobs.length})`);
   if (jobs.length === 0) {
     lines.push("- (no job history data)");
   } else {
