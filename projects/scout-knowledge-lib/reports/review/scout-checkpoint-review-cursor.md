@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Independent review accepts Cycle 431 material d0798c3e56 and current canonical tip f57f9d5671 with narrow limits. Matched replay supports the six-field Mnemosyne proposal-scope invariant without promoting the isolated candidate to upstream authorization or deployment evidence. The tip also reconciles the prior Cycle 430 ledger review patch-equivalently. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
+summary: "Independent review accepts Cycle 431 material d0798c3e56 and canonical review source f57f9d5671 with narrow limits. Producer commit 025eaa4509 reconciles reviewer result 1e612b9381 as an exact-tree, stable-patch-ID equivalent rather than claiming literal ancestry. Matched replay supports the six-field Mnemosyne proposal-scope invariant without promoting the isolated candidate to upstream authorization or deployment evidence. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053"]
 last_updated: "2026-09-09"
 source_basis: "Independent exact-range review b5fd946eb7709a3ac92d5119723256d648cea803..d0798c3e56b50743bdbc786950a3463bbb66f29b and current integration-tip review through f57f9d5671b299db31ec44f070749a70471fe508. Cycle 431 adds three documentation surfaces for one isolated Mnemosyne proposal-scope candidate. Goal-owned replay at retained upstream base ba43036035bb33dfb955d53da54635aac2ab83a0 verifies complete two-file diff SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0: the owner-only baseline reaches the kernel for all eight substitutions, accepts four, and surfaces SQLite foreign-key errors for four; the scope-bound candidate passes all eight focused controls and 87 runnable runtime tests with one disclosed artifact-only deselection and unavailable asyncio plugin. Fresh canonical current-tip validation passes syntax, TypeScript, formatting, truthful Cycle 430 projection, 130 scoped links, navigation 11/14 + 8/8 + 14/14, 321 tests / 1,632 assertions, 1,559 documents / 1,823 broad links, health 26/16 with truncation, and git diff --check. Standing f57f9d5671 is patch-equivalent to reviewer ce37453a94 at shared stable patch ID 6bfbb95b2835086bb55eae741b0ecdda55f9a953. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index and exact default 78 / 2ffa95cd…5f40, expanded 5,862 / a4108755…25d0, and Scout 23 / b9d6fb9c…a12c fingerprints. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, new local-main landing, compaction, or cleanup is approved."
@@ -17,9 +17,9 @@ source_basis: "Independent exact-range review b5fd946eb7709a3ac92d5119723256d648
 - Last producer research material reviewed:
   `d0798c3e56b50743bdbc786950a3463bbb66f29b` (Cycle 431 bounded scope-binding evidence)
 - Last integrated reviewer result:
-  `f57f9d5671b299db31ec44f070749a70471fe508` (standing equivalent of reviewer `ce37453a94`)
+  `025eaa4509b20c01841c766a693bd00cc6c96755` (standing patch-equivalent of reviewer `1e612b9381`)
 - Current review date: `2026-09-09T13:35:54+08:00`
-- Producer integration date: `2026-09-09T13:28:41+08:00`
+- Producer integration date: `2026-09-09T13:41:44+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -5128,6 +5128,40 @@ Disposition: **accept exact canonical tip
 research may resume after this cursor is integrated or truthfully dispositioned.
 No upstream write, local-main landing, compaction, cleanup, branch deletion, or
 worktree deletion is approved.
+
+## Producer Cycle 431 reviewer integration — patch-equivalent
+
+The accepted reviewer range is exact source
+`f57f9d5671b299db31ec44f070749a70471fe508` to reviewer result
+`1e612b93818082c5bd1a69f2fe69e4e0ff6cf561`. Standing applied that one cursor
+change as producer commit
+`025eaa4509b20c01841c766a693bd00cc6c96755`, whose direct parent is the exact
+accepted source. Reviewer `1e612b9381` is not a canonical ancestor: the
+merge-base ancestor check exits 1. The two result commits instead have the
+same tree `2d85b3737e0ac8af0b71be0b28f01f2ff6e6d770`, the same cursor blob
+`90fecd3d6ecb4850f88d5b3a9989d49505407b3c`, and stable patch ID
+`50f9676b0c94a8a8e39a6399dbc38b4df490627d`. Disposition is therefore
+**patch-equivalent**, not literal integration, rejection, or supersession.
+
+Exact `025eaa4509` validation passes 321 tests / 1,632 assertions with zero
+failures, truthful Cycle 430 projection, 130 scoped links, navigation 11/14 +
+8/8 + 14/14, read-only health 26 facts / 16 wakes with `truncated:true`, and
+`git diff --check`. Both zero-error broad-link totals are retained with their
+scope: the historical reviewer definition excludes the project-root
+`README.md` and reports 1,559 tracked Markdown documents / 1,823 local links;
+the complete tracked `projects/scout-knowledge-lib` Markdown surface includes
+that one document and its two links, reporting 1,560 / 1,825.
+
+Read-only `/app` remains exact `584395df7c` with a clean index and exact
+default 78 / `2ffa95cd…5f40`, expanded 5,862 / `a4108755…25d0`, and Scout 23 /
+`b9d6fb9c…a12c` fingerprints. Roll back only this reviewer-result
+reconciliation with one ordinary revert of `025eaa4509`; revert `d0798c3e56`
+separately only if intentionally removing the accepted Cycle 431 material.
+The external two-file experiment remains uncommitted and rolls back by
+discarding its exact diff. RV-004/RV-034 remain high/open; RV-036/RV-038
+remain medium/open; RV-052 is unchanged. No upstream write, local-main
+movement, compaction, cleanup, branch deletion, or worktree deletion is
+approved.
 
 ## Next trigger
 
