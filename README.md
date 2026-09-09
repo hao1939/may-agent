@@ -37,6 +37,11 @@ scripts/     Current build, deploy, maintenance, and diagnostic commands
 Unit tests normally live beside the source they test. Put cross-component
 tests in `test/integration` and process-level tests in `test/e2e`.
 
+For the loading-to-Task path, start with the [App source map](src/app/README.md).
+The [control package guide](packages/control/README.md) describes public event
+contracts and clients; the [Conversation guide](src/app/conversations/README.md)
+locates message projections and Topic links.
+
 `src/lib` is hosted runtime infrastructure, not a dependency-free public
 library. Project apps should use `@may-agent/sdk`; local control clients should
 use `@may-agent/control`.

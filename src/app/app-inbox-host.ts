@@ -25,16 +25,11 @@ import {
   associateAppInboxClaimTopic,
   claimNextAppInboxItem,
   completeAppInboxClaim,
-  createConversationTopic,
   createAppInboxItem,
   getAppInboxItem,
-  linkConversationTopicTask,
   listAppInboxChildren,
   listOpenConversationTopicRequests,
   listAppInboxTaskDependencyKeys,
-  readAppConversationResource,
-  readConversationMessageTopicId,
-  readConversationTopic,
   releaseAppInboxClaim,
   renewAppInboxClaim,
   waitAppInboxClaim,
@@ -46,6 +41,13 @@ import {
   type AppInboxWaitKind,
   type AppInboxTaskDependencyKey,
 } from "./app-inbox-store.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  readAppConversationResource,
+  readConversationMessageTopicId,
+  readConversationTopic,
+} from "./conversations/store.js";
 
 export type AppDependencyReader = (input: {
   appId: string;
@@ -777,43 +779,21 @@ export class AppInboxHost {
     const outcome: AppInboxReconcileResult = { claimed: 1, admitted: 0, released: 0, errors: [] };
     const conversationIds = new Set<string>();
     try {
-      try {
-        const request = await this.#authorRequest(claim.item);
-        const terminalTaskDependency =
-          request.dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(request.dependency.status)
-            ? request.dependency
-            : undefined;
-        const directRequest =
-          app.requests &&
-          (app.requests.inputKinds === undefined || app.requests.inputKinds.includes(claim.item.input.kind));
-        const changedConversation = directRequest
-          ? await this.#resolveDirectRequest(app, claim, request)
-          : terminalTaskDependency
-            ? this.#completeRequest(claim, {
-                summary:
-                  terminalTaskDependency.summary ??
-                  (terminalTaskDependency.status === "done"
-                    ? `${request.input.kind} completed`
-                    : `Task ${terminalTaskDependency.id} requires owner review (${terminalTaskDependency.status})`),
-                response: terminalTaskDependency.response,
-                result: terminalTaskDependency.result,
-                evidence: terminalTaskDependency.evidence,
-              })
-            : await this.#attachRequestTask(app, claim, request);
-        if (changedConversation) conversationIds.add(changedConversation);
-        outcome.admitted = 1;
-      } catch (error) {
-        outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
-        if (
-          releaseAppInboxClaim(this.#db, claim, {
-            retryAfterMs: this.#retryAfterMs,
-            now: this.#now(),
-          })
-        ) {
-          outcome.released = 1;
-          if (claim.item.conversationId) {
-            conversationIds.add(claim.item.conversationId);
-          }
+      const request = await this.#authorRequest(claim.item);
+      const changedConversation = await this.#handleRequest(app, claim, request);
+      if (changedConversation) conversationIds.add(changedConversation);
+      outcome.admitted = 1;
+    } catch (error) {
+      outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
+      if (
+        releaseAppInboxClaim(this.#db, claim, {
+          retryAfterMs: this.#retryAfterMs,
+          now: this.#now(),
+        })
+      ) {
+        outcome.released = 1;
+        if (claim.item.conversationId) {
+          conversationIds.add(claim.item.conversationId);
         }
       }
     } finally {
@@ -821,6 +801,35 @@ export class AppInboxHost {
     }
     if (conversationIds.size > 0) outcome.conversationIds = [...conversationIds].sort();
     return outcome;
+  }
+
+  async #handleRequest(
+    app: RegisteredApp,
+    claim: AppInboxClaim,
+    request: Readonly<AppRequest>,
+  ): Promise<string | undefined> {
+    if (
+      app.requests &&
+      (app.requests.inputKinds === undefined || app.requests.inputKinds.includes(claim.item.input.kind))
+    ) {
+      return this.#resolveDirectRequest(app, claim, request);
+    }
+
+    const dependency = request.dependency;
+    if (dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(dependency.status)) {
+      return this.#completeRequest(claim, {
+        summary:
+          dependency.summary ??
+          (dependency.status === "done"
+            ? `${request.input.kind} completed`
+            : `Task ${dependency.id} requires owner review (${dependency.status})`),
+        response: dependency.response,
+        result: dependency.result,
+        evidence: dependency.evidence,
+      });
+    }
+
+    return this.#attachRequestTask(app, claim, request);
   }
 
   #requiredApp(appId: string): RegisteredApp {

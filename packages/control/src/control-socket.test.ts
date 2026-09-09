@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sendSocketCommand, type SocketEndpoint } from "./client.js";
+import { getEvent, sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
   attachControlSocket,
   CONTROL_SOCKET_LIMITS,
@@ -137,7 +137,16 @@ describe("control socket protocol", () => {
           links: [{ kind: "request", id: "app_73", state: "pending" }],
         };
       },
-      getEvent: (eventId) => ({ event: { id: eventId, type: "app.input.requested" } }),
+      getEvent: (eventId) => ({
+        event: {
+          id: eventId,
+          type: "app.input.requested",
+          data: { input: { kind: "message", data: { message: "hello" } } },
+          timestamp: 100,
+        },
+        delivery: { state: "accepted", acceptedBy: "app-inbox:sample" },
+        links: [{ kind: "request", id: "app_73", state: "pending" }],
+      }),
     });
 
     await expect(
@@ -165,10 +174,15 @@ describe("control socket protocol", () => {
         idempotencyKey: "turn-73",
       },
     ]);
-    await expect(sendSocketCommand(core.endpoint, { type: "event.get", eventId: 73 })).resolves.toMatchObject({
-      type: "ok",
-      command: "event.get",
-      event: { event: { id: 73, type: "app.input.requested" } },
+    await expect(getEvent(core.endpoint, 73)).resolves.toEqual({
+      event: {
+        id: 73,
+        type: "app.input.requested",
+        data: { input: { kind: "message", data: { message: "hello" } } },
+        timestamp: 100,
+      },
+      delivery: { state: "accepted", acceptedBy: "app-inbox:sample" },
+      links: [{ kind: "request", id: "app_73", state: "pending" }],
     });
   });
 

@@ -1,5 +1,12 @@
 import type { AppInput, AppInputSource } from "@may-agent/sdk";
-import type { EventInput, EventLink, EventReceipt, EventTarget } from "../../packages/control/src/protocol.js";
+import type {
+  EventInput,
+  EventLink,
+  EventReceipt,
+  EventTarget,
+  EventView,
+  PublicEvent,
+} from "@may-agent/control/events";
 import type { SqliteDb } from "../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -11,39 +18,9 @@ import {
   type EventBus,
 } from "./event-bus.js";
 
-export type { EventInput, EventLink, EventReceipt, EventTarget } from "../../packages/control/src/protocol.js";
-
-export type EventView = {
-  event: {
-    id: number;
-    type: string;
-    source?: string;
-    owner?: string;
-    target?: EventTarget;
-    data: Record<string, unknown>;
-    timestamp: number;
-  };
-  delivery: {
-    state: "recorded" | "accepted" | "unhandled" | "failed";
-    acceptedBy?: string;
-    note?: string;
-  };
-  links: EventLink[];
-};
-
 export type EventFilter = {
   types?: string[];
   sessionIds?: string[];
-};
-
-export type PublicEvent = {
-  id?: number;
-  type: string;
-  source?: string;
-  owner?: string;
-  target?: EventTarget;
-  data: Record<string, unknown>;
-  timestamp?: number;
 };
 
 export type EventPublisherContext = {

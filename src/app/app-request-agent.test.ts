@@ -17,7 +17,8 @@ import { createFinishTool } from "../lib/tools/lifecycle.js";
 import type { AppRegistry } from "./app-registry.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { AppInboxHost } from "./app-inbox-host.js";
-import { listAppInboxChildren, readAppConversationResource } from "./app-inbox-store.js";
+import { listAppInboxChildren } from "./app-inbox-store.js";
+import { readAppConversationResource } from "./conversations/store.js";
 
 const input = (kind: string) => Type.Object({ kind: Type.Literal(kind), data: Type.Object({ text: Type.String() }) });
 const may = defineApp({

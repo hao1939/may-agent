@@ -28,16 +28,18 @@ import {
   type AppTaskAttacher,
 } from "./app-inbox-host.js";
 import {
-  linkConversationTopicTask,
-  listConversationTopicLinksForTask,
-  listStaleConversationTopicTasks,
   listAppInboxItemsWaitingOnTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
   listHumanAppInboxItemsWaitingOnTask,
-  readAppConversationResource,
-  readConversationTopic,
   type AppInboxItem,
 } from "./app-inbox-store.js";
+import {
+  linkConversationTopicTask,
+  listConversationTopicLinksForTask,
+  listStaleConversationTopicTasks,
+  readAppConversationResource,
+  readConversationTopic,
+} from "./conversations/store.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import {
   completeAppEventAdmissionPlan,
