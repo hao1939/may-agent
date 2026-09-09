@@ -413,6 +413,17 @@ it("does not release an agent handoff until its required workflow verifier is av
   await installCoreTaskRuntimes(base);
   expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
   expect(config.resourceStore.readReceipt(taskId)).toBeNull();
+  const before = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const withoutVerifier: TaskWorkflowRunner = {
+    ...workflows,
+    async inspect(input) {
+      return { ...(await workflows.inspect(input)), verifier: undefined };
+    },
+  };
+  await installCoreTaskRuntimes({ ...base, workflows: withoutVerifier });
+  expect(config.resourceStore.readTaskContext({ taskIds: [taskId] })).toEqual(before);
+  expect(agentCalls).toBe(0);
+  expect(verified).toBe(0);
   await installCoreTaskRuntimes({ ...base, workflows });
   await run();
   // A fresh workflow pass may re-establish its handoff after recovery.

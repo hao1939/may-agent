@@ -127,6 +127,8 @@ export type AppTaskControlReceipt = {
 
 export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
+  /** Readiness release must not race an App pause from another writer. */
+  requireActiveProject?: boolean;
   expectMissingTaskIds?: string[];
   tasks?: TaskResourceWrite[];
   deleteTaskIds?: string[];
@@ -1207,6 +1209,7 @@ export class AppTaskResourceStore {
       throw new Error("Task resource mutation requires at least one existing or missing-task fence");
     }
     return transaction(this.db, () => {
+      if (mutation.requireActiveProject && this.projectLifecycle() !== "active") return false;
       for (const fence of mutation.fences) {
         const current = this.db
           .prepare(

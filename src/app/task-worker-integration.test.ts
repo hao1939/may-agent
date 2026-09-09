@@ -7,6 +7,7 @@ describe("real Task worker boundary", () => {
   it.each([
     ["parentLoss", "stops with its parent and recovers the same unfinished Task"],
     ["restoredHandler", "repairs an unavailable binding without running it in the recovery process"],
+    ["restoredAgent", "recovers a restored non-default agent without executing it"],
     ["recoverySourceRace", "rejects availability from a release replaced during inspection"],
     ["pinnedSource", "pins workflow and shared definitions across reload"],
     ["inheritedAgent", "runs an inherited non-default agent"],

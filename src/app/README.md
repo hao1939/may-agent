@@ -157,7 +157,8 @@ the request handler's execution slot.
 `HandlerUnavailable` attempts. It asks an availability function about the exact
 binding; only core may release attention and requeue that same Task. The
 generation, resource version, attempt, cancellation and pause checks remain in
-`app-task-reconciler.ts`.
+`app-task-reconciler.ts`. Recovery also requires active App lifecycle inside
+the resource commit transaction, so a concurrent pause cannot release work.
 
 The pass advances a cursor in the existing resource-store metadata before it
 awaits inspection. Pages use the existing phase index and wrap after the last
@@ -169,6 +170,11 @@ not a Task revision, new retry queue, or new timer.
 workflow bindings without executing them. Workflow inspection comes from the
 selected runner; its lookup cache lasts one pass. An agent handoff still needs
 its originating workflow's verification capability before it can recover.
+
+Attempt workers load their selected agents only. Recovery workers load the
+active validated agent catalog, including non-default agents named or inherited
+by retained Tasks. This uses ordinary generation loading rather than a second
+agent-selection index; it constructs definitions but never executes agents.
 
 `app-task-runtime.ts` supplies the selected bindings, fences checks against the installed
 definition, and queues recovered IDs through the existing controller. Neither

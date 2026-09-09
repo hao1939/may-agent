@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import {
   cancelAppTask,
   claimObservedAppTask,
@@ -45,6 +45,48 @@ function fixture(handler = "executor:fixture") {
 }
 
 describe("unavailable Task handler recovery", () => {
+  it("preserves unavailable work when another connection pauses immediately before commit", async () => {
+    const { config: seed, fail } = fixture();
+    fail();
+    const root = mkdtempSync(join(tmpdir(), "may-handler-pause-"));
+    const path = join(root, "tasks.sqlite");
+    const store = AppTaskResourceStore.openStandalone(path, "sample");
+    store.bootstrapSnapshot(seed.resourceStore.readSnapshot(), "fixture");
+    const other = AppTaskResourceStore.openStandalone(path, "sample");
+    const recovered: string[] = [];
+    const commit = store.commit.bind(store);
+    const interleave = spyOn(store, "commit").mockImplementationOnce((mutation) => {
+      other.setProjectLifecycle("paused");
+      return commit(mutation);
+    });
+    try {
+      const before = store.readTaskContext({ taskIds: ["work"] });
+      const recover = () =>
+        recoverUnavailableTaskHandlers({
+          config: { ...seed, resourceStore: store },
+          isCurrent: () => true,
+          isAvailable: async () => true,
+          onRecovered: (candidate) => recovered.push(candidate.taskId),
+        });
+      await recover();
+      expect(interleave).toHaveBeenCalledTimes(1);
+      expect(other.projectLifecycle()).toBe("paused");
+      expect(store.readTaskContext({ taskIds: ["work"] }).resources).toEqual(before.resources);
+      expect(store.readTaskContext({ taskIds: ["work"] }).attempts).toEqual(before.attempts);
+      expect(recovered).toEqual([]);
+      interleave.mockRestore();
+      other.setProjectLifecycle("active");
+      await recover();
+      expect(store.readTask("work")?.status.phase).toBe("pending");
+      expect(recovered).toEqual(["work"]);
+    } finally {
+      interleave.mockRestore();
+      other.close();
+      store.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reaches restored handlers beyond the first page across recovery restarts", async () => {
     const { config: seed, fail } = fixture();
     const claim = fail();
