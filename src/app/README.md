@@ -261,10 +261,17 @@ No new event family or diagnostic service is required.
 `app-task-runtime.ts` coordinates the same Task lifecycle across ordinary
 dispatch and startup. `consumePersistedTerminalAgentResult` reuses normal
 transactional admission; `settlePersistedTerminalAgentResult` handles its shared
-post-commit effects. `taskCompletionDisposition` distinguishes Task completion
+cleanup and publication. Validated actions retire exact superseded sessions
+before the fenced Task commit exposes replacements. A cleanup refusal leaves
+the saved result and original claim available for recovery, rather than
+rejecting the result or losing a post-commit cleanup obligation. Cleanup runs
+outside the SQLite transaction; commit still rechecks every resource fence.
+If a concurrent update wins after cleanup, ordinary reconciliation uses the
+current Task, never the stale action. Cleanup may repeat and names only the
+prior exact session, never a replacement. No new outbox or persisted schema is added.
+`taskCompletionDisposition` distinguishes Task completion
 from accepted progress or self-revision. Both paths publish dependency changes
-through the same function. Recovered waits replay persisted Condition facts,
-and admitted actions retire their exact superseded sessions. Startup retains
+through the same function. Recovered waits replay persisted Condition facts. Startup retains
 its distinct live-session/lease checks and queue gate; it does not run an App
 attempt or invent another completion policy.
 

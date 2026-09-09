@@ -415,7 +415,6 @@ type PersistedTerminalAgentResultConsumption = {
   response?: string;
   evidence: string[];
   actionsApplied: string[];
-  supersededSessionIds: string[];
   conditionIds?: string[];
   reconcileTaskIds: string[];
 };
@@ -427,6 +426,7 @@ export function consumePersistedTerminalAgentResult(input: {
   taskId: string;
   sessionId: string;
   onRejected?: (error: unknown) => void;
+  prepareSupersededSessions?: (sessionIds: string[]) => void;
 }): PersistedTerminalAgentResultConsumption | null {
   const raw = input.result;
   if (raw === undefined) return null;
@@ -437,6 +437,15 @@ export function consumePersistedTerminalAgentResult(input: {
   if (claim.intent.workflow) return null;
   const defaultParentId = input.config.resourceStore.rootTaskId();
   if (!defaultParentId) return null;
+  let cleanupFailed = false;
+  const prepareSupersededSessions = (sessionIds: string[]) => {
+    try {
+      input.prepareSupersededSessions?.(sessionIds);
+    } catch (error) {
+      cleanupFailed = true;
+      throw error;
+    }
+  };
   try {
     const result = normalizeTaskHandlerResult(
       raw,
@@ -461,6 +470,7 @@ export function consumePersistedTerminalAgentResult(input: {
         evidence: result.evidence,
         actions: result.actions,
         acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
+        prepareSupersededSessions,
       });
       if (applied.status !== "applied") return null;
       return {
@@ -470,7 +480,6 @@ export function consumePersistedTerminalAgentResult(input: {
         ...(result.response ? { response: result.response } : {}),
         evidence: result.evidence,
         actionsApplied: applied.actionsApplied,
-        supersededSessionIds: applied.supersededSessionIds,
         reconcileTaskIds: applied.dependentTaskIds,
       };
     }
@@ -483,6 +492,7 @@ export function consumePersistedTerminalAgentResult(input: {
         evidence: result.evidence,
         actions: result.actions,
         conditions: result.conditions,
+        prepareSupersededSessions,
       });
       if (applied.status !== "applied") return null;
       return {
@@ -491,12 +501,14 @@ export function consumePersistedTerminalAgentResult(input: {
         summary: result.summary,
         evidence: result.evidence,
         actionsApplied: applied.actionsApplied,
-        supersededSessionIds: applied.supersededSessionIds,
         conditionIds: result.conditions?.map((condition) => condition.id),
         reconcileTaskIds: applied.reconcileTaskIds,
       };
     }
   } catch (error) {
+    // A valid saved result is not rejected when cleanup is temporarily unsafe.
+    // Keep its claim and exact targets intact for the next recovery pass.
+    if (cleanupFailed) throw error;
     input.onRejected?.(error);
   }
   return null;
@@ -512,10 +524,13 @@ function settlePersistedTerminalAgentResult(input: {
   onRejected?: (error: unknown) => void;
 }): string[] | null {
   const { opts, descriptor, taskId, sessionId } = input;
-  const consumed = consumePersistedTerminalAgentResult({ ...input, result: opts.sessions?.result(sessionId) });
+  const consumed = consumePersistedTerminalAgentResult({
+    ...input,
+    result: opts.sessions?.result(sessionId),
+    prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, taskId, ids),
+  });
   if (!consumed) return null;
   // Publication follows the committed Task disposition, not the session status.
-  interruptSupersededActionSessions(opts, taskId, consumed.supersededSessionIds);
   emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", taskId, {
     route: "terminal-agent-result-recovery",
     generation: consumed.claim.generation,
@@ -1800,6 +1815,7 @@ async function reconcileTask(input: {
               actions: primaryHandlerResult.actions,
               acceptanceBasis,
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+              prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, intent.id, ids),
             }),
           );
           const appliedDisposition = taskCompletionDisposition(
@@ -1807,7 +1823,6 @@ async function reconcileTask(input: {
             primaryHandlerResult.actions,
             apply.taskContinues,
           );
-          interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
           const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
           emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
             generation: primary.generation,
@@ -1915,9 +1930,9 @@ async function reconcileTask(input: {
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+            prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, intent.id, ids),
           }),
         );
-        interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
