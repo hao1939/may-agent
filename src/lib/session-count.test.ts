@@ -1,25 +1,31 @@
-import { describe, it, expect } from "bun:test";
+import { afterEach, describe, it, expect } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "./manager.js";
+import { closeDb } from "./requests.js";
 import { eventData, EventBus } from "../app/event-bus.js";
-import type { Model } from "@earendil-works/pi-ai";
+import { fakeModel } from "../../test/fixtures/model.js";
 
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
+const fixtures: Array<{ root: string; manager: SubagentManager }> = [];
+function createManager(bus?: EventBus) {
+  const root = mkdtempSync(join(tmpdir(), "manager-count-"));
+  const manager = new SubagentManager({ persistDir: root, bus });
+  fixtures.push({ root, manager });
+  return manager;
 }
+afterEach(async () => {
+  for (const { root, manager } of fixtures.splice(0)) {
+    const sessions = manager.status().filter((s) => manager.hasActiveSession(s.sessionId));
+    for (const session of sessions) manager.cancel(session.sessionId);
+    try {
+      await Promise.allSettled(sessions.map((s) => manager.waitFor(s.sessionId)));
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
 
 function registerAgent(manager: SubagentManager, name: string) {
   manager.register({
@@ -36,7 +42,7 @@ function registerAgent(manager: SubagentManager, name: string) {
 describe("SubagentManager.getSessionCount()", () => {
   it("registers live state before publishing session.start", () => {
     const bus = new EventBus();
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), bus });
+    const manager = createManager(bus);
     registerAgent(manager, "alpha");
     let activeAtStart = false;
     bus.subscribe((event) => {
@@ -55,7 +61,7 @@ describe("SubagentManager.getSessionCount()", () => {
     bus.setPersistenceSubscriber((event) => {
       if (event.type === "session.start") throw new Error("disk unavailable");
     });
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), bus });
+    const manager = createManager(bus);
     registerAgent(manager, "alpha");
 
     expect(() => manager.run("alpha", "do something")).toThrow("disk unavailable");
@@ -63,19 +69,19 @@ describe("SubagentManager.getSessionCount()", () => {
   });
 
   it("returns 0 when no sessions have been created", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = createManager();
     expect(manager.getSessionCount()).toBe(0);
   });
 
   it("returns 1 after a single session is started", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = createManager();
     registerAgent(manager, "alpha");
     manager.run("alpha", "do something");
     expect(manager.getSessionCount()).toBe(1);
   });
 
   it("completed sessions are removed from active count", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = createManager();
     registerAgent(manager, "alpha");
 
     const s1 = manager.run("alpha", "task one");
@@ -95,7 +101,7 @@ describe("SubagentManager.getSessionCount()", () => {
   });
 
   it("counts only running sessions across multiple agents", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = createManager();
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
 

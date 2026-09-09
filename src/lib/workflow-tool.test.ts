@@ -1,12 +1,22 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
 
-describe("workflow execution timeout", () => {
+const roots: string[] = [];
+function workflowRoot(prefix: string): string {
+  const root = mkdtempSync(join(tmpdir(), prefix));
+  roots.push(root);
+  return root;
+}
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+describe("workflow execution boundaries", () => {
   it("uses the canonical App read capability supplied by its owning Runtime", async () => {
-    const root = mkdtempSync(join(tmpdir(), "workflow-app-read-"));
+    const root = workflowRoot("workflow-app-read-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -33,11 +43,11 @@ export async function execute(ctx) {
     const runner = createWorkflowRunner({ manager: {} as any, workflowDir, agentName: "owner", read });
 
     await expect(runner.run("read", "test")).resolves.toMatchObject({ type: "done", summary: "resource task" });
-    rmSync(root, { recursive: true, force: true });
+
   });
 
   it("cancels the active step when its owning Task attempt is aborted", async () => {
-    const root = mkdtempSync(join(tmpdir(), "workflow-cancel-"));
+    const root = workflowRoot("workflow-cancel-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -88,7 +98,7 @@ export async function execute(ctx) {
   });
 
   it("cancels the active step and rejects late workflow effects", async () => {
-    const root = mkdtempSync(join(tmpdir(), "workflow-timeout-"));
+    const root = workflowRoot("workflow-timeout-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -149,7 +159,7 @@ export async function execute(ctx) {
   });
 
   it("lets a workflow declare a longer bounded timeout", async () => {
-    const root = mkdtempSync(join(tmpdir(), "workflow-timeout-override-"));
+    const root = workflowRoot("workflow-timeout-override-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -179,7 +189,7 @@ export async function execute(ctx) {
 
 describe("App workflow authoring context", () => {
   it("does not let a resource-backed Task bypass the fenced event capability", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-unfenced-event-"));
+    const root = workflowRoot("app-workflow-unfenced-event-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -203,11 +213,11 @@ export async function execute(ctx) {
       type: "error",
       error: expect.stringContaining("stable localKey"),
     });
-    rmSync(root, { recursive: true, force: true });
+
   });
 
   it("requires and forwards a stable local key through the fenced Task emitter", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-fenced-event-"));
+    const root = workflowRoot("app-workflow-fenced-event-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -236,11 +246,11 @@ export async function execute(ctx) {
 
     expect(await runner.run("emit", "test")).toMatchObject({ type: "done" });
     expect(emissions).toEqual([{ localKey: "child-one", type: "test.child.requested" }]);
-    rmSync(root, { recursive: true, force: true });
+
   });
 
   it("makes a coordination event visible before the emitting workflow finishes", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-immediate-event-"));
+    const root = workflowRoot("app-workflow-immediate-event-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -309,7 +319,7 @@ export async function execute(ctx) {
   });
 
   it("delivers live Task feedback to a workflow and removes the listener at completion", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-task-event-"));
+    const root = workflowRoot("app-workflow-task-event-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -363,11 +373,11 @@ export async function execute(ctx) {
 
     expect(await execution).toMatchObject({ type: "done", summary: "continue with review" });
     expect(unsubscribed).toBe(1);
-    rmSync(root, { recursive: true, force: true });
+
   });
 
   it("adapts bounded Agent execution to the single execution result", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-agent-"));
+    const root = workflowRoot("app-workflow-agent-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -461,7 +471,7 @@ export async function execute(ctx) {
   });
 
   it("rejects invalid operation allowances before provider execution", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-invalid-allowance-"));
+    const root = workflowRoot("app-workflow-invalid-allowance-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -493,7 +503,7 @@ export async function execute(ctx) {
   });
 
   it("normalizes a directly returned execution error at the host boundary", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-error-"));
+    const root = workflowRoot("app-workflow-error-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -527,7 +537,7 @@ export async function execute(ctx) {
   });
 
   it("preserves structured input across capability-scoped nested workflows", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-nested-"));
+    const root = workflowRoot("app-workflow-nested-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -570,7 +580,7 @@ export async function execute(ctx) {
   });
 
   it("exposes only the App, project, and bounded attempt workspace roots", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-workspace-"));
+    const root = workflowRoot("app-workflow-workspace-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(
@@ -608,7 +618,7 @@ export async function execute(ctx) {
   });
 
   it("exposes App-authored input without parsing the legacy task prompt", async () => {
-    const root = mkdtempSync(join(tmpdir(), "app-workflow-input-"));
+    const root = workflowRoot("app-workflow-input-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
     writeFileSync(

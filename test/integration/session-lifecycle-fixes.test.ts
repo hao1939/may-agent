@@ -1,7 +1,7 @@
 /**
  * Tests for session lifecycle bug fixes (Bug 3, 4, 8, 10).
  *
- * Bug 3: handleCompletion throws → session stuck in activeSessions
+ * Bug 3: terminal persistence throws → session stuck in activeSessions
  * Bug 4: run() with duplicate sessionId → orphaned agent
  * Bug 8: resumeSession doesn't restore parentAgentName
  * Bug 10: callDepths map never cleaned for completed root sessions
@@ -11,35 +11,23 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
+import { closeDb } from "../../src/lib/requests.js";
 import {
   classifyTerminalAssistantFailure,
   extractLastAssistantError,
 } from "../../src/lib/manager-utils.js";
 import {
   readSessionMeta,
+  readActiveSessionProcessId,
   writeSessionMeta,
   ensureSessionDir,
   appendSessionMessage,
 } from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
-import { Type, type Model } from "@earendil-works/pi-ai";
+import { Type } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
-
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
-}
+import { fakeModel } from "../fixtures/model.js";
 
 function registerAgent(manager: SubagentManager, name = "test-agent") {
   manager.register({
@@ -102,52 +90,37 @@ describe("terminal assistant failure classification", () => {
   });
 });
 
-describe("Bug 3: handleCompletion error recovery", () => {
+describe("terminal persistence failure", () => {
   let persistDir: string;
-  let manager: SubagentManager;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir });
-    registerAgent(manager);
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
 
-  it("session is removed from activeSessions even if completion errors", async () => {
-    // Start a session — it will complete quickly due to connection error (fake model)
+  it("surfaces the exact completion failure and releases live session ownership", async () => {
+    const bus = new EventBus();
+    const terminalSessions: string[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      if (event.type === "session.end") {
+        terminalSessions.push(String(event.data.sessionId));
+        throw new Error("fixture terminal persistence failed");
+      }
+    });
+    const manager = new SubagentManager({ persistDir, bus });
+    registerAgent(manager);
     const sessionId = manager.run("test-agent", "do something");
-
-    // Wait for the session to finish
-    try {
-      await manager.waitFor(sessionId);
-    } catch {
-      // Expected — fake model will cause an error
-    }
-
-    // Session should NOT be in activeSessions after completion
+    await expect(manager.waitFor(sessionId)).rejects.toThrow("fixture terminal persistence failed");
+    expect(terminalSessions).toEqual([sessionId]);
     expect(manager.hasActiveSession(sessionId)).toBe(false);
-
-    // Should be archived in registry
-    const meta = readSessionMeta(persistDir, sessionId);
-    expect(meta).toBeTruthy();
-  });
-
-  it("session gets error status when handleCompletion pipeline fails", async () => {
-    const sessionId = manager.run("test-agent", "do something");
-
-    try {
-      await manager.waitFor(sessionId);
-    } catch {
-      // Expected
-    }
-
-    // Session should be cleaned up regardless
-    expect(manager.hasActiveSession(sessionId)).toBe(false);
+    expect(readActiveSessionProcessId(persistDir, sessionId)).toBeNull();
+    expect(readSessionMeta(persistDir, sessionId)?.status).toBe("error");
   });
 });
 
@@ -166,6 +139,7 @@ describe("persistent chat empty response recovery", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
@@ -291,6 +265,7 @@ describe("workflow call empty final turn recovery", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
@@ -714,6 +689,7 @@ describe("session.start metadata", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
@@ -794,6 +770,7 @@ describe("Bug 4: run() duplicate sessionId guard", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
@@ -838,6 +815,7 @@ describe("Bug 8: resumeSession restores parentAgentName", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
@@ -908,6 +886,7 @@ describe("Bug 10: callDepths cleanup", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }

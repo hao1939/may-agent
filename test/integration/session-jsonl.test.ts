@@ -12,22 +12,7 @@ import {
   sessionJsonlPath,
 } from "../../src/lib/persistence.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { Model } from "@earendil-works/pi-ai";
-
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
-}
+import { fakeModel } from "../fixtures/model.js";
 
 function userMessage(text: string): AgentMessage {
   return {

@@ -4,23 +4,10 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readSessionMeta } from "../../src/lib/persistence.js";
-import { Type, type Model } from "@earendil-works/pi-ai";
+import { Type } from "@earendil-works/pi-ai";
+import { fakeModel } from "../fixtures/model.js";
 
 // Minimal fake model that satisfies the Model interface
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
-}
 
 describe("Registry persistence", () => {
   let persistDir: string;

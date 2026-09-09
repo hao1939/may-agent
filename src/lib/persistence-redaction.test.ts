@@ -1,7 +1,19 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { redactTranscriptSecrets, appendSessionMessage } from "./persistence.js";
+
+function writeAndRead(message: Parameters<typeof appendSessionMessage>[2]): string {
+  const root = mkdtempSync(join(tmpdir(), "transcript-redaction-"));
+  try {
+    mkdirSync(join(root, "sessions", "test"), { recursive: true });
+    appendSessionMessage(root, "test", message);
+    return readFileSync(join(root, "sessions", "test", "session.jsonl"), "utf8");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
 
 describe("redactTranscriptSecrets", () => {
   it("redacts Azure JWT tokens", () => {
@@ -13,16 +25,14 @@ describe("redactTranscriptSecrets", () => {
   });
 
   it("redacts Bearer tokens", () => {
-    const input =
-      "Authorization: Bearer abcdef1234567890abcdef1234567890abcdef1234567890";
+    const input = "Authorization: Bearer abcdef1234567890abcdef1234567890abcdef1234567890";
     const result = redactTranscriptSecrets(input);
     expect(result).toContain("[REDACTED-BEARER-TOKEN]");
     expect(result).not.toContain("abcdef1234567890");
   });
 
   it("redacts accessToken assignments", () => {
-    const input =
-      '{"accessToken": "abcdefghij1234567890abcdefghij1234567890abcdef"}';
+    const input = '{"accessToken": "abcdefghij1234567890abcdefghij1234567890abcdef"}';
     const result = redactTranscriptSecrets(input);
     expect(result).toContain("[REDACTED-ACCESS-TOKEN]");
     expect(result).not.toContain("abcdefghij1234567890");
@@ -41,8 +51,7 @@ describe("redactTranscriptSecrets", () => {
   });
 
   it("redacts multiple JWTs in one string", () => {
-    const jwt1 =
-      "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhIiwiZXhwIjoxfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV";
+    const jwt1 = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhIiwiZXhwIjoxfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV";
     const jwt2 =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSm9obiJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV";
     const input = `Token1: ${jwt1} and Token2: ${jwt2}`;
@@ -62,10 +71,7 @@ describe("redactTranscriptSecrets", () => {
     const result = redactTranscriptSecrets(azOutput);
     expect(result).not.toContain("eyJhbGciOiJ");
     // Should contain either REDACTED-JWT or REDACTED-ACCESS-TOKEN
-    expect(
-      result.includes("[REDACTED-JWT]") ||
-        result.includes("[REDACTED-ACCESS-TOKEN]"),
-    ).toBe(true);
+    expect(result.includes("[REDACTED-JWT]") || result.includes("[REDACTED-ACCESS-TOKEN]")).toBe(true);
   });
 
   it("redacts authenticated GitHub URLs with embedded tokens", () => {
@@ -82,21 +88,6 @@ describe("redactTranscriptSecrets", () => {
 // verifying the fast-path detector doesn't bypass redaction for edge cases.
 
 describe("appendSessionMessage redaction (persistence path)", () => {
-  const tmpDir = join(import.meta.dir, "__redaction_test_tmp__");
-
-  function writeAndRead(message: any): string {
-    const sessionId = `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    // appendSessionMessage uses persistDir/sessions/sessionId/session.jsonl
-    mkdirSync(join(tmpDir, "sessions", sessionId), { recursive: true });
-    appendSessionMessage(tmpDir, sessionId, message);
-    return readFileSync(join(tmpDir, "sessions", sessionId, "session.jsonl"), "utf-8");
-  }
-
-  // Clean up after all tests
-  it("setup", () => {
-    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
-  });
-
   it("redacts non-JWT Bearer tokens through persistence path", () => {
     const message = {
       role: "assistant",
@@ -152,7 +143,8 @@ describe("appendSessionMessage redaction (persistence path)", () => {
   });
 
   it("redacts secrets in nested tool-call arguments", () => {
-    const jwt = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQuYXp1cmUuY29tIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+    const jwt =
+      "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQuYXp1cmUuY29tIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
     const message = {
       role: "assistant",
       content: [
@@ -189,7 +181,8 @@ describe("appendSessionMessage redaction (persistence path)", () => {
           id: "call_456",
           name: "ssh_exec",
           input: {
-            command: "curl -H 'Authorization: Bearer abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890' https://api.example.com",
+            command:
+              "curl -H 'Authorization: Bearer abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890' https://api.example.com",
           },
         },
       ],
@@ -197,10 +190,6 @@ describe("appendSessionMessage redaction (persistence path)", () => {
     const persisted = writeAndRead(message);
     expect(persisted).toContain("[REDACTED-BEARER-TOKEN]");
     expect(persisted).not.toContain("abcdefghij1234567890");
-  });
-
-  it("cleanup", () => {
-    if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
   });
 });
 
@@ -214,14 +203,14 @@ describe("GitHub PAT redaction", () => {
 
   it("redacts fine-grained GitHub PAT (github_pat_)", () => {
     // Standalone context (not after a token= keyword) to test the pattern alone
-    const input = 'Found credential: github_pat_11AABBCC0ddddddEEEEEEfffgg in env';
+    const input = "Found credential: github_pat_11AABBCC0ddddddEEEEEEfffgg in env";
     const result = redactTranscriptSecrets(input);
     expect(result).toContain("[REDACTED-GITHUB-PAT]");
     expect(result).not.toContain("github_pat_11AABBCC0");
   });
 
   it("redacts GitHub App installation tokens (ghs_)", () => {
-    const input = 'ghs_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abc expires at 2026-07-01';
+    const input = "ghs_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abc expires at 2026-07-01";
     const result = redactTranscriptSecrets(input);
     expect(result).toContain("[REDACTED-GITHUB-TOKEN]");
     expect(result).not.toContain("ghs_aBcDeFgHiJk");
@@ -250,28 +239,17 @@ describe("GitHub PAT redaction", () => {
 });
 
 describe("appendSessionMessage GitHub PAT redaction (persistence path)", () => {
-  const tmpDir2 = join(import.meta.dir, "__ghpat_redaction_test_tmp__");
-
-  function writeAndRead2(message: any): string {
-    const sessionId = `test_ghpat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    mkdirSync(join(tmpDir2, "sessions", sessionId), { recursive: true });
-    appendSessionMessage(tmpDir2, sessionId, message);
-    return readFileSync(join(tmpDir2, "sessions", sessionId, "session.jsonl"), "utf-8");
-  }
-
-  it("setup", () => {
-    if (existsSync(tmpDir2)) rmSync(tmpDir2, { recursive: true });
-  });
-
   it("redacts GitHub PAT in tool output through persistence fast-path", () => {
     const message = {
       role: "assistant",
-      content: [{
-        type: "tool_result",
-        text: 'resolveGitHubClient says ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abc',
-      }],
+      content: [
+        {
+          type: "tool_result",
+          text: "resolveGitHubClient says ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abc",
+        },
+      ],
     };
-    const persisted = writeAndRead2(message);
+    const persisted = writeAndRead(message);
     expect(persisted).toContain("REDACTED");
     expect(persisted).not.toContain("ghp_aBcDeFgHiJk");
   });
@@ -279,25 +257,24 @@ describe("appendSessionMessage GitHub PAT redaction (persistence path)", () => {
   it("redacts github_pat_ in nested Bun command output through persistence path", () => {
     const message = {
       role: "assistant",
-      content: [{
-        type: "tool_use",
-        id: "call_789",
-        name: "bash",
-        input: {
-          command: "bun run script.ts",
+      content: [
+        {
+          type: "tool_use",
+          id: "call_789",
+          name: "bash",
+          input: {
+            command: "bun run script.ts",
+          },
         },
-      }, {
-        type: "tool_result",
-        tool_use_id: "call_789",
-        content: "Found credential github_pat_11AABBCC0ddddddEEEEEEfffgg in environment",
-      }],
+        {
+          type: "tool_result",
+          tool_use_id: "call_789",
+          content: "Found credential github_pat_11AABBCC0ddddddEEEEEEfffgg in environment",
+        },
+      ],
     };
-    const persisted = writeAndRead2(message);
+    const persisted = writeAndRead(message);
     expect(persisted).toContain("[REDACTED-GITHUB-PAT]");
     expect(persisted).not.toContain("github_pat_11AABBCC0");
-  });
-
-  it("cleanup", () => {
-    if (existsSync(tmpDir2)) rmSync(tmpDir2, { recursive: true });
   });
 });

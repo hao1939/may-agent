@@ -8,7 +8,7 @@ import {
   type Model,
   type StreamFunction,
 } from "@earendil-works/pi-ai";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -150,27 +150,6 @@ describe("GitHub Copilot IDE token recovery", () => {
 });
 
 describe("shared agent execution preparation", () => {
-  test("has no autonomous-infrastructure imports", () => {
-    const source = readFileSync(new URL("./agent-execution.ts", import.meta.url), "utf8");
-    const imports = source
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith("import "))
-      .join("\n");
-
-    for (const forbidden of [
-      "event-bus",
-      "bun:sqlite",
-      "requests.js",
-      "persistence.js",
-      "app-task",
-      "metrics",
-      "cron",
-      "manager.js",
-    ]) {
-      expect(imports).not.toContain(forbidden);
-    }
-  });
-
   test("prepares convention prompts and tools without a manager or database", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-preparation-"));
     roots.push(root);

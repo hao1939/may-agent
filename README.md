@@ -67,7 +67,7 @@ bun run ci
 Useful focused commands:
 
 ```bash
-bun run test:unit
+bun run test:components
 bun run test:integration
 bun run test:e2e
 bun run test:sdk

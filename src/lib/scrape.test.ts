@@ -1,66 +1,74 @@
-import { describe, it, expect } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { createScrapeTool } from "./scrape.js";
 
-describe("scrape_webpage tool", () => {
-  const tool = createScrapeTool({ timeoutMs: 10000, defaultMaxLength: 5000 });
-
-  it("has correct name and description", () => {
-    expect(tool.name).toBe("scrape_webpage");
-    expect(tool.description).toContain("Fetch a web page");
+describe("scrape_webpage", () => {
+  const html =
+    "<html><body><script>hiddenScript()</script><style>hiddenStyle</style><p>Hello <b>world</b> &amp; friends</p></body></html>";
+  let server: ReturnType<typeof Bun.serve>;
+  beforeAll(() => {
+    server = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch(request) {
+        switch (new URL(request.url).pathname) {
+          case "/redirect":
+            return Response.redirect(new URL("/html", request.url), 302);
+          case "/error":
+            return new Response("Fixture unavailable", { status: 503 });
+          case "/text":
+            return new Response("0123456789".repeat(20), { headers: { "Content-Type": "text/plain" } });
+          default:
+            return new Response(html, { headers: { "Content-Type": "text/html" } });
+        }
+      },
+    });
   });
-
-  it("rejects invalid URLs", async () => {
-    const result = await tool.execute("t1", { url: "not-a-url" });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text).toContain("Invalid URL");
+  afterAll(() => server?.stop(true));
+  const tool = createScrapeTool({ timeoutMs: 2000, defaultMaxLength: 5000 });
+  async function scrape(path: string, options: { raw?: boolean; maxLength?: number } = {}) {
+    const result = await tool.execute("scrape", { url: new URL(path, server.url).href, ...options });
+    const part = result.content[0];
+    if (part.type !== "text") throw new Error("Expected a text result");
+    return part.text;
+  }
+  it.each([
+    ["not-a-url", "Invalid URL"],
+    ["ftp://example.com/file", "Only http:// and https://"],
+  ])("rejects unsupported URL %s", async (url, error) => {
+    const result = await tool.execute("invalid", { url });
+    expect(result.content[0]).toMatchObject({ type: "text", text: expect.stringContaining(error) });
   });
-
-  it("rejects non-http protocols", async () => {
-    const result = await tool.execute("t2", { url: "ftp://example.com/file" });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text).toContain("Only http:// and https://");
+  it("fetches and cleans real HTML, including redirects", async () => {
+    const text = await scrape("/redirect");
+    expect(text).toContain("Status: 200");
+    expect(text).toContain("Redirected: yes");
+    expect(text.split("--- Content ---\n\n")[1]).toBe("Hello world & friends");
   });
-
-  it("handles DNS resolution failure gracefully", async () => {
-    const result = await tool.execute("t3", { url: "https://this-domain-does-not-exist-12345.com" });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    // Should return an error, not throw
-    expect(text).toContain("Error");
+  it("returns the exact HTML when raw is requested", async () => {
+    const text = await scrape("/html", { raw: true });
+    expect(text).toContain("Status: 200");
+    expect(text.split("--- Content ---\n\n")[1]).toBe(html);
   });
-
-  // Network-dependent tests: these verify behavior when fetch works.
-  // In environments without outbound HTTP, they test error handling instead.
-  it("fetches a page or handles network error gracefully", async () => {
-    const result = await tool.execute("t4", { url: "https://example.com" });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    // Either we get a successful response or a graceful error — never a thrown exception
-    expect(text.length).toBeGreaterThan(0);
-    if (text.includes("Status: 200")) {
-      // Network available: verify clean text output
-      expect(text).toContain("Example Domain");
-      expect(text).not.toContain("<html");
-      expect(text).not.toContain("<head");
-    } else {
-      // Network unavailable: verify graceful error
-      expect(text).toContain("Error");
+  it("preserves plain text and truncates at the requested length", async () => {
+    expect((await scrape("/text")).split("--- Content ---\n\n")[1]).toBe("0123456789".repeat(20));
+    const truncated = await scrape("/text", { maxLength: 15 });
+    expect(truncated).toContain("Status: 200");
+    expect(truncated.split("--- Content ---\n\n")[1].split("\n\n")[0]).toBe("012345678901234");
+    expect(truncated).toContain("Truncated at 15 chars");
+  });
+  it("reports a real HTTP failure with its response body", async () => {
+    const text = await scrape("/error");
+    expect(text).toContain("Status: 503");
+    expect(text).toContain("--- Response Body (error) ---\nFixture unavailable");
+    expect(text).not.toContain("--- Content ---");
+  });
+  it("reports DNS failure separately from successful content", async () => {
+    const fetch = spyOn(globalThis, "fetch").mockRejectedValue(new Error("ENOTFOUND"));
+    try {
+      expect(await scrape("/html")).toContain("Error: DNS resolution failed");
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      fetch.mockRestore();
     }
-  }, 15000);
-
-  it("returns raw HTML when raw=true (or handles network error)", async () => {
-    const result = await tool.execute("t5", { url: "https://example.com", raw: true });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text.length).toBeGreaterThan(0);
-    if (text.includes("Status: 200")) {
-      expect(text).toContain("<");
-    }
-  }, 15000);
-
-  it("respects maxLength parameter (or handles network error)", async () => {
-    const result = await tool.execute("t6", { url: "https://example.com", maxLength: 100 });
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text.length).toBeGreaterThan(0);
-    if (text.includes("Status: 200")) {
-      expect(text).toContain("Truncated at 100 chars");
-    }
-  }, 15000);
+  });
 });
