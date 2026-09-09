@@ -1,8 +1,9 @@
 <ai_context>
-summary: "Independent review revises exact Cycle 432 tip 0cac37d14f only for RV-054's misstated implementation/test line split, then accepts the corrected documentation candidate. Independent matched replay verifies that the three sequential duplicate-admission cases reach the kernel before failing on the Cycle 431 baseline and stop before the kernel on candidate digest b31c32d0…21817. The patch remains uncommitted external evidence, not an atomic, concurrent, upstream, or deployed repair; RV-004 and RV-034 remain high/open, and no Cycle 433, local-main movement, compaction, or cleanup is approved before producer reconciliation."
+summary: "Cycle 432 reconciliation literally integrates reviewer correction d6429bc20d after producer 0cac37d14f, resolving low RV-054 by correcting the exact increment to 15 implementation plus 115 test lines. The matched sequential-replay result is unchanged, the external candidate remains explicitly uncommitted, and concurrency/TOCTOU, RV-004, and RV-034 remain open."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053", "RV-054"]
 last_updated: "2026-09-09"
 source_basis: "Independent Cycle 432 review of exact direct-child range dc4ed03ef68ff469e7ab7ec5f18eae93e48d2a02..0cac37d14ff168163223e219694f9856bddbe048. Reviewer-owned reconstruction at retained Mnemosyne base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduces complete two-file diff SHA-256 b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817. Against exact Cycle 431 digest 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0, three new controls fail after the kernel with SQLite uniqueness errors and 17 deselections; the Cycle 432 candidate passes 20 focused and 90 runnable runtime tests with one disclosed artifact deselection. Direct file comparison is 15 implementation plus 115 test lines, correcting producer 17/113 wording without changing the 130-line increment or behavior result. Current canonical validation passes 321 tests / 1,632 assertions, Cycle 430 projection, 132 scoped links, navigation 11/14 + 8/8 + 14/14, historical 1,560 documents / 1,825 broad links, all-project 1,561 / 1,827, health 26/16 with truncation, and git diff --check. Producer-time /app preservation at 584395df7c remains historically supported; fresh read-only state has independently advanced through human-authored documentation commits to a8657eb669 with clean index, exact Scout 23 / b9d6fb9c…a12c fingerprint and all five protected hashes, while unrelated default/expanded status is now 79 / 5,863. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No Cycle 433, upstream write, new local-main landing, compaction, or cleanup is approved before producer reconciliation."
+producer_integration_basis: "Literal fast-forward of exact direct-child reviewer result d6429bc20d4a5224c91a3b021f3a0098cedd2613 onto reviewed producer 0cac37d14ff168163223e219694f9856bddbe048; stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985; producer disposition recorded at 2026-09-09T17:07:04+08:00."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,15 +12,15 @@ source_basis: "Independent Cycle 432 review of exact direct-child range dc4ed03e
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `0cac37d14ff168163223e219694f9856bddbe048` (Cycle 432 material; revise under RV-054)
+  `d6429bc20d4a5224c91a3b021f3a0098cedd2613` (accepted Cycle 432 reviewer correction)
 - Last material standing commit reviewed:
   `0cac37d14ff168163223e219694f9856bddbe048` (Cycle 432 sequential-admission evidence)
 - Last producer research material reviewed:
   `0cac37d14ff168163223e219694f9856bddbe048` (Cycle 432 bounded sequential-replay evidence)
 - Last integrated reviewer result:
-  `025eaa4509b20c01841c766a693bd00cc6c96755` (standing patch-equivalent of reviewer `1e612b9381`)
+  `d6429bc20d4a5224c91a3b021f3a0098cedd2613` (literal Cycle 432 RV-054 correction)
 - Current review date: `2026-09-09T16:15:50+08:00`
-- Producer integration date: `2026-09-09T13:41:44+08:00`
+- Producer integration date: `2026-09-09T17:07:04+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
   `4ad017a2a7662cc046455d9f3e057f00b01d4545` (Cycle 244), and
@@ -3948,7 +3949,7 @@ compaction, and cleanup remain unapproved.
 | `RV-051` | Low | Review-cursor `source_basis` through exact canonical tip `6458b20511455313b5eec86913670d52482e1573` | The phrase “commit-time health 27 facts / 16 wakes” did not identify its clock. Direct replay returns 27 / 16 at reviewed candidate `cf08a2798d`'s `2026-09-05T21:31:46Z` commit time but 26 / 16 at later ledger and acceptance clocks because a calendar boundary elapsed. The ambiguity weakened exact replay but changed no health logic or checkpoint decision. | **Resolved exactly at `6458b20511`.** The candidate and successor clocks are distinguished explicitly; current exact-tip replay returns 26 / 16 with `truncated:true`. |
 | `RV-052` | High | Cycle 420-427 release preparation, reviewer acceptance, and exact guarded postflight `6237bd7e60` → `584395df7c` | Candidate `584395df7c` has ordered parents protected base and canonical `ed7de4d929`, contains reviewer `27c7286418` plus the patch-equivalent Hermes/OpenClaw canonical commits, and intentionally predates documentation-only `8b20b38fbe` / `28c797a021`. The immediate plan at 5,679 expanded records reproduced 38 candidate paths, two SHA-bound retained overlaps, 36 materializations, nine inverse restores, and 27 inverse removals. The actual transition reached exact candidate HEAD with a clean index and byte-identical 77 / 5,679 / 23 status streams. Independent postflight and integration-ledger review confirm exact HEAD, clean index, unchanged default and Scout fingerprints, all five protected hashes, exactly two intended dirty candidate paths, and zero clean-materialization mismatches. Expanded status subsequently rose to 5,701, but all 22 additions are outside the Scout and candidate-path preservation surfaces. | **Resolved for this exact landing; accept.** Reviewer `28c797a021` is integrated literally and producer `af52f0c4e4` truthfully records the transition; ledger `fb519252f4` truthfully records later reviewer integration. Do not generalize this proof: every later landing needs fresh candidate, overlay, fingerprint, byte, rollback, and current-tip validation gates. If immediate rollback is still applicable, use the emitted 9/27 inverse and reproduce the exact preflight fingerprints. Compaction and cleanup remain blocked under separate findings. |
 | `RV-053` | Medium | Cycle 429 producer tip `57c3f1563f3183dcea27745bc6e384858b70f317`; scan #318, `agent-architectures.md`, scan #320, and the skill-governance-stack synthesis | The new primary audit accurately retracts ecosystem-wide and npm/PyPI risk equivalence, but these four high-traffic retrieval paths still called the generated graph an active incident, the complete risk surface, inevitable harm, or proof of npm-equivalent remediation and cascading failure. A user entering through those notes could therefore receive the precise conclusion Cycle 429 rejects. | **Resolved on standing.** Reviewer correction `a8f353880ebb84f9d37a7e83a7e73913c9f07ddb` is integrated literally as the direct child of the producer audit at stable patch ID `e1648f3c8a127ea7979d9a358c95e2009329a158`. It qualifies the population, conditional 26/194 row, absent execution/outcome comparison, prediction status, and analogy boundary in all four paths. Roll back with one ordinary revert of the reviewer result; do not revert the accurate 10-file producer audit. |
-| `RV-054` | Low | Cycle 432 report at exact producer tip `0cac37d14ff168163223e219694f9856bddbe048` | The report calls the increment from accepted Cycle 431 digest `4b295990…5cf0` 17 implementation plus 113 test lines. Direct comparison to exact Cycle 432 digest `b31c32d0…21817` is 15 implementation plus 115 test lines. The total 130-line increment and all replay outcomes are unchanged, but the published split prevents exact provenance replay. | **Resolved in this reviewer candidate; pending producer integration.** The report now names both exact digests and the reproduced 15/115 split. Roll back the correction with this reviewer commit only; retain the accepted Cycle 432 evidence if the line-count repair alone is removed. |
+| `RV-054` | Low | Cycle 432 report at exact producer tip `0cac37d14ff168163223e219694f9856bddbe048` | The report called the increment from accepted Cycle 431 digest `4b295990…5cf0` 17 implementation plus 113 test lines. Direct comparison to exact Cycle 432 digest `b31c32d0…21817` is 15 implementation plus 115 test lines. The total 130-line increment and all replay outcomes are unchanged, but the published split prevented exact provenance replay. | **Resolved on standing by literal integration `d6429bc20d`.** The report now names both exact digests and the reproduced 15/115 split. Roll back the correction with one ordinary revert of `d6429bc20d` after reverting any dependent ledger; retain accepted Cycle 432 producer `0cac37d14f` if removing only the line-count repair. |
 
 ## Reviewer source/result and integration status
 
@@ -5218,14 +5219,38 @@ must integrate the exact reviewer range or record an evidence-backed rejection
 or supersession, validate the resulting canonical tip, and record the ledger
 disposition before Cycle 433. No upstream or local-main write is authorized.
 
+## Producer Cycle 432 reviewer integration — literal
+
+Standing owner reconciliation began at exact clean producer
+`0cac37d14ff168163223e219694f9856bddbe048`. Reviewer result
+`d6429bc20d4a5224c91a3b021f3a0098cedd2613` is its direct child, applies with
+stable patch ID `78ceb7ee4500c6fed11397eeef1f9d68ffb7c985`, and is now a literal
+ancestor of this ledger. The exact reviewer diff corrects only the Cycle 432
+increment from 17 implementation / 113 test lines to the reproduced 15 / 115
+split and updates this review cursor. No producer or reviewer evidence is
+rejected, superseded, or lost.
+
+Disposition: **integrated literally.** RV-054 is resolved on standing without
+changing the 130-line total, candidate digest, baseline failures, repaired test
+results, or narrow sequential verdict. The goal-owned external Mnemosyne
+candidate remains uncommitted with only its two intentional files modified.
+Concurrency/TOCTOU, atomic idempotency, delegation, `agent_binding_id`, typed
+errors, durable denial auditing, upstream adoption, deployment, and behavior
+effects remain unproved. RV-004/RV-034 stay high/open; RV-036/RV-038 stay
+medium/open.
+
+Rollback of the reviewer correction is one ordinary revert of `d6429bc20d`
+after reverting this dependent ledger. Removing all Cycle 432 documentation
+then reverts `0cac37d14f`; removing the external experiment discards its
+uncommitted two-file diff. None of those rollback descriptions authorize a
+reset, cleanup, protected-checkout write, or local-main movement.
+
 ## Next trigger
 
-The next exact trigger is producer integration, evidence-backed rejection, or
-supersession of this reviewer result on source `0cac37d14f`, with current-tip
-validation and a truthful integration-ledger disposition. Cycle 433 remains
-paused until that reconciliation. Afterward, wait for one later coherent
-material producer checkpoint, evidence changing RV-004, RV-034, RV-036,
-RV-038, or RV-052, or the first eligible periodic boundary
+Cycle 432 reconciliation is now durable. No Cycle 433 begins in this bounded
+turn. The next exact trigger is one later coherent material producer
+checkpoint, evidence changing RV-004, RV-034, RV-036, RV-038, or RV-052, or
+the first eligible periodic boundary
 `2026-09-10T16:15:50+08:00`. Do not begin another local-main landing,
 compaction, or cleanup without a fresh exact-boundary gate.
 
