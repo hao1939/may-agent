@@ -15,6 +15,11 @@ import * as interfaces from "../../src/app/interface-startup.js";
 import * as background from "../../src/app/composition/background-startup.js";
 import { Cron } from "../../src/app/cron.js";
 import { getAgentCrons } from "../../src/app/agent-loader.js";
+import * as agentLoader from "../../src/app/agent-loader.js";
+import * as metrics from "../../src/app/app-metric-definitions.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
+import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
 import {
   attachLoadedAppTask,
   closeInstalledAppTaskRuntimes,
@@ -290,6 +295,70 @@ export async function execute(ctx) {
   assert.equal(subscription.mock.calls.length, agentNames.length * 2, "rejected definitions must not activate");
   assert.equal(registry!.snapshot(), accepted);
   assert.ok(runtime!.host.hasApp("fixture"));
+  if (mode === "overlapping-reloads" || mode === "overlapping-preparation") {
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const queued = Promise.withResolvers<void>();
+    const originalReload = registry!.reload.bind(registry);
+    const originalPrepare = agentLoader.prepareAgentGeneration;
+    const originalSyncMetrics = metrics.syncAppMetricDefinitions;
+    let reloadCount = 0;
+    let prepareCount = 0;
+    const reload = spyOn(registry!, "reload").mockImplementation((apply, discover) => {
+      const index = ++reloadCount;
+      if (index === 2) queued.resolve();
+      return originalReload(async (snapshot) => {
+        if (mode === "overlapping-reloads" && index === 1) {
+          entered.resolve();
+          await release.promise;
+        }
+        await apply?.(snapshot);
+      }, discover);
+    });
+    const prepare = spyOn(agentLoader, "prepareAgentGeneration").mockImplementation(async (options) => {
+      const result = await originalPrepare(options);
+      if (mode === "overlapping-preparation" && ++prepareCount === 1) {
+        entered.resolve();
+        await release.promise;
+      }
+      return result;
+    });
+    const syncMetrics = spyOn(metrics, "syncAppMetricDefinitions").mockImplementation((entries, service) => {
+      if (entries[0]?.definition.description === "rejected overlap") {
+        throw new Error("fixture rejects publication after source activation");
+      }
+      return originalSyncMetrics(entries, service);
+    });
+    try {
+      writeFileSync(appPath, appSource("accepted overlap"));
+      const first = lifecycle!.handleReload();
+      await entered.promise;
+      writeFileSync(appPath, appSource("rejected overlap"));
+      const second = lifecycle!.handleReload();
+      if (mode === "overlapping-reloads") await queued.promise;
+      else assert.equal((await second).ok, false);
+      release.resolve();
+      assert.equal((await first).ok, true);
+      const failed = await second;
+      assert.equal(failed.ok, false);
+      assert.match(failed.summary, /fixture rejects publication after source activation/);
+      assert.equal(registry!.snapshot().generation, accepted.generation + 1);
+      assert.equal(registry!.entries()[0]?.definition.description, "accepted overlap");
+      const activeSource = new DefinitionSourceReleaseStore(root, join(root, "state")).current()!;
+      const workerRegistry = new AppRegistry(discoverAppDefinitions(activeSource.projectsRoot, join(root, "projects")));
+      await workerRegistry.reload();
+      assert.equal(
+        workerRegistry.entries()[0]?.definition.description,
+        "accepted overlap",
+        "fresh workers must load the same source as the committed registry",
+      );
+    } finally {
+      release.resolve();
+      reload.mockRestore();
+      prepare.mockRestore();
+      syncMetrics.mockRestore();
+    }
+  }
   if (activationFailure) {
     const { bus, manager } = preparedOptions!;
     const runTask = async (taskId: string) => {

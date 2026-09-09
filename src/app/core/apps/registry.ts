@@ -1,7 +1,20 @@
 import { randomUUID } from "node:crypto";
 import type { AppEvent, TaskIntent } from "@may-agent/sdk";
-import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
-import { loadAppDefinitions, type LoadedAppDefinition } from "./loader/app-loader.js";
+import { normalizeAppAgent, type HostAppDefinition } from "../../app-agent-selection.js";
+import { assertValidAppDefinition } from "./definition-validation.js";
+
+/**
+ * Discovery supplies declarations, not validated registrations or live resources.
+ * Sources must not mutate returned declarations (including nested data or policy
+ * functions). Return fresh declarations for replacements; unchanged ones may be
+ * reused. The registry freezes its envelope, not the executable object graph.
+ */
+export type AppDefinitionSource = () => Promise<readonly { appDir: string; definition: unknown }[]>;
+
+export type LoadedAppDefinition = {
+  appDir: string;
+  definition: HostAppDefinition;
+};
 
 export type AppRegistrySnapshot = Readonly<{
   /** Boot-unique durable identity; unlike generation it cannot collide after restart. */
@@ -10,14 +23,15 @@ export type AppRegistrySnapshot = Readonly<{
   entries: readonly Readonly<LoadedAppDefinition>[];
 }>;
 
-function immutableEntries(entries: LoadedAppDefinition[]): readonly Readonly<LoadedAppDefinition>[] {
+function immutableEntries(entries: Awaited<ReturnType<AppDefinitionSource>>): readonly Readonly<LoadedAppDefinition>[] {
+  const ids = new Set<string>();
   return Object.freeze(
-    entries.map((entry) =>
-      Object.freeze({
-        appDir: entry.appDir,
-        definition: Object.freeze(entry.definition),
-      }),
-    ),
+    entries.map(({ appDir, definition }) => {
+      assertValidAppDefinition(definition);
+      if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
+      ids.add(definition.id);
+      return Object.freeze({ appDir, definition: Object.freeze(normalizeAppAgent(definition)) });
+    }),
   );
 }
 
@@ -26,17 +40,15 @@ function immutableEntries(entries: LoadedAppDefinition[]): readonly Readonly<Loa
  *
  * A reload is published only after every consumer prepares and applies the
  * prospective snapshot. The callback may be asynchronous, but publication is
- * still fenced by the immutable generation passed to it.
+ * still fenced by the generation passed to it. Declaration immutability is a
+ * source contract, not a deep-clone or sandbox guarantee.
  */
 export class AppRegistry {
   private readonly bootId = randomUUID();
   private current: AppRegistrySnapshot;
   private reloadQueue: Promise<void> = Promise.resolve();
 
-  constructor(
-    private projectsRoot: string,
-    private readonly canonicalProjectsRoot = projectsRoot,
-  ) {
+  constructor(private discover: AppDefinitionSource) {
     this.current = Object.freeze({ id: `${this.bootId}:0`, generation: 0, entries: Object.freeze([]) });
   }
 
@@ -70,9 +82,9 @@ export class AppRegistry {
 
   reload(
     apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
-    projectsRoot = this.projectsRoot,
+    discover?: AppDefinitionSource,
   ): Promise<LoadedAppDefinition[]> {
-    const operation = this.reloadQueue.then(() => this.performReload(apply, projectsRoot));
+    const operation = this.reloadQueue.then(() => this.performReload(apply, discover ?? this.discover));
     this.reloadQueue = operation.then(
       () => undefined,
       () => undefined,
@@ -81,14 +93,12 @@ export class AppRegistry {
   }
 
   private async performReload(
-    apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
-    projectsRoot = this.projectsRoot,
+    apply: ((next: AppRegistrySnapshot) => void | Promise<void>) | undefined,
+    discover: AppDefinitionSource,
   ): Promise<LoadedAppDefinition[]> {
-    // Discovery is part of the serialized reload transaction. Invalidating
-    // here makes a rejected generation retryable and prevents a queued reload
-    // from reusing the module graph discovered by its predecessor.
-    invalidateRuntimeModuleCache();
-    const next = await loadAppDefinitions(projectsRoot, {}, this.canonicalProjectsRoot);
+    // Invoke discovery inside the queue, never while scheduling a reload.
+    // A replacement source becomes the default only after successful publication.
+    const next = await discover();
     const generation = this.current.generation + 1;
     const prospective = Object.freeze({
       id: `${this.bootId}:${generation}`,
@@ -102,7 +112,7 @@ export class AppRegistry {
       );
     }
     this.current = prospective;
-    this.projectsRoot = projectsRoot;
+    this.discover = discover;
     return this.entries();
   }
 }

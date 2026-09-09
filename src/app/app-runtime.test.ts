@@ -6,7 +6,15 @@ import { fileURLToPath } from "node:url";
 import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 
 describe("app runtime startup", () => {
-  it.each(["headless", "tty", "no-schedules", "startup-job", "activation-failure"])(
+  it.each([
+    "headless",
+    "tty",
+    "no-schedules",
+    "startup-job",
+    "activation-failure",
+    "overlapping-reloads",
+    "overlapping-preparation",
+  ])(
     "observes startup and explicit reload through real runtime (%s)",
     async (mode) => {
       const { stdout } = await promisify(execFile)(

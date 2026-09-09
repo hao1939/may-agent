@@ -10,7 +10,8 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
-import { AppRegistry } from "./app-registry.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import {
@@ -573,7 +574,7 @@ describe("canonical App task runtime", () => {
       }),
       persistDir,
     );
-    const registry = new AppRegistry(f.projectsRoot);
+    const registry = new AppRegistry(discoverAppDefinitions(f.projectsRoot));
     await registry.reload();
     await installAppTaskRuntimes({
       ...options(f, bus),
@@ -725,7 +726,7 @@ describe("canonical App task runtime", () => {
       persistDir,
     );
 
-    const registry = new AppRegistry(f.projectsRoot);
+    const registry = new AppRegistry(discoverAppDefinitions(f.projectsRoot));
     await registry.reload();
     const evaluationSourceConfig = appTaskTestContext({
       appDir: evaluationDir,

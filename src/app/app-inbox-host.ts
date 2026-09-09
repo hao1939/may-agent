@@ -20,7 +20,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
-import { assertValidAppDefinition } from "./app-definition-validation.js";
+import { assertValidAppDefinition } from "./core/apps/definition-validation.js";
 import {
   associateAppInboxClaimTopic,
   claimNextAppInboxItem,

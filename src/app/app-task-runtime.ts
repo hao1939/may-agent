@@ -84,7 +84,7 @@ import {
   projectAppTaskReconciliationEvents,
   readAppTaskWaitPromptContext,
 } from "./app-task-context.js";
-import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import type { AppRegistry, AppRegistrySnapshot } from "./core/apps/registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./app-task-controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";

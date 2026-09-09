@@ -2,7 +2,7 @@
  * Shared App discovery context for conversation and Task execution.
  * Summarizes the supplied registry snapshot; does not load or run Apps.
  */
-import type { AppRegistrySnapshot } from "./app-registry.js";
+import type { AppRegistrySnapshot } from "./core/apps/registry.js";
 
 function schemaStringLiterals(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];

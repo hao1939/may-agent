@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import type { AppEventAdmissionCommand } from "./app-event-admission-store.js";
-import { AppRegistry } from "./app-registry.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
 import { admitStandaloneCanonicalAppTaskEvent, standaloneAppTaskAdmissionDescriptors } from "./app-task-runtime.js";
 import { EVENT_ROW_ID, type AgentEvent } from "./event-bus.js";
@@ -149,7 +150,7 @@ export async function runTaskAdmissionWorker(input: {
     : new Promise<void>((resolveDone) => process.once("disconnect", resolveDone));
   const releases = new DefinitionSourceReleaseStore(input.projectRoot, input.persistDir);
   const source = releases.ensureCurrent();
-  const registry = new AppRegistry(source.projectsRoot, input.projectsRoot);
+  const registry = new AppRegistry(discoverAppDefinitions(source.projectsRoot, input.projectsRoot));
   await registry.reload();
   const descriptors = standaloneAppTaskAdmissionDescriptors({
     persistDir: input.persistDir,

@@ -40,7 +40,7 @@ import {
   readAppConversationResource,
   readConversationTopic,
 } from "./conversations/store.js";
-import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import type { AppDefinitionSource, AppRegistry, AppRegistrySnapshot, LoadedAppDefinition } from "./core/apps/registry.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
@@ -55,7 +55,6 @@ import {
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 import type { HostCapacity } from "./host-capacity.js";
-import type { LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -69,7 +68,7 @@ export type AppInboxRuntime = {
   start(): Promise<void>;
   close(): void;
   scanNow(): void;
-  reload(prepare?: AppRegistryReloadPreparation, projectsRoot?: string): Promise<string[]>;
+  reload(prepare?: AppRegistryReloadPreparation, discover?: AppDefinitionSource): Promise<string[]>;
 };
 
 // The Event turn persists a small admission plan. Canonical Task mutation runs
@@ -675,7 +674,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
+  let scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
 
   const refreshScheduleActivations = (): void => {
     const activeKeys = new Set<string>();
@@ -1675,10 +1674,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       return startPromise;
     },
     scanNow,
-    async reload(prepare, projectsRoot) {
-      const previousLoaded = loaded;
-      const previousSnapshot = registrySnapshot;
+    async reload(prepare, discover) {
       await options.registry.reload(async (snapshot) => {
+        const previousLoaded = loaded;
+        const previousSnapshot = registrySnapshot;
         if (
           snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
           !options.observerContext
@@ -1686,8 +1685,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           throw new Error("Canonical App observers require an observer context factory");
         }
         let committed = false;
+        let previousScheduleActivations = scheduleActivations;
         const commit = () => {
           if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
+          previousScheduleActivations = scheduleActivations;
+          // Replacements get new activation records; unchanged schedules retain
+          // their delivered slots, including any scan during async preparation.
+          scheduleActivations = new Map(scheduleActivations);
           committed = true;
           const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
           host.replaceApps(entries.map((entry) => entry.definition));
@@ -1710,11 +1714,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
             replaceRouteIndexes(previousLoaded);
             observerRuntime.replace(previousLoaded);
-            refreshScheduleActivations();
+            scheduleActivations = previousScheduleActivations;
           }
           throw error;
         }
-      }, projectsRoot);
+      }, discover);
       taskAdmissionWorker?.close();
       taskAdmissionWorker = options.createTaskAdmissionWorker?.();
       // App definitions may have made a previously unavailable frozen route

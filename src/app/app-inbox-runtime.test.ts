@@ -18,14 +18,15 @@ import {
   EVENT_ROW_ID,
   EventBus,
 } from "./event-bus.js";
-import { AppRegistry } from "./app-registry.js";
+import { AppRegistry, type AppDefinitionSource } from "./core/apps/registry.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { HostCapacity } from "./host-capacity.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 import { createConversationTopic, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
-  const registry = new AppRegistry(projectsRoot);
+  const registry = new AppRegistry(discoverAppDefinitions(projectsRoot));
   await registry.reload();
   return registry;
 }
@@ -1433,6 +1434,87 @@ describe("App inbox runtime", () => {
     bus.emit({ type: "route.new", source: "test", data: {} });
     await waitUntil(() => admitted.length === 2);
     expect(admitted).toEqual(["route.old", "route.new"]);
+  });
+
+  it.each(["changed", "removed"])("restores a %s schedule across a due slot", async (scheduleChange) => {
+    const source =
+      (name: string): AppDefinitionSource =>
+      async () => [
+        {
+          appDir: join(root, "routing.app"),
+          definition: {
+            id: "routing",
+            version: 1,
+            agent: "routing",
+            inputSchema: { type: "object" },
+            tasks: {
+              subscriptions: [`route.${name}`],
+              resolve: () => ({ id: "routing/task", outcome: name, acceptance: ["done"] }),
+            },
+            schedules:
+              name === "rejected" && scheduleChange === "removed"
+                ? []
+                : [{ id: "tick", intervalMs: 1000, event: { type: `tick.${name}`, data: {} } }],
+          },
+        },
+      ];
+    const registry = new AppRegistry(source("initial"));
+    await registry.reload();
+    const bus = persistentBus();
+    const admitted: string[] = [];
+    const ticks: string[] = [];
+    bus.subscribe((event) => {
+      if (event.type.startsWith("tick.")) ticks.push(event.type);
+    });
+    let currentTime = 1_000;
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      bus,
+      previewTaskEventRoutes: () => [],
+      admitTaskEvent: ({ event }) => {
+        admitted.push(event.type);
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      scanIntervalMs: 60_000,
+      now: () => currentTime,
+    });
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const first = runtime.reload(async ({ commit }) => {
+      started.resolve();
+      await release.promise;
+      commit();
+    }, source("accepted"));
+    await started.promise;
+    const second = runtime.reload(async ({ commit }) => {
+      currentTime = 2_000;
+      commit();
+      throw new Error("publication failed");
+    }, source("rejected"));
+    const rejected = second.catch((error: unknown) => error);
+    release.resolve();
+    await first;
+    expect(await rejected).toEqual(new Error("publication failed"));
+    expect(registry.snapshot().generation).toBe(2);
+
+    // Invalid discovery must not alter the retained consumers either.
+    await expect(
+      runtime.reload(undefined, async () => [
+        {
+          appDir: join(root, "routing.app"),
+          definition: { id: "broken" },
+        },
+      ]),
+    ).rejects.toThrow("version 1");
+    for (const name of ["initial", "accepted", "rejected"]) {
+      bus.emit({ type: `route.${name}`, source: "test", data: {} });
+    }
+    await waitUntil(() => admitted.length > 0);
+    expect(admitted).toEqual(["route.accepted"]);
+    runtime.scanNow();
+    runtime.scanNow();
+    expect(ticks).toEqual(["tick.accepted"]);
   });
 
   it("records broad App routing before running Task admission asynchronously", async () => {
