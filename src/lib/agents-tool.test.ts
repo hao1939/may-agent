@@ -212,20 +212,14 @@ describe("V2 agents tool", () => {
     expect(r2.error).toContain(deprecation);
 
     // With full config — deprecation error, no sent/message confirmation
-    let triggeredAgent: string | null = null;
     const t2 = manager.createAgentsTool({
       agentsRoot,
       getCallerAgentName: () => "may",
-      triggerHeartbeat: (name) => {
-        triggeredAgent = name;
-        return true;
-      },
     });
     const r3 = await callTool(t2, { action: "message", agent: "coder", message: "fix the login bug" });
     expect(r3.error).toContain(deprecation);
     expect(r3.sent).toBeUndefined();
     expect(r3.heartbeatTriggered).toBeUndefined();
-    expect(triggeredAgent).toBeNull();
 
     // No agentsRoot — still deprecation error (not "agentsRoot")
     const t3 = manager.createAgentsTool();

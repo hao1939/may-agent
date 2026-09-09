@@ -24,7 +24,7 @@ behavior change rather than treating this guide as replacement design.
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
 | `core/` | Identity, authority, and recovery rules shared by every capability | `apps/registry.ts` validates and publishes generations; `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
-| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `producers/agent-triggers.ts` attaches legacy event handlers and optional timers |
+| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `maintenance/` contains named Host duties and their configuration |
 | `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts` starts recovery independently of optional schedules |
 
 This layout is being applied incrementally. `app-runtime.ts` remains the main
@@ -76,8 +76,9 @@ registrations; disabling App schedules does not stop observers or recovery.
 
 See [Scheduling and Observation](../../../may-agent.app/docs/2a-design/cron.md)
 and [Shared timing, intentional events](../../../may-agent.app/docs/proposals/task-runtime-organization.md#shared-timing-intentional-events).
-The remaining legacy Cron execution/configuration path is a separate pending
-slice of the proposal, not removed by this shared-timing extraction.
+Host maintenance uses those same timer mechanics. See the private
+[maintenance guide](adapters/maintenance/README.md) for preparation, activation,
+failure behavior, and the retired standalone-work boundary.
 
 ## App discovery and registration
 

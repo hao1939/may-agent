@@ -42,8 +42,8 @@ import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./task-admission-process.js";
-import { getAgentCrons, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
-import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
+import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
 import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
@@ -371,7 +371,7 @@ export async function runAppRuntime(opts: {
     publishAgents: (options, generation) => {
       const publication = publishPreparedAgentGeneration(options, generation);
       try {
-        if (backgroundEnabled) activateAgentCrons(generation.crons, bus, CRON_ENABLED);
+        if (backgroundEnabled) activateAgentMaintenance(generation.maintenance, bus, CRON_ENABLED);
         return publication;
       } catch (error) {
         publication.rollback();
@@ -521,7 +521,7 @@ export async function runAppRuntime(opts: {
   if (backgroundEnabled) {
     // Handlers are prepared before ingress; activate only after its routes and
     // Conversation adapters are ready. A startup job must not gate core work.
-    activateAgentCrons(getAgentCrons(), bus, CRON_ENABLED);
+    activateAgentMaintenance(getAgentMaintenance(), bus, CRON_ENABLED);
     await appInboxRuntime.start();
     startBackgroundRuntime({
       manager,

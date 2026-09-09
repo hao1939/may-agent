@@ -55,8 +55,6 @@ export interface CreateAgentsToolOptions {
   callDeny?: { agents: string[]; hint: string };
   /** Root directory of agent definitions (for message action). */
   agentsRoot?: string;
-  /** Trigger an agent's heartbeat cron (for message action). */
-  triggerHeartbeat?: (agentName: string) => boolean;
   /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
   bus?: { emit(event: Record<string, unknown>): void };
 }

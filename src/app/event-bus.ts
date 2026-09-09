@@ -13,6 +13,28 @@ import { log } from "../lib/log.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
 
+/** Private canonical envelope shared by Task execution and Host observers.
+ * This type grants neither publication authority nor durable work acceptance. */
+export interface EventEnvelope {
+  type: string;
+  source: string;
+  owner: string;
+  timestamp?: number;
+  action?: string;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  visibility?: "default" | "detail";
+  trace?: EventTrace;
+  target?: {
+    project?: string;
+    taskId?: string;
+    owner?: string;
+    sessionId?: string;
+    human?: boolean;
+  };
+  data: Record<string, unknown>;
+}
+
 /** Typed commands accepted by the runtime. */
 export type AgentCommand =
   | {

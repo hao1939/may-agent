@@ -1,19 +1,14 @@
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { createWorkflowHandler, SubagentManager } from "../../lib/index.js";
-import type {
-  HandlerContext,
-  HandlerModule,
-  HandlerSDK,
-  EventEnvelope,
-  WorkflowHandlerContext,
-} from "../../lib/handler-context.js";
-import type { CronEntry, WorkflowBackedHandler } from "../../lib/cron-tool.js";
-import { buildSessionHelpers } from "../../lib/runtime-ctx.js";
-import { buildAgentSDK } from "../../lib/sdk-impl.js";
-import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { Cron, type CronHandler } from "../cron.js";
-import type { EventBus } from "../event-bus.js";
+import type { SubagentManager } from "../../../lib/manager.js";
+import type { HandlerContext, HandlerModule, HandlerSDK } from "./context.js";
+import type { EventEnvelope } from "../../event-bus.js";
+import type { MaintenanceEntry } from "./contracts.js";
+import { buildSessionHelpers } from "../../../lib/runtime-ctx.js";
+import { buildAgentSDK } from "../../../lib/sdk-impl.js";
+import { importRuntimeModule } from "../../../lib/runtime-import.js";
+import { HostMaintenance, type MaintenanceHandler } from "./runtime.js";
+import type { EventBus } from "../../event-bus.js";
 
 export interface AgentHandlerLoaderOptions {
   agentsRoot: string;
@@ -23,19 +18,19 @@ export interface AgentHandlerLoaderOptions {
   projectRoot: string;
   manager: SubagentManager;
   bus: EventBus;
-  agentCrons: ReadonlyMap<string, Cron>;
+  agentMaintenance: ReadonlyMap<string, HostMaintenance>;
 }
 
-type CronWithConfigPath = Cron & { getConfigPath?: () => string; hasHandler?: (jobName: string) => boolean };
+type CronWithConfigPath = HostMaintenance & { getConfigPath?: () => string; hasHandler?: (jobName: string) => boolean };
 
-export async function loadHandlersForAgentCrons(
+export async function loadMaintenanceHandlers(
   opts: AgentHandlerLoaderOptions,
 ): Promise<{ registered: string[]; errors: string[] }> {
   const { agentsRoot, sharedRoot, projectsRoot, persistDir, projectRoot, manager, bus } = opts;
   const registered: string[] = [];
   const errors: string[] = [];
 
-  for (const [agentName, cron] of opts.agentCrons) {
+  for (const [agentName, cron] of opts.agentMaintenance) {
     const entries = cron.getEntries();
     const handlersNeeded = entries.filter((e) => e.handler && !(cron as CronWithConfigPath).hasHandler?.(e.name));
 
@@ -73,18 +68,19 @@ export async function loadHandlersForAgentCrons(
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
       ...sessionHelpers,
     };
-    const workflowCtx: WorkflowHandlerContext = { ...ctx, sdk: fullSdk };
 
     // Startup and late resolution share preparation and diagnostics, not publication.
-    async function prepareHandlers(entries: readonly CronEntry[]) {
-      const result = { handlers: new Map<CronEntry, CronHandler>(), errors: [] as string[] };
+    async function prepareHandlers(entries: readonly MaintenanceEntry[]) {
+      const result = { handlers: new Map<MaintenanceEntry, MaintenanceHandler>(), errors: [] as string[] };
       for (const entry of entries) {
-        const workflow = workflowHandler(entry);
-        if (!workflow) continue;
-        result.handlers.set(entry, createWorkflowBackedHandler(workflowCtx, entry, workflow));
+        if (typeof entry.handler !== "string") {
+          throw new Error(
+            `Maintenance ${entry.name} requires a named handler; use App schedules and Tasks for workflow work`,
+          );
+        }
       }
 
-      const byFile = new Map<string, CronEntry[]>();
+      const byFile = new Map<string, MaintenanceEntry[]>();
       for (const entry of entries) {
         if (!entry.handler || typeof entry.handler !== "string") continue;
         const file = entry.handler;
@@ -151,10 +147,7 @@ export async function loadHandlersForAgentCrons(
     for (const [entry, handler] of initial.handlers) {
       cron.registerHandler(entry.name, handler);
       registered.push(`${agentName}:${entry.name}`);
-      const workflow = workflowHandler(entry);
-      const target = workflow
-        ? `workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`
-        : `${entry.handler}.ts (reloadable)`;
+      const target = `${entry.handler}.ts (reloadable)`;
       bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${target}` });
     }
     errors.push(...initial.errors);
@@ -165,22 +158,6 @@ export async function loadHandlersForAgentCrons(
   }
 
   return { registered, errors };
-}
-
-function workflowHandler(entry: CronEntry): WorkflowBackedHandler | undefined {
-  const handler = entry.handler;
-  return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
-}
-
-function createWorkflowBackedHandler(ctx: WorkflowHandlerContext, entry: CronEntry, handler: WorkflowBackedHandler) {
-  return createWorkflowHandler({
-    workflow: handler.workflow,
-    source: handler.agent ?? entry.agent ?? ctx.agentName,
-    sessionSource: entry.category === "heartbeat" ? "heartbeat" : undefined,
-    projectId: handler.projectId,
-    task: handler.task,
-    includeEvent: handler.includeEvent,
-  })(ctx, entry);
 }
 
 function resolveHandlerDir(agentsRoot: string, agentName: string, cron: CronWithConfigPath): string {
@@ -197,14 +174,15 @@ function resolveHandlerModule(handlerDir: string, handlerFile: string): string |
   return null;
 }
 
-function createReloadableHandler(modulePath: string, ctx: HandlerContext, entry: CronEntry) {
+function createReloadableHandler(modulePath: string, ctx: HandlerContext, entry: MaintenanceEntry) {
   const entrySnapshot = { ...entry };
-  return async (event?: EventEnvelope) => {
+  return async (event?: EventEnvelope, signal?: AbortSignal) => {
     const module = await importRuntimeModule<HandlerModule>(modulePath);
+    signal?.throwIfAborted();
     if (typeof module.create !== "function") {
       throw new Error(`Handler ${modulePath} no longer exports create()`);
     }
     const fn = module.create(ctx, entrySnapshot);
-    return fn(event);
+    return fn(event, signal);
   };
 }

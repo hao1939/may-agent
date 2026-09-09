@@ -95,8 +95,6 @@ export {
 } from "./persistence.js";
 export { createBackgroundExecTool } from "./background-exec.js";
 
-export { createCronTool } from "./cron-tool.js";
-export type { CronEntry } from "./cron-tool.js";
 export { readIdentity } from "./instance-identity.js";
 export type { InstanceIdentity } from "./instance-identity.js";
 export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
@@ -118,8 +116,6 @@ export type {
   EventDeliveryHealth,
   EventDeliveryHealthQuery,
 } from "./query-service.js";
-export { createWorkflowHandler } from "./workflow-handler.js";
-export type { WorkflowHandlerOptions } from "./workflow-handler.js";
 export {
   getExecutionResult,
   getExecutionResultFromDb,
@@ -132,7 +128,8 @@ export {
 } from "./execution-result.js";
 export type { ExecutionKind, ExecutionResult, ExecutionStatus, ResumeDiagnostic } from "./execution-result.js";
 
-export type { EventEnvelope, HandlerContext, HandlerModule } from "./handler-context.js";
+export type { EventEnvelope } from "../app/event-bus.js";
+export type { HandlerContext, HandlerModule } from "../app/adapters/maintenance/context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";

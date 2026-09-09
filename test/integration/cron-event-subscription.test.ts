@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Cron } from "../../src/app/cron.js";
+import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 import { EventBus, type SystemEvent } from "../../src/app/event-bus.js";
 
-describe("Cron event subscriptions", () => {
+describe("HostMaintenance event subscriptions", () => {
   const tempDirs: string[] = [];
 
   afterEach(() => {
@@ -21,7 +21,6 @@ describe("Cron event subscriptions", () => {
       {
         name: "metric-reactor",
         intervalMs: 60_000,
-        message: "react",
         enabled: true,
         handler: "metric-reactor",
         on: ["metric.breach"],
@@ -31,9 +30,9 @@ describe("Cron event subscriptions", () => {
     const bus = new EventBus();
     const emitted: SystemEvent[] = [];
     let handled = 0;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, undefined, (event) => {
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir, emitEvent: (event) => {
       emitted.push(event);
-    });
+    } });
     cron.load();
     cron.registerHandler("metric-reactor", async () => {
       handled++;
@@ -77,7 +76,7 @@ describe("Cron event subscriptions", () => {
 
     const bus = new EventBus();
     let handled = 0;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     const entries = cron.load();
     cron.registerHandler("metric-alert-reactor", async () => {
       handled++;
@@ -122,7 +121,7 @@ describe("Cron event subscriptions", () => {
 
     const bus = new EventBus();
     let handled = 0;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("metric-alert-reactor", async () => {
       handled++;
@@ -149,12 +148,7 @@ describe("Cron event subscriptions", () => {
       {
         name: "evaluator-aftermath",
         enabled: true,
-        handler: {
-          workflow: "evaluator-aftermath",
-          agent: "evaluator",
-          task: "Review completed session.",
-          includeEvent: true,
-        },
+        handler: "session-recovery",
         on: ["session.end"],
       },
     ]));
@@ -162,7 +156,7 @@ describe("Cron event subscriptions", () => {
     const bus = new EventBus();
     let handled = 0;
     let handledEvent: any;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     const entries = cron.load();
     cron.registerHandler("evaluator-aftermath", async (event) => {
       handled++;
@@ -209,7 +203,7 @@ describe("Cron event subscriptions", () => {
 
     const bus = new EventBus();
     let handledEvent: any;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("canonical-session-handler", async (event) => {
       handledEvent = event;
@@ -235,159 +229,6 @@ describe("Cron event subscriptions", () => {
     expect(handledEvent.data.sessionId).toBe("s_done");
   });
 
-  it("dispatchEvent synthesizes one canonical envelope for emit and handler delivery", async () => {
-    const dir = join(tmpdir(), `cron-dispatch-envelope-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempDirs.push(dir);
-    mkdirSync(dir, { recursive: true });
-    const configPath = join(dir, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "metric-reactor",
-        enabled: true,
-        handler: "metric-reactor",
-        on: ["metric.breach"],
-      },
-    ]));
-
-    const emitted: SystemEvent[] = [];
-    let handledEvent: any;
-    let resolveHandled: (() => void) | undefined;
-    const handled = new Promise<void>((resolve) => {
-      resolveHandled = resolve;
-    });
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, undefined, (event) => {
-      emitted.push(event);
-    });
-    cron.load();
-    cron.registerHandler("metric-reactor", async (event) => {
-      handledEvent = event;
-      resolveHandled?.();
-    });
-
-    const triggered = cron.dispatchEvent("metric.breach", {
-      metricId: "system.health",
-      message: "breached",
-      current: 1,
-      threshold: 2,
-    });
-
-    expect(triggered).toBe(1);
-    await handled;
-    expect(emitted[0]).toEqual({
-      type: "metric.breach",
-      source: "cron",
-      owner: "agent:may",
-      timestamp: expect.any(Number),
-      data: {
-        metricId: "system.health",
-        message: "breached",
-        current: 1,
-        threshold: 2,
-      },
-    });
-    expect(emitted[0]).not.toHaveProperty("metricId");
-    expect(handledEvent).toEqual(emitted[0]);
-  });
-
-  it("routes heartbeat.trigger only to the requested agent heartbeat", async () => {
-    const dir = join(tmpdir(), `cron-heartbeat-route-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempDirs.push(dir);
-    mkdirSync(dir, { recursive: true });
-    const configPath = join(dir, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "heartbeat-alpha",
-        enabled: true,
-        handler: { agent: "alpha", workflow: "alpha-heartbeat", task: "[heartbeat]" },
-        on: ["heartbeat.trigger"],
-      },
-      {
-        name: "heartbeat-beta",
-        enabled: true,
-        handler: { agent: "beta", workflow: "beta-heartbeat", task: "[heartbeat]" },
-        on: ["heartbeat.trigger"],
-      },
-    ]));
-
-    const bus = new EventBus();
-    let alphaHandled = 0;
-    let betaHandled = 0;
-    let alphaEvent: any;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
-    cron.load();
-    cron.registerHandler("heartbeat-alpha", async (event) => {
-      alphaHandled++;
-      alphaEvent = event;
-    });
-    cron.registerHandler("heartbeat-beta", async () => {
-      betaHandled++;
-    });
-    cron.subscribeToBus(bus);
-
-    bus.emit({
-      type: "heartbeat.trigger",
-      source: "web-ui",
-      owner: "agent:alpha",
-      data: { agent: "alpha" },
-    } as any);
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    expect(alphaHandled).toBe(1);
-    expect(betaHandled).toBe(0);
-    expect(alphaEvent).toMatchObject({
-      type: "heartbeat.trigger",
-      source: "web-ui",
-      owner: "agent:alpha",
-      data: { agent: "alpha" },
-    });
-  });
-
-  it("runs event subscribers concurrently up to maxConcurrentTriggers", async () => {
-    const dir = join(tmpdir(), `cron-concurrent-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempDirs.push(dir);
-    mkdirSync(dir, { recursive: true });
-    const configPath = join(dir, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "task-executor",
-        enabled: true,
-        handler: "task-executor",
-        on: ["project.task.execution.requested"],
-        maxConcurrentTriggers: 2,
-      },
-    ]));
-
-    const bus = new EventBus();
-    const started: string[] = [];
-    const resolvers: Array<() => void> = [];
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
-    cron.load();
-    cron.registerHandler("task-executor", async (event) => {
-      started.push(String(event?.data.taskId));
-      await new Promise<void>((resolve) => resolvers.push(resolve));
-    });
-    cron.subscribeToBus(bus);
-
-    for (const taskId of ["a", "b", "c"]) {
-      bus.emit({
-        type: "project.task.execution.requested",
-        source: "test",
-        owner: "agent:test",
-        data: { taskId },
-      } as any);
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["a", "b"]);
-
-    resolvers.shift()?.();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["a", "b", "c"]);
-
-    for (const resolve of resolvers.splice(0)) resolve();
-  });
-
   it("queues event subscribers by default until the running handler completes", async () => {
     const dir = join(tmpdir(), `cron-single-flight-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
@@ -405,7 +246,7 @@ describe("Cron event subscriptions", () => {
     const bus = new EventBus();
     const started: string[] = [];
     const resolvers: Array<() => void> = [];
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("single-task-executor", async (event) => {
       started.push(String(event?.data.taskId));
@@ -432,113 +273,6 @@ describe("Cron event subscriptions", () => {
     for (const resolve of resolvers.splice(0)) resolve();
   });
 
-  it("enforces maxQueueDepth, dropping oldest events when queue is full", async () => {
-    const dir = join(tmpdir(), `cron-queue-depth-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempDirs.push(dir);
-    mkdirSync(dir, { recursive: true });
-    const configPath = join(dir, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "depth-limited-handler",
-        enabled: true,
-        handler: "depth-limited-handler",
-        on: ["project.owner.requested"],
-        maxQueueDepth: 2,
-      },
-    ]));
-
-    const bus = new EventBus();
-    const started: string[] = [];
-    const resolvers: Array<() => void> = [];
-    const errors: string[] = [];
-    const cron = new Cron(configPath, {} as any, () => "session", (msg) => errors.push(msg), dir);
-    cron.load();
-    cron.registerHandler("depth-limited-handler", async (event) => {
-      started.push(String(event?.data.reason));
-      await new Promise<void>((resolve) => resolvers.push(resolve));
-    });
-    cron.subscribeToBus(bus);
-
-    // First event starts immediately (handler has capacity).
-    // Events 2-5 arrive while handler is busy — should queue max 2, dropping oldest.
-    for (const reason of ["first", "second", "third", "fourth", "fifth"]) {
-      bus.emit({
-        type: "project.owner.requested",
-        source: "test",
-        owner: "agent:may",
-        data: { reason },
-      } as any);
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    // Only "first" should have started; 4 events queued but limited to 2.
-    expect(started).toEqual(["first"]);
-
-    // Complete "first" — should drain newest queued event ("fourth" was dropped for "fifth").
-    // Queue had: [second, third] → third dropped for fourth → [second, fourth] → second dropped for fifth → [fourth, fifth]
-    resolvers.shift()?.();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["first", "fourth"]);
-
-    // Complete "fourth" — should drain "fifth".
-    resolvers.shift()?.();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["first", "fourth", "fifth"]);
-
-    // Verify drop messages were logged.
-    const dropMessages = errors.filter((m) => m.includes("queue full") || m.includes("dropping oldest"));
-    expect(dropMessages.length).toBeGreaterThanOrEqual(2);
-
-    for (const resolve of resolvers.splice(0)) resolve();
-  });
-
-  it("drops all events when maxQueueDepth is 0", async () => {
-    const dir = join(tmpdir(), `cron-queue-zero-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempDirs.push(dir);
-    mkdirSync(dir, { recursive: true });
-    const configPath = join(dir, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "no-queue-handler",
-        enabled: true,
-        handler: "no-queue-handler",
-        on: ["project.owner.requested"],
-        maxQueueDepth: 0,
-      },
-    ]));
-
-    const bus = new EventBus();
-    const started: string[] = [];
-    const resolvers: Array<() => void> = [];
-    const errors: string[] = [];
-    const cron = new Cron(configPath, {} as any, () => "session", (msg) => errors.push(msg), dir);
-    cron.load();
-    cron.registerHandler("no-queue-handler", async (event) => {
-      started.push(String(event?.data.reason));
-      await new Promise<void>((resolve) => resolvers.push(resolve));
-    });
-    cron.subscribeToBus(bus);
-
-    // First event starts immediately.
-    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "first" } } as any);
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["first"]);
-
-    // Subsequent events while handler is busy should be dropped entirely.
-    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "second" } } as any);
-    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "third" } } as any);
-
-    resolvers.shift()?.();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    // Only "first" should have run — no queued events drained.
-    expect(started).toEqual(["first"]);
-
-    const dropMessages = errors.filter((m) => m.includes("queueing disabled"));
-    expect(dropMessages.length).toBe(2);
-
-    for (const resolve of resolvers.splice(0)) resolve();
-  });
-
   it("uses default maxQueueDepth of 3 when not configured", async () => {
     const dir = join(tmpdir(), `cron-queue-default-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
@@ -557,7 +291,7 @@ describe("Cron event subscriptions", () => {
     const bus = new EventBus();
     const started: string[] = [];
     const resolvers: Array<() => void> = [];
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("default-queue-handler", async (event) => {
       started.push(String(event?.data.reason));
@@ -595,14 +329,13 @@ describe("Cron event subscriptions", () => {
         enabled: true,
         handler: "error-backoff-handler",
         on: ["test.event"],
-        maxQueueDepth: 10,
       },
     ]));
 
     const bus = new EventBus();
     const errors: string[] = [];
     let callCount = 0;
-    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, (msg) => errors.push(msg));
+    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir, notify: (msg) => errors.push(msg) });
     cron.load();
     cron.registerHandler("error-backoff-handler", async () => {
       callCount++;

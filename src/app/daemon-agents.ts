@@ -1,7 +1,4 @@
-import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { importRuntimeModule } from "../lib/runtime-import.js";
-import { listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
 import { buildTools } from "./loader/toolset-loader.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
@@ -9,13 +6,7 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import {
-  generateAutoHeartbeats,
-  getAgentCrons,
-  loadAgents,
-  getAgentSessionId,
-  prepareAgentTriggers,
-} from "./agent-loader.js";
+import { getAgentMaintenance, loadAgents, getAgentSessionId, prepareAgentTriggers } from "./agent-loader.js";
 import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
 import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
@@ -92,31 +83,6 @@ export async function prepareDaemonAgents(opts: {
     message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}`,
   });
 
-  const agentSources = listRuntimeAgentDirectories(opts.agentsRoot, opts.projectsRoot);
-  // Build a map from agentsRoot -> projectId for App-local agent directories.
-  // Global agents/ has no projectId (undefined), App-local dirs have one.
-  const projectIdByAgentsRoot = new Map<string, string | undefined>();
-  for (const agent of agentSources) {
-    if (!projectIdByAgentsRoot.has(agent.agentsRoot)) {
-      projectIdByAgentsRoot.set(agent.agentsRoot, agent.projectId);
-    }
-  }
-  const heartbeatRoots = [...projectIdByAgentsRoot.entries()];
-  const agentRootByName = new Map(agentSources.map((agent) => [agent.name, agent.agentsRoot]));
-  const autoHeartbeats = heartbeatRoots.flatMap(([root, pid]) => generateAutoHeartbeats(root, pid));
-  if (autoHeartbeats.length > 0) {
-    const mayCron = getAgentCrons().get("may");
-    if (mayCron) {
-      for (const entry of autoHeartbeats) {
-        mayCron.addSyntheticEntry(entry);
-      }
-      opts.bus.emit({
-        type: "info",
-        message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map((e) => e.agent).join(", ")}`,
-      });
-    }
-  }
-
   // App brings its own agents — register from local agent.json when not already loaded.
   const registerLocalAgent = async (agentName: string, appDir: string, resolvedAgentDir?: string): Promise<boolean> => {
     const agentDir = resolvedAgentDir ?? resolve(appDir, "agents", agentName);
@@ -153,8 +119,7 @@ export async function prepareDaemonAgents(opts: {
         globalAgentsRoot: opts.agentsRoot,
         agentDir,
         getAgentSessionId,
-        getAgentCrons: () => getAgentCrons(),
-        setAgentCron: (name, cron) => getAgentCrons().set(name, cron),
+        getAgentMaintenance: () => getAgentMaintenance(),
         addCleanup: () => {},
       }),
       projectRoot: opts.projectRoot,
@@ -245,35 +210,6 @@ export async function prepareDaemonAgents(opts: {
   }
 
   // Producer activation is separate from Task recovery and controller startup.
-
-  let failures = 0;
-  const heartbeatFiles = autoHeartbeats
-    .map((entry) => {
-      const agentRoot = agentRootByName.get(entry.agent!) ?? opts.agentsRoot;
-      const agentWfDir = join(agentRoot, entry.agent!, "workflows");
-      return join(agentWfDir, `${entry.agent}-heartbeat.ts`);
-    })
-    .filter((file) => existsSync(file));
-
-  for (const file of heartbeatFiles) {
-    try {
-      await importRuntimeModule(file);
-    } catch (err) {
-      failures++;
-      const msg = err instanceof Error ? err.message : String(err);
-      opts.bus.emit({
-        type: "info",
-        message: `[startup-check] ⚠️ WORKFLOW BROKEN: ${file.split("/").slice(-3).join("/")} — ${msg}`,
-      });
-      console.error(`[startup-check] BROKEN WORKFLOW: ${file}\n  ${msg}`);
-    }
-  }
-  if (failures > 0) {
-    opts.bus.emit({
-      type: "info",
-      message: `[startup-check] ⚠️ ${failures} heartbeat workflow(s) failed to load! Heartbeats will NOT fire for those agents.`,
-    });
-  }
 
   if (taskRuntimeMode === "controllers") await prepareAgentTriggers(loaderOpts);
 

@@ -57,7 +57,7 @@ describe("runtime generation reload", () => {
     added: ["new-agent"],
     updated: [],
     definitions: [],
-    crons: new Map(),
+    maintenance: new Map(),
     cleanups: new Map(),
     warnings: [],
   } as any;
@@ -120,7 +120,7 @@ describe("runtime generation reload", () => {
     let cleaned = 0;
     const prepared = {
       ...generation,
-      crons: new Map([["candidate", { close: () => closed++ }]]),
+      maintenance: new Map([["candidate", { close: () => closed++ }]]),
       cleanups: new Map([["candidate", [() => cleaned++]]]),
     } as any;
     const lifecycle = createDaemonLifecycle(

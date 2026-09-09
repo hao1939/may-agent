@@ -13,8 +13,8 @@ import * as daemon from "../../src/app/daemon.js";
 import * as inbox from "../../src/app/app-inbox-runtime.js";
 import * as interfaces from "../../src/app/interface-startup.js";
 import * as background from "../../src/app/composition/background-startup.js";
-import { Cron } from "../../src/app/cron.js";
-import { getAgentCrons } from "../../src/app/agent-loader.js";
+import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
+import { getAgentMaintenance } from "../../src/app/agent-loader.js";
 import * as agentLoader from "../../src/app/agent-loader.js";
 import * as metrics from "../../src/app/app-metric-definitions.js";
 import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
@@ -47,20 +47,20 @@ let stopTasks: (() => void) | undefined;
 let sharedCapacity: Parameters<typeof daemon.prepareDaemonAgents>[0]["hostCapacity"];
 let preparedOptions: Parameters<typeof daemon.prepareDaemonAgents>[0];
 let failActivation = false;
-const partiallyAttached: Cron[] = [];
+const partiallyAttached: HostMaintenance[] = [];
 let attemptFinished = Promise.withResolvers<void>();
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
 
-const subscribeToBus = Cron.prototype.subscribeToBus;
-const closeCron = Cron.prototype.close;
-const closedCrons = new Set<Cron>();
-const retirement = spyOn(Cron.prototype, "close").mockImplementation(function () {
+const subscribeToBus = HostMaintenance.prototype.subscribeToBus;
+const closeCron = HostMaintenance.prototype.close;
+const closedCrons = new Set<HostMaintenance>();
+const retirement = spyOn(HostMaintenance.prototype, "close").mockImplementation(function () {
   closedCrons.add(this);
   closeCron.call(this);
 });
-const subscription = spyOn(Cron.prototype, "subscribeToBus").mockImplementation(function (bus) {
+const subscription = spyOn(HostMaintenance.prototype, "subscribeToBus").mockImplementation(function (bus) {
   assert.ok(order.includes("ingress"), "producers must not activate during definition loading");
   assert.ok(this.hasHandler("startup-probe"), "handlers must be prepared before their routes attach");
   order.push("triggers");
@@ -393,7 +393,7 @@ export async function execute(ctx) {
       return task;
     };
     const previousTask = await runTask("work/before");
-    const previousCrons = new Map(getAgentCrons());
+    const previousCrons = new Map(getAgentMaintenance());
     const previousDefinitions = agentNames.map((name) => manager.getAgentDefinition(name));
     writeFileSync(appPath, appSource("must roll back"));
     failActivation = true;
@@ -408,7 +408,7 @@ export async function execute(ctx) {
       previousDefinitions,
     );
     for (const [name, cron] of previousCrons) {
-      assert.equal(getAgentCrons().get(name), cron);
+      assert.equal(getAgentMaintenance().get(name), cron);
       assert.equal(closedCrons.has(cron), false, "rollback must not retire the previous generation");
     }
     for (const cron of partiallyAttached) assert.ok(closedCrons.has(cron), "partial replacements must be retired");
@@ -437,7 +437,7 @@ export async function execute(ctx) {
   console.log("startup-contract-ok");
 } finally {
   subscription.mockRestore();
-  for (const cron of getAgentCrons().values()) cron.close();
+  for (const cron of getAgentMaintenance().values()) cron.close();
   retirement.mockRestore();
   if (preparedOptions!) await closeInstalledAppTaskRuntimes(preparedOptions.bus);
   stopTasks?.();

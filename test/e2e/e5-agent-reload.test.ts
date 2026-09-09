@@ -16,7 +16,7 @@
  * What this doesn't cover (out of scope for E5):
  *   - Reload of handler/workflow file content at the explicit reload boundary.
  *   - Removing an agent (no delete code path in the registry loader).
- *   - cron.json reload (covered by Cron.reload() unit tests).
+ *   - cron.json reload (covered by HostMaintenance.reload() unit tests).
  *
  * Validates documented behavior of:
  *   - user-guide.md § Reload (the `/reload` command, control-channel reload)

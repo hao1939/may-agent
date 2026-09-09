@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { Check } from "typebox/value";
-import type { EventEnvelope } from "../lib/handler-context.js";
+import type { EventEnvelope } from "./event-bus.js";
 import { createTaskHandlerAvailability } from "./core/tasks/handler-availability.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./core/tasks/result.js";
 import type {
