@@ -1,9 +1,10 @@
 # Task runtime organization
 
 **Design status:** Incremental direction accepted; later stages remain provisional.
-**Implementation status:** Stage 1 implemented in Host commit `9331ce18` on
-`refactor/task-context`; local CI passed, hosted checks pending. Not merged or
-deployed. Runtime ownership, execution, and lifecycle are unchanged.
+**Implementation status:** Stage 1 implemented in Host commit `1b5b0111` on
+`refactor/task-context`; local CI and hosted Quality/Container checks passed.
+Ready for review, not merged or deployed. Runtime ownership, execution, and
+lifecycle are unchanged.
 **Implementation PR:** [May Host #95](https://github.com/hao1939/may-agent/pull/95).
 **Date:** 2026-09-09.
 **Source baseline:** May Host `b94b4ccf3fc6fd7adf95571b50300b5f7b2daad5`.
@@ -264,10 +265,12 @@ if later ownership and directory changes are deferred.
 ## Validation and completion
 
 Stage 1 validation on Node 24.20.0 and Bun 1.3.14: `bun run ci` passed with
-**2,530 passed, 3 expected installed-agent checks skipped, 0 failed**. This
+**2,451 passed, 3 expected installed-agent checks skipped, 0 failed** after
+integrating the test cleanup from Host `167bab06`. This
 includes type, SDK, App-boundary, and lint checks plus portable unit,
 integration, process, and browser tests. It is not a live deployment claim.
-The hosted Container gate remains required before the PR is ready.
+Hosted Quality and Container checks also passed on `1b5b0111`, including the
+built-image smoke test.
 
 The source comparison found 116 original function bodies unchanged across the
 runtime and extracted modules. The three changed bodies are the two execution
@@ -303,9 +306,10 @@ packages/sdk/src/task-contract.test.ts
 ```
 
 For the extracted implementation, also include
-`src/app/app-dependency-catalog.test.ts` and `src/app/app-task-context.test.ts`;
-their tests moved out of the runtime suite or cover the newly explicit context
-boundary.
+`src/app/app-dependency-catalog.test.ts`, `src/app/app-task-context.test.ts`, and
+`src/app/app-task-runtime-policy.test.ts`. Pure tests now live with their
+responsibility after the context extraction and the main-branch test cleanup;
+new cases cover the explicit context boundary.
 
 Use focused existing tests while developing each stage, adding a regression
 only when a changed boundary lacks behavioral coverage. For extraction, move
