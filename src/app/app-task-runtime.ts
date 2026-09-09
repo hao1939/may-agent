@@ -418,6 +418,9 @@ export function consumePersistedTerminalAgentResult(input: {
   if (raw === undefined) return null;
   const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
   if (!claim) return null;
+  // A workflow's lost continuation includes its verifier and workspace handling.
+  // Retry through normal execution instead of accepting an agent-only shortcut.
+  if (claim.intent.workflow) return null;
   const defaultParentId = input.config.resourceStore.rootTaskId();
   if (!defaultParentId) return null;
   try {
@@ -440,6 +443,7 @@ export function consumePersistedTerminalAgentResult(input: {
       const applied = completeAppTask(input.config, claim, {
         summary: result.summary,
         response: result.response,
+        result: result.result,
         evidence: result.evidence,
         actions: result.actions,
         acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
@@ -1691,6 +1695,7 @@ async function reconcileTask(input: {
     ) {
       primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = `Agent convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
+      primaryResult.handlerBlocked = true;
     }
     if (primaryResult.unavailable) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
@@ -1713,6 +1718,9 @@ async function reconcileTask(input: {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = accepted.summary;
         primaryHandlerResult.evidence = accepted.evidence;
+        // Rejected acceptance needs new evidence or an owner decision, not a
+        // transport retry of the same workflow and its external effects.
+        primaryResult.handlerBlocked = true;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.verification.failed", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
