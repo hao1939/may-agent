@@ -1,13 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import { Type } from "@earendil-works/pi-ai";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { PersistedSession } from "../lib/persistence";
 import { shouldResumeStartupSession } from "./cron-startup";
 import { AppTaskResourceStore } from "./app-task-resource-store";
-import { getDb } from "../lib/requests";
+import { closeDb, getDb } from "../lib/requests";
 
 function session(appDir: string, source: string, recoveryOwner?: string): PersistedSession {
   return {
@@ -23,86 +25,73 @@ function session(appDir: string, source: string, recoveryOwner?: string): Persis
 }
 
 describe("cron startup recovery", () => {
-  it("starts isolated App task recovery before generic stale-session resumption without awaiting it", () => {
-    const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
-    const recoveryImport = source.indexOf('recoverInstalledAppTasks } from "./app-task-runtime.js";');
-    const recoveryCall = source.indexOf("recoverInstalledAppTasks(bus)");
-    const staleResume = source.indexOf("manager.resumeStaleSessions(");
-
-    expect(recoveryImport).toBeGreaterThan(-1);
-    expect(recoveryCall).toBeGreaterThan(-1);
-    expect(recoveryCall).toBeLessThan(staleResume);
-    expect(source).not.toContain("await recoverInstalledAppTasks(bus)");
-  });
+  it.each(["resolve", "reject"])(
+    "keeps startup available while Task recovery is pending (%s)",
+    async (mode) => {
+      const { fileURLToPath } = await import("node:url");
+      const fixture = fileURLToPath(new URL("../../test/fixtures/cron-startup.ts", import.meta.url));
+      const { stdout } = await promisify(execFile)(
+        process.execPath,
+        [fixture, mode],
+        { timeout: 5_000 },
+      );
+      expect(stdout).toContain("cron-startup-contract-ok");
+    },
+    10_000,
+  );
 
   it("never resumes task-bound execution outside bounded Task recovery", () => {
-    const appDir = mkdtempSync(join(tmpdir(), "may-claimed-task-app-"));
-    try {
-      const persisted = session(appDir, "app-task-owner");
-      expect(shouldResumeStartupSession("task-session", persisted)).toEqual({
-        resume: false,
-        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
-      });
-    } finally {
-      rmSync(appDir, { recursive: true, force: true });
-    }
+    const appDir = "/fixture/sample.app";
+    const persisted = session(appDir, "app-task-owner");
+    expect(shouldResumeStartupSession("task-session", persisted)).toEqual({
+      resume: false,
+      reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
+    });
   });
 
   it("leaves the exact stale parent and completing child sessions to App task recovery", () => {
-    const appDir = mkdtempSync(join(tmpdir(), "may-active-task-app-"));
-    try {
-      for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
-        const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
-        persisted.task +=
-          '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
-        expect(shouldResumeStartupSession(sessionId, persisted)).toEqual({
-          resume: false,
-          reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
-        });
-      }
-    } finally {
-      rmSync(appDir, { recursive: true, force: true });
+    const appDir = "/fixture/sample.app";
+    for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
+      const persisted = session(appDir, "workflow:task-handler", "app-task-reconciler");
+      persisted.task +=
+        '\n\n## Reconciliation Task\n```json\n{"appId":"sample","taskId":"work/legacy","generation":1}\n```';
+      expect(shouldResumeStartupSession(sessionId, persisted)).toEqual({
+        resume: false,
+        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
+      });
     }
   });
 
   it("keeps task-owned workflow workers out of generic resume even when their prompt omits the task block", () => {
-    const appDir = mkdtempSync(join(tmpdir(), "may-task-worker-app-"));
-    try {
-      const persisted = session(appDir, "workflow:domain-task-execution", "app-task-reconciler");
-      persisted.task = 'Execute the bounded reconciliation task below.\n\n{"appId":"sample","taskId":"work"}';
-      expect(shouldResumeStartupSession("task-worker-session", persisted)).toEqual({
-        resume: false,
-        reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
-      });
-    } finally {
-      rmSync(appDir, { recursive: true, force: true });
-    }
+    const appDir = "/fixture/sample.app";
+    const persisted = session(appDir, "workflow:domain-task-execution", "app-task-reconciler");
+    persisted.task = 'Execute the bounded reconciliation task below.\n\n{"appId":"sample","taskId":"work"}';
+    expect(shouldResumeStartupSession("task-worker-session", persisted)).toEqual({
+      resume: false,
+      reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
+    });
   });
 
   it("resumes an unbound typed owner-review workflow without losing its decision contract", () => {
-    const appDir = mkdtempSync(join(tmpdir(), "may-owner-review-app-"));
-    try {
-      const outputSchema = Type.Object({
-        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
-        summary: Type.String({ minLength: 1 }),
-        evidence: Type.Array(Type.String({ minLength: 1 })),
-      });
-      const persisted: PersistedSession = {
-        ...session(appDir, "workflow:platform-owner-review", "project-app-task-reconciler"),
-        taskId: null,
-        projectTaskId: null,
-        requireFinish: true,
-        outputSchema,
-      };
+    const appDir = "/fixture/sample.app";
+    const outputSchema = Type.Object({
+      state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
+      summary: Type.String({ minLength: 1 }),
+      evidence: Type.Array(Type.String({ minLength: 1 })),
+    });
+    const persisted: PersistedSession = {
+      ...session(appDir, "workflow:platform-owner-review", "project-app-task-reconciler"),
+      taskId: null,
+      projectTaskId: null,
+      requireFinish: true,
+      outputSchema,
+    };
 
-      expect(shouldResumeStartupSession("owner-review-session", persisted)).toEqual({ resume: true });
-      expect({ requireFinish: persisted.requireFinish, outputSchema: persisted.outputSchema }).toEqual({
-        requireFinish: true,
-        outputSchema,
-      });
-    } finally {
-      rmSync(appDir, { recursive: true, force: true });
-    }
+    expect(shouldResumeStartupSession("owner-review-session", persisted)).toEqual({ resume: true });
+    expect({ requireFinish: persisted.requireFinish, outputSchema: persisted.outputSchema }).toEqual({
+      requireFinish: true,
+      outputSchema,
+    });
   });
 
   it("lets the App inbox fence and replace an interrupted legacy agent attempt", () => {
@@ -135,6 +124,7 @@ describe("cron startup recovery", () => {
         reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
       });
     } finally {
+      closeDb(persistDir);
       rmSync(projectsRoot, { recursive: true, force: true });
     }
   });

@@ -1183,9 +1183,15 @@ describe("App task reconciler state", () => {
     expect(listRunnableAppTaskIds(config)).not.toContain(original.id);
   });
 
-  it("orders runnable tasks by declared priority before lower-priority work", () => {
+  it("orders runnable tasks by priority, then task ID when ready times tie", () => {
     const state = fixture();
     const { config } = state;
+    // Fast inserts can share a millisecond. Pin the tie instead of assuming
+    // creation order implies distinct ready times; older-ready ordering is tested below.
+    const readyAt = new Date(Date.now() - 1_000).toISOString();
+    mutateTaskResourceFixture(config, "categorized-task", (resource) => {
+      resource.status.updatedAt = readyAt;
+    });
     for (const [id, priority] of [
       ["work/p2", "P2"],
       ["work/p0-z", "P0"],
@@ -1196,11 +1202,14 @@ describe("App task reconciler state", () => {
         intent: { ...intent("achieve"), id, priority },
         appAgent: "app-owner",
       });
+      mutateTaskResourceFixture(config, id, (resource) => {
+        resource.status.updatedAt = readyAt;
+      });
     }
 
     expect(listRunnableAppTaskIds(config)).toEqual([
-      "work/p0-z",
       "work/p0-a",
+      "work/p0-z",
       "work/p1",
       "categorized-task",
       "work/p2",

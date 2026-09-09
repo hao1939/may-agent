@@ -3,22 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { SubagentManager } from "./manager.js";
-import type { Model } from "@earendil-works/pi-ai";
-
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
-}
+import { fakeModel } from "../../test/fixtures/model.js";
 
 describe("session ID prefix", () => {
   it("uses default 's' prefix when sessionIdPrefix is not set", () => {

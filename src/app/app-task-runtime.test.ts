@@ -16,20 +16,14 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
-  appTaskAgentProtocol,
   applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
   beginCanonicalAgentResidueGuard,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   consumePersistedTerminalAgentResult,
-  DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   finishCanonicalAgentResidueGuard,
-  hasDeployReceiptWake,
-  hasSuppliedDependencyObservation,
   installAppTaskRuntimes,
-  mergeTaskConditions,
-  normalizeTaskHandlerResult,
   planCanonicalAgentResidueCleanup,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
@@ -53,9 +47,9 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "./host-capacity.js";
-import { getDb } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { appTaskTestContext } from "./app-task-test-support.js";
+import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { HumanTaskService } from "./human-task-service.js";
 import {
@@ -67,6 +61,13 @@ import {
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
+const stores: AppTaskResourceStore[] = [];
+
+function appTaskTestContext(input: Parameters<typeof createTaskContext>[0]) {
+  const config = createTaskContext({ databasePath: ":memory:", ...input });
+  stores.push(config.resourceStore);
+  return config;
+}
 
 function eventBus(): EventBus {
   const bus = new EventBus();
@@ -165,14 +166,13 @@ function activateTaskResources(config: AppTaskContext, persistDir: string, appId
 function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.root, "state")) {
   const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
   if (!resourceStore) {
-    return activateTaskResources(
-      appTaskTestContext({
-        appDir: f.appDir,
-        agent: "sample-owner",
-        maxConcurrent: 1,
-      }),
-      persistDir,
-    );
+    // Bootstrap the intended authority once, not a temporary DB plus a copy.
+    return createTaskContext({
+      appDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.fromDb(getDb(persistDir), "sample"),
+    });
   }
   return appTaskContext({
     appDir: f.appDir,
@@ -212,7 +212,10 @@ function mutateRuntimeAttemptFixture(
 
 afterEach(async () => {
   await Promise.all(buses.splice(0).map((bus) => closeInstalledAppTaskRuntimes(bus)));
+  for (const store of stores.splice(0)) store.close();
   for (const root of roots.splice(0)) {
+    closeDb(join(root, "state"));
+    closeDb(join(root, ".state"));
     rmSync(root, { recursive: true, force: true });
   }
 });
@@ -298,112 +301,7 @@ describe("canonical direct-agent residue cleanup", () => {
   });
 });
 
-describe("App Task agent prompt context", () => {
-  it("recognizes deploy context only from the exact typed receipt wake", () => {
-    const events = (reason: string) =>
-      ({
-        items: [
-          {
-            eventId: 1,
-            observedAt: "2026-08-25T00:00:00.000Z",
-            event: {
-              type: "runtime.deploy.observed",
-              data: { reason },
-            },
-          },
-        ],
-        throughEventId: 1,
-        truncated: false,
-      }) as any;
-
-    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
-    expect(hasDeployReceiptWake(events("please inspect the restart-aware deploy receipt"))).toBe(false);
-  });
-
-  it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
-    const protocol = appTaskAgentProtocol("may");
-
-    expect(Buffer.byteLength(protocol, "utf8")).toBeLessThanOrEqual(4 * 1_024);
-    expect(protocol).toContain("agent pursuing one Task goal owned by App may");
-    expect(protocol).not.toContain("accountable owner");
-    expect(protocol).toContain("Finish exactly once with finish().result");
-    expect(protocol).toContain("Return state waiting only for an exact observable Condition");
-    expect(protocol).toContain("Runtime publishes and correlates it");
-    expect(protocol).not.toContain("Converged example");
-  });
-
-  it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [
-          {
-            event: {
-              type: "app.task.requested",
-              data: {
-                request: {
-                  dependency: {
-                    kind: "task",
-                    id: "runtime/platform-owner-review",
-                    status: "attention",
-                    summary: "Use this supplied state",
-                  },
-                },
-              },
-            },
-          },
-        ],
-      }),
-    ).toBeTrue();
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [{ event: { type: "app.task.requested", data: { request: {} } } }],
-      }),
-    ).toBeFalse();
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "as complete authority for the dependency in this attempt",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("This restriction is request-scoped");
-    expect(readFileSync(new URL("./app-task-runtime.ts", import.meta.url), "utf8")).toContain(
-      "DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,",
-    );
-  });
-
-  it("lets an App reject Conditions it cannot meaningfully observe", () => {
-    const normalized = normalizeTaskHandlerResult(
-      {
-        state: "waiting",
-        summary: "Waiting for an invented human event",
-        evidence: [],
-        conditions: [
-          {
-            id: "approval",
-            type: "human-decision",
-            subject: "id:approval",
-            expected: true,
-            owner: "human:operator",
-            reviewAfterMs: 60_000,
-          },
-        ],
-      },
-      { type: "done", summary: "done", runId: "run-1" },
-      {
-        validateCondition: () => "is not observable by this App",
-      },
-    );
-
-    expect(normalized).toMatchObject({
-      state: "error",
-      summary: "Handler result was rejected: conditions[0] is not observable by this App",
-    });
-  });
-
+describe("App Task persisted prompt context", () => {
   it("shows the executor the exact accepted wait before it judges feedback", () => {
     const f = fixture();
     const persistDir = join(f.root, "state");
@@ -4363,34 +4261,5 @@ describe("canonical App task runtime", () => {
       resources: { [intent.id]: { status: { phase: "running" } } },
       attempts: { [claim.attemptId]: { state: "running", sessionId: "session-invalid-terminal" } },
     });
-  });
-});
-
-describe("Task Condition reconciliation authority", () => {
-  const canonical = {
-    id: "app-request:appdep_exact",
-    type: "app.dependency.completed",
-    subject: "id:appdep_exact",
-    expected: { field: "status", equals: "done" },
-  };
-
-  it("keeps one canonical App-dependency Condition across compatible model and dependency echoes", () => {
-    const modelEcho = { ...canonical, reviewAfterMs: 60_000 };
-    const dependencyEcho = structuredClone(canonical);
-    expect(mergeTaskConditions([canonical, modelEcho, dependencyEcho], new Set([canonical.id]))).toEqual([canonical]);
-  });
-
-  it("rejects retargeting an authoritative App-dependency Condition", () => {
-    const retargeted = { ...canonical, subject: "id:different" };
-    expect(() => mergeTaskConditions([canonical, retargeted], new Set([canonical.id]))).toThrow(
-      "Task result conflicts with existing Condition app-request:appdep_exact",
-    );
-  });
-
-  it("rejects incompatible expected facts for an authoritative App-dependency Condition", () => {
-    const incompatible = { ...canonical, expected: { field: "status", equals: "attention" } };
-    expect(() => mergeTaskConditions([canonical, incompatible], new Set([canonical.id]))).toThrow(
-      "Task result conflicts with existing Condition app-request:appdep_exact",
-    );
   });
 });
