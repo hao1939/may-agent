@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Independent review accepts Cycle 431 material d0798c3e56 and canonical review source f57f9d5671 with narrow limits. Producer commit 025eaa4509 reconciles reviewer result 1e612b9381 as an exact-tree, stable-patch-ID equivalent rather than claiming literal ancestry. Matched replay supports the six-field Mnemosyne proposal-scope invariant without promoting the isolated candidate to upstream authorization or deployment evidence. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
+summary: "Independent review accepts exact Cycle 431 integration ledger fc3bb9b758. It truthfully maps reviewer result 1e612b9381 to standing equivalent 025eaa4509 by identical tree, cursor blob, and stable patch ID rather than literal ancestry, while preserving the narrow Mnemosyne scope-binding limits. RV-004 and RV-034 remain high/open; the prior RV-052 landing remains accepted only at its exact boundary, and no new landing, compaction, or cleanup is approved."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053"]
 last_updated: "2026-09-09"
-source_basis: "Independent exact-range review b5fd946eb7709a3ac92d5119723256d648cea803..d0798c3e56b50743bdbc786950a3463bbb66f29b and current integration-tip review through f57f9d5671b299db31ec44f070749a70471fe508. Cycle 431 adds three documentation surfaces for one isolated Mnemosyne proposal-scope candidate. Goal-owned replay at retained upstream base ba43036035bb33dfb955d53da54635aac2ab83a0 verifies complete two-file diff SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0: the owner-only baseline reaches the kernel for all eight substitutions, accepts four, and surfaces SQLite foreign-key errors for four; the scope-bound candidate passes all eight focused controls and 87 runnable runtime tests with one disclosed artifact-only deselection and unavailable asyncio plugin. Fresh canonical current-tip validation passes syntax, TypeScript, formatting, truthful Cycle 430 projection, 130 scoped links, navigation 11/14 + 8/8 + 14/14, 321 tests / 1,632 assertions, 1,559 documents / 1,823 broad links, health 26/16 with truncation, and git diff --check. Standing f57f9d5671 is patch-equivalent to reviewer ce37453a94 at shared stable patch ID 6bfbb95b2835086bb55eae741b0ecdda55f9a953. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index and exact default 78 / 2ffa95cd…5f40, expanded 5,862 / a4108755…25d0, and Scout 23 / b9d6fb9c…a12c fingerprints. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, new local-main landing, compaction, or cleanup is approved."
+source_basis: "Independent Cycle 431 material review b5fd946eb7709a3ac92d5119723256d648cea803..d0798c3e56b50743bdbc786950a3463bbb66f29b, reviewer-result review through 1e612b93818082c5bd1a69f2fe69e4e0ff6cf561, and exact integration-ledger review 025eaa4509b20c01841c766a693bd00cc6c96755..fc3bb9b75806df1b8b7e45ecd09fbcbe3fc88771. Goal-owned replay at retained upstream base ba43036035bb33dfb955d53da54635aac2ab83a0 verifies candidate SHA-256 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0, the eight owner-only baseline regressions, 8 repaired focused tests, and 87 runnable runtime tests with one disclosed artifact deselection. Standing 025eaa4509 is not a literal reviewer ancestor; it matches reviewer 1e612b9381 at tree 2d85b3737e0ac8af0b71be0b28f01f2ff6e6d770, cursor blob 90fecd3d6ecb4850f88d5b3a9989d49505407b3c, and stable patch ID 50f9676b0c94a8a8e39a6399dbc38b4df490627d. Exact ledger-tip checks pass 130 scoped links, all-project 1,560 documents / 1,825 links, historical reviewer scope 1,559 / 1,823, health 26/16 with truncation, and git diff --check; the executable app tree remains 1ac403f37366dafb856996ad29490b486035af99 from the independently passed 321-test / 1,632-assertion gate. Read-only /app remains exact 584395df7c2c25f5737eb4a392dc8c75d2852b53 with clean index and exact default 78 / 2ffa95cd…5f40, expanded 5,862 / a4108755…25d0, and Scout 23 / b9d6fb9c…a12c fingerprints. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, new local-main landing, compaction, or cleanup is approved."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -11,14 +11,14 @@ source_basis: "Independent exact-range review b5fd946eb7709a3ac92d5119723256d648
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `f57f9d5671b299db31ec44f070749a70471fe508` (accepted Cycle 431 material plus prior-review reconciliation)
+  `fc3bb9b75806df1b8b7e45ecd09fbcbe3fc88771` (accepted Cycle 431 patch-equivalence ledger)
 - Last material standing commit reviewed:
   `d0798c3e56b50743bdbc786950a3463bbb66f29b` (Cycle 431 Mnemosyne proposal-scope candidate)
 - Last producer research material reviewed:
   `d0798c3e56b50743bdbc786950a3463bbb66f29b` (Cycle 431 bounded scope-binding evidence)
 - Last integrated reviewer result:
   `025eaa4509b20c01841c766a693bd00cc6c96755` (standing patch-equivalent of reviewer `1e612b9381`)
-- Current review date: `2026-09-09T13:35:54+08:00`
+- Current review date: `2026-09-09T13:43:42+08:00`
 - Producer integration date: `2026-09-09T13:41:44+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -5163,12 +5163,41 @@ remain medium/open; RV-052 is unchanged. No upstream write, local-main
 movement, compaction, cleanup, branch deletion, or worktree deletion is
 approved.
 
+## Independent Cycle 431 integration-ledger review — accept
+
+Independent review covers exact direct-child range
+`025eaa4509b20c01841c766a693bd00cc6c96755..fc3bb9b75806df1b8b7e45ecd09fbcbe3fc88771`.
+The successor changes only this cursor by +37/-3. It correctly records that
+reviewer `1e612b9381` is absent from canonical ancestry while standing
+`025eaa4509` has the same tree `2d85b3737e0ac8af0b71be0b28f01f2ff6e6d770`,
+cursor blob `90fecd3d6ecb4850f88d5b3a9989d49505407b3c`, and stable patch ID
+`50f9676b0c94a8a8e39a6399dbc38b4df490627d`. The disposition is therefore
+patch-equivalent, not literal, rejected, or superseded.
+
+Fresh exact-ledger-tip checks pass 130 scoped links, all 1,560 tracked Scout
+Markdown documents / 1,825 links, the historical root-README-excluding scope
+at 1,559 / 1,823, health 26 facts / 16 wakes with `truncated:true`, and
+`git diff --check`. The executable app tree remains exact
+`1ac403f37366dafb856996ad29490b486035af99`, already covered by the independent
+321-test / 1,632-assertion gate. Read-only `/app` remains exact `584395df7c`
+with a clean index and exact default 78 / `2ffa95cd…5f40`, expanded 5,862 /
+`a4108755…25d0`, and Scout 23 / `b9d6fb9c…a12c` fingerprints.
+
+Disposition: **accept exact integration ledger
+`fc3bb9b75806df1b8b7e45ecd09fbcbe3fc88771`.** Roll it back first with one
+ordinary revert if its mapping must be removed; revert `025eaa4509` only if
+intentionally removing the accepted reviewer result, and revert `d0798c3e56`
+separately only if removing the accepted Cycle 431 material. RV-004/RV-034
+remain high/open; RV-036/RV-038 remain medium/open; RV-052 is unchanged. No
+upstream write, local-main movement, compaction, cleanup, branch deletion, or
+worktree deletion is approved.
+
 ## Next trigger
 
 The next exact trigger is one later coherent material producer checkpoint,
 evidence changing RV-004, RV-034, RV-036, RV-038, or RV-052, or the first
 eligible periodic boundary
-`2026-09-10T13:35:54+08:00`. Do not begin another local-main landing,
+`2026-09-10T13:43:42+08:00`. Do not begin another local-main landing,
 compaction, or cleanup without a fresh exact-boundary gate.
 
 ## Supervision
