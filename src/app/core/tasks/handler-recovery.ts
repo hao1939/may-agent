@@ -14,7 +14,7 @@ export async function recoverUnavailableTaskHandlers(input: {
   onRecovered: (candidate: AppTaskHandlerRepairCandidate) => void;
 }): Promise<void> {
   if (!input.isCurrent()) return;
-  const ids = input.config.resourceStore.listTaskIdsByPhase(["attention"], 512);
+  const ids = input.config.resourceStore.takeHandlerRecoveryTaskIds(512);
   for (const candidate of listHandlerUnavailableAppTasks(input.config, input.config.agent, ids)) {
     if (!input.isCurrent()) return;
     const available = await input.isAvailable(candidate);

@@ -4296,7 +4296,10 @@ function recoverInterruptedAppTasks(
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
+export async function recoverInstalledAppTasks(
+  bus: EventBus,
+  isDefinitionCurrent: () => boolean = () => true,
+): Promise<void> {
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
   if (opts.executeRecovery) {
@@ -4307,13 +4310,14 @@ export async function recoverInstalledAppTasks(bus: EventBus): Promise<void> {
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
-  await requeueAvailableAppTaskHandlers(opts, descriptors, controllers);
+  await requeueAvailableAppTaskHandlers(opts, descriptors, controllers, isDefinitionCurrent);
 }
 
 async function requeueAvailableAppTaskHandlers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
   controllers: Map<string, AppTaskController>,
+  isDefinitionCurrent: () => boolean = () => true,
 ): Promise<void> {
   for (const descriptor of descriptors) {
     const controller = controllers.get(descriptor.id);
@@ -4325,7 +4329,7 @@ async function requeueAvailableAppTaskHandlers(
         executors: opts.executors,
         workflowDir: (agent) => appWorkflowRuntimePaths(opts, descriptor, agent).workflowDir,
       }),
-      isCurrent: () => appRouterOptionsByBus.get(opts.bus) === opts,
+      isCurrent: () => appRouterOptionsByBus.get(opts.bus) === opts && isDefinitionCurrent(),
       onRecovered: (candidate) => {
         // Isolated recovery repairs readiness without installing controllers;
         // the parent discovers the pending Task through its normal recovery pass.

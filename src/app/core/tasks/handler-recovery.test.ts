@@ -7,7 +7,10 @@ import {
   retryFailedAppTask,
 } from "../../app-task-reconciler.js";
 import { appTaskTestContext } from "../../app-task-test-support.js";
-import type { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { recoverUnavailableTaskHandlers } from "./handler-recovery.js";
 
 const stores: AppTaskResourceStore[] = [];
@@ -42,6 +45,62 @@ function fixture(handler = "executor:fixture") {
 }
 
 describe("unavailable Task handler recovery", () => {
+  it("reaches restored handlers beyond the first page across recovery restarts", async () => {
+    const { config: seed, fail } = fixture();
+    const claim = fail();
+    const tree = seed.resourceStore.readTaskContext({ taskIds: ["work"] });
+    const original = tree.resources!.work!;
+    const failed = tree.attempts![claim.attemptId]!;
+    for (let index = 0; index < 512; index++) {
+      const taskId = `blocked/${String(index).padStart(4, "0")}`;
+      const attemptId = `attempt-${index}`;
+      tree.resources![taskId] = {
+        ...structuredClone(original),
+        metadata: { ...original.metadata, id: taskId },
+        status: { ...original.status, updatedAt: "2026-01-01T00:00:00.000Z" },
+      };
+      tree.attempts![attemptId] = {
+        ...structuredClone(failed),
+        metadata: { ...failed.metadata, id: attemptId },
+        taskId,
+        handler: "executor:missing",
+      };
+    }
+    const root = mkdtempSync(join(tmpdir(), "may-handler-pages-"));
+    const path = join(root, "tasks.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "sample");
+    try {
+      store.bootstrapSnapshot(tree, "fixture");
+      const recover = (inspected: string[]) =>
+        recoverUnavailableTaskHandlers({
+          config: { ...seed, resourceStore: store },
+          isCurrent: () => true,
+          isAvailable: async (candidate) => {
+            inspected.push(candidate.taskId);
+            return candidate.handler === "executor:fixture";
+          },
+          onRecovered: () => {},
+        });
+      const first: string[] = [];
+      await recover(first);
+      expect(first).toHaveLength(512);
+      expect(store.readTask("work")?.status.phase).toBe("attention");
+      store.close();
+      store = AppTaskResourceStore.openStandalone(path, "sample");
+      const second: string[] = [];
+      await recover(second);
+      expect(second).toEqual(["work"]);
+      expect(store.readTask("work")?.status.phase).toBe("pending");
+      expect(store.readAttempt(claim.attemptId)).toEqual(failed);
+      const wrapped: string[] = [];
+      await recover(wrapped);
+      expect(wrapped).toEqual(first);
+    } finally {
+      store.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it.each(["executor:fixture", "workflow:fixture"])("rechecks %s without a concrete backend", async (handler) => {
     const { config, store, fail } = fixture(handler);
     const claim = fail();

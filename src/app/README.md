@@ -77,6 +77,12 @@ binding; only core may release attention and requeue that same Task. The
 generation, resource version, attempt, cancellation and pause checks remain in
 `app-task-reconciler.ts`.
 
+The pass advances a cursor in the existing resource-store metadata before it
+awaits inspection. Pages use the existing phase index and wrap after the last
+row. Repeated startup/reload passes therefore reach later Tasks even when older
+bindings stay missing or a recovery process exits. This is a recovery hint,
+not a Task revision, new retry queue, or new timer.
+
 `adapters/executors/handler-availability.ts` looks up registered executors and
 inspects conventional workflow modules without executing them. Its lookup cache
 lasts one pass. It does not own Task state or retries.
@@ -92,6 +98,21 @@ The isolated recovery process has no controllers. It still repairs durable
 readiness and emits the existing recovery observation; the parent's recovery
 pass finds the pending Task and owns execution. Repair must not require a local
 controller or start an attempt in the recovery process.
+
+Its definition fence rereads the durable active-release link after each
+availability check; a child-local registry alone cannot observe a parent
+reload. A superseded check leaves the exact Task and failed attempt intact.
+Normal attempt workers keep their pinned source and are not stopped by this
+availability fence.
+
+The governing design is [System Boundary — Recovery](../../../may-agent.app/docs/2a-design/system-boundary.md#recovery)
+and [Task Resource Engine — Pause, reload, and recovery](../../../may-agent.app/docs/2a-design/task-resource-engine.md#pause-reload-and-recovery)
+and [Execution isolation](../../../may-agent.app/docs/2a-design/task-resource-engine.md#execution-isolation).
+They require recovery to continue the same identity, keep state changes fenced,
+and run execution outside the interface process; the worker is not another
+Task owner. These exact references require the sibling design tree, not this
+standalone Host checkout. The [core proposal's Step 3](../../../may-agent.app/docs/proposals/task-runtime-organization.md#step-3-finish-the-taskexecutor-boundary)
+describes the incremental extraction, not an additional lifecycle authority.
 
 This separates recovery availability, not the entire execution system. Managed
 agent preparation, workflow execution, and backend-specific session recovery

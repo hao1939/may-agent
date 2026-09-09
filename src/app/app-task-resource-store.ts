@@ -1072,6 +1072,41 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
+  /**
+   * Advance a recovery hint, not Task state, before asynchronous inspection.
+   * The durable cursor lets later startup/reload passes reach the rest of the
+   * attention cohort even if this worker exits or a binding stays unavailable.
+   */
+  takeHandlerRecoveryTaskIds(limit = 512): string[] {
+    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
+    return transaction(this.db, () => {
+      type Cursor = { updated_at: number; task_id: string };
+      const raw = this.meta("handler_recovery_cursor");
+      const cursor = raw ? parseJson<Cursor | null>(raw) : null;
+      const query = this.db.prepare(
+        `SELECT task_id, updated_at FROM app_tasks
+         WHERE app_id = ? AND phase = 'attention'
+           AND (updated_at, task_id) > (?, ?)
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations c
+             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+           )
+         ORDER BY updated_at, task_id LIMIT ?`,
+      );
+      const read = (after: Cursor | null) =>
+        query.all(
+          this.appId,
+          after?.updated_at ?? Number.MIN_SAFE_INTEGER,
+          after?.task_id ?? "",
+          boundedLimit,
+        ) as Cursor[];
+      let rows = read(cursor);
+      if (rows.length === 0 && cursor) rows = read(null);
+      this.setMeta("handler_recovery_cursor", json(rows.length === boundedLimit ? rows.at(-1) : null));
+      return rows.map((row) => row.task_id);
+    });
+  }
+
   hasUnfinishedTasks(): boolean {
     return Boolean(
       this.db

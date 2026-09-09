@@ -400,8 +400,8 @@ export async function runTaskRecoveryWorker(input: {
 }): Promise<void> {
   return runTaskWorker({
     ...input,
-    run: async (bus) => {
-      await recoverInstalledAppTasks(bus);
+    run: async (bus, isDefinitionCurrent) => {
+      await recoverInstalledAppTasks(bus, isDefinitionCurrent);
       return [];
     },
   });
@@ -413,7 +413,7 @@ async function runTaskWorker(input: {
   appIds?: readonly string[];
   task?: TaskAttemptProcessRequest;
   definitionSource?: TaskAttemptProcessRequest["definitionSource"];
-  run(bus: EventBus): Promise<string[]>;
+  run(bus: EventBus, isDefinitionCurrent: () => boolean): Promise<string[]>;
 }): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
     throw new Error("Task worker mode is private to the parent runtime");
@@ -495,7 +495,13 @@ async function runTaskWorker(input: {
       syncTaskReadModels: false,
       agentNames,
     });
-    const dependentTaskIds = await input.run(bus);
+    // Immutable release paths carry the selected source identity. A recovery
+    // child cannot observe a parent reload through its own in-memory registry.
+    // Attempt workers deliberately ignore this fence and finish pinned work.
+    const dependentTaskIds = await input.run(
+      bus,
+      () => appSources.current()?.projectsRoot === activeSource.projectsRoot,
+    );
     await writeWorkerFrame({ kind: "result", dependentTaskIds });
   } catch (error) {
     await writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });

@@ -118,7 +118,7 @@ function fixture(agent: string, wait = false) {
   return { root, appDir, persistDir, db, store, bus, request, child: undefined as ChildProcess | undefined };
 }
 
-function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> {
+function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output: string) => void): Promise<unknown> {
   let diagnostics = "";
   const worker = recovery ? "runTaskRecoveryWorker" : "runTaskAttemptWorker";
   const workerOptions = {
@@ -153,6 +153,7 @@ function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> 
       });
       child.stdout?.on("data", (chunk) => {
         diagnostics += chunk.toString();
+        onOutput?.(diagnostics);
       });
       child.stderr?.on("data", (chunk) => {
         diagnostics += chunk.toString();
@@ -171,6 +172,66 @@ function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> 
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async recoverySourceRace() {
+    const f = fixture("owner");
+    const path = join(f.appDir, "agents", "owner", "workflows", "probe.ts");
+    rmSync(path);
+    await run(f);
+    const before = f.store.readTaskContext({ taskIds: ["work/one"] });
+    assert.equal(before.resources?.["work/one"]?.status.phase, "attention");
+    const gate = join(f.root, "release-inspection");
+    writeFileSync(
+      path,
+      `
+import { watch, existsSync } from "node:fs";
+await new Promise(resolve => {
+  const watcher = watch(${JSON.stringify(f.root)}, () => {
+    if (existsSync(${JSON.stringify(gate)})) { watcher.close(); resolve(); }
+  });
+  console.log("fixture-inspecting-restored-handler");
+});
+export const name = "probe";
+export const description = "An inspection paused across source replacement";
+export async function execute() { throw new Error("Recovery must not execute work"); }
+`,
+    );
+    const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
+    releases.activate(releases.stage());
+    // The next committed source removes the handler again while the child is
+    // awaiting inspection of the earlier, repaired release.
+    rmSync(path);
+    const replacement = releases.stage();
+    let replaced = false;
+    await run(f, true, (output) => {
+      if (replaced || !output.includes("fixture-inspecting-restored-handler")) return;
+      replaced = true;
+      releases.activate(replacement);
+      writeFileSync(gate, "continue");
+    });
+    assert.equal(replaced, true, "the race must cross the real workflow inspection");
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }), before);
+    assert.equal(
+      f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
+        ?.count,
+      0,
+    );
+    await run(f, true);
+    assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }), before);
+    writeFileSync(
+      path,
+      `export const name = "probe";
+export const description = "Currently repaired handler";
+export async function execute(ctx) {
+  return ctx.done("verified", { state: "converged", summary: "current handler ran", evidence: [] });
+}`,
+    );
+    releases.activate(releases.stage());
+    await run(f, true);
+    assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
+    await run(f);
+    assert.equal(f.store.readReceipt("work/one")?.summary, "current handler ran");
+  },
+
   async restoredHandler() {
     const f = fixture("owner");
     const path = join(f.appDir, "agents", "owner", "workflows", "probe.ts");
