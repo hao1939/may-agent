@@ -17,23 +17,52 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
-  applyCanonicalAgentResidueCleanup,
   attachLoadedAppTask,
-  beginCanonicalAgentResidueGuard,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
-  consumePersistedTerminalAgentResult,
-  finishCanonicalAgentResidueGuard,
-  installAppTaskRuntimes,
-  planCanonicalAgentResidueCleanup,
+  consumePersistedTerminalAgentResult as consumeTerminalTaskResult,
+  installAppTaskRuntimes as installCoreTaskRuntimes,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
-  rejectConvergedDirectAgentResidue,
   retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
+import { createTaskExecutionBackends } from "./composition/task-execution.js";
+import { createTaskSessionRecovery } from "./adapters/executors/session-recovery.js";
+import { createTaskAgentRunner } from "./adapters/executors/managed-agent.js";
+import type { TaskAgentRunner, TaskWorkflowRunner } from "./core/tasks/execution.js";
+import {
+  applyCanonicalAgentResidueCleanup,
+  beginCanonicalAgentResidueGuard,
+  finishCanonicalAgentResidueGuard,
+  planCanonicalAgentResidueCleanup,
+  rejectConvergedDirectAgentResidue,
+} from "./adapters/executors/agent-workspace.js";
+
+// These integration fixtures select the shipped backends explicitly.
+// Boundary/absence tests below call installCoreTaskRuntimes directly.
+function installAppTaskRuntimes(
+  opts: Parameters<typeof installCoreTaskRuntimes>[0] & Parameters<typeof createTaskExecutionBackends>[0],
+  recovery?: Parameters<typeof installCoreTaskRuntimes>[1],
+) {
+  const { manager, registerLocalAgent, drainPersistedBashProcessGroups, ...runtime } = opts;
+  return installCoreTaskRuntimes(
+    {
+      ...createTaskExecutionBackends({ manager, registerLocalAgent, drainPersistedBashProcessGroups, ...runtime }),
+      ...runtime,
+    },
+    recovery,
+  );
+}
+
+function consumePersistedTerminalAgentResult(
+  input: Omit<Parameters<typeof consumeTerminalTaskResult>[0], "result"> & { persistDir: string },
+) {
+  const sessions = createTaskSessionRecovery({ persistDir: input.persistDir, manager: {} as never, bus: eventBus() });
+  return consumeTerminalTaskResult({ ...input, result: sessions.result(input.sessionId) });
+}
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -143,6 +172,255 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it("keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const base = {
+    projectsRoot: f.projectsRoot,
+    projectRoot: f.root,
+    persistDir: join(f.root, "state"),
+    bus,
+    hostCapacity: new HostCapacity(2),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "workflow-boundary:1",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+    executors: {
+      fixture: async () => ({ state: "converged" as const, summary: "Independent work completed", evidence: [] }),
+    },
+  };
+  await installCoreTaskRuntimes(base);
+  const config = loadedTaskConfig(f);
+  for (const [id, selection] of [
+    ["work/workflow", { workflow: "verify" }],
+    ["work/independent", { executor: "fixture" }],
+  ] as const) {
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id,
+        parentId: "operations",
+        outcome: `Complete ${id}`,
+        acceptance: ["Verified"],
+        mode: "achieve",
+        ...selection,
+      },
+    });
+  }
+  const run = (taskId: string) =>
+    reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+  await run("work/workflow");
+  const waiting = config.resourceStore.readTask("work/workflow")!;
+  expect(waiting.status.phase).toBe("attention");
+  expect(waiting.status.summary).toContain("workflow runner is not installed");
+  const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
+  expect(attempts).toHaveLength(1);
+  await run("work/workflow");
+  expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toEqual(attempts);
+  await run("work/independent");
+  expect(config.resourceStore.readReceipt("work/independent")).not.toBeNull();
+
+  let calls = 0;
+  await installCoreTaskRuntimes({
+    ...base,
+    workflows: {
+      async inspect({ workflow }) {
+        expect(workflow).toBe("verify");
+        return { available: true, error: null, workspace: "shared" };
+      },
+      async execute(input) {
+        calls++;
+        expect(input.attempt.task.id).toBe("work/workflow");
+        expect(input.attempt.signal.aborted).toBeFalse();
+        expect((await input.taskRead.get("work/workflow"))?.status).toBe("running");
+        expect("resourceStore" in input.descriptor).toBeFalse();
+        expect("manager" in input.source).toBeFalse();
+        return {
+          handlerResult: { state: "converged", summary: "Verified by supplied runner", evidence: [], actions: [] },
+          runId: "fixture-run",
+        };
+      },
+    },
+  });
+  expect(config.resourceStore.readTask("work/workflow")?.status.phase).toBe("pending");
+  await run("work/workflow");
+  expect(calls).toBe(1);
+  expect(config.resourceStore.readReceipt("work/workflow")?.metadata.generation).toBe(waiting.metadata.generation);
+  expect(
+    Object.values(readTaskSnapshot(config).attempts ?? {}).find((a) => a.metadata.id === attempts[0]!.metadata.id),
+  ).toEqual(attempts[0]);
+});
+
+it("retains an App and exact agent work when its agent capability is removed, then restores it", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const base = {
+    projectRoot: f.root,
+    projectsRoot: f.projectsRoot,
+    persistDir: join(f.root, "state"),
+    bus,
+    hostCapacity: new HostCapacity(2),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "agent-boundary:1",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  };
+  let calls = 0;
+  const agents: TaskAgentRunner = {
+    available: () => true,
+    prepare: async () => true,
+    role: (agent) => ({ agent, instructions: "Fixture role" }),
+    snapshot: () => agents,
+    async execute(input) {
+      calls++;
+      expect(input.attempt.role.instructions).toBe("Fixture role");
+      expect(input.attempt.signal.aborted).toBeFalse();
+      expect("resourceStore" in input.descriptor).toBeFalse();
+      return {
+        handlerResult: { state: "converged", summary: "Current goal verified", evidence: [], actions: [] },
+        runId: null,
+      };
+    },
+  };
+  await installCoreTaskRuntimes({ ...base, agents });
+  const config = loadedTaskConfig(f);
+  const taskId = "work/agent-removed";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: {
+      id: taskId,
+      parentId: "operations",
+      outcome: "Keep accepted work",
+      acceptance: ["Verified"],
+      mode: "achieve",
+    },
+  });
+  const removed = await installCoreTaskRuntimes(base);
+  expect(removed.installed.map((app) => app.id)).toEqual(["sample"]);
+  const run = () =>
+    reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+  await run();
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
+  expect(attempts).toHaveLength(1);
+  expect(attempts[0]?.failureReason).toBe("HandlerUnavailable");
+  await run();
+  expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toEqual(attempts);
+  expect(calls).toBe(0);
+  await installCoreTaskRuntimes({ ...base, agents });
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
+  await run();
+  expect(config.resourceStore.readReceipt(taskId)?.metadata.generation).toBe(1);
+  expect(calls).toBe(1);
+});
+
+it("does not release an agent handoff until its required workflow verifier is available", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  let agentCalls = 0;
+  let verified = 0;
+  const agents: TaskAgentRunner = {
+    available: () => true,
+    prepare: async () => true,
+    snapshot: () => agents,
+    role: (agent) => ({ agent, instructions: "Fixture" }),
+    async execute() {
+      agentCalls++;
+      return {
+        handlerResult: { state: "converged", summary: "Agent proposes completion", evidence: [], actions: [] },
+        runId: null,
+      };
+    },
+  };
+  const workflows: TaskWorkflowRunner = {
+    async inspect() {
+      return {
+        available: true,
+        error: null,
+        workspace: "shared",
+        verifier: {
+          name: "required-proof",
+          sourcePath: "fixture",
+          verify: async () => {
+            verified++;
+            return { accepted: true, summary: "Postcondition verified", evidence: ["fixture:verified"] };
+          },
+        },
+      };
+    },
+    async execute() {
+      return {
+        handlerResult: { state: "needs-agent", summary: "Agent judgment required", evidence: [], actions: [] },
+        runId: "fixture-handoff",
+      };
+    },
+  };
+  const base = {
+    projectsRoot: f.projectsRoot,
+    projectRoot: f.root,
+    persistDir: join(f.root, "state"),
+    bus,
+    hostCapacity: new HostCapacity(2),
+    installControllers: false,
+    agents,
+    appRegistrySnapshot: {
+      id: "handoff-boundary:1",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  };
+  await installCoreTaskRuntimes({ ...base, workflows });
+  const config = loadedTaskConfig(f);
+  const taskId = "work/handoff";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: {
+      id: taskId,
+      parentId: "operations",
+      outcome: "Verify before completion",
+      acceptance: ["Required verifier passes"],
+      mode: "achieve",
+      workflow: "verify",
+    },
+  });
+  const run = () =>
+    reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+  await run();
+  await installCoreTaskRuntimes(base);
+  await run();
+  expect(agentCalls).toBe(0);
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  await installCoreTaskRuntimes(base);
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  expect(config.resourceStore.readReceipt(taskId)).toBeNull();
+  await installCoreTaskRuntimes({ ...base, workflows });
+  await run();
+  // A fresh workflow pass may re-establish its handoff after recovery.
+  if (!config.resourceStore.readReceipt(taskId)) await run();
+  expect(verified).toBe(1);
+  expect(agentCalls).toBe(1);
+  expect(config.resourceStore.readReceipt(taskId)?.acceptanceBasis.method).toBe("deterministic");
+});
 
 function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
   const tree = readTaskSnapshot(config);
@@ -2976,19 +3254,22 @@ describe("canonical App task runtime", () => {
 
     await installAppTaskRuntimes({
       ...options(f, bus),
-      agentDefinitions: new Map([
-        [
-          "sample-owner",
-          {
-            name: "sample-owner",
-            description: "Sample owner",
-            domain: "sample",
-            systemPrompt: "Use the immutable sample owner role.",
-            tools: [],
-            model: {},
-          } as never,
-        ],
-      ]),
+      agents: createTaskAgentRunner(
+        { manager: { hasAgent: () => true } as never },
+        new Map([
+          [
+            "sample-owner",
+            {
+              name: "sample-owner",
+              description: "Sample owner",
+              domain: "sample",
+              systemPrompt: "Use the immutable sample owner role.",
+              tools: [],
+              model: {},
+            } as never,
+          ],
+        ]),
+      ),
       executors: {
         reviewer: async (attempt) => {
           calls += 1;

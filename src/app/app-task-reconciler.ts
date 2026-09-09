@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename } from "node:path";
 import {
   isTypedConditionSubject as isTypedAppTaskConditionSubject,
   MIN_CONDITION_REVIEW_AFTER_MS as MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS,
@@ -27,8 +26,6 @@ import type {
   AppTaskTriggerEvent,
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
-import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
-import { readLatestCheckpoint, type CheckpointEntry } from "../lib/tools/checkpoint.js";
 import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
 import { normalizeTaskAgent } from "./app-agent-selection.js";
 import type { AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -562,120 +559,6 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
       (attempt) => attempt.taskId === taskId && (generation === undefined || attempt.taskGeneration === generation),
     )
     .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
-}
-
-function runtimePersistDirFromAppDir(appDir: string): string {
-  return join(dirname(dirname(appDir)), ".state");
-}
-
-function summarizeRecoveryTranscriptEntry(message: unknown): string | null {
-  if (!message || typeof message !== "object") return null;
-  const entry = message as Record<string, unknown>;
-  const role = typeof entry.role === "string" ? entry.role : "message";
-  const content = Array.isArray(entry.content)
-    ? entry.content
-        .map((part) => {
-          if (typeof part === "string") return part;
-          if (!part || typeof part !== "object") return "";
-          const text = (part as Record<string, unknown>).text;
-          return typeof text === "string" ? text : "";
-        })
-        .join(" ")
-    : typeof entry.content === "string"
-      ? entry.content
-      : "";
-  const normalized = content.replace(/\s+/g, " ").trim();
-  if (!normalized) return null;
-  const prefix =
-    role === "toolResult" ? `tool:${typeof entry.toolName === "string" ? entry.toolName : "unknown"}` : role;
-  return `${prefix} ${normalized}`.slice(0, 240);
-}
-
-function latestReceiptedTranscriptCheckpoint(messages: unknown[]): Pick<CheckpointEntry, "summary" | "data"> | null {
-  const calls = new Map<string, Pick<CheckpointEntry, "summary" | "data">>();
-  let latest: Pick<CheckpointEntry, "summary" | "data"> | null = null;
-  for (const message of messages) {
-    if (!isRecord(message)) continue;
-    if (message.role === "assistant" && Array.isArray(message.content)) {
-      for (const block of message.content) {
-        if (!isRecord(block) || block.type !== "toolCall" || block.name !== "checkpoint") continue;
-        if (typeof block.id !== "string" || !isRecord(block.arguments)) continue;
-        const summary = block.arguments.summary;
-        const data = block.arguments.data;
-        if (typeof summary !== "string" || !summary.trim() || (data !== undefined && !isRecord(data))) continue;
-        calls.set(block.id, { summary: summary.trim(), data: data ?? {} });
-      }
-      continue;
-    }
-    if (
-      message.role === "toolResult" &&
-      typeof message.toolCallId === "string" &&
-      message.isError !== true &&
-      (message.toolName === undefined || message.toolName === "checkpoint")
-    ) {
-      const call = calls.get(message.toolCallId);
-      if (call) latest = call;
-    }
-  }
-  return latest;
-}
-
-function checkpointRecoveryEvidence(
-  checkpointPath: string,
-  transcriptPath: string,
-  checkpoint: CheckpointEntry | null,
-  transcriptCheckpoint: Pick<CheckpointEntry, "summary" | "data"> | null,
-  sessionId: string,
-): string {
-  if (checkpoint) {
-    return `Recovered latest durable checkpoint: ${checkpointPath} step=${checkpoint.step} summary=${checkpoint.summary} data=${JSON.stringify(stableValue(checkpoint.data))}`;
-  }
-  if (transcriptCheckpoint) {
-    return `Recovered latest receipted transcript checkpoint: ${transcriptPath} summary=${transcriptCheckpoint.summary} data=${JSON.stringify(stableValue(transcriptCheckpoint.data))}`;
-  }
-  return `Recovered durable checkpoint: absent for session ${sessionId}; no matching successful checkpoint receipt in ${transcriptPath}`;
-}
-
-function buildRecoveredSessionHandoff(
-  config: AppTaskContext,
-  attempt: AppTaskAttempt | undefined,
-): AppTaskClaim["handoff"] | undefined {
-  if (!attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
-    return undefined;
-  }
-  const persistDir = runtimePersistDirFromAppDir(config.appDir);
-  const interruptedSessionPath = sessionDir(persistDir, attempt.sessionId);
-  const metaPath = join(interruptedSessionPath, "meta.json");
-  const meta = readSessionMeta(persistDir, attempt.sessionId);
-  const resultPath = join(interruptedSessionPath, "result.json");
-  const transcriptPath = join(interruptedSessionPath, "session.jsonl");
-  const sessionLabel = isManagedAgentHandler(attempt.handler) ? "agent session" : `${attempt.handler} session`;
-  const checkpointPath = join(persistDir, "checkpoints", `${attempt.sessionId}.jsonl`);
-  const checkpoint = readLatestCheckpoint(persistDir, attempt.sessionId);
-  const transcriptMessages = existsSync(transcriptPath) ? readSessionMessages(persistDir, attempt.sessionId) : [];
-  const transcriptCheckpoint = checkpoint ? null : latestReceiptedTranscriptCheckpoint(transcriptMessages);
-  const evidence = [
-    `Recovered interrupted ${sessionLabel} path: ${interruptedSessionPath}`,
-    `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
-    `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
-    `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
-    checkpointRecoveryEvidence(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId),
-  ];
-  if (transcriptMessages.length > 0) {
-    for (const snippet of transcriptMessages
-      .map(summarizeRecoveryTranscriptEntry)
-      .filter((entry): entry is string => Boolean(entry))
-      .slice(-3)) {
-      evidence.push(`Recovered transcript snippet: ${snippet}`);
-    }
-  }
-  return {
-    reason: "recovered-session",
-    summary:
-      meta?.error?.trim() ||
-      `Previous runtime ${sessionLabel} ${attempt.sessionId} was interrupted during recovery before a task decision was persisted`,
-    evidence,
-  };
 }
 
 function isAgentHandoffReason(reason: string | undefined): boolean {
@@ -2685,6 +2568,7 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
   const snapshotRevision = config.resourceStore.revision();
@@ -2784,7 +2668,7 @@ export function claimObservedAppTask(
   const agentHandoff = needsAgentHandoff(tree, resource) && isManagedAgentHandler(handler, agent);
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
   const handoffAttempt = agentHandoff ? latestAttempt : undefined;
-  const recoveredSessionHandoff = !agentHandoff ? buildRecoveredSessionHandoff(config, latestAttempt) : undefined;
+  const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {
     const now = new Date().toISOString();
