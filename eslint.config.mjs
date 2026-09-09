@@ -51,12 +51,18 @@ export default [
             {
               group: [
                 "bun:sqlite",
+                "**/event-bus",
                 "**/event-bus.*",
+                "**/requests",
                 "**/requests.*",
+                "**/persistence",
                 "**/persistence.*",
                 "**/app-task*",
+                "**/metrics",
                 "**/metrics.*",
+                "**/cron",
                 "**/cron.*",
+                "**/manager",
                 "**/manager.*",
               ],
               message: "Bounded agent execution must not depend on durable Host orchestration.",
@@ -74,7 +80,7 @@ export default [
         {
           patterns: [
             {
-              group: ["**/app-task-runtime.*"],
+              group: ["**/app-task-runtime", "**/app-task-runtime.*"],
               message: "Use the App Task capability, not runtime internals.",
             },
           ],
