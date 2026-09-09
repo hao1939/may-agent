@@ -27,6 +27,8 @@ export interface AgentLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   cronEnabled: boolean;
+  /** Only the owning daemon attaches event handlers; timers are selected separately. */
+  activateTriggers?: boolean;
   /** Load only these exact agents in a short-lived execution worker. */
   agentNames?: readonly string[];
 }

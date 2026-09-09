@@ -10,7 +10,7 @@ checks. Directory names alone do not indicate test cost or isolation.
 | Task prompt/catalog projection | `app-task-runtime-policy.test.ts`, with no disk setup | Runtime tests verify persisted waits and actual agent inputs |
 | Workflow execution allowances, cancellation and bounded effects | `src/lib/workflow-tool.test.ts` | `test/integration/workflow-tool.test.ts` owns tool dispatch, session reuse and steering; daemon discovery checks persisted runs |
 | Metrics and alert transitions | `test/integration/metrics.test.ts` | E4 proves event ingress, handler registration and persistent alert recovery |
-| Startup and recovery order | `app-runtime.test.ts` and `cron-startup.test.ts` call isolated production-code probes | Real daemon/socket scenarios; registry and Task runtime tests own atomic publication/rollback |
+| Startup and recovery order | `app-runtime.test.ts` and `composition/background-startup.test.ts` call isolated production-code probes; `core/tasks/startup-recovery.test.ts` owns session eligibility | `task-startup-no-schedules.test.ts` runs real daemon/socket/worker restart; registry and Task runtime tests own atomic publication/rollback |
 | Shutdown decisions | `test/integration/shutdown.test.ts` calls production lifecycle/signal handlers with intercepted process effects | Real daemon teardown and process lifetime tests |
 | Browser rendering | E8 executes served `chat.js`, including raw/Markdown streaming and safe fallback | Same browser checks the project-comment HTTP journey |
 | Bounded execution imports | ESLint restricted imports | SDK exports, execution results and shipped artifacts retain their own tests |

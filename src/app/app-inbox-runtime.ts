@@ -126,6 +126,8 @@ export type StartAppInboxRuntimeOptions = {
   /** Maximum request decisions admitted to shared Host capacity at once. */
   maxConcurrentRequests?: number;
   scanIntervalMs?: number;
+  /** Select timed App publications only; admission, observers and recovery remain active. */
+  schedulesEnabled?: boolean;
   leaseMs?: number;
   retryAfterMs?: number;
   now?: () => number;
@@ -831,7 +833,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const scanNow = () => {
     if (closed || !started) return;
     const currentTime = now();
-    for (const { definition } of loaded) {
+    for (const { definition } of options.schedulesEnabled === false ? [] : loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
         if (configuredSchedule.enabled === false) continue;
         const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);

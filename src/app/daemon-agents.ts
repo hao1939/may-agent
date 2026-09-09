@@ -53,7 +53,7 @@ export async function prepareDaemonAgents(opts: {
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
   /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
-  taskRuntimeMode?: "controllers" | "manual" | "none";
+  taskRuntimeMode: "controllers" | "manual" | "none";
   executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
   executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
   taskAppIds?: readonly string[];
@@ -75,6 +75,7 @@ export async function prepareDaemonAgents(opts: {
     manager: opts.manager,
     bus: opts.bus,
     cronEnabled: opts.cronEnabled,
+    activateTriggers: opts.taskRuntimeMode === "controllers",
     ...(opts.agentNames ? { agentNames: opts.agentNames } : {}),
   };
 
@@ -169,7 +170,7 @@ export async function prepareDaemonAgents(opts: {
 
   let appTaskOptions: AppTaskRuntimeOptions | undefined;
   let startAppTaskControllers = () => {};
-  const taskRuntimeMode = opts.taskRuntimeMode ?? (opts.cronEnabled ? "controllers" : "none");
+  const taskRuntimeMode = opts.taskRuntimeMode;
   if (taskRuntimeMode !== "none") {
     let started = false;
     let openStartGate = () => {};
@@ -233,8 +234,7 @@ export async function prepareDaemonAgents(opts: {
     }
   }
 
-  // Cron subscribe + start is handled by cron-startup.ts in one centralized
-  // loop after all crons (agent-level and app-level) are created and loaded.
+  // Producer activation is separate from Task recovery and controller startup.
 
   let failures = 0;
   const heartbeatFiles = autoHeartbeats

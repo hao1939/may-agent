@@ -18,7 +18,7 @@ import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { readAppConversationResource } from "./conversations/store.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
-import { startCronRuntime } from "./cron-startup.js";
+import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
@@ -41,7 +41,7 @@ import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./task-admission-process.js";
-import { prepareAgentGeneration } from "./agent-loader.js";
+import { prepareAgentGeneration, startAgentTriggers } from "./agent-loader.js";
 import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
@@ -147,6 +147,7 @@ export async function runAppRuntime(opts: {
     envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
+  const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
 
   const bus = new EventBus();
   const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
@@ -218,6 +219,7 @@ export async function runAppRuntime(opts: {
     manager,
     bus,
     cronEnabled: CRON_ENABLED,
+    taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
@@ -269,6 +271,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     hostCapacity,
     maxConcurrentRequests: configuredHostConcurrency,
+    schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     resolveRequest: createAppRequestAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
     controlTask: async ({ control }) => {
@@ -528,15 +531,17 @@ export async function runAppRuntime(opts: {
   });
 
   await appInboxRuntime.start();
-  if (CRON_ENABLED) {
-    await startCronRuntime({
+  if (backgroundEnabled) {
+    startBackgroundRuntime({
       manager,
       bus,
-      loaderOpts,
+      projectsRoot: loaderOpts.projectsRoot,
+      persistDir: loaderOpts.persistDir,
       // App work begins after recovery succeeds or yields to bounded retry;
       // neither path is allowed to hold the already-open interfaces.
       onTaskRecoverySettled: startAppTaskControllers,
     });
+    await startAgentTriggers(loaderOpts);
   }
 
   if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {

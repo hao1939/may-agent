@@ -1,15 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { Type } from "@earendil-works/pi-ai";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { PersistedSession } from "../lib/persistence";
-import { shouldResumeStartupSession } from "./cron-startup";
-import { AppTaskResourceStore } from "./app-task-resource-store";
-import { closeDb, getDb } from "../lib/requests";
+import type { PersistedSession } from "../../../lib/persistence";
+import { shouldResumeStartupSession } from "./startup-recovery.js";
+import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { closeDb, getDb } from "../../../lib/requests";
 
 function session(appDir: string, source: string, recoveryOwner?: string): PersistedSession {
   return {
@@ -24,22 +22,7 @@ function session(appDir: string, source: string, recoveryOwner?: string): Persis
   };
 }
 
-describe("cron startup recovery", () => {
-  it.each(["resolve", "reject"])(
-    "keeps startup available while Task recovery is pending (%s)",
-    async (mode) => {
-      const { fileURLToPath } = await import("node:url");
-      const fixture = fileURLToPath(new URL("../../test/fixtures/cron-startup.ts", import.meta.url));
-      const { stdout } = await promisify(execFile)(
-        process.execPath,
-        [fixture, mode],
-        { timeout: 5_000 },
-      );
-      expect(stdout).toContain("cron-startup-contract-ok");
-    },
-    10_000,
-  );
-
+describe("Task startup session recovery", () => {
   it("never resumes task-bound execution outside bounded Task recovery", () => {
     const appDir = "/fixture/sample.app";
     const persisted = session(appDir, "app-task-owner");

@@ -19,6 +19,7 @@
  */
 
 import type { Cron } from "./cron.js";
+import { log } from "../lib/log.js";
 import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
   loadAgents as loadAgentsFromRegistry,
@@ -31,7 +32,7 @@ import {
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
 import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
-import { activateAgentCrons } from "./cron-activation.js";
+import { activateAgentCrons } from "./adapters/producers/agent-triggers.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export {
@@ -86,7 +87,7 @@ function publishResources(opts: AgentLoaderOptions, generation: PreparedAgentGen
       if (existing) existing.push(...cleanups);
       else agentCleanups.set(name, [...cleanups]);
     }
-    if (opts.cronEnabled) activateAgentCrons(generation.crons, opts.bus);
+    if (opts.activateTriggers) activateAgentCrons(generation.crons, opts.bus, opts.cronEnabled);
   } catch (error) {
     discardAgentGeneration(generation);
     agentCrons.clear();
@@ -193,4 +194,31 @@ export async function loadAgentHandlers(
   },
 ): Promise<{ registered: string[]; errors: string[] }> {
   return loadHandlersForAgentCrons({ ...opts, agentCrons });
+}
+
+/** Attach optional legacy producers; Task startup is owned by composition. */
+export async function startAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
+  const { bus } = loaderOpts;
+  const handlerResult = await loadAgentHandlers({
+    ...loaderOpts,
+    getSessionId: (agentName: string) => getAgentSessionId(agentName) ?? null,
+  });
+  if (handlerResult.registered.length > 0) {
+    bus.emit({
+      type: "info",
+      message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}`,
+    });
+  }
+  if (handlerResult.errors.length > 0) {
+    bus.emit({
+      type: "info",
+      message: `[handlers] ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}`,
+    });
+    for (const err of handlerResult.errors) {
+      const handlerName = err.match(/"(\w[\w-]*)\.(js|ts)"/)?.[1] ?? err.match(/"([^"]+)"/)?.[1] ?? "unknown";
+      log("warn", `[handlers] Failed to load handler "${handlerName}": ${err}`);
+    }
+  }
+
+  activateAgentCrons(getAgentCrons(), bus, loaderOpts.cronEnabled);
 }

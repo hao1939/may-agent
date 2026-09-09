@@ -1881,6 +1881,59 @@ describe("App inbox runtime", () => {
     expect(statuses).toHaveLength(1);
   });
 
+  it("disables only schedule publication, retaining event admission and observers across reload", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      readFileSync(appPath, "utf8").replace(
+        "subscriptions: [{",
+        `
+      schedules: [
+        { id: "fact", intervalMs: 1000, event: { type: "sample.scheduled", data: {} } },
+        { id: "input", intervalMs: 1000, input: { kind: "probe", data: { value: "scheduled" } } }
+      ],
+      observers: [{
+        id: "observer", intervalMs: 1000,
+        async run() { return [{ type: "sample.observed", data: {} }]; }
+      }],
+      subscriptions: [{`,
+      ),
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const observed: string[] = [];
+    bus.subscribe((event) => {
+      observed.push(event.type);
+    });
+    let currentTime = 1000;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      schedulesEnabled: false,
+      scanIntervalMs: 60_000,
+      now: () => currentTime,
+      observerContext: () => ({}) as never,
+    });
+    for (let cycle = 0; cycle < 2; cycle++) {
+      if (cycle) await runtime.reload();
+      currentTime += 1000;
+      runtime.scanNow();
+      bus.emit({
+        type: "provider.changed",
+        source: "test",
+        owner: "app:evaluation",
+        target: { project: "evaluation" },
+        data: { project: "evaluation", value: "external-" + cycle },
+      } as any);
+      await waitUntil(() => task.attached.length === cycle + 1);
+    }
+    expect(observed).toContain("sample.observed");
+    expect(observed).not.toContain("sample.scheduled");
+    expect(observed).not.toContain("app.input.requested");
+  });
+
   it("publishes event schedules as record-only facts", async () => {
     const appPath = join(root, "evaluation.app", "app.js");
     const source = readFileSync(appPath, "utf8");

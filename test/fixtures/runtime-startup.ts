@@ -12,14 +12,17 @@ import { parseAppArgs } from "../../src/app/app-args.js";
 import * as daemon from "../../src/app/daemon.js";
 import * as inbox from "../../src/app/app-inbox-runtime.js";
 import * as interfaces from "../../src/app/interface-startup.js";
+import * as background from "../../src/app/composition/background-startup.js";
 
 const actualDaemon = { ...daemon };
 const actualInbox = { ...inbox };
 const actualInterfaces = { ...interfaces };
+const actualBackground = { ...background };
 
 const root = mkdtempSync(join(tmpdir(), "may-startup-"));
 const mode = process.argv[2];
 const tty = mode === "tty";
+const schedulesEnabled = mode === "headless";
 const order: string[] = [];
 let runtime: inbox.AppInboxRuntime | undefined;
 let registry: Parameters<typeof inbox.startAppInboxRuntime>[0]["registry"] | undefined;
@@ -34,6 +37,8 @@ process.env.MAY_DAEMON_QUIET = "1";
 mock.module("../../src/app/daemon.js", () => ({
   ...actualDaemon,
   prepareDaemonAgents: async (options: Parameters<typeof daemon.prepareDaemonAgents>[0]) => {
+    assert.equal(options.taskRuntimeMode, "controllers");
+    assert.equal(options.cronEnabled, schedulesEnabled);
     sharedCapacity = options.hostCapacity;
     return actualDaemon.prepareDaemonAgents(options);
   },
@@ -69,6 +74,7 @@ mock.module("../../src/app/app-inbox-runtime.js", () => ({
   startAppInboxRuntime: async (options: Parameters<typeof inbox.startAppInboxRuntime>[0]) => {
     registry = options.registry;
     assert.equal(options.deferStart, true);
+    assert.equal(options.schedulesEnabled, schedulesEnabled);
     assert.equal(options.maxConcurrentRequests, 2);
     assert.equal(options.hostCapacity, sharedCapacity);
     const first = sharedCapacity!.tryAcquireForeground();
@@ -102,11 +108,12 @@ mock.module("../../src/app/interface-startup.js", () => ({
     return socket;
   },
 }));
-// Cron recovery has its own pending/rejected-recovery probe. Here observe the
+// Background recovery has its own pending/rejected-recovery probe. Here observe the
 // ordering of the caller without starting recurring timers or Task workers.
-mock.module("../../src/app/cron-startup.js", () => ({
-  startCronRuntime: async () => {
-    order.push("cron");
+mock.module("../../src/app/composition/background-startup.js", () => ({
+  ...actualBackground,
+  startBackgroundRuntime: () => {
+    order.push("background");
   },
 }));
 
@@ -131,7 +138,10 @@ try {
   writeFileSync(appPath, appSource("before"));
   const { runAppRuntime } = await import("../../src/app/app-runtime.js");
   await runAppRuntime({
-    appArgs: parseAppArgs(["bun", "may", "--console", "--socket", "--telegram", ...(tty ? [] : ["--cron"])], {}),
+    appArgs: parseAppArgs(
+      ["bun", "may", "--console", "--socket", "--telegram", ...(schedulesEnabled ? ["--cron"] : [])],
+      {},
+    ),
     models: { fixture: fakeModel() },
     projectRoot: root,
     agentsRoot: join(root, "agents"),
@@ -146,8 +156,8 @@ try {
   assert.deepEqual(
     order,
     tty
-      ? ["console", "routes", "telegram", "ingress", "recovered-work", "interactive"]
-      : ["routes", "telegram", "ingress", "recovered-work", "cron", "keepalive"],
+      ? ["console", "routes", "telegram", "ingress", "recovered-work", "background", "interactive"]
+      : ["routes", "telegram", "ingress", "recovered-work", "background", "keepalive"],
   );
 
   // The caller's actual reload callback, not a source-string assertion. The

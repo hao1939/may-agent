@@ -383,7 +383,7 @@ export class Cron {
 
   /**
    * Rebuild event subscriptions from the current entries list.
-   * Public so that cron-startup.ts can call it after subscribeToBus to
+   * Public so that producer activation can call it after subscribeToBus to
    * ensure the subscription map matches the final entry list.
    *
    * Root-cause context (evaluation-aftermath-session-dispatch-fix):

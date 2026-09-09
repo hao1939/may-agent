@@ -1,6 +1,6 @@
-import type { CronEntry } from "../lib/cron-tool.js";
-import type { Cron } from "./cron.js";
-import type { EventBus } from "./event-bus.js";
+import type { CronEntry } from "../../../lib/cron-tool.js";
+import type { Cron } from "../../cron.js";
+import type { EventBus } from "../../event-bus.js";
 
 function handlerLabel(entry: CronEntry): string {
   if (typeof entry.handler === "string") return entry.handler;
@@ -9,7 +9,7 @@ function handlerLabel(entry: CronEntry): string {
 }
 
 /** Activate a prepared scheduler generation only after its definitions commit. */
-export function activateAgentCrons(crons: ReadonlyMap<string, Cron>, bus: EventBus): void {
+export function activateAgentCrons(crons: ReadonlyMap<string, Cron>, bus: EventBus, timersEnabled: boolean): void {
   for (const [name, cron] of crons) {
     cron.subscribeToBus(bus);
     cron.rebuildEventSubscriptions();
@@ -27,6 +27,10 @@ export function activateAgentCrons(crons: ReadonlyMap<string, Cron>, bus: EventB
       bus.emit({ type: "info", message: `[cron] ${entry.name} fired (handler -> ${handlerLabel(entry)})` });
     });
 
+    if (!timersEnabled) {
+      cron.stop(); // Timers stop; declared event routes remain attached.
+      continue;
+    }
     const entries = cron.getEntries();
     if (entries.length === 0) continue;
     bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });

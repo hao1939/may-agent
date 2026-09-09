@@ -1,8 +1,35 @@
-# Host App loading and admission
+# Host code boundaries
 
-Start with `runAppRuntime()` in `app-runtime.ts`. It connects definitions,
-admission, Task execution, and interfaces. These files implement the Host;
-installed Apps supply domain meaning through `@may-agent/sdk`.
+The Host contains both stable mechanics and replaceable implementations.
+"External" means outside the core, not necessarily another package or process.
+
+| Home | Responsibility | Current entrypoint |
+| --- | --- | --- |
+| `core/` | Identity, authority, and recovery rules shared by every capability | `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
+| `adapters/` | Concrete capability implementations | `producers/agent-triggers.ts` attaches legacy event handlers and optional timers |
+| `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts` starts recovery independently of optional schedules |
+
+This layout is being applied incrementally. `app-runtime.ts` remains the main
+composition root; Task stores/controllers, event admission, and concrete
+executors still have mixed/flat locations. Do not mistake those remaining files
+for completed separation or move the whole Cron engine into core.
+
+Core depends on contracts and foundational utilities, not concrete adapters.
+Composition may import both sides. Adapters receive the narrow capabilities
+they need; they do not become another Task state or recovery authority.
+
+To extend a supported capability:
+
+1. Read its existing SDK/control or Host-private contract.
+2. Add a focused implementation and colocated tests in its capability family.
+3. Register it explicitly in composition, including activation and cleanup.
+4. Test behavior when it fails or is absent; leave core correctness rules alone.
+
+App-owned policy, observers, and schedules stay in the owning App declaration.
+Public App contracts live in `packages/sdk`; client contracts in
+`packages/control`. Do not add a plugin loader, a second manifest, or a universal
+component interface. Add subdirectories as real boundaries are separated, not
+as empty placeholders.
 
 ## Reading order
 
@@ -51,6 +78,6 @@ integration point, not a new public API. Broad Task-intent admission runs in
 `task-admission-process.ts`; exact wakes and request admission have bounded
 in-process paths. Task execution uses `task-attempt-process.ts` separately.
 
-Code navigation lives here; the canonical design remains
-[Host and App Boundary](../../../may-agent.app/docs/2a-design/system-boundary.md)
-and [Events and Task Admission](../../../may-agent.app/docs/2a-design/events.md).
+Canonical design remains in the sibling `may-agent.app/docs`: start with
+`2a-design/system-boundary.md` and `proposals/task-runtime-organization.md`.
+This file is a source navigation guide, not a second system design.

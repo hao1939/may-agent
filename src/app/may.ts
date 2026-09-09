@@ -55,7 +55,7 @@ Options:
   --oneshot                  Run one task and exit
   --console, --chat          Enable the console interface
   --telegram                 Enable the Telegram interface
-  --cron                     Enable scheduled jobs
+  --cron                     Enable optional schedules (Tasks run without it)
   --socket                   Enable the daemon socket
   --web                      Enable the web interface (alone: web-only mode)
   --status                   Print runtime status
