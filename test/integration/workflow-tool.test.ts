@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkflowRunner, createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
+import { closeDb } from "../../src/lib/requests.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  closeDb(join(testDir, "state"));
   if (existsSync(testDir)) {
     rmSync(testDir, { recursive: true, force: true });
   }
@@ -63,7 +65,7 @@ afterEach(() => {
 
 describe("workflow tool: list", () => {
   it("returns empty list when no workflows exist", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "list" });
@@ -76,7 +78,7 @@ describe("workflow tool: list", () => {
   });
 
   it("returns empty list when directory doesn't exist", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir: join(testDir, "nonexistent"),
@@ -111,7 +113,7 @@ describe("workflow tool: list", () => {
     // Non-.ts file should be ignored
     writeFileSync(join(workflowDir, "README.md"), "ignored", "utf-8");
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "list" });
@@ -130,7 +132,7 @@ describe("workflow tool: list", () => {
   it("handles workflow load errors gracefully", async () => {
     writeWorkflow("broken.ts", `export const foo = "bar";`); // missing name/execute
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "list" });
@@ -152,7 +154,7 @@ describe("workflow tool: list", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "list" });
@@ -191,7 +193,7 @@ describe("workflow tool: list", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
     const listed = JSON.parse((await tool.execute("tc1", { action: "list" })).content[0].text) as WorkflowToolResult;
     expect(listed.type).toBe("list");
@@ -222,7 +224,7 @@ describe("workflow tool: typed execution", () => {
       export async function execute() { return new Promise(() => {}); }
     `,
     );
-    const persistDir = mkdtempSync(join(tmpdir(), "may-test-"));
+    const persistDir = join(testDir, "state");
     const manager = new SubagentManager({ persistDir });
     const runner = createWorkflowRunner({
       manager,
@@ -258,7 +260,7 @@ describe("workflow tool: typed execution", () => {
       export async function execute(ctx) { return ctx.done("typed result", { disposition: "converged" }); }
     `,
     );
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const runner = createWorkflowRunner({ manager, workflowDir });
     const tool = createWorkflowTool({ manager, workflowDir });
 
@@ -327,7 +329,7 @@ describe("workflow tool: typed execution", () => {
 
 describe("workflow tool: run", () => {
   it("returns error when workflow not found", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -355,7 +357,7 @@ describe("workflow tool: run", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -384,7 +386,7 @@ describe("workflow tool: run", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -414,7 +416,7 @@ describe("workflow tool: run", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -445,7 +447,7 @@ describe("workflow tool: run", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -476,7 +478,7 @@ describe("workflow tool: run", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -512,7 +514,7 @@ describe("workflow tool: run", () => {
 
     const lifecycleEvents: WorkflowEvent[] = [];
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -568,7 +570,7 @@ describe("workflow tool: run", () => {
     );
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -641,7 +643,7 @@ describe("workflow tool: run", () => {
     );
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -721,7 +723,7 @@ describe("workflow tool: run", () => {
     );
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -788,7 +790,7 @@ describe("workflow tool: agent name validation", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "bad-agent", task: "test" });
@@ -813,7 +815,7 @@ describe("workflow tool: agent name validation", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "bad-agent-str", task: "test" });
@@ -1114,14 +1116,14 @@ describe("workflow tool: structured agent results", () => {
 
 describe("workflow tool: steering", () => {
   it("steer() returns false when no workflow is running", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     expect(tool.steer("stop")).toBe(false);
   });
 
   it("isRunning is false when no workflow is active", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     expect(tool.isRunning).toBe(false);
@@ -1140,7 +1142,7 @@ describe("workflow tool: steering", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     await tool.execute("tc1", {
@@ -1165,7 +1167,7 @@ describe("workflow tool: steering", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     await tool.execute("tc1", {
@@ -1190,7 +1192,7 @@ describe("workflow tool: steering", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     await tool.execute("tc1", {
@@ -1221,7 +1223,7 @@ describe("workflow tool: steering", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -1287,7 +1289,7 @@ describe("workflow tool: steering", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -1354,7 +1356,7 @@ describe("workflow tool: steering", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -1403,7 +1405,7 @@ describe("workflow tool: steering", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const tool = createWorkflowTool({
       manager,
       workflowDir,

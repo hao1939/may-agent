@@ -44,13 +44,6 @@ describe("P113 Bash Resource Caps", () => {
     expect(timeouts).toEqual([expected]);
   });
 
-  it("normal commands complete within default timeout", async () => {
-    // Use real default timeout — normal commands finish instantly
-    const tool = createBashTool("/tmp");
-    const result = await tool.execute("id", { command: "echo 'P113 resource caps working'" });
-    expect(result.content[0].text).toContain("P113 resource caps working");
-  });
-
   it("does not let a background descendant hold the tool call open", async () => {
     const tool = createBashTool("/tmp", { defaultTimeout: 10 });
     const startedAt = Date.now();

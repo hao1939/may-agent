@@ -11,6 +11,7 @@ type AppTaskTestContextInput = {
   maxConcurrent: number;
   appId?: string;
   databasePath?: string;
+  resourceStore?: AppTaskResourceStore;
   tree?: TaskTree;
   lifecycle?: "active" | "paused";
 };
@@ -29,10 +30,11 @@ export function appTaskTestContext(input: AppTaskTestContextInput): AppTaskConte
   tree.groups ??= {};
   tree.resources ??= {};
 
-  const store = AppTaskResourceStore.openStandalone(
-    input.databasePath ?? join(input.appDir, `task-test-${Date.now()}-${Math.random().toString(36).slice(2)}.sqlite`),
-    appId,
-  );
+  const store = input.resourceStore ??
+    AppTaskResourceStore.openStandalone(
+      input.databasePath ?? join(input.appDir, `task-test-${Date.now()}-${Math.random().toString(36).slice(2)}.sqlite`),
+      appId,
+    );
   store.bootstrapSnapshot(tree, `test:${Date.now()}:${Math.random().toString(36).slice(2)}`);
   return appTaskContext({
     appDir: input.appDir,

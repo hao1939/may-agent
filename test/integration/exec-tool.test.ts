@@ -20,11 +20,6 @@ describe("createBashTool", () => {
     expect(result.content[0].text).toBe("(no output)");
   });
 
-  it("respects timeout parameter", async () => {
-    const tool = createBashTool("/tmp");
-    await expect(tool.execute("id", { command: "sleep 30", timeout: 1 })).rejects.toThrow(/timed out/);
-  });
-
   it("captures stderr in output", async () => {
     const tool = createBashTool("/tmp");
     await expect(tool.execute("id", { command: "echo error >&2; exit 1" })).rejects.toThrow(/error/);

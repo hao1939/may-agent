@@ -1,83 +1,27 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 
-describe("app runtime startup order", () => {
-  it("attaches the Telegram Conversation adapter before external ingress and cron work", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    const admission = source.indexOf("telegramBot = TELEGRAM_ENABLED");
-    const externalIngress = source.indexOf("await startInterfaceRuntime(");
-    const cronStartup = source.indexOf("await startCronRuntime(");
-
-    expect(admission).toBeGreaterThan(-1);
-    expect(admission).toBeLessThan(externalIngress);
-    expect(admission).toBeLessThan(cronStartup);
-  });
-
-  it("installs durable App routes before ingress but defers recovered work until interfaces are ready", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    const appInbox = source.indexOf("await startAppInboxRuntime({");
-    const externalIngress = source.indexOf("await startInterfaceRuntime(");
-    const recoveredWork = source.indexOf("await appInboxRuntime.start()");
-
-    expect(appInbox).toBeGreaterThan(-1);
-    expect(appInbox).toBeLessThan(externalIngress);
-    expect(source).toContain("deferStart: true");
-    expect(recoveredWork).toBeGreaterThan(externalIngress);
-    expect(source).not.toContain("appInboxRuntime = CRON_ENABLED");
-  });
-
-  it("does not construct a parallel persistent May chat session", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).not.toContain("ChatSession");
-    expect(source).not.toContain("chatSession");
-    expect(source).not.toContain("getSessionId: () => taskSessionId");
-    expect(source).toContain("startInitialTask");
-  });
-
-  it("attaches the in-process Console only for a real TTY", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY");
-    expect(source).toContain("if (interactiveConsole) {");
-    expect(source).toContain("interactiveMode: interactiveConsole");
-    expect(source).toContain("else if (interactiveConsole)");
-  });
+describe("app runtime startup", () => {
+  it.each(["headless", "tty"])(
+    "observes startup and explicit reload through real runtime (%s)",
+    async (mode) => {
+      const { stdout } = await promisify(execFile)(
+        process.execPath,
+        [new URL("../../test/fixtures/runtime-startup.ts", import.meta.url).pathname, mode],
+        { timeout: 15_000 },
+      );
+      expect(stdout).toContain("startup-contract-ok");
+    },
+    20_000,
+  );
 
   it("keeps the production daemon on background and socket interfaces", () => {
     const entrypoint = readFileSync(new URL("../../container/entrypoint.sh", import.meta.url), "utf8");
     const defaultArgs = entrypoint.match(/export MAY_ARGS="\$\{MAY_ARGS:-(.*?)\}"/)?.[1] ?? "";
     expect(defaultArgs.trim()).toBe("--cron --telegram --socket");
-  });
-
-  it("does not couple Task completion to a transport delivery gate", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).not.toContain("enableDelivery");
-    expect(source).not.toContain("setEventPublisher");
-  });
-
-  it("uses configured Host capacity without a separate App-agent execution path", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("const hostCapacity = new HostCapacity");
-    expect(source).toContain("process.env.MAY_HOST_MAX_CONCURRENT ?? 4");
-    expect(source).toContain("maxConcurrentRequests: configuredHostConcurrency");
-    expect(source).not.toContain("runOwner:");
-    expect(source).not.toContain("createManagerAppOwnerInvoker");
-  });
-
-  it("publishes source, inbox, and canonical task routes in one registry transaction", () => {
-    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("appTasks.publishGeneration({");
-    expect(source).toContain("appSources.activate(candidate);");
-    expect(source).toContain("commit();");
-  });
-
-  it("reloads App generations explicitly instead of polling every source file", () => {
-    const runtime = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    const tasks = readFileSync(new URL("./app-task-runtime.ts", import.meta.url), "utf8");
-    expect(runtime).toContain("reloadApps: async ({ publishAgents }) =>");
-    expect(runtime).not.toContain("watchGenerations");
-    expect(tasks).not.toContain("appTaskHostFingerprint");
-    expect(tasks).not.toContain("Auto-reloaded");
   });
 });
 

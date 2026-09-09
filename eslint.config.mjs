@@ -5,15 +5,7 @@ import eslintConfigPrettier from "eslint-config-prettier";
 export default [
   // Global ignores
   {
-    ignores: [
-      "node_modules/",
-      "dist/",
-      ".state/",
-      "agents/",
-      "test-workspace/",
-      "pi-deps/",
-      "docs/",
-    ],
+    ignores: ["node_modules/", "dist/", ".state/", "agents/", "test-workspace/", "pi-deps/", "docs/"],
   },
 
   // TypeScript files
@@ -45,6 +37,49 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+
+  // Architecture rules inspect imports, not the formatting of source lines.
+  {
+    files: ["src/lib/agent-runner.ts", "src/lib/agent-execution.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "bun:sqlite",
+                "**/event-bus.*",
+                "**/requests.*",
+                "**/persistence.*",
+                "**/app-task*",
+                "**/metrics.*",
+                "**/cron.*",
+                "**/manager.*",
+              ],
+              message: "Bounded agent execution must not depend on durable Host orchestration.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/app-runtime.ts", "src/app/transport/socket.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/app-task-runtime.*"],
+              message: "Use the App Task capability, not runtime internals.",
+            },
+          ],
+        },
+      ],
     },
   },
 

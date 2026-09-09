@@ -49,11 +49,32 @@ neither those experiments nor a production restart belongs in PR CI.
 
 ## Keeping tests useful and fast
 
+For the local edit loop, run the affected contract directly, for example:
+
+```sh
+bun test src/app/app-task-runtime-policy.test.ts
+bun run test:changed
+```
+
+`test:changed` uses Bun's dependency selection against your fetched `origin/main`.
+It is a convenience, not merge proof: dynamic imports, subprocess fixtures, and
+served JavaScript may not be inferred. Run their owning tests explicitly.
+`test:components` selects `src/` and `packages/`; it includes real Git, worker,
+and build tests, not just unit tests. `test:unit` remains a compatibility alias.
+The complete `bun run ci` remains the PR gate. See [test coverage ownership](test/README.md).
+
 Measure JUnit and CI timings before optimizing; test count is not the target.
 Use the smallest test that exercises real behavior, with integration tests for
 the boundaries. Fresh in-memory SQLite is appropriate for reconciliation rules;
 keep file-backed, multi-connection, and restart tests for storage guarantees.
 Never share mutable databases between test cases to save setup time.
+
+Test shipped behavior, not a copied parser, renderer, or policy in the test.
+Keep one detailed owner for a contract and retain extra boundary tests only
+where they catch a distinct failure. Use local HTTP fixtures with exact success
+assertions; a failed request must not satisfy a success test. Share small data
+factories, not live managers. Close databases and remove temporary roots in
+teardown even when assertions fail; setup and cleanup are not test cases.
 
 Wait for the exact event or result, not a fixed sleep. Keep real timers where
 scheduling is what the test proves; other lifecycle tests can use real event

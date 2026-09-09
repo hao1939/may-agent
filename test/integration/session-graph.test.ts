@@ -7,7 +7,7 @@ import { SubagentManager } from "../../src/lib/manager.js";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { getWorkflowRun, listWorkflowRunIds } from "../../src/lib/requests.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
-import type { Model } from "@earendil-works/pi-ai";
+import { fakeModel } from "../fixtures/model.js";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 
@@ -19,21 +19,6 @@ function freshDir(): string {
   const dir = join(tmpdir(), `trace-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(dir, { recursive: true });
   return dir;
-}
-
-function fakeModel(): Model<any> {
-  return {
-    id: "test-model",
-    name: "Test Model",
-    api: "anthropic",
-    provider: "anthropic",
-    baseUrl: "http://localhost:0",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 4096,
-    maxTokens: 1024,
-  };
 }
 
 function writeWorkflow(name: string, content: string): void {
