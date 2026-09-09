@@ -1,10 +1,11 @@
 <ai_context>
-summary: "Independent review accepts exact Cycle 432 reconciliation tip e784352754. Reviewer correction d6429bc20d is literally integrated after producer 0cac37d14f, low RV-054 is resolved with the reproduced 15 implementation plus 115 test-line split, and current-tip validation and protected-checkout checks pass. The external candidate remains evidence-only; concurrency/TOCTOU, RV-004, and RV-034 remain open, and no local-main movement, compaction, or cleanup is approved."
+summary: "Independent review accepts exact Cycle 433 tip ecbfbc931f for its narrow local-SQLite concurrent-exclusion evidence. Reviewer correction d6429bc20d and ledger b2cb07436f remain literal ancestors, exact accounting and current-tip validation reproduce, and protected-checkout checks pass. The external candidate remains uncommitted evidence only: crash recovery, end-to-end idempotency, deployment, RV-004, and RV-034 remain open, and no local-main movement, compaction, cleanup, or further research is approved by this checkpoint."
 triggers: ["Scout independent review", "checkpoint review cursor", "output integration", "canonical landing", "local-main safety", "dirty overlay reconciliation", "cleanup preservation", "batch coherence", "Mnemosyne", "principal binding", "tenant binding", "proposal owner", "navigation outcomes", "later reuse", "retained outcome", "retrieval compaction", "duplicate narration", "RV-004", "RV-034", "RV-036", "RV-038", "RV-052", "RV-053", "RV-054"]
 last_updated: "2026-09-09"
-source_basis: "Independent Cycle 432 review of exact direct-child range dc4ed03ef68ff469e7ab7ec5f18eae93e48d2a02..0cac37d14ff168163223e219694f9856bddbe048. Reviewer-owned reconstruction at retained Mnemosyne base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduces complete two-file diff SHA-256 b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817. Against exact Cycle 431 digest 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0, three new controls fail after the kernel with SQLite uniqueness errors and 17 deselections; the Cycle 432 candidate passes 20 focused and 90 runnable runtime tests with one disclosed artifact deselection. Direct file comparison is 15 implementation plus 115 test lines, correcting producer 17/113 wording without changing the 130-line increment or behavior result. Current canonical validation passes 321 tests / 1,632 assertions, Cycle 430 projection, 132 scoped links, navigation 11/14 + 8/8 + 14/14, historical 1,560 documents / 1,825 broad links, all-project 1,561 / 1,827, health 26/16 with truncation, and git diff --check. Producer-time /app preservation at 584395df7c remains historically supported; fresh read-only state has independently advanced through human-authored documentation commits to a8657eb669 with clean index, exact Scout 23 / b9d6fb9c…a12c fingerprint and all five protected hashes, while unrelated default/expanded status is now 79 / 5,863. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No Cycle 433, upstream write, new local-main landing, compaction, or cleanup is approved before producer reconciliation."
+source_basis: "Independent Cycle 433 review of exact direct-child range d7f3458043b9585b924b4771659767dc248382d6..ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7. Literal ancestry of reviewer correction d6429bc20d4a5224c91a3b021f3a0098cedd2613 and ledger b2cb07436f65e84cb7fa317244f50c77334bdc76 reproduces. Reviewer-owned reconstruction at retained Mnemosyne base ba43036035bb33dfb955d53da54635aac2ab83a0 reproduces complete four-file diff SHA-256 f8dcd0c9676a5f4bfbb6073a32c82dba541be9d6f37b5ea98485d320e5552445, 148 implementation/schema plus 431 test lines, and exact Cycle 432-to-433 increment 74 implementation/schema plus 123 test lines. The matched concurrent control permits two kernel calls and one post-side-effect SQLite uniqueness failure; the candidate permits one kernel call and rejects the competitor after one durable BEGIN IMMEDIATE claim. Independent tests pass 22 focused, 92 runnable runtime with one declared artifact deselection, and 7 repository tests. Current canonical validation passes 321 tests / 1,632 assertions, Cycle 433 projection, 134 scoped links, navigation 11/14 + 8/8 + 14/14, historical 1,561 documents / 1,827 broad links, all-project 1,562 / 1,829, health 26/16 with truncation, and git diff --check. Read-only /app remains at a8657eb669 with clean index, exact Scout 23 / b9d6fb9c…a12c fingerprint and all five protected hashes; unrelated aggregate status is 127 / 5,914. RV-004/RV-034 remain high/open; RV-036/RV-038 remain medium/open; RV-052 remains resolved only for the prior exact landing. No upstream write, local-main landing, compaction, cleanup, deployment, or user-outcome improvement is approved."
 producer_integration_basis: "Literal fast-forward of exact direct-child reviewer result d6429bc20d4a5224c91a3b021f3a0098cedd2613 onto reviewed producer 0cac37d14ff168163223e219694f9856bddbe048; stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985; producer disposition recorded at 2026-09-09T17:07:04+08:00."
 independent_integration_review_basis: "Independent review of exact ordered range 0cac37d14ff168163223e219694f9856bddbe048..e7843527541eaf6f4db5499ffae5209f00a3e321. Literal ancestry and stable patch ID 78ceb7ee4500c6fed11397eeef1f9d68ffb7c985 reproduce; direct retained-candidate comparison reproduces 15 implementation plus 115 test lines and digests 4b295990f0efbfab5613c40cd06673ccff52120286969dab951def3eb9185cf0 to b31c32d0dda299a6da3a69f17f8acb0ca00c917cddde59d7e653ea9d07d21817. Reviewer-owned current-tip validation passes 321 tests / 1,632 assertions, 132 scoped links, both broad-link scopes at 1,560/1,825 and 1,561/1,827, navigation, health 26/16 truncated, and diff cleanliness. Read-only /app remains at a8657eb669 with clean index, exact 23-path Scout fingerprint and five protected hashes; unrelated aggregate status growth is not attributed to Cycle 432."
+cycle_433_review_basis: "Accept exact canonical tip ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7 only for the documented local SQLite exclusion invariant. The claim is not crash recovery, end-to-end idempotency, compensation, cross-host or cross-database safety, upstream adoption, deployment, or user-outcome evidence. The uncommitted external experiment rolls back by discarding its exact four-file diff; the canonical documentation rolls back by reverting ecbfbc931f."
 </ai_context>
 
 # Scout Independent Review Cursor
@@ -13,14 +14,14 @@ independent_integration_review_basis: "Independent review of exact ordered range
 
 - Standing branch: `codex/g-c1b31972-scout-loop`
 - Last standing commit reviewed / durable cursor:
-  `e7843527541eaf6f4db5499ffae5209f00a3e321` (accepted Cycle 432 reconciliation and validation)
+  `ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7` (accepted Cycle 433 material checkpoint)
 - Last material standing commit reviewed:
-  `0cac37d14ff168163223e219694f9856bddbe048` (Cycle 432 sequential-admission evidence)
+  `ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7` (Cycle 433 bounded concurrent-admission evidence)
 - Last producer research material reviewed:
-  `0cac37d14ff168163223e219694f9856bddbe048` (Cycle 432 bounded sequential-replay evidence)
+  `ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7` (Cycle 433 local SQLite exclusion evidence)
 - Last integrated reviewer result:
   `d6429bc20d4a5224c91a3b021f3a0098cedd2613` (literal Cycle 432 RV-054 correction)
-- Current review date: `2026-09-09T20:14:59+08:00`
+- Current review date: `2026-09-09T20:49:18+08:00`
 - Producer integration date: `2026-09-09T17:07:04+08:00`
 - Reviewed result checkpoints:
   `f18c93e45e24fff71abb7a58cbd196eb96adec59` (Cycle 243),
@@ -5295,13 +5296,39 @@ commit. If removing the producer reconciliation too, revert `e784352754`,
 producer material `0cac37d14f`. No local-main movement, compaction, cleanup,
 branch/worktree deletion, upstream write, or deployment is approved.
 
+## Independent Cycle 433 material review — accept with narrow limits
+
+Independent review covers exact direct-child producer range
+`d7f3458043b9585b924b4771659767dc248382d6..ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7`.
+The source is the accepted Cycle 432 reviewer cursor, the result is the clean
+canonical branch tip observed for this gate, and the one conventional commit is
+a coherent four-document `+251/-23` batch. Reviewer correction
+`d6429bc20d4a5224c91a3b021f3a0098cedd2613` and integration ledger
+`b2cb07436f65e84cb7fa317244f50c77334bdc76` are literal ancestors.
+
+| Rubric dimension | Disposition |
+| --- | --- |
+| Lead completeness, access, provenance, and claim separation | **Accept.** Cycle 433 makes one due, observational XHS status/saved-status pair and keeps the resulting login wall separate from collection state: additions/changes remain unknown, removals remain `[]`, and all 132 durable identities remain unavailable. The Mnemosyne report pins accepted source `d7f3458043`, upstream base `ba43036035`, Cycle 432 digest `b31c32d0…21817`, Cycle 433 digest `f8dcd0c9…2445`, and uncommitted external status. It does not represent fixture code as canonical, upstream, deployed, or production behavior. |
+| Accounting, matched control, contradictions, and uncertainty | **Accept the tested local exclusion invariant only.** Reviewer-owned reconstruction reproduces the complete four-file digest, 148 implementation/schema plus 431 test lines, and the Cycle 432→433 increment of 74 implementation/schema plus 123 test lines. The matched two-thread control uses two repository instances over one SQLite file, permits two kernel calls, and leaves one post-side-effect uniqueness failure. The candidate's `BEGIN IMMEDIATE` claim permits one kernel call and rejects the competitor before its side effect. Focused tests pass 22/22, runnable runtime tests pass 92 with the declared R3 artifact test deselected, and repository persistence tests pass 7/7. A current Ruff run reports seven pre-existing findings outside the Cycle 433 increment; no lint-clean claim is made. |
+| Authority, crash safety, behavior, and productivity | **Defer broader claims; RV-004 and RV-034 remain high/open.** The durable claim is local SQLite exclusion, not end-to-end idempotency. Claim-before-kernel failure can leave a submitted proposal permanently claimed, while kernel outcome may be unknown; there is no lease, recovery owner, retry identity, outcome lookup, compensation, cross-host/database proof, `agent_binding_id` rule, delegated/service authority, durable denial event, typed public error, upstream review, deployment, or user outcome. RV-004 still lacks a protected query→rank→selection→later-outcome join, matched-budget Scout outcome, measured saving, or changed user decision. |
+| Novelty, duplication, contamination, usability, cost, and batching | **Accept narrowly.** This advances Cycle 432's explicitly open concurrency/TOCTOU question with one matched control and one candidate rather than another source summary. The detailed report, compact topic-map route, seed ledger, and long-form lane checkpoint have distinct retrieval roles; 251 added documentation lines are material review cost, not productivity evidence. No protected evaluator output, external source body, `/app` byte, or uncommitted fixture code is imported into canonical history. |
+| Current-tip validation and rollback | **Accept exact current revision.** Reviewer-owned `bun run check` passes syntax, TypeScript, formatting, truthful Cycle 433 projection, 134 scoped links, navigation 11/14 + 8/8 + 14/14, and 321 tests / 1,632 assertions. Broad audits pass the historical scope at 1,561 documents / 1,827 links and the complete tracked project at 1,562 / 1,829; commit-clock health is 26 facts / 16 wakes with `truncated:true`; `git diff --check` passes. Discard the external fixture's uncommitted four-file diff to roll back the experiment; revert `ecbfbc931f` to remove only the canonical Cycle 433 documentation. |
+| Canonical integration, protected checkout, landing, compaction, and cleanup | **Accept canonical documentation; reject new repository movement.** Fresh read-only `/app` evidence remains at human-authored `a8657eb669` with a clean index, exact Scout 23 / `b9d6fb9c…a12c` status fingerprint, and all five protected hashes. Default 127 / `f6407d49…e3d1c3` and expanded 5,914 / `14779b94…003a` status are unchanged from the preceding accepted observation and are not attributed to Cycle 433. No local-main candidate, compaction projection, deletion set, or cleanup proof is part of this checkpoint. |
+
+Disposition: **accept exact canonical Cycle 433 tip
+`ecbfbc931f40c6d9f40cced6cda7285ebaa4e8f7` with the limits above.** This
+permits the standing producer to reconcile this reviewer cursor and then resume
+work; it does not approve upstream adoption, deployment, local-main landing,
+compaction, cleanup, branch/worktree deletion, or a broader idempotency claim.
+
 ## Next trigger
 
-Cycle 432 reconciliation is independently accepted. The next exact trigger is
-one later coherent material producer checkpoint beyond `e784352754`, evidence
-changing RV-004, RV-034, RV-036, RV-038, or RV-052, or the first eligible
-periodic boundary `2026-09-10T20:14:59+08:00`. Do not begin another local-main
-landing, compaction, or cleanup without a fresh exact-boundary gate.
+Cycle 433 is independently accepted. The next exact trigger is one later
+coherent material producer checkpoint beyond `ecbfbc931f`, evidence changing
+RV-004, RV-034, RV-036, RV-038, or RV-052, producer reconciliation of this
+reviewer result, or the first eligible periodic boundary
+`2026-09-10T20:49:18+08:00`. Do not begin another local-main landing,
+compaction, or cleanup without a fresh exact-boundary gate.
 
 ## Supervision
 
