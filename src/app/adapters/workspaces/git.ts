@@ -3,19 +3,14 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
-import type { AppTaskWorkspace as AppTaskWorkspace } from "./app-task-state.js";
+import type { AppTaskWorkspace } from "../../app-task-state.js";
+import type { TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace } from "../../core/tasks/workspace.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
 
-export type PreparedTaskWorkspace = {
-  repoDir: string;
-  metadata: AppTaskWorkspace;
-};
-
-export type FinalizedTaskWorkspace = {
-  ok: boolean;
-  metadata: AppTaskWorkspace;
-  reason?: string;
+export const gitTaskWorkspaces: TaskWorkspaces = {
+  prepare: prepareAppTaskWorkspace,
+  finalize: finalizeAppTaskWorkspace,
 };
 
 function git(repoDir: string, args: string[], allowFailure = false): Promise<GitResult> {
@@ -145,15 +140,9 @@ function unintegratedResult(metadata: AppTaskWorkspace): FinalizedTaskWorkspace 
   };
 }
 
-export async function prepareAppTaskWorkspace(input: {
-  repoDir: string;
-  workspaceRoot: string;
-  taskId: string;
-  generation: number;
-  baseBranch: string;
-  refreshRemote?: boolean;
-  previous?: AppTaskWorkspace;
-}): Promise<PreparedTaskWorkspace> {
+export async function prepareAppTaskWorkspace(
+  input: Parameters<TaskWorkspaces["prepare"]>[0],
+): Promise<PreparedTaskWorkspace> {
   const repoDir = await realpath(input.repoDir);
   return withRepoOperation(repoDir, async () => {
     if ((await git(repoDir, ["rev-parse", "--is-inside-work-tree"])).stdout !== "true") {

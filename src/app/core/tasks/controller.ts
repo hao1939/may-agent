@@ -1,5 +1,5 @@
-import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./app-task-queue.js";
-import type { HostCapacity } from "./host-capacity.js";
+import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./queue.js";
+import type { HostCapacity } from "../../host-capacity.js";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
 let hostPumpScheduled = false;
@@ -31,7 +31,8 @@ export type AppTaskControllerOptions = {
   /** Shared Host capacity. App-local limits still apply independently. */
   capacity?: HostCapacity;
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
-  onError?(taskId: string, error: unknown, willRetry: boolean): void;
+  /** Best-effort diagnostics; never holds capacity or gates retries. */
+  onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
   maxRetries?: number;
   retryDelayMs?: (attempt: number) => number;
   /** Do not claim work until the controller instance being replaced has drained. */
@@ -203,7 +204,10 @@ export class AppTaskController {
       readyWaitMs: Math.max(0, startedAt - enqueuedAt),
       lane,
     };
-    const reconcile = () => (this.closed ? Promise.resolve() : this.options.reconcile(taskId, dispatch));
+    // An async boundary also captures callbacks that throw before returning a Promise.
+    const reconcile = async () => {
+      if (!this.closed) await this.options.reconcile(taskId, dispatch);
+    };
     void reconcile()
       .then(() => {
         this.failures.delete(taskId);
@@ -213,10 +217,18 @@ export class AppTaskController {
         const maxRetries = this.options.maxRetries ?? 3;
         const willRetry = attempt <= maxRetries && !this.closed;
         this.failures.set(taskId, attempt);
-        this.options.onError?.(taskId, error, willRetry);
         if (willRetry) {
           const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));
           setTimeout(() => this.enqueue(taskId, { lane }), delay);
+        }
+        const reportFailure = (reportError: unknown) => {
+          console.error(`Task ${taskId} failure reporter failed; willRetry=${willRetry}`, { error, reportError });
+        };
+        try {
+          // Do not await reporting: a slow diagnostic sink must not hold a Task slot.
+          void Promise.resolve(this.options.onError?.(taskId, error, willRetry)).catch(reportFailure);
+        } catch (reportError) {
+          reportFailure(reportError);
         }
       })
       .finally(() => {

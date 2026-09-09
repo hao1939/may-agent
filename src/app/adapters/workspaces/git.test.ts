@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace } from "./app-task-workspace.js";
+import { finalizeAppTaskWorkspace, prepareAppTaskWorkspace } from "./git.js";
 
 const roots: string[] = [];
 const execGit = promisify(execFile);

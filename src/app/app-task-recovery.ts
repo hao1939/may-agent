@@ -1,4 +1,4 @@
-import type { AppTaskLane } from "./app-task-queue.js";
+import type { AppTaskLane } from "./core/tasks/queue.js";
 import type { IndexedTaskCandidatePage, IndexedTaskRecoveryCursor } from "./app-task-resource-store.js";
 import { OwnedTimer } from "./core/scheduling/timer.js";
 

@@ -286,6 +286,10 @@ it("retains an App and exact agent work when its agent capability is removed, th
       expect(input.attempt.role.instructions).toBe("Fixture role");
       expect(input.attempt.signal.aborted).toBeFalse();
       expect("resourceStore" in input.descriptor).toBeFalse();
+      expect(input).not.toHaveProperty("claim");
+      expect(input).not.toHaveProperty("intent");
+      expect(input).not.toHaveProperty("declaredOutputPaths");
+      expect(input.attempt.task.outcome).toBe("Keep accepted work");
       return {
         handlerResult: { state: "converged", summary: "Current goal verified", evidence: [], actions: [] },
         runId: null,
@@ -2371,6 +2375,13 @@ describe("canonical App task runtime", () => {
     { name: "executor uses App branch", git: true, branch: "main", expectedBase: "main" },
     { name: "executor defaults to dev", git: true, expectedBase: "dev" },
     { name: "local executor needs no worktree", git: false },
+    { name: "local executor needs no workspace backend", git: false, withoutBackend: true },
+    {
+      name: "Git executor rejects a missing workspace backend",
+      git: true,
+      withoutBackend: true,
+      preparationFails: true,
+    },
     { name: "workflow uses App branch", git: true, branch: "main", workspace: "task", expectedBase: "main" },
     { name: "workflow defaults to dev", git: true, workspace: "task", expectedBase: "dev" },
     {
@@ -2381,6 +2392,14 @@ describe("canonical App task runtime", () => {
       expectedBase: "release",
     },
     { name: "shared workflow needs no worktree", git: true, branch: "main", workspace: "shared" },
+    { name: "shared workflow needs no workspace backend", git: true, workspace: "shared", withoutBackend: true },
+    {
+      name: "task workflow rejects a missing workspace backend",
+      git: true,
+      workspace: "task",
+      withoutBackend: true,
+      preparationFails: true,
+    },
     { name: "task workflow rejects a local App", git: false, workspace: "task", preparationFails: true },
     {
       name: "failed Git preparation can recover on the same Task",
@@ -2421,8 +2440,9 @@ describe("canonical App task runtime", () => {
     }
 
     let executorCwd: string | undefined;
-    await installAppTaskRuntimes({
+    const runtimeOptions: Parameters<typeof installAppTaskRuntimes>[0] = {
       ...options(f, bus),
+      ...(scenario.withoutBackend ? { workspaces: undefined } : {}),
       agentsRoot,
       sharedRoot: join(f.root, "shared"),
       installControllers: false,
@@ -2447,7 +2467,8 @@ describe("canonical App task runtime", () => {
           },
         ],
       },
-    });
+    };
+    await installAppTaskRuntimes(runtimeOptions);
     const config = loadedTaskConfig(f);
     const taskId = "work/workspace-admission";
     observeAppTaskIntent(config, {
@@ -2478,7 +2499,11 @@ describe("canonical App task runtime", () => {
           state: "failed",
           failureReason: "WorkspacePreparationFailed",
           summary: expect.stringContaining(
-            scenario.missingRemote ? "git ls-remote" : "requires a task worktree but app workspace is not Git",
+            scenario.missingRemote
+              ? "git ls-remote"
+              : scenario.withoutBackend
+                ? "Task workspace backend is not installed"
+                : "requires a task worktree but app workspace is not Git",
           ),
         }),
       ]);
@@ -2491,6 +2516,29 @@ describe("canonical App task runtime", () => {
       expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
       expect(executorCwd).toBeUndefined();
       expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+      if (scenario.withoutBackend) {
+        // Restore composition, then use the ordinary exact retry control.
+        const { workspaces: _missing, ...restored } = runtimeOptions;
+        await installAppTaskRuntimes(restored);
+        const resource = config.resourceStore.readTask(taskId)!;
+        retryFailedAppTask(config, {
+          appId: "sample",
+          taskId,
+          expectedGeneration: resource.metadata.generation,
+          expectedResourceVersion: resource.metadata.resourceVersion,
+        });
+        await reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+        const recovered = readTaskSnapshot(config);
+        expect(recovered.receipts?.[taskId]?.summary).toBe(
+          scenario.workspace ? "Fixture workflow ran" : "Fixture executor ran",
+        );
+        expect(Object.keys(recovered.attempts ?? {})).toHaveLength(2);
+      }
       if (scenario.missingRemote) {
         const git = (...args: string[]) => promisify(execFile)("git", args, { timeout: 10_000 });
         const privateRefs = () => git("-C", f.appDir, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/");
@@ -4728,8 +4776,11 @@ describe("canonical App task runtime", () => {
               workflowCalls++;
               // The App checks its provider's operation identity before a write.
               // Runtime recovery must preserve that input, not invent a new key.
-              const operationId = String(input.intent.input?.operationId);
+              const operationId = String(input.attempt.task.input.operationId);
               expect(operationId).toBe(f.payload.operationId);
+              expect(input).not.toHaveProperty("claim");
+              expect(input).not.toHaveProperty("intent");
+              expect(input).not.toHaveProperty("declaredOutputPaths");
               if (!operations.has(operationId)) {
                 operations.add(operationId);
                 externalCreates++;
