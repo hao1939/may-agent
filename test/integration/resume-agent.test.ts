@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -87,6 +90,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
   });
 
@@ -274,6 +278,72 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     expect(events.some((event) => event.type === "session.resume_failed")).toBe(false);
   });
+
+  for (const bound of [true, false]) {
+    it(`cold resume uses only the caller's current Task binding (bound: ${bound})`, async () => {
+      const staleBinding = { appId: "sample", taskId: "work/one", generation: 2, attemptId: "attempt-old" };
+      const taskBinding = bound ? { ...staleBinding, generation: 3, attemptId: "attempt-current" } : undefined;
+      writeRegistryState(persistDir, {
+        "session-work": {
+          agent: "worker",
+          task: "previous pass",
+          status: "interrupted",
+          kind: "call",
+          startedAt: Date.now() - 10000,
+          source: "workflow:reconcile",
+          projectId: "sample",
+          taskBinding: staleBinding,
+        },
+      });
+      setupSession(persistDir, "session-work", [userMessage("previous pass")]);
+      const bus = new EventBus();
+      bus.setPersistenceSubscriber(new DbWriter(persistDir).handler);
+      upsertSession(persistDir, { sessionId: "session-work", ...readSessionMeta(persistDir, "session-work")! });
+      const storedBinding = () =>
+        getDb(persistDir)
+          .prepare("SELECT app_id, task_id, task_generation, attempt_id FROM sessions WHERE sessionId = ?")
+          .get("session-work");
+      expect(storedBinding()).toEqual({
+        app_id: "sample",
+        task_id: "work/one",
+        task_generation: 2,
+        attempt_id: "attempt-old",
+      });
+      const expectedBinding = {
+        app_id: taskBinding?.appId ?? null,
+        task_id: taskBinding?.taskId ?? null,
+        task_generation: taskBinding?.generation ?? null,
+        attempt_id: taskBinding?.attemptId ?? null,
+      };
+      const events: AgentEvent[] = [];
+      bus.subscribe((event) => events.push(event));
+      const manager = new SubagentManager({ persistDir, bus });
+      registerAgent(manager, "worker");
+
+      try {
+        expect(
+          manager.resumeSession("session-work", "continue", {
+            source: "workflow:reconcile",
+            taskBinding,
+          }),
+        ).toBe("session-work");
+        expect(manager.activeSessions.get("session-work")?.taskBinding).toEqual(taskBinding);
+        expect(events.find((event) => event.type === "session.start")).toMatchObject({
+          data: { sessionId: "session-work", taskBinding },
+        });
+        const persisted = readSessionMeta(persistDir, "session-work");
+        expect(persisted).not.toBeNull();
+        expect(persisted?.taskBinding).toEqual(taskBinding);
+        expect(storedBinding()).toEqual(expectedBinding);
+      } finally {
+        // This regression exercises real resumption and scope, not a model call.
+        manager.cancel("session-work");
+        await manager.waitFor("session-work");
+      }
+      expect(readSessionMeta(persistDir, "session-work")?.taskBinding).toEqual(taskBinding);
+      expect(storedBinding()).toEqual(expectedBinding);
+    });
+  }
 
   it("uses the injected user message as the visible task when cold-resuming a session", async () => {
     const bus = new EventBus();

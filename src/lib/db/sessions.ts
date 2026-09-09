@@ -32,7 +32,7 @@ function taskPreview(task: string): string {
   return `${task.slice(0, MAX_TASK_PREVIEW_LENGTH)}\n...[full task in session meta; ${task.length} chars]`;
 }
 
-/** Insert or update a session row without erasing existing lineage fields. */
+/** Project a session start: replace current Task scope, retain optional lineage. */
 export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
   const task = entry.task ?? "";
@@ -55,10 +55,10 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
          requestId = COALESCE(excluded.requestId, sessions.requestId),
          workflowRunId = COALESCE(excluded.workflowRunId, sessions.workflowRunId),
          projectId = COALESCE(excluded.projectId, sessions.projectId),
-         app_id = COALESCE(excluded.app_id, sessions.app_id),
-         task_id = COALESCE(excluded.task_id, sessions.task_id),
-         task_generation = COALESCE(excluded.task_generation, sessions.task_generation),
-         attempt_id = COALESCE(excluded.attempt_id, sessions.attempt_id),
+         app_id = excluded.app_id,
+         task_id = excluded.task_id,
+         task_generation = excluded.task_generation,
+         attempt_id = excluded.attempt_id,
          stepLabel = COALESCE(excluded.stepLabel, sessions.stepLabel),
          startedAt = COALESCE(excluded.startedAt, sessions.startedAt),
          endedAt = COALESCE(excluded.endedAt, sessions.endedAt),

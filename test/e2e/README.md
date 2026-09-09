@@ -20,7 +20,9 @@ subprocess, use its Unix socket/HTTP interface, and inspect its stored results.
 Each daemon gets a temporary directory with its own `.state`, agents, projects,
 and shared files. Tests do not operate the developer's `/app` installation.
 Scheduled fixtures use an explicit startup offset to avoid random initial
-waiting; real recurring timers still run.
+waiting. E1 retains real recurring timers; E4 advances metric phases through
+the existing operator event ingress once its handler subscription is ready.
+It tests the metric lifecycle without waiting for repeated scheduler intervals.
 
 ## Coverage and limits
 
@@ -29,10 +31,10 @@ waiting; real recurring timers still run.
 | `e1-handler-loop-liveness` | At least two real cron/handler cycles with start, completion, and domain events. |
 | `e2-project-comment-roundtrip` | Legacy project-comment intake: stored comment, project status update, and nudge event. Not App Task reconciliation. |
 | `e3b-workflow-discovery` | Configured workflow discovery, execution, and terminal `workflow_runs` persistence. |
-| `e4-metric-lifecycle` | Metric definition, baseline, breach, alert row, recovery event, and resolved alert. |
+| `e4-metric-lifecycle` | Operator event triggers real handler phases: definition, healthy baseline without an alert, breach with an open alert, then recovery resolving that same alert. |
 | `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
 | `e6-host-maintenance` | Host file handlers cannot launch agents, workflows, or escalations; no worker session starts. |
-| `e7-escalation-roundtrip` | Escalation persistence and resume-attempt/failure handling for a synthetic session, plus the `needs_human` short-circuit. Not successful model execution. |
+| `e7-escalation-roundtrip` | One escalation moves from `needs_human` to terminal resolution; the FIFO listener produces exactly one resume attempt and failure for a synthetic session. Not successful model execution. |
 | `e8-project-comment-ui` | Real browser loads the served UI, opens a project, submits a comment, and observes stored changes. |
 | `e9-session-auto-resume` | Explicit steering resumes a stored interrupted session under the same identity. Not autonomous retry/backoff or successful model execution. |
 | `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |

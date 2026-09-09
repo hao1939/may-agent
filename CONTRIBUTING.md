@@ -47,6 +47,24 @@ from this repository alone.
 Model-backed experiments require separate credentials and explicit authority;
 neither those experiments nor a production restart belongs in PR CI.
 
+## Keeping tests useful and fast
+
+Measure JUnit and CI timings before optimizing; test count is not the target.
+Use the smallest test that exercises real behavior, with integration tests for
+the boundaries. Fresh in-memory SQLite is appropriate for reconciliation rules;
+keep file-backed, multi-connection, and restart tests for storage guarantees.
+Never share mutable databases between test cases to save setup time.
+
+Wait for the exact event or result, not a fixed sleep. Keep real timers where
+scheduling is what the test proves; other lifecycle tests can use real event
+ingress. Remove examples that only exercise test-local SQL or algorithms, not
+regressions that invoke production behavior. Do not skip slow coverage or add
+automatic retries to make the suite look faster or greener.
+
+Do not race a short timeout against child startup or a fixed output volume.
+Test timeout selection at the execution boundary, real timer cancellation in a
+process test, and retained output after observing that the output was written.
+
 ## GitHub checks
 
 Every PR and push to `main` reports two independent Linux checks:

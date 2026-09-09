@@ -52,6 +52,7 @@ import {
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
+const stores: AppTaskResourceStore[] = [];
 
 /** Most reconciler fixtures exercise mechanics, so give their external waits explicit test ownership. */
 function deferAppTask(...args: Parameters<typeof deferCanonicalAppTask>): ReturnType<typeof deferCanonicalAppTask> {
@@ -70,7 +71,7 @@ function trackAppTaskConditionEvent(config: AppTaskContext, event: Record<string
   return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
 }
 
-function seedFixture(operationsOwner?: string) {
+function fixture(operationsOwner?: string) {
   const root = join(tmpdir(), `task-reconciler-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -122,25 +123,16 @@ function seedFixture(operationsOwner?: string) {
     appDir,
     agent: "app-owner",
     maxConcurrent: 3,
-    databasePath: join(root, "host.sqlite"),
+    // These are reconciliation rules, not disk/restart tests. Keep real SQLite
+    // transactions and fences without paying for a fresh WAL file per case.
+    databasePath: ":memory:",
   });
-  return { root, appDir, config };
-}
-
-function resourceFixture(
-  input: { root: string; appDir: string; config: AppTaskContext },
-  _sourceRevision: string,
-): { config: AppTaskContext; store: AppTaskResourceStore } {
-  return { config: input.config, store: input.config.resourceStore };
-}
-
-function fixture(operationsOwner?: string) {
-  const state = seedFixture(operationsOwner);
-  return { ...state, config: resourceFixture(state, "default-resource-fixture").config };
+  stores.push(config.resourceStore);
+  return { root, appDir, config, store: config.resourceStore };
 }
 
 function mutateAttemptFixture(
-  config: ReturnType<typeof resourceFixture>["config"],
+  config: AppTaskContext,
   taskId: string,
   attemptId: string,
   mutate: (attempt: NonNullable<ReturnType<typeof readTaskSnapshot>["attempts"]>[string]) => void,
@@ -167,7 +159,7 @@ function mutateAttemptFixture(
 }
 
 function mutateTaskResourceFixture(
-  config: ReturnType<typeof resourceFixture>["config"],
+  config: AppTaskContext,
   taskId: string,
   mutate: (
     resource: NonNullable<ReturnType<typeof readTaskSnapshot>["resources"]>[string],
@@ -236,7 +228,7 @@ function reclaimInterruptedSession(
   checkpoint?: Record<string, unknown>,
 ) {
   const { root } = state;
-  const { config } = resourceFixture(state, `interrupted-session-${sessionId}`);
+  const { config } = state;
   const claim = declareAndClaimTask(config, {
     intent: intent(),
     appAgent: "app-owner",
@@ -273,6 +265,7 @@ function reclaimInterruptedSession(
 }
 
 afterEach(() => {
+  for (const store of stores.splice(0)) store.close();
   while (roots.length > 0) rmSync(roots.pop()!, { recursive: true, force: true });
 });
 
@@ -302,8 +295,8 @@ describe("App task reconciler state", () => {
   });
 
   it("writes only attempts changed by a reconciliation", () => {
-    const state = seedFixture();
-    const { config, store } = resourceFixture(state, "bounded-attempt-write");
+    const state = fixture();
+    const { config, store } = state;
     const first = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -332,8 +325,8 @@ describe("App task reconciler state", () => {
   });
 
   it("fences an unchanged parent without rewriting it", () => {
-    const state = seedFixture();
-    const { config, store } = resourceFixture(state, "bounded-parent-write");
+    const state = fixture();
+    const { config, store } = state;
     const parent = { ...intent("maintain"), id: "work/parent" };
     observeAppTaskIntent(config, { intent: parent, appAgent: "app-owner" });
     const child = { ...intent("achieve"), id: "work/child", parentId: parent.id };
@@ -379,7 +372,7 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceConfig = resourceFixture(state, "attempt-lease").config;
+    const resourceConfig = state.config;
 
     const before = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).attempts?.[
       claim.attemptId
@@ -452,7 +445,7 @@ describe("App task reconciler state", () => {
 
   it("keeps a maintain task pending when a durable wake arrives during its attempt", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "maintain-wake-during-attempt");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -487,7 +480,7 @@ describe("App task reconciler state", () => {
 
   it("keeps an achieve task live until events that arrived during the attempt are reconciled", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "achieve-wake-during-attempt");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -540,7 +533,7 @@ describe("App task reconciler state", () => {
 
   it("consumes only live events incorporated into the accepted result", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "accepted-live-events");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",
@@ -566,7 +559,7 @@ describe("App task reconciler state", () => {
 
   it.each(["waiting", "converged"] as const)("keeps %s result and actions atomic across unaccepted input", (state) => {
     const fixtureState = fixture();
-    const { config } = resourceFixture(fixtureState, "unaccepted-live-events");
+    const { config } = fixtureState;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -774,7 +767,7 @@ describe("App task reconciler state", () => {
 
   it("claims an ordered bounded event prefix without losing the remaining wakes", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "bounded-event-prefix");
+    const { config } = state;
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -876,7 +869,7 @@ describe("App task reconciler state", () => {
       headCommit: "b".repeat(40),
       disposition: "branch-retained" as const,
     };
-    const resourceConfig = resourceFixture(state, "attempt-workspace").config;
+    const resourceConfig = state.config;
 
     expect(recordAppTaskAttemptWorkspace(resourceConfig, claim, workspace)).toBe(true);
     expect(completeAppTask(resourceConfig, claim, { summary: "completed in isolated workspace" }).status).toBe(
@@ -888,7 +881,7 @@ describe("App task reconciler state", () => {
   });
   it("rejects a missing or completed parent instead of creating an orphan", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "missing-parent");
+    const { config } = state;
 
     expect(() =>
       observeAppTaskIntent(config, {
@@ -925,7 +918,7 @@ describe("App task reconciler state", () => {
 
   it("accepts canonical Task agent selection and retains it in Host state", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "agent-selection");
+    const { config } = state;
     const agentIntent: AppTaskIntent = {
       ...intent(),
       id: "work/managed-agent",
@@ -948,7 +941,7 @@ describe("App task reconciler state", () => {
 
   it("rejects conflicting or empty Task agent selection before persistence", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "invalid-agent-selection");
+    const { config } = state;
     expect(() =>
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: "work/conflict", agent: "one", owner: "two" },
@@ -977,7 +970,7 @@ describe("App task reconciler state", () => {
 
   it("lists pending and explicit agent handoff tasks but keeps unavailable workflows asleep", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "runnable-agent-handoff");
+    const { config } = state;
     const attentionIntent = {
       ...intent(),
       id: "work/attention",
@@ -1089,7 +1082,7 @@ describe("App task reconciler state", () => {
 
   it("separates desired-state observation from attempt claiming", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "observe-and-claim");
+    const { config } = state;
     expect(
       observeAppTaskIntent(config, {
         intent: intent("maintain"),
@@ -1134,7 +1127,7 @@ describe("App task reconciler state", () => {
   });
 
   it("reads exact live intent and completion state without confusing an older receipt", () => {
-    const { config } = resourceFixture(fixture(), "current-generation-read");
+    const { config } = fixture();
     const original = intent();
     const claim = declareAndClaimTask(config, {
       intent: original,
@@ -1192,7 +1185,7 @@ describe("App task reconciler state", () => {
 
   it("orders runnable tasks by declared priority before lower-priority work", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "priority-order");
+    const { config } = state;
     for (const [id, priority] of [
       ["work/p2", "P2"],
       ["work/p0-z", "P0"],
@@ -1216,7 +1209,7 @@ describe("App task reconciler state", () => {
 
   it("prefers older ready work over newer peers within the same priority", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "ready-age-order");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/a-newer", priority: "P2" },
       appAgent: "app-owner",
@@ -1239,7 +1232,7 @@ describe("App task reconciler state", () => {
 
   it("ages ready work toward P1 without erasing the explicit P0 boundary", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "priority-aging");
+    const { config } = state;
     for (const [id, priority] of [
       ["work/fresh-p0", "P0"],
       ["work/aged-p1", "P1"],
@@ -1284,14 +1277,14 @@ describe("App task reconciler state", () => {
       resource.status.updatedAt = new Date(Date.now() - 10 * 60_000 - 1_000).toISOString();
     });
 
-    expect(appTaskQueueEntries(resourceFixture(state, "selected-task-age").config, ["work/aged-p2"])).toEqual([
+    expect(appTaskQueueEntries(state.config, ["work/aged-p2"])).toEqual([
       { taskId: "work/aged-p2", options: { priority: "P1", lane: "normal" } },
     ]);
   });
 
   it("ages triggered work from when it became ready instead of its old waiting status", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "trigger-aging");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/fresh-trigger-p2", priority: "P2" },
       appAgent: "app-owner",
@@ -1328,7 +1321,7 @@ describe("App task reconciler state", () => {
 
   it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "human-comment-order");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/autonomous-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1361,7 +1354,7 @@ describe("App task reconciler state", () => {
 
   it("keeps an unresolved human task control ahead of a later automated wake", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "human-control");
+    const { config } = state;
     const ownerReview = { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" as const };
     const humanComment = {
       type: "project.comment.created",
@@ -1407,7 +1400,7 @@ describe("App task reconciler state", () => {
     });
 
     expect(readTaskSnapshot(config).resources?.[humanTask.id]?.status.lane).toBe("human");
-    expect(appTaskQueueEntries(resourceFixture(state, "human-lane-queue").config, [humanTask.id])).toEqual([
+    expect(appTaskQueueEntries(state.config, [humanTask.id])).toEqual([
       {
         taskId: humanTask.id,
         options: { priority: "P0", lane: "human" },
@@ -1417,7 +1410,7 @@ describe("App task reconciler state", () => {
 
   it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "priority-before-trigger");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/new-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1446,7 +1439,7 @@ describe("App task reconciler state", () => {
 
   it("uses trigger as tiebreak within same priority", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "trigger-tiebreak");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/untriggered-p1", priority: "P1" },
       appAgent: "app-owner",
@@ -1468,7 +1461,7 @@ describe("App task reconciler state", () => {
 
   it("P0 untriggered beats stream of triggered P1s (priority inversion regression)", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "priority-inversion");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "ops/critical-p0", priority: "P0" },
       appAgent: "app-owner",
@@ -1506,7 +1499,7 @@ describe("App task reconciler state", () => {
 
   it("keeps triggered work behind unresolved dependencies during passive resync", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "triggered-dependency");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/dependency" },
       appAgent: "app-owner",
@@ -1531,7 +1524,7 @@ describe("App task reconciler state", () => {
 
   it("persists the exact Condition observation as the next attempt trigger", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "condition-trigger");
+    const { config } = state;
     const waitingIntent = {
       ...intent(),
       id: "work/condition-trigger",
@@ -1590,7 +1583,7 @@ describe("App task reconciler state", () => {
 
   it("preflights Condition routes without mutation and admits only selected exact tasks", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "condition-route-preflight");
+    const { config } = state;
     for (const taskId of ["work/first", "work/second"]) {
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: taskId },
@@ -1634,7 +1627,7 @@ describe("App task reconciler state", () => {
 
   it("claims the current canonical spec after a stale reader observed an older version", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "current-spec");
+    const { config } = state;
     const original = intent("maintain");
     observeAppTaskIntent(config, { intent: original, appAgent: "app-owner" });
     const staleCopy = readAppTaskIntent(config, original.id);
@@ -1664,7 +1657,7 @@ describe("App task reconciler state", () => {
 
   it("preserves an explicit retry over lower-priority task wakes", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "explicit-retry-precedence");
+    const { config } = state;
     const monitor = intent("maintain");
     observeAppTaskIntent(config, {
       intent: monitor,
@@ -1696,7 +1689,7 @@ describe("App task reconciler state", () => {
 
   it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
     const f = fixture();
-    const { config, store } = resourceFixture(f, "immutable-trigger-snapshots");
+    const { config } = f;
     cacheTaskSnapshots(config);
     const monitor = intent("maintain");
     observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
@@ -1719,7 +1712,6 @@ describe("App task reconciler state", () => {
       type: "metric.breach",
       data: { metricId: "may.failure-rate" },
     });
-    store.close();
   });
 
   it("keeps passive checks asleep but reconsiders a waiting task for fresh routed input", () => {
@@ -1913,7 +1905,7 @@ describe("App task reconciler state", () => {
 
   it("detaches prior-generation Conditions and triggers when desired state changes", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "generation-detach");
+    const { config } = state;
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
@@ -1961,7 +1953,7 @@ describe("App task reconciler state", () => {
 
   it("claims generation drift before honoring a stale waiting Condition", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "generation-drift");
+    const { config } = state;
     const monitor = intent("maintain");
     const first = declareAndClaimTask(config, {
       intent: monitor,
@@ -2139,7 +2131,7 @@ describe("App task reconciler state", () => {
   });
 
   it("keeps explicitly closed maintain work terminal under repeated observer admission", () => {
-    const { config } = resourceFixture(fixture(), "explicit-maintain-closure");
+    const { config } = fixture();
     const standing = intent("maintain");
     observeAppTaskIntent(config, { intent: standing, appAgent: "app-owner" });
     const staleResource = config.resourceStore.readTask(standing.id);
@@ -2457,9 +2449,8 @@ describe("App task reconciler state", () => {
       }),
     ).toBe(true);
 
-    const resource = resourceFixture(f, "test:child-context");
+    const resource = f;
     const context = readAppTaskChildContext(resource.config, "pipeline-monitor");
-    resource.store.close();
 
     expect(context.completed).toHaveLength(8);
     expect(context.completed.map(({ taskId }) => taskId)).toEqual([
@@ -2550,9 +2541,8 @@ describe("App task reconciler state", () => {
       });
     }
 
-    const resource = resourceFixture(f, "test:live-snapshot");
+    const resource = f;
     const snapshot = readAppTaskLiveSnapshot(resource.config, "snapshot-task-64");
-    resource.store.close();
 
     expect(snapshot.truncated).toBe(true);
     expect(snapshot.live).toHaveLength(64);
@@ -2750,7 +2740,7 @@ describe("App task reconciler state", () => {
         attempts: Object.values(stale.attempts ?? {}).filter((attempt) => attempt.taskId === taskIntent.id),
       }),
     ).toBe(true);
-    const resourceConfig = resourceFixture(state, "completed-recovery-duplicate").config;
+    const resourceConfig = state.config;
 
     expect(recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [taskIntent.id])).toEqual([]);
 
@@ -2832,7 +2822,7 @@ describe("App task reconciler state", () => {
           attempts: [tree.attempts![`r_changed_${variant}`]],
         }),
       ).toBe(true);
-      const resourceConfig = resourceFixture(state, `changed-recovery-${variant}`).config;
+      const resourceConfig = state.config;
 
       expect(recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [taskIntent.id])).toEqual([
         expect.objectContaining({ taskId: taskIntent.id, intent: expect.objectContaining({ id: taskIntent.id }) }),
@@ -2980,7 +2970,7 @@ describe("App task reconciler state", () => {
 
   it("consumes a terminal direct-agent result exactly once even while its lease is fresh", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "terminal-agent-result");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -3035,7 +3025,7 @@ describe("App task reconciler state", () => {
 
   it("releases only the exact expired agent attempt after its session is terminal", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "release-expired-agent-session");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -3096,7 +3086,7 @@ describe("App task reconciler state", () => {
 
   it("never releases a healthy live agent session or a stale fenced observation", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "expired-agent-session");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -3158,7 +3148,7 @@ describe("App task reconciler state", () => {
 
   it("requeues the same task when a late workflow result reaches its still-running attempt", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "late-workflow-result");
+    const { config } = state;
     const trigger = {
       type: "project.task.tick",
       data: { project: "sample", taskId: "maintain" },
@@ -3215,7 +3205,7 @@ describe("App task reconciler state", () => {
     });
     if (current.kind !== "claimed") throw new Error("expected claim");
     expect(
-      recoverableAppTaskAttempts(resourceFixture(currentState, "current-runtime-attempt").config, Date.now(), false, [
+      recoverableAppTaskAttempts(currentState.config, Date.now(), false, [
         current.taskId,
       ]),
     ).toEqual([]);
@@ -3235,7 +3225,7 @@ describe("App task reconciler state", () => {
     mutateAttemptFixture(config, first.taskId, first.attemptId, (attempt) => {
       attempt.runtimeId = "previous-runtime";
     });
-    const resourceConfig = resourceFixture(state, "previous-runtime-attempt").config;
+    const resourceConfig = state.config;
 
     const [recovery] = recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [first.taskId]);
     expect(recovery).toMatchObject({
@@ -3333,7 +3323,7 @@ describe("App task reconciler state", () => {
 
   it("returns superseded agent-session ids when reclaiming a previous-runtime attempt", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "superseded-agent-session");
+    const { config } = state;
     const first = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3360,7 +3350,7 @@ describe("App task reconciler state", () => {
 
   it("associates workflow sessions with the current attempt and rejects stale generations", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "workflow-session-association");
+    const { config } = state;
     const original = intent();
     const claim = declareAndClaimTask(config, {
       intent: original,
@@ -3407,7 +3397,7 @@ describe("App task reconciler state", () => {
 
   it("returns orphaned agent-session ids when requeueing a previous-runtime attempt without a trigger", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "orphaned-agent-session");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3440,7 +3430,7 @@ describe("App task reconciler state", () => {
 
   it("requeues running tasks whose current attempt record is missing", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "running-without-attempt");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -3510,7 +3500,7 @@ describe("App task reconciler state", () => {
     };
     makeWaiting("work/orphaned", "missing-request");
     makeWaiting("work/admitted", "accepted-request");
-    const resourceConfig = resourceFixture(state, "unadmitted-dependency-waits").config;
+    const resourceConfig = state.config;
     const candidateTaskIds = ["work/orphaned", "work/admitted"];
 
     expect(
@@ -3608,7 +3598,7 @@ describe("App task reconciler state", () => {
     mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
       attempt.runtimeId = "previous-runtime";
     });
-    const interruptedResourceConfig = resourceFixture(state, "synthetic-controller-trigger").config;
+    const interruptedResourceConfig = state.config;
 
     const [recovery] = recoverableAppTaskAttempts(interruptedResourceConfig, Date.now(), false, [claim.taskId]);
     expect(recovery).toMatchObject({
@@ -3785,7 +3775,7 @@ describe("App task reconciler state", () => {
   it("atomically fences an interrupted orphan claim and accepts exactly one later wake (events 5446564 and 5446878)", () => {
     const fixtureState = fixture();
     const { root } = fixtureState;
-    const { config } = resourceFixture(fixtureState, "interrupted-orphan-fence");
+    const { config } = fixtureState;
     const taskIntent = { ...intent("maintain"), id: "ops/orphan-claim-fence" };
     const oldClaim = declareAndClaimTask(config, {
       intent: taskIntent,
@@ -3919,7 +3909,7 @@ describe("App task reconciler state", () => {
       false,
     );
 
-    const resourceConfig = resourceFixture(state, "attention").config;
+    const resourceConfig = state.config;
     expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([
       { taskId: claim.taskId, summary: `old attention ${claim.taskId}` },
     ]);
@@ -3985,7 +3975,7 @@ describe("App task reconciler state", () => {
 
   it("wakes a maintain task once per canonical App admission", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "maintain-admission");
+    const { config } = state;
     const monitor = intent("maintain");
     const trigger = (key: string) => ({
       type: "app.task.requested",
@@ -4066,7 +4056,7 @@ describe("App task reconciler state", () => {
 
   it("replays a queued maintain trigger after the older attempt completes", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "maintain-trigger-replay");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review" },
       appAgent: "app-owner",
@@ -4115,7 +4105,7 @@ describe("App task reconciler state", () => {
 
   it("preserves a queued project comment through child completion and interrupted-attempt recovery", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "queued-comment-recovery");
+    const { config } = state;
     const parentIntent = {
       ...intent("maintain"),
       id: "runtime/owner-review",
@@ -4394,7 +4384,7 @@ describe("App task reconciler state", () => {
 
   it("rejects stale results after a fallback attempt takes ownership", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "fallback-attempt-ownership");
+    const { config } = state;
     const primary = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4437,7 +4427,7 @@ describe("App task reconciler state", () => {
 
   it("does not reclaim attention tasks during plain resync", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "attention-passive-resync");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4478,7 +4468,7 @@ describe("App task reconciler state", () => {
 
   it("allows a new trigger to reclaim an attention task", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "attention-trigger-reclaim");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4507,7 +4497,7 @@ describe("App task reconciler state", () => {
 
   it("releases execution failure only after newer success from the same agent", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "execution-failed");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4570,7 +4560,7 @@ describe("App task reconciler state", () => {
 
   it("preserves newer human steering while releasing one execution failure", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "execution-failure-human-steering");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4619,7 +4609,7 @@ describe("App task reconciler state", () => {
 
   it("replays a failed attempt batch before every newer pending event", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "execution-failure-event-replay");
+    const { config } = state;
     observeAppTaskIntent(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4669,7 +4659,7 @@ describe("App task reconciler state", () => {
 
   it("does not revive repeated execution failures from unrelated agent success", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "repeated-execution-failure");
+    const { config } = state;
     const first = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
@@ -4745,7 +4735,7 @@ describe("App task reconciler state", () => {
 
   it("can release a stale current attempt so the task is judged again from current evidence", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "stale-result-release");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4796,7 +4786,7 @@ describe("App task reconciler state", () => {
 
   it("keeps accepted waits and semantic progress when feedback fences an attempt", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "feedback-stale-result-release");
+    const { config } = state;
     const taskIntent = intent();
     const initial = declareAndClaimTask(config, {
       intent: taskIntent,
@@ -4867,7 +4857,7 @@ describe("App task reconciler state", () => {
 
   it("applies handler actions atomically with reconciliation completion", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "atomic-actions");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appAgent: "app-owner",
@@ -4974,7 +4964,7 @@ describe("App task reconciler state", () => {
 
   it("requeues only the exact failed attention generation and retains immutable attempt evidence", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "retry-failed-task");
+    const { config } = state;
     const failed = declareAndClaimTask(config, {
       intent: {
         id: "reviewed-failure",
@@ -5063,7 +5053,7 @@ describe("App task reconciler state", () => {
       handler: "agent:app-owner",
     });
     if (running.kind !== "claimed") throw new Error("expected running claim");
-    const runningResourceConfig = resourceFixture(runningState, "retry-running-task").config;
+    const runningResourceConfig = runningState.config;
     const runningResourceVersion = runningResourceConfig.resourceStore.readTaskContext({ taskIds: [running.taskId] })
       .resources?.[running.taskId]?.metadata.resourceVersion;
     if (!runningResourceVersion) throw new Error("expected running task resource version");
@@ -5091,7 +5081,7 @@ describe("App task reconciler state", () => {
       },
       false,
     );
-    const attentionResourceConfig = resourceFixture(attentionState, "retry-attention-without-failure").config;
+    const attentionResourceConfig = attentionState.config;
     const attentionResourceVersion = attentionResourceConfig.resourceStore.readTaskContext({
       taskIds: [attentionClaim.taskId],
     }).resources?.[attentionClaim.taskId]?.metadata.resourceVersion;
@@ -5108,7 +5098,7 @@ describe("App task reconciler state", () => {
 
   it("lets a controller retry a known transient attention task without changing its generation", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "transient-attention-retry");
+    const { config } = state;
     const retryIntent = {
       id: "retry-after-base-race",
       parentId: "operations",
@@ -5273,7 +5263,7 @@ describe("App task reconciler state", () => {
 
   it("repairs explicit agent and workflow bindings through an update action", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "repair-bindings");
+    const { config } = state;
     const observed = observeAppTaskIntent(config, {
       intent: {
         id: "categorized-task",
@@ -5322,7 +5312,7 @@ describe("App task reconciler state", () => {
 
   it("returns sessions superseded by a dependent update-task action", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "superseded-session-association");
+    const { config } = state;
     const targetIntent: AppTaskIntent = {
       id: "work/running-target",
       parentId: "operations",
@@ -5896,7 +5886,7 @@ describe("App task reconciler state", () => {
     "preserves new routed %s input queued while the task installs a wait",
     (type) => {
       const state = fixture();
-      const { config } = resourceFixture(state, "unrelated-trigger-during-wait");
+      const { config } = state;
       const claim = declareAndClaimTask(config, {
         intent: { ...intent("maintain"), id: "work/queued-pulse" },
         appAgent: "app-owner",
@@ -5940,7 +5930,7 @@ describe("App task reconciler state", () => {
 
   it("preserves a queued trigger that satisfies the wait installed by the attempt", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "satisfying-trigger-during-wait");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: { ...intent("maintain"), id: "work/queued-completion" },
       appAgent: "app-owner",
@@ -6053,7 +6043,7 @@ describe("App task reconciler state", () => {
 
   it("keeps a decomposition parent open while applying child task actions", () => {
     const state = fixture();
-    const { config } = resourceFixture(state, "decomposition-children");
+    const { config } = state;
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
       appAgent: "app-owner",

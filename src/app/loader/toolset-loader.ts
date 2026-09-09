@@ -285,10 +285,11 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       scope: () => {
         const sessionId = opts.getAgentSessionId(config.name);
         const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
+        if (session?.taskBinding) return session.taskBinding;
         if ((session?.source !== "app-task-agent" && session?.source !== "app-task-owner") || !session.projectId) {
           return undefined;
         }
-        return session.taskBinding ?? { appId: session.projectId };
+        return { appId: session.projectId };
       },
     }),
   );

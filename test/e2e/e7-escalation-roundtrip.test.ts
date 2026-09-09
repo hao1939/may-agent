@@ -5,7 +5,7 @@
  * escalation.resolved events correctly:
  *
  *   1. emit escalation.created (with escalationId + sourceSessionId)
- *   2. emit escalation.resolved (matching escalationId)
+ *   2. emit needs_human, then resolved (matching escalationId)
  *   3. subscriber finds the original, attempts to resume
  *   4. emits escalation.resume_attempted, then resume_failed
  *      (because the source session id is synthetic — no real session
@@ -19,7 +19,9 @@
  *
  * Also covers the `needs_human` short-circuit: resolving with
  * outcome=needs_human does NOT attempt resume of the source session
- * (the parent stays blocked until the human child escalation resolves).
+ * (no resume attempt until a terminal resolution). The later resolution proves
+ * the same FIFO listener has processed the earlier event; no fixed sleep.
+ * Parent/child human escalation is covered by the integration lifecycle tests.
  *
  * Validates documented behavior of:
  *   - sdk-quickstart.md § External Escalate
@@ -53,7 +55,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
     if (sb) await sb.close();
   });
 
-  test("resolved → resume_attempted → resume_failed (no real session to resume)", async () => {
+  test("needs_human does not resume; terminal resolution attempts the exact source session", async () => {
     const escalationId = `e2e-${Date.now()}-resolved`;
     const sourceSessionId = `e2e-fake-session-${Date.now()}`;
     const t0 = Date.now();
@@ -98,7 +100,15 @@ describe("E7: escalation lifecycle roundtrip", () => {
         },
       });
 
-      // ── 3. Emit escalation.resolved ────────────────────────────────
+      const waiting = { escalationId, outcome: "needs_human", summary: "blocked on human" };
+      const waitingResp = (await socketEmit(sb.socketPath, "escalation.resolved", {
+        source: "e2e-test",
+        owner: "agent:may",
+        data: waiting,
+      })) as { type?: string };
+      expect(waitingResp.type).toBe("ok");
+
+      // ── 3. Emit a later terminal resolution on the same listener ───
       const resolvedResp = (await socketEmit(sb.socketPath, "escalation.resolved", {
         source: "e2e-test",
         owner: "agent:may",
@@ -114,13 +124,15 @@ describe("E7: escalation lifecycle roundtrip", () => {
       // ── 4. Subscriber processes → resume_attempted + resume_failed ──
       const result = await pollUntil(
         () => {
-          const attempted = queryEvents(db, {
-            types: ["escalation.resume_attempted"],
+          const failed = queryEvents(db, {
+            types: ["escalation.resume_failed"],
             since: t0,
             limit: 5,
           }).filter((e) => (e.data ?? "").includes(escalationId));
-          const failed = queryEvents(db, {
-            types: ["escalation.resume_failed"],
+          if (!failed.some((row) => eventPayload(row).outcome === "resolved")) return null;
+          // Read earlier evidence only after the terminal marker is visible.
+          const attempted = queryEvents(db, {
+            types: ["escalation.resume_attempted"],
             since: t0,
             limit: 5,
           }).filter((e) => (e.data ?? "").includes(escalationId));
@@ -129,14 +141,20 @@ describe("E7: escalation lifecycle roundtrip", () => {
             since: t0,
             limit: 5,
           }).filter((e) => (e.data ?? "").includes(escalationId));
-          if (resolved.length >= 1 && attempted.length >= 1 && failed.length >= 1)
-            return { resolved, attempted, failed };
-          return null;
+          return { resolved, attempted, failed };
         },
         { timeoutMs: 5_000, intervalMs: 100, description: "resolved + resume_attempted + resume_failed" },
       );
 
-      const resolvedRow = result.resolved[0];
+      // The listener is FIFO: terminal failure proves it already processed
+      // needs_human. Exactly one attempt excludes an early, erroneous resume.
+      expect(result.attempted).toHaveLength(1);
+      expect(result.failed).toHaveLength(1);
+      expect(result.resolved).toHaveLength(2);
+      const waitingRow = result.resolved.find((row) => eventPayload(row).outcome === "needs_human")!;
+      expect(waitingRow).toMatchObject({ source: "control-socket", owner: "agent:may" });
+      expect(eventPayload(waitingRow)).toEqual(waiting);
+      const resolvedRow = result.resolved.find((row) => eventPayload(row).outcome === "resolved")!;
       expect(resolvedRow.source).toBe("control-socket");
       expect(resolvedRow.owner).toBe("agent:may");
       expect(eventPayload(resolvedRow)).toEqual({
@@ -176,88 +194,4 @@ describe("E7: escalation lifecycle roundtrip", () => {
       db.close();
     }
   }, 30_000);
-
-  test("needs_human outcome does NOT attempt source-session resume", async () => {
-    const escalationId = `e2e-${Date.now()}-needs-human`;
-    const sourceSessionId = `e2e-fake-session-${Date.now() + 1}`;
-    const t0 = Date.now();
-
-    // Emit created
-    await socketEmit(sb.socketPath, "escalation.created", {
-      source: "e2e-test",
-      owner: "agent:may",
-      data: {
-        escalationId,
-        reason: "needs human decision",
-        sourceSessionId,
-        requestedAction: "human input required",
-      },
-    });
-
-    const db = openSandboxDb(sb.dbPath);
-    try {
-      const createdRows = await pollUntil(
-        () => {
-          const rows = queryEvents(db, { types: ["escalation.created"], since: t0, limit: 5 }).filter((e) =>
-            (e.data ?? "").includes(escalationId),
-          );
-          return rows.length >= 1 ? rows : null;
-        },
-        { timeoutMs: 5_000, intervalMs: 100, description: "needs_human escalation.created persisted" },
-      );
-      expect(createdRows[0].source).toBe("control-socket");
-      expect(createdRows[0].owner).toBe("agent:may");
-      expect(eventPayload(createdRows[0])).toEqual({
-        escalationId,
-        reason: "needs human decision",
-        sourceSessionId,
-        requestedAction: "human input required",
-        resumeCondition: "human input required",
-        resume: {
-          kind: "session",
-          sessionId: sourceSessionId,
-          condition: "human input required",
-        },
-      });
-
-      // Resolve with outcome=needs_human
-      await socketEmit(sb.socketPath, "escalation.resolved", {
-        source: "e2e-test",
-        owner: "agent:may",
-        data: {
-          escalationId,
-          outcome: "needs_human",
-          summary: "blocked on human",
-        },
-      });
-
-      // Wait briefly to let the subscriber decide not to act.
-      await new Promise((r) => setTimeout(r, 1500));
-
-      // Assert: NO resume_attempted for this escalation.
-      const attempted = queryEvents(db, {
-        types: ["escalation.resume_attempted"],
-        since: t0,
-        limit: 5,
-      }).filter((e) => (e.data ?? "").includes(escalationId));
-      expect(attempted.length).toBe(0);
-
-      // The resolved event itself should still have landed.
-      const resolved = queryEvents(db, {
-        types: ["escalation.resolved"],
-        since: t0,
-        limit: 5,
-      }).filter((e) => (e.data ?? "").includes(escalationId));
-      expect(resolved.length).toBeGreaterThanOrEqual(1);
-      expect(resolved[0].source).toBe("control-socket");
-      expect(resolved[0].owner).toBe("agent:may");
-      expect(eventPayload(resolved[0])).toEqual({
-        escalationId,
-        outcome: "needs_human",
-        summary: "blocked on human",
-      });
-    } finally {
-      db.close();
-    }
-  }, 15_000);
 });

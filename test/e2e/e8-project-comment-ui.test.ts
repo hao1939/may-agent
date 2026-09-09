@@ -43,21 +43,18 @@ async function probePuppeteer(): Promise<{ ok: true; mod: typeof import("puppete
   ].filter((p): p is string => typeof p === "string" && p.length > 0);
   const chromePath = candidates.find((p) => existsSync(p));
   if (!chromePath) {
-    return { ok: false, reason: "no chrome/chromium executable found (set CHROME_PATH or install /usr/bin/google-chrome)" };
+    return {
+      ok: false,
+      reason: "no chrome/chromium executable found (set CHROME_PATH or install /usr/bin/google-chrome)",
+    };
   }
   // The browser driver is a declared repository dependency, not a host fallback.
-  const tryPaths = [
-    "puppeteer-core",
-  ];
-  for (const p of tryPaths) {
-    try {
-      const mod = (await import(p)) as typeof import("puppeteer-core");
-      return { ok: true, mod, chromePath };
-    } catch {
-      /* keep trying */
-    }
+  try {
+    const mod = await import("puppeteer-core");
+    return { ok: true, mod, chromePath };
+  } catch {
+    return { ok: false, reason: "puppeteer-core not importable; run bun install --frozen-lockfile" };
   }
-  return { ok: false, reason: "puppeteer-core not importable; run bun install --frozen-lockfile" };
 }
 
 function statusOf(content: string): string | null {
@@ -118,7 +115,9 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       page.on("response", (res) => {
         if (res.status() >= 400) console.log(`[E8 http ${res.status()}] ${res.url()}`);
       });
-      await page.goto(`${base}/#/projects`, { waitUntil: "networkidle0", timeout: 10_000 });
+      // Page-specific assertions below prove readiness; background requests
+      // need not stop before a human can use the page.
+      await page.goto(`${base}/#/projects`, { waitUntil: "domcontentloaded", timeout: 10_000 });
 
       // 2. Reveal inactive projects (platform default status = waiting).
       await page.waitForSelector("#show-hidden-toggle", { timeout: 5000 });
