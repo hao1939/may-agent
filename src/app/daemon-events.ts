@@ -1,4 +1,4 @@
-import { eventData, type EventBus } from "./event-bus.js";
+import { eventData, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
 import {

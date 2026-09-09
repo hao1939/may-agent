@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAgentSDK } from "./sdk-impl.js";
 import type { SDKDeps } from "./sdk-impl.js";
-import { EventBus } from "../app/event-bus.js";
+import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
 import { closeDb } from "./requests.js";
 

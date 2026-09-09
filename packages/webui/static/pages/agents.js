@@ -69,7 +69,6 @@ async function renderAgentDetail(name) {
     <span style="color:${dotColor};font-size:14px">●</span>
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
     ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
-    <button onclick="verbHeartbeatNow('${esc(name)}', event)" title="Trigger a heartbeat for ${esc(name)} now" style="margin-left:auto;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">♥ heartbeat-now</button>
     <button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>
   </div>`;
   if (summary && summary.description) {

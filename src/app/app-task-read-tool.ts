@@ -1,7 +1,7 @@
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage, TaskView } from "@may-agent/sdk";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 
 const parameters = Type.Object(
   {

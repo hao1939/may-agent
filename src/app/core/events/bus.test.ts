@@ -12,7 +12,7 @@ import {
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   EventBus,
-} from "./event-bus.js";
+} from "./bus.js";
 
 describe("EventBus subscriber priority", () => {
   it("reruns only explicit durable routes during pending-event redelivery", () => {

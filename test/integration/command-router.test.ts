@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
-import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
+import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
 
 const roots: string[] = [];

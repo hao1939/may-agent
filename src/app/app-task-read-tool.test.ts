@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { TaskOutcomeProjection } from "@may-agent/sdk";
 import { createAppTaskReadTool } from "./app-task-read-tool.js";
-import { EventBus } from "./event-bus.js";
+import { EventBus } from "./core/events/bus.js";
 
 function text(result: Awaited<ReturnType<ReturnType<typeof createAppTaskReadTool>["execute"]>>): unknown {
   const content = result.content[0];

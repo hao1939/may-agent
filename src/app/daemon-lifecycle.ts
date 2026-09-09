@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import type { InstanceIdentity } from "../lib/instance-identity.js";
 export { createIdentityWriter, type InstanceIdentity } from "../lib/instance-identity.js";
-import type { EventBus } from "./event-bus.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";

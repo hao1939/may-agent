@@ -1,5 +1,5 @@
 import type { AppDefinition, AppRead, TaskAttempt, TaskIntent, TaskVerifier } from "@may-agent/sdk";
-import type { EventEnvelope } from "../../event-bus.js";
+import type { EventEnvelope } from "../events/bus.js";
 import type { AppTaskEvents } from "../../app-task-emitter.js";
 import type { AppTaskExecutionPaths } from "../../app-task-output-paths.js";
 import type { AppTaskChildContext, AppTaskClaim, readAppTaskLiveSnapshot } from "../../app-task-reconciler.js";

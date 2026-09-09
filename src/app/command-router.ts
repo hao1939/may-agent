@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
 
 export interface CommandRouterOptions {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { EventBus } from "../event-bus.js";
+import { EventBus } from "../core/events/bus.js";
 import { attachConsoleUI } from "./console.js";
 
 describe("console transport", () => {

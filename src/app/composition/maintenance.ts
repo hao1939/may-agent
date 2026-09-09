@@ -1,5 +1,5 @@
 import { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import { mayConversationNoticeEvent } from "../app-input-event.js";
 
 /** Prepare only. The committed generation owns activation and retirement. */

@@ -5,7 +5,7 @@
  * See F7 in projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import { attachDaemonInfoLog } from "../../src/app/transport/daemon-info-log.js";
 import { addLogSubscriber } from "../../src/lib/log.js";
 

@@ -358,12 +358,6 @@ async function steer(method, path, body, opts) {
 // Verb wrappers (one per endpoint). Stop event so row clicks don't fire.
 function stopEv(ev) { if (ev) { ev.stopPropagation(); ev.preventDefault(); } }
 
-async function verbHeartbeatNow(agent, ev) {
-  stopEv(ev);
-  await steer('POST', `/api/agents/${encodeURIComponent(agent)}/heartbeat-now`, { actor: 'human' }, { label: `heartbeat ${agent}` });
-  scheduleLivenessRefresh();
-}
-
 async function verbResolveAlert(alertId, ev) {
   stopEv(ev);
   const reason = prompt('Resolution note (optional):', '') ?? '';

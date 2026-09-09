@@ -9,7 +9,7 @@
  * Daemon mode: show everything dimmed.
  */
 
-import { eventData, isSessionEvent, type EventBus } from "../event-bus.js";
+import { eventData, isSessionEvent, type EventBus } from "../core/events/bus.js";
 import { addLogSubscriber, type LogLevel } from "../../lib/log.js";
 
 const DIM = "\x1b[2m";

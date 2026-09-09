@@ -2,13 +2,13 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import type { SubagentManager } from "../../../lib/manager.js";
 import type { HandlerContext, HandlerModule, HandlerSDK } from "./context.js";
-import type { EventEnvelope } from "../../event-bus.js";
+import type { EventEnvelope } from "../../core/events/bus.js";
 import type { MaintenanceEntry } from "./contracts.js";
 import { buildSessionHelpers } from "../../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../../lib/sdk-impl.js";
 import { importRuntimeModule } from "../../../lib/runtime-import.js";
 import { HostMaintenance, type MaintenanceHandler } from "./runtime.js";
-import type { EventBus } from "../../event-bus.js";
+import type { EventBus } from "../../core/events/bus.js";
 
 export interface AgentHandlerLoaderOptions {
   agentsRoot: string;

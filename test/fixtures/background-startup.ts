@@ -2,7 +2,7 @@
 // pending, then either resolved or rejected. Never start installed workloads.
 import assert from "node:assert/strict";
 import { mock } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import type { BackgroundRuntimeOptions } from "../../src/app/composition/background-startup.js";
 
 const order: string[] = [];

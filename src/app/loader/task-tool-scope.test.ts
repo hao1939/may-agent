@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 import type { AgentConfig } from "./agent-config.js";
-import { EventBus } from "../event-bus.js";
+import { EventBus } from "../core/events/bus.js";
 
 const roots: string[] = [];
 afterEach(() => {

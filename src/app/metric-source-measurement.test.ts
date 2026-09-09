@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb } from "../lib/requests.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { EventBus, EVENT_ROW_ID } from "./event-bus.js";
+import { EventBus, EVENT_ROW_ID } from "./core/events/bus.js";
 import {
   attachMetricSourceMeasurement,
   batchableProjectMetricCommand,

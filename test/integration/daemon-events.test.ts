@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,

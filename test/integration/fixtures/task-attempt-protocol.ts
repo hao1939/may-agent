@@ -1,6 +1,6 @@
 import { expect } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { EventBus } from "../../../src/app/event-bus.js";
+import { EventBus } from "../../../src/app/core/events/bus.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,

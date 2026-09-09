@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
 import { VALID_TOOL_PRESETS } from "../../lib/tool-preset-registry.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 
 export interface AgentConfig {
   name: string;

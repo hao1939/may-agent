@@ -128,7 +128,7 @@ export {
 } from "./execution-result.js";
 export type { ExecutionKind, ExecutionResult, ExecutionStatus, ResumeDiagnostic } from "./execution-result.js";
 
-export type { EventEnvelope } from "../app/event-bus.js";
+export type { EventEnvelope } from "../app/core/events/bus.js";
 export type { HandlerContext, HandlerModule } from "../app/adapters/maintenance/context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
 export { retryWithBackoff } from "./retry-with-backoff.js";

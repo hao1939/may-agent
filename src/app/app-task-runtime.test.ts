@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { Type, defineApp, type AppDefinition, type AppRequest, type TaskExecutor } from "@may-agent/sdk";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./core/events/bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./core/apps/registry.js";

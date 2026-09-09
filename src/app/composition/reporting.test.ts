@@ -4,7 +4,7 @@ import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../lib/sdk-impl.js";
 import * as metrics from "../../lib/metrics.js";
 import * as query from "../../lib/query-service.js";
-import { EventBus } from "../event-bus.js";
+import { EventBus } from "../core/events/bus.js";
 
 it("does not construct reporting services merely to prepare runtime/SDK capabilities", () => {
   const metricFactory = spyOn(metrics, "createMetricService");

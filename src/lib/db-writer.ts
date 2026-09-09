@@ -17,7 +17,7 @@ import {
   type EventTaskEmissionFence,
   type AgentEvent,
   type DeliveryResult,
-} from "../app/event-bus.js";
+} from "../app/core/events/bus.js";
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";

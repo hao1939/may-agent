@@ -5,7 +5,7 @@
  * filename still includes the interface agent (`may.sock`).
  */
 
-import type { EventInterface } from "../event-interface.js";
+import type { EventInterface } from "../core/events/interface.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import {
   attachControlSocket,

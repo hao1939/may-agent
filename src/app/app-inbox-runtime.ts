@@ -14,7 +14,7 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
   AppInboxHost,
   type AppInboxReconcileResult,

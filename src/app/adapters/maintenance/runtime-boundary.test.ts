@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HostMaintenance } from "./runtime.js";
-import { EventBus, EVENT_DELIVERY_RESULT, type SystemEvent } from "../../event-bus.js";
+import { EventBus, EVENT_DELIVERY_RESULT, type SystemEvent } from "../../core/events/bus.js";
 import { closeDb } from "../../../lib/requests.js";
 
 const cleanups: Array<() => void> = [];

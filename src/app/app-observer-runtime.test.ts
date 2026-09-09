@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { AppDefinition } from "@may-agent/sdk";
-import { EventBus } from "./event-bus.js";
+import { EventBus } from "./core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
 function entry(definition: AppDefinition) {

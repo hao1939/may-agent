@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "bun:test";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 
 function tempCronConfig(entries: unknown[]): { root: string; configPath: string; cleanup: () => void } {

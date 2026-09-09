@@ -64,7 +64,7 @@ import { createUnavailableMetricService } from "./metrics.js";
 import type { AppTaskEvents } from "../app/app-task-emitter.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { EventTrace } from "../app/event-bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 import type {
   AppRead,
   AgentCallOptions,

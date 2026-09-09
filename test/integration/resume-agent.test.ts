@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
+import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { upsertSession } from "../../src/lib/db/sessions.js";

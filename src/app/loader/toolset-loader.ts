@@ -16,7 +16,7 @@ import {
 } from "../../lib/index.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
 import { createMaintenanceTool } from "../adapters/maintenance/tool.js";
 import type { AgentConfig } from "./agent-config.js";

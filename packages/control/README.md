@@ -33,10 +33,45 @@ for one matching notification; after reconnecting, read durable state again.
 - `src/server.ts`: server transport with callbacks supplied by the Host.
 - `src/event-envelope.ts` and `src/task-wake.ts`: transport envelope and wake helpers.
 
-The Host implementation in `src/app/event-interface.ts` validates input,
+The Host implementation in `src/app/core/events/interface.ts` validates input,
 assigns trusted provenance, persists events, and exposes their admission view.
 Publisher authority and the live EventBus stay inside the Host. App attempts
 receive their scoped publishing capability through the SDK.
+
+## Observe facts; read results
+
+| Surface | Meaning and consumer rule |
+| --- | --- |
+| `publish` receipt | Durable event identity and admission only; follow its request/Task links for the result |
+| `app.task.updated` | Exact `{appId, taskId}` wake for a watched Task/list; reread it, never infer completion |
+| `conversation.updated` | Exact Conversation wake; read messages since the last known sequence |
+| `getEvent` / HTTP `GET /api/events/:id` | Trusted operator diagnostics, including internal types; linked route state is not Task state |
+| Explicit raw event/session subscription | Best-effort diagnostic stream; payloads outside documented integrations may change |
+
+`PublicEvent` names the transport shape, not a promise that every bus type is a
+supported domain API. The Host's `PUBLIC_EVENT_TYPES` is an **ingress allowlist**,
+not an outbound filter. Seeing a diagnostic does not authorize publishing it.
+Normal `publish`/HTTP rejects unregistered types; trusted local operator frames
+may record facts. Neither can turn diagnostic text into accepted Task results.
+
+`project.task.reconciled` includes stale/rejected attempts. Its raw summary or
+`state` is not completion evidence. Task subscribers receive identity-only
+wakes and use canonical Task reads, which retain result/cancellation fences.
+Profiling, handler health, and subscriber-failure events remain observable to
+their diagnostic readers, not promoted into new work APIs.
+
+Listeners run after publication with bounded, independent FIFO notification
+buffers. Their async promises preserve per-listener ordering and failures become
+`subscriber.failed` diagnostics. Slow listeners do not block other listeners or
+accepted state; a synchronous CPU-heavy callback still occupies the process and
+must be bounded or moved out of process. Overflow/reconnect can lose notifications:
+reread canonical resources; never use this stream as a durable work queue.
+
+To add an integration, identify the independent consumer and its existing
+resource first. Reuse a wake/read pair where sufficient. Keep domain schemas and
+subscriptions in the owning App; only add a public event when that integration
+needs one. Private claims, leases, result admission and timer callbacks remain
+ordinary calls/transactions. There is no general event plugin or second router.
 
 The canonical design is
 [Events and Task Admission](../../../may-agent.app/docs/2a-design/events.md).

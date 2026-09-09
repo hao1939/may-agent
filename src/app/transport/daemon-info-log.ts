@@ -17,7 +17,7 @@
  * Opt-out via env: set `MAY_DAEMON_QUIET=1` to suppress.
  */
 
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import { log } from "../../lib/log.js";
 
 export function attachDaemonInfoLog(bus: EventBus): void {

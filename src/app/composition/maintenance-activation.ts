@@ -1,5 +1,5 @@
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import type { EventBus } from "../event-bus.js";
+import type { EventBus } from "../core/events/bus.js";
 
 /** Activate a prepared scheduler generation only after its definitions commit. */
 export function activateAgentMaintenance(

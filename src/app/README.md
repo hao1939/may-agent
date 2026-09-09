@@ -14,8 +14,9 @@ The governing design lives in the sibling App tree, not this navigation guide:
   definition active.” [Extension rule](../../../may-agent.app/docs/2a-design/system-boundary.md#extension-rule)
   keeps stable mechanics in the Host and policy in the App.
 - [Core proposal — Step 2](../../../may-agent.app/docs/proposals/task-runtime-organization.md#step-2-separate-app-source-discovery-from-core-registration)
-  applies these accepted rules to discovery and registration. The rest of that
-  proposal remains incremental work, not implemented behavior.
+  applies these accepted rules to discovery and registration. The following
+  guide maps the complete candidate separation; PR/source status remains in
+  the proposal, separate from deployment.
 
 These links require the sibling `may-agent.app` design tree. A standalone Host
 checkout does not contain it; request the cited sections when reviewing a
@@ -23,14 +24,15 @@ behavior change rather than treating this guide as replacement design.
 
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
-| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/registry.ts` validates and publishes generations; `tasks/startup-recovery.ts` keeps Task-bound sessions under Task recovery |
-| `adapters/` | Concrete capability implementations | `discovery/app-definitions.ts` reads conventional App files; `maintenance/` contains named Host duties and their configuration |
-| `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts` starts recovery independently of optional schedules |
+| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/` registration, `events/` admission/observation, `reads/` canonical reads, `tasks/` executor/recovery contracts, `scheduling/` owned timing |
+| `adapters/` | Concrete capability implementations | `discovery/`, `executors/`, `producers/`, `maintenance/`, `reporting/` |
+| `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts`, `task-execution.ts`, `maintenance.ts`, `maintenance-activation.ts`, `reporting.ts` |
 
-This layout is being applied incrementally. `app-runtime.ts` remains the main
-composition root; Task stores/controllers, event admission, and concrete
-executors still have mixed/flat locations. Do not mistake those remaining files
-for completed separation or move the whole Cron engine into core.
+`app-runtime.ts` remains the main composition root. Transaction-critical Task
+stores/controllers and request admission retain their existing flat files;
+the navigation below identifies their ownership. Transports remain in
+`transport/`, HTTP in `http/`. The proposal separates demonstrated responsibilities,
+not every file or an entire runtime-instance rewrite.
 
 Core depends on contracts and foundational utilities, not concrete adapters.
 Composition may import both sides. Adapters receive the narrow capabilities
@@ -54,7 +56,26 @@ Public App contracts live in `packages/sdk`; client contracts in
 component interface. Add subdirectories as real boundaries are separated, not
 as empty placeholders.
 
-## Shared timing
+## Supported events and diagnostics
+
+`core/events/bus.ts` owns synchronous persistence/admission followed by independent
+bounded passive observation. `core/events/interface.ts` validates ingress and
+exposes diagnostic reads/streams. Its ingress allowlist does not select outbound
+events. See the [control guide](../../packages/control/README.md) for supported
+Task/Conversation wake-and-reread semantics.
+
+Consumers were traced across control socket, console/Telegram, inbox recovery,
+metric source measurement, event graph and health queries. Existing profiling and
+handler-health diagnostics remain. A stale `project.task.reconciled` observation
+does not mean an accepted completion; control emits only the exact Task identity.
+Async subscriber returns pass back to the existing bus so ordering and error
+containment work. No new event family or routing registry is introduced.
+
+The retired standalone heartbeat trigger, HTTP action and UI buttons are removed
+together. Historical heartbeat evidence remains readable. App work uses declared
+input/schedules and fenced Task controls, not an unhandled “triggered” response.
+
+## Shared timing mechanics
 
 `core/scheduling/timer.ts` owns timer replacement, cancellation, and shutdown.
 It dispatches private callbacks and contains synchronous failures; it does not
@@ -126,7 +147,7 @@ owners; the registry does not take over their lifecycle.
 | How is an App discovered and validated?          | `adapters/discovery/app-definitions.ts`; `core/apps/definition-validation.ts` |
 | How does reload publish a generation?            | `core/apps/registry.ts`: `reload()`; `app-runtime.ts` coordinates consumers    |
 | What may an external caller publish or read?     | `packages/control/src/events.ts` and `client.ts` in the repository root        |
-| How does the Host admit an event?                | `event-interface.ts`: `createEventInterface()`                                 |
+| How does the Host admit an event?                | `core/events/interface.ts`: `createEventInterface()`                           |
 | How are declared routes selected and remembered? | `app-inbox-runtime.ts`; `app-event-admission-store.ts`                         |
 | How is one request handled?                      | `app-inbox-host.ts`: `reconcileOnce()` and `#handleRequest()`                  |
 | Where are requests claimed and settled?          | `app-inbox-store.ts`                                                           |

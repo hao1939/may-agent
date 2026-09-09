@@ -11,7 +11,7 @@ import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
 import { readIdentity } from "./instance-identity.js";
-import type { EventTrace } from "../app/event-bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),

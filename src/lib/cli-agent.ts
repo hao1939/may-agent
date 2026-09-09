@@ -14,7 +14,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
-import type { EventTrace } from "../app/event-bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 import { addSessionBashProcessGroup, removeSessionBashProcessGroup } from "./persistence.js";
 import { BASH_PROCESS_GROUP_KILL_GRACE_MS, drainBashProcessGroup } from "./tools/bash.js";
 

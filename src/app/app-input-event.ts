@@ -1,4 +1,4 @@
-import type { AgentEvent } from "./event-bus.js";
+import type { AgentEvent } from "./core/events/bus.js";
 
 /** Append an explicit human-visible runtime notice to May's shared Conversation. */
 export function mayConversationNoticeEvent(input: {

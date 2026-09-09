@@ -1,7 +1,7 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 

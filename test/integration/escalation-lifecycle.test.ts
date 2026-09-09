@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 import { createEscalationLifecycleSubscriber } from "../../src/lib/escalation-lifecycle.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";

@@ -5,7 +5,7 @@ import {
   type EventBus,
   type EventTrace,
   type Subscriber,
-} from "../app/event-bus.js";
+} from "../app/core/events/bus.js";
 import { appOwnerReviewEvent } from "../app/app-input-event.js";
 import { getDb } from "./requests.js";
 

@@ -7,7 +7,7 @@ import type {
   EventView,
   PublicEvent,
 } from "@may-agent/control/events";
-import type { SqliteDb } from "../lib/db.js";
+import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
   EVENT_INTERFACE_INPUT,
@@ -16,7 +16,7 @@ import {
   eventData,
   type AgentEvent,
   type EventBus,
-} from "./event-bus.js";
+} from "./bus.js";
 
 export type EventFilter = {
   types?: string[];
@@ -34,8 +34,10 @@ export type EventPublisherContext = {
 
 export type EventInterface = {
   publish(input: EventInput, context: EventPublisherContext): EventReceipt;
+  /** Trusted operator diagnostics, not a stable payload contract for every type. */
   get(eventId: number): EventView | undefined;
-  subscribe(filter: EventFilter, listener: (event: PublicEvent) => void): () => void;
+  /** Best-effort observations; slow/failing listeners never acknowledge work. */
+  subscribe(filter: EventFilter, listener: (event: PublicEvent) => void | Promise<void>): () => void;
 };
 
 type EventDefinition = {
@@ -170,14 +172,6 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       requiredText(input.data.instructions, "evaluation.session.requested data.instructions");
     },
   },
-  "heartbeat.trigger": {
-    delivery: "record",
-    validate: (input, options) => {
-      const agent = requiredText(input.data.agent, "heartbeat.trigger data.agent");
-      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
-      optionalTextField(input.data, "requestedBy", "heartbeat.trigger data.requestedBy");
-    },
-  },
   "metric.threshold_changed": {
     delivery: "record",
     validate: (input) => {
@@ -241,6 +235,7 @@ export function eventDeliveryContract(type: string): "record" | "required" {
 }
 
 /** Types accepted by the new generic socket/HTTP publish operation. */
+/** Ingress permission only. Never use this as an outbound observation filter. */
 export const PUBLIC_EVENT_TYPES = new Set([...Object.keys(EVENT_DEFINITIONS)]);
 
 export type CreateEventInterfaceOptions = {
@@ -645,7 +640,7 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
         (event) => {
           const data = eventData(event);
           if (sessionIds && (typeof data.sessionId !== "string" || !sessionIds.has(data.sessionId))) return;
-          listener(publicEvent(event));
+          return listener(publicEvent(event));
         },
         { label: "event-interface", ...(types ? { types: [...types] } : {}) },
       );

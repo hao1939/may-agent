@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTaskAdmissionProcess, runTaskAdmissionWorker } from "../../src/app/task-admission-process.js";
-import { EVENT_ROW_ID, type AgentEvent } from "../../src/app/event-bus.js";
+import { EVENT_ROW_ID, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import type { AppEventAdmissionCommand } from "../../src/app/app-event-admission-store.js";
