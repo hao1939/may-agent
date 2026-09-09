@@ -1,5 +1,6 @@
 import type { AppTaskLane } from "./app-task-queue.js";
 import type { IndexedTaskCandidatePage, IndexedTaskRecoveryCursor } from "./app-task-resource-store.js";
+import { OwnedTimer } from "./core/scheduling/timer.js";
 
 export type IndexedTaskRecoverySource = {
   listRecoveryCandidates(now?: number, limit?: number, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage;
@@ -22,8 +23,8 @@ export class AppTaskRecoveryScheduler {
   private readonly safetyIntervalMs: number;
   private readonly pageSize: number;
   private readonly now: () => number;
-  private safetyTimer?: ReturnType<typeof setInterval>;
-  private dueTimer?: ReturnType<typeof setTimeout>;
+  private readonly safetyTimer = new OwnedTimer("task-recovery:safety");
+  private readonly dueTimer = new OwnedTimer("task-recovery:due");
   private dueAt?: number;
   private recoveryCursor?: IndexedTaskRecoveryCursor;
   private closed = false;
@@ -35,14 +36,13 @@ export class AppTaskRecoveryScheduler {
   }
 
   start(): void {
-    if (this.closed || this.safetyTimer) return;
+    if (this.closed || this.safetyTimer.armed) return;
     this.recover();
     this.armNearestDue();
-    this.safetyTimer = setInterval(() => {
+    this.safetyTimer.every(this.safetyIntervalMs, () => {
       this.recover();
       this.armNearestDue();
-    }, this.safetyIntervalMs);
-    this.safetyTimer.unref?.();
+    });
   }
 
   /** Call after a task records a new next-check time or clears the current one. */
@@ -53,10 +53,8 @@ export class AppTaskRecoveryScheduler {
 
   close(): void {
     this.closed = true;
-    if (this.safetyTimer) clearInterval(this.safetyTimer);
-    if (this.dueTimer) clearTimeout(this.dueTimer);
-    this.safetyTimer = undefined;
-    this.dueTimer = undefined;
+    this.safetyTimer.close();
+    this.dueTimer.close();
     this.dueAt = undefined;
   }
 
@@ -75,26 +73,19 @@ export class AppTaskRecoveryScheduler {
   private armNearestDue(force = false): void {
     const next = this.options.source.nextDueAt();
     if (next === null || next <= this.now()) {
-      if (force && this.dueTimer) clearTimeout(this.dueTimer);
       if (force || next === null) {
-        this.dueTimer = undefined;
+        this.dueTimer.cancel();
         this.dueAt = undefined;
       }
       return;
     }
-    if (!force && this.dueTimer && this.dueAt === next) return;
-    if (this.dueTimer) clearTimeout(this.dueTimer);
+    if (!force && this.dueTimer.armed && this.dueAt === next) return;
     this.dueAt = next;
-    this.dueTimer = setTimeout(
-      () => {
-        this.dueTimer = undefined;
-        this.dueAt = undefined;
-        this.recover();
-        // Re-arming waits for the task transition or the safety query. A still-
-        // due row must not create a zero-delay timer loop.
-      },
-      Math.max(1, next - this.now()),
-    );
-    this.dueTimer.unref?.();
+    this.dueTimer.after(Math.max(1, next - this.now()), () => {
+      this.dueAt = undefined;
+      this.recover();
+      // Re-arming waits for the task transition or the safety query. A still-
+      // due row must not create a zero-delay timer loop.
+    });
   }
 }

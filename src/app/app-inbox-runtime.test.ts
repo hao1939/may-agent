@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -545,7 +545,9 @@ describe("App inbox runtime", () => {
     resumed = { topicId: topic.id, taskId: task.attached[0] };
     task.observations.set(resumed.taskId, { kind: "task", id: resumed.taskId, status: "running" });
     await waitUntil(() => {
-      const row = db.prepare("SELECT status FROM app_inbox_items WHERE source_id = 'human-review'").get() as { status: string };
+      const row = db.prepare("SELECT status FROM app_inbox_items WHERE source_id = 'human-review'").get() as {
+        status: string;
+      };
       return row.status === "done";
     });
     runtime.close();
@@ -2014,6 +2016,67 @@ describe("App inbox runtime", () => {
     expect(observed).toContain("sample.observed");
     expect(observed).not.toContain("sample.scheduled");
     expect(observed).not.toContain("app.input.requested");
+  });
+
+  it("keeps schedule and observer cadence alive when request recovery reads fail", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      readFileSync(appPath, "utf8").replace(
+        "subscriptions: [{",
+        `
+      schedules: Array.from({ length: 32 }, (_, i) => ({
+        id: "fact-" + i, intervalMs: 1000,
+        event: { type: "sample.scheduled", data: { index: i } }
+      })),
+      observers: [{ id: "observer", intervalMs: 1000,
+        async run() { return [{ type: "sample.observed", data: {} }]; }
+      }], subscriptions: [{`,
+      ),
+    );
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const observed: string[] = [];
+    bus.subscribe((event) => {
+      observed.push(event.type);
+    });
+    let now = 1000;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      now: () => now,
+      scanIntervalMs: 5,
+      deferStart: true,
+      observerContext: () => ({}) as never,
+    });
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    const readiness = spyOn(runtime.host, "readyAppIds").mockImplementation(() => {
+      throw new Error("fixture readiness read unavailable");
+    });
+    try {
+      now = 2000;
+      await runtime.start();
+      await waitUntil(
+        () =>
+          errors.mock.calls.length > 0 &&
+          observed.includes("sample.observed") &&
+          observed.filter((type) => type === "sample.scheduled").length === 32,
+      );
+      // Subsequent scans at the same slot cannot multiply publications.
+      await waitUntil(() => errors.mock.calls.length >= 3);
+      expect(observed.filter((type) => type === "sample.scheduled")).toHaveLength(32);
+      expect(observed.filter((type) => type === "sample.observed")).toHaveLength(1);
+      runtime.close();
+      const count = observed.length;
+      now = 3000;
+      await Bun.sleep(20);
+      expect(observed).toHaveLength(count);
+    } finally {
+      readiness.mockRestore();
+      errors.mockRestore();
+    }
   });
 
   it("publishes event schedules as record-only facts", async () => {
