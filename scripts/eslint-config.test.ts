@@ -2,6 +2,23 @@ import { expect, it } from "bun:test";
 import { ESLint } from "eslint";
 import { fileURLToPath } from "node:url";
 
+it("keeps loader imports independent of the runtime barrel that exports them", async () => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
+  const source = [
+    'import { loadAgents } from "../../lib/index.js"; void loadAgents;',
+    'export { createReadTool } from "../../lib/index";',
+    'import type { SubagentManager } from "../../lib/manager.js"; export type Manager = SubagentManager;',
+    'import { createReadTool } from "../../lib/tools/read.js"; void createReadTool;',
+  ].join("\n");
+  for (const filePath of ["src/app/agent-loader.ts", "src/app/loader/toolset-loader.ts"]) {
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual([
+      ["no-restricted-imports", 1],
+      ["no-restricted-imports", 2],
+    ]);
+  }
+});
+
 it("enforces bounded imports with and without extensions, but allows neutral helpers", async () => {
   const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
   for (const filePath of [

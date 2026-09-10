@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
 import type { SubagentDefinition } from "../../lib/types.js";
-import type { SubagentManager } from "../../lib/index.js";
+import type { SubagentManager } from "../../lib/manager.js";
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
 import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";

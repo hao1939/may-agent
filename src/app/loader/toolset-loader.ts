@@ -1,19 +1,17 @@
 import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import {
-  SubagentManager,
-  createCodingTools,
-  createReadTool,
-  createWorkflowTool,
-  createBackgroundExecTool,
-  createScrapeTool,
-  createSystemStatusTool,
-  createQueryDbTool,
-  createFinishTool,
-  createCheckpointTool,
-  createRunCliAgentTool,
-} from "../../lib/index.js";
+import type { SubagentManager } from "../../lib/manager.js";
+import { createCodingTools } from "../../lib/tools/coding.js";
+import { createReadTool } from "../../lib/tools/read.js";
+import { createWorkflowTool } from "../../lib/workflow-tool.js";
+import { createBackgroundExecTool } from "../../lib/background-exec.js";
+import { createScrapeTool } from "../../lib/scrape.js";
+import { createSystemStatusTool } from "../../lib/tools/system-status.js";
+import { createQueryDbTool } from "../../lib/tools/query-db.js";
+import { createFinishTool } from "../../lib/tools/lifecycle.js";
+import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
+import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import type { EventBus } from "../core/events/bus.js";
