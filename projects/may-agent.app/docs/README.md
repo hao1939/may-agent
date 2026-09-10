@@ -31,10 +31,12 @@ small shared state boundary.
 ## Current focus
 
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
-tracks the accepted removal of conversational child waits in Host #140, with
+tracks the merged removal of conversational child waits in Host #140, with
 visible retirement of old waits and preservation of accepted Requests and Task
 work. Import/navigation and foreground-App selection landed in #138/#139.
-Directory organization is the next independent milestone for code review;
+Directory organization is prepared in Host #141 (core/composition) and #142
+(Codex executor/observers), with an aligned documentation companion. HTTP
+handler extraction remains a separate follow-up.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 
@@ -42,7 +44,8 @@ The [external component plan](proposals/external-components-simplification.md#ca
 records the completed source fixes for guard guidance, the blocking credential
 probe, and Telegram I/O. Scout's fix is on workspace `main`; Host #132 and #133
 merged as `23968acd` and `39a23f22`. Deployment remains separate. Evaluation
-feature reduction, metric improvements, and code moves remain conditional.
+feature reduction and metric improvements remain conditional; directory
+organization is accepted and tracked by the simplification review.
 
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate
