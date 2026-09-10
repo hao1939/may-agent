@@ -35,6 +35,12 @@ Completing an input, fulfilling an accepted Request and finishing a Task remain
 separate facts. Their records now exist; they need truthful App judgment and
 focused usage validation, not another execution lifecycle.
 
+The next ordered implementation work is the
+[seven-step inbox and Conversation plan](storage-state-service.md#implementation-order-and-acceptance):
+names, reads, Turn writes, linked work, frontend separation, turn behavior and
+final review. It starts from Host `743aa5de` and owns slice order and completion
+criteria. The completed fixes below are preserved regression requirements.
+
 ## Implementation order and candidate decisions
 
 ### 1. Contain the reproduced input-runtime failures

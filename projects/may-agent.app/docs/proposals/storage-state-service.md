@@ -9,7 +9,8 @@ transitions and request leases. The broader storage layout, combined
 capacity/claim ownership and a separate API server remain unimplemented choices.
 Source checks and temporary-state experiments below are not deployment proof.
 **Date:** 2026-09-10.
-**Source baseline:** The Conversation review uses Host `99bc1a31`. Historical
+**Source baseline:** The Conversation review used Host `99bc1a31`; the sequential
+implementation plan starts from `743aa5de`, including merged #127. Historical
 attachment evidence uses `569e4da0` (PR #108), with the original inventory and
 candidate at `350552a4` and `54b9eecf`. Settlement/retry slices also merged and
 are tracked in the [controller proposal](task-controller-pattern.md).
@@ -339,33 +340,150 @@ core state into the frontend defeats the boundary.
 
 ### Implementation order and acceptance
 
-1. Align type/local names with the owning vocabulary. Preserve stored IDs and
-   external contracts through explicit compatibility boundaries. Separate the
-   retained App-to-App dependency result before giving the chat result a purely
-   conversational name. Do not create aliases throughout the implementation.
-2. Consolidate Conversation/Request/Topic reads and switch the context tool and
-   Host readers. Reuse current projections and pagination; add no chat cache or
-   replacement messages table.
-3. Extract decision acceptance and Turn completion from the inbox Host. Move
-   the transaction and its invariants together. Reuse atomic Task admission
-   and the Task-result closure path; do not wrap multiple committing stores.
-4. Separate the frontend from generic inbox dispatch and retained caller waits.
-   Keep the existing executor loop and current budgets. Review premature
-   completion separately from this behavior-preserving extraction.
+**Plan status:** Ready to execute sequentially; no implementation slice below
+has started. Scope is the agreed inbox, Conversation and shared-state cleanup.
+Completed Stop, ownership and containment fixes remain the baseline. Broader
+Task-controller rewrites and the paused metrics/App-merger proposals are outside
+this sequence.
 
-Use existing integration tests as the baseline, adding coverage only for a
-changed boundary: stale Request revisions and stopped/expired claims reject
-effects; Task admission retains exact links after rollback/reopen; closure
-retains its answer after a missed hint; bounded context still allows reading an
-older full ask. A valid installation without chat must run unrelated Task work;
-retained Conversation state must be readable without the frontend. Test supported
-absence, not an invented live-unload protocol. No model call or deployment is
-needed to prove these mechanical guarantees.
+Start each code slice from current Host `main`, including #127. Check affected
+callers, public names and existing regression coverage before editing. Keep
+`/app` on `main`; use an isolated checkout for each change. One independently
+reviewable PR per slice is the default. Finish its checks and integration before
+starting dependent work; a slice may be smaller if that makes it easier to review.
 
-For the separate turn-behavior review, retain the existing model/tool loop and
-check that an agent can inspect and repair a failed check before answering.
-Budget exhaustion must preserve an unresolved ask. Use behavioral evidence to
-judge model persistence; schema tests alone cannot establish useful completion.
+```text
+1 Names -> 2 Reads -> 3 Turn writes -> 4 Linked work
+        -> 5 Frontend boundary -> 6 Turn behavior -> 7 Final review
+```
+
+#### 1. Name inputs, accepted asks and model steps consistently
+
+Change Host/SDK input-context naming from `AppRequest` toward `AppInputContext`,
+and internal runner counters from `turnCount` toward `modelStepCount`. Clarify
+inbox/turn IDs versus accepted Request IDs in local APIs. Inventory SDK exports,
+App consumers, control payloads and retained session fields before changing them.
+Keep required old names only at explicit compatibility boundaries; preserve
+stored IDs, SQL columns, event schemas and existing App declarations.
+
+**Done when:** Host/SDK and affected App consumers compile; compatibility readers
+still interpret retained data; an internal model step cannot be mistaken for a
+human Turn. Defer the shared decision/result rename until step 5 separates the
+conversational and retained dependency paths. No runtime behavior changes here.
+
+#### 2. Consolidate Conversation, Request and Topic reads
+
+Bring the existing typed reads/projections behind `core/state/conversations.ts`
+or its private resource modules. Reuse `conversations/store.ts` and
+`conversations/requests.ts`; replace the context tool's inline Request SQL in
+`app-request-agent.ts` with the shared paged read. Migrate Host readers and
+preserve the existing client response shapes. Move the owning implementation
+and its callers together rather than adding permanent forwarding wrappers.
+
+**Done when:** One API supplies bounded Conversation views, paged open Requests,
+full exact asks and Topic discovery. Existing store/read tests preserve ordering,
+message deduplication and App/Conversation scope. An ask omitted from initial
+context remains discoverable and readable in full. No second chat store is added.
+
+#### 3. Centralize Turn decision and completion writes
+
+Extract decision acceptance and completion from `app-inbox-host.ts` into core
+state operations. Acceptance saves the decision, Topic changes and accepted or
+refined Requests together. Completion saves the input result and any Request
+closure with its durable answer evidence. Keep inbox ownership checks and the
+same SQLite transaction; model/tool execution stays outside it.
+
+**Done when:** Existing ownership/failure/Request tests prove that expired or
+stopped claims cannot commit, stale scope cannot close, and failed/stopped Turns
+leave the ask unresolved. A repeated saved decision or lost notification does
+not rerun model work or duplicate the answer. Remove the superseded caller-side
+transaction code. Keep safe external-effect checks; SQLite does not undo tools.
+
+#### 4. Consolidate linked Task admission and returned outcomes
+
+Reuse the atomic admission in `core/state/requests.ts`, naming its inbox
+responsibility clearly when moved. Switch the follow-up and supervision paths
+in `app-inbox-runtime.ts` to meaningful state operations. Task admission retains
+its exact Topic/Request links; a supervised outcome retains its message and
+Request closure under the existing ownership/version fences. Preserve the
+current Task settlement and durable wake/recovery responsibilities.
+
+**Done when:** Attachment/runtime tests retain one Task identity on replay,
+reject changed/stale admission, and roll back related writes together. A newer
+human correction rejects a late closure; completed linked work with an open ask
+remains discoverable after restart. Generic Task admission requires no chat links.
+No new supervisor, operation journal or independent commit path is introduced.
+
+#### 5. Separate the conversational frontend from generic inbox dispatch
+
+Move context preparation, selected agent invocation and conversational result
+application into `conversations/turn-handler.ts` and `turn-agent.ts` as useful.
+Generic inbox code keeps admission, ordering, claims, capacity and recovery,
+calling the selected handler through narrow functions supplied by composition.
+Core state must not import the frontend or May policy. Keep retained App-to-App
+dependency handling explicit and outside the normal human-turn path.
+
+Now give the conversational result its `ConversationTurnResult` name; do not
+rename the retained caller-wait protocol as conversational. Keep App-owned scope,
+acceptance and supervision guidance in `projects/may.app`.
+
+**Done when:** Existing admission, Stop, claim-loss, capacity-close and recovery
+regressions still pass. A supported configuration without the frontend can run
+unrelated Task work and read retained conversation state. Replacing the handler
+does not require editing core state rules. Remove obsolete orchestration/imports;
+no empty capability framework or duplicate execution loop remains.
+
+#### 6. Verify useful continuation within one interactive Turn
+
+Trace the current `app-request-agent.ts` entrypoint through shared execution and
+the finish guardrails. Use existing executor tests and focused scripted model/tool
+responses to exercise inspect -> act -> failed check -> repair -> verify -> answer.
+Confirm useful progress is distinct from completion, a discussion can answer
+without a Task, and budget exhaustion cannot fulfill an unresolved ask.
+
+**Done when:** The mechanical path supports repeated work within the same Turn,
+Stop remains prompt and exact, and a correction after Stop retains the accepted
+ask without reviving the old execution. Review May guidance for premature handoff
+or unsupported fulfillment; fix the responsible layer only for an observed gap.
+Record model judgment as a separate evidence question: scripted results cannot
+prove that a live agent reliably persists or judges acceptance. Any model-backed
+trial uses an explicitly authorized test setup, not production App state.
+
+#### 7. Review the complete path and remove remaining duplication
+
+Review the integrated flow from input admission through answer or Task handoff,
+then the later outcome and Request closure. Use the existing regression results
+and add only missing boundary cases. Confirm supported capability absence,
+reopen/restart behavior, scoped full-record reads and control responsiveness.
+Inspect common query plans; measure representative retained data if an extraction
+changes query cost. Optimize only a demonstrated problem.
+
+**Done when:** Active callers use the new boundary, compatibility stays at named
+edges, and each stored fact has one writer. Update code maps, SDK examples and
+implementation-status notes to the merged revision. Record the removed caller
+coordination and any remaining gaps. Close this sequence when the agreed
+contracts hold; file count or a fully populated target tree is not the goal.
+
+#### Checks and integration for every slice
+
+Use existing tests near the changed contract: Conversation stores and Requests,
+`app-inbox-host`, `app-inbox-ownership`, `app-inbox-failure`,
+`app-inbox-containment`, `app-inbox-runtime`, `core/state/requests`, and shared
+agent execution/finish tests. Extend production-path tests only where the change
+introduces or exposes a missing assertion; use temporary SQLite and fixtures.
+
+Run focused checks while editing and the Host's required `bun run ci` before
+review. Validate changed SDK consumers/examples and run `bun run check:may-design`
+for companion docs. Commit a coherent slice, report actual checks and remaining
+limitations, and integrate through the repository's existing review requirements.
+Track progress here and mark a slice complete only after its source is merged.
+Source integration does not deploy, restart, or alter an installation's App state.
+
+If a slice adds more coordination than it removes, stop expanding it and revise
+the operation boundary. A simple existing helper is acceptable when extraction
+does not earn its cost. Immediate steering, timeout/finish-threshold changes,
+extra recovery machinery and a network API server require separate evidence;
+they are not automatic steps after this plan.
 
 The turn model is consistent with the [Codex turn definition](https://learn.chatgpt.com/docs/app-server)
 (user input plus the agent work that follows) and [Claude Code's agent loop](https://code.claude.com/docs/en/how-claude-code-works#the-agentic-loop)

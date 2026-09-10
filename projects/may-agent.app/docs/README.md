@@ -44,6 +44,10 @@ bindings; #127 added dispatch-failure pacing and cancellation of capacity waits
 on close (merged as `743aa5de`). Remaining work includes naming/state API
 consolidation, current-turn steering and usage validation. App judgment and
 deployment need their own evidence.
+The [sequential implementation plan](proposals/storage-state-service.md#implementation-order-and-acceptance)
+breaks the inbox/Conversation work into seven reviewable slices, starting from
+Host `743aa5de`. All seven are planned; none of these new slices has been marked
+complete.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
 Error/metric placement and App consolidation remain
 [paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
