@@ -1,3 +1,4 @@
+/** Historical JSON snapshot analysis only; not a live Host metric collector. */
 import { readFileSync } from "node:fs";
 
 export const ACCEPTED_SOURCE_OUTPUTS_METRIC_ID =
@@ -191,7 +192,7 @@ export function collectAcceptedSourceOutputs(
 }
 
 export function sampleAcceptedSourceOutputs(
-  statePath = DEFAULT_SCOUT_TASK_STATE_PATH,
+  statePath: string,
   now = Date.now(),
 ): AcceptedSourceOutputSample {
   return collectAcceptedSourceOutputs(
@@ -201,6 +202,12 @@ export function sampleAcceptedSourceOutputs(
 }
 
 if (import.meta.main) {
-  const sample = sampleAcceptedSourceOutputs();
+  const statePath = process.argv[2];
+  if (!statePath) {
+    throw new Error(
+      "Historical snapshot analysis requires an explicit JSON file path. Use supported Task reads for live state; the retired JSON projection is not current.",
+    );
+  }
+  const sample = sampleAcceptedSourceOutputs(statePath);
   process.stdout.write(JSON.stringify(sample));
 }

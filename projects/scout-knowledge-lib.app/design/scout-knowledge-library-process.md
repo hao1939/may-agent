@@ -379,19 +379,21 @@ current observations.
 
 Do not commit runtime packets or current task snapshots as source truth.
 
-The accepted-output source-command metric still reads the historical JSON
-file. Until that collector uses supported live reads, its samples cannot prove
-current research health. Prefer current source-task evidence; this is an open
-implementation gap, not a reason to regenerate the retired file.
+The accepted-output source-command metric is retired because its JSON source
+is no longer live. Existing samples remain historical, not current research
+health. Its script accepts an explicit snapshot path for historical analysis
+only. Use supported source-Task reads for current output evidence; do not
+regenerate the retired file or add a replacement collector without a useful
+measurement requirement.
 
 ## Metrics And Experience Review
 
 Scout metrics are advisory infrastructure observations, never task acceptance
 or content-edit instructions. Deployment-practice loading is runtime health.
-Preamble coverage watches only canonical Scout knowledge. Accepted source
-outputs count admitted `output:` evidence from converged source
-reconciliations; evidence-backed no-ops are not failures. Textual downstream
-reference counting is retired. The app does not subscribe directly to Scout
+Preamble coverage watches only canonical Scout knowledge. Current Task evidence
+records accepted source outputs; evidence-backed no-ops are not failures.
+The JSON-based output count and textual downstream reference count are retired.
+The app does not subscribe directly to Scout
 metric breaches during the observation window.
 
 One daily owner review may receive a bounded, redacted 36-hour reconciliation

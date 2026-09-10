@@ -49,6 +49,21 @@ function stateWith(
 }
 
 describe("latest accepted Scout source output collector", () => {
+  it("refuses to sample the retired live path implicitly", async () => {
+    const child = Bun.spawn(
+      [process.execPath, new URL("./accepted-source-outputs.ts", import.meta.url).pathname],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const [exitCode, stdout, stderr] = await Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    expect(exitCode).not.toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("requires an explicit JSON file path");
+  });
+
   it("names the metric for latest-per-source rather than rolling coverage", () => {
     expect(ACCEPTED_SOURCE_OUTPUTS_METRIC_ID).toBe(
       "scout.latest-accepted-source-outputs-per-source",

@@ -61,16 +61,36 @@ function oversizedNote(projectDir: string, lines: number): void {
 }
 
 describe("Scout library-health observer", () => {
-  it("can alert when every latest accepted source output disappears", () => {
-    const definition = acceptedSourceOutputsMetricDefinition("/app/scout.app");
-
-    expect(definition).toMatchObject({
-      target: 1,
-      threshold: 1,
-      alertOp: "<",
+  it("retires the obsolete JSON output metric when the observer runs", async () => {
+    const paths = fixture();
+    const ctx = createTestAppWorkflowContext({
+      input: {},
+      workspace: {
+        appRoot: paths.appDir,
+        projectRoot: paths.projectDir,
+        root: paths.projectDir,
+        output: join(paths.appDir, ".state", "output"),
+      },
     });
-    expect(0 < definition.threshold).toBe(true);
-    expect(1 < definition.threshold).toBe(false);
+    const definitions: Parameters<typeof ctx.metrics.define>[0][] = [];
+    ctx.metrics.define = (definition) => {
+      definitions.push(definition);
+    };
+
+    const result = await execute(ctx);
+    const definition = acceptedSourceOutputsMetricDefinition();
+
+    expect(result.status).toBe("done");
+    expect(definitions).toContainEqual(definition);
+    expect(definition.status).toBe("retired");
+    expect(definition).not.toHaveProperty("sourceCommand");
+    expect(definition).not.toHaveProperty("threshold");
+    expect(definitions).toContainEqual(
+      expect.objectContaining({
+        id: KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,
+        status: "active",
+      }),
+    );
   });
 
   it("owns and records canonical knowledge preamble coverage", async () => {
