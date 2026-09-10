@@ -38,19 +38,19 @@ cross-component and process boundaries.
 
 | Responsibility | Contract and implementation | Wiring and owning tests |
 | --- | --- | --- |
-| App registration | `core/apps/registry.ts`: `AppDefinitionSource`; validation in `definition-validation.ts`; file discovery in `adapters/discovery/app-definitions.ts` | `app-runtime.ts`; `core/apps/registry.test.ts` covers rejected/serialized publication |
+| App registration | `core/apps/registry.ts`: `AppDefinitionSource`; validation in `core/apps/definition-validation.ts`; file discovery in `adapters/discovery/app-definitions.ts` | `app-runtime.ts`; `core/apps/registry.test.ts` covers rejected/serialized publication |
 | Events | `core/events/interface.ts` for ingress/reads; `core/events/bus.ts` for persisted admission and bounded observation | `daemon-events.ts`; colocated interface/bus tests and `event-delivery.test.ts` |
 | Input admission | `app-inbox-host.ts`, `app-inbox-store.ts`, `app-event-admission-store.ts`; frozen routes and durable claims | `app-inbox-runtime.ts`; inbox runtime, ownership and failure tests |
-| Conversation | `core/inbox/input-handler.ts`; `conversations/context.ts`, `turn-handler.ts`, `turn-agent.ts` | `composition/conversation-inbox.ts`; turn-agent and inbox tests; [guide](conversations/README.md) |
-| Conversation state | `core/state/conversations.ts`, `conversation-requests.ts`, `conversation-turns.ts`, `conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
+| Conversation | `core/inbox/input-handler.ts`; `conversations/context.ts`, `conversations/turn-handler.ts`, `conversations/turn-agent.ts` | `composition/conversation-inbox.ts`; turn-agent and inbox tests; [guide](conversations/README.md) |
+| Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
 | Atomic Task attachment | `core/state/inbox.ts`: `attachRequestToTask()` and `completeInboxInput()` | Task capability and inbox Host; `core/state/inbox.test.ts` |
-| Task dispatch | `core/tasks/controller.ts`, `queue.ts`; `host-capacity.ts`; `app-task-recovery.ts` | `app-task-runtime.ts`; controller/queue/recovery tests |
+| Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `host-capacity.ts`; `app-task-recovery.ts` | `app-task-runtime.ts`; controller/queue/recovery tests |
 | Task transitions | `app-task-reconciler.ts`, `app-task-state.ts`, `app-task-resource-store.ts` | `app-task-runtime.ts`; reconciler/resource-store, cancellation and restart tests |
 | Agent/workflow/session backend | `core/tasks/execution.ts`; `adapters/executors/` | `composition/task-execution.ts`; adapter and Task runtime tests |
 | Named executor | SDK `TaskExecutor` / `TaskAttempt`; `codex-goal-executor.ts` | Executor map in `daemon-agents.ts`; executor and Task runtime tests |
 | Task workspace | `core/tasks/workspace.ts`; `adapters/workspaces/git.ts` | `composition/task-execution.ts`; workspace and Task runtime tests |
 | Timing and observations | `core/scheduling/timer.ts`; `adapters/producers/app-schedules.ts`, `app-observer-runtime.ts` | `app-inbox-runtime.ts`; timer, schedule and observer tests |
-| Canonical reads and optional reports | `core/reads/app-read.ts`, `reporting.ts`; `adapters/reporting/` | `composition/reporting.ts`; read/reporting and runtime tests |
+| Canonical reads and optional reports | `core/reads/app-read.ts`, `core/reads/reporting.ts`; `adapters/reporting/` | `composition/reporting.ts`; read/reporting and runtime tests |
 | Host maintenance | `adapters/maintenance/` | `composition/maintenance*.ts`; [maintenance guide](adapters/maintenance/README.md) and colocated tests |
 | Human interfaces | `transport/`, `http/`; root `packages/control`, `packages/terminal`, `packages/webui` | `interface-startup.ts`; transport and process/browser tests; [control guide](../../packages/control/README.md) |
 | Agent/tool loading | `agent-loader.ts`, `loader/`; bounded execution under `../lib/` | `daemon-agents.ts`; loader and agent-execution tests |
@@ -59,7 +59,7 @@ cross-component and process boundaries.
 enter through `task-admission-process.ts` and `task-attempt-process.ts`.
 Task context is assembled in `app-task-context.ts`; shared App summaries live in
 `app-dependency-catalog.ts`. Runtime persistence primitives are under `../lib/db/`;
-transcripts/artifacts are handled by `../lib/persistence.ts` and `artifacts.ts`.
+transcripts/artifacts are handled by `../lib/persistence.ts` and `../lib/artifacts.ts`.
 The still-flat Task/inbox files retain the responsibilities shown above.
 
 ## Adding a capability
