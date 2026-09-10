@@ -8,8 +8,11 @@ is no durable per-surface replay cursor. Watch refreshes suppress unchanged
 semantic Task revisions and render only meaningful changes. Follow-up
 admission now presents the responsible Task directly, and human-action reads
 follow exact dependency links to the Task that owns the action.
-The accepted [current-turn Stop button](human-control-surfaces.md#current-turn-control)
-remains unimplemented; Task cancellation and ending a watch have separate effects.
+The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
+is implemented; Task cancellation and ending a watch have separate effects.
+Request deadlines and close cancellation are implemented in candidate Host
+[PR #133](https://github.com/hao1939/may-agent/pull/133), with passing source
+checks and pending review. They are not a deployment claim.
 
 ## Purpose
 
@@ -188,6 +191,23 @@ message identities. A later explicit history/catch-up feature would require a
 separate reviewed product decision; ordinary operation does not promise
 exactly-once display or offline replay.
 
+Each provider request has a finite client deadline: 15 seconds for ordinary
+calls and 45 seconds for `getUpdates`, whose server wait is 30 seconds. The
+deadline includes reading the response body. Closing the bot aborts its active
+requests and prevents further polls and message chunks.
+
+A confirmed formatting rejection may be retried once as plain text. Network
+failure, timeout, or cancellation leaves delivery uncertain and does not cause
+an immediate formatting retry. A multipart send counts as confirmed only when
+every chunk has a provider message ID; IDs for confirmed chunks remain indexed
+even if another chunk fails.
+
+Refreshes run on later events, without a periodic delivery retry loop. A later
+wake may retry an unconfirmed message and duplicate its display or some chunks.
+Without another wake, the message may remain missing from Telegram. These are
+accepted presentation limits: the durable answer remains readable through
+Conversation, and presentation failure never reruns accepted work.
+
 ## Reply Target
 
 For an immediate answer, reply to the incoming Telegram message. For a later
@@ -289,14 +309,15 @@ available for observation without becoming Telegram work.
 
 ## Failure Honesty
 
-No silent drops:
+Keep failures and their consequences honest:
 
 - invalid ingress records a rejected receipt with safe diagnostics;
 - failed May admission remains visibly pending/failed;
 - missing reply correlation asks for clarification;
 - lost sessions recreate from the same request;
-- failed delivery remains linked to its operation; and
-- uncertain delivery is not blindly duplicated.
+- send failures produce diagnostics, and confirmed provider IDs remain available;
+- uncertain delivery does not trigger an immediate resend; later wake-driven
+  refresh has the [accepted display limits](#outbound-presentation) above.
 
 Transport success never masks a failed App admission, unresolved dependency, or
 missing human closeout.
@@ -317,6 +338,9 @@ Telegram integration tests prove:
 - original session loss creates a fresh session for the same request;
 - proactive attention is one May child request, not an event-pair lifecycle;
 - failed or uncertain provider sends never rerun May or reopen Task work;
+- stalled provider calls and response bodies hit a deadline, long polling has
+  enough time for its server wait, and close aborts active I/O;
+- only confirmed formatting rejection permits a plain-text fallback;
 - Task controls target exact identities and never list-position/session guesses;
 - focused watch feedback reaches May with exact canonical Task context;
 - idle watch performs no polling and coalesces concurrent wakes;

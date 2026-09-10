@@ -1,8 +1,10 @@
 # External components: simple, solid, and clearly organized
 
-**Design status:** Draft for review, narrowed after the philosophy review.
-**Implementation status:** Source review only. No runtime changes or deployment
-have been performed under this plan.
+**Design status:** First milestone accepted for implementation; follow-ups remain
+conditional.
+**Implementation status:** Three source fixes prepared on isolated review
+branches. See [candidate evidence](#candidate-evidence). No deployment or live
+provider trial has been performed.
 
 ## Goal and stopping point
 
@@ -141,6 +143,37 @@ and uncertain timeout. Existing chunk, refresh, ordering, and Stop tests remain
 the contract owners. Accepted input/actions retain their deduplication guarantees.
 Update [Telegram notifications](../2a-design/telegram-notifications.md) with the
 accepted display limitation; no layout extraction is required for this fix.
+
+## Candidate evidence
+
+Implementation started from Host `765ce79c` and App workspace `8cb0e2dc05`.
+The shared checkouts remain on `main`; implementation uses isolated branches.
+
+| Change | Review candidate | Evidence |
+| --- | --- | --- |
+| Truthful guard guidance | [Host #132](https://github.com/hao1939/may-agent/pull/132), `013b7226` | Existing 8 guard tests and full local CI passed: 2,664 pass, 3 deployment-only skips |
+| Nonblocking credential probe | App workspace branch `fix/external-capability-bounds`, source commit `2e1b713e09` | App tests, syntax, types, changed-file formatting, projection, links and navigation thresholds checked; see the aggregate-check limitation below |
+| Telegram request bounds and close | [Host #133](https://github.com/hao1939/may-agent/pull/133), `280d06ad` | Focused network, input, refresh, multipart, Stop and integration checks passed; full local CI passed: 2,670 pass, 3 deployment-only skips |
+
+Scout retains its 30-second budget and existing ready/unavailable interpretation.
+A temporary marker in its existing cache fences stale results across separately
+loaded modules; there is no observer registry or recovery loop. Its full
+`bun run check` stops on pre-existing formatting in
+`scripts/accepted-source-outputs.test.ts`; the remaining checks were run
+individually. That unchanged file is outside this fix.
+
+The first hosted Quality run for #132 timed out in the unchanged browser Stop
+fixture while waiting for a diagnostic event. The fixture does not wait for
+its WebSocket subscription before publishing. The test passed in local
+isolation; the first failure is recorded in the PR and the failed job was
+rerun once successfully. Quality and Container passed on both Host candidates.
+The first failure remains recorded; the browser fixture still has a potential
+subscription race. Check the PRs for later revisions and review results.
+
+Tests use synthetic child processes and local network fixtures. No real XHS or
+Telegram call, credential inspection, live App-state operation, restart or deployment
+was used as validation. The App fix and Host fixes can land independently;
+the Telegram contract update accompanies the App workspace review branch.
 
 ## Conditional follow-ups
 

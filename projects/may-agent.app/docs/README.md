@@ -32,8 +32,9 @@ small shared state boundary.
 
 The [external component plan](proposals/external-components-simplification.md)
 prioritizes three small corrections: guard guidance, the blocking credential
-probe, and Telegram I/O. Evaluation feature reduction, metric improvements, and
-code moves are conditional follow-ups. It is a draft, not an implementation claim.
+probe, and Telegram I/O. Their source candidates and checks are recorded in the
+plan; review and deployment remain separate. Evaluation feature reduction,
+metric improvements, and code moves remain conditional follow-ups.
 
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate
