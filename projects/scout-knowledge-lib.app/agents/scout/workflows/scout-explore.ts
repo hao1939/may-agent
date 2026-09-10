@@ -699,7 +699,12 @@ export async function executeScoutExplore(
   // Execution "done" means the call returned, not that its work succeeded.
   // The existing finish evidence preserves an explicitly partial outcome.
   const finish = result.evidence;
-  if (finish && typeof finish === "object" && "status" in finish && finish.status === "partial") {
+  if (
+    finish &&
+    typeof finish === "object" &&
+    "status" in finish &&
+    finish.status === "partial"
+  ) {
     return ctx.blocked("Scout exploration is incomplete, not a no-op", {
       executionId: result.id,
       summary: result.summary,

@@ -6,56 +6,64 @@ import { admitExperienceReviewResult, execute } from "./knowledge-planner";
 describe("Scout owner reconciliation boundary", () => {
   it.each([
     { status: "blocked", evidence: undefined },
-    { status: "done", evidence: { status: "partial", next_steps: "Finish the review" } },
-  ] as const)("does not publish maintenance facts or actions from an incomplete call: %j", async (execution) => {
-    const emitted: unknown[] = [];
-    const result = await execute(
-      createTestAppWorkflowContext({
-        input: {},
-        reconciliation: {
-          appId: "scout-knowledge-lib",
-          taskId: "library-maintenance",
-          generation: 1,
-          resourceVersion: 1,
-          agent: "scout",
-          mode: "maintain",
-          outcome: "Maintain the library",
-          acceptance: ["One bounded decision is recorded"],
+    {
+      status: "done",
+      evidence: { status: "partial", next_steps: "Finish the review" },
+    },
+  ] as const)(
+    "does not publish maintenance facts or actions from an incomplete call: %j",
+    async (execution) => {
+      const emitted: unknown[] = [];
+      const result = await execute(
+        createTestAppWorkflowContext({
           input: {},
-          children: { live: [], completed: [] },
-          events: { items: [], truncated: false },
-        },
-        workspace: {
-          appRoot: "/test/scout.app",
-          projectRoot: "/test/scout",
-          root: "/test/scout",
-          output: "/test/output",
-        },
-        callAgent: (async () => ({
-          id: "s_blocked",
-          kind: "agent",
-          ...execution,
-          summary: "Review not finished",
-          output: {
-            state: "converged",
-            summary: "Partial maintenance plan",
-            evidence: ["partial"],
-            actions: [],
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "library-maintenance",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            mode: "maintain",
+            outcome: "Maintain the library",
+            acceptance: ["One bounded decision is recorded"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
           },
-        })) as WorkflowContext["agents"]["call"],
-        emit: async (event) => {
-          emitted.push(event);
-        },
-      }),
-    );
+          workspace: {
+            appRoot: "/test/scout.app",
+            projectRoot: "/test/scout",
+            root: "/test/scout",
+            output: "/test/output",
+          },
+          callAgent: (async () => ({
+            id: "s_blocked",
+            kind: "agent",
+            ...execution,
+            summary: "Review not finished",
+            output: {
+              state: "converged",
+              summary: "Partial maintenance plan",
+              evidence: ["partial"],
+              actions: [],
+            },
+          })) as WorkflowContext["agents"]["call"],
+          emit: async (event) => {
+            emitted.push(event);
+          },
+        }),
+      );
 
-    expect(result.status).toBe("blocked");
-    expect(result.evidence).toMatchObject({
-      executionId: "s_blocked",
-      ...(execution.status === "blocked" ? { status: "blocked" } : { finish: execution.evidence }),
-    });
-    expect(emitted).toEqual([]);
-  });
+      expect(result.status).toBe("blocked");
+      expect(result.evidence).toMatchObject({
+        executionId: "s_blocked",
+        ...(execution.status === "blocked"
+          ? { status: "blocked" }
+          : { finish: execution.evidence }),
+      });
+      expect(emitted).toEqual([]);
+    },
+  );
 
   it("normalizes an omitted experience-task mode to finite achieve work", () => {
     const admitted = admitExperienceReviewResult({

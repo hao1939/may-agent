@@ -87,30 +87,27 @@ describe("scout-explore workflow prompt", () => {
     temporaryRoots.push(root);
     mkdirSync(join(root, "knowledge"));
     let callOptions: unknown;
-    const ctx = workflowContext(
-      async (_agent, _task, options) => {
-        callOptions = options;
-        return {
-          status: "done",
-          sessionId: "s_partial",
-          lastAssistantText: "Useful candidate found; integration unfinished",
-          evidence: {
-            status: "partial",
-            next_steps: "Verify and integrate the selected paper",
+    const ctx = workflowContext(async (_agent, _task, options) => {
+      callOptions = options;
+      return {
+        status: "done",
+        sessionId: "s_partial",
+        lastAssistantText: "Useful candidate found; integration unfinished",
+        evidence: {
+          status: "partial",
+          next_steps: "Verify and integrate the selected paper",
+        },
+        structuredResult: {
+          summary: "Stopped at the operation limit before integration",
+          source: {
+            name: "arxiv",
+            queryOrFeed: "https://export.arxiv.org/api/query",
+            itemIdsOrUrls: ["https://arxiv.org/abs/2609.00001"],
           },
-          structuredResult: {
-            summary: "Stopped at the operation limit before integration",
-            source: {
-              name: "arxiv",
-              queryOrFeed: "https://export.arxiv.org/api/query",
-              itemIdsOrUrls: ["https://arxiv.org/abs/2609.00001"],
-            },
-            outputs: [],
-          },
-        };
-      },
-      "arxiv",
-    );
+          outputs: [],
+        },
+      };
+    }, "arxiv");
     ctx.workspace = {
       appRoot: root,
       projectRoot: root,
@@ -123,7 +120,10 @@ describe("scout-explore workflow prompt", () => {
     expect(result.status).toBe("blocked");
     expect(result.evidence).toMatchObject({
       executionId: "s_partial",
-      finish: { status: "partial", next_steps: "Verify and integrate the selected paper" },
+      finish: {
+        status: "partial",
+        next_steps: "Verify and integrate the selected paper",
+      },
     });
     expect(result).not.toHaveProperty("output.state", "converged");
     expect(callOptions).toMatchObject({ operationAllowance: 48 });
