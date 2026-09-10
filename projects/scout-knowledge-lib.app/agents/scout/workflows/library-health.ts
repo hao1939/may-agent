@@ -253,10 +253,15 @@ function digestArtifactIdentities(
 function latestArchivedDigest(digestDir: string): string | undefined {
   try {
     return readdirSync(digestDir)
-      .filter((entry) => /^20\d{2}-\d{2}-\d{2}\.md$/.test(entry))
-      .sort()
-      .map((entry) => join(digestDir, entry))
-      .at(-1);
+      .filter((entry) =>
+        /^(?:20\d{2}-\d{2}-\d{2}|digest-[a-f0-9]{64})\.md$/.test(entry),
+      )
+      .map((entry) => {
+        const path = join(digestDir, entry);
+        return { path, modified: statSync(path).mtimeMs };
+      })
+      .sort((a, b) => a.modified - b.modified || a.path.localeCompare(b.path))
+      .at(-1)?.path;
   } catch {
     return undefined;
   }

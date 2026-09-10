@@ -3,6 +3,7 @@ import app, {
   evaluationOwnerRequestedInput,
   libraryHealthObservedInput,
   resolveScoutTask,
+  taskForScoutInput,
 } from "./app";
 
 describe("Scout task reconciliation", () => {
@@ -78,6 +79,18 @@ describe("Scout task reconciliation", () => {
     expect(
       resolveScoutTask({ type: "scout.digest", eventId: 2 })?.input,
     ).toBeUndefined();
+  });
+
+  it("uses the same digest Task for an explicit request and the schedule", () => {
+    const input = app.actions?.["digest-now"]?.toInput({});
+    expect(input).toEqual({ kind: "digest", data: {} });
+    const admitted = { id: "manual-digest", input } as Parameters<
+      typeof taskForScoutInput
+    >[0];
+    expect(taskForScoutInput(admitted)).toEqual({
+      kind: "desired",
+      intent: resolveScoutTask({ type: "scout.digest" }),
+    });
   });
 
   it("routes explicit owner requests to the accountable owner workflow", () => {

@@ -100,9 +100,9 @@ export function resolveScoutTask(
         id: "daily-digest",
         parentId: "ongoing-research",
         outcome:
-          "Keep the daily Scout digest delivered and its working accumulator bounded.",
+          "Keep daily Scout findings preserved and handed to May for a useful shared-Conversation digest.",
         acceptance: [
-          "Current findings are delivered and archived, or the workflow records that there are no findings to send.",
+          "Current findings are preserved in an immutable snapshot and handed to May through the supported App message route, or the workflow records that there are no findings. Do not claim provider delivery; preserve accumulator changes that arrive during handoff.",
         ],
         mode: "maintain",
         workflow: "scout-daily-digest",
@@ -181,6 +181,7 @@ const scoutInputSchema = Type.Object(
       Type.Literal("owner-review"),
       Type.Literal("library-health"),
       Type.Literal("explore"),
+      Type.Literal("digest"),
     ]),
     data: Type.Record(Type.String(), Type.Unknown()),
   },
@@ -263,6 +264,8 @@ export function libraryHealthObservedInput(
 function intentForScoutInput(input: AppInput): TaskIntent | null {
   const data = eventParams(input.data);
   switch (input.kind) {
+    case "digest":
+      return resolveScoutTask({ type: "scout.digest" });
     case "owner-review":
       return resolveScoutTask(
         scoutEvent("project.owner.requested", data) as unknown as Record<
@@ -450,6 +453,14 @@ export default defineApp({
   },
 
   actions: {
+    "digest-now": {
+      description:
+        "Preserve current findings and ask May to present a research digest.",
+      inputSchema: Type.Object({}, { additionalProperties: false }),
+      toInput() {
+        return scoutInput("digest", {});
+      },
+    },
     "review-library": {
       description:
         "Ask Scout to review the knowledge library and update it if useful.",

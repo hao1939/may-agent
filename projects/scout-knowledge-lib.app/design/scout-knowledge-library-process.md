@@ -320,6 +320,39 @@ scan free-form task history or treat quoted forecasts as domain truth.
 Scout should either correct the date or record why it is intentionally future
 dated.
 
+## Daily digest handoff
+
+The daily workflow owns compiling and preserving findings, not Telegram
+delivery. It writes an immutable, content-addressed digest snapshot and emits
+one retry-stable `message.created` addressed to **May**, using the existing
+App message route. May produces the useful human-facing reply in its default
+shared Conversation. Host admission and recovery own that bounded request;
+the workflow must not add a delivery queue, poll Telegram, or create a proxy
+Task. Publication is reported as a handoff, never as provider delivery.
+The `digest-now` App action uses the same `daily-digest` Task intent as the
+daily schedule, so an operator can request a digest without a duplicate Task
+or an internal-event injection.
+
+The snapshot survives failed publication and process restart. Its existence
+alone is not proof of handoff: a retry publishes the same content key and
+payload, allowing the Host to return its original receipt. Content identity
+does not depend on the wake, attempt or current date. Older dated archives
+remain evidence; they cannot establish that the current Conversation received
+anything.
+
+Scout's Task runtime serializes its normal workflows. After successful
+publication, clear `today.md` only if its exact bytes still match the captured
+input. Otherwise retain it for a later cycle, accepting some repeated findings
+over deleting concurrent work. This is not a filesystem transaction against
+arbitrary external editors; they must not concurrently rewrite the shared
+accumulator. Worktree isolation for repository content is separate from this
+runtime artifact. May can deduplicate repeated highlights from its Conversation
+context. No exactly-once human display or offline Telegram replay is promised.
+
+**Rollout:** source candidate; require temporary-directory preservation/replay
+tests, real Host message-to-Conversation validation, then one local digest
+handoff before claiming this path is deployed and useful.
+
 ## Path And Output Boundary
 
 The host resolves `appDir` and `projectDir` once. Workflow prompts use the

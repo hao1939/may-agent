@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -382,6 +383,46 @@ describe("Scout library-health observer", () => {
       join(digestDir, "2026-07-20.md"),
       "## HN Scan #3 — Replaced title (2026-07-20)\n",
     );
+
+    const packet = buildLibraryHealthPacket({
+      ...paths,
+      now: Date.parse("2026-07-21T00:00:00.000Z"),
+    });
+
+    expect(packet.facts).toContainEqual(
+      expect.objectContaining({
+        key: "artifact-identity-collision:hn:2026-07-20:3",
+        observedValue: 2,
+      }),
+    );
+  });
+
+  it("checks the latest content-addressed snapshot by time, not hash order", () => {
+    const paths = fixture();
+    const digestDir = join(
+      paths.appDir,
+      "agents",
+      "scout",
+      "workspace",
+      "digest",
+    );
+    writeFileSync(
+      join(digestDir, "today.md"),
+      "## HN Scan #3 — Current title (2026-07-20)\n",
+    );
+    for (const [name, content, time] of [
+      ["2026-07-19.md", "Older dated archive", 1],
+      [`digest-${"f".repeat(64)}.md`, "Older content snapshot", 2],
+      [
+        `digest-${"a".repeat(64)}.md`,
+        "## HN Scan #3 — Replaced title (2026-07-20)\n",
+        3,
+      ],
+    ] as const) {
+      const path = join(digestDir, name);
+      writeFileSync(path, content);
+      utimesSync(path, time, time);
+    }
 
     const packet = buildLibraryHealthPacket({
       ...paths,
