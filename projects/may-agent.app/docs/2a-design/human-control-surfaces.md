@@ -120,6 +120,11 @@ exact Task's human-owned Condition, the rendered question carries that Task
 identity so May can return the answer to the same work even when the human
 responds from another surface.
 
+`replyTo` records a human-selected reply target, not the last message an adapter
+displayed. Replayed history and asynchronous results must not silently bind the
+next human message. Console has no message-reply gesture: bare text uses the
+shared Conversation plus its selected App, Topic, and watched Task context.
+
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
 Apps and `/apps <app>` changes that local selection. `/tasks` reads live Tasks
 for the selected App, including `maintain` Tasks that are currently converged;
