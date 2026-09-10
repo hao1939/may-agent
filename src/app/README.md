@@ -201,6 +201,9 @@ cases to trace request attachment, controller execution, persisted parent wakes,
 executor context, fenced `unblock-task`, and the accepted caller result. The
 restart case closes and reopens SQLite and installs a new runtime/EventBus before
 the parent review. It does not simulate a process kill or test model judgment.
+See the canonical [existing-parent owner proof](../../../may-agent.app/docs/proposals/task-controller-pattern.md#existing-parent-owner-proof)
+and [parents and dependencies contract](../../../may-agent.app/docs/2a-design/task-resource-engine.md#parents-and-dependencies)
+for the tested boundary and authoring rules.
 
 `app-task-reconciler.ts` records a child transition for an existing executable
 parent. `app-task-context.ts` and `runtimeTaskAttempt()` expose child facts and
@@ -312,7 +315,10 @@ attempt or invent another completion policy.
 The [whole-lifecycle proposal](../../../may-agent.app/docs/proposals/task-controller-pattern.md)
 connects existing App input mapping, bounded attempts, exact waits and checked
 results. The reconciler above owns the retry-across-restart bound;
-end-to-end owner-decision proof remains separate work. The lifecycle cases
+the [parent-owned failure review](#parent-owned-failure-review) cases prove the
+existing executable-parent retry route through the caller's result, including
+database reopen. App policy, model judgment and live follow-through remain
+separate validation. The lifecycle cases
 in `app-task-runtime.test.ts` cover continued input, revised acceptance,
 recovered waits/actions and required workflow verification.
 
