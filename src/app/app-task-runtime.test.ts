@@ -4344,6 +4344,218 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
   });
 
+  it.each([false, true])(
+    "lets an existing parent repair exhausted work and accept the caller result (restart: %j)",
+    async (restart) => {
+      const f = fixture();
+      let bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const parentId = "work/delivery";
+      const childId = "work/verification";
+      let childCalls = 0;
+      let repaired = false;
+      const reviews: Array<Pick<Parameters<TaskExecutor>[0], "children" | "events">> = [];
+      const pendingCallerStates: Array<ReturnType<AppInboxHost["get"]>> = [];
+      let host: AppInboxHost;
+      const executors: Record<string, TaskExecutor> = {
+        owner: async ({ children, events }) => {
+          reviews.push(structuredClone({ children, events }));
+          pendingCallerStates.push(host.get("request-delivery"));
+          const child = children.live.find((entry) => entry.taskId === childId);
+          if (child?.status === "attention") {
+            // The fixture App chooses the repair. The Host only executes its
+            // existing fenced action; no new owner or recovery Task is created.
+            repaired = true;
+            return {
+              state: "waiting",
+              summary: "Prerequisite repaired; verify the same child again",
+              evidence: ["test:prerequisite-repaired"],
+              actions: [
+                {
+                  kind: "unblock-task",
+                  taskId: childId,
+                  expectedGeneration: child.generation,
+                  reason: "Prerequisite repair verified",
+                },
+              ],
+            };
+          }
+          if (children.completed.some((entry) => entry.taskId === childId)) {
+            return {
+              state: "converged",
+              summary: "Owner accepted the verified delivery",
+              response: "Delivered and independently verified.",
+              evidence: ["test:aggregate-accepted"],
+            };
+          }
+          return {
+            state: "waiting",
+            summary: "Verify the delivery before accepting it",
+            evidence: ["test:verification-required"],
+            actions: [
+              {
+                kind: "create-task",
+                id: childId,
+                parentId,
+                outcome: "Verify the delivery",
+                acceptance: ["Verification passes"],
+                mode: "achieve",
+                outputs: [],
+                priority: "P2",
+                executor: "verify",
+              },
+            ],
+          };
+        },
+        verify: async () => {
+          childCalls += 1;
+          if (!repaired) throw new Error("Verification prerequisite unavailable");
+          return {
+            state: "converged",
+            summary: "Delivery verification passed",
+            evidence: ["test:verification-passed"],
+          };
+        },
+      };
+      const app = defineApp({
+        ...definition(),
+        task: () => ({
+          kind: "desired" as const,
+          intent: {
+            id: parentId,
+            parentId: "operations",
+            outcome: "Deliver a verified result",
+            acceptance: ["Owner accepts the verified delivery"],
+            mode: "achieve" as const,
+            executor: "owner",
+          },
+        }),
+      });
+      const install = async (controllers: boolean) => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus),
+          hostCapacity: new HostCapacity(1),
+          installControllers: controllers,
+          executors,
+          appRegistrySnapshot: {
+            id: "boot:parent-review",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: app }],
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir),
+          apps: [app],
+          attachTask: async (input) => {
+            if (controllers) return attachLoadedAppTask({ ...input, bus, appDir: f.appDir });
+            if (!input.claim) throw new Error("expected request claim");
+            return attachRequestToTask(loadedTaskConfig(f), { ...input, claim: input.claim });
+          },
+          readDependency: async ({ dependency }) => {
+            const task = readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: dependency.id });
+            return task
+              ? {
+                  ...dependency,
+                  status: task.status,
+                  summary: task.summary,
+                  response: task.response,
+                  result: task.result,
+                  evidence: task.evidence,
+                }
+              : null;
+          },
+        });
+      };
+      await install(!restart);
+      host!.admit({
+        id: "request-delivery",
+        appId: "sample",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      });
+      expect(await host!.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+
+      if (restart) {
+        const run = (taskId: string) =>
+          reconcileLoadedAppTaskOnce({
+            bus,
+            appId: "sample",
+            taskId,
+            dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+          });
+        await run(parentId);
+        for (let index = 0; index < 3; index += 1) {
+          await expect(run(childId)).rejects.toThrow("Verification prerequisite unavailable");
+        }
+        expect(await run(childId)).toEqual([parentId]);
+        const config = loadedTaskConfig(f);
+        expect(config.resourceStore.readTask(childId)?.status).toMatchObject({
+          phase: "attention",
+          executionFailures: 4,
+        });
+        expect(config.resourceStore.readTask(parentId)?.status.phase).toBe("waiting");
+        const parentTrigger = readTaskSnapshot(config).taskTriggers?.[parentId];
+        expect(parentTrigger?.events).toHaveLength(1);
+        for (let index = 0; index < 3; index += 1) expect(await run(childId)).toEqual([]);
+        expect(childCalls).toBe(4);
+        expect(readTaskSnapshot(config).taskTriggers?.[parentId]).toEqual(parentTrigger);
+        expect(await host!.recoverTaskDependencies()).toMatchObject({ woken: 0, errors: [] });
+        expect(host!.readyCount("sample")).toBe(0);
+        // Drop all in-memory wake hints before the owner reviews the failure.
+        // Startup must find the persisted parent trigger, not rerun the child.
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install(true);
+      }
+
+      const config = loadedTaskConfig(f);
+      const deadline = Date.now() + 5_000;
+      while (!config.resourceStore.readReceipt(parentId) && Date.now() < deadline) await Bun.sleep(5);
+      expect(config.resourceStore.readReceipt(parentId)?.summary).toBe("Owner accepted the verified delivery");
+      expect(childCalls).toBe(5);
+      expect(reviews).toHaveLength(3);
+      expect(reviews[1]!.children.live).toContainEqual(
+        expect.objectContaining({
+          taskId: childId,
+          generation: 1,
+          status: "attention",
+          summary: expect.stringContaining("Verification prerequisite unavailable"),
+        }),
+      );
+      expect(JSON.stringify(reviews[1]!.events)).toContain("Verification prerequisite unavailable");
+      expect(reviews[2]!.children.completed).toContainEqual(
+        expect.objectContaining({
+          taskId: childId,
+          generation: 1,
+          summary: "Delivery verification passed",
+          evidence: ["test:verification-passed"],
+        }),
+      );
+      expect(pendingCallerStates).toHaveLength(3);
+      for (const item of pendingCallerStates) {
+        expect(item).toMatchObject({ status: "handling", waitingOn: { kind: "task", id: parentId } });
+      }
+      expect(host!.readyCount("sample")).toBe(1);
+      expect(await host!.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+      expect(host!.get("request-delivery")).toMatchObject({
+        status: "done",
+        result: {
+          summary: "Owner accepted the verified delivery",
+          response: "Delivered and independently verified.",
+          evidence: ["test:aggregate-accepted"],
+        },
+      });
+      const snapshot = readTaskSnapshot(config);
+      expect(Object.keys(snapshot.resources ?? {})).toEqual([]);
+      expect(Object.keys(snapshot.receipts ?? {}).sort()).toEqual([parentId, childId].sort());
+      expect(Object.values(snapshot.attempts ?? {}).filter((attempt) => attempt.taskId === childId)).toHaveLength(5);
+      for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
+      expect(reviews).toHaveLength(3);
+      expect(childCalls).toBe(5);
+    },
+  );
+
   it.each(["normal", "recovered"])(
     "settles an App stop without success and retains it after restart (%s)",
     async (route) => {
