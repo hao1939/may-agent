@@ -31,9 +31,9 @@ small shared state boundary.
 ## Current focus
 
 The [external component plan](proposals/external-components-simplification.md)
-turns the source review into bounded implementation slices: optional I/O
-containment, HTTP/Evaluation ownership, metric lifecycle/freshness, and targeted
-code organization. It is a draft for review, not an implementation claim.
+prioritizes three small corrections: guard guidance, the blocking credential
+probe, and Telegram I/O. Evaluation feature reduction, metric improvements, and
+code moves are conditional follow-ups. It is a draft, not an implementation claim.
 
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate

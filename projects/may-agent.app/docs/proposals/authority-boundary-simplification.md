@@ -36,7 +36,7 @@ the current deployed release or completion of provider-facing delivery work.
 | --- | --- |
 | Retire conversational child-request waiting where redundant | A dated audit found retained open obligations. Inventory current callers and retained requests before deletion; keep ordinary caller/result correlation and Task-to-Task dependencies. Drain or migrate real obligations explicitly. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
-| Move Evaluation policy out of HTTP | Separate Host/Evaluation change: preserve exact feedback identity, history and the meaning of “saved.” Event admission alone cannot claim feedback was persisted. This remains deferred from the May cleanup. |
+| Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
 | Prove one App-owned delivery workflow | Select one repository, responsible Task, executor and requested terminal outcome. The recorded read-only PR assessment did not exercise publication, review dispatch or validation effects. |
 | Assess historical production state before rollout | Verify the actual artifact and retained state. Candidate fixes do not establish that a previously revived Task generation was authorized or repair historical rows automatically. |
 

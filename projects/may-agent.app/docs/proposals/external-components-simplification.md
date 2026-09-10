@@ -1,354 +1,221 @@
 # External components: simple, solid, and clearly organized
 
-**Design status:** Draft for review.
-**Implementation status:** Source review completed September 10, 2026. The changes
-below are proposed; none has been implemented or deployed by this plan.
+**Design status:** Draft for review, narrowed after the philosophy review.
+**Implementation status:** Source review only. No runtime changes or deployment
+have been performed under this plan.
 
-## Goal and sufficient outcome
+## Goal and stopping point
 
-Make May's replaceable capabilities easier to understand, change, and operate
-without weakening accepted work. A capability should have an obvious owner,
-small dependencies, bounded execution where applicable, and explicit cleanup.
-Removing it should degrade capability while preserving the remaining system's
-correctness and accepted obligations.
+Keep ordinary conversation and authorized work responsive and understandable
+at an acceptable total cost. Improve external components only where the change
+serves that outcome. Follow the [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
+and [core principles](../1-principles/core-principles.md): start with a simpler
+contract, then use the smallest implementation that is robust enough.
 
-Use the [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
-and [core principles](../1-principles/core-principles.md). Invest first in failures
-that can repeatedly stall ordinary use. Accept missed observations, affordable
-redo, or visible unavailability when that avoids permanent recovery machinery.
-A file move earns its cost when it clarifies ownership or prevents coupling;
-file length alone is not a reason to refactor.
+The first milestone is three focused corrections: misleading guard wording,
+a blocking credential probe, and unbounded Telegram requests. Stop after their
+checks pass. The remaining findings are choices for later work, not promised
+phases of a seven-part refactor. A known architectural gap can remain documented
+when fixing it costs more than its current consequences.
 
-Enough means the concrete gaps below are closed, their affected contracts agree
-with the implementation, and existing removal/failure guarantees still hold.
-It does not mean every external file has moved or every capability has the same API.
+## What changed after reviewing the plan
 
-## Scope and evidence
+The previous draft treated all findings as required work. It proposed observer
+cancellation/reload machinery before inspecting the real consumer, bundled
+metric freshness with ownership migration, and preserved advanced evaluation
+features without establishing their value. Its directory tree also risked
+becoming a file-move checklist.
 
-The review covered capability families, their composition, and representative
-failure paths; it was not an exhaustive audit of every installed App or provider.
-It examined Host `0d8c7658` and the Conversation candidate `0b420287`.
-The cited external implementations were unchanged between those revisions.
-At plan preparation, fetched `main` was `765ce79c` and those implementations
-remained unchanged. #130 and #131 were squash-merged into #129's branch
-(`5317d627`); #129 remained open. Recheck these facts before implementation.
+The narrower decisions are:
 
-Existing focused tests passed: **79 tests across 11 files**, covering observers,
-schedules, discovery/registration, workflow inspection, Git workspaces, reporting,
-maintenance, Telegram client behavior, and read-dedup guards. A small synthetic
-probe exercised the actual observer runtime with an unresolved callback: later
-slots did not rerun it, reload started another callback before the old one
-settled, and close correctly discarded late facts. Separate probes confirmed
-the guard wording and metric projection omissions described below. These are
-source observations, not network, live-model, or deployment validation. Add
-durable regression coverage with the fixes rather than relying on scratch probes.
-
-| Finding | Source, relative to the Host root | Consequence |
+| Area | Smallest worthwhile choice | Capability or guarantee we can give up |
 | --- | --- | --- |
-| Observer awaits have no runtime deadline or supplied cancellation signal; reload resets running ownership | `src/app/app-observer-runtime.ts`; SDK `ObserverContext` | A stuck observer stays busy; replacement can overlap unresolved old work |
-| Telegram fetch has no explicit request deadline or cancellation tied to close | `src/app/transport/telegram-client.ts`, `telegram.ts` | Provider I/O can hold polling or a delivery sequence beyond its useful lifetime |
-| HTTP builds evaluator instructions and appends feedback files | `src/app/http/server.ts`, `handleSessionEvalGenerate` and `handleSessionEvalComment` | Transport owns domain policy and a second domain write path |
-| Metric collection is attached in general daemon setup; public metric reads omit sample time | `src/app/daemon-events.ts`, `metric-source-measurement.ts`, `adapters/reporting/metric-read.ts` | Collection has no matching optional lifecycle boundary; callers cannot assess value freshness |
-| Central definitions still include domain measurements | Host Operations `agents/tech-lead/handlers/metrics-snapshot.ts` | Meaning and definition updates can have competing owners |
-| Read-dedup warns that file content has not changed without checking it | `src/lib/tools/read-dedup-guard.ts` | A mechanical observation becomes an unsupported instruction |
-| Executor implementation and registration are scattered | `src/app/codex-goal-*`, `daemon-agents.ts`, `src/lib/manager.ts`, `workflow-tool.ts` | Backend changes require navigating unrelated responsibilities |
+| Guard | Correct the unsupported sentence | No file-change detection to justify a warning |
+| Observer | Fix the actual blocking provider call first | No new general cancellation API, seamless hot replacement, or precise observation recovery |
+| Telegram | Bound each request and cancel owned I/O on close | Delayed/missed display and occasional duplicates; no guaranteed delivery |
+| Evaluation UI | Prefer viewing retained evidence; keep only operations the App actually supports | Automatic line-trail generation and inline feedback may be disabled instead of rebuilt |
+| Metrics | Expose sample time to an existing consumer when needed | No automatic freshness classifier or mandatory catalog migration |
+| Collection | Keep one collector; isolate a demonstrated failure at its existing boundary | Startup selection is sufficient; live removal is unnecessary |
+| Layout | Document owners and move code when changing that responsibility | No repository-wide directory migration |
 
-The [architecture](../2a-design/architecture.md) owns the core/external boundary.
-[Storage](../2a-design/storage.md) owns authoritative operations. This proposal
-owns the implementation sequence; it does not replace those contracts.
+Preserve the consequences that matter: accepted asks and Task identity, honest
+results, required action checks, and safe handling of committed external effects.
+Duplicate presentation can be affordable; duplicate consequential actions may
+not be. Removing a feature must preserve its retained data and expose its
+unavailability. Revise the owning contract with a behavior change rather than
+silently weakening it or treating every existing guarantee as permanent.
 
-## Responsibility and removal review
+## Evidence and its limits
 
-| Family | Keep or improve | Required behavior when absent |
+The original Host review examined `0d8c7658` and candidate `0b420287`.
+The cited external code was unchanged at subsequently fetched `main` `765ce79c`.
+The earlier **79 focused tests across 11 files** passed; synthetic probes showed
+that a never-settling observer skips later scans, reload can start another call,
+late facts are discarded after close, and metric reads omit sample time.
+These facts do not establish incident frequency or prove that a general observer
+framework would repay its cost. Source/PR baselines must be refreshed before
+implementation; this is not a deployment audit.
+
+The philosophy review followed actual source consumers:
+
+- The App-declaration search found `scout-knowledge-lib.app`'s credential observer.
+  Its `watchers/xhs-credential.ts` calls `inspectXhsCredential`, whose implementation
+  in `agents/scout/tools/lib/xhs-credential.ts` uses `spawnSync` with a 30-second
+  timeout. It runs through the Host observer callback. An asynchronous function
+  around that call still blocks the Host; an AbortSignal alone cannot fix it.
+- `transport/telegram-client.ts` awaits fetch without an explicit client deadline.
+  The surrounding refresh queue retries on later wakes, not an automatic delivery
+  backoff loop. The earlier plan overstated that existing capability.
+- `src/lib/tools/read-dedup-guard.ts` counts reads but asserts unchanged content.
+- Host Operations' `platform-owner-review.ts` uses `ctx.read.metric` in its review
+  packet, providing a concrete potential consumer for sample time.
+- The [evaluation trail contract](../2a-design/session-eval-trail.md) already records
+  that the current Task does not produce the requested HTTP line trail. Preserving
+  the UI feature would require more than moving code.
+
+These are source findings, not a census of live usage. Do not call providers,
+inspect live credentials, or build a usage-measurement system to complete this
+planning exercise.
+
+## First milestone
+
+### 1. Correct misleading guard guidance
+
+Remove the claim that file content has not changed. Keep the observed read count
+and advisory meaning in `src/lib/tools/read-dedup-guard.ts`. Do not add hashing,
+watchers, or blocking behavior.
+
+**Value/cost:** A tiny edit removes incorrect guidance from a shared execution
+path. **Proof:** Run the existing guard tests and review the wording; no new
+wording-only test suite is needed.
+
+### 2. Make the existing credential probe nonblocking
+
+Replace the synchronous subprocess with an ordinary bounded asynchronous call.
+Keep the current 30-second provider budget and output interpretation initially;
+await the result in the observer and its other caller, `scout-explore.ts`, and
+update their typed dependencies together. Use synthetic subprocess fixtures.
+
+Keep failure visible and preserve current credential/Condition semantics. A
+missed observation can wait for the next ordinary scan. Check that the async
+conversion does not make the probe's local cache or a late result override newer
+evidence. Use a small local guard or defer a busy replacement if necessary;
+do not expand this into a general observer lifecycle or reload redesign.
+If safe replacement needs substantial coordination, support replacement after
+settlement or restart and document that limitation.
+
+**Value/cost:** This removes a concrete path that can occupy the Host event loop
+for up to the provider timeout. It is narrower than adding an SDK signal and
+tracking every observer generation. **Proof:** A pending fixture process leaves
+an unrelated event-loop callback responsive; success, timeout, and late-result
+cases preserve the existing result semantics. Run the affected observer and
+workflow tests. Do not run the real credential probe to test the change.
+
+The generic observer deadline/cancellation gap remains documented. Revisit it
+when another asynchronous observer needs the same facility or an actual failure
+justifies it. Never simulate cancellation by releasing a slot while unbounded
+old work continues; a visible stop or delayed replacement is an acceptable limit.
+
+### 3. Bound Telegram I/O without expanding delivery guarantees
+
+Add client-owned cancellation and finite request deadlines in the existing
+`telegram-client.ts`; connect them to the bot's existing close path. Start with
+one ordinary-request default and a long-poll deadline above the existing
+30-second server wait. Choose conservative constants from the current request
+paths; the previous draft's exact values were not measured requirements.
+Prevent further chunk sends and polling after close. Keep current controls,
+provider message IDs, and confirmed-render tracking.
+
+Restrict plain-text resend to confirmed formatting rejection; alternatively
+send plain text where formatting adds little value. A timeout does not prove
+that a message was not delivered. Keep the current wake-driven refresh behavior:
+a later wake may retry an unconfirmed message and produce a duplicate. Without
+a later wake, display may remain missing; the durable answer is still readable
+through the existing Conversation surfaces. Do not add periodic retry, durable
+delivery state, or a second queue to strengthen that promise.
+
+**Value/cost:** Explicit bounds and cleanup improve a normal human channel with
+little new state. **Proof:** Local network fixtures cover a stalled request,
+long polling, close during I/O, and the distinction between formatting rejection
+and uncertain timeout. Existing chunk, refresh, ordering, and Stop tests remain
+the contract owners. Accepted input/actions retain their deduplication guarantees.
+Update [Telegram notifications](../2a-design/telegram-notifications.md) with the
+accepted display limitation; no layout extraction is required for this fix.
+
+## Conditional follow-ups
+
+These are alternatives to consider when the first milestone is complete. Each
+needs an actual consumer or recurring failure; neither folder symmetry nor an
+old backlog entry is enough.
+
+| Finding | Default decision | Evidence that would justify more work |
 | --- | --- | --- |
-| Apps | Keep meaning, acceptance, prompts, and domain measurements with their App | Reject unavailable new work; preserve admitted obligations. Follow the existing drain/removal restriction |
-| Conversation | Reuse the [state/handler extraction](storage-state-service.md#conversation-state-and-handler-extraction) | Chat may be unavailable; Requests, messages, links, and unrelated Tasks remain intact |
-| Executors | Supply bounded execution and evidence through existing contracts | Required backend unavailable is visible; no silent substitute or false completion |
-| Tools, skills, guards | Prefer useful guidance and precise action checks | Optional guidance/tools may disappear; a mandatory action check remains enforced or that action is unavailable |
-| Schedules and observers | Keep timing, fact production, and work execution separate | No new timed input/facts; Task waits, cancellation, and required recovery remain operational |
-| Interfaces | Admit through shared operations and present canonical reads | One unavailable channel cannot complete, reopen, or stop unrelated work |
-| Metrics and reports | Own collection/projections outside core; retain evidence in existing storage | Missing/stale measurement is explicit; accepted results and canonical reads remain usable |
-| Discovery and workspaces | Retain existing narrow contracts and tests | Failed reload retains the accepted generation; missing workspace support fails affected execution visibly |
-| Maintenance | Retain bounded deterministic duties and single-flight behavior | Optional duties may stop. Task recovery and essential integrity work keep an explicit owner; disk growth is not acceptable indefinitely |
+| HTTP owns evaluation instructions and feedback writes | Prefer a read-only trail view and disable unsupported write/generation controls together with their routes. Keep existing artifacts and supported App review operations | Regular use of inline/line-level review that cannot be served adequately by existing conversation/App tools |
+| Metric reads omit sample time | If needed by the existing owner-review packet, add last-successful-sample time from retained snapshots; show unknown when unavailable | A consumer needs age to make a better decision; definition-update time must not stand in for sample time |
+| Collector attachment is mixed with daemon setup | Keep the implementation; add a small composition/cleanup seam only when omission or failure containment requires it | A fixture demonstrates collector failure blocking unrelated startup/work, or a supported deployment needs collection omitted |
+| Central domain metric definitions | Keep the gap visible. Retire unused/noisy metrics; migrate a measurement when its domain owner is changing it | Conflicting writers, repeated calibration problems, or a useful App change makes ownership separation worth the paired migration |
+| Scattered executor files | Update the navigation map; group touched backend files in the next real backend change | Repeated edits cross unrelated responsibilities or cause import/wiring mistakes |
 
-Deliberate absence at startup and supported reload are sufficient. Arbitrary live
-unloading is not a goal. Events connect independent consumers; local reads,
-execution calls, and atomic changes remain typed operations. Report-specific
-SQL may stay with a bounded read model; authoritative writes use their owning
-state operation. Sharing SQLite does not make every report part of core.
+The evaluation recommendation is a proposed feature reduction, not an approved
+removal or a claim that nobody uses it. Before changing it, inspect known callers
+and explain the retained user path. Update the Host/UI and
+[HTTP](../2a-design/http-boundary.md)/[evaluation](../2a-design/session-eval-trail.md)
+contracts together. Retain historical reads and explicitly reject unavailable
+operations; never report an unsaved comment as saved. If retaining the feature
+is worthwhile, use the existing Evaluation App route and its state authority.
+Do not prebuild a feedback journal, migration bridge, or new retry protocol.
+This supersedes the mandatory paired migration in the earlier draft; the
+[authority follow-up](authority-boundary-simplification.md#remaining-work) keeps
+the underlying ownership gap visible.
 
-## Implementation sequence
+Metric sample time, collector cleanup, and catalog ownership are separate
+choices. Do not bundle them. Keep one snapshot cadence and the existing metric
+service. A raw timestamp plus a clear unknown value may be enough; automated
+freshness states and dedicated health storage need their own use. If a metric
+migration proceeds, preserve useful history and meaning and remove the old
+writer in the same cutover, following the
+[ownership rule](design-implementation-convergence.md#remaining-metric-ownership-migration).
 
-| Slice | Value and cost | Review boundary |
-| --- | --- | --- |
-| 1. Observer lifetime | Prevent recurring stalls with a small runtime/SDK change | Deadline, cancellation, and ownership across reload |
-| 2. Telegram lifetime | Keep a frequently used channel responsive; accept occasional display duplicates | Provider I/O, cleanup, and retry semantics |
-| 3. Guard wording | Remove misleading guidance at minimal cost | Small independent correction; may land first |
-| 4. Evaluation ownership | Remove duplicate policy/writes; requires a paired App change | Input/result contract and artifact compatibility |
-| 5. Collection lifecycle | Make optional measurement removable and failure-contained | Composition, subscriptions, and cleanup |
-| 6. Freshness and ownership | Make existing measurements useful and trustworthy | Additive reads, then one bounded App migration |
-| 7. Executor layout | Reduce future navigation/change cost; defer broader extraction | Move concrete implementation without lifecycle changes |
+## Code organization without a move project
 
-Each slice has its own reviewable diff and sufficient proof. Independent small
-fixes may proceed from current `main`; changes using the new Conversation state
-API depend on #129 landing, or must show an explicit stacked base. The order
-below is a priority order, not a requirement to prepare every slice at once.
+Use the [architecture](../2a-design/architecture.md) and this ownership map.
+Existing names need not match the ideal immediately.
 
-### 1. Bound observer lifetime and preserve single-flight ownership
+| Responsibility | Home for changes |
+| --- | --- |
+| Accepted work, state consistency, events | Existing core/state/runtime modules |
+| Conversation policy and context | `src/app/conversations/`, building on the existing state/handler extraction |
+| Concrete executor, producer, reporting, discovery, workspace, maintenance implementations | Their existing `src/app/adapters/` families; flat implementations can stay until a useful extraction |
+| Input/output transport | Existing `src/app/transport/` and `http/` files |
+| Concrete selection and lifecycle wiring | `src/app/composition/` and existing composition roots |
+| Public contracts and human clients | Existing SDK, control, terminal, and Web UI packages |
+| Domain probes, prompts, workflows, and acceptance | The owning `projects/<id>.app/` |
 
-**Change:** Supply a cancellation signal through `ObserverContext` and add one
-conventional observer deadline. Audit installed observers for compatible bounded
-provider calls. Start with a proposed 60-second default, validated against those
-uses; avoid per-App timeout configuration until an actual use needs it.
+Move implementations and tests together only when doing so clarifies the change.
+Keep ordinary calls for local reads/atomic operations and events for independent
+consumers. No generic plugin interface, new service layer, empty folders, or
+compatibility wrappers are needed. Discovery, schedules, workspaces, Console,
+skills, and maintenance already have useful boundaries; keep them unless a
+specific failure warrants change. Required recovery is not optional housekeeping.
 
-Keep in-flight ownership by stable App/observer identity across replacement.
-On timeout, abort and report the original failure once; reject late facts.
-On replacement or close, cancel retired work and prevent new work from overlapping
-it. Release ownership only when the underlying callback settles. A callback that
-ignores cancellation remains visibly unavailable until it settles or the process
-is restarted; close must not wait forever or claim that the callback was killed.
+## Review and verification
 
-This is cooperative cancellation for trusted App callbacks. It cannot preempt
-synchronous CPU work. Keep expensive computation in the existing Task worker
-path rather than adding an observer worker framework. Retry-safe observation is
-recollected on an ordinary later scan; add no durable observer retry queue.
+For each chosen change, state the useful outcome, smallest alternative, accepted
+limitation, and focused proof. If it grows into new persistent state, multiple
+coordination paths, or a cross-component migration, revisit the feature first.
+This is a stopping rule for scope, not a new approval process for routine edits.
 
-**Code and contract:** Keep the change together in `app-observer-runtime.ts`,
-SDK `ObserverContext`, affected App adapters, and [Scheduling](../2a-design/cron.md).
-Move the runtime and tests to `adapters/producers/app-observers.ts` after the
-behavior is settled if the move keeps the review clear.
+Use small independent PRs for cohesive fixes. Keep shared checkouts on `main`
+and isolate source edits. Follow the relevant repository checks: affected
+fixtures first, full Host `bun run ci` and current Quality/Container checks for
+a Host PR, affected App tests for App changes, and `bun run check:may-design`
+when contracts change. Pair Host/App revisions only when the actual change
+crosses that boundary. Reuse existing regressions; do not add an exhaustive
+optional-component matrix or model-backed trial for these mechanical fixes.
 
-**Done when:** Controlled pending-callback tests prove deadline cancellation,
-no overlap across scans/reload, rejection of late facts, recovery after actual
-settlement, and close without new dispatch. A separate healthy observer and
-admitted Task continue. Failure-publication failure remains contained.
-
-### 2. Bound Telegram requests and own their cleanup
-
-**Change:** Give the client an owned cancellation path and explicit request
-deadlines. Proposed initial constants are 15 seconds for ordinary API requests
-and 45 seconds for the existing 30-second long poll. Verify them with local
-fixtures; keep them out of user configuration initially. Bot close cancels
-requests, retry delays, and queued refreshes, and prevents new sends.
-
-Preserve provider message IDs, chunk accounting, Conversation cursors, and exact
-Stop controls. Cancellation or timeout does not prove that Telegram rejected a
-send. Restrict plain-text formatting fallback to a confirmed formatting rejection;
-do not immediately resend an ambiguously timed-out send as a formatting fallback.
-The proposed display contract accepts occasional duplicate notifications: keep
-the last confirmed Conversation cursor and let the existing refresh path retry
-with bounded backoff. Reuse message identity/delivery evidence and report the
-uncertain attempt honestly. Do not add a durable uncertain-delivery state machine
-or stop all future messages to prevent an affordable display duplicate. Input
-admission and Task actions still retain their exact deduplication guarantees.
-
-Do not build a durable delivery queue or promise exactly-once display. Retry
-polling through the existing bounded backoff. Process-wide networking settings
-must have an explicit composition owner rather than running merely on import.
-
-**Code and contract:** `transport/telegram-client.ts`, `telegram.ts`, and
-[Telegram notifications](../2a-design/telegram-notifications.md). Split provider
-I/O, runtime/input handling, and pure rendering only where these edits establish
-the boundaries; preserve Console/control contracts.
-
-**Done when:** Local HTTP fixtures cover stalled requests, long-poll allowance,
-close during I/O/backoff, formatting rejection, ambiguous send outcome, and
-no post-close sends. Existing chunk, refresh, authorization, ordering, and
-turn-control tests pass; a failed channel does not affect Task settlement.
-
-### 3. Correct the read-dedup signal
-
-**Change:** Remove the unsupported claim that file content has not changed.
-Keep the observed read count and advisory meaning. Do not add hashing, file
-watching, or automatic blocks to preserve that sentence.
-
-**Code and contract:** `src/lib/tools/read-dedup-guard.ts` and
-[Guards](../2a-design/guards.md). This tiny independent fix can land at any time.
-
-**Done when:** The warning states only observed facts, existing guard checks
-pass, and rereading a changed file remains allowed. No new wording-only test
-suite is needed.
-
-### 4. Return evaluation ownership to the Evaluation App
-
-**Change:** Inventory current browser callers and the Evaluation App's input
-route. Reuse or extend that declared route for session evaluation and human
-feedback. HTTP supplies validated session/line identities and user content;
-the App owns evaluator instructions, append rules, artifact paths, and result
-interpretation. Reuse existing Task/input identity for retry-safe generation.
-For feedback, provide a stable submission identity and deduplicate appends at
-the owning write boundary so a lost response cannot append twice.
-
-Keep existing HTTP endpoints as thin adapters where useful. Specify admission
-versus completion responses with the browser consumer: a receipt cannot claim
-feedback was appended. Missing Evaluation must report unavailable without a
-fallback file writer. Retain existing evaluation files and their read path.
-
-**Integration:** This is a paired Host/Evaluation change. Prepare both revisions
-and test them together. Introduce the compatible App route first, switch Host/UI
-callers next, and remove any temporary compatibility only after callers migrate.
-If the existing protocol cannot support that order, release the paired changes
-together rather than land an incompatible half. Deployment remains separate.
-
-**Code and contract:** HTTP handlers, `projects/evaluation.app`,
-[HTTP boundary](../2a-design/http-boundary.md), and
-[evaluation trail](../2a-design/session-eval-trail.md). This slice implements the
-existing [authority follow-up](authority-boundary-simplification.md#remaining-work).
-Extract touched routes from `server.ts` after ownership is clear; a wholesale
-HTTP rewrite is outside this slice.
-
-**Done when:** Fixtures prove exact admission/result semantics, duplicate-submit
-behavior, retained artifact reads, invalid identity rejection, and unavailable
-Evaluation behavior. HTTP contains neither evaluator instructions nor direct
-evaluation writes. Chat, Task controls, and unrelated reads remain functional.
-
-### 5. Give metric collection an explicit optional lifecycle
-
-**Change:** Select and activate the current collector through reporting
-composition, with owned unsubscribe/cancellation/close. Separate collector
-installation from general daemon event setup. Keep default collection enabled
-in shipped composition without requiring core runtime construction to install it.
-Keep one snapshot cadence, existing due-sample checks, and keep-latest coalescing.
-
-Definition/collector failure reports diagnostics but cannot reject an App
-generation, stop unrelated work, or erase accepted results. No new work queue,
-service registry, metric scheduler, or default investigation App is needed.
-Existing core failure evidence remains available with collection omitted.
-
-**Code and contract:** `daemon-events.ts`, `metric-source-measurement.ts`,
-`composition/reporting.ts`, `adapters/reporting/`, and
-[Metrics](../2a-design/metrics.md). Reuse the existing metric storage service.
-
-**Done when:** A real runtime fixture omits collection and reporting while
-executing Tasks and reading retained results. Failed initialization, one failed
-source, and close during measurement are contained; no new collection starts
-after close. Verify one trigger/cadence owner and no duplicate subscriptions.
-
-### 6. Expose sample freshness and migrate one useful metric group
-
-**Change:** Add a backwards-compatible last-successful-sample time to metric
-reads, using retained snapshot evidence rather than definition-update time.
-Derive freshness from the declared cadence; absent cadence means freshness is
-unknown. Preserve the last successful value when a sample fails and expose
-bounded collection-failure evidence through existing diagnostics. A missing
-sample is distinct from a measured zero; definition status `active` is not health.
-
-Inventory the remaining central catalog by owner. Retain Host measurements with
-Host Operations; choose one demonstrably useful domain group to migrate to its
-App. Remove its old registration/measurement in the same cutover. Preserve IDs,
-history, sample meaning, cadence, and alerts when meaning is unchanged; changed
-meaning needs a new ID or explicit migration. Do not expand the metric set.
-
-**Code and contract:** SDK `MetricView`, the metric service/read projection,
-affected consumers, Host Operations catalog, the selected App, and
-[Metrics](../2a-design/metrics.md). Follow the existing
-[ownership migration rule](design-implementation-convergence.md#remaining-metric-ownership-migration).
-Separate freshness and the paired App migration into distinct PRs if neither
-requires the other.
-
-**Done when:** Controlled-clock and retained-data tests distinguish fresh,
-stale, never-measured, failed, and measured-zero cases. Updating a definition
-cannot refresh a sample. Old consumers tolerate added fields. The chosen metric
-has one active definition/measurement owner after restart and App reload; its
-history and meaning remain intact.
-
-### 7. Organize executor implementation where it pays back
-
-**Change:** Group `codex-goal-*` implementation and tests under
-`adapters/executors/codex-goal/`. Move concrete executor registration and retained
-binding migration selection from general agent preparation into execution
-composition. Preserve executor names, binding files, legacy aliases needed by
-unfinished work, and daemon/worker wiring.
-
-Keep the existing shared model/tool execution path. Splitting `manager.ts` or
-`workflow-tool.ts` is a later choice only when an actual change demonstrates a
-useful responsibility boundary. Do not remove workflow resume or change stored
-run semantics during this organization work. Affordable-redo changes require
-their own workload/cost and external-effect review.
-
-**Done when:** Core has no concrete backend import; daemon and isolated worker
-select the same backend behavior. Existing cancellation, result fencing,
-unavailable-backend, restoration, and retained-binding tests pass. Imports and
-entrypoints resolve in the built image. No forwarding wrappers or second
-executor registry remain solely to conceal the move.
-
-## Proposed code layout
-
-This extends existing homes. Create directories as their owning slice lands,
-move tests with implementations, and update source navigation at that time.
-Existing `src/lib` services stay where they are unless a separate useful
-extraction is justified.
-
-```text
-src/app/
-  core/                         stable admission, state, events, work runtime
-  conversations/                context, agent selection, turn handling
-  adapters/
-    discovery/                  conventional App sources
-    executors/
-      managed-agent.ts
-      workflow.ts
-      session-recovery.ts
-      codex-goal/                backend implementation and tests
-    producers/
-      app-schedules.ts
-      app-observers.ts
-    workspaces/git.ts
-    maintenance/                existing deterministic duties
-    reporting/                  collection and bounded report projections
-  transport/
-    console.ts
-    socket.ts
-    telegram/                   client, runtime, rendering as separated
-  http/
-    server.ts                   server setup and route wiring
-    routes/                     extracted thin resource/feature endpoints
-    read-model/                 existing bounded report queries
-    live.ts                     websocket transport if extracted
-  composition/                  concrete selection, activation, cleanup
-
-packages/sdk/                   App and executor contracts
-packages/control/               client protocol and transport helpers
-packages/terminal/              Console client
-packages/webui/                 browser client
-projects/<id>.app/              domain declarations, policy, agents, workflows
-```
-
-Use ordinary imports and narrow functions. Core cannot import concrete adapters
-or conversational policy; composition may import both sides. A provider module
-must not change process settings, subscribe, or start a timer merely on import.
-Reuse existing lint boundaries and add targeted checks only for an extracted
-boundary. Different capability families retain their own contracts.
-
-## Review, verification, and stopping
-
-Review each slice against four questions: what useful failure does it prevent;
-what simpler alternative was considered; what happens on failure/removal; and
-what state or behavior must survive the change? The numbered slices state the
-proposed decisions. Reviewers should settle the timeout defaults, Telegram
-uncertain-delivery behavior, paired Evaluation contract, and chosen metric
-group before implementing their dependent behavior. These are design choices,
-not a new runtime approval framework.
-
-Use a separate, independently reviewable PR for each cohesive fix. Pair Host/App
-revisions where needed; group file moves only with their demonstrated boundary.
-Keep the shared checkout on `main` and isolate implementation work. Before a
-Host PR is ready, use the repository-pinned tools, frozen install, full
-`bun run ci`, and current-revision Quality/Container checks. Run affected App
-tests and `bun run check:may-design` for paired contract changes. Local fixtures
-must not depend on a live installation, credentials, or model calls.
-
-Final review uses existing boundary coverage plus the new regressions; do not
-build an exhaustive matrix of every optional combination. Confirm Task-only
-operation, another healthy channel/producer, retained accepted results, and
-supported removal/reload. Recheck runtime readiness and control responsiveness
-where the changed callback shares their process. No performance improvement is
-claimed without measurement; a passing deadline test is not network reliability
-proof.
-
-Stop after a slice satisfies its acceptance criteria. Discovery, schedules,
-Git workspaces, the Console/control protocol, skills, and maintenance need no
-general rewrite based on this review. App merging, a new error-investigation
-system, a generic plugin framework, exact delivery, precise workflow recovery,
-and live deployment remain outside this plan. Further work needs an observed
-remaining problem or a benefit worth its total cost.
+The milestone is complete when its three corrections have sufficient proof.
+Do not continue through the conditional table automatically. Reliability can
+come from dropping a feature, delaying an observation, using another existing
+surface, or restarting a faulty optional capability. Additional automation must
+repay its implementation, maintenance, compute, and human-attention cost over
+its likely useful lifetime.
