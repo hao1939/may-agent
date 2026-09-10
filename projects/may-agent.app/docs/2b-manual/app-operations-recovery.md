@@ -40,6 +40,12 @@ App with unfinished Tasks, requests or admission commands and keeps the prior
 generation; use restart to leave that work saved but inactive. This marker
 does not add a hot-stop mechanism.
 
+App selection is captured when preparing a generation. Its agents, message
+targets, admission workers, recovery and Task attempts use that accepted
+selection with the matching source snapshot. Later marker edits must not
+change those workers, including after a rejected reload. The selection is
+internal generation data, not another installation configuration file.
+
 **Availability:** Implemented on `feat/app-disable-marker`, not in `v0.2.0`.
 Use a Host build containing the change before relying on the marker.
 
