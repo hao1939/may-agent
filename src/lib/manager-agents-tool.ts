@@ -7,7 +7,7 @@
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
-import type { SessionInfo, TaskResult } from "./types.js";
+import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
 import { readIdentity } from "./instance-identity.js";
@@ -19,7 +19,18 @@ import type { EventTrace } from "../app/core/events/bus.js";
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string; requestId?: string; trace?: EventTrace }>;
+  activeSessions: Map<
+    string,
+    {
+      definition?: SubagentDefinition;
+      parentSessionId?: string;
+      originSessionId?: string;
+      workflowRunId?: string;
+      projectId?: string;
+      requestId?: string;
+      trace?: EventTrace;
+    }
+  >;
   callAgent(
     agentName: string,
     task: string,
@@ -213,6 +224,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const callDeny = opts?.callDeny;
   const bus = opts?.bus;
 
+  const callerDefinition = (caller?: string, sessionId = getCallerSessionId?.()) =>
+    (sessionId ? manager.activeSessions.get(sessionId)?.definition : undefined) ??
+    (caller ? manager.agents.get(caller)?.definition : undefined);
+
   const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string; trace?: EventTrace } => {
     if (!sessionId) return {};
     const active = manager.activeSessions.get(sessionId);
@@ -235,12 +250,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const appBoundaryError = (caller: string | undefined, target: string, sessionId?: string): string | null => {
     const targetDefinition = manager.agents.get(target)?.definition;
     if (!targetDefinition?.appLocal) return null;
-    const callerDefinition = caller ? manager.agents.get(caller)?.definition : undefined;
-    if (
-      callerDefinition?.appLocal &&
-      callerDefinition.projectId &&
-      callerDefinition.projectId === targetDefinition.projectId
-    ) {
+    const definition = callerDefinition(caller, sessionId);
+    if (definition?.appLocal && definition.projectId && definition.projectId === targetDefinition.projectId) {
       return null;
     }
     if (isBreakGlassCaller(sessionId)) return null;
@@ -275,9 +286,9 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentCall = getCallerAgentName?.();
             if (callerAgentCall) {
-              const callerReg = manager.agents.get(callerAgentCall);
-              if (callerReg) {
-                const toolNames = callerReg.definition.tools.map((t) => t.name);
+              const definition = callerDefinition(callerAgentCall);
+              if (definition) {
+                const toolNames = definition.tools.map((t) => t.name);
                 if (toolNames.includes(params.agent)) {
                   return textResult(
                     JSON.stringify({
@@ -326,9 +337,9 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
-              const callerReg = manager.agents.get(callerAgentRun);
-              if (callerReg) {
-                const toolNames = callerReg.definition.tools.map((t) => t.name);
+              const definition = callerDefinition(callerAgentRun);
+              if (definition) {
+                const toolNames = definition.tools.map((t) => t.name);
                 if (toolNames.includes(params.agent)) {
                   return textResult(
                     JSON.stringify({

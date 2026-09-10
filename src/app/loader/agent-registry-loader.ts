@@ -8,7 +8,6 @@ import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
 import {
   agentProjectRoot,
-  agentRelativeDir,
   agentsRootForAgentDir,
   listRuntimeAgentDirectories,
 } from "./agent-discovery.js";
@@ -22,6 +21,10 @@ export interface AgentLoaderOptions {
   /** Immutable prompt and shared-skill root for this definition generation. */
   definitionSharedRoot?: string;
   projectsRoot: string;
+  /** Live installation folders own .disabled markers, not immutable source snapshots. */
+  canonicalProjectsRoot?: string;
+  /** App folders selected for this generation; never re-read live markers in its tools/workers. */
+  appDirectories?: readonly string[];
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -135,7 +138,12 @@ export async function prepareAgents(
     { config: AgentConfig; source: ReturnType<typeof listRuntimeAgentDirectories>[number] }
   >();
 
-  for (const source of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
+  for (const source of listRuntimeAgentDirectories(
+    agentsRoot,
+    projectsRoot,
+    opts.canonicalProjectsRoot,
+    opts.appDirectories,
+  )) {
     const config = readCandidate(source.dir, source.name, allErrors);
     if (!config) continue;
     if (requestedNames && !requestedNames.has(config.name)) continue;
@@ -151,7 +159,7 @@ export async function prepareAgents(
         allErrors.push({
           agent: config.name,
           field: "name",
-          message: `Duplicate agent name. Already loaded from ${agentRelativeDir(prior.source)}; duplicate at ${agentRelativeDir(source)}`,
+          message: `Duplicate agent name. Already loaded from ${prior.source.relativeDir}; duplicate at ${source.relativeDir}`,
         });
       }
       continue;

@@ -7,6 +7,9 @@ import { EVENT_ROW_ID, type AgentEvent } from "../../src/app/core/events/bus.js"
 import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import type { AppEventAdmissionCommand } from "../../src/app/app-event-admission-store.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
+import { parseAppArgs } from "../../src/app/app-args.js";
+import { parseTaskWorkerDefinitionSource } from "../../src/app/task-attempt-process.js";
 
 const scenario = process.env.ADMISSION_TEST_SCENARIO ?? process.argv[2] ?? "healthy";
 if (process.argv.includes("--task-admission-worker")) {
@@ -17,10 +20,12 @@ if (process.argv.includes("--task-admission-worker")) {
     await new Promise<void>(() => {});
   } else {
     const root = process.env.ADMISSION_TEST_ROOT!;
+    const args = parseAppArgs();
     await runTaskAdmissionWorker({
       projectRoot: root,
       projectsRoot: join(root, "projects"),
       persistDir: join(root, "state"),
+      ...(args.taskWorkerSource ? { definitionSource: parseTaskWorkerDefinitionSource(args.taskWorkerSource) } : {}),
     });
   }
   process.exit(0);
@@ -49,7 +54,19 @@ writeFileSync(
 };\n`,
 );
 getDb(persistDir);
-const worker = createTaskAdmissionProcess({ timeoutMs: scenario.endsWith("timeout") ? 500 : 5_000 });
+const release =
+  scenario === "pinned-selection" ? new DefinitionSourceReleaseStore(root, persistDir).ensureCurrent() : undefined;
+if (release) {
+  writeFileSync(join(root, "projects/sample.app/.disabled"), "");
+  // A later activated source must not change this already selected worker.
+  writeFileSync(join(root, "projects/sample.app/app.js"), 'throw new Error("replacement App imported");');
+  const releases = new DefinitionSourceReleaseStore(root, persistDir);
+  releases.activate(releases.stage());
+}
+const worker = createTaskAdmissionProcess({
+  timeoutMs: scenario.endsWith("timeout") ? 500 : 5_000,
+  ...(release ? { definitionSource: { ...release, appDirectories: ["sample.app"] } } : {}),
+});
 const command: AppEventAdmissionCommand = {
   appId: "sample",
   kind: "task",

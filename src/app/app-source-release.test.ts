@@ -95,10 +95,27 @@ describe("App source releases", () => {
     const runtimeState = join(root, "projects", "sample.app", ".state", "runtime.json");
     mkdirSync(join(runtimeState, ".."), { recursive: true });
     writeFileSync(runtimeState, "{}\n");
+    writeFileSync(join(root, "projects", "sample.app", ".disabled"), "");
 
     const release = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
     expect(readFileSync(join(release.projectsRoot, "sample.app", "app.js"), "utf8")).toContain("sample-v1");
     expect(existsSync(join(release.projectsRoot, "sample.app", ".state"))).toBeFalse();
+    expect(existsSync(join(release.projectsRoot, "sample.app", ".disabled"))).toBeFalse();
+  });
+
+  it("keeps an untracked disable marker outside committed definition releases", async () => {
+    const { root, stateDir } = fixture();
+    const projectsRoot = join(root, "projects");
+    const marker = join(projectsRoot, "sample.app", ".disabled");
+    writeFileSync(marker, "");
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const release = store.ensureCurrent();
+    expect(existsSync(join(release.projectsRoot, "sample.app", ".disabled"))).toBeFalse();
+    expect(await loadAppDefinitions(release.projectsRoot, projectsRoot)).toEqual([]);
+    rmSync(marker);
+    expect((await loadAppDefinitions(store.ensureCurrent().projectsRoot, projectsRoot))[0]?.definition.id).toBe(
+      "sample-v1",
+    );
   });
 
   it("keeps minimal non-git sandboxes valid without inventing shared guidance", () => {

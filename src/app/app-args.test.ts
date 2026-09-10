@@ -72,6 +72,12 @@ describe("app args", () => {
 
   it("parses the private one-shot recovery worker", () => {
     expect(parseAppArgs(["may-agent", "--task-recovery-once"], {}).taskRecoveryWorker).toBe(true);
+    const payload = JSON.stringify({ appDirectories: ["sample.app"] });
+    expect(
+      parseAppArgs(["may-agent", "--task-recovery-once", "--task-worker-source", payload], {}).taskWorkerSource,
+    ).toBe(payload);
+    expect(parseAppArgs(["may-agent", "--task-recovery-once", "--cron"], {}).taskWorkerSource).toBeUndefined();
+    expect(() => parseAppArgs(["may-agent", "--task-worker-source"], {})).toThrow("requires one source payload");
   });
 
   it("parses the private persistent Task admission worker", () => {
