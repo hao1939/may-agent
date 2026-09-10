@@ -106,111 +106,6 @@ function isMayMetricBreach(event: Record<string, unknown>): boolean {
   return metric.startsWith("may.") || metric.startsWith("agent.may.");
 }
 
-const comparisonShapeKeys = [
-  "outcome",
-  "scope",
-  "acceptanceProof",
-  "baseline",
-  "candidate",
-  "comparisonArtifact",
-  "requiredProof",
-  "sampleScope",
-] as const;
-
-function isComparisonShaped(details: Record<string, unknown>): boolean {
-  return comparisonShapeKeys.some((key) => Object.hasOwn(details, key));
-}
-
-function nonEmptyStrings(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every((item) => typeof item === "string" && item.trim().length > 0)
-  );
-}
-
-function validFrozenIdentity(value: unknown): boolean {
-  const identity = params(value);
-  return (
-    typeof identity.path === "string" &&
-    identity.path.trim().length > 0 &&
-    !identity.path.startsWith("/") &&
-    !identity.path.split("/").includes("..") &&
-    typeof identity.sha256 === "string" &&
-    /^[a-f0-9]{64}$/.test(identity.sha256)
-  );
-}
-
-function validFinishResultIdentity(value: unknown): boolean {
-  const identity = params(value);
-  return (
-    typeof identity.artifact === "string" &&
-    identity.artifact.startsWith("/app/.state/sessions/") &&
-    identity.artifact.endsWith("/result.json") &&
-    !identity.artifact.split("/").includes("..") &&
-    typeof identity.sha256 === "string" &&
-    /^[a-f0-9]{64}$/.test(identity.sha256)
-  );
-}
-
-function validFinishResultCandidate(value: unknown): boolean {
-  const candidate = params(value);
-  return (
-    typeof candidate.worktree === "string" &&
-    candidate.worktree.startsWith("/app/projects/") &&
-    !candidate.worktree.split("/").includes("..") &&
-    typeof candidate.commit === "string" &&
-    /^[a-f0-9]{40}$/.test(candidate.commit) &&
-    typeof candidate.patchSha256 === "string" &&
-    /^[a-f0-9]{64}$/.test(candidate.patchSha256)
-  );
-}
-
-function validFinishResultComparisonEnvelope(
-  details: Record<string, unknown>,
-): boolean {
-  const sampleScope = params(details.sampleScope);
-  return (
-    details.mode === "finish-result-comparison" &&
-    typeof details.requestId === "string" &&
-    details.requestId.trim().length > 0 &&
-    typeof details.priorRequestId === "string" &&
-    details.priorRequestId.trim().length > 0 &&
-    details.priorRequestId !== details.requestId &&
-    typeof details.outcome === "string" &&
-    details.outcome.trim().length > 0 &&
-    validFinishResultIdentity(details.baseline) &&
-    validFinishResultCandidate(details.candidate) &&
-    nonEmptyStrings(sampleScope.positive) &&
-    nonEmptyStrings(sampleScope.negative) &&
-    nonEmptyStrings(details.requiredProof) &&
-    nonEmptyStrings(details.constraints) &&
-    typeof details.returnPath === "string" &&
-    details.returnPath.startsWith("/app/projects/gym/.state/proofs/") &&
-    !details.returnPath.split("/").includes("..")
-  );
-}
-
-function validComparisonEnvelope(details: Record<string, unknown>): boolean {
-  if (details.mode === "finish-result-comparison") {
-    return validFinishResultComparisonEnvelope(details);
-  }
-  const scope = params(details.scope);
-  return (
-    typeof details.requestId === "string" &&
-    details.requestId.trim().length > 0 &&
-    typeof details.outcome === "string" &&
-    details.outcome.trim().length > 0 &&
-    nonEmptyStrings(details.acceptanceProof) &&
-    nonEmptyStrings(details.constraints) &&
-    validFrozenIdentity(scope.baseline) &&
-    validFrozenIdentity(scope.candidate) &&
-    validFrozenIdentity(scope.comparisonArtifact) &&
-    nonEmptyStrings(scope.expectedLifecycleTypes) &&
-    nonEmptyStrings(scope.negativeControls)
-  );
-}
-
 function mayImprovementIntent(): TaskIntent {
   return {
     id: "improve/may",
@@ -240,27 +135,6 @@ function mayImprovementIntent(): TaskIntent {
   };
 }
 
-const terminalArtifactEvidenceAcceptance =
-  "An acceptance-critical terminal artifact claim may converge only after a fresh successful read verifies the exact required content and any claimed fingerprint is independently computed; disclose a current read failure such as ENOENT and remain non-converged.";
-const hashFenceEvidenceAcceptance =
-  "A SHA-256 hash-fence claim may activate or converge only when the executing review session independently runs the checksum command and preserves, for every exact current candidate path, the command, path, computed digest, required fence, comparison result, and exit status; copied cross-session hashes, a missing receipt, nonzero exit, or mismatch are insufficient proof and remain non-converged.";
-
-function gymOwnerReviewTaskId(input: AppInput, requestId: string): string {
-  const finding = params(params(input.data).finding);
-  const dedupeKey =
-    typeof finding.dedupeKey === "string" ? finding.dedupeKey.trim() : "";
-  const identity = dedupeKey ? `finding:${dedupeKey}` : requestId;
-  const readableIdentity = (dedupeKey || requestId)
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 72);
-  const identityDigest = createHash("sha256")
-    .update(identity)
-    .digest("hex")
-    .slice(0, 16);
-  return `owner-review/${readableIdentity || "request"}-${identityDigest}`;
-}
-
 function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
   const data = params(input.data);
   const requestedOutcome =
@@ -272,37 +146,28 @@ function gymOwnerReviewIntent(input: AppInput, requestId: string): TaskIntent {
         typeof value === "string" && value.trim() ? [value.trim()] : [],
       )
     : [];
-  const acceptance =
-    requestedAcceptance.length > 0
-      ? requestedAcceptance
-      : [
-          "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
-          "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
-          "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
-        ];
-  const evidenceClaim = [requestedOutcome, ...requestedAcceptance].join(" ");
-  const artifactClaimRequested = /\bartifact\b/i.test(evidenceClaim);
-  if (
-    artifactClaimRequested &&
-    !acceptance.includes(terminalArtifactEvidenceAcceptance)
-  ) {
-    acceptance.push(terminalArtifactEvidenceAcceptance);
-  }
-  const hashFenceClaimRequested =
-    /\b(?:sha-?256|hash(?:es|ed|ing)?|checksum)\b/i.test(evidenceClaim);
-  if (
-    hashFenceClaimRequested &&
-    !acceptance.includes(hashFenceEvidenceAcceptance)
-  ) {
-    acceptance.push(hashFenceEvidenceAcceptance);
-  }
+  const readableRequestId = requestId
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  const requestDigest = createHash("sha256")
+    .update(requestId)
+    .digest("hex")
+    .slice(0, 16);
   return {
-    id: gymOwnerReviewTaskId(input, requestId),
+    id: `owner-review/${readableRequestId || "request"}-${requestDigest}`,
     parentId: "review-proposals",
     outcome:
       requestedOutcome ||
       "Review one request for the Gym project and organize the smallest useful next step from its exact admitted evidence.",
-    acceptance,
+    acceptance:
+      requestedAcceptance.length > 0
+        ? requestedAcceptance
+        : [
+            "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
+            "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
+            "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
+          ],
     mode: "achieve",
     agent: "gym",
     input: {
@@ -477,8 +342,16 @@ export function resolveGymTask(
         details.executionRequestId ?? requestId,
       ).trim();
       if (!executionRequestId) return null;
-      const comparisonShaped = isComparisonShaped(details);
-      if (comparisonShaped && !validComparisonEnvelope(details)) return null;
+      const comparisonShaped = [
+        "outcome",
+        "scope",
+        "acceptanceProof",
+        "baseline",
+        "candidate",
+        "comparisonArtifact",
+        "requiredProof",
+        "sampleScope",
+      ].some((key) => Object.hasOwn(details, key));
       return {
         id: taskIdentity("regression-run", executionRequestId),
         parentId: "regression-assurance",
@@ -503,9 +376,7 @@ export function resolveGymTask(
           "candidate",
           "constraints",
           "executionRequestId",
-          "mode",
           "outcome",
-          "priorRequestId",
           "reason",
           "requestId",
           "reviewAndFailureBranch",
@@ -593,15 +464,17 @@ function gymTaskIntentForInput(
   requestId: string,
 ): TaskIntent | null {
   const supplied = params(input.data);
-  const comparisonShaped = isComparisonShaped(supplied);
+  const comparisonShaped = [
+    "outcome",
+    "scope",
+    "acceptanceProof",
+    "baseline",
+    "candidate",
+    "comparisonArtifact",
+    "requiredProof",
+    "sampleScope",
+  ].some((key) => Object.hasOwn(supplied, key));
   const sourceRequestId = String(supplied.requestId ?? "").trim();
-  if (
-    input.kind === "run-regression" &&
-    comparisonShaped &&
-    !validComparisonEnvelope(supplied)
-  ) {
-    return null;
-  }
   const data =
     input.kind === "run-regression" && comparisonShaped
       ? {
