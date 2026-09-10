@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/hao1939/may-agent/compare/v0.2.0...v0.3.0) (2026-09-10)
+
+
+### Features
+
+* **apps:** skip Apps marked .disabled ([#116](https://github.com/hao1939/may-agent/issues/116)) ([d0231db](https://github.com/hao1939/may-agent/commit/d0231db630e82724e79b6e909027bbd0b70366b6))
+
+
+### Bug Fixes
+
+* **core:** bound input retries and cancel pending dispatch on close ([#127](https://github.com/hao1939/may-agent/issues/127)) ([743aa5d](https://github.com/hao1939/may-agent/commit/743aa5dedd6fcea5219fa006d87553c3d942271b))
+* **core:** contain input failures and simplify turn controls ([#121](https://github.com/hao1939/may-agent/issues/121)) ([ed56e38](https://github.com/hao1939/may-agent/commit/ed56e38ba354879567bbee9557ac1928ea1255ac))
+* **release:** link published image from GitHub release ([#117](https://github.com/hao1939/may-agent/issues/117)) ([b81a5d6](https://github.com/hao1939/may-agent/commit/b81a5d622bd1d2990d483d1b536a228b4f9b3157))
+* **tasks:** preserve exact cross-App reads in isolated workers ([#119](https://github.com/hao1939/may-agent/issues/119)) ([7682f3b](https://github.com/hao1939/may-agent/commit/7682f3bb3ef57992c943e34b21cba7d1330740c0))
+* **tools:** preserve filesystem access errors during edits ([#128](https://github.com/hao1939/may-agent/issues/128)) ([0d8c765](https://github.com/hao1939/may-agent/commit/0d8c76585414359917569aea5f7c2f61a4a22840))
+
 ## [0.2.0](https://github.com/hao1939/may-agent/compare/v0.1.1...v0.2.0) (2026-09-10)
 
 
