@@ -16,22 +16,10 @@ Console. It may use Telegram-native commands, replies, buttons, and formatting,
 but it must not create a Telegram-specific owner, queue, context store,
 escalation lifecycle, or completion rule.
 
-```text
-human Telegram message
-  -> normalize chat/topic/message/reply identity
-  -> Conversation may:primary
-  -> one bounded May frontend request and optional Topic
-  -> direct answer or typed App request/exact Task feedback
-  -> Topic links the responsible Task
-  -> meaningful Task events wake May's supervision Task
-  -> persisted result in Conversation
-  -> Telegram independently renders unseen messages
-```
-
-Destination Tasks own work; the Host request correlates the human turn and
-May's response. Topics link related turns to those Tasks. The Conversation provides shared durable context across Telegram and
-Console. Telegram chat/topic/message IDs, traces, sessions, notification rows,
-and reply anchors are delivery or context evidence only.
+[Message Lifecycle](message-lifecycle.md) owns May's bounded turn, direct work
+and Task follow-through. [Human Control Surfaces](human-control-surfaces.md)
+owns commands, Task identity, watching and human-action views. Telegram adds
+provider coordinates and presentation; it does not redefine those contracts.
 
 ## Responsibilities
 
@@ -153,21 +141,13 @@ missed linked-Task review
 Do not replay the last prompt or steer an unrelated current session. Session
 loss cannot lose or duplicate the bounded request or responsible Task link.
 
-## Answers And Cross-App Dependencies
+## Answers and durable work
 
-May may answer in one decision or request typed work from accountable Apps. In
-the latter case:
-
-- the responsible Task admission and Topic link are durable before the
-  frontend request completes;
-- the target App reuses or creates the fitting Task;
-- the target App reconciles that Task;
-- meaningful Task events wake one bounded reconciliation of May's supervision
-  Task; and
-- May reviews the result before producing the human-facing response.
-
-An agent message, owner label, `escalation.created` event, or source-session
-resume marker is not a substitute for this dependency.
+A bounded May turn can finish authorized work directly. Durable admission links
+the Topic to the responsible Task before the frontend turn completes. Later
+Task changes may produce useful Conversation updates under
+[Message Lifecycle](message-lifecycle.md). Telegram renders those messages;
+an agent label or provider send is not evidence of Task completion.
 
 ## Proactive Human Attention
 

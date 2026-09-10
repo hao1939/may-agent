@@ -1,5 +1,8 @@
 # Task Reconciliation WebUI Cutover
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Implemented (2026-07-20)
 
 **Design authority:** [Default Project UI](../../2a-design/default-project-ui.md)

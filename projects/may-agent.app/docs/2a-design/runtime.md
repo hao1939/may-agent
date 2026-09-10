@@ -1,8 +1,9 @@
 # Host Runtime
 
 **Design status:** Accepted.
-**Implementation status:** Task reconciliation is the only side-effecting App
-policy path. Small pure mappings (`subscription.toInput`, `task(input)`, and
+**Implementation status:** Task reconciliation owns durable App work. Bounded
+conversational turns can perform self-contained authorized work directly.
+Small pure mappings (`subscription.toInput`, `task(request)`, and
 `tasks.resolve`) select durable work during admission; they cannot execute it.
 The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
@@ -10,15 +11,12 @@ Runtime implementation across SDK, agent tool, control socket, and HTTP.
 
 The runtime is the Host code. It is not a third layer between Host and App.
 
-```text
-Infra   = ingress, persistence, scheduling, capacity, and delivery
-Runtime = task lifecycle, execution, scoped capabilities, and recovery
-App     = resolve inputs to tasks and reconcile those tasks
-```
+The [System Model](system-model.md) defines ownership and replaceability;
+[Architecture](architecture.md) maps them to current source.
 
 The code contains workers, queues, claims, leases, controllers, and adapters.
-Those are private ways the Host does its five jobs. They are not concepts an
-App author must compose or understand.
+Those implement the [four core responsibilities](architecture.md#core-responsibilities).
+An App author uses their contracts without assembling those internal modules.
 
 ## Process modes
 
@@ -28,22 +26,43 @@ recovery.
 
 | Mode                           | Hosts Apps | Runs bounded agents/workflows       |
 | ------------------------------ | ---------- | ----------------------------------- |
-| Daemon with scheduling enabled | Yes        | Yes                                 |
+| Daemon with `--cron`            | Yes | Yes, including background Tasks          |
+| Daemon without `--cron`         | Yes | Yes, including background Tasks; optional schedules disabled |
 | Direct agent/workflow          | No         | Yes                                 |
 | Gym                            | No         | Yes                                 |
 | Web/read-only process          | No         | Only through explicit control calls |
 | Status CLI                     | No         | No                                  |
 
+Ingress readiness and Task execution readiness are separate. At the
+[current source baseline](../README.md), process role determines whether Task
+controllers and startup recovery run. A socket-only daemon runs its Tasks
+without `--cron`; that flag selects optional schedules. The Task controller gate
+opens after the initial recovery pass settles. Direct workflow, read-only and
+isolated worker modes do not claim background work. The
+[core proposal](../archive/implementation/core-separation-review-20260910.md#step-1-implementation)
+records the merged implementation and validation, not a deployment claim.
+
 ## Startup
+
+At the [source baseline](../README.md), execution/recovery adapters are
+selected in composition; named Host maintenance cannot launch standalone
+workflow jobs; reporting is optional and observes committed App generations
+outside publication. Basic Task/request/result reads remain available without
+reporting. Source tests run Tasks with all human interfaces omitted. See
+[Architecture](architecture.md#behavior-when-a-capability-is-absent) for the
+absence contract.
 
 ```text
 open stores
   -> restore the explicitly activated definition source release
   -> prepare agents and Apps from that same committed source
   -> validate one complete Runtime generation
-  -> attach event routes, schedules, observers, and task workers
-  -> recover unfinished work
-  -> attach external ingress and Conversation adapters
+  -> publish the complete registry and attach event routes
+  -> open external ingress, reads, and Conversation adapters
+  -> attach prepared producer event routes; with --cron, enable optional timers
+  -> start the App inbox runtime
+  -> start bounded isolated Task recovery asynchronously
+  -> start Task controllers after that initial recovery pass settles
 ```
 
 Reload stages committed global and App-local agent definitions, shared
@@ -94,8 +113,11 @@ calls this "admission":
 - an input event, frozen route journal entry, and any caller request are
   persisted before asynchronous request-to-Task coordination;
 - a subscribed fact becomes typed App input or an exact task wake;
-- a task trigger is recorded before a worker is woken; and
-- a child dependency is stored before the child starts.
+- a task trigger is recorded before a worker is woken;
+- a local child and its parent link commit together; and
+- a cross-App wait references a durably admitted destination request. Request
+  admission and the source Task's final wait commit are separate; recovery
+  reuses the exact correlated request if the source attempt is interrupted.
 
 This is why restart recovery does not depend on an in-memory queue.
 
@@ -318,6 +340,13 @@ starve control reads or human-message admission.
 
 Recovery preserves request and task identities. Requests correlate callers;
 tasks own App work. Logs and traces are evidence, not reconstruction authority.
+Saved execution output is only a candidate for normal Task admission: newer
+input or a recorded scope revision may require continuation even after that
+output is accepted. Recovery must not equate a finished session with a completed
+Task. Normal and recovered results share settlement and publication decisions;
+see [Task acceptance](task-resource-engine.md#acceptance). The
+[historical review](../archive/implementation/controller-review-20260910.md#settlement-candidate-and-remaining-work)
+records the merged correction's original proof.
 
 ## Interfaces
 

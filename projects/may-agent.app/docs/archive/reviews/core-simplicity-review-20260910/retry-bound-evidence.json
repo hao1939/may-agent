@@ -1,0 +1,248 @@
+{
+  "sourceRevision": "d9e7597e93608c45bed4fe649ff1b0fb1d040743",
+  "scope": "Component integration with real controller, recovery scheduler, SQLite store, claim and retry-release transitions; synthetic repeatable failure. Separate Bun processes use the same temporary database.",
+  "limitations": [
+    "No full daemon or executor invocation; no live model/provider or production cost measurement.",
+    "Explicit recover() calls exercise recovery without waiting for the production timer; retry delays shortened to 1 ms."
+  ],
+  "initial": {
+    "mode": "initial",
+    "maxRetries": 3,
+    "retryDelayMs": 1,
+    "exhausted": {
+      "reports": [
+        {
+          "attemptId": "r_1_c035fd8a-5dd9-4f8f-96db-b923b10a1d4e",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_06d129c9-7000-4680-b4c5-0cc2c824ccc7",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_8d4836fb-8981-483b-9321-7a6c48d26bcc",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_356b68f5-715e-4db5-94eb-8fe94291d551",
+          "willRetry": false,
+          "error": "Synthetic repeatable execution failure"
+        }
+      ],
+      "task": {
+        "metadata": {
+          "generation": 1,
+          "id": "always-fails",
+          "resourceVersion": 9
+        },
+        "spec": {
+          "acceptance": [
+            "Synthetic acceptance"
+          ],
+          "mode": "achieve",
+          "outcome": "Synthetic result",
+          "parentId": "root"
+        },
+        "status": {
+          "observedGeneration": 0,
+          "phase": "pending",
+          "updatedAt": "2026-09-09T18:18:49.817Z"
+        }
+      },
+      "candidates": [
+        {
+          "taskId": "always-fails",
+          "lane": "normal",
+          "ready": true,
+          "changed": true,
+          "nextCheckAt": null,
+          "leaseUntil": null
+        }
+      ]
+    },
+    "afterRecovery": {
+      "reports": [
+        {
+          "attemptId": "r_1_c035fd8a-5dd9-4f8f-96db-b923b10a1d4e",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_06d129c9-7000-4680-b4c5-0cc2c824ccc7",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_8d4836fb-8981-483b-9321-7a6c48d26bcc",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_356b68f5-715e-4db5-94eb-8fe94291d551",
+          "willRetry": false,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_e4499412-e017-43d5-a793-3eafefeb097d",
+          "willRetry": false,
+          "error": "Synthetic repeatable execution failure"
+        }
+      ],
+      "task": {
+        "metadata": {
+          "generation": 1,
+          "id": "always-fails",
+          "resourceVersion": 11
+        },
+        "spec": {
+          "acceptance": [
+            "Synthetic acceptance"
+          ],
+          "mode": "achieve",
+          "outcome": "Synthetic result",
+          "parentId": "root"
+        },
+        "status": {
+          "observedGeneration": 0,
+          "phase": "pending",
+          "updatedAt": "2026-09-09T18:18:49.825Z"
+        }
+      },
+      "candidates": [
+        {
+          "taskId": "always-fails",
+          "lane": "normal",
+          "ready": true,
+          "changed": true,
+          "nextCheckAt": null,
+          "leaseUntil": null
+        }
+      ]
+    }
+  },
+  "restart": {
+    "mode": "restart",
+    "maxRetries": 3,
+    "retryDelayMs": 1,
+    "exhausted": {
+      "reports": [
+        {
+          "attemptId": "r_1_5d22d034-6751-4821-adbd-d8c69af21763",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_768697a0-de0a-44a6-aacf-38d3585cb85a",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_9f41606b-292f-41bb-85ef-c75637b2f3c8",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_724e6db1-deff-45ac-a943-11883b4a52e0",
+          "willRetry": false,
+          "error": "Synthetic repeatable execution failure"
+        }
+      ],
+      "task": {
+        "metadata": {
+          "generation": 1,
+          "id": "always-fails",
+          "resourceVersion": 19
+        },
+        "spec": {
+          "acceptance": [
+            "Synthetic acceptance"
+          ],
+          "mode": "achieve",
+          "outcome": "Synthetic result",
+          "parentId": "root"
+        },
+        "status": {
+          "observedGeneration": 0,
+          "phase": "pending",
+          "updatedAt": "2026-09-09T18:18:50.039Z"
+        }
+      },
+      "candidates": [
+        {
+          "taskId": "always-fails",
+          "lane": "normal",
+          "ready": true,
+          "changed": true,
+          "nextCheckAt": null,
+          "leaseUntil": null
+        }
+      ]
+    },
+    "afterRecovery": {
+      "reports": [
+        {
+          "attemptId": "r_1_5d22d034-6751-4821-adbd-d8c69af21763",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_768697a0-de0a-44a6-aacf-38d3585cb85a",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_9f41606b-292f-41bb-85ef-c75637b2f3c8",
+          "willRetry": true,
+          "error": "Synthetic repeatable execution failure"
+        },
+        {
+          "attemptId": "r_1_724e6db1-deff-45ac-a943-11883b4a52e0",
+          "willRetry": false,
+          "error": "Synthetic repeatable execution failure"
+        }
+      ],
+      "task": {
+        "metadata": {
+          "generation": 1,
+          "id": "always-fails",
+          "resourceVersion": 19
+        },
+        "spec": {
+          "acceptance": [
+            "Synthetic acceptance"
+          ],
+          "mode": "achieve",
+          "outcome": "Synthetic result",
+          "parentId": "root"
+        },
+        "status": {
+          "observedGeneration": 0,
+          "phase": "pending",
+          "updatedAt": "2026-09-09T18:18:50.039Z"
+        }
+      },
+      "candidates": [
+        {
+          "taskId": "always-fails",
+          "lane": "normal",
+          "ready": true,
+          "changed": true,
+          "nextCheckAt": null,
+          "leaseUntil": null
+        }
+      ]
+    }
+  },
+  "verification": {
+    "files": [
+      "src/app/app-task-controller.test.ts",
+      "src/app/app-task-recovery.test.ts",
+      "src/app/app-task-resource-store.test.ts"
+    ],
+    "passed": 48,
+    "failed": 0
+  }
+}

@@ -1,5 +1,8 @@
 # Agent App Scenario Audit — 2026-07-16
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Design review.
 **Current authority:** [Agent App Contract](../../2a-design/agent-app.md) and
 [Task Resource Engine](../../2a-design/task-resource-engine.md).

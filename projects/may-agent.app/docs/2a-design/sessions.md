@@ -8,9 +8,10 @@ fail-closed start persistence, and terminal error persistence.
 
 Every agent interaction is a **session** — a single LLM conversation with tools.
 
-Effective query schema. Some columns are added by migrations after the base
-`CREATE TABLE`; agents should rely on the effective schema exposed by the SDK/query
-surface, not hand-copy base DDL.
+The following is a schematic Host storage view. Migrations may add columns;
+Host maintenance must inspect the effective schema. App code uses bounded
+`ctx.read.execution` and other [SDK reads](sdk.md), not SQL or a generic query
+service.
 
 ```sql
 CREATE TABLE sessions (
@@ -122,6 +123,11 @@ index. See [storage.md](storage.md) for the cross-record storage contract.
 
 ## Persistence Integrity
 
+New session identities must be unique across isolated execution processes and
+restarts, including sessions started in the same millisecond. Use a random UUID
+alongside the diagnostic prefix/timestamp, not a process-local counter. Existing
+session IDs and artifact paths remain unchanged; consumers treat IDs as opaque.
+
 The manager registers live state before emitting `session.start`. The event is
 persisted before side-effect subscribers run; if persistence fails, manager
 state is rolled back and the registry records the start error. Consumers must
@@ -168,6 +174,13 @@ The no-observation deadline is not the session's total runtime budget. Active
 work may continue beyond five minutes while it produces observations; the
 separately configured session timeout still bounds total execution time.
 
+An interrupted `call` returns to its caller; generic session auto-resume must
+not start it again independently. The owning workflow or Task decides the next
+bounded attempt using current state. Otherwise a timed-out call can keep editing
+after its workflow settled, outside Task capacity and result fencing. Explicit
+cancellation is likewise not an automatic retry request. Independent `job`
+recovery remains separate from caller-owned execution.
+
 ## Data Retention
 
 Runtime maintenance expires old SQL projections in bounded batches. It does not
@@ -191,7 +204,8 @@ See `events.md` → "Data Retention" for the full retention table.
 - **Manager:** `projects/may-agent/src/lib/manager.ts` — spawns/manages sessions
 - **DB writes:** `projects/may-agent/src/lib/db-writer.ts` and `projects/may-agent/src/lib/db/sessions.ts`
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts`
-- **Queries:** prefer `projects/may-agent/src/lib/query-service.ts` / SDK `query` over direct SQL in agent-facing code
+- **Reads:** Apps use scoped SDK execution/Task reads. The Host-private
+  `query-service.ts` and explicitly granted maintenance tools are not App SDK APIs.
 
 ## Design Decisions
 

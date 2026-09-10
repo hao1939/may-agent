@@ -33,6 +33,24 @@ and [event-graph.md](event-graph.md) for causal graph details.
 
 ## Public interface
 
+The implementation lives in `src/app/core/events/` at the
+[source baseline](../README.md). Async subscriber promises remain in the bus's
+ordered, error-contained listener path. The observation boundary is:
+
+- `PUBLIC_EVENT_TYPES` governs ingress only, never outbound observation.
+- `app.task.updated` and `conversation.updated` identify resources to reread.
+  A raw `project.task.reconciled` can describe a stale result and is not proof of
+  accepted completion.
+- Event-by-ID reads and explicit raw streams remain trusted operator diagnostics.
+  Their transport shape does not promise a stable API for every internal payload.
+- Passive listeners have independent bounded queues, preserve their own async
+  ordering, and report failures without vetoing accepted state. Reconnect/overflow
+  requires a canonical reread, not replaying observations as work.
+
+The obsolete standalone heartbeat command and its HTTP/UI trigger are removed
+from the current source; historical diagnostics remain readable. Public
+observation does not create another event family or routing registry.
+
 Every adapter uses the same three operations:
 
 ```text
@@ -140,6 +158,13 @@ rewrite the Task goal. The Event is feedback for existing work; later Task
 reconciliation reads whatever broader bounded context it actually needs in its
 isolated worker.
 
+Exact Task wakes use this bounded durable update even when broader admission
+uses an isolated worker. A blocked admission worker must not prevent an
+already-resolved Task from becoming runnable. The broader worker reports ready
+only after installing its receiver; the Host bounds unanswered dispatches and
+preserves the EventHub identity across its process boundary. Pending admission
+links expose their recorded failure instead of hiding it behind `accepted`.
+
 A required consumer does not gain a special synchronous handler. It first
 persists the exact request, Task link, or operation that makes the work
 recoverable, then handles that resource asynchronously. Ordering is local to
@@ -194,6 +219,20 @@ batch atomically with task state. Events arriving during an attempt remain
 pending. If more events are linked than fit one batch, `truncated` is explicit
 and the remainder drives later attempts. The controller queue may contain only
 one copy of the task ID without losing any linked event.
+
+Scheduled `project.task.tick` events are reconciliation notifications, not
+unique input. Pending ticks coalesce to the newest durable tick for that Task;
+older ticks remain EventHub history, not a requirement for separate attempts.
+Human feedback and other input-bearing events retain their ordered identities.
+A tick arriving during a pass does not invalidate that pass's actions or effects:
+passing time is not new evidence. Normal result settlement evaluates the pending
+wake against the newly installed waits, or retains it for a subsequent pass.
+New human feedback and provider facts still fence effects until incorporated.
+When rejecting an attempt, recovery rereads current state and fences that
+version while requiring the same generation and attempt identity. It must not
+reuse the obsolete version that caused the rejection, overwrite a concurrent
+update, or release a replacement attempt. Existing indexed Task recovery
+reconstructs lost scheduling from durable state; there is no App-owned retry queue.
 
 The same fact may reach several Apps, but within each App it takes exactly one
 path: translate to one task, wake one exact task, or remain observation-only.
@@ -252,23 +291,35 @@ Conversation, but their inputs are not presented as human Turns.
 ## Admission state
 
 Event admission metadata answers whether the event type's contract is
-satisfied, not whether resulting work finished. The durable acknowledgement
-point is:
+satisfied, not whether resulting work finished. For Task-based input, the
+milestones are:
 
-| Route                       | Accepted after                                                 |
+```text
+admission recorded -> Task attached -> result accepted
+```
+
+These are commit points in existing records, not new status fields. An accepted
+request or frozen routing plan can precede Task attachment. A client reads the
+linked request/Task to follow coordination and completion.
+
+The durable acknowledgement point depends on the route:
+
+| Route                       | Durable admission boundary                                     |
 | --------------------------- | -------------------------------------------------------------- |
-| App subscription            | translated input, task intent, and exact trigger are durable   |
+| Addressed App input         | caller request is durable; Task attachment follows asynchronously |
+| Broad App subscription      | frozen routing plan is durable; request/Task admission follows asynchronously |
 | Exact task target           | task wake/trigger is durably correlated                        |
-| Observation-only projection | projection explicitly accepts responsibility for that evidence |
-| Record-only event           | persistence; no semantic accepter is required                  |
+| Required observation/control | its declared durable evidence or operation accepts responsibility |
+| Record-only event           | persistence is sufficient; public delivery remains `recorded`  |
 
 Logging, UI tailing, passive metrics, database writing, and unrelated broad
 subscribers do not count as semantic acceptance.
 
-For asynchronous work, accepted means “the correct durable owner now has it,”
-not "finished." Completion remains in the task resource and its linked caller
-request. Adapter presentation is a passive consequence, not another semantic
-route or operation.
+For required asynchronous work, `accepted` means its durable admission
+authority now owns coordination. It does not promise an attached Task or an
+accepted result. Pending admission links expose progress or failure separately.
+Completion remains in the Task resource and its linked caller request. Adapter
+presentation is a passive consequence, not another semantic route or operation.
 
 Record-only facts with no consumer remain valid observations. A required event
 without durable acceptance remains visible for recovery. Invalid or unknown
@@ -276,78 +327,33 @@ external input and nonexistent required targets create no event receipt.
 
 ## Results and correlation
 
-Requests and Tasks carry durable correlation instead of opening event pairs:
+In the current Host, a Task result completes linked Task-based caller records
+through their exact stored identities. A bounded frontend's handling record
+instead completes after its direct result or durable follow-up admission.
+Topics retain the responsible Task links, and semantic changes may wake May's
+supervision Task. These are input-handling completion rules, not proof that the
+conversational Request's accepted ask has been fulfilled.
+[Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure) owns
+Request recognition, refinement and closure, response identity, and the
+remaining implementation gap. Transport admission stays deterministic and does
+not wait for the model to recognize an ask.
 
-```text
-May frontend request -> answer, or responsible Task admission -> request complete
-Topic -> exact responsible Task
-Task event/result -> May supervision Task -> optional Conversation update
-                                  `-----> adapters render independently
-```
+Conversation and Task state remain the resources readers inspect. A
+`conversation.updated` Event is a coalescible, record-only wake emitted after
+new content is durably readable. It carries no content and cannot create work.
+The publication stack never waits for an adapter read or render.
 
-The Topic-to-Task index is the subscription selector. A meaningful canonical
-Task revision produces an identity-only wake for the one May supervision Task;
-the wake names the exact Topic, Task, and event/revision identity. Runtime may
-coalesce equivalent wakes, while the supervision Task's normal event checkpoint
-makes accepted handling durable. The Task is not a parent or dependent of the
-work it observes.
+Task admission activity carries the exact responsible Task identity. Routine
+executor events stay diagnostic; they do not manufacture human speech or
+completion. Adapter delivery is observational and cannot reopen accepted work.
 
-After the responsible Task and Topic link are durably admitted, Runtime records
-one structured tool-authored Conversation activity containing that Task
-identity. It
-is the human-visible admission receipt and lets an adapter watch canonical Task
-state immediately. It does not claim completion, replace Task state, or turn
-low-level Runtime events into Conversation messages. Meaningful progress is
-read from the Task after identity-only wakes; routine execution events remain
-outside ordinary conversation.
+Typed Runtime controls use exact operation identities. For reload,
+`runtime.reload.requested` produces one `runtime.reload.finished`; the initiating
+adapter may append a command-view message after it actually displays the result.
 
-An App Task waits on exact child work or Conditions. A May frontend request
-does not wait on destination work. The Topic's exact Task link preserves the
-relationship, and a persisted May response enters Conversation independently
-of channel rendering.
-Events provide causal evidence and wakes along those relationships; they do
-not recreate the relationships as opener/closer pairs.
-
-Escalation is an explicit cross-owner request linked to its source App request
-or task. Its resolution wakes that source obligation. Metric alert state remains
-a metric projection; a breach event may wake work but does not own its result.
-
-Trace closure answers which evidence fulfilled an earlier cause. It is useful
-for audit but cannot replace request or Task completion.
-
-## Human-rooted flow
-
-```text
-conversation.message.created target.appId=may
-  conversationId=may:primary
-  author.kind=human
-  -> bounded May frontend request
-  -> answer/clarification, or typed App request/exact Task feedback
-  -> frontend request done
-  -> Topic links the exact responsible Task
-  -> meaningful Task events wake May's supervision Task
-  -> useful result persisted in Conversation
-  -> Console and Telegram independently observe and render
-```
-
-The Conversation is a bounded read model reconstructed from messages, admitted
-requests, dependencies, and persisted results. It is not another database or
-work owner. Each admitted human turn has its own request identity; when durable
-work is needed, its Topic links the real destination Tasks. Reply anchors and channel coordinates add context;
-they do not decide which unfinished task owns the response. Adapter delivery
-attempts and receipts are operational evidence only and never gate Conversation
-content or May work.
-
-`conversation.updated` is an internal record-only resource notification emitted
-after the Conversation projection can durably expose a new message. Adapters
-watch it and re-read the resource. It carries no content, cannot create work,
-and may be coalesced.
-
-Direct typed runtime controls may bypass owner judgment. If their rendered
-result should inform later conversation, the Runtime emits one correlated
-terminal fact and the initiating adapter appends it as a command message only
-after the human actually saw it. For reload these are
-`runtime.reload.requested` and `runtime.reload.finished`.
+Escalation uses exact Task/request dependencies, not event pairs. Metric alert
+state remains a metric projection. Trace closure records causal evidence and
+cannot replace Task or request completion.
 
 ## Core event vocabulary
 

@@ -1,95 +1,41 @@
-# Authoring App task handlers
+# Task Reconciler Authoring
 
-An App has one `app.ts` declaration, one default agent, and one Task resolver.
-Every actionable input resolves to or wakes a Task.
+A Task reconciler performs one bounded attempt and proposes a result. The App
+owns the outcome; the Host owns scheduling, fencing, persistence and recovery.
+Start with the [SDK Quickstart](sdk-quickstart.md) and its checked App declaration.
 
-## App manifest
-
-```ts
-import { Type, defineApp } from "@may-agent/sdk";
-
-export default defineApp({
-  id: "example",
-  version: 1,
-  agent: "example-agent",
-  inputSchema: Type.Object({
-    kind: Type.String(),
-    data: Type.Unknown(),
-  }),
-  workspace: { kind: "local", localPath: "../example" },
-  task(input) {
-    const requestId = String(input.data.requestId ?? "");
-    if (!requestId) return null;
-    return {
-      id: `request/${requestId}`,
-      parentId: "project",
-      outcome: "Handle the request.",
-      acceptance: ["The requested outcome is evidenced."],
-      mode: "achieve",
-      workflow: "handle-request",
-      input,
-    };
-  },
-});
-```
-
-Targeted task events, Condition observations, and indexed recovery already enter
-the same controller. Do not add a second route or scheduler for them.
-
-## Workflow convention
+## Select the execution
 
 `workflow: "handle-request"` resolves
-`agents/<selected-agent>/workflows/handle-request.ts`. No workflow registry is
-needed. A task without a workflow runs its explicit or inherited agent. If a
-workflow returns `needs-agent`, the same task is handed to that agent once. An
-unavailable or failed explicitly bound workflow moves the task to `attention`;
-the runtime does not substitute direct agent handling. After the binding is
-repaired, a successful app reload re-enqueues it.
+`agents/<selected-agent>/workflows/handle-request.ts`. A Task without a workflow
+or named executor uses its explicit or inherited agent. See
+[execution selection](../2a-design/task-resource-engine.md#selecting-the-attempt-mechanism)
+for unavailable bindings, blocked workflows and same-Task recovery.
 
-Every handler returns one envelope:
+A workflow can call bounded agents and nested workflows with supplied
+capabilities. It must not mutate Task storage, acknowledge transport delivery,
+or implement controller retries.
 
-```ts
-{
-  state: "converged" | "waiting" | "needs-agent";
-  summary: string;
-  evidence: string[];
-  actions?: TaskAction[]; // compatibility name for task changes
-  conditions?: Condition[];
-  dependencies?: AppTaskDependency[];
-}
-```
+## Return evidence and an exact outcome
 
-- `converged` means the current generation satisfies its acceptance criteria.
-- `waiting` must carry exact typed Conditions or leave at least one live direct
-  child or cross-App dependency after its changes are admitted.
-- `needs-agent` is the compatibility result that asks for one bounded attempt
-  by the selected agent; it does not transfer ownership.
+Use the SDK's `TaskReconcileResult`, `TaskAction`, `Condition` and
+`TaskAppDependency` types. The
+[Task result contract](../2a-design/task-resource-engine.md#result-contract)
+owns their disposition; do not maintain a second result schema here.
 
-For an unresolved human request, give its external Condition a bounded review
-checkpoint:
+- `converged` claims the current acceptance criteria are satisfied.
+- `waiting` needs an exact external Condition or live child/dependency.
+- `needs-agent` requests exceptional bounded judgment from the same App's
+  selected agent; it does not transfer ownership.
 
-```ts
-{
-  id: "report-run-finished",
-  type: "pipeline-run.state",
-  subject: "pipeline-run:123",
-  expected: { field: "state", equals: "completed" },
-  reviewAfterMs: 300_000,
-}
-```
+The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract,
+canonical owner and five-minute review interval. Replace its illustrative
+pipeline identity with your actual producer and route. New waits require
+`owner` and `reviewAfterMs`; the minimum interval is 60 seconds.
 
-The minimum is 60 seconds. The Host stores the nearest checkpoint in the due
-index and arms one timer; a bounded safety query recovers a missed wake.
-Returning the same Condition resets the checkpoint. Do not add a cron job,
-duplicate task, or routine Telegram update.
-Change execution or prove a real blocker after an evidence-free recheck; May
-handles any human-facing follow-through separately.
-
-The selected executor may be an agent or one of that agent's workflows.
-It may use supplied tools and skills; a workflow may also run bounded agent
-steps. Those capabilities may access a database behind an explicit tool or SDK
-boundary. The handler must not edit task storage, acknowledge caller delivery,
-or implement controller retries/recovery. Those are infrastructure duties.
+An unchanged wait preserves its future deadline. A due review may renew it after
+reevaluation, and elapsed time alone never satisfies it. See
+[Conditions](../2a-design/task-resource-engine.md#conditions) for the complete rule.
 
 ## Task changes and safety
 
@@ -135,16 +81,14 @@ resulting App input. Do not add another action lifecycle or event router.
 
 Validate with the app's `bun run check` and runtime reconciliation tests.
 
-## Handler boundary checklist
+## Review checklist
 
-A handler is a small infrastructure adapter. It may translate, observe,
-persist, or dispatch bounded work. It must not become a second task scheduler,
-task-state writer, domain owner, or learned process.
+- Does each durable input map to or wake the correct Task?
+- Does the attempt return structured evidence through the shared result contract?
+- Does each wait name an external fact, accountable owner and recovery review?
+- Can recovery continue the same Task without an App-local scheduler?
+- Are storage and result authority retained by the Host?
 
-- Does every actionable input resolve to or wake exactly one task?
-- Is reusable judgment implemented under its owning agent?
-- Does any watcher know task IDs or mutate task resources?
-- Can recovery start from durable state without replaying a synthetic scheduler
-  event?
-- Is every compatibility read isolated, with no compatibility writer or second
-  authority?
+A **Host handler** is a different role: a small internal adapter for observation,
+translation or maintenance. It is not an App reconciler. Its boundary is
+[Host-private maintenance](../2a-design/sdk.md#host-private-maintenance-is-not-an-sdk-extension).

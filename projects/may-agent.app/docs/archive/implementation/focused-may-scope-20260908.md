@@ -82,7 +82,7 @@ and completes the frontend request, and `dependencies` that keep a request open
 while child requests finish. See the pinned
 [request prompt](https://github.com/hao1939/may-agent/blob/e1a36126229826a0848ec6687bd07c5c950c75e7/src/app/app-request-agent.ts#L65)
 and [request completion/waiting code](https://github.com/hao1939/may-agent/blob/e1a36126229826a0848ec6687bd07c5c950c75e7/src/app/app-inbox-host.ts#L1230).
-The current [message lifecycle](../2a-design/message-lifecycle.md) chooses direct
+The current [message lifecycle](../../2a-design/message-lifecycle.md) chooses direct
 Task admission for May. In the reviewed App tree, May is the only App declaring
 the conversational `requests` attachment. That is a lead, not proof that the
 other public path is unused.
@@ -179,7 +179,7 @@ behavior is proven; large files alone do not justify another refactor.
 3. Follow with role-specific guidance, and keep Evaluation cleanup separate?
 
 Recommendation: accept those boundaries and that order. Update the existing
-[convergence tracker](design-implementation-convergence.md) after approval;
+[convergence tracker](../../proposals/design-implementation-convergence.md) after approval;
 do not create another execution plan or duplicate the pilot. Earlier evidence
 below remains useful, but its open PR/pilot choices are not prerequisites or
 new authority for this source cleanup.

@@ -5,7 +5,12 @@
 are implemented, and Cron is the sole Host snapshot scheduler. Host Operations
 still carries a legacy central catalog for Host measurements and domain metrics
 not yet moved to their Apps. That remaining authority gap is tracked in the
-convergence tracker.
+convergence tracker. The expanded default core-metrics proposal and later
+App-subscriber alternative are [archived and paused](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
+Task-attempt collector; it is unpublished and does not change current activation
+or reporting requirements. The existing metric service contract below remains
+accepted.
 
 ## Purpose
 
@@ -23,6 +28,26 @@ App declaration, observer, or workflow
 
 A breach means “inspect this evidence,” not “the project failed.” A recovery
 means the alert rule no longer matches, not “all related work is complete.”
+
+## Default failure visibility
+
+Users should get useful error handling and visibility without assembling a
+complex system. This remains a product goal. Whether default collection and
+investigation belong in core or an ordinary App is deferred; default does not
+by itself mean core. The [archived discussion](../archive/reviews/error-handling-and-conversation-discussion-20260910.md)
+retains the simple `onError -> event -> App subscriber` alternative.
+
+Current core work preserves truthful execution outcomes and failure evidence.
+Measurements should retain recovered failures, distinguish attempt outcomes from
+Task outcomes, and state their window, denominator, freshness and coverage.
+Unavailable evidence is unknown, not zero; an interruption alone is not a proven
+error. Follow the [definition contract](#definition-contract).
+
+A broken collector or investigation must not roll back accepted results or stop
+unrelated work. Expose missing or stale observations and reuse retained evidence
+where possible. These properties do not require a new telemetry queue or error
+framework. Code records observations and evaluates declared rules; Apps and LLMs
+interpret uncertain causes and decide whether improvement is worth its cost.
 
 ## Public App capability
 

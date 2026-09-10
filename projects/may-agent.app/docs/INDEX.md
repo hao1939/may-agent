@@ -8,11 +8,21 @@ archive.
 
 | Question | Authority |
 | --- | --- |
+| How do we apply the philosophy to actual work and reviews? | [Decision and review guide](1-principles/core-principles.md#review-rule) |
+| What is May for, and what counts as progress? | [May's goal](1-principles/design-philosophy.md#mays-goal) |
+| How do we define a project goal clearly enough to choose work? | [Define the goal first](1-principles/design-philosophy.md#define-the-goal-first) |
+| What do we value, and how do we judge a technical choice? | [Design Philosophy](1-principles/design-philosophy.md) and [Core Principles](1-principles/core-principles.md) |
+| Can the same choice create both value and cost? | [Value and cost](1-principles/design-philosophy.md#value-and-cost) |
+| How do lifetime, usage, and the cost of being wrong change a decision? | [Match the horizon and risk](1-principles/design-philosophy.md#match-the-horizon-and-risk) |
+| What wins when design preferences conflict? | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff) |
 | What is the whole mental model? | [system-model.md](2a-design/system-model.md) |
-| Where does runtime code compose? | [architecture.md](2a-design/architecture.md) |
+| What are the four core components, their dependencies and code homes? | [architecture.md](2a-design/architecture.md) |
+| How does May track and close an accepted ask? | [message-lifecycle.md](2a-design/message-lifecycle.md#requests-acceptance-and-closure) |
 | Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
 | Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
 | How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |
+| Which state is authoritative and rebuildable? | [storage.md](2a-design/storage.md) |
+| How does the Host start, recover and shut down? | [runtime.md](2a-design/runtime.md) |
 | How are desired-state Tasks reconciled? | [task-resource-engine.md](2a-design/task-resource-engine.md) |
 | How does admitted input/fact routing work? | [events.md](2a-design/events.md) |
 | How do humans share context across adapters? | [human-control-surfaces.md](2a-design/human-control-surfaces.md) |
@@ -26,7 +36,8 @@ owning document and keep implementation details there.
 
 | Document                                              | Purpose                                                |
 | ----------------------------------------------------- | ------------------------------------------------------ |
-| [core-principles.md](1-principles/core-principles.md) | Governing architecture principles.                     |
+| [design-philosophy.md](1-principles/design-philosophy.md) | Project goal, sufficient outcomes, value and cost, learning, and judgment. |
+| [core-principles.md](1-principles/core-principles.md) | Technical decision rules: simple first, stable core, events, authority, and conventions. |
 | [work-model.md](1-principles/work-model.md)           | Projects hold context; signals wake; agents judge.     |
 | [evidence-first.md](1-principles/evidence-first.md)   | Hypothesis, evidence, and validation discipline.       |
 | [code-vs-data.md](1-principles/code-vs-data.md)       | Choose code, instructions, skills, workflows, or data. |
@@ -39,7 +50,7 @@ owning document and keep implementation details there.
 | Document                                           | Purpose                                                           |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
 | [system-model.md](2a-design/system-model.md)       | Compact whole-system model; read first.                           |
-| [architecture.md](2a-design/architecture.md)       | Detailed runtime architecture and subsystem map.                  |
+| [architecture.md](2a-design/architecture.md)       | Current composition, execution boundaries and code map.           |
 | [system-boundary.md](2a-design/system-boundary.md) | Infrastructure primitives versus agent/app patterns.              |
 | [storage.md](2a-design/storage.md)                 | Authoritative artifacts, projections, migration, and maintenance. |
 | [app-root-layout.md](2a-design/app-root-layout.md) | Durable source, runtime state, workspaces, and scratch layout.    |
@@ -49,7 +60,7 @@ owning document and keep implementation details there.
 | Document                                                       | Purpose                                                       |
 | -------------------------------------------------------------- | ------------------------------------------------------------- |
 | [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
-| [runtime.md](2a-design/runtime.md)                             | Model/tool boundary, direct execution, and runtime internals. |
+| [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, reload and recovery.   |
 | [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.                  |
 | [workflows.md](2a-design/workflows.md)                         | App-local reusable process and execution contract.            |
 | [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                            |
@@ -83,9 +94,9 @@ owning document and keep implementation details there.
 
 | Document                                                         | Purpose                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------- |
-| [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console intent contract. |
+| [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared Task controls and views; current-turn Stop/Steer contract and gaps. |
 | [http-boundary.md](2a-design/http-boundary.md)                   | HTTP adapter boundary.                                  |
-| [message-lifecycle.md](2a-design/message-lifecycle.md)           | Open-to-resolved message ownership and recovery.        |
+| [message-lifecycle.md](2a-design/message-lifecycle.md)           | Conversation, accepted Requests and closure, Task handoff, and implementation gaps. |
 | [telegram-notifications.md](2a-design/telegram-notifications.md) | Telegram Conversation adapter and transport contract.   |
 | [webui.md](2a-design/webui.md)                                   | Web UI surfaces and steering.                           |
 | [may-console.md](2a-design/may-console.md)                       | Terminal REPL over the daemon socket.                   |
@@ -100,10 +111,10 @@ current-design list.
 | Document                                                                   | Purpose                                                     |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | [user-guide.md](2b-manual/user-guide.md)                                   | CLI flags, Docker, socket, and chat commands.               |
-| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | SDK usage examples.                                         |
-| [handler-authoring.md](2b-manual/handler-authoring.md)                     | Event handler authoring.                                    |
+| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | Checked App quickstart and public capability guide.                                         |
+| [handler-authoring.md](2b-manual/handler-authoring.md)                     | Task reconciler results, waits and mutation rules.                                    |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring and invocation.                          |
-| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Create an App on the shared Task contract.                   |
+| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adoption checklist using the shared quickstart.                   |
 | [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
 | [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |
 | [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                 | Compare event runtime behavior with design.                 |
@@ -114,10 +125,21 @@ current-design list.
 
 Active reviews are:
 
+- [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
+  — new proposal for meaningful Task/request operations, consistency boundaries,
+  code organization and a bounded first extraction;
+- [Task controller pattern](proposals/task-controller-pattern.md)
+  — controller/lifecycle direction: ordinary reconciliation, bounded retries,
+  recovery and evidence required before claiming simplification;
+- [Stable core and replaceable capabilities](proposals/task-runtime-organization.md)
+  — compact remaining-work plan; canonical boundaries live in Architecture
+  and completed separation/recovery evidence lives in the archive;
+- [authority-boundary-simplification.md](proposals/authority-boundary-simplification.md)
+  — remaining request-path, behavioral-comparison and App-owned delivery work;
+  dated incident and pilot evidence lives in the archive;
 - [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
-  — converge the complete Host, Runtime, App, executor, metrics, Conversation,
-  adapter, and documentation implementation on the accepted simple event-driven
-  Task model without another rewrite.
+  — index of known source gaps and their owning contracts, including Request
+  closure, turn control, owner decisions and remaining metric migration.
 
 Earlier reviewed drafts were resolved as follows:
 
@@ -136,6 +158,17 @@ Event/Task decision, Codex evaluation, Task interface, human-action projection,
 and earlier presentation evidence are archived below.
 
 ## Historical material
+
+[Core simplicity and robustness review — September 10](archive/reviews/core-simplicity-review-20260910.md)
+records the latest source findings and reproducible probes; follow-up priorities
+remain in the active core proposal.
+
+[Error handling, metrics and responsive conversation — paused September 10](archive/reviews/error-handling-and-conversation-discussion-20260910.md)
+preserves the open choices, earlier draft and live PoC. App placement and
+consolidation remain undecided.
+
+[Documentation clarity review and cleanup](archive/reviews/documentation-clarity-20260909.md)
+records the source-backed September 9 audit and fixes.
 
 [Archive index](archive/README.md) contains:
 

@@ -60,7 +60,7 @@ import { verifyChange } from "./lib/verify-change.js";
 
 type Input = {
   objective: string;
-  maxAttempts: number;
+  maxIterations: number;
 };
 
 export const name = "implement-and-verify";
@@ -71,9 +71,9 @@ export async function execute(
   ctx: WorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   let feedback = "";
-  const limit = Math.max(1, Math.min(ctx.input.maxAttempts, 3));
+  const limit = Math.max(1, Math.min(ctx.input.maxIterations, 3));
 
-  for (let attempt = 1; attempt <= limit; attempt += 1) {
+  for (let iteration = 1; iteration <= limit; iteration += 1) {
     const implementation = await ctx.agents.call(
       "dev",
       [ctx.input.objective, feedback].filter(Boolean).join("\n\n"),
@@ -91,7 +91,7 @@ export async function execute(
         evidence: verification.evidence,
       });
     }
-    feedback = `Attempt ${attempt} failed verification: ${verification.summary}`;
+    feedback = `Iteration ${iteration} failed verification: ${verification.summary}`;
   }
 
   return ctx.blocked("Bounded repair loop exhausted", { feedback });
@@ -167,6 +167,13 @@ one Task's exact desired input or Conditions uses
 `ctx.read.tasks.get(taskId)`. A workflow returns a typed output for the task
 boundary to validate and admit. It never edits task state itself.
 
+Agent steps called inside that workflow inherit its exact Host-supplied Task
+binding (App, Task, generation and attempt). The native Task tool resolves this
+binding independently of the session's display/source label. A project name
+alone cannot grant an unbound workflow Task access or fenced event authority.
+This is capability propagation within one attempt, not a new Task or session
+ownership rule; existing read scope and event-publication fences still apply.
+
 ## Invocation
 
 Workflow execution is explicit from one bounded Task attempt:
@@ -207,6 +214,45 @@ Good in-run waits are bounded operations such as:
 - a nested workflow returning `done` or `blocked`; or
 - a bounded retry with explicit limit and terminal condition.
 
+### Repair within an attempt
+
+One Task attempt can contain several work/check/repair iterations. A failed
+check need not return control to the Task controller:
+
+```text
+One bounded attempt
+  -> do work -> check result and evidence
+                    |
+                    +-- fixable now -> repair -> check again
+                    +-- satisfactory -> return proposed result
+                    +-- cannot continue -> return wait or blocker
+
+Host validates the returned result and applies any declared verifier
+  -> checked state commit
+  -> a later permitted continuation uses a new attempt of the same Task
+```
+
+The workflow or agent owns this inner loop. Code runs predictable checks; the
+App/LLM judges uncertain failures, useful repairs and whether another iteration
+is worth its cost. Continue while the repair is authorized, conditions are
+available now, the existing deadline/budget permits it, and there is a credible
+next step. Repeated failure without useful progress calls for reconsideration.
+Local iterations do not create new Task attempts or reset their limits.
+
+An external dependency, exhausted bound or need for a scope decision ends the
+run with truthful evidence. Cancellation or lost ownership stops execution; it
+is not a quality problem the workflow can repair around. The Task retains the
+commitment, and normal reconciliation can arrange later authorized work.
+
+Put ordinary quality checks inside `execute()` before returning. When an App
+also declares a final `verify`, reuse the same check helpers where appropriate
+so both express the same acceptance criteria. As implemented, that final
+verifier runs after `execute()` returns; rejection is recorded as a blocker and
+is not automatically fed back into the finished workflow. The Host still checks
+current authority, input, result shape and allowed changes before committing.
+This convention uses existing workflow control flow and adds no repair service
+or automatic verifier-feedback protocol.
+
 ## Durable waits
 
 Do not keep a workflow open across human replies, approval, long timers,
@@ -229,6 +275,64 @@ child result -> parent task wake -> new reconciliation pass
 The next pass receives current durable state through its typed request or
 reconciliation context. It never depends on workflow-local variables, an open
 session, module memory, or source-session resume.
+
+### A wait reason is not an exclusive event filter
+
+Waiting releases execution capacity; it does not suspend the Task's ownership
+of its outcome. Outstanding waits and reasons to wake are independent. A Task
+may retain several external waits. Any legitimate new input routed to that Task
+can request reevaluation, even if its event type was not anticipated by the
+workflow and matches none of those waits. It must not need an `overrideWait`
+flag or membership in a special event-type allowlist merely because the Task
+is waiting. Routing still establishes relevance and authority: an unrelated
+broadcast or invalid input must not wake every Task.
+
+Receiving or claiming that input does not cancel, satisfy, replace, or reset
+the outstanding waits and their review deadlines. Only accepted reconciliation
+can retire a wait after establishing that it is satisfied, obsolete, or explicitly
+cancelled. Keep still-valid waits in the next waiting result. A Task can therefore
+wake to handle an unexpected review finding while retaining both a pipeline
+wait and a separate external decision wait; no new subscription registry or
+work lifecycle is needed.
+
+Redeclaring an unchanged wait preserves its future review deadline. Once the
+checkpoint is due, accepted reevaluation may renew it if the fact is still
+pending; renewal does not satisfy the wait.
+
+Replacing an interrupted or expired attempt also preserves the accepted Task
+generation and its waits. Execution recovery is not desired-state drift. The
+replacement recollects current facts using the same Task; it does not remove
+subscriptions merely because the previous execution could not finish.
+
+Any relevant changed fact may wake reconciliation; all acceptance requirements
+must hold before completion. A wake means recollect current facts and decide
+what is now useful, not blindly continue the next step after the original wait.
+If a pass is already running, newer admitted input remains durable for that
+same Task until incorporated by an accepted result. Returning a new waiting
+result must not discard that input simply because it matches none of the
+returned Conditions. Do not create a parallel attempt. Unchanged observations must
+not purchase repeated model work. Repeated provider observations and declared
+review checkpoints repair missed wake hints by rereading current state, not by
+assuming the awaited operation succeeded or replaying obsolete workflow steps.
+
+Review a waiting result for both its named producer and its retained wake
+coverage. Test an unexpected routed event with two outstanding waits, retention
+of both waits/deadlines, another event arriving during reconciliation before it
+returns to waiting, and later independent satisfaction of either original wait.
+Also test a missed observation followed by a repeated level/checkpoint and
+unchanged facts causing no duplicate work. A declared
+blocker is different from a wait and still needs explicit recovery ownership;
+this rule does not authorize retrying every unchanged failure.
+
+Implementation status: the Host removes wait-phase input suppression
+and preserves unaccepted input when an attempt returns to waiting. Regression
+tests cover exact-target scheduling, independent wait/deadline retention,
+restart, concurrent input and passive no-op checks. Seven recovery paths retain
+accepted waits; the MLVM trial verified unchanged Conditions and deadlines on
+three real Tasks across attempt replacement. See Host
+[PR75](https://github.com/hao1939/may-agent/pull/75). This does not add event routes
+or bypass explicit `dependsOn`
+execution prerequisites; blocked dependencies retain their pending input.
 
 `ctx.done` means this bounded workflow completed its own contract. It does not
 mean the enclosing App request, task, or project completed. `ctx.blocked` means
@@ -274,6 +378,22 @@ For task-owned work:
 
 ## Facts and side effects
 
+Facts and judgments are separate. A new event may change the judgment of what
+to do next; it does not erase commits, diagnostics, completed runs, artifacts,
+or the scope under which they were produced. Retained `result` is prior App
+output to reevaluate, not permission to repeat its proposed effects or a current
+readiness certificate. Recollect authoritative state and check an action's
+current prerequisites before acting. In particular, a comment alone does not
+invalidate a live run; a repair that moves the head leaves that run as historical
+evidence and may require new exact-head validation.
+
+The Host retains no-action same-attempt output when newer input is pending
+and keeps the Task eligible for another pass. A result proposing Task actions
+still commits atomically with those actions or remains fenced; it must not
+report unapplied work as admitted. The Host does not infer semantic relevance,
+automatically accept unseen events, or waive generation/cancellation fences.
+This uses the existing result, event, attempt, and Condition records.
+
 `ctx.events.emit` publishes observed or produced facts. In a resource-backed
 task attempt, every event requires a stable `localKey`. The Host verifies the
 attempt fence, deduplicates that key within the task generation, persists the
@@ -313,6 +433,21 @@ For isolated Git work, the host owns worktree creation, base revision, branch
 lineage, cleanup, and recovery. A workflow returns verified evidence and clean
 result; it does not create a parallel workspace registry or select random
 branches. Retries for one task generation preserve the recorded lineage.
+Waiting releases the attempt slot but retains that generation's clean checkout,
+including ignored dependencies and local evidence. Recreating it on every wake
+would turn observation into repeated setup and model-driven repair. Normal
+cleanup runs after accepted completion; dirty source still requires explicit
+recovery. This uses the existing workspace identity, not another cache or lease.
+
+Cleanup recognizes both commit ancestry and squash/rebase integration. For a
+non-ancestor branch, a conflict-free Git merge-tree must equal the exact pinned
+target tree; the probe changes no refs or working files. Unknown integration,
+conflicts, and dirty work remain recoverable, not silently discarded. A human
+squash merge must not cause unchanged completion attempts indefinitely.
+If workspace finalization cannot establish a clean waiting/completed result,
+the same Task enters recoverable attention with its prior evidence and workspace
+diagnosis. It does not replay the unchanged handler as a transient process error.
+Normal parent judgment or explicit fenced retry can revisit the retained work.
 
 Shared ledgers, observation state, and maintenance migrations do not belong in
 task worktrees. Genuine offline repair belongs in an explicit maintenance CLI.

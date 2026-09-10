@@ -10,7 +10,7 @@ contracts; Tier-2 design governs when wording conflicts.
 | [agent-app-boundary-refinement.md](decisions/agent-app-boundary-refinement.md)                                       | [Agent App Contract](../2a-design/agent-app.md)                                                         |
 | [agent-app-runtime-model.md](decisions/agent-app-runtime-model.md)                                                   | [Agent App Contract](../2a-design/agent-app.md)                                                         |
 | [agent-app-external-interaction-contract.md](decisions/agent-app-external-interaction-contract.md)                   | [System Model](../2a-design/system-model.md) and [Agent App Contract](../2a-design/agent-app.md)        |
-| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                                 | [Canonical Agent App Migration](implementation/canonical-agent-app-migration.md)                        |
+| [app-owned-runtime-simplification.md](decisions/app-owned-runtime-simplification.md)                                 | [App Contract](../2a-design/agent-app.md)                        |
 | [app-task-reconciliation-model.md](decisions/app-task-reconciliation-model.md)                                       | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
 | [event-ingress-and-socket-reliability.md](decisions/event-ingress-and-socket-reliability.md)                         | [Events](../2a-design/events.md) and [HTTP Boundary](../2a-design/http-boundary.md)                     |
 | [task-reconciliation-integrity-refinement.md](decisions/task-reconciliation-integrity-refinement.md)                 | [Task Resource Engine](../2a-design/task-resource-engine.md)                                            |
@@ -32,12 +32,51 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Core simplicity and robustness — 2026-09-10](reviews/core-simplicity-review-20260910.md)
+  — current source review, reproduced controller failure gaps, measured recovery
+  query cost, and 172 passing focused tests; completion fix #104 is merged.
+- [Error handling, metrics and responsive conversation — 2026-09-10](reviews/error-handling-and-conversation-discussion-20260910.md)
+  — paused discussion: simple error hook, App placement, consolidation and user
+  responsiveness; current work returns to core simplicity and robustness.
+- [Default error handling and metrics — archived draft](reviews/default-error-handling-and-metrics-draft-20260909.md)
+  — historical expanded-core proposal; placement was reopened and work paused.
+- [Default error handling and metrics PoC — 2026-09-09](reviews/default-error-metrics-poc-20260909.md)
+  — real isolated Host runs, actual model judgment, failure containment and restart,
+  with a portable unpublished prototype and explicit coverage limits.
+- [Core design review — 2026-09-09](reviews/core-design-review-20260909.md)
+  — source-backed recovery findings, minimal core boundaries, and simplification
+  tradeoffs, with reproducible probes and an unpublished experimental patch.
+- [Design philosophy history — 2026-09-09](reviews/design-philosophy-history-20260909.md)
+  — recovered human guidance, technical decision history, and corrections to
+  earlier preference summaries; current guidance lives in Tier 1.
+- [Authority-boundary review history — 2026-09-09](reviews/authority-boundary-history-20260909.md)
+  — earlier proposal, incident analysis and source-review scope; current open work
+  remains in the [active proposal](../proposals/authority-boundary-simplification.md).
+- [Authority-boundary pilot — 2026-09-06](reviews/authority-boundary-pilot-20260906.md)
+  — dated lifecycle, wait and restart verification, not current deployment status.
+- [Documentation clarity review and cleanup — 2026-09-09](reviews/documentation-clarity-20260909.md)
+- [Runtime compatibility audit — 2026-08-18](reviews/runtime-compatibility-audit-2026-08-18.md)
+
 - [Agent App scenario audit — 2026-07-16](reviews/agent-app-scenario-audit-2026-07-16.md)
 - [Project creative audit — 2026-06-14](reviews/project-creative-audit-2026-06-14.md)
 - [Retry/recovery decomposition cleanup — 2026-08-11](reviews/retry-decomposition-rule-2026-08-11.md)
 - [Console and Telegram information-experience evidence](reviews/console-telegram-information-experience.md)
 
 ## Completed implementation records
+
+- [Atomic request attachment review — 2026-09-10](implementation/storage-attachment-review-20260910.md)
+  — merged storage/readiness slices, transaction/restart proof and measured scope limits.
+- [Core separation and recovery review — 2026-09-10](implementation/core-separation-review-20260910.md)
+  — complete prior proposal, separation steps and PR-specific proof; active work has moved to the core review plan.
+- [Controller implementation review — 2026-09-10](implementation/controller-review-20260910.md)
+  — historical settlement/retry candidates and bounded owner-route evidence.
+- [App contract migration notes](implementation/app-contract-migration-20260910.md)
+  — completed migration wording, superseded by separate conversational and Task paths.
+- [Convergence review through 2026-09-08](implementation/convergence-review-through-20260908.md)
+  — previous main's migration evidence and scoped follow-up decisions.
+
+- [Retired Task resource cutover](implementation/retired-task-resource-cutover.md)
+  — historical commands removed in Host commit `54689855`; current source requires resource authority.
 
 - [Dissolve shared workflows](implementation/2026-05-15-dissolve-shared-workflows.md)
 - [Bug E/F fixes](implementation/2026-05-18-bug-e-f-fixes.md)

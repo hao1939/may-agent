@@ -54,8 +54,13 @@ Task attempts carry generation, resource-version, session, workspace, and
 lease fences. After process restart, the task reconciler interrupts the old
 attempt and starts any replacement through normal bounded Host capacity. The
 session remains execution evidence; it is not independently resumed by the
-generic session manager. A task in `attention` is already the durable review
-obligation and does not need a synthetic owner-inbox event.
+generic session manager. A Task in `attention` retains the durable obligation;
+that alone does not prove its owner was notified or acted. Inspect the reason
+and existing declared owner/parent route, then repair the prerequisite or obtain
+an authorized decision for that same Task. Do not create a replacement Task or
+invent an owner-inbox event merely because it is waiting for attention. The
+[controller proposal](../proposals/task-controller-pattern.md) tracks the
+remaining end-to-end decision-route proof.
 
 For a state-shape migration:
 
@@ -68,44 +73,17 @@ For a state-shape migration:
 
 The revision guard must fail closed if state changes between review and apply.
 
-### Whole-App JSON to resource rows
+### Retained pre-resource installations
 
-Use the guarded cutover command only after the running daemon contains the
-resource-backed runtime bridge. Replace the example paths with the canonical
-App directory and the daemon's actual persistence directory:
+Current Host source requires SQLite Task resource authority. It does not contain
+the former `cutover-task-resources.ts` command or a mutable whole-App JSON
+fallback. A normal restart never imports or activates legacy state implicitly.
 
-```bash
-bun scripts/cutover-task-resources.ts inspect \
-  --app-dir /app/projects/gym.app --persist-dir /app/.state
-
-bun scripts/cutover-task-resources.ts pause \
-  --app-dir /app/projects/gym.app --persist-dir /app/.state \
-  --reason "resource-row cutover"
-```
-
-Keep inspecting until `runningAttemptIds` is empty. Then stop the daemon, prove
-that it is stopped through the deployment supervisor, and inspect once more.
-Use the `sourceRevision` from that final offline inspection—not the revision
-printed before attempts drained:
-
-```bash
-bun scripts/cutover-task-resources.ts activate \
-  --app-dir /app/projects/gym.app --persist-dir /app/.state \
-  --expected-revision SHA256_FROM_FINAL_INSPECT \
-  --confirm-daemon-stopped --resume
-```
-
-Start the same reviewed Runtime release. It discovers `authority=resources`
-and must not recreate or mutate `state.json`. Verify resource-backed task
-list/get, one normal reconciliation, restart recovery, and the indexed safety
-query before selecting the next App.
-
-The command fails closed when the source is not paused, an attempt still runs,
-the source revision changed, shadow comparison differs, or resource authority
-is already active. Before activation, recovery is simply to leave or resume
-the one paused JSON authority. After activation, roll forward: the old JSON
-remains paused evidence and must never be resumed as a second authority.
-Neither path deletes historical state.
+If retained state still needs that migration, stop at the compatibility boundary
+and identify a reviewed migration release and exact source revision. Preserve
+both stores; do not resume historical JSON as a second authority. The
+[retired procedure](../archive/implementation/retired-task-resource-cutover.md)
+records the removal boundary and earlier steps, not a current command to run.
 
 ## Quiet-runtime proof
 

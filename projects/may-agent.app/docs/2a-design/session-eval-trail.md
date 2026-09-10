@@ -6,8 +6,8 @@ projection, historical trail reads, and direct HTTP human-feedback append are
 present. The current Evaluation Task drops an HTTP review's selected line and
 instructions; its aftermath executor does not generate the requested line
 trail. HTTP-owned policy and feedback writes also remain a boundary gap. See
-[the convergence tracker](../proposals/design-implementation-convergence.md#5-http-retains-evaluation-policy-and-feedback-persistence).
-The pipeline below describes the accepted trail behavior, not proof that every
+[the authority proposal](../proposals/authority-boundary-simplification.md#remaining-work).
+The write boundary below describes the accepted trail behavior, not proof that every
 step currently runs. Calibration remains an ongoing evaluation concern.
 **Aligned with**: `sessions.md`, `webui.md`, `runtime.md`, `sdk.md`
 
@@ -117,19 +117,22 @@ Human feedback is stored in the same trail:
 
 A later evaluator pass appends new rows instead of rewriting old rows. That preserves the original evaluator judgment, human correction, revised judgment, and raw context for future evaluator training.
 
-## Pipeline
+## Write boundary
 
-Evaluation owns generation. The required trail behavior is:
+The Evaluation App reads session evidence, judges it and emits
+`evaluation.recorded`. The Host projection validates that fact and writes the
+bounded evaluations summary. Trail generation separately appends artifact
+annotations through the granted execution/file boundary. App code does not write
+the Host database directly.
 
-1. Read `session.jsonl`.
-2. Classify the session and write/update the `evaluations` table as the summary projection.
-3. Append a `type: "summary"` row to `session.eval.jsonl`.
-4. Append `type: "line"` rows for important raw log lines.
-5. Add owner findings to the summary when critique is actionable. Owners are concrete responsibility labels: `agent:<name>` or `human:<role>`.
-6. Emit `learning.feedback` only for high-severity or blocked/waiting findings; keep routine findings in the eval trail for digest/review. The event `owner` is the responsible owner: `agent:<name>` or `human:<role>`. Human-owned findings are delivered to May by the human-owner routing rule, so May can decide whether to ask the human via Telegram/UI, rewrite context, defer, or dismiss.
-7. If a deeper evaluator review runs, it may append additional summary or line rows with a different `source`.
+Reviewed findings use explicit App routes. An owner label attributes a finding;
+it cannot route human work by itself. A required human decision belongs to an
+exact Condition or a typed May request. The full routing and learning policy
+lives in [Practice Learning Loop](practice-learning-loop.md).
 
-The Web UI and HTTP server do not own evaluation semantics. They may provide convenience endpoints to read the eval trail, append human feedback, or dispatch evaluator work, but scoring belongs to the evaluator pipeline.
+The trail preserves append-only summary and line annotations, including later
+reviews and human feedback. HTTP and Web UI expose those records; they do not
+own scoring or turn raw detector output into accepted learning.
 
 ## Convenience API
 

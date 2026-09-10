@@ -45,6 +45,10 @@ than private runtime storage.
 
 ## Read boundary
 
+The [SDK read types](../../../may-agent/packages/sdk/src/workflow.ts) define
+public Task responses. The internal stored resource's `metadata/spec/status`
+shape is not that response contract.
+
 GET endpoints return bounded explicit API models, never database rows or
 filesystem layout as a public contract. A read model:
 

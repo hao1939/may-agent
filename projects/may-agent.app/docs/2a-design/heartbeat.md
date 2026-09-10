@@ -57,8 +57,9 @@ signal, not an automatic task.
 
 ## Runtime Contract
 
-The SDK heartbeat helper loads bounded current facts and returns a task packet.
-The auto-heartbeat loader discovers enabled standalone agents with a matching
+A standalone heartbeat workflow collects bounded facts with its granted
+capabilities; there is no public SDK heartbeat service. The Host's
+auto-heartbeat loader discovers enabled standalone agents with a matching
 workflow and creates timer entries.
 
 ```text

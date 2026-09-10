@@ -1,5 +1,8 @@
 # Lightweight Event-Driven Reconciliation
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Accepted, implemented, and verified on 2026-08-24
 
 **Scope:** the smallest useful Host core, fast event admission, bounded Task

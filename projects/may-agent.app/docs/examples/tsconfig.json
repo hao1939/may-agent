@@ -1,0 +1,9 @@
+{
+  "extends": "../../../may-agent/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../..",
+    "types": ["bun", "node"],
+    "noEmit": true
+  },
+  "include": ["app.ts", "client.ts"]
+}

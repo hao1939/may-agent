@@ -1,5 +1,8 @@
 # Herdr-Backed Web Terminal
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Original proposal rejected; simpler alternative accepted and
 implemented.
 **Decision date:** 2026-08-18.

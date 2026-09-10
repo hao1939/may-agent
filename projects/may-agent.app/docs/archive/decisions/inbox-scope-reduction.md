@@ -1,5 +1,8 @@
 # Inbox Scope Reduction
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Accepted and incorporated into the canonical Agent App migration
 **Scope:** Keep addressed obligations in the App inbox and route deterministic
 task work without manufacturing an inbox request

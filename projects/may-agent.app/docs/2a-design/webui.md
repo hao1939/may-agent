@@ -69,7 +69,7 @@ The platform uses real browser paths and `history.pushState`:
 | `/events` and `/events/:eventId` | Event list, admission health, and trace graph                   |
 | `/learning`                      | Evaluation and learning readouts                                |
 | `/knowledge`                     | Searchable durable knowledge                                    |
-| `/terminal`                      | Browser terminal profiles                                       |
+| `/terminal`                      | Full-window ttyd terminal attached to Herdr                                       |
 
 Legacy hash routes are ingress aliases only. New links and docs use real paths.
 The HTTP adapter serves `index.html` for platform client routes while keeping

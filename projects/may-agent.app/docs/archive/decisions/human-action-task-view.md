@@ -1,5 +1,8 @@
 # Human Action Task View
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Accepted on 2026-08-24. Current authority is
 [human-control-surfaces.md](../../2a-design/human-control-surfaces.md),
 [task-resource-engine.md](../../2a-design/task-resource-engine.md), and the

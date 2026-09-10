@@ -16,6 +16,12 @@ executions. It answers:
 - what work and evidence exist;
 - what should wake the App next.
 
+Use [Define the goal first](../1-principles/design-philosophy.md#define-the-goal-first)
+to make the intended outcome, sufficient evidence, scope, and acceptable cost
+clear. A standing goal needs bounded milestones so useful work can finish or
+wait. Keep the concise goal in `project.json` and supporting rationale in the
+existing project documentation.
+
 Projects do not replace events, sessions, workflows, or tasks. The project
 holds durable intent and posture; tasks own all App work, while the other
 records represent signals and bounded execution. A UI may render

@@ -1,0 +1,668 @@
+diff --git a/packages/sdk/src/workflow.ts b/packages/sdk/src/workflow.ts
+index 2d549b0c..42cdacd0 100644
+--- a/packages/sdk/src/workflow.ts
++++ b/packages/sdk/src/workflow.ts
+@@ -156,7 +156,7 @@ export type AppRead = {
+     get(taskId: string): Promise<TaskDetail | null>;
+   };
+   execution(executionId: string): Promise<ExecutionView | null>;
+-  /** Null means no matching metric; an absent reporting capability rejects. */
++  /** Null means no matching metric; unavailable core metric storage rejects. */
+   metric(metricId: string): Promise<MetricView | null>;
+ };
+ 
+diff --git a/src/app/app-runtime.ts b/src/app/app-runtime.ts
+index be960b79..b3d1feeb 100644
+--- a/src/app/app-runtime.ts
++++ b/src/app/app-runtime.ts
+@@ -7,6 +7,7 @@ import type { TaskListOptions } from "@may-agent/sdk";
+ import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
+ import { closeAllDbs, getDb } from "../lib/requests.js";
+ import type { AppReporting } from "./composition/reporting.js";
++import { startTaskBaseline } from "./core/metrics/task-baseline.js";
+ import type { AppArgs } from "./app-args.js";
+ import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
+ import { AppRegistry } from "./core/apps/registry.js";
+@@ -157,6 +158,7 @@ export async function runAppRuntime(opts: {
+     Number.isInteger(requestedHostConcurrency) && requestedHostConcurrency > 0 ? requestedHostConcurrency : 4;
+   const hostCapacity = new HostCapacity(configuredHostConcurrency);
+   attachEventPersistence({ bus, persistDir: opts.persistDir });
++  const taskMetrics = backgroundEnabled ? startTaskBaseline({ getDb: () => getDb(opts.persistDir), bus }) : undefined;
+   markStartupPhase("database");
+ 
+   let taskSessionId: string | undefined;
+@@ -365,6 +367,7 @@ export async function runAppRuntime(opts: {
+       activeRL = null;
+     },
+     beforeShutdown: () => {
++      taskMetrics?.close();
+       void appTasks.close();
+       appInboxRuntime?.close();
+     },
+diff --git a/src/app/core/reads/app-read.test.ts b/src/app/core/reads/app-read.test.ts
+index 2cc3680f..d6ba4aee 100644
+--- a/src/app/core/reads/app-read.test.ts
++++ b/src/app/core/reads/app-read.test.ts
+@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
++import { createMetricService } from "../../../lib/metrics.js";
+ import { openDatabase, type SqliteDb } from "../../../lib/db.js";
+ import { applyDbSchema } from "../../../lib/db/schema.js";
+ import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "../../app-inbox-store.js";
+@@ -75,7 +76,11 @@ describe("App read projections", () => {
+       evidence: ["canary"],
+     });
+     await expect(read.appResult("missing")).resolves.toBeNull();
+-    await expect(read.metric("missing")).rejects.toThrow("Metric reporting is unavailable");
++    await expect(read.metric("missing")).resolves.toBeNull();
++    const metrics = createMetricService({ getDb: () => db });
++    metrics.define({ id: "core-probe", type: "gauge", unit: "attempts" });
++    metrics.record("core-probe", 4);
++    await expect(read.metric("core-probe")).resolves.toMatchObject({ id: "core-probe", value: 4 });
+     await expect(read.tasks.outcomes()).rejects.toThrow("Task outcome reporting is unavailable");
+   });
+ 
+diff --git a/src/app/core/reads/app-read.ts b/src/app/core/reads/app-read.ts
+index 0aead1a2..855ffea5 100644
+--- a/src/app/core/reads/app-read.ts
++++ b/src/app/core/reads/app-read.ts
+@@ -3,6 +3,7 @@ import type { AppTaskContext, TaskTree } from "../../app-task-store.js";
+ import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
+ import type { SqliteDb } from "../../../lib/db.js";
+ import { getAppInboxItem } from "../../app-inbox-store.js";
++import { createMetricService } from "../../../lib/metrics.js";
+ 
+ export type RuntimeAppReadOptions = {
+   getDb(): SqliteDb;
+@@ -173,8 +174,10 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
+       return readRuntimeExecutionView(opts, executionId);
+     },
+     async metric(metricId) {
+-      if (!opts.readMetric) throw new Error("Metric reporting is unavailable");
+-      return opts.readMetric(metricId);
++      if (opts.readMetric) return opts.readMetric(metricId);
++      const metric = createMetricService({ getDb: opts.getDb }).get(metricId);
++      return metric ? { id: metric.id, value: metric.current, status: metric.status,
++        target: metric.target, threshold: metric.threshold, unit: metric.unit } : null;
+     },
+   };
+ }
+diff --git a/test/e2e/lib/sandbox.ts b/test/e2e/lib/sandbox.ts
+index 6fa4da8f..af91e65a 100644
+--- a/test/e2e/lib/sandbox.ts
++++ b/test/e2e/lib/sandbox.ts
+@@ -58,6 +58,8 @@ export interface SandboxSpec {
+   fixtureProjects?: string[];
+   /** Daemon args. Default: ["--cron", "--socket"]. */
+   daemonArgs?: string[];
++  /** Test-only composition entrypoint; defaults to the normal Host CLI. */
++  daemonEntrypoint?: string;
+   /** Extra env to pass to daemon. */
+   env?: Record<string, string>;
+   /** Instance label. Default: "e2e". */
+@@ -248,7 +250,7 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
+   };
+ 
+   const args = daemonArgs;
+-  const child: ChildProcess = spawn("bun", [MAY_TS, ...args], {
++  const child: ChildProcess = spawn("bun", [spec.daemonEntrypoint ?? MAY_TS, ...args], {
+     cwd: REPO_ROOT,
+     env,
+     stdio: ["ignore", "pipe", "pipe"],
+diff --git a/scripts/poc/error-metrics-host.ts b/scripts/poc/error-metrics-host.ts
+new file mode 100644
+index 00000000..5e7ab4df
+--- /dev/null
++++ b/scripts/poc/error-metrics-host.ts
+@@ -0,0 +1,26 @@
++/** PoC composition: real runtime with optional reporting absent, normal workers. */
++import "../../src/app/sdk-resolver-plugin.js";
++import { runAppRuntime } from "../../src/app/app-runtime.js";
++import { parseAppArgs } from "../../src/app/app-args.js";
++import { createModelRegistry } from "../../src/app/model-registry.js";
++import { resolveRuntimeRoots } from "../../src/app/path-roots.js";
++import { createIdentityWriter } from "../../src/app/daemon.js";
++
++const appArgs = parseAppArgs();
++if (appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker || appArgs.taskAdmissionWorker) {
++  await import("../../src/app/may.js");
++} else {
++  if (!process.env.APP_ROOT?.includes("may-e2e-")) throw new Error("PoC requires an isolated e2e root");
++  const roots = resolveRuntimeRoots(import.meta.url);
++  const instance = process.env.INSTANCE ?? "error-metrics-poc";
++  console.log("[poc] optional reporting omitted; schedules and UI disabled");
++  await runAppRuntime({
++    ...roots,
++    appArgs,
++    models: createModelRegistry(),
++    instance,
++    instanceLabel: instance,
++    processStartTime: Date.now(),
++    writeIdentity: createIdentityWriter({ persistDir: roots.persistDir, instanceLabel: instance }),
++  });
++}
+diff --git a/scripts/poc/error-metrics-live.ts b/scripts/poc/error-metrics-live.ts
+new file mode 100644
+index 00000000..e5ea889e
+--- /dev/null
++++ b/scripts/poc/error-metrics-live.ts
+@@ -0,0 +1,258 @@
++import assert from "node:assert/strict";
++import { Database } from "bun:sqlite";
++import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
++import { resolve } from "node:path";
++import { buildSandbox } from "../../test/e2e/lib/sandbox.js";
++import { openSandboxDb, pollUntil } from "../../test/e2e/lib/live-daemon.js";
++import { publishEvent, sendSocketCommand } from "../../packages/control/src/client.js";
++
++type Task = { status: string; generation: number; outcome: string; input?: Record<string, unknown> };
++const phase = process.argv[2] ?? "baseline";
++assert.ok(["baseline", "candidate", "resilience"].includes(phase));
++const evidenceRoot = resolve(process.argv[3] ?? ".tmp/error-metrics-poc");
++mkdirSync(evidenceRoot, { recursive: true });
++process.env.E2E_KEEP = "1";
++const calls: Record<string, number> = {};
++const provider = Bun.serve({
++  hostname: "127.0.0.1",
++  port: 0,
++  fetch(request) {
++    const url = new URL(request.url);
++    const key = decodeURIComponent(url.pathname.slice(1));
++    calls[key] = (calls[key] ?? 0) + 1;
++    if (key === "blocked" && url.searchParams.get("approach") !== "manual")
++      return Response.json(
++        {
++          error:
++            "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day",
++        },
++        { status: 409 },
++      );
++    if (key === "flaky" && calls[key] === 1)
++      return Response.json({ error: "FixtureTransientError: temporary provider unavailability" }, { status: 503 });
++    return Response.json({ exportId: `export-${key}`, effortHours: 1, published: false });
++  },
++});
++const providerUrl = `http://127.0.0.1:${provider.port}`;
++const entrypoint = resolve(import.meta.dir, "error-metrics-host.ts");
++const sb = await buildSandbox({
++  fixtureAgents: ["error-metrics"],
++  interfaceAgent: "error-metrics",
++  fixtureWorkflows: { "error-metrics": ["error-metrics-probe"] },
++  fixtureProjects: ["error-metrics.app"],
++  daemonArgs: ["--socket"],
++  ...(phase === "resilience" ? { daemonEntrypoint: entrypoint } : {}),
++  instance: "error-metrics-poc",
++  env: { ERROR_METRICS_POC_PROVIDER: providerUrl, ERROR_METRICS_POC_PHASE: phase, MAY_DAEMON_QUIET: "1" },
++});
++console.log(JSON.stringify({ phase, sandbox: sb.root, hostPid: sb.daemonPid }));
++let db: ReturnType<typeof openSandboxDb> | undefined;
++let faultDb: Database | undefined;
++let restarted: ReturnType<typeof Bun.spawn> | undefined;
++let restartedLogs: Promise<string> | undefined;
++const tasks: Record<string, Task> = {};
++const checkpoints: Record<string, unknown> = {};
++const events: unknown[] = [];
++const sql = () => db!;
++const metric = (id: string) =>
++  (sql().prepare("SELECT current FROM metrics WHERE id = ?").get(id) as { current: number } | null)?.current;
++const sampleTime = () => metric("host.task-metrics.last-sample-ms");
++const attemptCount = () =>
++  (
++    sql().prepare("SELECT COUNT(*) AS count FROM app_task_attempts WHERE app_id = 'error-metrics'").get() as {
++      count: number;
++    }
++  ).count;
++const snapshotCount = () =>
++  (sql().prepare("SELECT COUNT(*) AS count FROM metric_snapshots").get() as { count: number }).count;
++const readTask = async (taskId: string) =>
++  (await sendSocketCommand(sb.socketPath, { type: "app.task.get", appId: "error-metrics", taskId })).task as Task;
++async function settle(key: string, status: string, generation = 1) {
++  const task = await pollUntil(
++    async () => {
++      const task = await readTask(key);
++      return task?.status === status && task.generation === generation ? task : null;
++    },
++    { timeoutMs: 90_000, intervalMs: 200, description: `${key} reaches ${status}, generation ${generation}` },
++  );
++  tasks[key] = task;
++  return task;
++}
++async function admit(key: string, data: Record<string, unknown> = {}, suffix = "") {
++  const receipt = await publishEvent(sb.socketPath, {
++    type: "app.input.requested",
++    target: { appId: "error-metrics" },
++    idempotencyKey: `poc:${key}${suffix}`,
++    data: { input: { kind: "probe", data: { key, ...data } } },
++  });
++  events.push(receipt);
++  return receipt;
++}
++async function measured(finished: number) {
++  await pollUntil(() => metric("host.task-attempts.finished-1h") === finished, {
++    timeoutMs: 12_000,
++    description: `${finished} finished attempts in default baseline`,
++  });
++}
++try {
++  await sb.daemonReady;
++  db = openSandboxDb(sb.dbPath);
++  for (const key of ["flaky", "blocked", "healthy"]) await admit(key);
++  await settle("flaky", "done");
++  await settle("blocked", "attention");
++  await settle("healthy", "done");
++  if (phase !== "baseline") {
++    await measured(4);
++    const expected = { finished: 4, failed: 1, interrupted: 1, completed: 2, retry: 1, recovered: 1 };
++    for (const [name, value] of Object.entries(expected))
++      assert.equal(metric(`host.task-attempts.${name}-1h`), value, name);
++    checkpoints.initial = { ...expected, blocked: tasks.blocked, sampleTime: sampleTime() };
++  }
++  if (phase === "resilience") {
++    assert.match(sb.getLogs(), /optional reporting omitted/);
++    // Explicit fixture fault injection into disposable storage only. Reject the second
++    // metric's snapshot so the check also catches partial current/sample commits.
++    faultDb = new Database(sb.dbPath);
++    faultDb.exec("PRAGMA busy_timeout=1000");
++    faultDb.exec(`CREATE TRIGGER poc_metric_outage BEFORE INSERT ON metric_snapshots
++      WHEN NEW.metric_id = 'host.task-attempts.failed-1h'
++      BEGIN SELECT RAISE(ABORT, 'poc metric store unavailable'); END`);
++    const before = { sampleTime: sampleTime(), snapshots: snapshotCount() };
++    await admit("during-outage-a");
++    await settle("during-outage-a", "done");
++    await pollUntil(() => sb.getLogs().includes("poc metric store unavailable"), { timeoutMs: 12_000 });
++    await admit("during-outage-b");
++    await settle("during-outage-b", "done");
++    assert.equal(sampleTime(), before.sampleTime);
++    assert.equal(snapshotCount(), before.snapshots);
++    assert.equal(metric("host.task-attempts.finished-1h"), 4);
++    assert.equal(attemptCount(), 6);
++    assert.equal(sb.getLogs().match(/collection unavailable/g)?.length, 1);
++    checkpoints.outage = { ...before, settledAttempts: 6, unchangedFinishedGauge: 4, diagnostics: 1 };
++    await pollUntil(
++      () => {
++        faultDb!.exec("DROP TRIGGER IF EXISTS poc_metric_outage");
++        return true;
++      },
++      { timeoutMs: 10_000, description: "fixture removes metric outage trigger" },
++    );
++    await admit("after-outage");
++    await settle("after-outage", "done");
++    await measured(7);
++    assert.match(sb.getLogs(), /collection restored/);
++    checkpoints.restored = { finished: 7, sampleTime: sampleTime() };
++
++    // Replay an already admitted input: acceptance must not create another attempt.
++    const duplicate = await admit("blocked");
++    assert.equal((await readTask("blocked")).status, "attention");
++    assert.equal(calls.blocked, 1);
++    checkpoints.duplicate = duplicate;
++
++    // This is a model recommendation, then an explicit synthetic owner decision.
++    // The original packet lacked expected value. The fixture owner now estimates
++    // four hours of benefit and accepts the model's conditional two-hour scope.
++    const judgment = JSON.parse(readFileSync(resolve(evidenceRoot, "judgment.json"), "utf8"));
++    assert.equal(judgment.decision, "revise_manual");
++    const revision = {
++      approach: "manual",
++      expectedValueHours: 4,
++      decisionReason: judgment.reason,
++      modelRecommendation: judgment.new_scope,
++    };
++    await admit("blocked", revision, ":manual");
++    await settle("blocked", "done", 2);
++    assert.match(tasks.blocked.outcome, /full format remains unsupported/);
++    await measured(8);
++    assert.equal(calls.blocked, 2);
++    assert.equal(metric("host.task-attempts.retry-1h"), 1, "new generation is not a retry of old scope");
++    checkpoints.scopeRevision = {
++      recommendation: judgment,
++      ownerAssumptions: { expectedValueHours: 4, budgetHours: 2, synthetic: true },
++      task: tasks.blocked,
++    };
++
++    // Restart the actual Host on the same disposable installation, still with
++    // reporting omitted. Fresh gauges are recomputed, not incremented.
++    const beforeRestart = { calls: { ...calls }, attempts: attemptCount(), sampleTime: sampleTime() };
++    await sb.close();
++    restarted = Bun.spawn(["bun", entrypoint, "--socket"], {
++      cwd: resolve(import.meta.dir, "../.."),
++      stdout: "pipe",
++      stderr: "pipe",
++      env: {
++        ...process.env,
++        APP_ROOT: sb.root,
++        PROJECT_ROOT: sb.root,
++        AGENTS_ROOT: sb.agentsRoot,
++        PROJECTS_ROOT: sb.projectsRoot,
++        SHARED_ROOT: resolve(sb.root, "shared"),
++        STATE_DIR: sb.stateDir,
++        INSTANCE: sb.instance,
++        DAEMON_INSTANCE: sb.instance,
++        AGENT: "error-metrics",
++        DAEMON_AGENT: "error-metrics",
++        ERROR_METRICS_POC_PROVIDER: providerUrl,
++        ERROR_METRICS_POC_PHASE: phase,
++        TELEGRAM_BOT_TOKEN: "",
++        TELEGRAM_CHAT_ID: "",
++        MAY_DAEMON_QUIET: "1",
++      },
++    });
++    restartedLogs = Promise.all([new Response(restarted.stdout).text(), new Response(restarted.stderr).text()]).then(
++      (parts) => parts.join("\n"),
++    );
++    await pollUntil(
++      async () => sampleTime()! > beforeRestart.sampleTime! && (await readTask("blocked"))?.status === "done",
++      { timeoutMs: 30_000 },
++    );
++    await measured(8);
++    assert.deepEqual(calls, beforeRestart.calls);
++    assert.equal(attemptCount(), beforeRestart.attempts);
++    await admit("after-restart");
++    await settle("after-restart", "done");
++    await measured(9);
++    assert.equal(attemptCount(), 9);
++    assert.equal(calls.flaky, 2);
++    assert.equal(calls.blocked, 2);
++    assert.equal(calls.healthy, 1);
++    checkpoints.restart = {
++      before: beforeRestart,
++      freshSampleTime: sampleTime(),
++      finalAttempts: 9,
++      calls: { ...calls },
++    };
++  }
++  const attempts = sql()
++    .prepare(
++      "SELECT app_id, task_id, attempt_id, state, attempt_json FROM app_task_attempts WHERE app_id = 'error-metrics' ORDER BY started_at, attempt_id",
++    )
++    .all();
++  const metrics = sql().prepare("SELECT id, current, type, unit FROM metrics ORDER BY id").all();
++  const snapshots = sql()
++    .prepare("SELECT metric_id, value, sample_size, note, measured_at FROM metric_snapshots ORDER BY measured_at")
++    .all();
++  const summary = { phase, sandbox: sb.root, events, calls, tasks, checkpoints, attempts, metrics, snapshots };
++  writeFileSync(resolve(evidenceRoot, `${phase}.json`), JSON.stringify(summary, null, 2));
++  console.log(
++    JSON.stringify({
++      phase,
++      calls,
++      outcomes: Object.fromEntries(Object.entries(tasks).map(([key, value]) => [key, value.status])),
++      attempts: attempts.length,
++      metricCount: metrics.length,
++    }),
++  );
++} finally {
++  await sb.close();
++  if (restarted) {
++    restarted.kill("SIGTERM");
++    const force = setTimeout(() => restarted?.kill("SIGKILL"), 3_000);
++    await restarted.exited;
++    clearTimeout(force);
++  }
++  faultDb?.exec("DROP TRIGGER IF EXISTS poc_metric_outage");
++  faultDb?.close();
++  db?.close();
++  provider.stop(true);
++  writeFileSync(resolve(evidenceRoot, `${phase}.log`), sb.getLogs() + (restartedLogs ? await restartedLogs : ""));
++}
+diff --git a/src/app/core/metrics/task-baseline.ts b/src/app/core/metrics/task-baseline.ts
+new file mode 100644
+index 00000000..bfca52f2
+--- /dev/null
++++ b/src/app/core/metrics/task-baseline.ts
+@@ -0,0 +1,129 @@
++import type { SqliteDb } from "../../../lib/db.js";
++import { createMetricService } from "../../../lib/metrics.js";
++import type { EventBus } from "../events/bus.js";
++import { OwnedTimer } from "../scheduling/timer.js";
++
++const PREFIX = "host.task-attempts.";
++const WINDOW_MS = 3_600_000;
++const ROW_LIMIT = 5_000;
++type AttemptRow = {
++  app_id: string;
++  task_id: string;
++  task_generation: number;
++  attempt_id: string;
++  state: string;
++  started_at: number;
++  attempt_json: string;
++};
++
++/** PoC baseline over canonical attempts. Counts are window gauges, never increments. */
++export function collectTaskBaseline(db: SqliteDb, now = Date.now()): void {
++  const rows = db
++    .prepare(
++      `SELECT app_id, task_id, task_generation, attempt_id, state, started_at, attempt_json
++    FROM app_task_attempts WHERE started_at >= ? AND started_at <= ?
++    ORDER BY started_at, attempt_id LIMIT ?`,
++    )
++    .all(now - WINDOW_MS, now, ROW_LIMIT + 1) as AttemptRow[];
++  if (rows.length > ROW_LIMIT) throw new Error(`Task metric window exceeds ${ROW_LIMIT} attempts; coverage incomplete`);
++  const counts = { finished: 0, failed: 0, interrupted: 0, completed: 0, retry: 0, recovered: 0, "elapsed-ms": 0 };
++  const previous = new Map<string, AttemptRow>();
++  const examples: Array<Record<string, unknown>> = [];
++  for (const row of rows) {
++    const attempt = JSON.parse(row.attempt_json) as {
++      finishedAt?: string;
++      failureReason?: string;
++      summary?: string;
++      handler?: string;
++    };
++    const key = JSON.stringify([row.app_id, row.task_id, row.task_generation]);
++    const prior = previous.get(key);
++    const followsFailure = prior && ["failed", "interrupted"].includes(prior.state);
++    if (followsFailure) counts.retry++;
++    previous.set(key, row);
++    if (row.state === "running") continue;
++    counts.finished++;
++    if (row.state === "failed") counts.failed++;
++    if (row.state === "interrupted") counts.interrupted++;
++    if (row.state === "completed") {
++      counts.completed++;
++      if (followsFailure) counts.recovered++;
++    }
++    const finishedAt = Date.parse(attempt.finishedAt ?? "");
++    if (!Number.isFinite(finishedAt)) throw new Error(`Missing finish time for attempt ${row.attempt_id}`);
++    counts["elapsed-ms"] += Math.max(0, finishedAt - row.started_at);
++    if (["failed", "interrupted"].includes(row.state) && examples.length < 8) {
++      examples.push({
++        appId: row.app_id,
++        taskId: row.task_id,
++        generation: row.task_generation,
++        attemptId: row.attempt_id,
++        state: row.state,
++        handler: attempt.handler,
++        failureReason: attempt.failureReason,
++        summary: attempt.summary?.slice(0, 600),
++      });
++    }
++  }
++  const metrics = createMetricService({ getDb: () => db, measuredBy: "core:task-baseline" });
++  const note = JSON.stringify({
++    windowStart: now - WINDOW_MS,
++    windowEnd: now,
++    coverage: "attempts started within the hour; retry chains crossing the window are incomplete",
++    running: rows.length - counts.finished,
++    samplesAreWindowGauges: true,
++    examples,
++  });
++  db.exec("BEGIN IMMEDIATE");
++  try {
++    for (const [name, value] of Object.entries(counts)) {
++      const id = `${PREFIX}${name}-1h`;
++      metrics.define({
++        id,
++        owner: "app:may-agent",
++        type: "gauge",
++        unit: name === "elapsed-ms" ? "ms" : "attempts",
++        source: "canonical app_task_attempts",
++        description: `Task attempt ${name} in the started-within-one-hour cohort`,
++      });
++      metrics.record(id, value, { sampleSize: counts.finished, measuredAt: now, note });
++    }
++    const healthId = "host.task-metrics.last-sample-ms";
++    metrics.define({ id: healthId, owner: "app:may-agent", type: "gauge", unit: "unix-ms" });
++    metrics.record(healthId, now, { measuredAt: now, sampleSize: rows.length });
++    db.exec("COMMIT");
++  } catch (error) {
++    db.exec("ROLLBACK");
++    throw error;
++  }
++}
++
++/** Default owned collection. Events request a bounded later read; periodic reads repair missed wakes. */
++export function startTaskBaseline(input: { getDb(): SqliteDb; bus: EventBus }): { close(): void } {
++  const cadence = new OwnedTimer("core-task-metrics-cadence");
++  const refresh = new OwnedTimer("core-task-metrics-refresh");
++  let failed = false;
++  const sample = () => {
++    try {
++      collectTaskBaseline(input.getDb());
++      if (failed) console.error("[core-task-metrics] collection restored");
++      failed = false;
++    } catch (error) {
++      if (!failed)
++        console.error(`[core-task-metrics] collection unavailable; last sample may be stale: ${String(error)}`);
++      failed = true;
++    }
++  };
++  const unsubscribe = input.bus.subscribe((event) => {
++    if (String(event.type) === "project.task.reconciled" && !refresh.armed) refresh.after(100, sample);
++  });
++  refresh.after(0, sample);
++  cadence.every(60_000, sample);
++  return {
++    close() {
++      unsubscribe();
++      refresh.close();
++      cadence.close();
++    },
++  };
++}
+diff --git a/test/e2e/fixtures/agents/error-metrics/AGENTS.md b/test/e2e/fixtures/agents/error-metrics/AGENTS.md
+new file mode 100644
+index 00000000..83b41381
+--- /dev/null
++++ b/test/e2e/fixtures/agents/error-metrics/AGENTS.md
+@@ -0,0 +1,5 @@
++# PoC owner
++
++Judge only the supplied synthetic failure evidence. Make no external changes.
++Compare remaining value, cost and risk. Return a concise recommendation with
++your reason using finish. Distinguish recommendation from an applied change.
+diff --git a/test/e2e/fixtures/agents/error-metrics/agent.json b/test/e2e/fixtures/agents/error-metrics/agent.json
+new file mode 100644
+index 00000000..b2816dd6
+--- /dev/null
++++ b/test/e2e/fixtures/agents/error-metrics/agent.json
+@@ -0,0 +1 @@
++{"name":"error-metrics","description":"Bounded owner for the error and metric PoC","domain":"poc","model":"gpt-5.6-sol","tools":["finish"],"heartbeat":false}
+diff --git a/test/e2e/fixtures/projects/error-metrics.app/app.js b/test/e2e/fixtures/projects/error-metrics.app/app.js
+new file mode 100644
+index 00000000..f09cb833
+--- /dev/null
++++ b/test/e2e/fixtures/projects/error-metrics.app/app.js
+@@ -0,0 +1,49 @@
++export default {
++  id: "error-metrics",
++  version: 1,
++  agent: "error-metrics",
++  inputSchema: {
++    type: "object",
++    required: ["kind", "data"],
++    properties: {
++      kind: { const: "probe" },
++      data: {
++        type: "object",
++        required: ["key"],
++        properties: {
++          key: { type: "string" },
++          approach: { enum: ["full", "manual"] },
++          expectedValueHours: { type: "number" },
++          decisionReason: { type: "string" },
++        },
++      },
++    },
++  },
++  workspace: { kind: "local", localPath: "." },
++  tasks: {},
++  task(request) {
++    const manual = request.input.data.approach === "manual";
++    if (manual && !(request.input.data.expectedValueHours > 2))
++      throw new Error("Manual scope requires expected value above its two-hour cost");
++    return {
++      kind: "desired",
++      intent: {
++        id: request.input.data.key,
++        parentId: "root",
++        mode: "achieve",
++        workflow: "error-metrics-probe",
++        outcome: manual
++          ? "Produce one internal manual fixture export within two hours; full format remains unsupported"
++          : "Produce the requested fixture export",
++        acceptance: manual
++          ? [
++              "Provider confirms manual export",
++              "Measured fixture effort stays within two hours",
++              "No external publication",
++            ]
++          : ["Provider confirms the requested export was produced"],
++        input: request.input.data,
++      },
++    };
++  },
++};
+diff --git a/test/e2e/fixtures/projects/error-metrics.app/tasks/seed.json b/test/e2e/fixtures/projects/error-metrics.app/tasks/seed.json
+new file mode 100644
+index 00000000..f3366bd4
+--- /dev/null
++++ b/test/e2e/fixtures/projects/error-metrics.app/tasks/seed.json
+@@ -0,0 +1 @@
++{"root_task_id":"root","groups":{"root":{"id":"root","parent_id":null,"state":"backlog","children":[]}}}
+diff --git a/test/e2e/fixtures/workflows/error-metrics-probe.ts b/test/e2e/fixtures/workflows/error-metrics-probe.ts
+new file mode 100644
+index 00000000..65432e93
+--- /dev/null
++++ b/test/e2e/fixtures/workflows/error-metrics-probe.ts
+@@ -0,0 +1,38 @@
++import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
++
++export const name = "error-metrics-probe";
++export const description = "Exercise real Task error handling with a controlled local provider.";
++
++export async function execute(
++  ctx: WorkflowContext<{ key: string; approach?: "full" | "manual" }>,
++): Promise<ExecutionResult> {
++  const task = ctx.reconciliation;
++  if (!task) throw new Error("This probe requires a real Task attempt");
++  const endpoint = process.env.ERROR_METRICS_POC_PROVIDER;
++  if (!endpoint) throw new Error("Controlled PoC provider is missing");
++  const response = await fetch(
++    `${endpoint}/${encodeURIComponent(task.input.key)}?approach=${task.input.approach ?? "full"}`,
++  );
++  const body = (await response.json()) as {
++    error?: string;
++    exportId?: string;
++    effortHours?: number;
++    published?: boolean;
++  };
++  if (response.status === 409) return ctx.blocked(body.error ?? "Export is unavailable", body);
++  if (!response.ok) throw new Error(body.error ?? `Provider failure ${response.status}`);
++  if (
++    task.input.approach === "manual" &&
++    (body.effortHours == null || body.effortHours > 2 || body.published !== false)
++  ) {
++    return ctx.blocked("Manual export did not meet the revised scope", body);
++  }
++  const baseline =
++    process.env.ERROR_METRICS_POC_PHASE === "baseline" ? null : await ctx.read.metric("host.task-attempts.finished-1h");
++  return ctx.done("Export produced", {
++    state: "converged",
++    summary: "Requested export produced",
++    result: { ...body, approach: task.input.approach ?? "full", baseline },
++    evidence: [`provider:${body.exportId}`],
++  });
++}

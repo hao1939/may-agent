@@ -1,0 +1,991 @@
+{
+  "hostBase": "46ebccd145af32b0a0f7ca014fdd4730afdc0c03",
+  "prototypeSha256": "679ce0549b16677cf3a5675cc0b41b6e691c711e04c60726125df1cb4eb87a08",
+  "model": {
+    "client": "Codex CLI 0.153.4",
+    "model": "gpt-6-astra",
+    "reasoning": "high",
+    "toolsUsed": false,
+    "scope": "one bounded synthetic packet; not a Host-managed judgment workflow"
+  },
+  "runs": {
+    "baseline": {
+      "calls": {
+        "flaky": 2,
+        "blocked": 1,
+        "healthy": 1
+      },
+      "tasks": {
+        "flaky": {
+          "id": "flaky",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "exportId": "export-flaky"
+          },
+          "evidence": [
+            "provider:export-flaky"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "flaky"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "blocked": {
+          "id": "blocked",
+          "status": "attention",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day",
+          "evidence": [
+            "workflow-run:wr_1788967891775_oc4y",
+            "workflow-blocker-context:{\"error\":\"Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day\"}"
+          ],
+          "parentId": "root",
+          "mode": "achieve",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "blocked"
+          },
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "healthy": {
+          "id": "healthy",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "exportId": "export-healthy"
+          },
+          "evidence": [
+            "provider:export-healthy"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "healthy"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        }
+      },
+      "checkpoints": {},
+      "attempts": [
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_b2796ffc-6daf-47c4-a5c1-723fc808921f",
+          "state": "interrupted",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:31:31.300Z",
+          "finishedAt": "2026-09-09T15:31:31.377Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "stale-reconciliation-result",
+          "summary": "Workflow \"error-metrics-probe\" error: FixtureTransientError: temporary provider unavailability; retrying the same Task"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "blocked",
+          "attempt_id": "r_1_a7a16a9f-781d-4869-a047-02ef97c5454e",
+          "state": "failed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:31:31.747Z",
+          "finishedAt": "2026-09-09T15:31:31.797Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "handler-blocked",
+          "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "healthy",
+          "attempt_id": "r_1_2e31125c-7048-4168-9b08-7ce3a4233393",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:31:32.179Z",
+          "finishedAt": "2026-09-09T15:31:32.233Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_5828f027-83f6-4bb6-9f5d-b07ef778ec3d",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:31:32.554Z",
+          "finishedAt": "2026-09-09T15:31:32.618Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        }
+      ],
+      "metrics": [
+        {
+          "id": "event.unhandled-signal-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "infra.bus.subscriber-failed-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "metric.stale-active-count",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        }
+      ],
+      "latestFinishedSnapshot": null,
+      "snapshotCount": 0
+    },
+    "candidate": {
+      "calls": {
+        "flaky": 2,
+        "blocked": 1,
+        "healthy": 1
+      },
+      "tasks": {
+        "flaky": {
+          "id": "flaky",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "exportId": "export-flaky"
+          },
+          "evidence": [
+            "provider:export-flaky"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "flaky"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "blocked": {
+          "id": "blocked",
+          "status": "attention",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day",
+          "evidence": [
+            "workflow-run:wr_1788968236438_5pnh",
+            "workflow-blocker-context:{\"error\":\"Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day\"}"
+          ],
+          "parentId": "root",
+          "mode": "achieve",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "blocked"
+          },
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "healthy": {
+          "id": "healthy",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "exportId": "export-healthy"
+          },
+          "evidence": [
+            "provider:export-healthy"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "healthy"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        }
+      },
+      "checkpoints": {},
+      "attempts": [
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_9a613363-efa1-4862-86dd-736e88afefec",
+          "state": "interrupted",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:37:16.057Z",
+          "finishedAt": "2026-09-09T15:37:16.103Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "stale-reconciliation-result",
+          "summary": "Workflow \"error-metrics-probe\" error: FixtureTransientError: temporary provider unavailability; retrying the same Task"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "blocked",
+          "attempt_id": "r_1_234eedc7-5220-42aa-828a-1575b9f6e68c",
+          "state": "failed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:37:16.415Z",
+          "finishedAt": "2026-09-09T15:37:16.465Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "handler-blocked",
+          "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "healthy",
+          "attempt_id": "r_1_d9137650-1995-48e8-92ca-26a86e6fbafa",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:37:16.773Z",
+          "finishedAt": "2026-09-09T15:37:16.824Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_0cfb93fd-b0b9-4bb9-a49b-019bce66d9f4",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:37:17.107Z",
+          "finishedAt": "2026-09-09T15:37:17.159Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        }
+      ],
+      "metrics": [
+        {
+          "id": "event.unhandled-signal-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "host.task-attempts.completed-1h",
+          "current": 2,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.elapsed-ms-1h",
+          "current": 199,
+          "type": "gauge",
+          "unit": "ms"
+        },
+        {
+          "id": "host.task-attempts.failed-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.finished-1h",
+          "current": 4,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.interrupted-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.recovered-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.retry-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-metrics.last-sample-ms",
+          "current": 1788968237273,
+          "type": "gauge",
+          "unit": "unix-ms"
+        },
+        {
+          "id": "infra.bus.subscriber-failed-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "metric.stale-active-count",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        }
+      ],
+      "latestFinishedSnapshot": {
+        "metric_id": "host.task-attempts.finished-1h",
+        "value": 4,
+        "sample_size": 4,
+        "note": "{\"windowStart\":1788964637273,\"windowEnd\":1788968237273,\"coverage\":\"attempts started within the hour; retry chains crossing the window are incomplete\",\"running\":0,\"samplesAreWindowGauges\":true,\"examples\":[{\"appId\":\"error-metrics\",\"taskId\":\"flaky\",\"generation\":1,\"attemptId\":\"r_1_9a613363-efa1-4862-86dd-736e88afefec\",\"state\":\"interrupted\",\"handler\":\"workflow:error-metrics-probe\",\"failureReason\":\"stale-reconciliation-result\",\"summary\":\"Workflow \\\"error-metrics-probe\\\" error: FixtureTransientError: temporary provider unavailability; retrying the same Task\"},{\"appId\":\"error-metrics\",\"taskId\":\"blocked\",\"generation\":1,\"attemptId\":\"r_1_234eedc7-5220-42aa-828a-1575b9f6e68c\",\"state\":\"failed\",\"handler\":\"workflow:error-metrics-probe\",\"failureReason\":\"handler-blocked\",\"summary\":\"Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day\"}]}",
+        "measured_at": 1788968237273
+      },
+      "snapshotCount": 40
+    },
+    "resilience": {
+      "calls": {
+        "flaky": 2,
+        "blocked": 2,
+        "healthy": 1,
+        "during-outage-a": 1,
+        "during-outage-b": 1,
+        "after-outage": 1,
+        "after-restart": 1
+      },
+      "tasks": {
+        "flaky": {
+          "id": "flaky",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 3
+            },
+            "effortHours": 1,
+            "exportId": "export-flaky",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-flaky"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "flaky"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "blocked": {
+          "id": "blocked",
+          "status": "done",
+          "generation": 2,
+          "outcome": "Produce one internal manual fixture export within two hours; full format remains unsupported",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "manual",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 7
+            },
+            "effortHours": 1,
+            "exportId": "export-blocked",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-blocked"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms manual export",
+            "Measured fixture effort stays within two hours",
+            "No external publication"
+          ],
+          "input": {
+            "approach": "manual",
+            "decisionReason": "Recommendation only; no change has been applied. Full export costs 10 days against at most 1 day of remaining value. Manual export costs 2 hours and preserves useful value. Its expected benefit must exceed that cost; the packet provides a value ceiling, not an expected value. Otherwise, stop. Unchanged retry would not resolve an unsupported format; the flaky and healthy tasks already succeeded.",
+            "expectedValueHours": 4,
+            "key": "blocked",
+            "modelRecommendation": "Produce one internal manual export within a 2-hour budget. No external publication."
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "healthy": {
+          "id": "healthy",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 2
+            },
+            "effortHours": 1,
+            "exportId": "export-healthy",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-healthy"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "healthy"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "during-outage-a": {
+          "id": "during-outage-a",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 4
+            },
+            "effortHours": 1,
+            "exportId": "export-during-outage-a",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-during-outage-a"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "during-outage-a"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "during-outage-b": {
+          "id": "during-outage-b",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 4
+            },
+            "effortHours": 1,
+            "exportId": "export-during-outage-b",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-during-outage-b"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "during-outage-b"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "after-outage": {
+          "id": "after-outage",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 6
+            },
+            "effortHours": 1,
+            "exportId": "export-after-outage",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-after-outage"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "after-outage"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        },
+        "after-restart": {
+          "id": "after-restart",
+          "status": "done",
+          "generation": 1,
+          "outcome": "Produce the requested fixture export",
+          "summary": "Requested export produced",
+          "result": {
+            "approach": "full",
+            "baseline": {
+              "id": "host.task-attempts.finished-1h",
+              "status": "active",
+              "target": null,
+              "threshold": null,
+              "unit": "attempts",
+              "value": 8
+            },
+            "effortHours": 1,
+            "exportId": "export-after-restart",
+            "published": false
+          },
+          "evidence": [
+            "provider:export-after-restart"
+          ],
+          "parentId": "root",
+          "acceptance": [
+            "Provider confirms the requested export was produced"
+          ],
+          "input": {
+            "key": "after-restart"
+          },
+          "agent": "error-metrics",
+          "owner": "error-metrics",
+          "workflow": "error-metrics-probe",
+          "conditions": []
+        }
+      },
+      "checkpoints": {
+        "initial": {
+          "finished": 4,
+          "failed": 1,
+          "interrupted": 1,
+          "completed": 2,
+          "retry": 1,
+          "recovered": 1,
+          "blocked": {
+            "id": "blocked",
+            "status": "attention",
+            "generation": 1,
+            "outcome": "Produce the requested fixture export",
+            "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day",
+            "evidence": [
+              "workflow-run:wr_1788968390218_8i16",
+              "workflow-blocker-context:{\"error\":\"Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day\"}"
+            ],
+            "parentId": "root",
+            "mode": "achieve",
+            "acceptance": [
+              "Provider confirms the requested export was produced"
+            ],
+            "input": {
+              "key": "blocked"
+            },
+            "workflow": "error-metrics-probe",
+            "conditions": []
+          },
+          "sampleTime": 1788968391005
+        },
+        "outage": {
+          "sampleTime": 1788968391005,
+          "snapshots": 40,
+          "settledAttempts": 6,
+          "unchangedFinishedGauge": 4,
+          "diagnostics": 1
+        },
+        "restored": {
+          "finished": 7,
+          "sampleTime": 1788968392531
+        },
+        "duplicate": {
+          "eventId": 3,
+          "eventType": "app.input.requested",
+          "delivery": "accepted",
+          "links": [
+            {
+              "kind": "request",
+              "id": "app_d814cc35-5d70-43aa-afa0-7f9dd158991e",
+              "state": "done"
+            }
+          ]
+        },
+        "scopeRevision": {
+          "recommendation": {
+            "decision": "revise_manual",
+            "reason": "Recommendation only; no change has been applied. Full export costs 10 days against at most 1 day of remaining value. Manual export costs 2 hours and preserves useful value. Its expected benefit must exceed that cost; the packet provides a value ceiling, not an expected value. Otherwise, stop. Unchanged retry would not resolve an unsupported format; the flaky and healthy tasks already succeeded.",
+            "new_scope": "Produce one internal manual export within a 2-hour budget. No external publication.",
+            "acceptance": [
+              "Expected remaining value exceeds the 2-hour additional cost.",
+              "Manual export preserves the useful value.",
+              "Stop if the budget or value condition cannot be met."
+            ],
+            "remaining_limitations": [
+              "Full export format remains unsupported.",
+              "Expected remaining value is unspecified.",
+              "Manual export has not been performed or verified."
+            ]
+          },
+          "ownerAssumptions": {
+            "expectedValueHours": 4,
+            "budgetHours": 2,
+            "synthetic": true
+          },
+          "task": {
+            "id": "blocked",
+            "status": "done",
+            "generation": 2,
+            "outcome": "Produce one internal manual fixture export within two hours; full format remains unsupported",
+            "summary": "Requested export produced",
+            "result": {
+              "approach": "manual",
+              "baseline": {
+                "id": "host.task-attempts.finished-1h",
+                "status": "active",
+                "target": null,
+                "threshold": null,
+                "unit": "attempts",
+                "value": 7
+              },
+              "effortHours": 1,
+              "exportId": "export-blocked",
+              "published": false
+            },
+            "evidence": [
+              "provider:export-blocked"
+            ],
+            "parentId": "root",
+            "acceptance": [
+              "Provider confirms manual export",
+              "Measured fixture effort stays within two hours",
+              "No external publication"
+            ],
+            "input": {
+              "approach": "manual",
+              "decisionReason": "Recommendation only; no change has been applied. Full export costs 10 days against at most 1 day of remaining value. Manual export costs 2 hours and preserves useful value. Its expected benefit must exceed that cost; the packet provides a value ceiling, not an expected value. Otherwise, stop. Unchanged retry would not resolve an unsupported format; the flaky and healthy tasks already succeeded.",
+              "expectedValueHours": 4,
+              "key": "blocked",
+              "modelRecommendation": "Produce one internal manual export within a 2-hour budget. No external publication."
+            },
+            "agent": "error-metrics",
+            "owner": "error-metrics",
+            "workflow": "error-metrics-probe",
+            "conditions": []
+          }
+        },
+        "restart": {
+          "before": {
+            "calls": {
+              "flaky": 2,
+              "blocked": 2,
+              "healthy": 1,
+              "during-outage-a": 1,
+              "during-outage-b": 1,
+              "after-outage": 1
+            },
+            "attempts": 8,
+            "sampleTime": 1788968393163
+          },
+          "freshSampleTime": 1788968396340,
+          "finalAttempts": 9,
+          "calls": {
+            "flaky": 2,
+            "blocked": 2,
+            "healthy": 1,
+            "during-outage-a": 1,
+            "during-outage-b": 1,
+            "after-outage": 1,
+            "after-restart": 1
+          }
+        }
+      },
+      "attempts": [
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_4c3d6598-56da-46b9-9acf-5cd49585a3c4",
+          "state": "interrupted",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:49.862Z",
+          "finishedAt": "2026-09-09T15:39:49.903Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "stale-reconciliation-result",
+          "summary": "Workflow \"error-metrics-probe\" error: FixtureTransientError: temporary provider unavailability; retrying the same Task"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "blocked",
+          "attempt_id": "r_1_fcb9f6f4-9fa2-4904-a342-19bfd4645561",
+          "state": "failed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:50.195Z",
+          "finishedAt": "2026-09-09T15:39:50.239Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": "handler-blocked",
+          "summary": "Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "healthy",
+          "attempt_id": "r_1_73ba9704-5a08-4791-b4be-457170acbc53",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:50.528Z",
+          "finishedAt": "2026-09-09T15:39:50.579Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "flaky",
+          "attempt_id": "r_1_afac88bd-7bc6-448f-b17d-42acb18f1d18",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:50.850Z",
+          "finishedAt": "2026-09-09T15:39:50.896Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "during-outage-a",
+          "attempt_id": "r_1_02e91975-1fbe-4fc2-bd61-1d88eb57bd67",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:51.352Z",
+          "finishedAt": "2026-09-09T15:39:51.401Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "during-outage-b",
+          "attempt_id": "r_1_5a914a97-4c9c-4554-bcb0-e286181fe7ea",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:51.955Z",
+          "finishedAt": "2026-09-09T15:39:52.001Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "after-outage",
+          "attempt_id": "r_1_28a98f1d-1564-4198-b757-60de4ed022bc",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:52.375Z",
+          "finishedAt": "2026-09-09T15:39:52.420Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "blocked",
+          "attempt_id": "r_2_3e326366-b8f5-4bca-8922-290cb6fb78fe",
+          "state": "completed",
+          "taskGeneration": 2,
+          "startedAt": "2026-09-09T15:39:52.997Z",
+          "finishedAt": "2026-09-09T15:39:53.042Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        },
+        {
+          "app_id": "error-metrics",
+          "task_id": "after-restart",
+          "attempt_id": "r_1_f5211132-2a8b-4e2d-884b-74a04d9bc888",
+          "state": "completed",
+          "taskGeneration": 1,
+          "startedAt": "2026-09-09T15:39:56.174Z",
+          "finishedAt": "2026-09-09T15:39:56.224Z",
+          "handler": "workflow:error-metrics-probe",
+          "failureReason": null,
+          "summary": "Requested export produced"
+        }
+      ],
+      "metrics": [
+        {
+          "id": "event.unhandled-signal-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "host.task-attempts.completed-1h",
+          "current": 7,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.elapsed-ms-1h",
+          "current": 417,
+          "type": "gauge",
+          "unit": "ms"
+        },
+        {
+          "id": "host.task-attempts.failed-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.finished-1h",
+          "current": 9,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.interrupted-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.recovered-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-attempts.retry-1h",
+          "current": 1,
+          "type": "gauge",
+          "unit": "attempts"
+        },
+        {
+          "id": "host.task-metrics.last-sample-ms",
+          "current": 1788968396340,
+          "type": "gauge",
+          "unit": "unix-ms"
+        },
+        {
+          "id": "infra.bus.subscriber-failed-count-1h",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        },
+        {
+          "id": "metric.stale-active-count",
+          "current": null,
+          "type": "health",
+          "unit": "count"
+        }
+      ],
+      "latestFinishedSnapshot": {
+        "metric_id": "host.task-attempts.finished-1h",
+        "value": 9,
+        "sample_size": 9,
+        "note": "{\"windowStart\":1788964796340,\"windowEnd\":1788968396340,\"coverage\":\"attempts started within the hour; retry chains crossing the window are incomplete\",\"running\":0,\"samplesAreWindowGauges\":true,\"examples\":[{\"appId\":\"error-metrics\",\"taskId\":\"flaky\",\"generation\":1,\"attemptId\":\"r_1_4c3d6598-56da-46b9-9acf-5cd49585a3c4\",\"state\":\"interrupted\",\"handler\":\"workflow:error-metrics-probe\",\"failureReason\":\"stale-reconciliation-result\",\"summary\":\"Workflow \\\"error-metrics-probe\\\" error: FixtureTransientError: temporary provider unavailability; retrying the same Task\"},{\"appId\":\"error-metrics\",\"taskId\":\"blocked\",\"generation\":1,\"attemptId\":\"r_1_fcb9f6f4-9fa2-4904-a342-19bfd4645561\",\"state\":\"failed\",\"handler\":\"workflow:error-metrics-probe\",\"failureReason\":\"handler-blocked\",\"summary\":\"Unsupported export format; implementation costs 10 days for an optional experiment worth at most one day\"}]}",
+        "measured_at": 1788968396340
+      },
+      "snapshotCount": 80
+    }
+  },
+  "failedIterations": [
+    {
+      "phase": "candidate first attempt",
+      "failure": "TypeError: db.transaction is not a function",
+      "observation": "Tasks settled; collector produced no samples",
+      "change": "Use the Host SqliteDb transaction API: explicit BEGIN/COMMIT/ROLLBACK"
+    },
+    {
+      "phase": "resilience first attempt",
+      "failure": "SQLITE_BUSY when fixture dropped outage trigger",
+      "observation": "Six attempts settled; measurement failure contained. Restoration and restart not reached.",
+      "change": "Bounded busy wait and retry for disposable fixture DDL; stop daemon before final fixture cleanup"
+    }
+  ],
+  "validation": {
+    "hostTypecheck": "passed",
+    "sdkTypecheck": "passed",
+    "changedFileEslint": "passed",
+    "runtimeAndReadTests": {
+      "passed": 18,
+      "failed": 0
+    },
+    "metricServiceIntegrationTests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "fullCI": "not run",
+    "productionDeployment": "not performed"
+  }
+}

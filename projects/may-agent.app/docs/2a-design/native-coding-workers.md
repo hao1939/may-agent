@@ -16,6 +16,20 @@ remains a one-shot compatibility adapter. The earlier
 [executor proposal](../archive/implementation/codex-goal-executor.md) records evaluation
 history but does not override this accepted design.
 
+## Primary Task executor path
+
+```text
+Task runtime -> fenced TaskAttempt -> selected native adapter
+             <- proposed TaskReconcileResult and attempt evidence
+```
+
+`codex-goal` runs the persistent goal/thread adapter; `codex` and `claude` use
+one-shot CLI process adapters. They share Task identity, cancellation and result
+admission. The later `run_cli_agent` sections describe the compatibility tool
+and CLI process records, not a requirement to route `codex-goal` through that tool.
+The [Task contract](task-resource-engine.md#one-attempt-interface) owns the
+executor-neutral interface.
+
 ## Accepted Codex Goal Boundaries
 
 The correction boundary is the current fenced Task attempt: malformed output or
@@ -52,7 +66,7 @@ Codex and Claude are default entries behind the same named executor boundary
 used by Host extensions. Replacing one adapter does not change Task intent,
 events, result admission, or recovery.
 
-## Mental Model
+## Compatibility tool flow
 
 ```text
 an execution session needs bounded native-worker evidence
@@ -151,14 +165,14 @@ The native worker does not become an App planner or owner.
 
 ## Current Implementation
 
-The current runtime has two layers:
+The compatibility process path has these integration points:
 
 | Layer            | File                                                  | Responsibility                                                                                                  |
 | ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Task adapter     | `projects/may-agent/src/app/app-task-cli-executor.ts` | Translate one fenced Task attempt into a CLI request and return its terminal JSON to normal Task admission.     |
 | Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts`   | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
 | Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`       | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
-| Event schema     | `projects/may-agent/src/app/event-bus.ts`             | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
+| Event schema     | `projects/may-agent/src/app/core/events/bus.ts`             | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
 | Restart recovery | `projects/may-agent/src/app/daemon-events.ts`         | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
 
 The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
@@ -185,7 +199,7 @@ Shipped behavior today:
 - Relative `files` resolve against `worktree` when present, otherwise `cwd`.
 - `structuredResultPath` points at `result.json` in terminal events.
 
-## Runtime Flow
+## Compatibility tool runtime flow
 
 Within a compatible bounded execution session, the flow is:
 
@@ -276,7 +290,7 @@ Do not encode every vendor-specific habit in project workflows. Keep workflows
 business-focused and let the native-worker guide plus adapter handle CLI
 details.
 
-## Event Contract
+## Compatibility process event contract
 
 The current event contract is intentionally small. The historical `cli.task.*`
 name identifies a native-worker process record, not a canonical App task.
@@ -284,103 +298,14 @@ name identifies a native-worker process record, not a canonical App task.
 observability, and exactly one of `cli.task.completed`, `cli.task.failed`, or
 `cli.task.orphaned` closes the worker run.
 
-```typescript
-cli.task.requested {
-  taskId: string;
-  tool: "codex" | "claude";
-  mode: "investigate" | "review" | "patch";
-  cwd: string;
-  promptPath: string;
-  resultPath: string;
-  structuredResultPath?: string;
-  eventsPath?: string;
-  sandbox?: "read-only" | "workspace-write" | "danger-full-access";
-  effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
-  sandboxFallbackReason?: string;
-  timeoutMs?: number;
-  sourceOwner: string;
-  sourceSessionId?: string;
-  resumeSessionId?: string;
-  reuseSession?: boolean;
-  files?: string[];
-  worktree?: string;
-  worktreePolicy?: "use-existing" | "require";
-  expectedOutput?: {
-    format: "markdown" | "json";
-    requiredFields?: string[];
-  };
-}
+The executable envelopes are defined in
+[Host event types](../../../may-agent/src/app/core/events/bus.ts). Requests carry exact
+worker identity, tool/mode, workspace and artifact paths, source correlation,
+optional native-session continuity and output constraints. Terminal events
+carry the same identity plus result paths, native session, and failure evidence.
+Failure categories distinguish timeout, permission, tool, missing output,
+output schema and process failures.
 
-cli.task.started {
-  taskId;
-  tool;
-  mode;
-  cwd;
-  promptPath;
-  resultPath;
-  structuredResultPath?;
-  eventsPath?;
-  pid?;
-  attempt?;
-  sourceSessionId?;
-  effectiveSandbox?;
-  sandboxFallbackReason?;
-  reuseSession?;
-}
-
-cli.task.completed {
-  taskId;
-  tool;
-  resultPath;
-  structuredResultPath?;
-  eventsPath?;
-  exitCode;
-  summary;
-  sourceSessionId?;
-  cliSessionId?;
-  resumeCommand?;
-  effectiveSandbox?;
-  sandboxFallbackReason?;
-  reuseSession?;
-}
-
-cli.task.failed {
-  taskId;
-  tool;
-  resultPath?;
-  structuredResultPath?;
-  eventsPath?;
-  error;
-  failureCategory?:
-    | "timeout"
-    | "permission"
-    | "tool"
-    | "no_output"
-    | "output_schema"
-    | "process";
-  exitCode?;
-  sourceSessionId?;
-  cliSessionId?;
-  resumeCommand?;
-  effectiveSandbox?;
-  sandboxFallbackReason?;
-  reuseSession?;
-}
-
-cli.task.orphaned {
-  taskId;
-  tool?;
-  pid?;
-  reason;
-  structuredResultPath?;
-  sourceSessionId?;
-  cliSessionId?;
-  resumeCommand?;
-  effectiveSandbox?;
-  sandboxFallbackReason?;
-  reuseSession?;
-}
-```
 
 `cli.task.requested` targets `runtime:cli-task-runner`. Terminal events return
 to `sourceOwner`, usually the agent that requested the worker.
